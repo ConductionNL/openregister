@@ -28,6 +28,7 @@ use OCP\EventDispatcher\Event;
  */
 class SchemaCreatedEvent extends Event
 {
+
     /**
      * The newly created schema
      *

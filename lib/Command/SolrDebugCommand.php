@@ -169,7 +169,7 @@ class SolrDebugCommand extends Command
         $overwriteHost = $this->config->getSystemValue(key: 'overwrite.cli.url', default: '');
 
         // Use overwrite host for tenant ID if set, otherwise use instance ID.
-        $tenantId = empty($overwriteHost) === false ? 'nc_' . hash('crc32', $overwriteHost) : 'nc_' . substr($instanceId, 0, 8);
+        $tenantId = empty($overwriteHost) === false ? 'nc_'.hash('crc32', $overwriteHost) : 'nc_'.substr($instanceId, 0, 8);
 
         // Display overwrite host value or 'not set'.
         $overwriteHostDisplay = ($overwriteHost !== '' && $overwriteHost !== null) ? $overwriteHost : 'not set';
@@ -181,7 +181,7 @@ class SolrDebugCommand extends Command
         // Get SOLR settings.
         $solrSettings       = $this->settingsService->getSolrSettings();
         $baseCoreName       = $solrSettings['core'] ?? 'openregister';
-        $tenantSpecificCore = $baseCoreName . '_' . $tenantId;
+        $tenantSpecificCore = $baseCoreName.'_'.$tenantId;
 
         $output->writeln("  Base Core Name: <comment>$baseCoreName</comment>");
         $output->writeln("  Tenant Specific Core: <comment>$tenantSpecificCore</comment>");
@@ -379,7 +379,7 @@ class SolrDebugCommand extends Command
                     // $collectionData contains collection metadata but we only display the name.
                     unset($collectionData);
                     // Suppress unused variable warning.
-                    $output->writeln("    - <comment>" . $collectionName . "</comment>");
+                    $output->writeln("    - <comment>".$collectionName."</comment>");
                 }
             }
         } else {

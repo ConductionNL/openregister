@@ -51,6 +51,7 @@ use RuntimeException;
  */
 class BulkOperationsHandler
 {
+
     /**
      * Database connection.
      *
@@ -99,7 +100,7 @@ class BulkOperationsHandler
         IDBConnection $db,
         LoggerInterface $logger,
         QueryBuilderHandler $queryBuilderHandler,
-        string $tableName = 'openregister_objects'
+        string $tableName='openregister_objects'
     ) {
         $this->db     = $db;
         $this->logger = $logger;
@@ -118,7 +119,7 @@ class BulkOperationsHandler
      *
      * @return array Array of processed UUIDs.
      */
-    public function ultraFastBulkSave(array $insertObjects = [], array $updateObjects = []): array
+    public function ultraFastBulkSave(array $insertObjects=[], array $updateObjects=[]): array
     {
         $optimizedHandler = new OptimizedBulkOperations(
             db: $this->db,
@@ -141,7 +142,7 @@ class BulkOperationsHandler
      *
      * @return array Array of UUIDs of deleted objects.
      */
-    public function deleteObjects(array $uuids = [], bool $hardDelete = false): array
+    public function deleteObjects(array $uuids=[], bool $hardDelete=false): array
     {
         if (empty($uuids) === true) {
             return [];
@@ -188,7 +189,7 @@ class BulkOperationsHandler
      *
      * @return array Array of UUIDs of published objects.
      */
-    public function publishObjects(array $uuids = [], \DateTime|bool $datetime = true): array
+    public function publishObjects(array $uuids=[], \DateTime|bool $datetime=true): array
     {
         if (empty($uuids) === true) {
             return [];
@@ -231,7 +232,7 @@ class BulkOperationsHandler
      *
      * @return array Array of UUIDs of depublished objects.
      */
-    public function depublishObjects(array $uuids = [], \DateTime|bool $datetime = true): array
+    public function depublishObjects(array $uuids=[], \DateTime|bool $datetime=true): array
     {
         if (empty($uuids) === true) {
             return [];
@@ -278,7 +279,7 @@ class BulkOperationsHandler
      *
      * @psalm-return array{published_count: int<0, max>, published_uuids: list<mixed>, schema_id: int}
      */
-    public function publishObjectsBySchema(int $schemaId, bool $publishAll = false): array
+    public function publishObjectsBySchema(int $schemaId, bool $publishAll=false): array
     {
         // First, get all UUIDs for objects belonging to this schema.
         $qb = $this->db->getQueryBuilder();
@@ -326,7 +327,7 @@ class BulkOperationsHandler
      *
      * @psalm-return array{deleted_count: int<0, max>, deleted_uuids: array, schema_id: int}
      */
-    public function deleteObjectsBySchema(int $schemaId, bool $hardDelete = false): array
+    public function deleteObjectsBySchema(int $schemaId, bool $hardDelete=false): array
     {
         // First, get all UUIDs for objects belonging to this schema.
         $qb = $this->db->getQueryBuilder();
@@ -584,15 +585,15 @@ class BulkOperationsHandler
                 $size += strlen($key);
                 if (is_string($value) === true) {
                     $size += strlen($value);
-                } elseif (is_array($value) === true) {
+                } else if (is_array($value) === true) {
                     $size += strlen(json_encode($value));
-                } elseif (is_numeric($value) === true) {
+                } else if (is_numeric($value) === true) {
                     $size += strlen((string) $value);
                 }
             }
 
             return $size;
-        } elseif (is_object($object) === true) {
+        } else if (is_object($object) === true) {
             // For ObjectEntity objects (update case).
             $size       = 0;
             $reflection = new ReflectionClass($object);
@@ -602,9 +603,9 @@ class BulkOperationsHandler
 
                 if (is_string($value) === true) {
                     $size += strlen($value);
-                } elseif (is_array($value) === true) {
+                } else if (is_array($value) === true) {
                     $size += strlen(json_encode($value));
-                } elseif (is_numeric($value) === true) {
+                } else if (is_numeric($value) === true) {
                     $size += strlen((string) $value);
                 }
             }
@@ -729,8 +730,8 @@ class BulkOperationsHandler
                     /*
                      * @var string $column
                      */
-                    $paramName   = 'param_' . $paramIndex . '_' . $column;
-                    $rowValues[] = ':' . $paramName;
+                    $paramName   = 'param_'.$paramIndex.'_'.$column;
+                    $rowValues[] = ':'.$paramName;
 
                     $value = $objectData[$column] ?? null;
 
@@ -743,11 +744,11 @@ class BulkOperationsHandler
                     $paramIndex++;
                 }
 
-                $valuesClause[] = '(' . implode(', ', $rowValues) . ')';
+                $valuesClause[] = '('.implode(', ', $rowValues).')';
             }//end foreach
 
             // Build the complete INSERT statement for this batch.
-            $batchSql = "INSERT INTO {$this->tableName} (" . implode(', ', $columns) . ") VALUES " . implode(', ', $valuesClause);
+            $batchSql = "INSERT INTO {$this->tableName} (".implode(', ', $columns).") VALUES ".implode(', ', $valuesClause);
 
             // Execute the batch insert with retry logic.
             $maxBatchRetries = 3;
@@ -867,7 +868,7 @@ class BulkOperationsHandler
      *
      * @psalm-return list<mixed>
      */
-    private function bulkDelete(array $uuids, bool $hardDelete = false): array
+    private function bulkDelete(array $uuids, bool $hardDelete=false): array
     {
         if (empty($uuids) === true) {
             return [];
@@ -962,7 +963,7 @@ class BulkOperationsHandler
      *
      * @psalm-return list<mixed>
      */
-    private function bulkPublish(array $uuids, \DateTime|bool $datetime = true): array
+    private function bulkPublish(array $uuids, \DateTime|bool $datetime=true): array
     {
         if (empty($uuids) === true) {
             return [];
@@ -1034,7 +1035,7 @@ class BulkOperationsHandler
      *
      * @psalm-return list<mixed>
      */
-    private function bulkDepublish(array $uuids, \DateTime|bool $datetime = true): array
+    private function bulkDepublish(array $uuids, \DateTime|bool $datetime=true): array
     {
         if (empty($uuids) === true) {
             return [];
@@ -1142,7 +1143,7 @@ class BulkOperationsHandler
             $value = $property->getValue($entity);
         } catch (\ReflectionException $e) {
             // Try getter method.
-            $getterMethod = 'get' . ucfirst($column);
+            $getterMethod = 'get'.ucfirst($column);
             if (method_exists($entity, $getterMethod) === false) {
                 return null;
             }

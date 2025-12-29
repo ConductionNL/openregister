@@ -31,6 +31,7 @@ use OCP\Settings\IIconSection;
  */
 class OpenRegisterAdmin implements IIconSection
 {
+
     /**
      * Localization service.
      *

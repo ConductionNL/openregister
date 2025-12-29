@@ -28,6 +28,7 @@ use Psr\Log\LoggerInterface;
  */
 class ElasticsearchDocumentIndexer
 {
+
     /**
      * Elasticsearch HTTP client for making requests
      *
@@ -84,7 +85,7 @@ class ElasticsearchDocumentIndexer
      *
      * @return bool True if successful
      */
-    public function indexObject(ObjectEntity $object, bool $refresh = false): bool
+    public function indexObject(ObjectEntity $object, bool $refresh=false): bool
     {
         try {
             $index = $this->indexManager->getActiveIndexName();
@@ -96,7 +97,7 @@ class ElasticsearchDocumentIndexer
             $document = $this->documentBuilder->createDocument($object);
 
             // Index document.
-            $url      = $this->httpClient->buildBaseUrl() . '/' . $index . '/_doc/' . $document['id'];
+            $url      = $this->httpClient->buildBaseUrl().'/'.$index.'/_doc/'.$document['id'];
             $response = $this->httpClient->put($url, $document);
 
             $success = isset($response['result']) && in_array($response['result'], ['created', 'updated']);
@@ -105,9 +106,9 @@ class ElasticsearchDocumentIndexer
                 $this->logger->info(
                     '[ElasticsearchDocumentIndexer] Object indexed',
                     [
-                            'object_id' => $object->getId(),
-                            'result'    => $response['result'] ?? 'unknown',
-                        ]
+                        'object_id' => $object->getId(),
+                        'result'    => $response['result'] ?? 'unknown',
+                    ]
                 );
 
                 // Refresh index if requested.
@@ -121,9 +122,9 @@ class ElasticsearchDocumentIndexer
             $this->logger->error(
                 '[ElasticsearchDocumentIndexer] Failed to index object',
                 [
-                        'object_id' => $object->getId(),
-                        'error'     => $e->getMessage(),
-                    ]
+                    'object_id' => $object->getId(),
+                    'error'     => $e->getMessage(),
+                ]
             );
             return false;
         }//end try
@@ -139,7 +140,7 @@ class ElasticsearchDocumentIndexer
      *
      * @psalm-return array{success: bool, indexed: int<0, max>, failed: int<min, max>, error?: string}
      */
-    public function bulkIndexObjects(array $objects, bool $refresh = false): array
+    public function bulkIndexObjects(array $objects, bool $refresh=false): array
     {
         $successCount = 0;
         $failureCount = 0;
@@ -162,11 +163,11 @@ class ElasticsearchDocumentIndexer
                 // Index action.
                 $bulkBody[] = json_encode(
                     [
-                            'index' => [
-                                '_index' => $index,
-                                '_id'    => $document['id'],
-                            ],
-                        ]
+                        'index' => [
+                            '_index' => $index,
+                            '_id'    => $document['id'],
+                        ],
+                    ]
                 );
 
                 // Document data.
@@ -175,9 +176,9 @@ class ElasticsearchDocumentIndexer
                 $this->logger->error(
                     '[ElasticsearchDocumentIndexer] Failed to build document',
                     [
-                            'object_id' => $object->getId(),
-                            'error'     => $e->getMessage(),
-                        ]
+                        'object_id' => $object->getId(),
+                        'error'     => $e->getMessage(),
+                    ]
                 );
                 $failureCount++;
             }//end try
@@ -193,10 +194,10 @@ class ElasticsearchDocumentIndexer
         }
 
         try {
-            $url = $this->httpClient->buildBaseUrl() . '/_bulk';
+            $url = $this->httpClient->buildBaseUrl().'/_bulk';
 
             // Send bulk request with newline-delimited JSON.
-            $bulkData = implode("\n", $bulkBody) . "\n";
+            $bulkData = implode("\n", $bulkBody)."\n";
             $response = $this->httpClient->postRaw($url, $bulkData);
 
             if (isset($response['items']) === true) {
@@ -212,9 +213,9 @@ class ElasticsearchDocumentIndexer
             $this->logger->info(
                 '[ElasticsearchDocumentIndexer] Bulk indexing completed',
                 [
-                        'success' => $successCount,
-                        'failed'  => $failureCount,
-                    ]
+                    'success' => $successCount,
+                    'failed'  => $failureCount,
+                ]
             );
 
             // Refresh index if requested.
@@ -231,8 +232,8 @@ class ElasticsearchDocumentIndexer
             $this->logger->error(
                 '[ElasticsearchDocumentIndexer] Bulk indexing failed',
                 [
-                        'error' => $e->getMessage(),
-                    ]
+                    'error' => $e->getMessage(),
+                ]
             );
             return [
                 'success' => false,
@@ -251,11 +252,11 @@ class ElasticsearchDocumentIndexer
      *
      * @return bool True if successful
      */
-    public function deleteObject(string|int $objectId, bool $refresh = false): bool
+    public function deleteObject(string|int $objectId, bool $refresh=false): bool
     {
         try {
             $index = $this->indexManager->getActiveIndexName();
-            $url   = $this->httpClient->buildBaseUrl() . '/' . $index . '/_doc/' . $objectId;
+            $url   = $this->httpClient->buildBaseUrl().'/'.$index.'/_doc/'.$objectId;
 
             $response = $this->httpClient->delete($url);
 
@@ -265,8 +266,8 @@ class ElasticsearchDocumentIndexer
                 $this->logger->info(
                     '[ElasticsearchDocumentIndexer] Object deleted',
                     [
-                            'object_id' => $objectId,
-                        ]
+                        'object_id' => $objectId,
+                    ]
                 );
 
                 // Refresh index if requested.
@@ -280,9 +281,9 @@ class ElasticsearchDocumentIndexer
             $this->logger->error(
                 '[ElasticsearchDocumentIndexer] Failed to delete object',
                 [
-                        'object_id' => $objectId,
-                        'error'     => $e->getMessage(),
-                    ]
+                    'object_id' => $objectId,
+                    'error'     => $e->getMessage(),
+                ]
             );
             return false;
         }//end try
@@ -305,8 +306,8 @@ class ElasticsearchDocumentIndexer
             $this->logger->info(
                 '[ElasticsearchDocumentIndexer] Index cleared',
                 [
-                        'index' => $index,
-                    ]
+                    'index' => $index,
+                ]
             );
 
             return true;
@@ -314,8 +315,8 @@ class ElasticsearchDocumentIndexer
             $this->logger->error(
                 '[ElasticsearchDocumentIndexer] Failed to clear index',
                 [
-                        'error' => $e->getMessage(),
-                    ]
+                    'error' => $e->getMessage(),
+                ]
             );
             return false;
         }//end try

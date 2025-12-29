@@ -201,7 +201,7 @@ class AgentMapper extends QBMapper
      *
      * @psalm-return list<\OCA\OpenRegister\Db\Agent>
      */
-    public function findByOrganisation(string $organisationUuid, ?string $userId = null, int $limit = 50, int $offset = 0): array
+    public function findByOrganisation(string $organisationUuid, ?string $userId=null, int $limit=50, int $offset=0): array
     {
         // Verify RBAC permission to read.
         $this->verifyRbacPermission(
@@ -316,7 +316,7 @@ class AgentMapper extends QBMapper
      *
      * @psalm-return list<OCA\OpenRegister\Db\Agent>
      */
-    public function findAll(?int $limit = null, ?int $offset = null, ?array $filters = [], ?array $order = []): array
+    public function findAll(?int $limit=null, ?int $offset=null, ?array $filters=[], ?array $order=[]): array
     {
         // Verify RBAC permission to read.
         $this->verifyRbacPermission(
@@ -335,7 +335,7 @@ class AgentMapper extends QBMapper
                 if ($value !== null && $field !== '_route') {
                     if ($field === 'active') {
                         $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter((bool) $value, IQueryBuilder::PARAM_BOOL)));
-                    } elseif (is_array($value) === true) {
+                    } else if (is_array($value) === true) {
                         $qb->andWhere($qb->expr()->in($field, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY)));
                     } else {
                         $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR)));
@@ -505,7 +505,7 @@ class AgentMapper extends QBMapper
      * @return int Total count of agents
      * @throws \Exception If user doesn't have read permission
      */
-    public function count(?array $filters = []): int
+    public function count(?array $filters=[]): int
     {
         // Verify RBAC permission to read.
         $this->verifyRbacPermission(
@@ -524,7 +524,7 @@ class AgentMapper extends QBMapper
                 if ($value !== null && $field !== '_route') {
                     if ($field === 'active') {
                         $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter((bool) $value, IQueryBuilder::PARAM_BOOL)));
-                    } elseif (is_array($value) === true) {
+                    } else if (is_array($value) === true) {
                         $qb->andWhere($qb->expr()->in($field, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY)));
                     } else {
                         $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR)));

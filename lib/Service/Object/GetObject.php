@@ -86,12 +86,12 @@ class GetObject
      */
     public function find(
         string $id,
-        ?Register $register = null,
-        ?Schema $schema = null,
-        ?array $_extend = [],
-        bool $files = false,
-        bool $_rbac = true,
-        bool $_multitenancy = true
+        ?Register $register=null,
+        ?Schema $schema=null,
+        ?array $_extend=[],
+        bool $files=false,
+        bool $_rbac=true,
+        bool $_multitenancy=true
     ): ObjectEntity {
         $object = $this->objectEntityMapper->find(identifier: $id, register: $register, schema: $schema, includeDeleted: false, _rbac: $_rbac, _multitenancy: $_multitenancy);
 
@@ -131,12 +131,12 @@ class GetObject
      */
     public function findSilent(
         string $id,
-        ?Register $register = null,
-        ?Schema $schema = null,
-        ?array $_extend = [],
-        bool $files = false,
-        bool $_rbac = true,
-        bool $_multitenancy = true
+        ?Register $register=null,
+        ?Schema $schema=null,
+        ?array $_extend=[],
+        bool $files=false,
+        bool $_rbac=true,
+        bool $_multitenancy=true
     ): ObjectEntity {
         $object = $this->objectEntityMapper->find(identifier: $id, register: $register, schema: $schema, includeDeleted: false, _rbac: $_rbac, _multitenancy: $_multitenancy);
 
@@ -173,20 +173,20 @@ class GetObject
      * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      */
     public function findAll(
-        ?int $limit = null,
-        ?int $offset = null,
-        array $filters = [],
-        array $sort = [],
-        ?string $search = null,
-        ?array $_extend = [],
-        bool $files = false,
-        ?string $uses = null,
-        ?Register $register = null,
-        ?Schema $schema = null,
-        ?array $ids = null,
-        ?bool $published = false,
-        bool $_rbac = true,
-        bool $_multitenancy = true
+        ?int $limit=null,
+        ?int $offset=null,
+        array $filters=[],
+        array $sort=[],
+        ?string $search=null,
+        ?array $_extend=[],
+        bool $files=false,
+        ?string $uses=null,
+        ?Register $register=null,
+        ?Schema $schema=null,
+        ?array $ids=null,
+        ?bool $published=false,
+        bool $_rbac=true,
+        bool $_multitenancy=true
     ): array {
         // Retrieve objects using the objectEntityMapper with optional register, schema, and ids.
         $objects = $this->objectEntityMapper->findAll(
@@ -263,13 +263,13 @@ class GetObject
      */
     public function findLogs(
         ObjectEntity $object,
-        ?int $limit = null,
-        ?int $offset = null,
-        ?array $filters = [],
-        ?array $sort = ['created' => 'DESC'],
-        ?string $search = null,
-        bool $_rbac = true,
-        bool $_multitenancy = true
+        ?int $limit=null,
+        ?int $offset=null,
+        ?array $filters=[],
+        ?array $sort=['created' => 'DESC'],
+        ?string $search=null,
+        bool $_rbac=true,
+        bool $_multitenancy=true
     ): array {
         // Ensure object ID is always included in filters.
         $filters['object'] = $object->getId();

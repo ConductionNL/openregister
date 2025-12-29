@@ -47,6 +47,7 @@ use Psr\Log\LoggerInterface;
  */
 class DocumentProcessingHandler
 {
+
     /**
      * Reference to FileService for cross-handler coordination (circular dependency break).
      *
@@ -102,7 +103,7 @@ class DocumentProcessingHandler
      *
      * @psalm-return Node
      */
-    public function replaceWords(Node $node, array $replacements, ?string $outputName = null): File
+    public function replaceWords(Node $node, array $replacements, ?string $outputName=null): File
     {
         if ($node->getType() !== \OCP\Files\FileInfo::TYPE_FILE) {
             throw new Exception('Node must be a file');
@@ -114,9 +115,9 @@ class DocumentProcessingHandler
 
         // Generate output file name if not provided.
         if ($outputName === null) {
-            $outputName = $fileNameWithoutExtension . '_replaced';
+            $outputName = $fileNameWithoutExtension.'_replaced';
             if (empty($fileExtension) === false) {
-                $outputName .= '.' . $fileExtension;
+                $outputName .= '.'.$fileExtension;
             }
         }
 
@@ -157,7 +158,7 @@ class DocumentProcessingHandler
             $key          = $entity['key'] ?? substr(\Symfony\Component\Uid\Uuid::v4()->toRfc4122(), 0, 8);
 
             if (empty($originalText) === false) {
-                $replacements[$originalText] = '[' . $entityType . ': ' . $key . ']';
+                $replacements[$originalText] = '['.$entityType.': '.$key.']';
             }
         }
 
@@ -166,9 +167,9 @@ class DocumentProcessingHandler
         $fileExtension = pathinfo($fileName, PATHINFO_EXTENSION);
         $fileNameWithoutExtension = pathinfo($fileName, PATHINFO_FILENAME);
 
-        $anonymizedFileName = $fileNameWithoutExtension . '_anonymized';
+        $anonymizedFileName = $fileNameWithoutExtension.'_anonymized';
         if (empty($fileExtension) === false) {
-            $anonymizedFileName .= '.' . $fileExtension;
+            $anonymizedFileName .= '.'.$fileExtension;
         }
 
         return $this->replaceWords(node: $node, replacements: $replacements, outputName: $anonymizedFileName);
@@ -312,12 +313,12 @@ class DocumentProcessingHandler
             }
 
             $this->logger->error(
-                'Failed to replace words in Word document: ' . $e->getMessage(),
+                'Failed to replace words in Word document: '.$e->getMessage(),
                 [
                     'exception' => $e,
                 ]
             );
-            throw new Exception('Failed to replace words in Word document: ' . $e->getMessage(), 0, $e);
+            throw new Exception('Failed to replace words in Word document: '.$e->getMessage(), 0, $e);
         }//end try
     }//end replaceWordsInWordDocument()
 
@@ -352,7 +353,7 @@ class DocumentProcessingHandler
          */
         $content = $node->getContent();
         if ($content === false) {
-            throw new Exception('Failed to get content from file: ' . $node->getPath());
+            throw new Exception('Failed to get content from file: '.$node->getPath());
         }
 
         // Apply replacements.

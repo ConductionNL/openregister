@@ -33,6 +33,7 @@ use Psr\Log\LoggerInterface;
  */
 class ViewHandler
 {
+
     /**
      * View mapper instance.
      *

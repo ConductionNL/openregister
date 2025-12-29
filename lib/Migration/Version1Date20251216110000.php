@@ -69,8 +69,8 @@ class Version1Date20251216110000 extends SimpleMigrationStep
                     'request_body',
                     Types::TEXT,
                     [
-                            'notnull' => false,
-                        ]
+                        'notnull' => false,
+                    ]
                 );
                 $output->info('Added request_body column to openregister_webhook_logs table');
             }

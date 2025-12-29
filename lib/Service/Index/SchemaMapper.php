@@ -27,6 +27,7 @@ use Psr\Log\LoggerInterface;
  */
 class SchemaMapper
 {
+
     /**
      * Logger instance.
      *

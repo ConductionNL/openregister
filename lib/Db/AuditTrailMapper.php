@@ -110,11 +110,11 @@ class AuditTrailMapper extends QBMapper
      * @psalm-return list<OCA\OpenRegister\Db\AuditTrail>
      */
     public function findAll(
-        ?int $limit = null,
-        ?int $offset = null,
-        ?array $filters = [],
-        ?array $sort = ['created' => 'DESC'],
-        ?string $search = null
+        ?int $limit=null,
+        ?int $offset=null,
+        ?array $filters=[],
+        ?array $sort=['created' => 'DESC'],
+        ?string $search=null
     ): array {
         $qb = $this->db->getQueryBuilder();
 
@@ -133,8 +133,7 @@ class AuditTrailMapper extends QBMapper
         // Apply filters.
         foreach ($filters as $field => $value) {
             // Ensure the field is a valid column name.
-            if (
-                in_array(
+            if (in_array(
                     $field,
                     [
                         'id',
@@ -182,15 +181,14 @@ class AuditTrailMapper extends QBMapper
         // Add search on changed field if search term provided.
         if ($search !== null && $search !== '') {
             $qb->andWhere(
-                $qb->expr()->like('changed', $qb->createNamedParameter('%' . $search . '%'))
+                $qb->expr()->like('changed', $qb->createNamedParameter('%'.$search.'%'))
             );
         }
 
         // Add sorting.
         foreach ($sort ?? [] as $field => $direction) {
             // Ensure the field is a valid column name.
-            if (
-                in_array(
+            if (in_array(
                     $field,
                     [
                         'id',
@@ -245,7 +243,7 @@ class AuditTrailMapper extends QBMapper
      *
      * @return AuditTrail The created audit trail
      */
-    public function createAuditTrail(?ObjectEntity $old = null, ?ObjectEntity $new = null, ?string $action = 'update'): AuditTrail
+    public function createAuditTrail(?ObjectEntity $old=null, ?ObjectEntity $new=null, ?string $action='update'): AuditTrail
     {
         // Determine the action based on the presence of old and new objects.
         $objectEntity = $new;
@@ -345,7 +343,7 @@ class AuditTrailMapper extends QBMapper
      *
      * @psalm-return list<\OCA\OpenRegister\Db\AuditTrail>
      */
-    public function findByObjectUntil(int $objectId, string $objectUuid, $until = null): array
+    public function findByObjectUntil(int $objectId, string $objectUuid, $until=null): array
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -430,7 +428,7 @@ class AuditTrailMapper extends QBMapper
      *
      * @return ObjectEntity The reverted object (unsaved)
      */
-    public function revertObject($identifier, $until = null, bool $overwriteVersion = false): ObjectEntity
+    public function revertObject($identifier, $until=null, bool $overwriteVersion=false): ObjectEntity
     {
         // Get the current object.
         $object = $this->objectEntityMapper->find($identifier);
@@ -509,7 +507,7 @@ class AuditTrailMapper extends QBMapper
      *
      * @psalm-return array{total: int, size: int}
      */
-    public function getStatistics(?int $registerId = null, ?int $schemaId = null, array $exclude = []): array
+    public function getStatistics(?int $registerId=null, ?int $schemaId=null, array $exclude=[]): array
     {
         try {
             $qb = $this->db->getQueryBuilder();
@@ -618,7 +616,7 @@ class AuditTrailMapper extends QBMapper
      *
      * @psalm-return array{labels: list<array-key>, series: list<array{data: list<int>, name: string}>}
      */
-    public function getActionChartData(?\DateTime $from = null, ?\DateTime $till = null, ?int $registerId = null, ?int $schemaId = null): array
+    public function getActionChartData(?\DateTime $from=null, ?\DateTime $till=null, ?int $registerId=null, ?int $schemaId=null): array
     {
         try {
             $qb = $this->db->getQueryBuilder();
@@ -711,7 +709,7 @@ class AuditTrailMapper extends QBMapper
      *
      * @psalm-return array{total: int, creates: int, updates: int, deletes: int, reads: int}
      */
-    public function getDetailedStatistics(?int $registerId = null, ?int $schemaId = null, ?int $hours = 24): array
+    public function getDetailedStatistics(?int $registerId=null, ?int $schemaId=null, ?int $hours=24): array
     {
         try {
             // Get total count.
@@ -807,7 +805,7 @@ class AuditTrailMapper extends QBMapper
      *
      * @psalm-return array{actions: list<array{count: int, name: mixed}>}
      */
-    public function getActionDistribution(?int $registerId = null, ?int $schemaId = null, ?int $hours = 24): array
+    public function getActionDistribution(?int $registerId=null, ?int $schemaId=null, ?int $hours=24): array
     {
         try {
             $qb = $this->db->getQueryBuilder();
@@ -883,7 +881,7 @@ class AuditTrailMapper extends QBMapper
      *
      * @psalm-return array{objects: list<array{count: int, id: mixed, name: string}>}
      */
-    public function getMostActiveObjects(?int $registerId = null, ?int $schemaId = null, ?int $limit = 10, ?int $hours = 24): array
+    public function getMostActiveObjects(?int $registerId=null, ?int $schemaId=null, ?int $limit=10, ?int $hours=24): array
     {
         try {
             $qb = $this->db->getQueryBuilder();
@@ -926,7 +924,7 @@ class AuditTrailMapper extends QBMapper
             foreach ($results as $row) {
                 $objects[] = [
                     'id'    => $row['object'],
-                    'name'  => 'Object ' . $row['object'],
+                    'name'  => 'Object '.$row['object'],
                 // Could be enhanced to get actual object name.
                     'count' => (int) $row['count'],
                 ];
@@ -975,11 +973,11 @@ class AuditTrailMapper extends QBMapper
         } catch (\Exception $e) {
             // Log the error for debugging purposes.
             \OC::$server->getLogger()->error(
-                'Failed to clear expired audit trail logs: ' . $e->getMessage(),
+                'Failed to clear expired audit trail logs: '.$e->getMessage(),
                 [
-                        'app'       => 'openregister',
-                        'exception' => $e,
-                    ]
+                    'app'       => 'openregister',
+                    'exception' => $e,
+                ]
             );
 
             // Re-throw the exception so the caller knows something went wrong.
@@ -1014,11 +1012,11 @@ class AuditTrailMapper extends QBMapper
         } catch (\Exception $e) {
             // Log the error for debugging purposes.
             \OC::$server->getLogger()->error(
-                'Failed to clear all audit trail logs: ' . $e->getMessage(),
+                'Failed to clear all audit trail logs: '.$e->getMessage(),
                 [
-                        'app'       => 'openregister',
-                        'exception' => $e,
-                    ]
+                    'app'       => 'openregister',
+                    'exception' => $e,
+                ]
             );
 
             // Re-throw the exception so the caller knows something went wrong.
@@ -1065,11 +1063,11 @@ class AuditTrailMapper extends QBMapper
         } catch (\Exception $e) {
             // Log the error for debugging purposes.
             \OC::$server->getLogger()->error(
-                'Failed to set expiry dates for audit trails: ' . $e->getMessage(),
+                'Failed to set expiry dates for audit trails: '.$e->getMessage(),
                 [
-                        'app'       => 'openregister',
-                        'exception' => $e,
-                    ]
+                    'app'       => 'openregister',
+                    'exception' => $e,
+                ]
             );
 
             // Re-throw the exception so the caller knows something went wrong.

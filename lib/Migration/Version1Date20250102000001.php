@@ -35,6 +35,7 @@ use OCP\IDBConnection;
  */
 class Version1Date20250102000001 extends SimpleMigrationStep
 {
+
     /**
      * Database connection
      *
@@ -94,10 +95,10 @@ class Version1Date20250102000001 extends SimpleMigrationStep
                     'active',
                     Types::BOOLEAN,
                     [
-                            'notnull' => true,
-                            'default' => true,
-                            'comment' => 'Whether the organisation is active',
-                        ]
+                        'notnull' => true,
+                        'default' => true,
+                        'comment' => 'Whether the organisation is active',
+                    ]
                 );
                 $output->info(message: 'Added active column to organisations table');
             }

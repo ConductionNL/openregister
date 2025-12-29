@@ -92,16 +92,16 @@ class Version1Date20251102180000 extends SimpleMigrationStep
                     'groups',
                     Types::JSON,
                     [
-                            'notnull' => false,
-                            'default' => '[]',
-                            'comment' => 'Array of Nextcloud group IDs that have access to this organisation',
-                        ]
+                        'notnull' => false,
+                        'default' => '[]',
+                        'comment' => 'Array of Nextcloud group IDs that have access to this organisation',
+                    ]
                 );
 
                 $output->info(message: '   ✓ Added groups column');
 
                 return $schema;
-            } elseif ($table->hasColumn('groups') === true) {
+            } else if ($table->hasColumn('groups') === true) {
                 $output->info(message: '   ⚠️  Groups column already exists');
             }
         }//end if
@@ -155,7 +155,7 @@ class Version1Date20251102180000 extends SimpleMigrationStep
 
             $output->info(message: '✅ Migration completed successfully - organisations now use groups');
         } catch (\Exception $e) {
-            $output->info('   ⚠️  Error during migration: ' . $e->getMessage());
+            $output->info('   ⚠️  Error during migration: '.$e->getMessage());
         }//end try
     }//end postSchemaChange()
 }//end class

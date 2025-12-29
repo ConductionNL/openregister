@@ -76,7 +76,7 @@ class ValidationSettingsController extends Controller
         } catch (Exception $e) {
             return new JSONResponse(
                 data: [
-                    'error'             => 'Failed to validate objects: ' . $e->getMessage(),
+                    'error'             => 'Failed to validate objects: '.$e->getMessage(),
                     'total_objects'     => 0,
                     'valid_objects'     => 0,
                     'invalid_objects'   => 0,
@@ -159,7 +159,7 @@ class ValidationSettingsController extends Controller
             return new JSONResponse(
                 data: [
                     'success'   => false,
-                    'error'     => 'Mass validation failed: ' . $e->getMessage(),
+                    'error'     => 'Mass validation failed: '.$e->getMessage(),
                     'stats'     => [
                         'total_objects'     => 0,
                         'processed_objects' => 0,
@@ -266,7 +266,7 @@ class ValidationSettingsController extends Controller
             return new JSONResponse(
                 data: [
                     'success'         => false,
-                    'error'           => 'Failed to predict memory usage: ' . $e->getMessage(),
+                    'error'           => 'Failed to predict memory usage: '.$e->getMessage(),
                     'prediction_safe' => true,
                     // Default to safe if we can't predict.
                     'formatted'       => [

@@ -99,7 +99,7 @@ class PerformanceOptimizationHandler
                     'Implement pagination with smaller page sizes',
                 ],
             ];
-        } elseif ($totalTime > 500) {
+        } else if ($totalTime > 500) {
             $recommendations[] = [
                 'type'        => 'warning',
                 'issue'       => 'Slow response time',

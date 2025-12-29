@@ -69,7 +69,7 @@ class AuditHandler
      *
      * @psalm-return array<\OCA\OpenRegister\Db\AuditTrail>
      */
-    public function getLogs(string $uuid, array $filters = []): array
+    public function getLogs(string $uuid, array $filters=[]): array
     {
         $this->logger->debug(
             message: '[AuditHandler] Getting logs for object',

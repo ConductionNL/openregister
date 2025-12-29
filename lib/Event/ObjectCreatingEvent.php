@@ -28,6 +28,7 @@ use OCP\EventDispatcher\Event;
  */
 class ObjectCreatingEvent extends Event
 {
+
     /**
      * The newly created object entity
      *

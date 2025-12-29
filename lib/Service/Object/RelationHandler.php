@@ -130,7 +130,7 @@ class RelationHandler
 
                     if (Uuid::isValid($idRaw) === true) {
                         return $idRaw;
-                    } elseif (filter_var($idRaw, FILTER_VALIDATE_URL) !== false) {
+                    } else if (filter_var($idRaw, FILTER_VALIDATE_URL) !== false) {
                         $path = explode(separator: '/', string: parse_url($idRaw, PHP_URL_PATH));
 
                         return end($path);
@@ -146,7 +146,7 @@ class RelationHandler
             }
 
             foreach (array_keys($value) as $k) {
-                unset($filters[$key . '_' . $k]);
+                unset($filters[$key.'_'.$k]);
             }
         }//end foreach
 
@@ -254,7 +254,7 @@ class RelationHandler
                                 ]
                             );
                         }
-                    } elseif (is_string($value) === true && empty($value) === false) {
+                    } else if (is_string($value) === true && empty($value) === false) {
                         // Handle single relationship ID.
                         $allIds[] = $value;
                         $extractedCount++;
@@ -353,7 +353,7 @@ class RelationHandler
                         'batch'         => ($batchIndex + 1),
                         'idsInBatch'    => count($batch),
                         'objectsLoaded' => count($chunkObjects),
-                        'batchTime'     => round($batchTime, 2) . 'ms',
+                        'batchTime'     => round($batchTime, 2).'ms',
                     ]
                 );
             } catch (\Exception $e) {
@@ -376,8 +376,8 @@ class RelationHandler
             context: [
                 'totalRequested' => count($relationshipIds),
                 'totalLoaded'    => count($loadedObjects),
-                'totalTime'      => round($totalTime, 2) . 'ms',
-                'avgPerBatch'    => round($totalTime / count($batches), 2) . 'ms',
+                'totalTime'      => round($totalTime, 2).'ms',
+                'avgPerBatch'    => round($totalTime / count($batches), 2).'ms',
             ]
         );
 
@@ -432,7 +432,7 @@ class RelationHandler
      *
      * @psalm-return array{results: array|mixed, total: int<0, max>, limit: 30|mixed, offset: 0|mixed}
      */
-    public function getContracts(string $objectId, array $filters = []): array
+    public function getContracts(string $objectId, array $filters=[]): array
     {
         try {
             // Find the object.
@@ -488,7 +488,7 @@ class RelationHandler
      *
      * @psalm-return array{results: list<OCA\OpenRegister\Db\OCA\OpenRegister\Db\ObjectEntity>, total: int<0, max>, limit: 30|mixed, offset: 0|mixed}
      */
-    public function getUses(string $objectId, array $query = [], bool $rbac = true, bool $_multitenancy = true): array
+    public function getUses(string $objectId, array $query=[], bool $rbac=true, bool $_multitenancy=true): array
     {
         try {
             // Find the object.
@@ -554,7 +554,7 @@ class RelationHandler
      *
      * @psalm-return array{results: array<never, never>, total: 0, limit: 30|mixed, offset: 0|mixed, message?: 'Reverse relationship lookup not yet implemented'}
      */
-    public function getUsedBy(string $objectId, array $query = [], bool $rbac = true, bool $_multitenancy = true): array
+    public function getUsedBy(string $objectId, array $query=[], bool $rbac=true, bool $_multitenancy=true): array
     {
         try {
             // Find the object.

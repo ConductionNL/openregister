@@ -218,7 +218,7 @@ class HyperFacetHandler
      * @psalm-param    array<string, mixed> $facetConfig
      * @psalm-return   array<string, mixed>
      */
-    public function getHyperOptimizedFacets(array $facetConfig, array $baseQuery = []): array
+    public function getHyperOptimizedFacets(array $facetConfig, array $baseQuery=[]): array
     {
         $startTime = microtime(true);
 
@@ -233,10 +233,10 @@ class HyperFacetHandler
             $this->logger->debug(
                 'Hyper cache hit - instant facet response',
                 [
-                        'cacheKey'     => substr($cacheKey, 0, 20) . '...',
-                        'responseTime' => '<10ms',
-                        'source'       => 'cache_layer_1',
-                    ]
+                    'cacheKey'     => substr($cacheKey, 0, 20).'...',
+                    'responseTime' => '<10ms',
+                    'source'       => 'cache_layer_1',
+                ]
             );
             return $cachedResult;
         }//end if
@@ -248,10 +248,10 @@ class HyperFacetHandler
             $this->logger->debug(
                 'Dataset analysis completed',
                 [
-                        'estimatedSize' => $datasetStats['estimated_size'],
-                        'strategy'      => $optimizationStrategy,
-                        'analysisTime'  => round((microtime(true) - $startTime) * 1000, 2) . 'ms',
-                    ]
+                    'estimatedSize' => $datasetStats['estimated_size'],
+                    'strategy'      => $optimizationStrategy,
+                    'analysisTime'  => round((microtime(true) - $startTime) * 1000, 2).'ms',
+                ]
             );
 
         // **STEP 3**: Execute optimized facet calculation based on strategy.
@@ -297,11 +297,11 @@ class HyperFacetHandler
         $this->logger->debug(
             'Hyper-optimized facets completed',
             [
-                    'strategy'      => $optimizationStrategy,
-                    'executionTime' => $executionTime . 'ms',
-                    'facetCount'    => count($results),
-                    'cacheKey'      => substr($cacheKey, 0, 20) . '...',
-                ]
+                'strategy'      => $optimizationStrategy,
+                'executionTime' => $executionTime.'ms',
+                'facetCount'    => count($results),
+                'cacheKey'      => substr($cacheKey, 0, 20).'...',
+            ]
         );
 
         return $enhancedResults;
@@ -325,7 +325,7 @@ class HyperFacetHandler
     private function analyzeDatasetSize(array $baseQuery): array
     {
         // Check cardinality cache first.
-        $cardinalityCacheKey = 'dataset_size_' . md5(json_encode($baseQuery));
+        $cardinalityCacheKey = 'dataset_size_'.md5(json_encode($baseQuery));
 
         if ($this->cardinalityCache !== null) {
             try {
@@ -516,11 +516,11 @@ class HyperFacetHandler
         $this->logger->debug(
             'Using smart sampling strategy',
             [
-                    'totalSize'           => $totalSize,
-                    'sampleRate'          => $sampleRate,
-                    'sampleSize'          => $sampleSize,
-                    'extrapolationFactor' => round(1 / $sampleRate, 2),
-                ]
+                'totalSize'           => $totalSize,
+                'sampleRate'          => $sampleRate,
+                'sampleSize'          => $sampleSize,
+                'extrapolationFactor' => round(1 / $sampleRate, 2),
+            ]
         );
 
         // **SAMPLING OPTIMIZATION**: Get random sample efficiently.
@@ -534,10 +534,10 @@ class HyperFacetHandler
             facetConfig: $facetConfig,
             baseQuery: $sampleQuery,
             options: [
-                    'estimated_size' => $sampleSize,
-                    'size_category'  => 'small',
+                'estimated_size' => $sampleSize,
+                'size_category'  => 'small',
             // Treat sample as small dataset.
-                ]
+            ]
         );
 
         // **STATISTICAL EXTRAPOLATION**: Scale up sample results.
@@ -576,10 +576,10 @@ class HyperFacetHandler
         $this->logger->debug(
             'Using HyperLogLog estimation strategy',
             [
-                    'datasetSize'        => $datasetStats['estimated_size'],
-                    'expectedAccuracy'   => '~95%',
-                    'targetResponseTime' => '<50ms',
-                ]
+                'datasetSize'        => $datasetStats['estimated_size'],
+                'expectedAccuracy'   => '~95%',
+                'targetResponseTime' => '<50ms',
+            ]
         );
 
         // **HYPERLOGLOG OPTIMIZATION**: Use simplified cardinality estimation.
@@ -645,17 +645,17 @@ class HyperFacetHandler
                     $this->logger->debug(
                         'Metadata facets completed',
                         [
-                        'executionTime'     => $executionTime . 'ms',
-                        'facetCount'        => count($results),
-                        'batchOptimization' => 'enabled',
+                            'executionTime'     => $executionTime.'ms',
+                            'facetCount'        => count($results),
+                            'batchOptimization' => 'enabled',
                         ]
                     );
 
                     /*
-                         * Type annotation for resolve callback
+                     * Type annotation for resolve callback
                          *
                          * @var callable(mixed): void $resolve
-                         */
+                     */
                     $resolve($results);
                 } catch (\Throwable $e) {
                     $reject($e);
@@ -848,7 +848,7 @@ class HyperFacetHandler
         // **PERFORMANCE OPTIMIZATION**: Search only indexed fields to avoid JSON_SEARCH.
         // This implements the user's requirement: '_search never touches JSON object field'.
         $searchConditions = $queryBuilder->expr()->orX();
-        $searchParam      = $queryBuilder->createNamedParameter('%' . strtolower($searchTerm) . '%');
+        $searchParam      = $queryBuilder->createNamedParameter('%'.strtolower($searchTerm).'%');
 
         // Search in indexed fields only (as per user requirement).
         $searchConditions->add($queryBuilder->expr()->like($queryBuilder->createFunction('LOWER(name)'), $searchParam));
@@ -891,7 +891,7 @@ class HyperFacetHandler
         // Increment to invalidate cache when algorithm changes.
         ];
 
-        return 'hyper_facets_' . md5(json_encode($keyData));
+        return 'hyper_facets_'.md5(json_encode($keyData));
     }//end generateIntelligentCacheKey()
 
     /**
@@ -951,9 +951,9 @@ class HyperFacetHandler
     {
         if ($size <= self::SMALL_DATASET_THRESHOLD) {
             return 'small';
-        } elseif ($size <= self::MEDIUM_DATASET_THRESHOLD) {
+        } else if ($size <= self::MEDIUM_DATASET_THRESHOLD) {
             return 'medium';
-        } elseif ($size <= self::LARGE_DATASET_THRESHOLD) {
+        } else if ($size <= self::LARGE_DATASET_THRESHOLD) {
             return 'large';
         } else {
             return 'huge';
@@ -1019,7 +1019,7 @@ class HyperFacetHandler
         if ($datasetSize <= self::SMALL_DATASET_THRESHOLD) {
             return self::SMALL_SAMPLE_RATE;
             // 100% - exact
-        } elseif ($datasetSize <= self::MEDIUM_DATASET_THRESHOLD) {
+        } else if ($datasetSize <= self::MEDIUM_DATASET_THRESHOLD) {
             return self::MEDIUM_SAMPLE_RATE;
             // 10% sampling
         } else {
@@ -1114,10 +1114,10 @@ class HyperFacetHandler
             function ($resolve) {
                 // Simplified for now.
                 /*
-                     * Type annotation for resolve callback
+                 * Type annotation for resolve callback
                      *
                      * @var callable(mixed): void $resolve
-                     */
+                 */
                 $resolve([]);
             }
         );

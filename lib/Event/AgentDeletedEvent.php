@@ -28,6 +28,7 @@ use OCP\EventDispatcher\Event;
  */
 class AgentDeletedEvent extends Event
 {
+
     /**
      * The deleted agent.
      *

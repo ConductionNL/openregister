@@ -32,6 +32,7 @@ use OCP\IDBConnection;
  */
 class Version1Date20250723110323 extends SimpleMigrationStep
 {
+
     /**
      * Database connection.
      *
@@ -93,9 +94,9 @@ class Version1Date20250723110323 extends SimpleMigrationStep
                     'is_default',
                     Types::BOOLEAN,
                     [
-                            'notnull' => false,
-                            'default' => false,
-                        ]
+                        'notnull' => false,
+                        'default' => false,
+                    ]
                 );
                 $output->info(message: 'Added is_default column to organisations table');
             }

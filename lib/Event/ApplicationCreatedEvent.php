@@ -28,6 +28,7 @@ use OCP\EventDispatcher\Event;
  */
 class ApplicationCreatedEvent extends Event
 {
+
     /**
      * The newly created application.
      *

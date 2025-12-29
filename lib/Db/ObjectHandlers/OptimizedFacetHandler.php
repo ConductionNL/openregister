@@ -35,6 +35,7 @@ use OCP\IDBConnection;
  */
 class OptimizedFacetHandler
 {
+
     /**
      * Database connection
      *
@@ -77,7 +78,7 @@ class OptimizedFacetHandler
      *
      * @return array Combined facet results
      */
-    public function getBatchedFacets(array $facetConfig, array $baseQuery = []): array
+    public function getBatchedFacets(array $facetConfig, array $baseQuery=[]): array
     {
         $results = [];
 
@@ -98,7 +99,7 @@ class OptimizedFacetHandler
         foreach ($facetConfig as $facetName => $config) {
             if ($facetName === '@self' && is_array($config) === true) {
                 $metadataFacets = $config;
-            } elseif ($facetName !== '@self') {
+            } else if ($facetName !== '@self') {
                 $jsonFieldFacets[$facetName] = $config;
             }
         }
@@ -259,7 +260,7 @@ class OptimizedFacetHandler
     private function getOptimizedJsonTermsFacet(string $field, array $baseQuery): array
     {
         $queryBuilder = $this->db->getQueryBuilder();
-        $jsonPath     = '$' . $field;
+        $jsonPath     = '$'.$field;
 
         // Check if we should skip this facet due to too much data.
         $estimatedRows = $this->estimateRowCount($baseQuery);
@@ -274,14 +275,14 @@ class OptimizedFacetHandler
 
         // Use optimized JSON query with limits.
         $queryBuilder->selectAlias(
-            $queryBuilder->createFunction("JSON_UNQUOTE(JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . "))"),
+            $queryBuilder->createFunction("JSON_UNQUOTE(JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath)."))"),
             'field_value'
         )
             ->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'doc_count')
             ->from('openregister_objects')
             ->where(
                 $queryBuilder->expr()->isNotNull(
-                    $queryBuilder->createFunction("JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . ")")
+                    $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
                 )
             )
             ->groupBy('field_value')

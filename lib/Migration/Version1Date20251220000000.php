@@ -75,9 +75,9 @@ class Version1Date20251220000000 extends SimpleMigrationStep
                     'configuration',
                     Types::TEXT,
                     [
-                            'notnull' => false,
-                            'default' => null,
-                        ]
+                        'notnull' => false,
+                        'default' => null,
+                    ]
                 );
                 $output->info('Added configuration column to openregister_registers table for magic mapping support.');
             }
@@ -86,8 +86,3 @@ class Version1Date20251220000000 extends SimpleMigrationStep
         return $schema;
     }//end changeSchema()
 }//end class
-
-
-
-
-

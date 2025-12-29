@@ -57,9 +57,9 @@ class LockedException extends Exception
      * @return void
      */
     public function __construct(
-        string $message = 'Object is locked and cannot be modified',
-        int $code = 423,
-        ?Throwable $previous = null
+        string $message='Object is locked and cannot be modified',
+        int $code=423,
+        ?Throwable $previous=null
     ) {
         // Call parent constructor to initialize base exception properties.
         // HTTP 423 Locked indicates the resource is locked (RFC 4918).

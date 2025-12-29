@@ -62,6 +62,7 @@ use Symfony\Component\Yaml\Yaml;
  */
 class UploadService
 {
+
     /**
      * HTTP client
      *
@@ -246,7 +247,7 @@ class UploadService
             $response = $this->client->request('GET', $url);
         } catch (\GuzzleHttp\Exception\BadResponseException $e) {
             // Return error response if HTTP request fails.
-            return new JSONResponse(data: ['error' => 'Failed to do a GET api-call on url: ' . $url . ' ' . $e->getMessage()], statusCode: 400);
+            return new JSONResponse(data: ['error' => 'Failed to do a GET api-call on url: '.$url.' '.$e->getMessage()], statusCode: 400);
         }
 
         // Step 2: Get response body content as string.

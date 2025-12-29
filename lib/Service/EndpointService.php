@@ -50,6 +50,7 @@ use Symfony\Component\Uid\Uuid;
  */
 class EndpointService
 {
+
     /**
      * Endpoint log mapper
      *
@@ -100,7 +101,7 @@ class EndpointService
      * @phpstan-return array{success: bool, statusCode: int, response: mixed, error?: string}
      * @psalm-return   array{success: bool, statusCode: int, response: mixed, error?: string}
      */
-    public function testEndpoint(Endpoint $endpoint, array $testData = []): array
+    public function testEndpoint(Endpoint $endpoint, array $testData=[]): array
     {
         try {
             // Step 1: Check if user has permission to execute this endpoint.
@@ -135,7 +136,7 @@ class EndpointService
         } catch (\Exception $e) {
             // Log error for debugging and monitoring.
             $this->logger->error(
-                'Error testing endpoint: ' . $e->getMessage(),
+                'Error testing endpoint: '.$e->getMessage(),
                 [
                     'endpoint_id' => $endpoint->getId(),
                     'trace'       => $e->getTraceAsString(),
@@ -191,7 +192,7 @@ class EndpointService
                     'success'    => false,
                     'statusCode' => 400,
                     'response'   => null,
-                    'error'      => 'Unknown target type: ' . $endpoint->getTargetType(),
+                    'error'      => 'Unknown target type: '.$endpoint->getTargetType(),
                 ];
         }//end switch
     }//end executeEndpoint()
@@ -251,7 +252,7 @@ class EndpointService
                     'success'    => false,
                     'statusCode' => 404,
                     'response'   => null,
-                    'error'      => 'Agent not found: ' . $agentId,
+                    'error'      => 'Agent not found: '.$agentId,
                 ];
             }
 
@@ -270,11 +271,11 @@ class EndpointService
             $this->logger->info(
                 '[EndpointService] Executing agent',
                 [
-                        'agent'    => $agent->getName(),
-                        'provider' => $agent->getProvider(),
-                        'model'    => $agent->getModel(),
-                        'message'  => substr($message, 0, 100),
-                    ]
+                    'agent'    => $agent->getName(),
+                    'provider' => $agent->getProvider(),
+                    'model'    => $agent->getModel(),
+                    'message'  => substr($message, 0, 100),
+                ]
             );
 
             // Get LLM configuration.
@@ -296,17 +297,17 @@ class EndpointService
                             $this->logger->debug(
                                 '[EndpointService] Added tool functions',
                                 [
-                                        'tool'      => $toolName,
-                                        'functions' => count($toolFunctions),
-                                    ]
+                                    'tool'      => $toolName,
+                                    'functions' => count($toolFunctions),
+                                ]
                             );
                         }
                     } catch (\Exception $e) {
                         $this->logger->warning(
-                            '[EndpointService] Failed to load tool: ' . $toolName,
+                            '[EndpointService] Failed to load tool: '.$toolName,
                             [
-                                    'error' => $e->getMessage(),
-                                ]
+                                'error' => $e->getMessage(),
+                            ]
                         );
                     }//end try
                 }//end foreach
@@ -315,8 +316,8 @@ class EndpointService
             $this->logger->info(
                 '[EndpointService] Agent has tools configured',
                 [
-                        'totalFunctions' => count($functions),
-                    ]
+                    'totalFunctions' => count($functions),
+                ]
             );
 
             // Call LLM based on provider.
@@ -327,10 +328,10 @@ class EndpointService
                 $this->logger->info(
                     '[EndpointService] Calling Ollama',
                     [
-                            'url'                => $ollamaUrl,
-                            'model'              => $agent->getModel(),
-                            'functionsAvailable' => count($functions),
-                        ]
+                        'url'                => $ollamaUrl,
+                        'model'              => $agent->getModel(),
+                        'functionsAvailable' => count($functions),
+                    ]
                 );
 
                 // Build messages.
@@ -360,15 +361,15 @@ class EndpointService
                     'success'    => false,
                     'statusCode' => 501,
                     'response'   => null,
-                    'error'      => 'Provider ' . $agent->getProvider() . ' not yet implemented for endpoint execution',
+                    'error'      => 'Provider '.$agent->getProvider().' not yet implemented for endpoint execution',
                 ];
             }//end if
         } catch (\Exception $e) {
             $this->logger->error(
-                '[EndpointService] Error executing agent endpoint: ' . $e->getMessage(),
+                '[EndpointService] Error executing agent endpoint: '.$e->getMessage(),
                 [
-                        'trace' => $e->getTraceAsString(),
-                    ]
+                    'trace' => $e->getTraceAsString(),
+                ]
             );
 
             return [
@@ -421,10 +422,10 @@ class EndpointService
                         $this->logger->info(
                             '[EndpointService] Calling tool function',
                             [
-                                    'tool'      => $toolName,
-                                    'function'  => $functionName,
-                                    'arguments' => $arguments,
-                                ]
+                                'tool'      => $toolName,
+                                'function'  => $functionName,
+                                'arguments' => $arguments,
+                            ]
                         );
 
                         // Call the function via __call magic method.
@@ -444,24 +445,24 @@ class EndpointService
                     }//end if
                 } catch (\Exception $e) {
                     $this->logger->error(
-                        '[EndpointService] Error checking tool: ' . $toolName,
+                        '[EndpointService] Error checking tool: '.$toolName,
                         [
-                                'error' => $e->getMessage(),
-                            ]
+                            'error' => $e->getMessage(),
+                        ]
                     );
                 }//end try
             }//end foreach
 
             return [
-                'error' => 'Function not found: ' . $functionName,
+                'error' => 'Function not found: '.$functionName,
             ];
         } catch (\Exception $e) {
             $this->logger->error(
                 '[EndpointService] Error executing tool function',
                 [
-                        'function' => $functionName,
-                        'error'    => $e->getMessage(),
-                    ]
+                    'function' => $functionName,
+                    'error'    => $e->getMessage(),
+                ]
             );
 
             return [
@@ -618,9 +619,9 @@ class EndpointService
             $log->setRequest($request);
             $log->setResponse(
                 response: [
-                        'statusCode' => $result['statusCode'],
-                        'body'       => $result['response'],
-                    ]
+                    'statusCode' => $result['statusCode'],
+                    'body'       => $result['response'],
+                ]
             );
 
             // Set status.
@@ -650,7 +651,7 @@ class EndpointService
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                'Error logging endpoint call: ' . $e->getMessage(),
+                'Error logging endpoint call: '.$e->getMessage(),
                 [
                     'endpoint_id' => $endpoint->getId(),
                     'trace'       => $e->getTraceAsString(),

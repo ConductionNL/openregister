@@ -103,6 +103,7 @@ use Psr\Log\LoggerInterface;
 
 class FileService
 {
+
     /**
      * Configuration service
      *
@@ -631,7 +632,7 @@ class FileService
      *
      * @phpstan-return Node|null
      */
-    private function createRegisterFolderById(Register $register, ?IUser $currentUser = null): ?Node
+    private function createRegisterFolderById(Register $register, ?IUser $currentUser=null): ?Node
     {
         return $this->folderManagementHandler->createRegisterFolderById(
             register: $register,
@@ -655,8 +656,8 @@ class FileService
      */
     private function createObjectFolderById(
         ObjectEntity|string $objectEntity,
-        ?IUser $currentUser = null,
-        int|string|null $registerId = null
+        ?IUser $currentUser=null,
+        int|string|null $registerId=null
     ): Node {
         return $this->folderManagementHandler->createObjectFolderById(
             objectEntity: $objectEntity,
@@ -716,7 +717,7 @@ class FileService
      * @psalm-return   list<\OCP\Files\Node>
      * @phpstan-return array<int, Node>
      */
-    public function getFilesForEntity(Register|ObjectEntity $entity, ?bool $sharedFilesOnly = false): array
+    public function getFilesForEntity(Register|ObjectEntity $entity, ?bool $sharedFilesOnly=false): array
     {
 
         if ($entity instanceof Register) {
@@ -726,7 +727,7 @@ class FileService
         }
 
         if ($folder === null) {
-            throw new Exception("Cannot access folder for entity " . $entity->getId());
+            throw new Exception("Cannot access folder for entity ".$entity->getId());
         }
 
         $files = $folder->getDirectoryListing();
@@ -770,7 +771,7 @@ class FileService
      * @psalm-return   Folder|null
      * @phpstan-return Folder|null
      */
-    public function getObjectFolder(ObjectEntity|string $objectEntity, int|string|null $registerId = null): ?Folder
+    public function getObjectFolder(ObjectEntity|string $objectEntity, int|string|null $registerId=null): ?Folder
     {
         return $this->folderManagementHandler->getObjectFolder(
             objectEntity: $objectEntity,
@@ -802,7 +803,7 @@ class FileService
      */
     public function getShareLink(IShare $share): string
     {
-        return $this->getCurrentDomain() . '/index.php/s/' . $share->getToken();
+        return $this->getCurrentDomain().'/index.php/s/'.$share->getToken();
     }//end getShareLink()
 
     /**
@@ -909,7 +910,7 @@ class FileService
      *
      * @phpstan-return array{results: array<int, array<string, mixed>>, total: int, page: int, pages: int, limit: int, offset: int}
      */
-    public function formatFiles(array $files, ?array $requestParams = []): array
+    public function formatFiles(array $files, ?array $requestParams=[]): array
     {
         return $this->fileFormattingHandler->formatFiles(
             files: $files,
@@ -956,7 +957,7 @@ class FileService
      * @psalm-return   array<IShare>
      * @phpstan-return array<int, IShare>
      */
-    public function findShares(Node $file, int $shareType = 3): array
+    public function findShares(Node $file, int $shareType=3): array
     {
         // Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
         $this->checkOwnership($file);
@@ -1033,7 +1034,7 @@ class FileService
      *
      * @return IShare|null The created share or null if user doesn't exist.
      */
-    private function shareFolderWithUser(Node $folder, string $userId, int $permissions = 31): ?IShare
+    private function shareFolderWithUser(Node $folder, string $userId, int $permissions=31): ?IShare
     {
         return $this->fileSharingHandler->shareFolderWithUser(
             folder: $folder,
@@ -1091,7 +1092,7 @@ class FileService
      *
      * @throws \Exception If sharing fails.
      */
-    private function shareFileWithUser(File $file, string $userId, int $permissions = 31): void
+    private function shareFileWithUser(File $file, string $userId, int $permissions=31): void
     {
         $this->fileSharingHandler->shareFileWithUser(
             file: $file,
@@ -1136,7 +1137,7 @@ class FileService
      *
      * @psalm-suppress PossiblyUnusedReturnValue
      */
-    public function createShareLink(string $path, ?int $shareType = 3, ?int $permissions = null): string
+    public function createShareLink(string $path, ?int $shareType=3, ?int $permissions=null): string
     {
         $path = trim(string: $path, characters: '/');
         if ($permissions === null) {
@@ -1158,7 +1159,7 @@ class FileService
             $file = $this->rootFolder->get($path);
         } catch (NotFoundException $e) {
             $this->logger->error(message: "Can't create share link for $path because file doesn't exist.");
-            return 'File not found at ' . $path;
+            return 'File not found at '.$path;
         }
 
         // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
@@ -1167,15 +1168,15 @@ class FileService
         try {
             $share = $this->createShare(
                 shareData: [
-                        'path'        => $path,
-                        'file'        => $file,
-                        'shareType'   => $shareType,
-                        'permissions' => $permissions,
-                    ]
+                    'path'        => $path,
+                    'file'        => $file,
+                    'shareType'   => $shareType,
+                    'permissions' => $permissions,
+                ]
             );
             return $this->getShareLink($share);
         } catch (Exception $exception) {
-            $this->logger->error(message: "Can't create share link for $path: " . $exception->getMessage());
+            $this->logger->error(message: "Can't create share link for $path: ".$exception->getMessage());
             throw new Exception('Can\'t create share link.');
         }
     }//end createShareLink()
@@ -1211,7 +1212,7 @@ class FileService
      * @phpstan-param array<int, string> $tags
      * @psalm-param   array<int, string> $tags
      */
-    public function updateFile(string|int $filePath, mixed $content = null, array $tags = [], ?ObjectEntity $object = null): File
+    public function updateFile(string|int $filePath, mixed $content=null, array $tags=[], ?ObjectEntity $object=null): File
     {
         return $this->updateFileHandler->updateFile(
             filePath: $filePath,
@@ -1256,7 +1257,7 @@ class FileService
      *
      * @throws Exception If deleting the file is not permitted or file operations fail.
      */
-    public function deleteFile(Node | string | int $file, ?ObjectEntity $object = null): bool
+    public function deleteFile(Node | string | int $file, ?ObjectEntity $object=null): bool
     {
         return $this->deleteFileHandler->deleteFile(
             file: $file,
@@ -1277,7 +1278,7 @@ class FileService
      * @phpstan-param array<int, string> $tags
      * @psalm-param   array<int, string> $tags
      */
-    private function attachTagsToFile(string $fileId, array $tags = []): void
+    private function attachTagsToFile(string $fileId, array $tags=[]): void
     {
         $this->taggingHandler->attachTagsToFile(
             fileId: $fileId,
@@ -1324,7 +1325,7 @@ class FileService
      * @phpstan-param array<int, string> $tags
      * @psalm-param   array<int, string> $tags
      */
-    public function addFile(ObjectEntity | string $objectEntity, string $fileName, string $content, bool $share = false, array $tags = [], int | string | Schema | null $_schema = null, int | string | Register | null $_register = null, int|string|null $registerId = null): File
+    public function addFile(ObjectEntity | string $objectEntity, string $fileName, string $content, bool $share=false, array $tags=[], int | string | Schema | null $_schema=null, int | string | Register | null $_register=null, int|string|null $registerId=null): File
     {
         return $this->createFileHandler->addFile(
             objectEntity: $objectEntity,
@@ -1357,7 +1358,7 @@ class FileService
      * @phpstan-param array<int, string> $tags
      * @psalm-param   array<int, string> $tags
      */
-    public function saveFile(ObjectEntity $objectEntity, string $fileName, string $content, bool $share = false, array $tags = []): File
+    public function saveFile(ObjectEntity $objectEntity, string $fileName, string $content, bool $share=false, array $tags=[]): File
     {
         return $this->createFileHandler->saveFile(
             objectEntity: $objectEntity,
@@ -1414,7 +1415,7 @@ class FileService
      * @psalm-return   list<\OCP\Files\Node>
      * @phpstan-return array<int, Node>
      */
-    public function getFiles(ObjectEntity | string $object, ?bool $sharedFilesOnly = false): array
+    public function getFiles(ObjectEntity | string $object, ?bool $sharedFilesOnly=false): array
     {
         return $this->readFileHandler->getFiles(
             object: $object,
@@ -1443,7 +1444,7 @@ class FileService
      * @psalm-return   File|null
      * @phpstan-return File|null
      */
-    public function getFile(ObjectEntity|string|null $object = null, string|int $file = ''): ?File
+    public function getFile(ObjectEntity|string|null $object=null, string|int $file=''): ?File
     {
         return $this->readFileHandler->getFile($object, $file);
     }//end getFile()
@@ -1486,7 +1487,7 @@ class FileService
 
             return $node;
         } catch (Exception $e) {
-            $this->logger->error(message: 'getFileById: Error finding file by ID ' . $fileId . ': ' . $e->getMessage());
+            $this->logger->error(message: 'getFileById: Error finding file by ID '.$fileId.': '.$e->getMessage());
             return null;
         }//end try
     }//end getFileById()
@@ -1514,7 +1515,7 @@ class FileService
 
         // Set appropriate headers.
         $response->addHeader('Content-Type', $file->getMimeType());
-        $response->addHeader('Content-Disposition', 'attachment; filename="' . $file->getName() . '"');
+        $response->addHeader('Content-Disposition', 'attachment; filename="'.$file->getName().'"');
         $response->addHeader('Content-Length', (string) $file->getSize());
 
         return $response;
@@ -1585,7 +1586,7 @@ class FileService
      * @psalm-return   array{path: string, filename: string, size: int, mimeType: 'application/zip'}
      * @phpstan-return array{path: string, filename: string, size: int, mimeType: string}
      */
-    public function createObjectFilesZip(ObjectEntity | string $object, ?string $zipName = null): array
+    public function createObjectFilesZip(ObjectEntity | string $object, ?string $zipName=null): array
     {
         return $this->filePublishingHandler->createObjectFilesZip(
             object: $object,
@@ -1626,10 +1627,10 @@ class FileService
                 'parent_path' => $file->getParent()->getPath(),
             ];
 
-            $this->logger->info(message: "debugFindFileById: Found file with ID $fileId: " . json_encode($fileInfo));
+            $this->logger->info(message: "debugFindFileById: Found file with ID $fileId: ".json_encode($fileInfo));
             return $fileInfo;
         } catch (Exception $e) {
-            $this->logger->error(message: "debugFindFileById: Error finding file by ID $fileId: " . $e->getMessage());
+            $this->logger->error(message: "debugFindFileById: Error finding file by ID $fileId: ".$e->getMessage());
             return null;
         }//end try
     }//end debugFindFileById()
@@ -1652,7 +1653,7 @@ class FileService
             $objectFolder = $this->getObjectFolder($object);
 
             if ($objectFolder === null) {
-                $this->logger->warning(message: "debugListObjectFiles: Could not get object folder for object ID: " . $object->getId());
+                $this->logger->warning(message: "debugListObjectFiles: Could not get object folder for object ID: ".$object->getId());
                 return [];
             }
 
@@ -1671,10 +1672,10 @@ class FileService
                 $fileList[] = $fileInfo;
             }
 
-            $this->logger->info(message: "debugListObjectFiles: Object " . $object->getId() . " folder contains " . count($fileList) . " files: " . json_encode($fileList));
+            $this->logger->info(message: "debugListObjectFiles: Object ".$object->getId()." folder contains ".count($fileList)." files: ".json_encode($fileList));
             return $fileList;
         } catch (Exception $e) {
-            $this->logger->error(message: "debugListObjectFiles: Error listing files for object " . $object->getId() . ": " . $e->getMessage());
+            $this->logger->error(message: "debugListObjectFiles: Error listing files for object ".$object->getId().": ".$e->getMessage());
             return [];
         }//end try
     }//end debugListObjectFiles()
@@ -1730,10 +1731,10 @@ class FileService
                 $this->logger->warning(
                     message: 'Executable magic bytes detected',
                     context: [
-                            'app'      => 'openregister',
-                            'filename' => $fileName,
-                            'type'     => $description,
-                        ]
+                        'app'      => 'openregister',
+                        'filename' => $fileName,
+                        'type'     => $description,
+                    ]
                 );
 
                 throw new Exception(
@@ -1746,14 +1747,14 @@ class FileService
         $firstLines = substr($content, 0, 1024);
         if (preg_match('/^#!.*\/(sh|bash|zsh|ksh|csh|python|perl|ruby|php|node)/m', $firstLines) === 1) {
             throw new Exception(
-                "File '$fileName' contains script shebang. " . "Script files are blocked for security reasons."
+                "File '$fileName' contains script shebang. "."Script files are blocked for security reasons."
             );
         }
 
         // Check for embedded PHP tags.
         if (preg_match('/<\?php|<\?=|<script\s+language\s*=\s*["\']php/i', $firstLines) === 1) {
             throw new Exception(
-                "File '$fileName' contains PHP code. " . "PHP files are blocked for security reasons."
+                "File '$fileName' contains PHP code. "."PHP files are blocked for security reasons."
             );
         }
     }//end detectExecutableMagicBytes()
@@ -1775,7 +1776,7 @@ class FileService
      * @psalm-return   int|null
      * @phpstan-return int|null
      */
-    public function createObjectFolderWithoutUpdate(ObjectEntity $objectEntity, ?IUser $currentUser = null): int
+    public function createObjectFolderWithoutUpdate(ObjectEntity $objectEntity, ?IUser $currentUser=null): int
     {
         return $this->folderManagementHandler->createObjectFolderWithoutUpdate(
             objectEntity: $objectEntity,
@@ -1839,7 +1840,7 @@ class FileService
             if ($share instanceof IShare) {
                 $url = $this->getShareLink($share);
                 if ($url !== null && $url !== '') {
-                    return $url . '/download';
+                    return $url.'/download';
                 }
             }
         }
@@ -1928,7 +1929,7 @@ class FileService
      * @phpstan-return Node
      * @psalm-return   Node
      */
-    public function replaceWords(Node $node, array $replacements, ?string $outputName = null): Node
+    public function replaceWords(Node $node, array $replacements, ?string $outputName=null): Node
     {
         return $this->documentProcessingHandler->replaceWords(
             node: $node,

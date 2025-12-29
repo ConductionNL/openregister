@@ -126,8 +126,8 @@ class WebhookRetryJob extends TimedJob
         $this->logger->debug(
             'Checking for webhook retries',
             [
-                    'timestamp' => $now->format('c'),
-                ]
+                'timestamp' => $now->format('c'),
+            ]
         );
 
         // Find failed logs ready for retry.
@@ -141,8 +141,8 @@ class WebhookRetryJob extends TimedJob
         $this->logger->info(
             'Processing webhook retries',
             [
-                    'count' => count($failedLogs),
-                ]
+                'count' => count($failedLogs),
+            ]
         );
 
         foreach ($failedLogs as $log) {
@@ -155,9 +155,9 @@ class WebhookRetryJob extends TimedJob
                     $this->logger->debug(
                         'Skipping retry for disabled webhook',
                         [
-                                'webhook_id' => $webhook->getId(),
-                                'log_id'     => $log->getId(),
-                            ]
+                            'webhook_id' => $webhook->getId(),
+                            'log_id'     => $log->getId(),
+                        ]
                     );
                     continue;
                 }
@@ -167,11 +167,11 @@ class WebhookRetryJob extends TimedJob
                     $this->logger->warning(
                         'Webhook retry limit exceeded',
                         [
-                                'webhook_id'  => $webhook->getId(),
-                                'log_id'      => $log->getId(),
-                                'attempt'     => $log->getAttempt(),
-                                'max_retries' => $webhook->getMaxRetries(),
-                            ]
+                            'webhook_id'  => $webhook->getId(),
+                            'log_id'      => $log->getId(),
+                            'attempt'     => $log->getAttempt(),
+                            'max_retries' => $webhook->getMaxRetries(),
+                        ]
                     );
                     continue;
                 }
@@ -180,10 +180,10 @@ class WebhookRetryJob extends TimedJob
                 $this->logger->info(
                     'Retrying webhook delivery',
                     [
-                            'webhook_id' => $webhook->getId(),
-                            'log_id'     => $log->getId(),
-                            'attempt'    => $log->getAttempt() + 1,
-                        ]
+                        'webhook_id' => $webhook->getId(),
+                        'log_id'     => $log->getId(),
+                        'attempt'    => $log->getAttempt() + 1,
+                    ]
                 );
 
                 $success = $this->webhookService->deliverWebhook(
@@ -197,27 +197,27 @@ class WebhookRetryJob extends TimedJob
                     $this->logger->info(
                         'Webhook retry succeeded',
                         [
-                                'webhook_id' => $webhook->getId(),
-                                'log_id'     => $log->getId(),
-                            ]
+                            'webhook_id' => $webhook->getId(),
+                            'log_id'     => $log->getId(),
+                        ]
                     );
                 } else {
                     $this->logger->warning(
                         'Webhook retry failed',
                         [
-                                'webhook_id' => $webhook->getId(),
-                                'log_id'     => $log->getId(),
-                                'attempt'    => $log->getAttempt() + 1,
-                            ]
+                            'webhook_id' => $webhook->getId(),
+                            'log_id'     => $log->getId(),
+                            'attempt'    => $log->getAttempt() + 1,
+                        ]
                     );
                 }
             } catch (\Exception $e) {
                 $this->logger->error(
                     'Error processing webhook retry',
                     [
-                            'log_id' => $log->getId(),
-                            'error'  => $e->getMessage(),
-                        ]
+                        'log_id' => $log->getId(),
+                        'error'  => $e->getMessage(),
+                    ]
                 );
             }//end try
         }//end foreach

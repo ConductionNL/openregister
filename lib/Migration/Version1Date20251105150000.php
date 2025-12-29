@@ -71,10 +71,10 @@ class Version1Date20251105150000 extends SimpleMigrationStep
                 'id',
                 Types::BIGINT,
                 [
-                        'autoincrement' => true,
-                        'notnull'       => true,
-                        'unsigned'      => true,
-                    ]
+                    'autoincrement' => true,
+                    'notnull'       => true,
+                    'unsigned'      => true,
+                ]
             );
             $table->setPrimaryKey(['id']);
 
@@ -83,10 +83,10 @@ class Version1Date20251105150000 extends SimpleMigrationStep
                 'uuid',
                 Types::STRING,
                 [
-                        'notnull' => true,
-                        'length'  => 36,
-                        'comment' => 'Unique identifier for the conversation',
-                    ]
+                    'notnull' => true,
+                    'length'  => 36,
+                    'comment' => 'Unique identifier for the conversation',
+                ]
             );
             $table->addUniqueIndex(['uuid'], 'conversations_uuid_index');
 
@@ -95,11 +95,11 @@ class Version1Date20251105150000 extends SimpleMigrationStep
                 'title',
                 Types::STRING,
                 [
-                        'notnull' => false,
-                        'length'  => 255,
-                        'default' => null,
-                        'comment' => 'Conversation title (auto-generated)',
-                    ]
+                    'notnull' => false,
+                    'length'  => 255,
+                    'default' => null,
+                    'comment' => 'Conversation title (auto-generated)',
+                ]
             );
 
             // User and organization.
@@ -107,21 +107,21 @@ class Version1Date20251105150000 extends SimpleMigrationStep
                 'user_id',
                 Types::STRING,
                 [
-                        'notnull' => true,
-                        'length'  => 64,
-                        'comment' => 'User ID who owns the conversation',
-                    ]
+                    'notnull' => true,
+                    'length'  => 64,
+                    'comment' => 'User ID who owns the conversation',
+                ]
             );
 
             $table->addColumn(
                 'organisation',
                 Types::STRING,
                 [
-                        'notnull' => false,
-                        'length'  => 36,
-                        'default' => null,
-                        'comment' => 'Organisation UUID',
-                    ]
+                    'notnull' => false,
+                    'length'  => 36,
+                    'default' => null,
+                    'comment' => 'Organisation UUID',
+                ]
             );
 
             // Agent reference.
@@ -129,11 +129,11 @@ class Version1Date20251105150000 extends SimpleMigrationStep
                 'agent_id',
                 Types::BIGINT,
                 [
-                        'notnull'  => false,
-                        'unsigned' => true,
-                        'default'  => null,
-                        'comment'  => 'Agent ID used in this conversation',
-                    ]
+                    'notnull'  => false,
+                    'unsigned' => true,
+                    'default'  => null,
+                    'comment'  => 'Agent ID used in this conversation',
+                ]
             );
 
             // Metadata (for summaries, token counts, etc.).
@@ -141,10 +141,10 @@ class Version1Date20251105150000 extends SimpleMigrationStep
                 'metadata',
                 Types::TEXT,
                 [
-                        'notnull' => false,
-                        'default' => null,
-                        'comment' => 'JSON metadata (summary, token_count, etc.)',
-                    ]
+                    'notnull' => false,
+                    'default' => null,
+                    'comment' => 'JSON metadata (summary, token_count, etc.)',
+                ]
             );
 
             // Soft delete.
@@ -152,10 +152,10 @@ class Version1Date20251105150000 extends SimpleMigrationStep
                 'deleted_at',
                 Types::DATETIME,
                 [
-                        'notnull' => false,
-                        'default' => null,
-                        'comment' => 'Soft delete timestamp',
-                    ]
+                    'notnull' => false,
+                    'default' => null,
+                    'comment' => 'Soft delete timestamp',
+                ]
             );
 
             // Timestamps.
@@ -163,18 +163,18 @@ class Version1Date20251105150000 extends SimpleMigrationStep
                 'created',
                 Types::DATETIME,
                 [
-                        'notnull' => true,
-                        'comment' => 'Creation timestamp',
-                    ]
+                    'notnull' => true,
+                    'comment' => 'Creation timestamp',
+                ]
             );
 
             $table->addColumn(
                 'updated',
                 Types::DATETIME,
                 [
-                        'notnull' => true,
-                        'comment' => 'Last update timestamp',
-                    ]
+                    'notnull' => true,
+                    'comment' => 'Last update timestamp',
+                ]
             );
 
             // Indexes for performance.
@@ -200,10 +200,10 @@ class Version1Date20251105150000 extends SimpleMigrationStep
                 'id',
                 Types::BIGINT,
                 [
-                        'autoincrement' => true,
-                        'notnull'       => true,
-                        'unsigned'      => true,
-                    ]
+                    'autoincrement' => true,
+                    'notnull'       => true,
+                    'unsigned'      => true,
+                ]
             );
             $table->setPrimaryKey(['id']);
 
@@ -212,10 +212,10 @@ class Version1Date20251105150000 extends SimpleMigrationStep
                 'uuid',
                 Types::STRING,
                 [
-                        'notnull' => true,
-                        'length'  => 36,
-                        'comment' => 'Unique identifier for the message',
-                    ]
+                    'notnull' => true,
+                    'length'  => 36,
+                    'comment' => 'Unique identifier for the message',
+                ]
             );
             $table->addUniqueIndex(['uuid'], 'messages_uuid_index');
 
@@ -224,10 +224,10 @@ class Version1Date20251105150000 extends SimpleMigrationStep
                 'conversation_id',
                 Types::BIGINT,
                 [
-                        'notnull'  => true,
-                        'unsigned' => true,
-                        'comment'  => 'Conversation ID',
-                    ]
+                    'notnull'  => true,
+                    'unsigned' => true,
+                    'comment'  => 'Conversation ID',
+                ]
             );
 
             // Message role (user or assistant).
@@ -235,10 +235,10 @@ class Version1Date20251105150000 extends SimpleMigrationStep
                 'role',
                 Types::STRING,
                 [
-                        'notnull' => true,
-                        'length'  => 20,
-                        'comment' => 'Message role: user or assistant',
-                    ]
+                    'notnull' => true,
+                    'length'  => 20,
+                    'comment' => 'Message role: user or assistant',
+                ]
             );
 
             // Message content.
@@ -246,9 +246,9 @@ class Version1Date20251105150000 extends SimpleMigrationStep
                 'content',
                 Types::TEXT,
                 [
-                        'notnull' => true,
-                        'comment' => 'Message content',
-                    ]
+                    'notnull' => true,
+                    'comment' => 'Message content',
+                ]
             );
 
             // RAG sources (for assistant messages).
@@ -256,10 +256,10 @@ class Version1Date20251105150000 extends SimpleMigrationStep
                 'sources',
                 Types::TEXT,
                 [
-                        'notnull' => false,
-                        'default' => null,
-                        'comment' => 'JSON array of RAG sources used',
-                    ]
+                    'notnull' => false,
+                    'default' => null,
+                    'comment' => 'JSON array of RAG sources used',
+                ]
             );
 
             // Timestamp.
@@ -267,9 +267,9 @@ class Version1Date20251105150000 extends SimpleMigrationStep
                 'created',
                 Types::DATETIME,
                 [
-                        'notnull' => true,
-                        'comment' => 'Creation timestamp',
-                    ]
+                    'notnull' => true,
+                    'comment' => 'Creation timestamp',
+                ]
             );
 
             // Indexes for performance.
@@ -302,10 +302,10 @@ class Version1Date20251105150000 extends SimpleMigrationStep
                     'views',
                     Types::TEXT,
                     [
-                            'notnull' => false,
-                            'default' => null,
-                            'comment' => 'JSON array of view UUIDs for data scope',
-                        ]
+                        'notnull' => false,
+                        'default' => null,
+                        'comment' => 'JSON array of view UUIDs for data scope',
+                    ]
                 );
                 $output->info(message: '  ✅ Added views column');
                 $updated = true;
@@ -317,10 +317,10 @@ class Version1Date20251105150000 extends SimpleMigrationStep
                     'search_files',
                     Types::BOOLEAN,
                     [
-                            'notnull' => false,
-                            'default' => true,
-                            'comment' => 'Whether agent searches in files',
-                        ]
+                        'notnull' => false,
+                        'default' => true,
+                        'comment' => 'Whether agent searches in files',
+                    ]
                 );
                 $output->info(message: '  ✅ Added search_files column');
                 $updated = true;
@@ -332,10 +332,10 @@ class Version1Date20251105150000 extends SimpleMigrationStep
                     'search_objects',
                     Types::BOOLEAN,
                     [
-                            'notnull' => false,
-                            'default' => true,
-                            'comment' => 'Whether agent searches in objects',
-                        ]
+                        'notnull' => false,
+                        'default' => true,
+                        'comment' => 'Whether agent searches in objects',
+                    ]
                 );
                 $output->info(message: '  ✅ Added search_objects column');
                 $updated = true;
@@ -347,10 +347,10 @@ class Version1Date20251105150000 extends SimpleMigrationStep
                     'is_private',
                     Types::BOOLEAN,
                     [
-                            'notnull' => false,
-                            'default' => true,
-                            'comment' => 'Whether agent is private (not shared with org)',
-                        ]
+                        'notnull' => false,
+                        'default' => true,
+                        'comment' => 'Whether agent is private (not shared with org)',
+                    ]
                 );
                 $output->info(message: '  ✅ Added is_private column');
                 $updated = true;
@@ -362,10 +362,10 @@ class Version1Date20251105150000 extends SimpleMigrationStep
                     'invited_users',
                     Types::TEXT,
                     [
-                            'notnull' => false,
-                            'default' => null,
-                            'comment' => 'JSON array of user IDs with access to private agent',
-                        ]
+                        'notnull' => false,
+                        'default' => null,
+                        'comment' => 'JSON array of user IDs with access to private agent',
+                    ]
                 );
                 $output->info(message: '  ✅ Added invited_users column');
                 $updated = true;

@@ -93,7 +93,7 @@ class Version1Date20250908180000 extends SimpleMigrationStep
             $output->info(message: '   • created ≠ updated → Object was updated (UPDATE)');
             $output->info(message: '🚀 Bulk imports can now distinguish creates vs updates per-object!');
         } catch (\Exception $e) {
-            $output->info(message: '❌ Failed to modify updated column: ' . $e->getMessage());
+            $output->info(message: '❌ Failed to modify updated column: '.$e->getMessage());
             $output->info(message: '⚠️  This may prevent precise create/update tracking');
             $output->info(
                 message: '💡 Manual SQL fix: See migration docs for ALTER TABLE command'

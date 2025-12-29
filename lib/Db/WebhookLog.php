@@ -62,6 +62,7 @@ use OCP\AppFramework\Db\Entity;
  */
 class WebhookLog extends Entity implements JsonSerializable
 {
+
     /**
      * Webhook (ID of the webhook this log belongs to)
      *

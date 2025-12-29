@@ -34,6 +34,7 @@ use OCP\IDBConnection;
  */
 class Version1Date20250801000000 extends SimpleMigrationStep
 {
+
     /**
      * Database connection
      *
@@ -93,9 +94,9 @@ class Version1Date20250801000000 extends SimpleMigrationStep
                     'users',
                     Types::JSON,
                     [
-                            'notnull' => false,
-                            'default' => '[]',
-                        ]
+                        'notnull' => false,
+                        'default' => '[]',
+                    ]
                 );
                 $output->info(message: 'Added users column to organisations table');
             }
@@ -106,9 +107,9 @@ class Version1Date20250801000000 extends SimpleMigrationStep
                     'owner',
                     Types::STRING,
                     [
-                            'notnull' => false,
-                            'length'  => 255,
-                        ]
+                        'notnull' => false,
+                        'length'  => 255,
+                    ]
                 );
                 $output->info(message: 'Added owner column to organisations table');
             }

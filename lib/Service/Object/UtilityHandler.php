@@ -159,7 +159,7 @@ class UtilityHandler
     {
         $count = count($lookupMap);
         if ($count > 0) {
-            return round($totalTime / $count, 2) . 'ms/object';
+            return round($totalTime / $count, 2).'ms/object';
         }
 
         return 'no_objects';

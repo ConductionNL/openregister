@@ -76,9 +76,9 @@ class SearchQueryHandler
      */
     public function buildSearchQuery(
         array $requestParams,
-        int | string | array | null $register = null,
-        int | string | array | null $schema = null,
-        ?array $ids = null
+        int | string | array | null $register=null,
+        int | string | array | null $schema=null,
+        ?array $ids=null
     ): array {
         // STEP 1: Fix PHP's dot-to-underscore mangling in query parameter names.
         // PHP converts dots to underscores in parameter names, e.g.:.
@@ -201,7 +201,7 @@ class SearchQueryHandler
         foreach ($params as $key => $value) {
             if (str_starts_with(haystack: $key, needle: '_') === true) {
                 $specialParams[$key] = $value;
-            } elseif (in_array(needle: $key, haystack: $metadataFields) === true) {
+            } else if (in_array(needle: $key, haystack: $metadataFields) === true) {
                 // Only add to @self if not already set from function parameters.
                 if (isset($query['@self'][$key]) === false) {
                     $query['@self'][$key] = $value;
@@ -284,7 +284,7 @@ class SearchQueryHandler
                     $registerArray = [];
                     if (is_array($registerValue) === true) {
                         $registerArray = $registerValue;
-                    } elseif ($registerValue !== null && $registerValue !== false) {
+                    } else if ($registerValue !== null && $registerValue !== false) {
                         $registerArray = [$registerValue];
                     }
 
@@ -306,7 +306,7 @@ class SearchQueryHandler
                     $schemaArray = [];
                     if (is_array($schemaValue) === true) {
                         $schemaArray = $schemaValue;
-                    } elseif ($schemaValue !== null && $schemaValue !== false) {
+                    } else if ($schemaValue !== null && $schemaValue !== false) {
                         $schemaArray = [$schemaValue];
                     }
 
@@ -328,7 +328,7 @@ class SearchQueryHandler
                     // Merge with existing search if present.
                     $query['_search'] = $searchTerms;
                     if (isset($query['_search']) === true && empty($query['_search']) === false) {
-                        $query['_search'] .= ' ' . $searchTerms;
+                        $query['_search'] .= ' '.$searchTerms;
                     }
                 }//end if
 
@@ -460,9 +460,9 @@ class SearchQueryHandler
         // Add next page link if there are more pages.
         if ($page < $pages) {
             $nextPage = ($page + 1);
-            $nextUrl  = preg_replace('/([?&])page=\d+/', '$1page=' . $nextPage, $currentUrl);
+            $nextUrl  = preg_replace('/([?&])page=\d+/', '$1page='.$nextPage, $currentUrl);
             if (strpos($nextUrl, 'page=') === false) {
-                $nextUrl .= $this->getUrlSeparator($nextUrl) . 'page=' . $nextPage;
+                $nextUrl .= $this->getUrlSeparator($nextUrl).'page='.$nextPage;
             }
 
             $paginatedResults['next'] = $nextUrl;
@@ -471,9 +471,9 @@ class SearchQueryHandler
         // Add previous page link if not on first page.
         if ($page > 1) {
             $prevPage = ($page - 1);
-            $prevUrl  = preg_replace('/([?&])page=\d+/', '$1page=' . $prevPage, $currentUrl);
+            $prevUrl  = preg_replace('/([?&])page=\d+/', '$1page='.$prevPage, $currentUrl);
             if (strpos($prevUrl, 'page=') === false) {
-                $prevUrl .= $this->getUrlSeparator($prevUrl) . 'page=' . $prevPage;
+                $prevUrl .= $this->getUrlSeparator($prevUrl).'page='.$prevPage;
             }
 
             $paginatedResults['prev'] = $prevUrl;
@@ -519,7 +519,7 @@ class SearchQueryHandler
         int $resultCount,
         int $totalResults,
         float $executionTime,
-        string $executionType = 'sync'
+        string $executionType='sync'
     ): void {
         try {
             // Only create search trail if search trails are enabled.

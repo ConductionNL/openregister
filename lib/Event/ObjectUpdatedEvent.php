@@ -28,6 +28,7 @@ use OCP\EventDispatcher\Event;
  */
 class ObjectUpdatedEvent extends Event
 {
+
     /**
      * The updated object entity state
      *

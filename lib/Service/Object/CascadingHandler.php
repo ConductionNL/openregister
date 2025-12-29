@@ -140,7 +140,7 @@ class CascadingHandler
 
                             // If creation failed, keep original item to avoid empty array.
                             $createdUuids[] = $createdUuid ?? $item;
-                        } elseif (is_string($item) === true && $this->utilityHandler->isUuid($item) === true) {
+                        } else if (is_string($item) === true && $this->utilityHandler->isUuid($item) === true) {
                             // This is already a UUID, keep it.
                             $createdUuids[] = $item;
                         }
@@ -148,7 +148,7 @@ class CascadingHandler
 
                     $object[$propertyName] = $createdUuids;
                 }
-            } elseif (isset($definition['inversedBy']) === true && $definition['type'] !== 'array') {
+            } else if (isset($definition['inversedBy']) === true && $definition['type'] !== 'array') {
                 // Handle single object properties.
                 if (is_array($propertyValue) === true && $this->utilityHandler->isUuid($propertyValue) === false) {
                     // This is a nested object, create it first.
@@ -237,7 +237,7 @@ class CascadingHandler
             return $createdObject->getUuid();
         } catch (Exception $e) {
             // Log error but don't expose details.
-            $this->logger->error('Failed to create related object: ' . $e->getMessage());
+            $this->logger->error('Failed to create related object: '.$e->getMessage());
             return null;
         }//end try
     }//end createRelatedObject()

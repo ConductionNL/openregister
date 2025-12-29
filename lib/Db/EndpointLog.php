@@ -39,6 +39,7 @@ use OCP\AppFramework\Db\Entity;
  */
 class EndpointLog extends Entity implements JsonSerializable
 {
+
     /**
      * Unique identifier for this endpoint log entry.
      *
@@ -203,7 +204,7 @@ class EndpointLog extends Entity implements JsonSerializable
                 $value = [];
             }
 
-            $method = 'set' . ucfirst($key);
+            $method = 'set'.ucfirst($key);
 
             try {
                 $this->$method($value);

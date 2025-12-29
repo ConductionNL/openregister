@@ -43,6 +43,7 @@ use Psr\Log\LoggerInterface;
  */
 class RegisterTool extends AbstractTool
 {
+
     /**
      * Register service
      *
@@ -204,7 +205,7 @@ class RegisterTool extends AbstractTool
      *
      * @throws \Exception If function execution fails
      */
-    public function executeFunction(string $functionName, array $parameters, ?string $userId = null): array
+    public function executeFunction(string $functionName, array $parameters, ?string $userId=null): array
     {
         $this->log(functionName: $functionName, parameters: $parameters);
 
@@ -236,7 +237,7 @@ class RegisterTool extends AbstractTool
      *
      * @psalm-return array{success: true, message: string, data: mixed}
      */
-    public function listRegisters(int $limit = 100, int $offset = 0): array
+    public function listRegisters(int $limit=100, int $offset=0): array
     {
 
         $filters = [];
@@ -304,7 +305,7 @@ class RegisterTool extends AbstractTool
      *
      * @psalm-return array{success: true, message: string, data: mixed}
      */
-    public function createRegister(string $title, string $description = '', ?string $slug = null): array
+    public function createRegister(string $title, string $description='', ?string $slug=null): array
     {
         $data = [
             'title'       => $title,
@@ -342,7 +343,7 @@ class RegisterTool extends AbstractTool
      *
      * @psalm-return array{success: true, message: string, data: mixed}
      */
-    public function updateRegister(string $id, ?string $title = null, ?string $description = null): array
+    public function updateRegister(string $id, ?string $title=null, ?string $description=null): array
     {
         $data = [];
         if ($title !== null) {

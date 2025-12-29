@@ -169,17 +169,17 @@ class BulkController extends Controller
 
             return new JSONResponse(
                 data: [
-                        'success'         => true,
-                        'message'         => 'Bulk delete operation completed successfully',
-                        'deleted_count'   => count($deletedUuids),
-                        'deleted_uuids'   => $deletedUuids,
-                        'requested_count' => count($uuids),
-                        'skipped_count'   => count($uuids) - count($deletedUuids),
-                    ]
+                    'success'         => true,
+                    'message'         => 'Bulk delete operation completed successfully',
+                    'deleted_count'   => count($deletedUuids),
+                    'deleted_uuids'   => $deletedUuids,
+                    'requested_count' => count($uuids),
+                    'skipped_count'   => count($uuids) - count($deletedUuids),
+                ]
             );
         } catch (Exception $e) {
             return new JSONResponse(
-                data: ['error' => 'Bulk delete operation failed: ' . $e->getMessage()],
+                data: ['error' => 'Bulk delete operation failed: '.$e->getMessage()],
                 statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
             );
         }//end try
@@ -243,18 +243,18 @@ class BulkController extends Controller
 
             return new JSONResponse(
                 data: [
-                        'success'         => true,
-                        'message'         => 'Bulk publish operation completed successfully',
-                        'published_count' => count($publishedUuids),
-                        'published_uuids' => $publishedUuids,
-                        'requested_count' => count($uuids),
-                        'skipped_count'   => count($uuids) - count($publishedUuids),
-                        'datetime_used'   => $datetimeUsed,
-                    ]
+                    'success'         => true,
+                    'message'         => 'Bulk publish operation completed successfully',
+                    'published_count' => count($publishedUuids),
+                    'published_uuids' => $publishedUuids,
+                    'requested_count' => count($uuids),
+                    'skipped_count'   => count($uuids) - count($publishedUuids),
+                    'datetime_used'   => $datetimeUsed,
+                ]
             );
         } catch (Exception $e) {
             return new JSONResponse(
-                data: ['error' => 'Bulk publish operation failed: ' . $e->getMessage()],
+                data: ['error' => 'Bulk publish operation failed: '.$e->getMessage()],
                 statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
             );
         }//end try
@@ -314,18 +314,18 @@ class BulkController extends Controller
 
             return new JSONResponse(
                 data: [
-                        'success'           => true,
-                        'message'           => 'Bulk depublish operation completed successfully',
-                        'depublished_count' => count($depublishedUuids),
-                        'depublished_uuids' => $depublishedUuids,
-                        'requested_count'   => count($uuids),
-                        'skipped_count'     => count($uuids) - count($depublishedUuids),
-                        'datetime_used'     => $datetimeUsed,
-                    ]
+                    'success'           => true,
+                    'message'           => 'Bulk depublish operation completed successfully',
+                    'depublished_count' => count($depublishedUuids),
+                    'depublished_uuids' => $depublishedUuids,
+                    'requested_count'   => count($uuids),
+                    'skipped_count'     => count($uuids) - count($depublishedUuids),
+                    'datetime_used'     => $datetimeUsed,
+                ]
             );
         } catch (Exception $e) {
             return new JSONResponse(
-                data: ['error' => 'Bulk depublish operation failed: ' . $e->getMessage()],
+                data: ['error' => 'Bulk depublish operation failed: '.$e->getMessage()],
                 statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
             );
         }//end try
@@ -397,16 +397,16 @@ class BulkController extends Controller
 
             return new JSONResponse(
                 data: [
-                        'success'         => true,
-                        'message'         => 'Bulk save operation completed successfully',
-                        'saved_count'     => ($savedObjects['statistics']['saved'] ?? 0) + ($savedObjects['statistics']['updated'] ?? 0),
-                        'saved_objects'   => $savedObjects,
-                        'requested_count' => count($objects),
-                    ]
+                    'success'         => true,
+                    'message'         => 'Bulk save operation completed successfully',
+                    'saved_count'     => ($savedObjects['statistics']['saved'] ?? 0) + ($savedObjects['statistics']['updated'] ?? 0),
+                    'saved_objects'   => $savedObjects,
+                    'requested_count' => count($objects),
+                ]
             );
         } catch (Exception $e) {
             return new JSONResponse(
-                data: ['error' => 'Bulk save operation failed: ' . $e->getMessage()],
+                data: ['error' => 'Bulk save operation failed: '.$e->getMessage()],
                 statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
             );
         }//end try
@@ -450,17 +450,17 @@ class BulkController extends Controller
 
             return new JSONResponse(
                 data: [
-                        'success'         => true,
-                        'message'         => 'Schema objects publishing completed successfully',
-                        'published_count' => $result['published_count'],
-                        'published_uuids' => $result['published_uuids'],
-                        'schema_id'       => $result['schema_id'],
-                        'publish_all'     => $publishAll,
-                    ]
+                    'success'         => true,
+                    'message'         => 'Schema objects publishing completed successfully',
+                    'published_count' => $result['published_count'],
+                    'published_uuids' => $result['published_uuids'],
+                    'schema_id'       => $result['schema_id'],
+                    'publish_all'     => $publishAll,
+                ]
             );
         } catch (Exception $e) {
             return new JSONResponse(
-                data: ['error' => 'Schema objects publishing failed: ' . $e->getMessage()],
+                data: ['error' => 'Schema objects publishing failed: '.$e->getMessage()],
                 statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
             );
         }//end try
@@ -504,17 +504,17 @@ class BulkController extends Controller
 
             return new JSONResponse(
                 data: [
-                        'success'       => true,
-                        'message'       => 'Schema objects deletion completed successfully',
-                        'deleted_count' => $result['deleted_count'],
-                        'deleted_uuids' => $result['deleted_uuids'],
-                        'schema_id'     => $result['schema_id'],
-                        'hard_delete'   => $hardDelete,
-                    ]
+                    'success'       => true,
+                    'message'       => 'Schema objects deletion completed successfully',
+                    'deleted_count' => $result['deleted_count'],
+                    'deleted_uuids' => $result['deleted_uuids'],
+                    'schema_id'     => $result['schema_id'],
+                    'hard_delete'   => $hardDelete,
+                ]
             );
         } catch (Exception $e) {
             return new JSONResponse(
-                data: ['error' => 'Schema objects deletion failed: ' . $e->getMessage()],
+                data: ['error' => 'Schema objects deletion failed: '.$e->getMessage()],
                 statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
             );
         }//end try
@@ -552,16 +552,16 @@ class BulkController extends Controller
 
             return new JSONResponse(
                 data: [
-                        'success'       => true,
-                        'message'       => 'Register objects deletion completed successfully',
-                        'deleted_count' => $result['deleted_count'],
-                        'deleted_uuids' => $result['deleted_uuids'],
-                        'register_id'   => $result['register_id'],
-                    ]
+                    'success'       => true,
+                    'message'       => 'Register objects deletion completed successfully',
+                    'deleted_count' => $result['deleted_count'],
+                    'deleted_uuids' => $result['deleted_uuids'],
+                    'register_id'   => $result['register_id'],
+                ]
             );
         } catch (Exception $e) {
             return new JSONResponse(
-                data: ['error' => 'Register objects deletion failed: ' . $e->getMessage()],
+                data: ['error' => 'Register objects deletion failed: '.$e->getMessage()],
                 statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
             );
         }//end try
@@ -621,7 +621,7 @@ class BulkController extends Controller
 
             return new JSONResponse(data: $result);
         } catch (Exception $e) {
-            return new JSONResponse(data: ['error' => 'Schema validation failed: ' . $e->getMessage()], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
+            return new JSONResponse(data: ['error' => 'Schema validation failed: '.$e->getMessage()], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
         }//end try
     }//end validateSchema()
 }//end class

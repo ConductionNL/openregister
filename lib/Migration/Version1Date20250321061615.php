@@ -71,9 +71,9 @@ class Version1Date20250321061615 extends SimpleMigrationStep
                 'organisation',
                 Types::STRING,
                 [
-                        'notnull' => false,
-                        'length'  => 255,
-                    ]
+                    'notnull' => false,
+                    'length'  => 255,
+                ]
             );
         }
 
@@ -83,9 +83,9 @@ class Version1Date20250321061615 extends SimpleMigrationStep
                 'application',
                 Types::STRING,
                 [
-                        'notnull' => false,
-                        'length'  => 255,
-                    ]
+                    'notnull' => false,
+                    'length'  => 255,
+                ]
             );
         }
 
@@ -95,8 +95,8 @@ class Version1Date20250321061615 extends SimpleMigrationStep
                 'validation',
                 Types::JSON,
                 [
-                        'notnull' => false,
-                    ]
+                    'notnull' => false,
+                ]
             );
         }
 
@@ -106,8 +106,8 @@ class Version1Date20250321061615 extends SimpleMigrationStep
                 'deleted',
                 Types::JSON,
                 [
-                        'notnull' => false,
-                    ]
+                    'notnull' => false,
+                ]
             );
         }
 
@@ -117,8 +117,8 @@ class Version1Date20250321061615 extends SimpleMigrationStep
                 'geo',
                 Types::JSON,
                 [
-                        'notnull' => false,
-                    ]
+                    'notnull' => false,
+                ]
             );
         }
 
@@ -128,8 +128,8 @@ class Version1Date20250321061615 extends SimpleMigrationStep
                 'retention',
                 Types::JSON,
                 [
-                        'notnull' => false,
-                    ]
+                    'notnull' => false,
+                ]
             );
         }
 
@@ -142,9 +142,9 @@ class Version1Date20250321061615 extends SimpleMigrationStep
                 'slug',
                 Types::STRING,
                 [
-                        'notnull' => false,
-                        'length'  => 255,
-                    ]
+                    'notnull' => false,
+                    'length'  => 255,
+                ]
             );
         }
 
@@ -154,9 +154,9 @@ class Version1Date20250321061615 extends SimpleMigrationStep
                 'owner',
                 Types::STRING,
                 [
-                        'notnull' => false,
-                        'length'  => 255,
-                    ]
+                    'notnull' => false,
+                    'length'  => 255,
+                ]
             );
         }
 
@@ -166,9 +166,9 @@ class Version1Date20250321061615 extends SimpleMigrationStep
                 'application',
                 Types::STRING,
                 [
-                        'notnull' => false,
-                        'length'  => 255,
-                    ]
+                    'notnull' => false,
+                    'length'  => 255,
+                ]
             );
         }
 
@@ -178,9 +178,9 @@ class Version1Date20250321061615 extends SimpleMigrationStep
                 'organisation',
                 Types::STRING,
                 [
-                        'notnull' => false,
-                        'length'  => 255,
-                    ]
+                    'notnull' => false,
+                    'length'  => 255,
+                ]
             );
         }
 
@@ -190,8 +190,8 @@ class Version1Date20250321061615 extends SimpleMigrationStep
                 'authorization',
                 Types::JSON,
                 [
-                        'notnull' => false,
-                    ]
+                    'notnull' => false,
+                ]
             );
         }
 
@@ -201,8 +201,8 @@ class Version1Date20250321061615 extends SimpleMigrationStep
                 'deleted',
                 Types::DATETIME,
                 [
-                        'notnull' => false,
-                    ]
+                    'notnull' => false,
+                ]
             );
         }
 
@@ -215,9 +215,9 @@ class Version1Date20250321061615 extends SimpleMigrationStep
                 'slug',
                 Types::STRING,
                 [
-                        'notnull' => false,
-                        'length'  => 255,
-                    ]
+                    'notnull' => false,
+                    'length'  => 255,
+                ]
             );
         }
 
@@ -227,9 +227,9 @@ class Version1Date20250321061615 extends SimpleMigrationStep
                 'owner',
                 Types::STRING,
                 [
-                        'notnull' => false,
-                        'length'  => 255,
-                    ]
+                    'notnull' => false,
+                    'length'  => 255,
+                ]
             );
         }
 
@@ -239,9 +239,9 @@ class Version1Date20250321061615 extends SimpleMigrationStep
                 'application',
                 Types::STRING,
                 [
-                        'notnull' => false,
-                        'length'  => 255,
-                    ]
+                    'notnull' => false,
+                    'length'  => 255,
+                ]
             );
         }
 
@@ -251,9 +251,9 @@ class Version1Date20250321061615 extends SimpleMigrationStep
                 'organisation',
                 Types::STRING,
                 [
-                        'notnull' => false,
-                        'length'  => 255,
-                    ]
+                    'notnull' => false,
+                    'length'  => 255,
+                ]
             );
         }
 
@@ -263,8 +263,8 @@ class Version1Date20250321061615 extends SimpleMigrationStep
                 'authorization',
                 Types::JSON,
                 [
-                        'notnull' => false,
-                    ]
+                    'notnull' => false,
+                ]
             );
         }
 
@@ -274,8 +274,8 @@ class Version1Date20250321061615 extends SimpleMigrationStep
                 'deleted',
                 Types::DATETIME,
                 [
-                        'notnull' => false,
-                    ]
+                    'notnull' => false,
+                ]
             );
         }
 
@@ -303,9 +303,9 @@ class Version1Date20250321061615 extends SimpleMigrationStep
                 'organisation_id',
                 Types::STRING,
                 [
-                        'notnull' => false,
-                        'length'  => 255,
-                    ]
+                    'notnull' => false,
+                    'length'  => 255,
+                ]
             );
         }
 
@@ -315,9 +315,9 @@ class Version1Date20250321061615 extends SimpleMigrationStep
                 'organisation_id_type',
                 Types::STRING,
                 [
-                        'notnull' => false,
-                        'length'  => 50,
-                    ]
+                    'notnull' => false,
+                    'length'  => 50,
+                ]
             );
         }
 
@@ -327,9 +327,9 @@ class Version1Date20250321061615 extends SimpleMigrationStep
                 'processing_activity_id',
                 Types::STRING,
                 [
-                        'notnull' => false,
-                        'length'  => 255,
-                    ]
+                    'notnull' => false,
+                    'length'  => 255,
+                ]
             );
         }
 
@@ -339,9 +339,9 @@ class Version1Date20250321061615 extends SimpleMigrationStep
                 'processing_activity_url',
                 Types::STRING,
                 [
-                        'notnull' => false,
-                        'length'  => 255,
-                    ]
+                    'notnull' => false,
+                    'length'  => 255,
+                ]
             );
         }
 
@@ -351,9 +351,9 @@ class Version1Date20250321061615 extends SimpleMigrationStep
                 'processing_id',
                 Types::STRING,
                 [
-                        'notnull' => false,
-                        'length'  => 255,
-                    ]
+                    'notnull' => false,
+                    'length'  => 255,
+                ]
             );
         }
 
@@ -363,9 +363,9 @@ class Version1Date20250321061615 extends SimpleMigrationStep
                 'confidentiality',
                 Types::STRING,
                 [
-                        'notnull' => false,
-                        'length'  => 255,
-                    ]
+                    'notnull' => false,
+                    'length'  => 255,
+                ]
             );
         }
 
@@ -375,9 +375,9 @@ class Version1Date20250321061615 extends SimpleMigrationStep
                 'retention_period',
                 Types::STRING,
                 [
-                        'notnull' => false,
-                        'length'  => 255,
-                    ]
+                    'notnull' => false,
+                    'length'  => 255,
+                ]
             );
         }
 

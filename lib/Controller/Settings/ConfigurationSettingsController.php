@@ -204,16 +204,16 @@ class ConfigurationSettingsController extends Controller
             $settings = $this->settingsService->getObjectSettingsOnly();
             return new JSONResponse(
                 data: [
-                        'success' => true,
-                        'data'    => $settings,
-                    ]
+                    'success' => true,
+                    'data'    => $settings,
+                ]
             );
         } catch (Exception $e) {
             return new JSONResponse(
                 data: [
-                        'success' => false,
-                        'error'   => $e->getMessage(),
-                    ],
+                    'success' => false,
+                    'error'   => $e->getMessage(),
+                ],
                 statusCode: 500
             );
         }
@@ -243,17 +243,17 @@ class ConfigurationSettingsController extends Controller
             $result = $this->settingsService->updateObjectSettingsOnly($data);
             return new JSONResponse(
                 data: [
-                        'success' => true,
-                        'message' => 'Object settings updated successfully',
-                        'data'    => $result,
-                    ]
+                    'success' => true,
+                    'message' => 'Object settings updated successfully',
+                    'data'    => $result,
+                ]
             );
         } catch (Exception $e) {
             return new JSONResponse(
                 data: [
-                        'success' => false,
-                        'error'   => $e->getMessage(),
-                    ],
+                    'success' => false,
+                    'error'   => $e->getMessage(),
+                ],
                 statusCode: 500
             );
         }//end try
@@ -337,17 +337,17 @@ class ConfigurationSettingsController extends Controller
 
             return new JSONResponse(
                 data: [
-                        'success'    => true,
-                        'collection' => 'objects',
-                        'status'     => $status,
-                    ]
+                    'success'    => true,
+                    'collection' => 'objects',
+                    'status'     => $status,
+                ]
             );
         } catch (Exception $e) {
             return new JSONResponse(
                 data: [
-                        'success' => false,
-                        'message' => 'Failed to get object collection field status: ' . $e->getMessage(),
-                    ],
+                    'success' => false,
+                    'message' => 'Failed to get object collection field status: '.$e->getMessage(),
+                ],
                 statusCode: 500
             );
         }
@@ -374,9 +374,9 @@ class ConfigurationSettingsController extends Controller
             if ($objectCollection === null || $objectCollection === '') {
                 return new JSONResponse(
                     data: [
-                            'success' => false,
-                            'message' => 'Object collection not configured',
-                        ],
+                        'success' => false,
+                        'message' => 'Object collection not configured',
+                    ],
                     statusCode: 400
                 );
             }
@@ -386,18 +386,18 @@ class ConfigurationSettingsController extends Controller
 
             return new JSONResponse(
                 data: [
-                        'success'    => true,
-                        'collection' => 'objects',
-                        'message'    => 'Missing object fields created successfully',
-                        'result'     => $result,
-                    ]
+                    'success'    => true,
+                    'collection' => 'objects',
+                    'message'    => 'Missing object fields created successfully',
+                    'result'     => $result,
+                ]
             );
         } catch (Exception $e) {
             return new JSONResponse(
                 data: [
-                        'success' => false,
-                        'message' => 'Failed to create missing object fields: ' . $e->getMessage(),
-                    ],
+                    'success' => false,
+                    'message' => 'Failed to create missing object fields: '.$e->getMessage(),
+                ],
                 statusCode: 500
             );
         }//end try

@@ -62,8 +62,8 @@ class Version1Date20250607093617 extends SimpleMigrationStep
                 'expires',
                 Types::DATETIME,
                 [
-                        'notnull' => false,
-                    ]
+                    'notnull' => false,
+                ]
             );
         }
 

@@ -61,6 +61,7 @@ use Psr\Log\LoggerInterface;
  */
 class ToolRegistry
 {
+
     /**
      * Registered tools
      *
@@ -128,9 +129,9 @@ class ToolRegistry
         $this->logger->info(
             '[ToolRegistry] Loaded tools',
             [
-                    'count' => count($this->tools),
-                    'tools' => array_keys($this->tools),
-                ]
+                'count' => count($this->tools),
+                'tools' => array_keys($this->tools),
+            ]
         );
     }//end loadTools()
 
@@ -178,10 +179,10 @@ class ToolRegistry
         $this->logger->info(
             '[ToolRegistry] Tool registered',
             [
-                    'id'   => $id,
-                    'name' => $metadata['name'],
-                    'app'  => $metadata['app'],
-                ]
+                'id'   => $id,
+                'name' => $metadata['name'],
+                'app'  => $metadata['app'],
+            ]
         );
     }//end registerTool()
 

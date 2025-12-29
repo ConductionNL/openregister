@@ -42,6 +42,7 @@ use OCP\AppFramework\Db\Entity;
  */
 class Endpoint extends Entity implements JsonSerializable
 {
+
     /**
      * Unique identifier for the endpoint.
      *
@@ -353,7 +354,7 @@ class Endpoint extends Entity implements JsonSerializable
                 $value = [];
             }
 
-            $method = 'set' . ucfirst($key);
+            $method = 'set'.ucfirst($key);
 
             try {
                 $this->$method($value);

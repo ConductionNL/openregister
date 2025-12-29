@@ -128,17 +128,17 @@ class LlmSettingsController extends Controller
             $result = $this->settingsService->updateLLMSettingsOnly($data);
             return new JSONResponse(
                 data: [
-                        'success' => true,
-                        'message' => 'LLM settings updated successfully',
-                        'data'    => $result,
-                    ]
+                    'success' => true,
+                    'message' => 'LLM settings updated successfully',
+                    'data'    => $result,
+                ]
             );
         } catch (Exception $e) {
             return new JSONResponse(
                 data: [
-                        'success' => false,
-                        'error'   => $e->getMessage(),
-                    ],
+                    'success' => false,
+                    'error'   => $e->getMessage(),
+                ],
                 statusCode: 500
             );
         }//end try
@@ -192,10 +192,10 @@ class LlmSettingsController extends Controller
             if (empty($provider) === true) {
                 return new JSONResponse(
                     data: [
-                            'success' => false,
-                            'error'   => 'Missing provider',
-                            'message' => 'Provider is required for testing',
-                        ],
+                        'success' => false,
+                        'error'   => 'Missing provider',
+                        'message' => 'Provider is required for testing',
+                    ],
                     statusCode: 400
                 );
             }
@@ -203,10 +203,10 @@ class LlmSettingsController extends Controller
             if (empty($config) === true || is_array($config) === false) {
                 return new JSONResponse(
                     data: [
-                            'success' => false,
-                            'error'   => 'Invalid config',
-                            'message' => 'Config must be provided as an object',
-                        ],
+                        'success' => false,
+                        'error'   => 'Invalid config',
+                        'message' => 'Config must be provided as an object',
+                    ],
                     statusCode: 400
                 );
             }
@@ -225,10 +225,10 @@ class LlmSettingsController extends Controller
         } catch (Exception $e) {
             return new JSONResponse(
                 data: [
-                        'success' => false,
-                        'error'   => $e->getMessage(),
-                        'message' => 'Failed to generate embedding: ' . $e->getMessage(),
-                    ],
+                    'success' => false,
+                    'error'   => $e->getMessage(),
+                    'message' => 'Failed to generate embedding: '.$e->getMessage(),
+                ],
                 statusCode: 400
             );
         }//end try
@@ -262,10 +262,10 @@ class LlmSettingsController extends Controller
             if (empty($provider) === true) {
                 return new JSONResponse(
                     data: [
-                            'success' => false,
-                            'error'   => 'Missing provider',
-                            'message' => 'Provider is required for testing',
-                        ],
+                        'success' => false,
+                        'error'   => 'Missing provider',
+                        'message' => 'Provider is required for testing',
+                    ],
                     statusCode: 400
                 );
             }
@@ -273,10 +273,10 @@ class LlmSettingsController extends Controller
             if (empty($config) === true || is_array($config) === false) {
                 return new JSONResponse(
                     data: [
-                            'success' => false,
-                            'error'   => 'Invalid config',
-                            'message' => 'Config must be provided as an object',
-                        ],
+                        'success' => false,
+                        'error'   => 'Invalid config',
+                        'message' => 'Config must be provided as an object',
+                    ],
                     statusCode: 400
                 );
             }
@@ -295,10 +295,10 @@ class LlmSettingsController extends Controller
         } catch (Exception $e) {
             return new JSONResponse(
                 data: [
-                        'success' => false,
-                        'error'   => $e->getMessage(),
-                        'message' => 'Failed to test chat: ' . $e->getMessage(),
-                    ],
+                    'success' => false,
+                    'error'   => $e->getMessage(),
+                    'message' => 'Failed to test chat: '.$e->getMessage(),
+                ],
                 statusCode: 400
             );
         }//end try
@@ -323,16 +323,16 @@ class LlmSettingsController extends Controller
             $ollamaUrl = $settings['ollamaConfig']['url'] ?? 'http://localhost:11434';
 
             // Call Ollama API to get available models.
-            $apiUrl = rtrim($ollamaUrl, '/') . '/api/tags';
+            $apiUrl = rtrim($ollamaUrl, '/').'/api/tags';
 
             $ch = curl_init($apiUrl);
             curl_setopt_array(
                 $ch,
                 [
-                        CURLOPT_RETURNTRANSFER => true,
-                        CURLOPT_TIMEOUT        => 5,
-                        CURLOPT_FOLLOWLOCATION => true,
-                    ]
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_TIMEOUT        => 5,
+                    CURLOPT_FOLLOWLOCATION => true,
+                ]
             );
 
             $response  = curl_exec($ch);
@@ -343,20 +343,20 @@ class LlmSettingsController extends Controller
             if ($curlError !== '') {
                 return new JSONResponse(
                     data: [
-                            'success' => false,
-                            'error'   => 'Failed to connect to Ollama: ' . $curlError,
-                            'models'  => [],
-                        ]
+                        'success' => false,
+                        'error'   => 'Failed to connect to Ollama: '.$curlError,
+                        'models'  => [],
+                    ]
                 );
             }
 
             if ($httpCode !== 200) {
                 return new JSONResponse(
                     data: [
-                            'success' => false,
-                            'error'   => "Ollama API returned HTTP {$httpCode}",
-                            'models'  => [],
-                        ]
+                        'success' => false,
+                        'error'   => "Ollama API returned HTTP {$httpCode}",
+                        'models'  => [],
+                    ]
                 );
             }
 
@@ -364,10 +364,10 @@ class LlmSettingsController extends Controller
             if (isset($data['models']) === false || is_array($data['models']) === false) {
                 return new JSONResponse(
                     data: [
-                            'success' => false,
-                            'error'   => 'Unexpected response from Ollama API',
-                            'models'  => [],
-                        ]
+                        'success' => false,
+                        'error'   => 'Unexpected response from Ollama API',
+                        'models'  => [],
+                    ]
                 );
             }
 
@@ -420,18 +420,18 @@ class LlmSettingsController extends Controller
 
             return new JSONResponse(
                 data: [
-                        'success' => true,
-                        'models'  => $models,
-                        'count'   => count($models),
-                    ]
+                    'success' => true,
+                    'models'  => $models,
+                    'count'   => count($models),
+                ]
             );
         } catch (Exception $e) {
             return new JSONResponse(
                 data: [
-                        'success' => false,
-                        'error'   => $e->getMessage(),
-                        'models'  => [],
-                    ],
+                    'success' => false,
+                    'error'   => $e->getMessage(),
+                    'models'  => [],
+                ],
                 statusCode: 500
             );
         }//end try
@@ -457,10 +457,10 @@ class LlmSettingsController extends Controller
         } catch (Exception $e) {
             return new JSONResponse(
                 data: [
-                        'has_vectors' => false,
-                        'mismatch'    => false,
-                        'error'       => $e->getMessage(),
-                    ],
+                    'has_vectors' => false,
+                    'mismatch'    => false,
+                    'error'       => $e->getMessage(),
+                ],
                 statusCode: 500
             );
         }
@@ -490,9 +490,9 @@ class LlmSettingsController extends Controller
         } catch (Exception $e) {
             return new JSONResponse(
                 data: [
-                        'success' => false,
-                        'error'   => $e->getMessage(),
-                    ],
+                    'success' => false,
+                    'error'   => $e->getMessage(),
+                ],
                 statusCode: 500
             );
         }
@@ -520,18 +520,18 @@ class LlmSettingsController extends Controller
 
             return new JSONResponse(
                 data: [
-                        'success'   => true,
-                        'stats'     => $stats,
-                        'timestamp' => date('c'),
-                    ]
+                    'success'   => true,
+                    'stats'     => $stats,
+                    'timestamp' => date('c'),
+                ]
             );
         } catch (Exception $e) {
             return new JSONResponse(
                 data: [
-                        'success' => false,
-                        'error'   => $e->getMessage(),
-                        'trace'   => $e->getTraceAsString(),
-                    ],
+                    'success' => false,
+                    'error'   => $e->getMessage(),
+                    'trace'   => $e->getTraceAsString(),
+                ],
                 statusCode: 500
             );
         }//end try

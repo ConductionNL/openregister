@@ -30,6 +30,7 @@ use OCP\Settings\ISettings;
  */
 class OpenRegisterAdmin implements ISettings
 {
+
     /**
      * Localization helper
      *

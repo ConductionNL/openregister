@@ -72,17 +72,17 @@ class SchemaHandler
      */
     public function ensureVectorFieldType(
         string $collection,
-        int $dimensions = 4096,
-        string $similarity = 'cosine'
+        int $dimensions=4096,
+        string $similarity='cosine'
     ): bool {
         try {
             $this->logger->info(
                 '[SchemaHandler] Ensuring vector field type',
                 [
-                        'collection' => $collection,
-                        'dimensions' => $dimensions,
-                        'similarity' => $similarity,
-                    ]
+                    'collection' => $collection,
+                    'dimensions' => $dimensions,
+                    'similarity' => $similarity,
+                ]
             );
 
             // Check if knn_vector type already exists.
@@ -112,9 +112,9 @@ class SchemaHandler
             $this->logger->error(
                 '[SchemaHandler] Failed to ensure vector field type',
                 [
-                        'error'      => $e->getMessage(),
-                        'collection' => $collection,
-                    ]
+                    'error'      => $e->getMessage(),
+                    'collection' => $collection,
+                ]
             );
             return false;
         }//end try
@@ -132,7 +132,7 @@ class SchemaHandler
      *
      * @psalm-return array{success: bool, error?: string, stats: array{schemas_processed: 0|1|2, fields_created: 0|mixed, fields_updated: 0|mixed, conflicts_resolved: 0, errors: 0|1|2, core_fields_created?: 52}, execution_time_ms?: float, resolved_conflicts?: mixed}
      */
-    public function mirrorSchemas(bool $force = false): array
+    public function mirrorSchemas(bool $force=false): array
     {
         $startTime = microtime(true);
         $stats     = [
@@ -155,10 +155,10 @@ class SchemaHandler
             $this->logger->info(
                 '[SchemaHandler] Field conflict analysis complete',
                 [
-                        'total_fields'       => count($conflictAnalysis['fields']),
-                        'conflicting_fields' => count($conflictAnalysis['conflicts']),
-                        'resolved_conflicts' => count($conflictAnalysis['resolved']),
-                    ]
+                    'total_fields'       => count($conflictAnalysis['fields']),
+                    'conflicting_fields' => count($conflictAnalysis['conflicts']),
+                    'resolved_conflicts' => count($conflictAnalysis['resolved']),
+                ]
             );
 
             // Ensure core metadata fields exist.
@@ -186,9 +186,9 @@ class SchemaHandler
                     $this->logger->error(
                         '[SchemaHandler] Failed to process schema',
                         [
-                                'schema_id' => $schema->getId(),
-                                'error'     => $e->getMessage(),
-                            ]
+                            'schema_id' => $schema->getId(),
+                            'error'     => $e->getMessage(),
+                        ]
                     );
                 }//end try
             }//end foreach
@@ -198,9 +198,9 @@ class SchemaHandler
             $this->logger->info(
                 '[SchemaHandler] Schema mirroring complete',
                 [
-                        'stats'             => $stats,
-                        'execution_time_ms' => $executionTime,
-                    ]
+                    'stats'             => $stats,
+                    'execution_time_ms' => $executionTime,
+                ]
             );
 
             return [
@@ -213,8 +213,8 @@ class SchemaHandler
             $this->logger->error(
                 '[SchemaHandler] Schema mirroring failed',
                 [
-                        'error' => $e->getMessage(),
-                    ]
+                    'error' => $e->getMessage(),
+                ]
             );
 
             return [
@@ -276,10 +276,10 @@ class SchemaHandler
                 $this->logger->warning(
                     '[SchemaHandler] Field type conflict resolved',
                     [
-                            'field'             => $fieldName,
-                            'conflicting_types' => $uniqueTypes,
-                            'resolved_type'     => $resolvedType,
-                        ]
+                        'field'             => $fieldName,
+                        'conflicting_types' => $uniqueTypes,
+                        'resolved_type'     => $resolvedType,
+                    ]
                 );
             } else {
                 $resolved[$fieldName] = $uniqueTypes[0];
@@ -438,9 +438,9 @@ class SchemaHandler
             $this->logger->info(
                 '[SchemaHandler] Core metadata fields ensured',
                 [
-                        'created' => $result['created'],
-                        'updated' => $result['updated'],
-                    ]
+                    'created' => $result['created'],
+                    'updated' => $result['updated'],
+                ]
             );
 
             return true;
@@ -448,8 +448,8 @@ class SchemaHandler
             $this->logger->error(
                 '[SchemaHandler] Failed to ensure core metadata fields',
                 [
-                        'error' => $e->getMessage(),
-                    ]
+                    'error' => $e->getMessage(),
+                ]
             );
             return false;
         }//end try
@@ -503,16 +503,16 @@ class SchemaHandler
 
                 if ($result === 'created') {
                     $created++;
-                } elseif ($result === 'updated') {
+                } else if ($result === 'updated') {
                     $updated++;
                 }
             } catch (Exception $e) {
                 $this->logger->error(
                     '[SchemaHandler] Failed to apply field',
                     [
-                            'field' => $fieldConfig['name'] ?? 'unknown',
-                            'error' => $e->getMessage(),
-                        ]
+                        'field' => $fieldConfig['name'] ?? 'unknown',
+                        'error' => $e->getMessage(),
+                    ]
                 );
             }
         }
@@ -562,9 +562,9 @@ class SchemaHandler
             $this->logger->error(
                 '[SchemaHandler] Failed to get collection field status',
                 [
-                        'collection' => $collection,
-                        'error'      => $e->getMessage(),
-                    ]
+                    'collection' => $collection,
+                    'error'      => $e->getMessage(),
+                ]
             );
 
             return [
@@ -585,15 +585,15 @@ class SchemaHandler
      *
      * @psalm-return array{success: true, created?: mixed, failed?: mixed, dry_run?: true, fields_to_add?: list<array-key>}
      */
-    public function createMissingFields(string $collection, array $missingFields, bool $dryRun = false): array
+    public function createMissingFields(string $collection, array $missingFields, bool $dryRun=false): array
     {
         $this->logger->info(
             '[SchemaHandler] Creating missing fields',
             [
-                    'collection'  => $collection,
-                    'field_count' => count($missingFields),
-                    'dry_run'     => $dryRun,
-                ]
+                'collection'  => $collection,
+                'field_count' => count($missingFields),
+                'dry_run'     => $dryRun,
+            ]
         );
 
         if ($dryRun === true) {
@@ -623,7 +623,7 @@ class SchemaHandler
      *
      * @return array Results with fixed/failed fields.
      */
-    public function fixMismatchedFields(array $mismatchedFields, bool $dryRun = false): array
+    public function fixMismatchedFields(array $mismatchedFields, bool $dryRun=false): array
     {
         $this->logger->info(
             '[SchemaHandler] Fixing mismatched fields',

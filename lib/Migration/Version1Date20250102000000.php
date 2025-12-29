@@ -35,6 +35,7 @@ use OCP\IDBConnection;
  */
 class Version1Date20250102000000 extends SimpleMigrationStep
 {
+
     /**
      * Database connection
      *
@@ -94,10 +95,10 @@ class Version1Date20250102000000 extends SimpleMigrationStep
                     'groups',
                     Types::JSON,
                     [
-                            'notnull' => false,
-                            'default' => '[]',
-                            'comment' => 'Array of Nextcloud group IDs that have access to this organisation',
-                        ]
+                        'notnull' => false,
+                        'default' => '[]',
+                        'comment' => 'Array of Nextcloud group IDs that have access to this organisation',
+                    ]
                 );
                 $output->info(message: 'Added groups column to organisations table');
             }

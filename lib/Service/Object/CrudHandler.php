@@ -82,14 +82,14 @@ class CrudHandler
      * @psalm-return array{results: array<never, never>, total: 0}
      */
     public function list(
-        array $query = [],
-        bool $rbac = true,
-        bool $_multitenancy = true,
-        bool $published = false,
-        bool $deleted = false,
-        ?array $ids = null,
-        ?string $uses = null,
-        ?array $views = null
+        array $query=[],
+        bool $rbac=true,
+        bool $_multitenancy=true,
+        bool $published=false,
+        bool $deleted=false,
+        ?array $ids=null,
+        ?string $uses=null,
+        ?array $views=null
     ): array {
         $this->logger->debug(
             message: '[CrudHandler] Listing objects',
@@ -147,7 +147,7 @@ class CrudHandler
      *
      * @throws \Exception If retrieval fails
      */
-    public function get(string $objectId, bool $rbac = true, bool $_multitenancy = true)
+    public function get(string $objectId, bool $rbac=true, bool $_multitenancy=true)
     {
         $this->logger->debug(
             message: '[CrudHandler] Getting object',
@@ -208,7 +208,7 @@ class CrudHandler
      *
      * @throws \Exception If creation fails
      */
-    public function create(array $data, bool $rbac = true, bool $_multitenancy = true)
+    public function create(array $data, bool $rbac=true, bool $_multitenancy=true)
     {
         $this->logger->info(
             message: '[CrudHandler] Creating object',
@@ -264,8 +264,8 @@ class CrudHandler
     public function update(
         string $objectId,
         array $data,
-        bool $rbac = true,
-        bool $_multitenancy = true
+        bool $rbac=true,
+        bool $_multitenancy=true
     ) {
         $this->logger->info(
             message: '[CrudHandler] Updating object',
@@ -322,8 +322,8 @@ class CrudHandler
     public function patch(
         string $objectId,
         array $data,
-        bool $rbac = true,
-        bool $_multitenancy = true
+        bool $rbac=true,
+        bool $_multitenancy=true
     ): ObjectEntity {
         $this->logger->info(
             message: '[CrudHandler] Patching object',
@@ -388,7 +388,7 @@ class CrudHandler
      *
      * @throws \Exception If deletion fails
      */
-    public function delete(string $objectId, bool $rbac = true, bool $_multitenancy = true): bool
+    public function delete(string $objectId, bool $rbac=true, bool $_multitenancy=true): bool
     {
         $this->logger->info(
             message: '[CrudHandler] Deleting object',
@@ -437,8 +437,8 @@ class CrudHandler
      */
     public function buildSearchQuery(
         array $requestParams,
-        ?string $register = null,
-        ?string $schema = null
+        ?string $register=null,
+        ?string $schema=null
     ): array {
         $this->logger->debug(
             message: '[CrudHandler] Building search query',

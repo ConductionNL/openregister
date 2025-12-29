@@ -234,7 +234,7 @@ class ApplicationMapper extends QBMapper
      *
      * @psalm-return list<\OCA\OpenRegister\Db\Application>
      */
-    public function findByOrganisation(string $organisationUuid, int $limit = 50, int $offset = 0): array
+    public function findByOrganisation(string $organisationUuid, int $limit=50, int $offset=0): array
     {
         // Verify RBAC permission to read applications.
         $this->verifyRbacPermission(action: 'read', entityType: 'application');
@@ -278,11 +278,11 @@ class ApplicationMapper extends QBMapper
      * @psalm-return list<OCA\OpenRegister\Db\Application>
      */
     public function findAll(
-        ?int $limit = null,
-        ?int $offset = null,
-        array $filters = [],
-        array $searchConditions = [],
-        array $searchParams = []
+        ?int $limit=null,
+        ?int $offset=null,
+        array $filters=[],
+        array $searchConditions=[],
+        array $searchParams=[]
     ): array {
         // Verify RBAC permission to read applications.
         $this->verifyRbacPermission(action: 'read', entityType: 'application');

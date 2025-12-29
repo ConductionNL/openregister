@@ -99,14 +99,14 @@ class DeletedController extends Controller
         $offset = null;
         if (($params['offset'] ?? null) !== null) {
             $offset = (int) $params['offset'];
-        } elseif (($params['_offset'] ?? null) !== null) {
+        } else if (($params['_offset'] ?? null) !== null) {
             $offset = (int) $params['_offset'];
         }
 
         $page = null;
         if (($params['page'] ?? null) !== null) {
             $page = (int) $params['page'];
-        } elseif (($params['_page'] ?? null) !== null) {
+        } else if (($params['_page'] ?? null) !== null) {
             $page = (int) $params['_page'];
         }
 
@@ -221,19 +221,19 @@ class DeletedController extends Controller
 
             return new JSONResponse(
                 data: [
-                        'results' => array_values($deletedObjects),
-                        'total'   => $total,
-                        'page'    => $params['page'] ?? 1,
-                        'pages'   => $pages,
-                        'limit'   => $params['limit'],
-                        'offset'  => $params['offset'],
-                    ]
+                    'results' => array_values($deletedObjects),
+                    'total'   => $total,
+                    'page'    => $params['page'] ?? 1,
+                    'pages'   => $pages,
+                    'limit'   => $params['limit'],
+                    'offset'  => $params['offset'],
+                ]
             );
         } catch (\Exception $e) {
             return new JSONResponse(
                 data: [
-                        'error' => 'Failed to retrieve deleted objects: ' . $e->getMessage(),
-                    ],
+                    'error' => 'Failed to retrieve deleted objects: '.$e->getMessage(),
+                ],
                 statusCode: 500
             );
         }//end try
@@ -263,7 +263,7 @@ class DeletedController extends Controller
             $deletedToday = $this->objectEntityMapper->countAll(
                 filters: [
                     '@self.deleted'         => 'IS NOT NULL',
-                    '@self.deleted.deleted' => '>=' . $today,
+                    '@self.deleted.deleted' => '>='.$today,
                 ],
             );
 
@@ -272,7 +272,7 @@ class DeletedController extends Controller
             $deletedThisWeek = $this->objectEntityMapper->countAll(
                 filters: [
                     '@self.deleted'         => 'IS NOT NULL',
-                    '@self.deleted.deleted' => '>=' . $weekAgo,
+                    '@self.deleted.deleted' => '>='.$weekAgo,
                 ],
             );
 
@@ -281,17 +281,17 @@ class DeletedController extends Controller
             // TODO: Calculate actual oldest deletion.
             return new JSONResponse(
                 data: [
-                        'totalDeleted'    => $totalDeleted,
-                        'deletedToday'    => $deletedToday,
-                        'deletedThisWeek' => $deletedThisWeek,
-                        'oldestDays'      => $oldestDays,
-                    ]
+                    'totalDeleted'    => $totalDeleted,
+                    'deletedToday'    => $deletedToday,
+                    'deletedThisWeek' => $deletedThisWeek,
+                    'oldestDays'      => $oldestDays,
+                ]
             );
         } catch (\Exception $e) {
             return new JSONResponse(
                 data: [
-                        'error' => 'Failed to get statistics: ' . $e->getMessage(),
-                    ],
+                    'error' => 'Failed to get statistics: '.$e->getMessage(),
+                ],
                 statusCode: 500
             );
         }//end try
@@ -323,8 +323,8 @@ class DeletedController extends Controller
         } catch (\Exception $e) {
             return new JSONResponse(
                 data: [
-                        'error' => 'Failed to get top deleters: ' . $e->getMessage(),
-                    ],
+                    'error' => 'Failed to get top deleters: '.$e->getMessage(),
+                ],
                 statusCode: 500
             );
         }
@@ -351,8 +351,8 @@ class DeletedController extends Controller
             if ($object->getDeleted() === null || $object->getDeleted() === []) {
                 return new JSONResponse(
                     data: [
-                            'error' => 'Object is not deleted',
-                        ],
+                        'error' => 'Object is not deleted',
+                    ],
                     statusCode: 400
                 );
             }
@@ -370,15 +370,15 @@ class DeletedController extends Controller
 
             return new JSONResponse(
                 data: [
-                        'success' => true,
-                        'message' => 'Object restored successfully',
-                    ]
+                    'success' => true,
+                    'message' => 'Object restored successfully',
+                ]
             );
         } catch (\Exception $e) {
             return new JSONResponse(
                 data: [
-                        'error' => 'Failed to restore object: ' . $e->getMessage(),
-                    ],
+                    'error' => 'Failed to restore object: '.$e->getMessage(),
+                ],
                 statusCode: 500
             );
         }//end try
@@ -406,8 +406,8 @@ class DeletedController extends Controller
         if (empty($ids) === true) {
             return new JSONResponse(
                 data: [
-                        'error' => 'No object IDs provided',
-                    ],
+                    'error' => 'No object IDs provided',
+                ],
                 statusCode: 400
             );
         }
@@ -455,18 +455,18 @@ class DeletedController extends Controller
 
             return new JSONResponse(
                 data: [
-                        'success'  => true,
-                        'restored' => $restored,
-                        'failed'   => $failed,
-                        'notFound' => $notFound,
-                        'message'  => $this->formatRestoreMessage(restored: $restored, failed: $failed, notFound: $notFound),
-                    ]
+                    'success'  => true,
+                    'restored' => $restored,
+                    'failed'   => $failed,
+                    'notFound' => $notFound,
+                    'message'  => $this->formatRestoreMessage(restored: $restored, failed: $failed, notFound: $notFound),
+                ]
             );
         } catch (\Exception $e) {
             return new JSONResponse(
                 data: [
-                        'error' => 'Failed to restore objects: ' . $e->getMessage(),
-                    ],
+                    'error' => 'Failed to restore objects: '.$e->getMessage(),
+                ],
                 statusCode: 500
             );
         }//end try
@@ -493,8 +493,8 @@ class DeletedController extends Controller
             if ($object->getDeleted() === null) {
                 return new JSONResponse(
                     data: [
-                            'error' => 'Object is not deleted',
-                        ],
+                        'error' => 'Object is not deleted',
+                    ],
                     statusCode: 400
                 );
             }
@@ -504,15 +504,15 @@ class DeletedController extends Controller
 
             return new JSONResponse(
                 data: [
-                        'success' => true,
-                        'message' => 'Object permanently deleted',
-                    ]
+                    'success' => true,
+                    'message' => 'Object permanently deleted',
+                ]
             );
         } catch (\Exception $e) {
             return new JSONResponse(
                 data: [
-                        'error' => 'Failed to permanently delete object: ' . $e->getMessage(),
-                    ],
+                    'error' => 'Failed to permanently delete object: '.$e->getMessage(),
+                ],
                 statusCode: 500
             );
         }//end try
@@ -540,8 +540,8 @@ class DeletedController extends Controller
         if (empty($ids) === true) {
             return new JSONResponse(
                 data: [
-                        'error' => 'No object IDs provided',
-                    ],
+                    'error' => 'No object IDs provided',
+                ],
                 statusCode: 400
             );
         }
@@ -588,18 +588,18 @@ class DeletedController extends Controller
 
             return new JSONResponse(
                 data: [
-                        'success'  => true,
-                        'deleted'  => $deleted,
-                        'failed'   => $failed,
-                        'notFound' => $notFound,
-                        'message'  => $this->formatDeleteMessage(deleted: $deleted, failed: $failed, notFound: $notFound),
-                    ]
+                    'success'  => true,
+                    'deleted'  => $deleted,
+                    'failed'   => $failed,
+                    'notFound' => $notFound,
+                    'message'  => $this->formatDeleteMessage(deleted: $deleted, failed: $failed, notFound: $notFound),
+                ]
             );
         } catch (\Exception $e) {
             return new JSONResponse(
                 data: [
-                        'error' => 'Failed to permanently delete objects: ' . $e->getMessage(),
-                    ],
+                    'error' => 'Failed to permanently delete objects: '.$e->getMessage(),
+                ],
                 statusCode: 500
             );
         }//end try

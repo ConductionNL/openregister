@@ -28,6 +28,7 @@ use OCP\EventDispatcher\Event;
  */
 class ConfigurationUpdatedEvent extends Event
 {
+
     /**
      * The updated configuration state.
      *

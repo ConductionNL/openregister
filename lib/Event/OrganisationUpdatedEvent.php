@@ -28,6 +28,7 @@ use OCP\EventDispatcher\Event;
  */
 class OrganisationUpdatedEvent extends Event
 {
+
     /**
      * The updated organisation state.
      *

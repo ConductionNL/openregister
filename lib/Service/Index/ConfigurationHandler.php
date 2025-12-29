@@ -40,6 +40,7 @@ use Exception;
  */
 class ConfigurationHandler
 {
+
     /**
      * Solr configuration array.
      *
@@ -124,9 +125,9 @@ class ConfigurationHandler
             $this->logger->info(
                 'ConfigurationHandler: HTTP Basic Authentication configured',
                 [
-                        'username'  => $this->solrConfig['username'],
-                        'auth_type' => 'basic',
-                    ]
+                    'username'  => $this->solrConfig['username'],
+                    'auth_type' => 'basic',
+                ]
             );
         }
 
@@ -202,7 +203,7 @@ class ConfigurationHandler
         // Allow custom path for reverse proxies or non-standard setups.
         $path = $this->solrConfig['path'] ?? '';
         if (empty($path) === false) {
-            $path = '/' . ltrim($path, '/');
+            $path = '/'.ltrim($path, '/');
         }
 
         // Build protocol-relative or absolute URL based on configuration.
@@ -246,12 +247,12 @@ class ConfigurationHandler
      *
      * @return string Full endpoint URL.
      */
-    public function getEndpointUrl(?string $collection = null): string
+    public function getEndpointUrl(?string $collection=null): string
     {
         $baseUrl = $this->buildSolrBaseUrl();
         $core    = $collection ?? $this->solrConfig['core'] ?? 'openregister';
 
-        return $baseUrl . '/solr/' . $core;
+        return $baseUrl.'/solr/'.$core;
     }//end getEndpointUrl()
 
     /**
@@ -285,7 +286,7 @@ class ConfigurationHandler
             return '✓ Using default port';
         }
 
-        return '✓ Port ' . $port;
+        return '✓ Port '.$port;
     }//end getPortStatus()
 
     /**
@@ -296,6 +297,6 @@ class ConfigurationHandler
     public function getCoreStatus(): string
     {
         $core = $this->solrConfig['core'] ?? 'openregister';
-        return '✓ Core: ' . $core;
+        return '✓ Core: '.$core;
     }//end getCoreStatus()
 }//end class

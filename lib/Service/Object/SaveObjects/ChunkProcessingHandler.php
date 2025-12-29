@@ -174,8 +174,7 @@ class ChunkProcessingHandler
             // Check if we got complete objects (new approach) or just UUIDs (fallback).
             $firstItem = reset($bulkResult);
 
-            if (
-                is_array($firstItem) === true
+            if (is_array($firstItem) === true
                 && (($firstItem['created'] ?? null) !== null)
                 && (($firstItem['updated'] ?? null) !== null)
             ) {

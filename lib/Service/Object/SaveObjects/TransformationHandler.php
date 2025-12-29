@@ -186,9 +186,9 @@ class TransformationHandler
             $this->logger->info(
                 "[SaveObjects] DEBUG - Mixed schema object structure",
                 [
-                 'available_keys'      => array_keys($object),
-                 'has_object_property' => isset($object['object']) === true,
-                 'sample_data'         => array_slice($object, 0, 3, true),
+                    'available_keys'      => array_keys($object),
+                    'has_object_property' => isset($object['object']) === true,
+                    'sample_data'         => array_slice($object, 0, 3, true),
                 ]
             );
 
@@ -227,9 +227,9 @@ class TransformationHandler
                 $this->logger->info(
                     "[SaveObjects] Metadata removal applied (mixed)",
                     [
-                     'removed_fields'       => array_intersect($metadataFields, array_keys($object)),
-                     'remaining_keys'       => array_keys($businessData),
-                     'business_data_sample' => array_slice($businessData, 0, 3, true),
+                        'removed_fields'       => array_intersect($metadataFields, array_keys($object)),
+                        'remaining_keys'       => array_keys($businessData),
+                        'business_data_sample' => array_slice($businessData, 0, 3, true),
                     ]
                 );
             }//end if
@@ -245,9 +245,9 @@ class TransformationHandler
                     $this->logger->info(
                         "[SaveObjects] Relations scanned in transformation",
                         [
-                         'uuid'          => $selfData['uuid'] ?? 'unknown',
-                         'relationCount' => count($relations),
-                         'relations'     => array_slice($relations, 0, 3, true),
+                            'uuid'          => $selfData['uuid'] ?? 'unknown',
+                            'relationCount' => count($relations),
+                            'relations'     => array_slice($relations, 0, 3, true),
                         ]
                     );
                 }
@@ -255,8 +255,8 @@ class TransformationHandler
                 $this->logger->info(
                     "[SaveObjects] Relations already set from preparation",
                     [
-                     'uuid'          => $selfData['uuid'] ?? 'unknown',
-                     'relationCount' => count($selfData['relations']),
+                        'uuid'          => $selfData['uuid'] ?? 'unknown',
+                        'relationCount' => count($selfData['relations']),
                     ]
                 );
             }//end if

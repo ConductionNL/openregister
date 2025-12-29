@@ -53,6 +53,7 @@ use OCP\AppFramework\Db\Entity;
  */
 class Feedback extends Entity implements JsonSerializable
 {
+
     /**
      * UUID.
      *

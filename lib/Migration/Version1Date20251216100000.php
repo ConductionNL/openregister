@@ -56,10 +56,10 @@ class Version1Date20251216100000 extends SimpleMigrationStep
                 'id',
                 Types::BIGINT,
                 [
-                        'autoincrement' => true,
-                        'notnull'       => true,
-                        'unsigned'      => true,
-                    ]
+                    'autoincrement' => true,
+                    'notnull'       => true,
+                    'unsigned'      => true,
+                ]
             );
 
             // Webhook ID reference.
@@ -67,9 +67,9 @@ class Version1Date20251216100000 extends SimpleMigrationStep
                 'webhook_id',
                 Types::BIGINT,
                 [
-                        'notnull'  => true,
-                        'unsigned' => true,
-                    ]
+                    'notnull'  => true,
+                    'unsigned' => true,
+                ]
             );
 
             // Event class name.
@@ -77,9 +77,9 @@ class Version1Date20251216100000 extends SimpleMigrationStep
                 'event_class',
                 Types::STRING,
                 [
-                        'notnull' => true,
-                        'length'  => 255,
-                    ]
+                    'notnull' => true,
+                    'length'  => 255,
+                ]
             );
 
             // Payload data (JSON).
@@ -87,8 +87,8 @@ class Version1Date20251216100000 extends SimpleMigrationStep
                 'payload',
                 Types::TEXT,
                 [
-                        'notnull' => false,
-                    ]
+                    'notnull' => false,
+                ]
             );
 
             // Target URL.
@@ -96,9 +96,9 @@ class Version1Date20251216100000 extends SimpleMigrationStep
                 'url',
                 Types::STRING,
                 [
-                        'notnull' => true,
-                        'length'  => 1024,
-                    ]
+                    'notnull' => true,
+                    'length'  => 1024,
+                ]
             );
 
             // HTTP method.
@@ -106,10 +106,10 @@ class Version1Date20251216100000 extends SimpleMigrationStep
                 'method',
                 Types::STRING,
                 [
-                        'notnull' => true,
-                        'length'  => 10,
-                        'default' => 'POST',
-                    ]
+                    'notnull' => true,
+                    'length'  => 10,
+                    'default' => 'POST',
+                ]
             );
 
             // Success status.
@@ -117,9 +117,9 @@ class Version1Date20251216100000 extends SimpleMigrationStep
                 'success',
                 Types::BOOLEAN,
                 [
-                        'notnull' => true,
-                        'default' => false,
-                    ]
+                    'notnull' => true,
+                    'default' => false,
+                ]
             );
 
             // HTTP status code.
@@ -127,8 +127,8 @@ class Version1Date20251216100000 extends SimpleMigrationStep
                 'status_code',
                 Types::INTEGER,
                 [
-                        'notnull' => false,
-                    ]
+                    'notnull' => false,
+                ]
             );
 
             // Request body (stored for debugging failures).
@@ -136,8 +136,8 @@ class Version1Date20251216100000 extends SimpleMigrationStep
                 'request_body',
                 Types::TEXT,
                 [
-                        'notnull' => false,
-                    ]
+                    'notnull' => false,
+                ]
             );
 
             // Response body.
@@ -145,8 +145,8 @@ class Version1Date20251216100000 extends SimpleMigrationStep
                 'response_body',
                 Types::TEXT,
                 [
-                        'notnull' => false,
-                    ]
+                    'notnull' => false,
+                ]
             );
 
             // Error message.
@@ -154,8 +154,8 @@ class Version1Date20251216100000 extends SimpleMigrationStep
                 'error_message',
                 Types::TEXT,
                 [
-                        'notnull' => false,
-                    ]
+                    'notnull' => false,
+                ]
             );
 
             // Attempt number.
@@ -163,9 +163,9 @@ class Version1Date20251216100000 extends SimpleMigrationStep
                 'attempt',
                 Types::INTEGER,
                 [
-                        'notnull' => true,
-                        'default' => 1,
-                    ]
+                    'notnull' => true,
+                    'default' => 1,
+                ]
             );
 
             // Next retry timestamp.
@@ -173,8 +173,8 @@ class Version1Date20251216100000 extends SimpleMigrationStep
                 'next_retry_at',
                 Types::DATETIME,
                 [
-                        'notnull' => false,
-                    ]
+                    'notnull' => false,
+                ]
             );
 
             // Created timestamp.
@@ -182,8 +182,8 @@ class Version1Date20251216100000 extends SimpleMigrationStep
                 'created',
                 Types::DATETIME,
                 [
-                        'notnull' => true,
-                    ]
+                    'notnull' => true,
+                ]
             );
 
             // Indexes.
@@ -199,8 +199,8 @@ class Version1Date20251216100000 extends SimpleMigrationStep
                 localColumnNames: ['webhook_id'],
                 foreignColumnNames: ['id'],
                 options: [
-                        'onDelete' => 'CASCADE',
-                    ]
+                    'onDelete' => 'CASCADE',
+                ]
             );
 
             return $schema;

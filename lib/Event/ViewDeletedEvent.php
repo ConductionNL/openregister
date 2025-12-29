@@ -28,6 +28,7 @@ use OCP\EventDispatcher\Event;
  */
 class ViewDeletedEvent extends Event
 {
+
     /**
      * The deleted view.
      *

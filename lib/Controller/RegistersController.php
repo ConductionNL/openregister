@@ -73,6 +73,7 @@ use Symfony\Component\Uid\Uuid;
  */
 class RegistersController extends Controller
 {
+
     /**
      * Configuration service for handling import/export operations
      *
@@ -553,16 +554,16 @@ class RegistersController extends Controller
 
             return new JSONResponse(
                 data: [
-                        'results' => $schemasArray,
-                        'total'   => count($schemasArray),
-                    ]
+                    'results' => $schemasArray,
+                    'total'   => count($schemasArray),
+                ]
             );
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             // Return a 404 error if the register doesn't exist.
             return new JSONResponse(data: ['error' => 'Register not found'], statusCode: 404);
         } catch (Exception $e) {
             // Return a 500 error for other exceptions.
-            return new JSONResponse(data: ['error' => 'Internal server error: ' . $e->getMessage()], statusCode: 500);
+            return new JSONResponse(data: ['error' => 'Internal server error: '.$e->getMessage()], statusCode: 500);
         }//end try
     }//end schemas()
 
@@ -669,7 +670,7 @@ class RegistersController extends Controller
                     return new DataDownloadResponse($jsonContent, $filename, 'application/json');
             }//end switch
         } catch (Exception $e) {
-            return new JSONResponse(data: ['error' => 'Failed to export register: ' . $e->getMessage()], statusCode: 400);
+            return new JSONResponse(data: ['error' => 'Failed to export register: '.$e->getMessage()], statusCode: 400);
         }//end try
     }//end export()
 
@@ -710,19 +711,19 @@ class RegistersController extends Controller
             // If path is empty, use a default filename based on register slug.
             if (empty($path) === true) {
                 $slug = $register->getSlug() ?? 'register';
-                $path = $slug . '_openregister.json';
+                $path = $slug.'_openregister.json';
             }
 
             $this->logger->info(
                 'Publishing register OAS to GitHub',
                 [
-                        'register_id'   => $id,
-                        'register_slug' => $register->getSlug(),
-                        'owner'         => $owner,
-                        'repo'          => $repo,
-                        'path'          => $path,
-                        'branch'        => $branch,
-                    ]
+                    'register_id'   => $id,
+                    'register_slug' => $register->getSlug(),
+                    'owner'         => $owner,
+                    'repo'          => $repo,
+                    'path'          => $path,
+                    'branch'        => $branch,
+                ]
             );
 
             // Generate real OAS (OpenAPI Specification) for the register.
@@ -754,12 +755,12 @@ class RegistersController extends Controller
             $this->logger->info(
                 "Successfully published register OAS {$register->getTitle()} to GitHub",
                 [
-                        'owner'    => $owner,
-                        'repo'     => $repo,
-                        'branch'   => $branch,
-                        'path'     => $path,
-                        'file_url' => $result['file_url'] ?? null,
-                    ]
+                    'owner'    => $owner,
+                    'repo'     => $repo,
+                    'branch'   => $branch,
+                    'path'     => $path,
+                    'file_url' => $result['file_url'] ?? null,
+                ]
             );
 
             // Check if published to default branch (required for Code Search indexing).
@@ -771,16 +772,16 @@ class RegistersController extends Controller
                 $this->logger->warning(
                     'Could not fetch repository default branch',
                     [
-                            'owner' => $owner,
-                            'repo'  => $repo,
-                            'error' => $e->getMessage(),
-                        ]
+                        'owner' => $owner,
+                        'repo'  => $repo,
+                        'error' => $e->getMessage(),
+                    ]
                 );
             }
 
             $message = 'Register OAS published successfully to GitHub';
             if (($defaultBranch !== null && $defaultBranch !== '') === true && $branch !== $defaultBranch) {
-                $message .= ". Note: Published to branch '{$branch}' (default is '{$defaultBranch}'). " . "GitHub Code Search primarily indexes the default branch, " . "so this may not appear in search results immediately.";
+                $message .= ". Note: Published to branch '{$branch}' (default is '{$defaultBranch}'). "."GitHub Code Search primarily indexes the default branch, "."so this may not appear in search results immediately.";
             } else {
                 $message .= ". Note: GitHub Code Search may take a few minutes to index new files.";
             }
@@ -810,9 +811,9 @@ class RegistersController extends Controller
             $this->logger->error('Register not found for publishing', ['register_id' => $id]);
             return new JSONResponse(data: ['error' => 'Register not found'], statusCode: 404);
         } catch (Exception $e) {
-            $this->logger->error('Failed to publish register OAS to GitHub: ' . $e->getMessage());
+            $this->logger->error('Failed to publish register OAS to GitHub: '.$e->getMessage());
 
-            return new JSONResponse(data: ['error' => 'Failed to publish register OAS: ' . $e->getMessage()], statusCode: 500);
+            return new JSONResponse(data: ['error' => 'Failed to publish register OAS: '.$e->getMessage()], statusCode: 500);
         }//end try
     }//end publishToGitHub()
 
@@ -831,7 +832,7 @@ class RegistersController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      */
-    public function import(int $id, bool $force = false): JSONResponse
+    public function import(int $id, bool $force=false): JSONResponse
     {
         try {
             // Get the uploaded file.
@@ -847,7 +848,7 @@ class RegistersController extends Controller
                 $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
                 if (in_array($extension, ['xlsx', 'xls']) === true) {
                     $type = 'excel';
-                } elseif ($extension === 'csv') {
+                } else if ($extension === 'csv') {
                     $type = 'csv';
                 } else {
                     $type = 'configuration';
@@ -864,12 +865,12 @@ class RegistersController extends Controller
             $this->logger->debug(
                 'Import parameters received',
                 [
-                        'includeObjects' => $includeObjects,
-                        'validation'     => $validation,
-                        'events'         => $events,
-                        'publish'        => $publish,
-                        'registerId'     => $id,
-                    ]
+                    'includeObjects' => $includeObjects,
+                    'validation'     => $validation,
+                    'events'         => $events,
+                    'publish'        => $publish,
+                    'registerId'     => $id,
+                ]
             );
             // Find the register.
             $register = $this->registerService->find($id);
@@ -997,9 +998,9 @@ class RegistersController extends Controller
 
             return new JSONResponse(
                 data: [
-                        'message' => 'Import successful',
-                        'summary' => $summary,
-                    ]
+                    'message' => 'Import successful',
+                    'summary' => $summary,
+                ]
             );
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
@@ -1086,7 +1087,7 @@ class RegistersController extends Controller
      *
      * @return bool The parsed boolean value
      */
-    private function parseBooleanParam(string $paramName, bool $default = false): bool
+    private function parseBooleanParam(string $paramName, bool $default=false): bool
     {
         $value = $this->request->getParam(key: $paramName, default: $default);
 
@@ -1177,9 +1178,9 @@ class RegistersController extends Controller
             $this->logger->info(
                 'Register published',
                 [
-                        'register_id'    => $id,
-                        'published_date' => $date->format('Y-m-d H:i:s'),
-                    ]
+                    'register_id'    => $id,
+                    'published_date' => $date->format('Y-m-d H:i:s'),
+                ]
             );
 
             return new JSONResponse($updatedRegister->jsonSerialize());
@@ -1189,9 +1190,9 @@ class RegistersController extends Controller
             $this->logger->error(
                 'Failed to publish register',
                 [
-                        'register_id' => $id,
-                        'error'       => $e->getMessage(),
-                    ]
+                    'register_id' => $id,
+                    'error'       => $e->getMessage(),
+                ]
             );
             return new JSONResponse(['error' => $e->getMessage()], 400);
         }//end try
@@ -1263,9 +1264,9 @@ class RegistersController extends Controller
             $this->logger->info(
                 'Register depublished',
                 [
-                        'register_id'      => $id,
-                        'depublished_date' => $date->format('Y-m-d H:i:s'),
-                    ]
+                    'register_id'      => $id,
+                    'depublished_date' => $date->format('Y-m-d H:i:s'),
+                ]
             );
 
             return new JSONResponse($updatedRegister->jsonSerialize());
@@ -1275,9 +1276,9 @@ class RegistersController extends Controller
             $this->logger->error(
                 'Failed to depublish register',
                 [
-                        'register_id' => $id,
-                        'error'       => $e->getMessage(),
-                    ]
+                    'register_id' => $id,
+                    'error'       => $e->getMessage(),
+                ]
             );
             return new JSONResponse(['error' => $e->getMessage()], 400);
         }//end try

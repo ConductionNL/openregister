@@ -1,0 +1,49 @@
+{
+  "name": "OpenRegister CS Fix Direct Execution",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "openregister-cs-fix",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "openregister-cs-fix-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const { execSync } = require('child_process');\n\ntry {\n  // Execute composer cs:fix in the Nextcloud container.\n  const output = execSync(\n    'docker exec master-nextcloud-1 bash -c \"cd /var/www/html/apps-extra/openregister && composer cs:fix 2>&1\"',\n    { \n      encoding: 'utf8',\n      maxBuffer: 10 * 1024 * 1024, // 10MB buffer.\n      timeout: 120000 // 2 minute timeout.\n    }\n  );\n\n  // Count files fixed.\n  const filesFixed = (output.match(/fixed/gi) || []).length;\n\n  return {\n    timestamp: new Date().toISOString(),\n    status: 'success',\n    command: 'composer cs:fix',\n    container: 'master-nextcloud-1',\n    files_fixed: filesFixed,\n    output: output,\n    message: filesFixed === 0 ? 'No files needed fixing' : `${filesFixed} issues fixed`\n  };\n} catch (error) {\n  return {\n    timestamp: new Date().toISOString(),\n    status: 'error',\n    command: 'composer cs:fix',\n    container: 'master-nextcloud-1',\n    error: error.message,\n    stdout: error.stdout ? error.stdout.toString() : '',\n    stderr: error.stderr ? error.stderr.toString() : ''\n  };\n}"
+      },
+      "id": "code-execute-cs-fix",
+      "name": "Execute CS Fix",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [[{"node": "Execute CS Fix", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "openregister-n8n"
+  },
+  "pinData": null,
+  "tags": []
+}
+

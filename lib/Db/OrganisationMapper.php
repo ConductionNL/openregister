@@ -224,7 +224,7 @@ class OrganisationMapper extends QBMapper
 
         $qb->select('*')
             ->from($this->getTableName())
-            ->where($qb->expr()->like('users', $qb->createNamedParameter('%"' . $userId . '"%')));
+            ->where($qb->expr()->like('users', $qb->createNamedParameter('%"'.$userId.'"%')));
 
         return $this->findEntities($qb);
     }//end findByUserId()
@@ -283,16 +283,16 @@ class OrganisationMapper extends QBMapper
         $organisation->setUpdated($now);
 
         // Debug logging before insert/update.
-        $this->logger->info('[OrganisationMapper] About to save organisation with UUID: ' . $organisation->getUuid());
+        $this->logger->info('[OrganisationMapper] About to save organisation with UUID: '.$organisation->getUuid());
         $this->logger->info(
             '[OrganisationMapper] Organisation object properties:',
             [
-                    'uuid'        => $organisation->getUuid(),
-                    'name'        => $organisation->getName(),
-                    'description' => $organisation->getDescription(),
-                    'owner'       => $organisation->getOwner(),
-                    'users'       => $organisation->getUsers(),
-                ]
+                'uuid'        => $organisation->getUuid(),
+                'name'        => $organisation->getName(),
+                'description' => $organisation->getDescription(),
+                'owner'       => $organisation->getOwner(),
+                'users'       => $organisation->getUsers(),
+            ]
         );
 
         if ($organisation->getId() === null) {
@@ -302,15 +302,15 @@ class OrganisationMapper extends QBMapper
             $this->logger->info(
                 '[OrganisationMapper] Entity state before insert:',
                 [
-                        'id'          => $organisation->getId(),
-                        'uuid'        => $organisation->getUuid(),
-                        'name'        => $organisation->getName(),
-                        'description' => $organisation->getDescription(),
-                        'owner'       => $organisation->getOwner(),
-                        'users'       => $organisation->getUsers(),
-                        'created'     => $organisation->getCreated(),
-                        'updated'     => $organisation->getUpdated(),
-                    ]
+                    'id'          => $organisation->getId(),
+                    'uuid'        => $organisation->getUuid(),
+                    'name'        => $organisation->getName(),
+                    'description' => $organisation->getDescription(),
+                    'owner'       => $organisation->getOwner(),
+                    'users'       => $organisation->getUsers(),
+                    'created'     => $organisation->getCreated(),
+                    'updated'     => $organisation->getUpdated(),
+                ]
             );
 
             try {
@@ -321,12 +321,12 @@ class OrganisationMapper extends QBMapper
                 return $result;
             } catch (Exception $e) {
                 $this->logger->error(
-                    '[OrganisationMapper] insert() failed: ' . $e->getMessage(),
+                    '[OrganisationMapper] insert() failed: '.$e->getMessage(),
                     [
-                            'exception'      => $e->getMessage(),
-                            'exceptionClass' => get_class($e),
-                            'trace'          => $e->getTraceAsString(),
-                        ]
+                        'exception'      => $e->getMessage(),
+                        'exceptionClass' => get_class($e),
+                        'trace'          => $e->getTraceAsString(),
+                    ]
                 );
                 throw $e;
             }
@@ -354,7 +354,7 @@ class OrganisationMapper extends QBMapper
      *
      * @return bool True if UUID already exists
      */
-    public function uuidExists(string $uuid, ?int $excludeId = null): bool
+    public function uuidExists(string $uuid, ?int $excludeId=null): bool
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -422,7 +422,7 @@ class OrganisationMapper extends QBMapper
      *
      * @psalm-return list<OCA\OpenRegister\Db\Organisation>
      */
-    public function findAll(int $limit = 50, int $offset = 0): array
+    public function findAll(int $limit=50, int $offset=0): array
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -446,13 +446,13 @@ class OrganisationMapper extends QBMapper
      *
      * @psalm-return list<\OCA\OpenRegister\Db\Organisation>
      */
-    public function findByName(string $name, int $limit = 50, int $offset = 0): array
+    public function findByName(string $name, int $limit=50, int $offset=0): array
     {
         $qb = $this->db->getQueryBuilder();
 
         $qb->select('*')
             ->from($this->getTableName())
-            ->where($qb->expr()->like('name', $qb->createNamedParameter('%' . $name . '%')))
+            ->where($qb->expr()->like('name', $qb->createNamedParameter('%'.$name.'%')))
             ->orderBy('name', 'ASC')
             ->setMaxResults($limit)
             ->setFirstResult($offset);
@@ -549,14 +549,14 @@ class OrganisationMapper extends QBMapper
             WITH RECURSIVE org_hierarchy AS (
                 -- Base case: the organisation itself
                 SELECT uuid, parent, 0 as level
-                FROM " . $this->getTablePrefix() . $this->getTableName() . "
+                FROM ".$this->getTablePrefix().$this->getTableName()."
                 WHERE uuid = :org_uuid
 
                 UNION ALL
 
                 -- Recursive case: get parent organisations
                 SELECT o.uuid, o.parent, oh.level + 1
-                FROM " . $this->getTablePrefix() . $this->getTableName() . " o
+                FROM ".$this->getTablePrefix().$this->getTableName()." o
                 INNER JOIN org_hierarchy oh ON o.uuid = oh.parent
                 WHERE oh.level < 10  -- Prevent infinite loops, max 10 levels
             )
@@ -631,14 +631,14 @@ class OrganisationMapper extends QBMapper
             WITH RECURSIVE org_hierarchy AS (
                 -- Base case: direct children
                 SELECT uuid, parent, 0 as level
-                FROM " . $this->getTablePrefix() . $this->getTableName() . "
+                FROM ".$this->getTablePrefix().$this->getTableName()."
                 WHERE parent = :org_uuid
 
                 UNION ALL
 
                 -- Recursive case: children of children
                 SELECT o.uuid, o.parent, oh.level + 1
-                FROM " . $this->getTablePrefix() . $this->getTableName() . " o
+                FROM ".$this->getTablePrefix().$this->getTableName()." o
                 INNER JOIN org_hierarchy oh ON o.parent = oh.uuid
                 WHERE oh.level < 10  -- Prevent infinite loops, max 10 levels
             )
@@ -863,7 +863,7 @@ class OrganisationMapper extends QBMapper
             }
         } catch (Exception $e) {
             $this->logger->warning(
-                'Failed to get active organisation for user: ' . $e->getMessage(),
+                'Failed to get active organisation for user: '.$e->getMessage(),
                 ['userId' => $userId]
             );
         }
@@ -922,7 +922,7 @@ class OrganisationMapper extends QBMapper
             );
         } catch (Exception $e) {
             $this->logger->warning(
-                'Failed to set active organisation in preferences: ' . $e->getMessage(),
+                'Failed to set active organisation in preferences: '.$e->getMessage(),
                 [
                     'userId'           => $userId,
                     'organisationUuid' => $defaultOrgUuid,

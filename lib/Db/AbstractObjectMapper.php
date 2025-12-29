@@ -66,11 +66,11 @@ abstract class AbstractObjectMapper
      */
     abstract public function find(
         string|int $identifier,
-        ?Register $register = null,
-        ?Schema $schema = null,
-        bool $includeDeleted = false,
-        bool $rbac = true,
-        bool $multitenancy = true
+        ?Register $register=null,
+        ?Schema $schema=null,
+        bool $includeDeleted=false,
+        bool $rbac=true,
+        bool $multitenancy=true
     ): ObjectEntity;
 
     /**
@@ -97,19 +97,19 @@ abstract class AbstractObjectMapper
      * @psalm-return list<ObjectEntity>
      */
     abstract public function findAll(
-        ?int $limit = null,
-        ?int $offset = null,
-        ?array $filters = null,
-        ?array $searchConditions = null,
-        ?array $searchParams = null,
-        array $sort = [],
-        ?string $search = null,
-        ?array $ids = null,
-        ?string $uses = null,
-        bool $includeDeleted = false,
-        ?Register $register = null,
-        ?Schema $schema = null,
-        ?bool $published = null
+        ?int $limit=null,
+        ?int $offset=null,
+        ?array $filters=null,
+        ?array $searchConditions=null,
+        ?array $searchParams=null,
+        array $sort=[],
+        ?string $search=null,
+        ?array $ids=null,
+        ?string $uses=null,
+        bool $includeDeleted=false,
+        ?Register $register=null,
+        ?Schema $schema=null,
+        ?bool $published=null
     ): array;
 
     /**
@@ -183,7 +183,7 @@ abstract class AbstractObjectMapper
      *
      * @psalm-return array{locked: mixed, uuid: string}
      */
-    abstract public function lockObject(string $uuid, ?int $lockDuration = null): array;
+    abstract public function lockObject(string $uuid, ?int $lockDuration=null): array;
 
     /**
      * Unlock an object to allow modifications.
@@ -208,7 +208,7 @@ abstract class AbstractObjectMapper
      *
      * @return array Array of processed UUIDs.
      */
-    abstract public function ultraFastBulkSave(array $insertObjects = [], array $updateObjects = []): array;
+    abstract public function ultraFastBulkSave(array $insertObjects=[], array $updateObjects=[]): array;
 
     /**
      * Perform bulk delete operations on objects by UUID.
@@ -218,7 +218,7 @@ abstract class AbstractObjectMapper
      *
      * @return array Array of UUIDs of deleted objects.
      */
-    abstract public function deleteObjects(array $uuids = [], bool $hardDelete = false): array;
+    abstract public function deleteObjects(array $uuids=[], bool $hardDelete=false): array;
 
     /**
      * Perform bulk publish operations on objects by UUID.
@@ -228,7 +228,7 @@ abstract class AbstractObjectMapper
      *
      * @return array Array of UUIDs of published objects.
      */
-    abstract public function publishObjects(array $uuids = [], DateTime|bool $datetime = true): array;
+    abstract public function publishObjects(array $uuids=[], DateTime|bool $datetime=true): array;
 
     /**
      * Perform bulk depublish operations on objects by UUID.
@@ -238,7 +238,7 @@ abstract class AbstractObjectMapper
      *
      * @return array Array of UUIDs of depublished objects.
      */
-    abstract public function depublishObjects(array $uuids = [], DateTime|bool $datetime = true): array;
+    abstract public function depublishObjects(array $uuids=[], DateTime|bool $datetime=true): array;
 
     // ==================================================================================
     // STATISTICS OPERATIONS
@@ -254,9 +254,9 @@ abstract class AbstractObjectMapper
      * @return array Statistics including total, size, invalid, deleted, locked, published counts.
      */
     abstract public function getStatistics(
-        int|array|null $registerId = null,
-        int|array|null $schemaId = null,
-        array $exclude = []
+        int|array|null $registerId=null,
+        int|array|null $schemaId=null,
+        array $exclude=[]
     ): array;
 
     /**
@@ -267,7 +267,7 @@ abstract class AbstractObjectMapper
      *
      * @return array Chart data with 'labels' and 'series' keys.
      */
-    abstract public function getRegisterChartData(?int $registerId = null, ?int $schemaId = null): array;
+    abstract public function getRegisterChartData(?int $registerId=null, ?int $schemaId=null): array;
 
     /**
      * Get chart data for objects grouped by schema.
@@ -277,7 +277,7 @@ abstract class AbstractObjectMapper
      *
      * @return array Chart data with 'labels' and 'series' keys.
      */
-    abstract public function getSchemaChartData(?int $registerId = null, ?int $schemaId = null): array;
+    abstract public function getSchemaChartData(?int $registerId=null, ?int $schemaId=null): array;
 
     // ==================================================================================
     // FACETING OPERATIONS
@@ -292,7 +292,7 @@ abstract class AbstractObjectMapper
      *
      * @throws \OCP\DB\Exception If a database error occurs.
      */
-    abstract public function getSimpleFacets(array $query = []): array;
+    abstract public function getSimpleFacets(array $query=[]): array;
 
     /**
      * Get facetable fields from schemas.
@@ -303,7 +303,7 @@ abstract class AbstractObjectMapper
      *
      * @throws \OCP\DB\Exception If a database error occurs.
      */
-    abstract public function getFacetableFieldsFromSchemas(array $baseQuery = []): array;
+    abstract public function getFacetableFieldsFromSchemas(array $baseQuery=[]): array;
 
     // ==================================================================================
     // SEARCH OPERATIONS
@@ -324,12 +324,12 @@ abstract class AbstractObjectMapper
      * @psalm-return list<ObjectEntity>|int
      */
     abstract public function searchObjects(
-        array $query = [],
-        ?string $activeOrganisationUuid = null,
-        bool $rbac = true,
-        bool $multitenancy = true,
-        ?array $ids = null,
-        ?string $uses = null
+        array $query=[],
+        ?string $activeOrganisationUuid=null,
+        bool $rbac=true,
+        bool $multitenancy=true,
+        ?array $ids=null,
+        ?string $uses=null
     ): array|int;
 
     /**
@@ -345,12 +345,12 @@ abstract class AbstractObjectMapper
      * @return int Count of objects.
      */
     abstract public function countSearchObjects(
-        array $query = [],
-        ?string $activeOrganisationUuid = null,
-        bool $rbac = true,
-        bool $multitenancy = true,
-        ?array $ids = null,
-        ?string $uses = null
+        array $query=[],
+        ?string $activeOrganisationUuid=null,
+        bool $rbac=true,
+        bool $multitenancy=true,
+        ?array $ids=null,
+        ?string $uses=null
     ): int;
 
     /**
@@ -363,9 +363,9 @@ abstract class AbstractObjectMapper
      * @return int Count of objects.
      */
     abstract public function countAll(
-        ?array $filters = null,
-        ?Schema $schema = null,
-        ?Register $register = null
+        ?array $filters=null,
+        ?Schema $schema=null,
+        ?Register $register=null
     ): int;
 
     // ==================================================================================
@@ -386,8 +386,3 @@ abstract class AbstractObjectMapper
      */
     abstract public function getMaxAllowedPacketSize(): int;
 }//end class
-
-
-
-
-

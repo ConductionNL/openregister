@@ -39,6 +39,7 @@ use Psr\Log\LoggerInterface;
  */
 class AgentTool extends AbstractTool implements ToolInterface
 {
+
     /**
      * Agent mapper for database operations
      *
@@ -210,15 +211,15 @@ class AgentTool extends AbstractTool implements ToolInterface
      *
      * @psalm-return array{success: bool, error?: string, details?: mixed, message?: string, data?: mixed}
      */
-    public function listAgents(int $limit = 50, int $offset = 0): array
+    public function listAgents(int $limit=50, int $offset=0): array
     {
         try {
             $this->logger->info(
                 '[AgentTool] Listing agents',
                 [
-                        'limit'  => $limit,
-                        'offset' => $offset,
-                    ]
+                    'limit'  => $limit,
+                    'offset' => $offset,
+                ]
             );
 
             // Get agents via mapper (RBAC is enforced in mapper).
@@ -230,21 +231,21 @@ class AgentTool extends AbstractTool implements ToolInterface
 
             return $this->formatSuccess(
                 data: [
-                        'agents' => $results,
-                        'total'  => $total,
-                        'limit'  => $limit,
-                        'offset' => $offset,
-                    ],
+                    'agents' => $results,
+                    'total'  => $total,
+                    'limit'  => $limit,
+                    'offset' => $offset,
+                ],
                 message: "Found {$total} agents."
             );
         } catch (\Exception $e) {
             $this->logger->error(
                 '[AgentTool] Failed to list agents',
                 [
-                        'error' => $e->getMessage(),
-                    ]
+                    'error' => $e->getMessage(),
+                ]
             );
-            return $this->formatError(message: 'Failed to list agents: ' . $e->getMessage());
+            return $this->formatError(message: 'Failed to list agents: '.$e->getMessage());
         }//end try
     }//end listAgents()
 
@@ -275,11 +276,11 @@ class AgentTool extends AbstractTool implements ToolInterface
             $this->logger->error(
                 '[AgentTool] Failed to get agent',
                 [
-                        'uuid'  => $uuid,
-                        'error' => $e->getMessage(),
-                    ]
+                    'uuid'  => $uuid,
+                    'error' => $e->getMessage(),
+                ]
             );
-            return $this->formatError(message: 'Failed to get agent: ' . $e->getMessage());
+            return $this->formatError(message: 'Failed to get agent: '.$e->getMessage());
         }//end try
     }//end getAgent()
 
@@ -297,9 +298,9 @@ class AgentTool extends AbstractTool implements ToolInterface
      */
     public function createAgent(
         string $name,
-        ?string $description = null,
-        ?string $type = null,
-        ?string $systemPrompt = null
+        ?string $description=null,
+        ?string $type=null,
+        ?string $systemPrompt=null
     ): array {
         try {
             $this->logger->info('[AgentTool] Creating agent', ['name' => $name]);
@@ -336,11 +337,11 @@ class AgentTool extends AbstractTool implements ToolInterface
             $this->logger->error(
                 '[AgentTool] Failed to create agent',
                 [
-                        'name'  => $name,
-                        'error' => $e->getMessage(),
-                    ]
+                    'name'  => $name,
+                    'error' => $e->getMessage(),
+                ]
             );
-            return $this->formatError(message: 'Failed to create agent: ' . $e->getMessage());
+            return $this->formatError(message: 'Failed to create agent: '.$e->getMessage());
         }//end try
     }//end createAgent()
 
@@ -358,9 +359,9 @@ class AgentTool extends AbstractTool implements ToolInterface
      */
     public function updateAgent(
         string $uuid,
-        ?string $name = null,
-        ?string $description = null,
-        ?string $systemPrompt = null
+        ?string $name=null,
+        ?string $description=null,
+        ?string $systemPrompt=null
     ): array {
         try {
             $this->logger->info('[AgentTool] Updating agent', ['uuid' => $uuid]);
@@ -394,11 +395,11 @@ class AgentTool extends AbstractTool implements ToolInterface
             $this->logger->error(
                 '[AgentTool] Failed to update agent',
                 [
-                        'uuid'  => $uuid,
-                        'error' => $e->getMessage(),
-                    ]
+                    'uuid'  => $uuid,
+                    'error' => $e->getMessage(),
+                ]
             );
-            return $this->formatError(message: 'Failed to update agent: ' . $e->getMessage());
+            return $this->formatError(message: 'Failed to update agent: '.$e->getMessage());
         }//end try
     }//end updateAgent()
 
@@ -433,11 +434,11 @@ class AgentTool extends AbstractTool implements ToolInterface
             $this->logger->error(
                 '[AgentTool] Failed to delete agent',
                 [
-                        'uuid'  => $uuid,
-                        'error' => $e->getMessage(),
-                    ]
+                    'uuid'  => $uuid,
+                    'error' => $e->getMessage(),
+                ]
             );
-            return $this->formatError(message: 'Failed to delete agent: ' . $e->getMessage());
+            return $this->formatError(message: 'Failed to delete agent: '.$e->getMessage());
         }//end try
     }//end deleteAgent()
 
@@ -450,7 +451,7 @@ class AgentTool extends AbstractTool implements ToolInterface
      *
      * @return array Response
      */
-    public function executeFunction(string $functionName, array $parameters, ?string $userId = null): array
+    public function executeFunction(string $functionName, array $parameters, ?string $userId=null): array
     {
         // Convert snake_case to camelCase for PSR compliance.
         $methodName = lcfirst(str_replace('_', '', ucwords($functionName, '_')));

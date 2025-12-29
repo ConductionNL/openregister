@@ -39,6 +39,7 @@ use Exception;
  */
 class ConfigurationCheckJob extends TimedJob
 {
+
     /**
      * Configuration mapper instance.
      *
@@ -138,7 +139,7 @@ class ConfigurationCheckJob extends TimedJob
         try {
             // Get all configurations.
             $configurations = $this->configurationMapper->findAll();
-            $this->logger->info('Found ' . count($configurations) . ' configurations to check');
+            $this->logger->info('Found '.count($configurations).' configurations to check');
 
             $stats = ['checked' => 0, 'updated' => 0, 'failed' => 0];
 
@@ -150,7 +151,7 @@ class ConfigurationCheckJob extends TimedJob
                 "Configuration check job completed: {$stats['checked']} checked, {$stats['updated']} updated, {$stats['failed']} failed"
             );
         } catch (Exception $e) {
-            $this->logger->error('Configuration check job failed: ' . $e->getMessage());
+            $this->logger->error('Configuration check job failed: '.$e->getMessage());
         }//end try
     }//end run()
 
@@ -213,7 +214,7 @@ class ConfigurationCheckJob extends TimedJob
             }
         } catch (Exception $e) {
             $stats['failed']++;
-            $this->logger->error("Error checking configuration {$configuration->getId()}: " . $e->getMessage());
+            $this->logger->error("Error checking configuration {$configuration->getId()}: ".$e->getMessage());
         }//end try
     }//end checkSingleConfiguration()
 
@@ -240,7 +241,7 @@ class ConfigurationCheckJob extends TimedJob
             $stats['updated']++;
             $this->logger->info("Successfully auto-updated configuration {$configuration->getTitle()}");
         } catch (Exception $e) {
-            $this->logger->error("Failed to auto-update configuration {$configuration->getTitle()}: " . $e->getMessage());
+            $this->logger->error("Failed to auto-update configuration {$configuration->getTitle()}: ".$e->getMessage());
             $stats['failed']++;
         }
     }//end handleAutoUpdate()
@@ -261,7 +262,7 @@ class ConfigurationCheckJob extends TimedJob
             $notificationCount = $this->notificationService->notifyConfigurationUpdate(configuration: $configuration);
             $this->logger->info("Sent {$notificationCount} notifications for configuration {$configuration->getTitle()}");
         } catch (Exception $e) {
-            $this->logger->error("Failed to send notifications for configuration {$configuration->getTitle()}: " . $e->getMessage());
+            $this->logger->error("Failed to send notifications for configuration {$configuration->getTitle()}: ".$e->getMessage());
         }
     }//end sendUpdateNotification()
 }//end class

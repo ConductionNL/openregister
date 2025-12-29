@@ -41,6 +41,7 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20251114130000 extends SimpleMigrationStep
 {
+
     /**
      * Database connection
      *

@@ -95,7 +95,7 @@ class ApiTokenSettingsController extends Controller
         } catch (Exception $e) {
             return new JSONResponse(
                 data: [
-                'error' => 'Failed to retrieve API tokens: ' . $e->getMessage(),
+                    'error' => 'Failed to retrieve API tokens: '.$e->getMessage(),
                 ],
                 statusCode: 500
             );
@@ -138,14 +138,14 @@ class ApiTokenSettingsController extends Controller
 
             return new JSONResponse(
                 data: [
-                        'success' => true,
-                        'message' => 'API tokens saved successfully',
-                    ]
+                    'success' => true,
+                    'message' => 'API tokens saved successfully',
+                ]
             );
         } catch (Exception $e) {
             return new JSONResponse(
                 data: [
-                    'error' => 'Failed to save API tokens: ' . $e->getMessage(),
+                    'error' => 'Failed to save API tokens: '.$e->getMessage(),
                 ],
                 statusCode: 500
             );
@@ -169,9 +169,9 @@ class ApiTokenSettingsController extends Controller
             if (empty($token) === true) {
                 return new JSONResponse(
                     data: [
-                            'success' => false,
-                            'message' => 'No GitHub token provided',
-                        ],
+                        'success' => false,
+                        'message' => 'No GitHub token provided',
+                    ],
                     statusCode: 400
                 );
             }
@@ -181,30 +181,30 @@ class ApiTokenSettingsController extends Controller
             $response = $client->get(
                 'https://api.github.com/user',
                 [
-                        'headers' => [
-                            'Accept'               => 'application/vnd.github+json',
-                            'Authorization'        => 'Bearer ' . $token,
-                            'X-GitHub-Api-Version' => '2022-11-28',
-                        ],
-                    ]
+                    'headers' => [
+                        'Accept'               => 'application/vnd.github+json',
+                        'Authorization'        => 'Bearer '.$token,
+                        'X-GitHub-Api-Version' => '2022-11-28',
+                    ],
+                ]
             );
 
             $data = json_decode($response->getBody(), true);
 
             return new JSONResponse(
                 data: [
-                        'success'  => true,
-                        'message'  => 'GitHub token is valid',
-                        'username' => $data['login'] ?? 'Unknown',
-                        'scopes'   => $response->getHeader('X-OAuth-Scopes') ?? [],
-                    ]
+                    'success'  => true,
+                    'message'  => 'GitHub token is valid',
+                    'username' => $data['login'] ?? 'Unknown',
+                    'scopes'   => $response->getHeader('X-OAuth-Scopes') ?? [],
+                ]
             );
         } catch (Exception $e) {
             return new JSONResponse(
                 data: [
-                        'success' => false,
-                        'message' => 'GitHub token test failed: ' . $e->getMessage(),
-                    ],
+                    'success' => false,
+                    'message' => 'GitHub token test failed: '.$e->getMessage(),
+                ],
                 statusCode: 400
             );
         }//end try
@@ -228,9 +228,9 @@ class ApiTokenSettingsController extends Controller
             if (empty($token) === true) {
                 return new JSONResponse(
                     data: [
-                            'success' => false,
-                            'message' => 'No GitLab token provided',
-                        ],
+                        'success' => false,
+                        'message' => 'No GitLab token provided',
+                    ],
                     statusCode: 400
                 );
             }
@@ -246,30 +246,30 @@ class ApiTokenSettingsController extends Controller
             // Test the token by making a simple API call.
             $client   = \OC::$server->get(\OCP\Http\Client\IClientService::class)->newClient();
             $response = $client->get(
-                $apiUrl . '/user',
+                $apiUrl.'/user',
                 [
-                        'headers' => [
-                            'PRIVATE-TOKEN' => $token,
-                        ],
-                    ]
+                    'headers' => [
+                        'PRIVATE-TOKEN' => $token,
+                    ],
+                ]
             );
 
             $data = json_decode($response->getBody(), true);
 
             return new JSONResponse(
                 data: [
-                        'success'  => true,
-                        'message'  => 'GitLab token is valid',
-                        'username' => $data['username'] ?? 'Unknown',
-                        'instance' => $apiUrl,
-                    ]
+                    'success'  => true,
+                    'message'  => 'GitLab token is valid',
+                    'username' => $data['username'] ?? 'Unknown',
+                    'instance' => $apiUrl,
+                ]
             );
         } catch (Exception $e) {
             return new JSONResponse(
                 data: [
-                        'success' => false,
-                        'message' => 'GitLab token test failed: ' . $e->getMessage(),
-                    ],
+                    'success' => false,
+                    'message' => 'GitLab token test failed: '.$e->getMessage(),
+                ],
                 statusCode: 400
             );
         }//end try

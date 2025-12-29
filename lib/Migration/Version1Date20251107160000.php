@@ -70,10 +70,10 @@ class Version1Date20251107160000 extends SimpleMigrationStep
                     'uuid',
                     Types::STRING,
                     [
-                            'notnull' => false,
-                            'length'  => 36,
-                            'comment' => 'Unique identifier for external referencing',
-                        ]
+                        'notnull' => false,
+                        'length'  => 36,
+                        'comment' => 'Unique identifier for external referencing',
+                    ]
                 );
 
                 // Add index for UUID lookups.

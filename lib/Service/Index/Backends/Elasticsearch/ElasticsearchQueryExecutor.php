@@ -27,6 +27,7 @@ use Psr\Log\LoggerInterface;
  */
 class ElasticsearchQueryExecutor
 {
+
     /**
      * Elasticsearch HTTP client for making requests
      *
@@ -80,15 +81,15 @@ class ElasticsearchQueryExecutor
             // Build Elasticsearch query.
             $esQuery = $this->buildElasticsearchQuery($query);
 
-            $url    = $this->httpClient->buildBaseUrl() . '/' . $index . '/_search';
+            $url    = $this->httpClient->buildBaseUrl().'/'.$index.'/_search';
             $result = $this->httpClient->post($url, $esQuery);
 
             $this->logger->debug(
                 '[ElasticsearchQueryExecutor] Search executed',
                 [
-                        'index' => $index,
-                        'hits'  => $result['hits']['total']['value'] ?? 0,
-                    ]
+                    'index' => $index,
+                    'hits'  => $result['hits']['total']['value'] ?? 0,
+                ]
             );
 
             return $result;
@@ -96,8 +97,8 @@ class ElasticsearchQueryExecutor
             $this->logger->error(
                 '[ElasticsearchQueryExecutor] Search failed',
                 [
-                        'error' => $e->getMessage(),
-                    ]
+                    'error' => $e->getMessage(),
+                ]
             );
 
             return [
@@ -163,7 +164,7 @@ class ElasticsearchQueryExecutor
         $index = $this->indexManager->getActiveIndexName();
 
         try {
-            $url    = $this->httpClient->buildBaseUrl() . '/' . $index . '/_count';
+            $url    = $this->httpClient->buildBaseUrl().'/'.$index.'/_count';
             $result = $this->httpClient->get($url);
 
             return $result['count'] ?? 0;
@@ -171,8 +172,8 @@ class ElasticsearchQueryExecutor
             $this->logger->error(
                 '[ElasticsearchQueryExecutor] Failed to get document count',
                 [
-                        'error' => $e->getMessage(),
-                    ]
+                    'error' => $e->getMessage(),
+                ]
             );
             return 0;
         }

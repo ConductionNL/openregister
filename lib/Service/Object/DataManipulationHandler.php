@@ -93,7 +93,7 @@ class DataManipulationHandler
 
             // Add timestamp for uniqueness.
             $timestamp  = time();
-            $uniqueSlug = $slug . '-' . $timestamp;
+            $uniqueSlug = $slug.'-'.$timestamp;
 
             return $uniqueSlug;
         } catch (Exception $e) {

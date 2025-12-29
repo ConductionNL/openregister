@@ -43,6 +43,7 @@ use Psr\Log\LoggerInterface;
  */
 class ObjectsTool extends AbstractTool
 {
+
     /**
      * Object service
      *
@@ -212,7 +213,7 @@ class ObjectsTool extends AbstractTool
      *
      * @throws \Exception If function execution fails
      */
-    public function executeFunction(string $functionName, array $parameters, ?string $userId = null): array
+    public function executeFunction(string $functionName, array $parameters, ?string $userId=null): array
     {
         $this->log(functionName: $functionName, parameters: $parameters);
 
@@ -245,7 +246,7 @@ class ObjectsTool extends AbstractTool
      *
      * @psalm-return array{success: true, message: string, data: mixed}
      */
-    public function searchObjects(int $limit = 20, int $offset = 0, ?string $register = null, ?string $schema = null, ?string $query = null): array
+    public function searchObjects(int $limit=20, int $offset=0, ?string $register=null, ?string $schema=null, ?string $query=null): array
     {
         $filters = [];
         if ($register !== null) {
@@ -264,10 +265,10 @@ class ObjectsTool extends AbstractTool
 
         $result = $this->objectService->findAll(
             config: [
-                    'limit'   => $limit,
-                    'offset'  => $offset,
-                    'filters' => $filters,
-                ]
+                'limit'   => $limit,
+                'offset'  => $offset,
+                'filters' => $filters,
+            ]
         );
 
         $objectList = array_map(

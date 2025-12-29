@@ -44,6 +44,7 @@ use ZipArchive;
  */
 class FilePublishingHandler
 {
+
     /**
      * Reference to FileService for cross-handler coordination (circular dependency break).
      *
@@ -112,7 +113,7 @@ class FilePublishingHandler
             // Try to find the file in the object's folder by ID.
             $fileNode = $this->fileService->getFile(object: $object, file: $file);
             if ($fileNode !== null) {
-                $this->logger->info(message: "publishFile: Found file by ID: " . $fileNode->getName() . " (ID: " . $fileNode->getId() . ")");
+                $this->logger->info(message: "publishFile: Found file by ID: ".$fileNode->getName()." (ID: ".$fileNode->getId().")");
             } else {
                 $this->logger->error(message: "publishFile: No file found with ID: $file");
                 throw new Exception("File with ID $file does not exist");
@@ -133,11 +134,11 @@ class FilePublishingHandler
             $objectFolder = $this->fileService->getObjectFolder($object);
 
             if ($objectFolder === null) {
-                $this->logger->error(message: "publishFile: Could not get object folder for object: " . $object->getId());
+                $this->logger->error(message: "publishFile: Could not get object folder for object: ".$object->getId());
                 throw new Exception('Object folder not found.');
             }
 
-            $this->logger->info(message: "publishFile: Object folder path: " . $objectFolder->getPath());
+            $this->logger->info(message: "publishFile: Object folder path: ".$objectFolder->getPath());
 
             // Debug: List all files in the object folder.
             try {
@@ -148,41 +149,41 @@ class FilePublishingHandler
                     },
                     $objectFiles
                 );
-                $this->logger->info(message: "publishFile: Files in object folder: " . json_encode($objectFileNames));
+                $this->logger->info(message: "publishFile: Files in object folder: ".json_encode($objectFileNames));
             } catch (Exception $e) {
-                $this->logger->error(message: "publishFile: Error listing object folder contents: " . $e->getMessage());
+                $this->logger->error(message: "publishFile: Error listing object folder contents: ".$e->getMessage());
             }
 
             try {
                 $this->logger->info(message: "publishFile: Attempting to get file '$fileName' from object folder");
                 $fileNode = $objectFolder->get($fileName);
-                $this->logger->info(message: "publishFile: Successfully found file: " . $fileNode->getName() . " at " . $fileNode->getPath());
+                $this->logger->info(message: "publishFile: Successfully found file: ".$fileNode->getName()." at ".$fileNode->getPath());
             } catch (NotFoundException $e) {
                 // Try with full path if filename didn't work.
                 try {
                     $this->logger->info(message: "publishFile: Attempting to get file '$filePath' (full path) from object folder");
                     $fileNode = $objectFolder->get($filePath);
-                    $this->logger->info(message: "publishFile: Successfully found file using full path: " . $fileNode->getName() . " at " . $fileNode->getPath());
+                    $this->logger->info(message: "publishFile: Successfully found file using full path: ".$fileNode->getName()." at ".$fileNode->getPath());
                 } catch (NotFoundException $e2) {
-                    $this->logger->error(message: "publishFile: File '$fileName' and '$filePath' not found in object folder. NotFoundException: " . $e2->getMessage());
+                    $this->logger->error(message: "publishFile: File '$fileName' and '$filePath' not found in object folder. NotFoundException: ".$e2->getMessage());
                     throw new Exception('File not found.');
                 }
             } catch (Exception $e) {
-                $this->logger->error(message: "publishFile: Unexpected error getting file from object folder: " . $e->getMessage());
+                $this->logger->error(message: "publishFile: Unexpected error getting file from object folder: ".$e->getMessage());
                 throw new Exception('File not found.');
             }//end try
         }//end if
 
         // Verify file exists and is a File instance.
         if ($fileNode instanceof File === false) {
-            $this->logger->error(message: "publishFile: Found node is not a File instance, it's a: " . get_class($fileNode));
+            $this->logger->error(message: "publishFile: Found node is not a File instance, it's a: ".get_class($fileNode));
             throw new Exception('File not found.');
         }
 
         // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
         $this->fileService->checkOwnership($fileNode);
 
-        $this->logger->info(message: "publishFile: Creating share link for file: " . $fileNode->getPath());
+        $this->logger->info(message: "publishFile: Creating share link for file: ".$fileNode->getPath());
 
         // Use FileMapper to create the share directly in the database.
         try {
@@ -196,11 +197,11 @@ class FilePublishingHandler
 
             $this->logger->info(message: "publishFile: Successfully created public share via FileMapper - ID: {$shareInfo['id']}, Token: {$shareInfo['token']}, URL: {$shareInfo['accessUrl']}");
         } catch (Exception $e) {
-            $this->logger->error(message: "publishFile: Failed to create share via FileMapper: " . $e->getMessage());
-            throw new Exception('Failed to create share link: ' . $e->getMessage());
+            $this->logger->error(message: "publishFile: Failed to create share via FileMapper: ".$e->getMessage());
+            throw new Exception('Failed to create share link: '.$e->getMessage());
         }
 
-        $this->logger->info(message: "publishFile: Successfully published file: " . $fileNode->getName());
+        $this->logger->info(message: "publishFile: Successfully published file: ".$fileNode->getName());
         return $fileNode;
     }//end publishFile()
 
@@ -239,7 +240,7 @@ class FilePublishingHandler
             // Try to find the file in the object's folder by ID.
             $file = $this->fileService->getFile(object: $object, file: $filePath);
             if ($file !== null) {
-                $this->logger->info(message: "unpublishFile: Found file by ID: " . $file->getName() . " (ID: " . $file->getId() . ")");
+                $this->logger->info(message: "unpublishFile: Found file by ID: ".$file->getName()." (ID: ".$file->getId().")");
             } else {
                 $this->logger->error(message: "unpublishFile: No file found with ID: $filePath");
                 throw new Exception("File with ID $filePath does not exist");
@@ -260,11 +261,11 @@ class FilePublishingHandler
             $objectFolder = $this->fileService->getObjectFolder($object);
 
             if ($objectFolder === null) {
-                $this->logger->error(message: "unpublishFile: Could not get object folder for object: " . $object->getId());
+                $this->logger->error(message: "unpublishFile: Could not get object folder for object: ".$object->getId());
                 throw new Exception('Object folder not found.');
             }
 
-            $this->logger->info(message: "unpublishFile: Object folder path: " . $objectFolder->getPath());
+            $this->logger->info(message: "unpublishFile: Object folder path: ".$objectFolder->getPath());
 
             // Debug: List all files in the object folder.
             try {
@@ -275,41 +276,41 @@ class FilePublishingHandler
                     },
                     $objectFiles
                 );
-                $this->logger->info(message: "unpublishFile: Files in object folder: " . json_encode($objectFileNames));
+                $this->logger->info(message: "unpublishFile: Files in object folder: ".json_encode($objectFileNames));
             } catch (Exception $e) {
-                $this->logger->error(message: "unpublishFile: Error listing object folder contents: " . $e->getMessage());
+                $this->logger->error(message: "unpublishFile: Error listing object folder contents: ".$e->getMessage());
             }
 
             try {
                 $this->logger->info(message: "unpublishFile: Attempting to get file '$fileName' from object folder");
                 $file = $objectFolder->get($fileName);
-                $this->logger->info(message: "unpublishFile: Successfully found file: " . $file->getName() . " at " . $file->getPath());
+                $this->logger->info(message: "unpublishFile: Successfully found file: ".$file->getName()." at ".$file->getPath());
             } catch (NotFoundException $e) {
                 // Try with full path if filename didn't work.
                 try {
                     $this->logger->info(message: "unpublishFile: Attempting to get file '$filePath' (full path) from object folder");
                     $file = $objectFolder->get($filePath);
-                    $this->logger->info(message: "unpublishFile: Successfully found file using full path: " . $file->getName() . " at " . $file->getPath());
+                    $this->logger->info(message: "unpublishFile: Successfully found file using full path: ".$file->getName()." at ".$file->getPath());
                 } catch (NotFoundException $e2) {
-                    $this->logger->error(message: "unpublishFile: File '$fileName' and '$filePath' not found in object folder. NotFoundException: " . $e2->getMessage());
+                    $this->logger->error(message: "unpublishFile: File '$fileName' and '$filePath' not found in object folder. NotFoundException: ".$e2->getMessage());
                     throw new Exception('File not found.');
                 }
             } catch (Exception $e) {
-                $this->logger->error(message: "unpublishFile: Unexpected error getting file from object folder: " . $e->getMessage());
+                $this->logger->error(message: "unpublishFile: Unexpected error getting file from object folder: ".$e->getMessage());
                 throw new Exception('File not found.');
             }//end try
         }//end if
 
         // Verify file exists and is a File instance.
         if ($file instanceof File === false) {
-            $this->logger->error(message: "unpublishFile: Found node is not a File instance, it's a: " . get_class($file));
+            $this->logger->error(message: "unpublishFile: Found node is not a File instance, it's a: ".get_class($file));
             throw new Exception('File not found.');
         }
 
         // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
         $this->fileService->checkOwnership($file);
 
-        $this->logger->info(message: "unpublishFile: Removing share links for file: " . $file->getPath());
+        $this->logger->info(message: "unpublishFile: Removing share links for file: ".$file->getPath());
 
         // Use FileMapper to remove all public shares directly from the database.
         try {
@@ -318,14 +319,14 @@ class FilePublishingHandler
             $this->logger->info(message: "unpublishFile: Successfully removed public shares via FileMapper - Deleted shares: {$deletionInfo['deleted_shares']}, File ID: {$deletionInfo['file_id']}");
 
             if ($deletionInfo['deleted_shares'] === 0) {
-                $this->logger->info(message: "unpublishFile: No public shares were found to delete for file: " . $file->getName());
+                $this->logger->info(message: "unpublishFile: No public shares were found to delete for file: ".$file->getName());
             }
         } catch (Exception $e) {
-            $this->logger->error(message: "unpublishFile: Failed to remove shares via FileMapper: " . $e->getMessage());
-            throw new Exception('Failed to remove share links: ' . $e->getMessage());
+            $this->logger->error(message: "unpublishFile: Failed to remove shares via FileMapper: ".$e->getMessage());
+            throw new Exception('Failed to remove share links: '.$e->getMessage());
         }
 
-        $this->logger->info(message: "unpublishFile: Successfully unpublished file: " . $file->getName());
+        $this->logger->info(message: "unpublishFile: Successfully unpublished file: ".$file->getName());
         return $file;
     }//end unpublishFile()
 
@@ -346,18 +347,18 @@ class FilePublishingHandler
      *
      * @psalm-return array{path: string, filename: string, size: int, mimeType: 'application/zip'}
      */
-    public function createObjectFilesZip(ObjectEntity | string $object, ?string $zipName = null): array
+    public function createObjectFilesZip(ObjectEntity | string $object, ?string $zipName=null): array
     {
         // If string ID provided, try to find the object entity.
         if (is_string($object) === true) {
             try {
                 $object = $this->objectEntityMapper->find($object);
             } catch (Exception $e) {
-                throw new Exception("Object not found: " . $e->getMessage());
+                throw new Exception("Object not found: ".$e->getMessage());
             }
         }
 
-        $this->logger->info(message: "Creating ZIP archive for object: " . $object->getId());
+        $this->logger->info(message: "Creating ZIP archive for object: ".$object->getId());
 
         // Check if ZipArchive extension is available.
         if (class_exists('ZipArchive') === false) {
@@ -371,25 +372,25 @@ class FilePublishingHandler
             throw new Exception('No files found for this object');
         }
 
-        $this->logger->info(message: "Found " . count($files) . " files for object " . $object->getId());
+        $this->logger->info(message: "Found ".count($files)." files for object ".$object->getId());
 
         // Generate ZIP filename.
         if ($zipName === null) {
             $objectIdentifier = $object->getUuid() ?? (string) $object->getId();
-            $zipName          = 'object_' . $objectIdentifier . '_files_' . date('Y-m-d_H-i-s') . '.zip';
-        } elseif (pathinfo($zipName, PATHINFO_EXTENSION) !== 'zip') {
+            $zipName          = 'object_'.$objectIdentifier.'_files_'.date('Y-m-d_H-i-s').'.zip';
+        } else if (pathinfo($zipName, PATHINFO_EXTENSION) !== 'zip') {
             $zipName .= '.zip';
         }
 
         // Create temporary file for the ZIP.
-        $tempZipPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $zipName;
+        $tempZipPath = sys_get_temp_dir().DIRECTORY_SEPARATOR.$zipName;
 
         // Create new ZIP archive.
         $zip    = new ZipArchive();
         $result = $zip->open($tempZipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
 
         if ($result !== true) {
-            throw new Exception("Cannot create ZIP file: " . $this->getZipErrorMessage($result));
+            throw new Exception("Cannot create ZIP file: ".$this->getZipErrorMessage($result));
         }
 
         $addedFiles   = 0;
@@ -399,7 +400,7 @@ class FilePublishingHandler
         foreach ($files as $file) {
             try {
                 if ($file instanceof \OCP\Files\File === false) {
-                    $this->logger->warning(message: "Skipping non-file node: " . $file->getName());
+                    $this->logger->warning(message: "Skipping non-file node: ".$file->getName());
                     $skippedFiles++;
                     continue;
                 }
@@ -415,15 +416,15 @@ class FilePublishingHandler
                 $added = $zip->addFromString($fileName, $fileContent);
 
                 if ($added === false) {
-                    $this->logger->error(message: "Failed to add file to ZIP: " . $fileName);
+                    $this->logger->error(message: "Failed to add file to ZIP: ".$fileName);
                     $skippedFiles++;
                     continue;
                 }
 
                 $addedFiles++;
-                $this->logger->debug(message: "Added file to ZIP: " . $fileName);
+                $this->logger->debug(message: "Added file to ZIP: ".$fileName);
             } catch (Exception $e) {
-                $this->logger->error(message: "Error processing file " . $file->getName() . ": " . $e->getMessage());
+                $this->logger->error(message: "Error processing file ".$file->getName().": ".$e->getMessage());
                 $skippedFiles++;
                 continue;
             }//end try

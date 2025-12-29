@@ -46,6 +46,7 @@ use Psr\Log\LoggerInterface;
  */
 class PreviewHandler
 {
+
     /**
      * Register mapper for database operations.
      *
@@ -388,7 +389,7 @@ class PreviewHandler
      *
      * @psalm-return array<never, never>
      */
-    public function compareArrays(array $current, array $proposed, string $prefix = ''): array
+    public function compareArrays(array $current, array $proposed, string $prefix=''): array
     {
         // Method body will be extracted from ConfigurationService.
         return [];

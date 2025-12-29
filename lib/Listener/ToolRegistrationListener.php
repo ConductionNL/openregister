@@ -40,6 +40,7 @@ use OCP\EventDispatcher\IEventListener;
  */
 class ToolRegistrationListener implements IEventListener
 {
+
     /**
      * Register tool
      *
@@ -117,55 +118,55 @@ class ToolRegistrationListener implements IEventListener
             id: 'openregister.register',
             tool: $this->registerTool,
             metadata: [
-                    'name'        => $this->registerTool->getName(),
-                    'description' => $this->registerTool->getDescription(),
-                    'icon'        => 'icon-category-office',
-                    'app'         => 'openregister',
-                ]
+                'name'        => $this->registerTool->getName(),
+                'description' => $this->registerTool->getDescription(),
+                'icon'        => 'icon-category-office',
+                'app'         => 'openregister',
+            ]
         );
 
         $event->registerTool(
             id: 'openregister.schema',
             tool: $this->schemaTool,
             metadata: [
-                    'name'        => $this->schemaTool->getName(),
-                    'description' => $this->schemaTool->getDescription(),
-                    'icon'        => 'icon-category-customization',
-                    'app'         => 'openregister',
-                ]
+                'name'        => $this->schemaTool->getName(),
+                'description' => $this->schemaTool->getDescription(),
+                'icon'        => 'icon-category-customization',
+                'app'         => 'openregister',
+            ]
         );
 
         $event->registerTool(
             id: 'openregister.objects',
             tool: $this->objectsTool,
             metadata: [
-                    'name'        => $this->objectsTool->getName(),
-                    'description' => $this->objectsTool->getDescription(),
-                    'icon'        => 'icon-category-organization',
-                    'app'         => 'openregister',
-                ]
+                'name'        => $this->objectsTool->getName(),
+                'description' => $this->objectsTool->getDescription(),
+                'icon'        => 'icon-category-organization',
+                'app'         => 'openregister',
+            ]
         );
 
         $event->registerTool(
             id: 'openregister.application',
             tool: $this->applicationTool,
             metadata: [
-                    'name'        => $this->applicationTool->getName(),
-                    'description' => $this->applicationTool->getDescription(),
-                    'icon'        => 'icon-category-integration',
-                    'app'         => 'openregister',
-                ]
+                'name'        => $this->applicationTool->getName(),
+                'description' => $this->applicationTool->getDescription(),
+                'icon'        => 'icon-category-integration',
+                'app'         => 'openregister',
+            ]
         );
 
         $event->registerTool(
             id: 'openregister.agent',
             tool: $this->agentTool,
             metadata: [
-                    'name'        => $this->agentTool->getName(),
-                    'description' => $this->agentTool->getDescription(),
-                    'icon'        => 'icon-category-monitoring',
-                    'app'         => 'openregister',
-                ]
+                'name'        => $this->agentTool->getName(),
+                'description' => $this->agentTool->getDescription(),
+                'icon'        => 'icon-category-monitoring',
+                'app'         => 'openregister',
+            ]
         );
     }//end handle()
 }//end class

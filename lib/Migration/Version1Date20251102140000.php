@@ -64,11 +64,11 @@ class Version1Date20251102140000 extends SimpleMigrationStep
                 'id',
                 Types::INTEGER,
                 [
-                        'autoincrement' => true,
-                        'notnull'       => true,
-                        'unsigned'      => true,
-                        'comment'       => 'Primary key',
-                    ]
+                    'autoincrement' => true,
+                    'notnull'       => true,
+                    'unsigned'      => true,
+                    'comment'       => 'Primary key',
+                ]
             );
 
             // UUID for external references.
@@ -76,10 +76,10 @@ class Version1Date20251102140000 extends SimpleMigrationStep
                 'uuid',
                 Types::STRING,
                 [
-                        'notnull' => false,
-                        'length'  => 255,
-                        'comment' => 'Unique identifier for external references',
-                    ]
+                    'notnull' => false,
+                    'length'  => 255,
+                    'comment' => 'Unique identifier for external references',
+                ]
             );
 
             // View name.
@@ -87,10 +87,10 @@ class Version1Date20251102140000 extends SimpleMigrationStep
                 'name',
                 Types::STRING,
                 [
-                        'notnull' => true,
-                        'length'  => 255,
-                        'comment' => 'Name of the view',
-                    ]
+                    'notnull' => true,
+                    'length'  => 255,
+                    'comment' => 'Name of the view',
+                ]
             );
 
             // Description.
@@ -98,9 +98,9 @@ class Version1Date20251102140000 extends SimpleMigrationStep
                 'description',
                 Types::TEXT,
                 [
-                        'notnull' => false,
-                        'comment' => 'Optional description of the view',
-                    ]
+                    'notnull' => false,
+                    'comment' => 'Optional description of the view',
+                ]
             );
 
             // Owner.
@@ -108,10 +108,10 @@ class Version1Date20251102140000 extends SimpleMigrationStep
                 'owner',
                 Types::STRING,
                 [
-                        'notnull' => true,
-                        'length'  => 64,
-                        'comment' => 'User ID of the view owner',
-                    ]
+                    'notnull' => true,
+                    'length'  => 64,
+                    'comment' => 'User ID of the view owner',
+                ]
             );
 
             // Public flag.
@@ -119,10 +119,10 @@ class Version1Date20251102140000 extends SimpleMigrationStep
                 'is_public',
                 Types::BOOLEAN,
                 [
-                        'notnull' => true,
-                        'default' => false,
-                        'comment' => 'Whether the view is public and shareable',
-                    ]
+                    'notnull' => true,
+                    'default' => false,
+                    'comment' => 'Whether the view is public and shareable',
+                ]
             );
 
             // Default flag.
@@ -130,10 +130,10 @@ class Version1Date20251102140000 extends SimpleMigrationStep
                 'is_default',
                 Types::BOOLEAN,
                 [
-                        'notnull' => true,
-                        'default' => false,
-                        'comment' => 'Whether this is the user\'s default view',
-                    ]
+                    'notnull' => true,
+                    'default' => false,
+                    'comment' => 'Whether this is the user\'s default view',
+                ]
             );
 
             // Query parameters as JSON.
@@ -141,9 +141,9 @@ class Version1Date20251102140000 extends SimpleMigrationStep
                 'query',
                 Types::JSON,
                 [
-                        'notnull' => true,
-                        'comment' => 'Query parameters: registers, schemas, search terms, and facet filters',
-                    ]
+                    'notnull' => true,
+                    'comment' => 'Query parameters: registers, schemas, search terms, and facet filters',
+                ]
             );
 
             // Favorited by users.
@@ -151,10 +151,10 @@ class Version1Date20251102140000 extends SimpleMigrationStep
                 'favored_by',
                 Types::JSON,
                 [
-                        'notnull' => false,
-                        'default' => null,
-                        'comment' => 'Array of user IDs who favorited this view',
-                    ]
+                    'notnull' => false,
+                    'default' => null,
+                    'comment' => 'Array of user IDs who favorited this view',
+                ]
             );
 
             // Timestamps.
@@ -162,18 +162,18 @@ class Version1Date20251102140000 extends SimpleMigrationStep
                 'created',
                 Types::DATETIME,
                 [
-                        'notnull' => true,
-                        'comment' => 'Creation timestamp',
-                    ]
+                    'notnull' => true,
+                    'comment' => 'Creation timestamp',
+                ]
             );
 
             $table->addColumn(
                 'updated',
                 Types::DATETIME,
                 [
-                        'notnull' => true,
-                        'comment' => 'Last update timestamp',
-                    ]
+                    'notnull' => true,
+                    'comment' => 'Last update timestamp',
+                ]
             );
 
             // Set primary key.

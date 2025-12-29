@@ -54,89 +54,89 @@ class Version1Date20251107150000 extends SimpleMigrationStep
                 'id',
                 Types::BIGINT,
                 [
-                        'autoincrement' => true,
-                        'notnull'       => true,
-                        'unsigned'      => true,
-                    ]
+                    'autoincrement' => true,
+                    'notnull'       => true,
+                    'unsigned'      => true,
+                ]
             );
             $table->addColumn(
                 'uuid',
                 Types::STRING,
                 [
-                        'notnull' => true,
-                        'length'  => 36,
-                    ]
+                    'notnull' => true,
+                    'length'  => 36,
+                ]
             );
             $table->addColumn(
                 'message_id',
                 Types::BIGINT,
                 [
-                        'notnull'  => true,
-                        'unsigned' => true,
-                    ]
+                    'notnull'  => true,
+                    'unsigned' => true,
+                ]
             );
             $table->addColumn(
                 'conversation_id',
                 Types::BIGINT,
                 [
-                        'notnull'  => true,
-                        'unsigned' => true,
-                    ]
+                    'notnull'  => true,
+                    'unsigned' => true,
+                ]
             );
             $table->addColumn(
                 'agent_id',
                 Types::BIGINT,
                 [
-                        'notnull'  => true,
-                        'unsigned' => true,
-                    ]
+                    'notnull'  => true,
+                    'unsigned' => true,
+                ]
             );
             $table->addColumn(
                 'user_id',
                 Types::STRING,
                 [
-                        'notnull' => true,
-                        'length'  => 64,
-                    ]
+                    'notnull' => true,
+                    'length'  => 64,
+                ]
             );
             $table->addColumn(
                 'organisation',
                 Types::STRING,
                 [
-                        'notnull' => false,
-                        'length'  => 36,
-                    ]
+                    'notnull' => false,
+                    'length'  => 36,
+                ]
             );
             $table->addColumn(
                 'type',
                 Types::STRING,
                 [
-                        'notnull' => true,
-                        'length'  => 20,
-                        'comment' => 'positive or negative',
-                    ]
+                    'notnull' => true,
+                    'length'  => 20,
+                    'comment' => 'positive or negative',
+                ]
             );
             $table->addColumn(
                 'comment',
                 Types::TEXT,
                 [
-                        'notnull' => false,
-                        'comment' => 'Optional user comment about the feedback',
-                    ]
+                    'notnull' => false,
+                    'comment' => 'Optional user comment about the feedback',
+                ]
             );
             $table->addColumn(
                 'created',
                 Types::DATETIME,
                 [
-                        'notnull' => false,
-                    ]
+                    'notnull' => false,
+                ]
             );
             $table->addColumn(
                 'updated',
                 Types::DATETIME,
                 [
-                        'notnull' => false,
-                    ]
+                    'notnull' => false,
+                ]
             );
 
             $table->setPrimaryKey(['id']);

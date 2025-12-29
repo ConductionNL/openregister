@@ -80,9 +80,9 @@ class FileSearchController extends Controller
             if (empty($query) === true) {
                 return new JSONResponse(
                     data: [
-                            'success' => false,
-                            'message' => 'Query parameter is required',
-                        ],
+                        'success' => false,
+                        'message' => 'Query parameter is required',
+                    ],
                     statusCode: 400
                 );
             }
@@ -93,9 +93,9 @@ class FileSearchController extends Controller
             if ($fileCollection === null || $fileCollection === '') {
                 return new JSONResponse(
                     data: [
-                            'success' => false,
-                            'message' => 'File collection not configured',
-                        ],
+                        'success' => false,
+                        'message' => 'File collection not configured',
+                    ],
                     statusCode: 422
                 );
             }
@@ -163,26 +163,26 @@ class FileSearchController extends Controller
 
             return new JSONResponse(
                 data: [
-                        'success'     => true,
-                        'query'       => $query,
-                        'total'       => $numFound,
-                        'results'     => array_values($groupedResults),
-                        'search_type' => 'keyword',
-                    ]
+                    'success'     => true,
+                    'query'       => $query,
+                    'total'       => $numFound,
+                    'results'     => array_values($groupedResults),
+                    'search_type' => 'keyword',
+                ]
             );
         } catch (\Exception $e) {
             $this->logger->error(
                 message: '[FileSearchController] Keyword search failed',
                 context: [
-                        'error' => $e->getMessage(),
-                    ]
+                    'error' => $e->getMessage(),
+                ]
             );
 
             return new JSONResponse(
                 data: [
-                        'success' => false,
-                        'message' => 'Search failed: ' . $e->getMessage(),
-                    ],
+                    'success' => false,
+                    'message' => 'Search failed: '.$e->getMessage(),
+                ],
                 statusCode: 500
             );
         }//end try
@@ -207,9 +207,9 @@ class FileSearchController extends Controller
             if (empty($query) === true) {
                 return new JSONResponse(
                     data: [
-                            'success' => false,
-                            'message' => 'Query parameter is required',
-                        ],
+                        'success' => false,
+                        'message' => 'Query parameter is required',
+                    ],
                     statusCode: 400
                 );
             }
@@ -223,26 +223,26 @@ class FileSearchController extends Controller
 
             return new JSONResponse(
                 data: [
-                        'success'     => true,
-                        'query'       => $query,
-                        'total'       => count($results),
-                        'results'     => $results,
-                        'search_type' => 'semantic',
-                    ]
+                    'success'     => true,
+                    'query'       => $query,
+                    'total'       => count($results),
+                    'results'     => $results,
+                    'search_type' => 'semantic',
+                ]
             );
         } catch (\Exception $e) {
             $this->logger->error(
                 message: '[FileSearchController] Semantic search failed',
                 context: [
-                        'error' => $e->getMessage(),
-                    ]
+                    'error' => $e->getMessage(),
+                ]
             );
 
             return new JSONResponse(
                 data: [
-                        'success' => false,
-                        'message' => 'Semantic search failed: ' . $e->getMessage(),
-                    ],
+                    'success' => false,
+                    'message' => 'Semantic search failed: '.$e->getMessage(),
+                ],
                 statusCode: 500
             );
         }//end try
@@ -270,9 +270,9 @@ class FileSearchController extends Controller
             if (empty($query) === true) {
                 return new JSONResponse(
                     data: [
-                         'success' => false,
-                         'message' => 'Query parameter is required',
-                     ],
+                        'success' => false,
+                        'message' => 'Query parameter is required',
+                    ],
                     statusCode: 400
                 );
             }
@@ -287,30 +287,30 @@ class FileSearchController extends Controller
 
             return new JSONResponse(
                 data: [
-                     'success'     => true,
-                     'query'       => $query,
-                     'total'       => count($results),
-                     'results'     => $results,
-                     'search_type' => 'hybrid',
-                     'weights'     => [
-                         'keyword'  => $keywordWeight,
-                         'semantic' => $semanticWeight,
-                     ],
-                 ]
+                    'success'     => true,
+                    'query'       => $query,
+                    'total'       => count($results),
+                    'results'     => $results,
+                    'search_type' => 'hybrid',
+                    'weights'     => [
+                        'keyword'  => $keywordWeight,
+                        'semantic' => $semanticWeight,
+                    ],
+                ]
             );
         } catch (\Exception $e) {
             $this->logger->error(
                 message: '[FileSearchController] Hybrid search failed',
                 context: [
-                     'error' => $e->getMessage(),
-                 ]
+                    'error' => $e->getMessage(),
+                ]
             );
 
             return new JSONResponse(
                 data: [
-                     'success' => false,
-                     'message' => 'Hybrid search failed: ' . $e->getMessage(),
-                 ],
+                    'success' => false,
+                    'message' => 'Hybrid search failed: '.$e->getMessage(),
+                ],
                 statusCode: 500
             );
         }//end try

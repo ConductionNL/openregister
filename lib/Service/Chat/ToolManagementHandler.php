@@ -42,6 +42,7 @@ use LLPhant\Chat\FunctionInfo\Parameter;
  */
 class ToolManagementHandler
 {
+
     /**
      * Agent mapper
      *
@@ -95,7 +96,7 @@ class ToolManagementHandler
      *
      * @psalm-return list<ToolInterface>
      */
-    public function getAgentTools(?Agent $agent, array $selectedTools = []): array
+    public function getAgentTools(?Agent $agent, array $selectedTools=[]): array
     {
         if ($agent === null) {
             return [];
@@ -126,7 +127,7 @@ class ToolManagementHandler
             if (strpos($toolId, '.') !== false) {
                 $fullToolId = $toolId;
             } else {
-                $fullToolId = 'openregister.' . $toolId;
+                $fullToolId = 'openregister.'.$toolId;
             }
 
             $tool = $this->toolRegistry->getTool($fullToolId);
@@ -209,7 +210,7 @@ class ToolManagementHandler
                     if ($type === 'object') {
                         // For object types, pass the properties definition (empty array if not specified).
                         $itemsOrProperties = $paramDef['properties'] ?? [];
-                    } elseif ($type === 'array') {
+                    } else if ($type === 'array') {
                         // For array types, pass the items definition (empty array if not specified).
                         $itemsOrProperties = $paramDef['items'] ?? [];
                     }

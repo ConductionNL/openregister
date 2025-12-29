@@ -41,6 +41,7 @@ use Exception;
  */
 class CustomValidationException extends Exception
 {
+
     /**
      * The validation errors array
      *

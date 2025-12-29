@@ -47,6 +47,7 @@ use Psr\Log\LoggerInterface;
  */
 class UpdateFileHandler
 {
+
     /**
      * Reference to FileService for cross-handler coordination (circular dependency break).
      *
@@ -110,9 +111,9 @@ class UpdateFileHandler
      */
     public function updateFile(
         string|int $filePath,
-        mixed $content = null,
-        array $tags = [],
-        ?ObjectEntity $object = null
+        mixed $content=null,
+        array $tags=[],
+        ?ObjectEntity $object=null
     ): File {
         // Debug logging - original file path.
         $originalFilePath = $filePath;
@@ -128,7 +129,7 @@ class UpdateFileHandler
                 // Try to find the file in the object's folder by ID.
                 $file = $this->readFileHandler->getFile(object: $object, file: $filePath);
                 if ($file !== null) {
-                    $this->logger->info(message: "updateFile: Found file by ID in object folder: " . $file->getName() . " (ID: " . $file->getId() . ")");
+                    $this->logger->info(message: "updateFile: Found file by ID in object folder: ".$file->getName()." (ID: ".$file->getId().")");
                 }
             }
 
@@ -139,14 +140,14 @@ class UpdateFileHandler
                     $nodes      = $userFolder->getById($filePath);
                     if (empty($nodes) === false) {
                         $file = $nodes[0];
-                        $this->logger->info(message: "updateFile: Found file by ID in user folder: " . $file->getName() . " (ID: " . $file->getId() . ")");
+                        $this->logger->info(message: "updateFile: Found file by ID in user folder: ".$file->getName()." (ID: ".$file->getId().")");
                     } else {
                         $this->logger->error(message: "updateFile: No file found with ID: $filePath");
                         throw new Exception("File with ID $filePath does not exist");
                     }
                 } catch (Exception $e) {
-                    $this->logger->error(message: "updateFile: Error finding file by ID $filePath: " . $e->getMessage());
-                    throw new Exception("File with ID $filePath does not exist: " . $e->getMessage());
+                    $this->logger->error(message: "updateFile: Error finding file by ID $filePath: ".$e->getMessage());
+                    throw new Exception("File with ID $filePath does not exist: ".$e->getMessage());
                 }
             }
         } else {
@@ -170,38 +171,38 @@ class UpdateFileHandler
                     $objectFolder = $this->folderManagementHandler->getObjectFolder($object);
 
                     if ($objectFolder !== null) {
-                        $this->logger->info(message: "updateFile: Object folder path: " . $objectFolder->getPath());
-                        $this->logger->info(message: "updateFile: Object folder ID: " . $objectFolder->getId());
+                        $this->logger->info(message: "updateFile: Object folder path: ".$objectFolder->getPath());
+                        $this->logger->info(message: "updateFile: Object folder ID: ".$objectFolder->getId());
 
                         // List all files in the object folder for debugging.
                         try {
                             $folderFiles = $objectFolder->getDirectoryListing();
                             $fileNames   = array_map(fn($f) => $f->getName(), $folderFiles);
-                            $this->logger->info(message: "updateFile: Files in object folder: " . implode(', ', $fileNames));
+                            $this->logger->info(message: "updateFile: Files in object folder: ".implode(', ', $fileNames));
                         } catch (Exception $e) {
-                            $this->logger->warning(message: "updateFile: Could not list folder contents: " . $e->getMessage());
+                            $this->logger->warning(message: "updateFile: Could not list folder contents: ".$e->getMessage());
                         }
 
                         // Try to get the file from object folder using just the filename.
                         try {
                             $file = $objectFolder->get($fileName);
-                            $this->logger->info(message: "updateFile: Found file in object folder: " . $file->getName() . " (ID: " . $file->getId() . ")");
+                            $this->logger->info(message: "updateFile: Found file in object folder: ".$file->getName()." (ID: ".$file->getId().")");
                         } catch (NotFoundException) {
                             $this->logger->warning(message: "updateFile: File '$fileName' not found in object folder.");
 
                             // Also try with the full path in case it's nested.
                             try {
                                 $file = $objectFolder->get($filePath);
-                                $this->logger->info(message: "updateFile: Found file using full path in object folder: " . $file->getName());
+                                $this->logger->info(message: "updateFile: Found file using full path in object folder: ".$file->getName());
                             } catch (NotFoundException) {
                                 $this->logger->warning(message: "updateFile: File '$filePath' also not found with full path in object folder.");
                             }
                         }
                     } else {
-                        $this->logger->warning(message: "updateFile: Could not get object folder for object ID: " . $object->getId());
+                        $this->logger->warning(message: "updateFile: Could not get object folder for object ID: ".$object->getId());
                     }//end if
                 } catch (Exception $e) {
-                    $this->logger->error(message: "updateFile: Error accessing object folder: " . $e->getMessage());
+                    $this->logger->error(message: "updateFile: Error accessing object folder: ".$e->getMessage());
                 }//end try
             } else {
                 $this->logger->info(message: "updateFile: No object provided, will search in user folder");
@@ -213,7 +214,7 @@ class UpdateFileHandler
                 try {
                     $userFolder = $this->folderManagementHandler->getOpenRegisterUserFolder();
                     $file       = $userFolder->get(path: $filePath);
-                    $this->logger->info(message: "updateFile: Found file in user folder at path: $filePath (ID: " . $file->getId() . ")");
+                    $this->logger->info(message: "updateFile: Found file in user folder at path: $filePath (ID: ".$file->getId().")");
                 } catch (NotFoundException $e) {
                     $this->logger->error(message: "updateFile: File $filePath not found in user folder either.");
 
@@ -226,12 +227,12 @@ class UpdateFileHandler
                             $nodes = $userFolder->getById($fileId);
                             if (empty($nodes) === false) {
                                 $file = $nodes[0];
-                                $this->logger->info(message: "updateFile: Found file by ID $fileId: " . $file->getName() . " at path: " . $file->getPath());
+                                $this->logger->info(message: "updateFile: Found file by ID $fileId: ".$file->getName()." at path: ".$file->getPath());
                             } else {
                                 $this->logger->warning(message: "updateFile: No file found with ID: $fileId");
                             }
                         } catch (Exception $e) {
-                            $this->logger->error(message: "updateFile: Error finding file by ID $fileId: " . $e->getMessage());
+                            $this->logger->error(message: "updateFile: Error finding file by ID $fileId: ".$e->getMessage());
                         }
                     }
 
@@ -239,8 +240,8 @@ class UpdateFileHandler
                         throw new Exception("File $filePath does not exist");
                     }
                 } catch (NotPermittedException | InvalidPathException $e) {
-                    $this->logger->error(message: "updateFile: Can't access file $filePath: " . $e->getMessage());
-                    throw new Exception("Can't access file $filePath: " . $e->getMessage());
+                    $this->logger->error(message: "updateFile: Can't access file $filePath: ".$e->getMessage());
+                    throw new Exception("Can't access file $filePath: ".$e->getMessage());
                 }//end try
             }//end if
         }//end if
@@ -260,13 +261,13 @@ class UpdateFileHandler
                 $this->fileValidationHandler->checkOwnership($file);
 
                 $file->putContent(data: $content);
-                $this->logger->info(message: "updateFile: Successfully updated file content: " . $file->getName());
+                $this->logger->info(message: "updateFile: Successfully updated file content: ".$file->getName());
 
                 // Transfer ownership to OpenRegister and share with current user if needed.
                 $this->fileOwnershipHandler->transferFileOwnershipIfNeeded($file);
             } catch (NotPermittedException $e) {
-                $this->logger->error(message: "updateFile: Can't write content to file: " . $e->getMessage());
-                throw new Exception("Can't write content to file: " . $e->getMessage());
+                $this->logger->error(message: "updateFile: Can't write content to file: ".$e->getMessage());
+                throw new Exception("Can't write content to file: ".$e->getMessage());
             }//end try
         }//end if
 
@@ -285,7 +286,7 @@ class UpdateFileHandler
             $allTags = array_unique(array_merge($objectTags, $tags));
 
             $this->fileService->attachTagsToFile(fileId: (string) $file->getId(), tags: $allTags);
-            $this->logger->info(message: "updateFile: Successfully updated file tags: " . $file->getName());
+            $this->logger->info(message: "updateFile: Successfully updated file tags: ".$file->getName());
         }
 
         return $file;

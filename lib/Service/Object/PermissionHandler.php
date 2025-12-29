@@ -91,9 +91,9 @@ class PermissionHandler
     public function hasPermission(
         Schema $schema,
         string $action,
-        ?string $userId = null,
-        ?string $objectOwner = null,
-        bool $rbac = true
+        ?string $userId=null,
+        ?string $objectOwner=null,
+        bool $rbac=true
     ): bool {
         // If RBAC is disabled, always return true (bypass all permission checks).
         if ($rbac === false) {
@@ -146,8 +146,7 @@ class PermissionHandler
                 $adminGroup = 'admin';
             }
 
-            if (
-                $schema->hasPermission(
+            if ($schema->hasPermission(
                     groupId: $groupId,
                     action: $action,
                     userId: $userId,
@@ -178,12 +177,11 @@ class PermissionHandler
     public function checkPermission(
         Schema $schema,
         string $action,
-        ?string $userId = null,
-        ?string $objectOwner = null,
-        bool $rbac = true
+        ?string $userId=null,
+        ?string $objectOwner=null,
+        bool $rbac=true
     ): void {
-        if (
-            $this->hasPermission(
+        if ($this->hasPermission(
                 schema: $schema,
                 action: $action,
                 userId: $userId,
@@ -242,8 +240,7 @@ class PermissionHandler
                         $schema = $this->schemaMapper->find($objectSchema);
                         // TODO: Add property-level RBAC check for 'create' action here.
                         // Check individual property permissions before allowing property values to be set.
-                        if (
-                            $this->hasPermission(
+                        if ($this->hasPermission(
                                 schema: $schema,
                                 action: 'create',
                                 userId: $userId,
@@ -318,8 +315,7 @@ class PermissionHandler
 
                         // TODO: Add property-level RBAC check for 'delete' action here
                         // Check if user has permission to delete objects with specific property values.
-                        if (
-                            $this->hasPermission(
+                        if ($this->hasPermission(
                                 schema: $schema,
                                 action: 'delete',
                                 userId: $userId,

@@ -36,6 +36,7 @@ use Psr\Log\LoggerInterface;
  */
 class LogCleanUpTask extends TimedJob
 {
+
     /**
      * The audit trail mapper for database operations
      *
@@ -101,24 +102,24 @@ class LogCleanUpTask extends TimedJob
                 $this->logger->info(
                     'Successfully cleared expired audit trail logs',
                     [
-                    'app' => 'openregister',
+                        'app' => 'openregister',
                     ]
                 );
             } else {
                 $this->logger->debug(
                     'No expired audit trail logs found to clear',
                     [
-                    'app' => 'openregister',
+                        'app' => 'openregister',
                     ]
                 );
             }
         } catch (\Exception $e) {
             // Log any errors that occur during cleanup.
             $this->logger->error(
-                'Failed to clear expired audit trail logs: ' . $e->getMessage(),
+                'Failed to clear expired audit trail logs: '.$e->getMessage(),
                 [
-                'app'       => 'openregister',
-                'exception' => $e,
+                    'app'       => 'openregister',
+                    'exception' => $e,
                 ]
             );
         }//end try

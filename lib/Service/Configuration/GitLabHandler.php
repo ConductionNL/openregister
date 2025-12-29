@@ -43,6 +43,7 @@ use RuntimeException;
  */
 class GitLabHandler
 {
+
     /**
      * GitLab API base URL (can be configured for self-hosted instances)
      *
@@ -131,13 +132,13 @@ class GitLabHandler
      *
      * @psalm-return array{total_count: int<0, max>, results: list<array{config: array{app: null, description: '', title: string, type: 'unknown', version: 'unknown'}, name: string, path: mixed, project_id: mixed, ref: 'main'|mixed, url: ''|mixed}>, page: int, per_page: int}
      */
-    public function searchConfigurations(string $search = '', int $page = 1, int $perPage = 30): array
+    public function searchConfigurations(string $search='', int $page=1, int $perPage=30): array
     {
         try {
             // Build search query.
             // Always search for x-openregister, optionally filter by additional terms.
             if (empty($search) === false) {
-                $searchQuery = 'x-openregister ' . $search;
+                $searchQuery = 'x-openregister '.$search;
             } else {
                 $searchQuery = 'x-openregister';
             }
@@ -153,7 +154,7 @@ class GitLabHandler
 
             $response = $this->client->request(
                 'GET',
-                $this->apiBase . '/search',
+                $this->apiBase.'/search',
                 [
                     'query'   => [
                         'scope'    => 'blobs',
@@ -206,7 +207,7 @@ class GitLabHandler
                     'query'   => $searchQuery ?? '',
                 ]
             );
-            throw new Exception('Failed to search GitLab: ' . $e->getMessage());
+            throw new Exception('Failed to search GitLab: '.$e->getMessage());
         }//end try
     }//end searchConfigurations()
 
@@ -235,7 +236,7 @@ class GitLabHandler
 
             $response = $this->client->request(
                 'GET',
-                $this->apiBase . "/projects/{$projectId}/repository/branches",
+                $this->apiBase."/projects/{$projectId}/repository/branches",
                 [
                     'headers' => $this->getHeaders(),
                 ]
@@ -267,7 +268,7 @@ class GitLabHandler
                     'project_id' => $projectId,
                 ]
             );
-            throw new Exception('Failed to fetch branches: ' . $e->getMessage());
+            throw new Exception('Failed to fetch branches: '.$e->getMessage());
         }//end try
     }//end getBranches()
 
@@ -283,7 +284,7 @@ class GitLabHandler
      *
      * @since 0.2.10
      */
-    public function getFileContent(int $projectId, string $path, string $ref = 'main'): array
+    public function getFileContent(int $projectId, string $path, string $ref='main'): array
     {
         try {
             $this->logger->info(
@@ -300,7 +301,7 @@ class GitLabHandler
 
             $response = $this->client->request(
                 'GET',
-                $this->apiBase . "/projects/{$projectId}/repository/files/{$encodedPath}/raw",
+                $this->apiBase."/projects/{$projectId}/repository/files/{$encodedPath}/raw",
                 [
                     'query'   => ['ref' => $ref],
                     'headers' => $this->getHeaders(),
@@ -311,7 +312,7 @@ class GitLabHandler
             $json    = json_decode($content, true);
 
             if (json_last_error() !== JSON_ERROR_NONE) {
-                throw new Exception('Invalid JSON in file: ' . json_last_error_msg());
+                throw new Exception('Invalid JSON in file: '.json_last_error_msg());
             }
 
             return $json;
@@ -325,7 +326,7 @@ class GitLabHandler
                     'ref'        => $ref,
                 ]
             );
-            throw new Exception('Failed to fetch file: ' . $e->getMessage());
+            throw new Exception('Failed to fetch file: '.$e->getMessage());
         }//end try
     }//end getFileContent()
 
@@ -346,7 +347,7 @@ class GitLabHandler
      *
      * @psalm-return list<array{config: array{app: mixed|null, description: ''|mixed, title: mixed|string, type: 'manual'|mixed, version: '1.0.0'|mixed}, id: mixed|null, path: mixed}>
      */
-    public function listConfigurationFiles(int $projectId, string $ref = 'main', string $path = ''): array
+    public function listConfigurationFiles(int $projectId, string $ref='main', string $path=''): array
     {
         try {
             $this->logger->info(
@@ -361,7 +362,7 @@ class GitLabHandler
             // Get repository tree.
             $response = $this->client->request(
                 'GET',
-                $this->apiBase . "/projects/{$projectId}/repository/tree",
+                $this->apiBase."/projects/{$projectId}/repository/tree",
                 [
                     'query'   => [
                         'ref'       => $ref,
@@ -377,8 +378,7 @@ class GitLabHandler
             $files = [];
             foreach ($tree as $item) {
                 // Check if file matches naming convention.
-                if (
-                    $item['type'] === 'blob'
+                if ($item['type'] === 'blob'
                     && (str_ends_with($item['path'], 'openregister.json') === true
                     || str_contains($item['path'], '.openregister.json') === true)
                 ) {
@@ -410,7 +410,7 @@ class GitLabHandler
                     'ref'        => $ref,
                 ]
             );
-            throw new Exception('Failed to list configuration files: ' . $e->getMessage());
+            throw new Exception('Failed to list configuration files: '.$e->getMessage());
         }//end try
     }//end listConfigurationFiles()
 
@@ -430,7 +430,7 @@ class GitLabHandler
     public function getProjectByPath(string $namespace, string $project): array
     {
         try {
-            $projectPath = urlencode($namespace . '/' . $project);
+            $projectPath = urlencode($namespace.'/'.$project);
 
             $this->logger->info(
                 message: 'Fetching GitLab project by path',
@@ -442,7 +442,7 @@ class GitLabHandler
 
             $response = $this->client->request(
                 'GET',
-                $this->apiBase . "/projects/{$projectPath}",
+                $this->apiBase."/projects/{$projectPath}",
                 [
                     'headers' => $this->getHeaders(),
                 ]
@@ -458,7 +458,7 @@ class GitLabHandler
                     'project'   => $project,
                 ]
             );
-            throw new Exception('Failed to fetch project: ' . $e->getMessage());
+            throw new Exception('Failed to fetch project: '.$e->getMessage());
         }//end try
     }//end getProjectByPath()
 
@@ -475,14 +475,13 @@ class GitLabHandler
      *
      * @psalm-return array{openapi: mixed, 'x-openregister': mixed,...}|null
      */
-    private function parseConfigurationFile(int $projectId, string $path, string $ref = 'main'): array|null
+    private function parseConfigurationFile(int $projectId, string $path, string $ref='main'): array|null
     {
         try {
             $content = $this->getFileContent(projectId: $projectId, path: $path, ref: $ref);
 
             // Validate that it's a valid OpenRegister configuration.
-            if (
-                isset($content['openapi']) === false
+            if (isset($content['openapi']) === false
                 || isset($content['x-openregister']) === false
             ) {
                 $this->logger->debug(

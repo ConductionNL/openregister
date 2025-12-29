@@ -88,7 +88,7 @@ trait MultiTenancyTrait
              */
             $organisationMapper = $this->organisationMapper;
             if (isset($this->logger) === true) {
-                $this->logger->info('🔹 MultiTenancyTrait: Calling getActiveOrganisationWithFallback for user: ' . $user->getUID());
+                $this->logger->info('🔹 MultiTenancyTrait: Calling getActiveOrganisationWithFallback for user: '.$user->getUID());
             }
 
             return $organisationMapper->getActiveOrganisationWithFallback($user->getUID());
@@ -174,7 +174,7 @@ trait MultiTenancyTrait
                 // Fall back to just the active org.
                 if (isset($this->logger) === true) {
                     $this->logger->warning(
-                        'Failed to get organisation hierarchy: ' . $e->getMessage(),
+                        'Failed to get organisation hierarchy: '.$e->getMessage(),
                         ['activeOrgUuid' => $activeOrgUuid]
                     );
                 }
@@ -284,11 +284,11 @@ trait MultiTenancyTrait
      */
     protected function applyOrganisationFilter(
         IQueryBuilder $qb,
-        string $columnName = 'organisation',
-        bool $allowNullOrg = false,
-        string $tableAlias = '',
-        bool $enablePublished = false,
-        bool $multiTenancyEnabled = true
+        string $columnName='organisation',
+        bool $allowNullOrg=false,
+        string $tableAlias='',
+        bool $enablePublished=false,
+        bool $multiTenancyEnabled=true
     ): void {
         // If multitenancy is explicitly disabled via parameter, skip all filtering immediately.
         if ($multiTenancyEnabled === false) {
@@ -342,7 +342,7 @@ trait MultiTenancyTrait
         // Build fully qualified column name.
         $organisationColumn = $columnName;
         if ($tableAlias !== null && $tableAlias !== '') {
-            $organisationColumn = $tableAlias . '.' . $columnName;
+            $organisationColumn = $tableAlias.'.'.$columnName;
         }
 
         // Check if published entities should bypass multi-tenancy (works for objects, schemas, registers).
@@ -395,11 +395,11 @@ trait MultiTenancyTrait
                 $publishedColumn   = 'published';
                 $depublishedColumn = 'depublished';
                 if ($tableAlias !== null && $tableAlias !== '') {
-                    $publishedColumn = $tableAlias . '.published';
+                    $publishedColumn = $tableAlias.'.published';
                 }
 
                 if ($tableAlias !== null && $tableAlias !== '') {
-                    $depublishedColumn = $tableAlias . '.depublished';
+                    $depublishedColumn = $tableAlias.'.depublished';
                 }
 
                 // Published bypass condition: entity must be published AND not depublished.
@@ -461,11 +461,11 @@ trait MultiTenancyTrait
         $publishedColumn   = 'published';
         $depublishedColumn = 'depublished';
         if ($tableAlias !== null && $tableAlias !== '') {
-            $publishedColumn = $tableAlias . '.published';
+            $publishedColumn = $tableAlias.'.published';
         }
 
         if ($tableAlias !== null && $tableAlias !== '') {
-            $depublishedColumn = $tableAlias . '.depublished';
+            $depublishedColumn = $tableAlias.'.depublished';
         }
 
         $now = (new DateTime())->format('Y-m-d H:i:s');

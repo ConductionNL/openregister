@@ -68,7 +68,7 @@ class AuditTrailController extends Controller
         // Extract pagination parameters.
         if (($params['limit'] ?? null) !== null) {
             $limit = (int) $params['limit'];
-        } elseif (($params['_limit'] ?? null) !== null) {
+        } else if (($params['_limit'] ?? null) !== null) {
             $limit = (int) $params['_limit'];
         } else {
             $limit = 20;
@@ -76,7 +76,7 @@ class AuditTrailController extends Controller
 
         if (($params['offset'] ?? null) !== null) {
             $offset = (int) $params['offset'];
-        } elseif (($params['_offset'] ?? null) !== null) {
+        } else if (($params['_offset'] ?? null) !== null) {
             $offset = (int) $params['_offset'];
         } else {
             $offset = null;
@@ -84,7 +84,7 @@ class AuditTrailController extends Controller
 
         if (($params['page'] ?? null) !== null) {
             $page = (int) $params['page'];
-        } elseif (($params['_page'] ?? null) !== null) {
+        } else if (($params['_page'] ?? null) !== null) {
             $page = (int) $params['_page'];
         } else {
             $page = null;
@@ -115,23 +115,23 @@ class AuditTrailController extends Controller
                 return !in_array(
                     $key,
                     [
-                            'limit',
-                            '_limit',
-                            'offset',
-                            '_offset',
-                            'page',
-                            '_page',
-                            'search',
-                            '_search',
-                            'sort',
-                            '_sort',
-                            'order',
-                            '_order',
-                            '_route',
-                            'id',
-                            'register',
-                            'schema',
-                        ]
+                        'limit',
+                        '_limit',
+                        'offset',
+                        '_offset',
+                        'page',
+                        '_page',
+                        'search',
+                        '_search',
+                        'sort',
+                        '_sort',
+                        'order',
+                        '_order',
+                        '_route',
+                        'id',
+                        'register',
+                        'schema',
+                    ]
                 );
             },
             ARRAY_FILTER_USE_KEY
@@ -172,13 +172,13 @@ class AuditTrailController extends Controller
         // Return paginated results.
         return new JSONResponse(
             data: [
-                    'results' => $logs,
-                    'total'   => $total,
-                    'page'    => $params['page'],
-                    'pages'   => ceil($total / $params['limit']),
-                    'limit'   => $params['limit'],
-                    'offset'  => $params['offset'],
-                ]
+                'results' => $logs,
+                'total'   => $total,
+                'page'    => $params['page'],
+                'pages'   => ceil($total / $params['limit']),
+                'limit'   => $params['limit'],
+                'offset'  => $params['offset'],
+            ]
         );
     }//end index()
 
@@ -248,13 +248,13 @@ class AuditTrailController extends Controller
             // Return paginated results.
             return new JSONResponse(
                 data: [
-                        'results' => $logs,
-                        'total'   => $total,
-                        'page'    => $params['page'],
-                        'pages'   => ceil($total / $params['limit']),
-                        'limit'   => $params['limit'],
-                        'offset'  => $params['offset'],
-                    ]
+                    'results' => $logs,
+                    'total'   => $total,
+                    'page'    => $params['page'],
+                    'pages'   => ceil($total / $params['limit']),
+                    'limit'   => $params['limit'],
+                    'offset'  => $params['offset'],
+                ]
             );
         } catch (\InvalidArgumentException $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
@@ -301,27 +301,27 @@ class AuditTrailController extends Controller
             $contentSize = is_string($content) ? strlen($content) : 0;
             return new JSONResponse(
                 data: [
-                        'success' => true,
-                        'data'    => [
-                            'content'     => $content,
-                            'filename'    => $exportResult['filename'],
-                            'contentType' => $exportResult['contentType'],
-                            'size'        => $contentSize,
-                        ],
-                    ]
+                    'success' => true,
+                    'data'    => [
+                        'content'     => $content,
+                        'filename'    => $exportResult['filename'],
+                        'contentType' => $exportResult['contentType'],
+                        'size'        => $contentSize,
+                    ],
+                ]
             );
         } catch (\InvalidArgumentException $e) {
             return new JSONResponse(
                 data: [
-                        'error' => 'Invalid export format: ' . $e->getMessage(),
-                    ],
+                    'error' => 'Invalid export format: '.$e->getMessage(),
+                ],
                 statusCode: 400
             );
         } catch (\Exception $e) {
             return new JSONResponse(
                 data: [
-                        'error' => 'Export failed: ' . $e->getMessage(),
-                    ],
+                    'error' => 'Export failed: '.$e->getMessage(),
+                ],
                 statusCode: 500
             );
         }//end try
@@ -348,31 +348,31 @@ class AuditTrailController extends Controller
             if ($success === true) {
                 return new JSONResponse(
                     data: [
-                            'success' => true,
-                            'message' => 'Audit trail deleted successfully',
-                        ],
+                        'success' => true,
+                        'message' => 'Audit trail deleted successfully',
+                    ],
                     statusCode: 200
                 );
             } else {
                 return new JSONResponse(
                     data: [
-                            'error' => 'Failed to delete audit trail',
-                        ],
+                        'error' => 'Failed to delete audit trail',
+                    ],
                     statusCode: 500
                 );
             }
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             return new JSONResponse(
                 data: [
-                        'error' => 'Audit trail not found',
-                    ],
+                    'error' => 'Audit trail not found',
+                ],
                 statusCode: 404
             );
         } catch (\Exception $e) {
             return new JSONResponse(
                 data: [
-                        'error' => 'Deletion failed: ' . $e->getMessage(),
-                    ],
+                    'error' => 'Deletion failed: '.$e->getMessage(),
+                ],
                 statusCode: 500
             );
         }//end try
@@ -409,7 +409,7 @@ class AuditTrailController extends Controller
                 // Handle both comma-separated string and array.
                 if (is_string($ids) === true) {
                     $deleteConfig['ids'] = array_map('intval', explode(',', $ids));
-                } elseif (is_array($ids) === true) {
+                } else if (is_array($ids) === true) {
                     $deleteConfig['ids'] = array_map('intval', $ids);
                 }
             }
@@ -419,16 +419,16 @@ class AuditTrailController extends Controller
 
             return new JSONResponse(
                 data: [
-                        'success' => true,
-                        'results' => $result,
-                        'message' => sprintf('Deleted %d audit trails successfully. %d failed.', $result['deleted'], $result['failed']),
-                    ]
+                    'success' => true,
+                    'results' => $result,
+                    'message' => sprintf('Deleted %d audit trails successfully. %d failed.', $result['deleted'], $result['failed']),
+                ]
             );
         } catch (\Exception $e) {
             return new JSONResponse(
                 data: [
-                        'error' => 'Mass deletion failed: ' . $e->getMessage(),
-                    ],
+                    'error' => 'Mass deletion failed: '.$e->getMessage(),
+                ],
                 statusCode: 500
             );
         }//end try
@@ -454,28 +454,28 @@ class AuditTrailController extends Controller
             if ($result === true) {
                 return new JSONResponse(
                     data: [
-                            'success' => true,
-                            'message' => 'All audit trails cleared successfully',
-                            'deleted' => 'All expired audit trails have been deleted',
-                        ],
+                        'success' => true,
+                        'message' => 'All audit trails cleared successfully',
+                        'deleted' => 'All expired audit trails have been deleted',
+                    ],
                     statusCode: 200
                 );
             } else {
                 return new JSONResponse(
                     data: [
-                            'success' => true,
-                            'message' => 'No expired audit trails found to clear',
-                            'deleted' => 0,
-                        ],
+                        'success' => true,
+                        'message' => 'No expired audit trails found to clear',
+                        'deleted' => 0,
+                    ],
                     statusCode: 200
                 );
             }
         } catch (\Exception $e) {
             return new JSONResponse(
                 data: [
-                        'success' => false,
-                        'error'   => 'Failed to clear audit trails: ' . $e->getMessage(),
-                    ],
+                    'success' => false,
+                    'error'   => 'Failed to clear audit trails: '.$e->getMessage(),
+                ],
                 statusCode: 500
             );
         }//end try

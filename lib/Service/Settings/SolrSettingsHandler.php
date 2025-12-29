@@ -46,6 +46,7 @@ use Psr\Log\LoggerInterface;
  */
 class SolrSettingsHandler
 {
+
     /**
      * Configuration service
      *
@@ -94,10 +95,10 @@ class SolrSettingsHandler
      */
     public function __construct(
         IConfig $config,
-        ?CacheHandler $objectCacheService = null,
-        ?IAppContainer $container = null,
-        ?LoggerInterface $logger = null,
-        string $appName = 'openregister'
+        ?CacheHandler $objectCacheService=null,
+        ?IAppContainer $container=null,
+        ?LoggerInterface $logger=null,
+        string $appName='openregister'
     ) {
         $this->config = $config;
         $this->objectCacheService = $objectCacheService;
@@ -140,7 +141,7 @@ class SolrSettingsHandler
 
             return json_decode($solrConfig, true);
         } catch (Exception $e) {
-            throw new RuntimeException('Failed to retrieve SOLR settings: ' . $e->getMessage());
+            throw new RuntimeException('Failed to retrieve SOLR settings: '.$e->getMessage());
         }//end try
     }//end getSolrSettings()
 
@@ -425,7 +426,7 @@ class SolrSettingsHandler
         $factor = floor(log($bytes, 1024));
         $factor = min($factor, count($units) - 1);
 
-        return round($bytes / pow(1024, $factor), 2) . ' ' . $units[$factor];
+        return round($bytes / pow(1024, $factor), 2).' '.$units[$factor];
     }//end formatBytesForDashboard()
 
     /**
@@ -491,7 +492,7 @@ class SolrSettingsHandler
                 'fileCollection'    => $solrData['fileCollection'] ?? null,
             ];
         } catch (Exception $e) {
-            throw new RuntimeException('Failed to retrieve SOLR settings: ' . $e->getMessage());
+            throw new RuntimeException('Failed to retrieve SOLR settings: '.$e->getMessage());
         }//end try
     }//end getSolrSettingsOnly()
 
@@ -536,7 +537,7 @@ class SolrSettingsHandler
             $this->config->setAppValue($this->appName, 'solr', json_encode($solrConfig));
             return $solrConfig;
         } catch (Exception $e) {
-            throw new RuntimeException('Failed to update SOLR settings: ' . $e->getMessage());
+            throw new RuntimeException('Failed to update SOLR settings: '.$e->getMessage());
         }//end try
     }//end updateSolrSettingsOnly()
 
@@ -564,7 +565,7 @@ class SolrSettingsHandler
 
             return json_decode($backendConfig, true);
         } catch (Exception $e) {
-            throw new RuntimeException('Failed to retrieve search backend configuration: ' . $e->getMessage());
+            throw new RuntimeException('Failed to retrieve search backend configuration: '.$e->getMessage());
         }
     }//end getSearchBackendConfig()
 
@@ -588,7 +589,7 @@ class SolrSettingsHandler
 
             if (in_array($backend, $availableBackends) === false) {
                 throw new InvalidArgumentException(
-                    "Invalid backend '$backend'. Must be one of: " . implode(', ', $availableBackends)
+                    "Invalid backend '$backend'. Must be one of: ".implode(', ', $availableBackends)
                 );
             }
 
@@ -601,7 +602,7 @@ class SolrSettingsHandler
             $this->config->setAppValue($this->appName, 'search_backend', json_encode($backendConfig));
 
             $this->logger->info(
-                'Search backend changed to: ' . $backend,
+                'Search backend changed to: '.$backend,
                 [
                     'app'     => 'openregister',
                     'backend' => $backend,
@@ -610,7 +611,7 @@ class SolrSettingsHandler
 
             return $backendConfig;
         } catch (Exception $e) {
-            throw new RuntimeException('Failed to update search backend configuration: ' . $e->getMessage());
+            throw new RuntimeException('Failed to update search backend configuration: '.$e->getMessage());
         }//end try
     }//end updateSearchBackendConfig()
 
@@ -642,7 +643,7 @@ class SolrSettingsHandler
 
             return json_decode($facetConfig, true);
         } catch (Exception $e) {
-            throw new RuntimeException('Failed to retrieve SOLR facet configuration: ' . $e->getMessage());
+            throw new RuntimeException('Failed to retrieve SOLR facet configuration: '.$e->getMessage());
         }
     }//end getSolrFacetConfiguration()
 
@@ -689,7 +690,7 @@ class SolrSettingsHandler
             $this->config->setAppValue($this->appName, 'solr_facet_config', json_encode($validatedConfig));
             return $validatedConfig;
         } catch (Exception $e) {
-            throw new RuntimeException('Failed to update SOLR facet configuration: ' . $e->getMessage());
+            throw new RuntimeException('Failed to update SOLR facet configuration: '.$e->getMessage());
         }
     }//end updateSolrFacetConfiguration()
 

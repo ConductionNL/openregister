@@ -41,6 +41,7 @@ use OCP\AppFramework\Db\Entity;
  */
 class DataAccessProfile extends Entity implements JsonSerializable
 {
+
     /**
      * UUID.
      *
@@ -148,7 +149,7 @@ class DataAccessProfile extends Entity implements JsonSerializable
 
         // Fallback to ID if available.
         if ($this->id !== null) {
-            return 'DataAccessProfile #' . $this->id;
+            return 'DataAccessProfile #'.$this->id;
         }
 
         // Final fallback.

@@ -100,12 +100,12 @@ class SolrWarmupJob extends QueuedJob
         $logger->info(
             message: '🔥 SOLR Warmup Job Started',
             context: [
-                    'job_id'         => $this->getId(),
-                    'max_objects'    => $maxObjects,
-                    'mode'           => $mode,
-                    'triggered_by'   => $triggeredBy,
-                    'collect_errors' => $collectErrors,
-                ]
+                'job_id'         => $this->getId(),
+                'max_objects'    => $maxObjects,
+                'mode'           => $mode,
+                'triggered_by'   => $triggeredBy,
+                'collect_errors' => $collectErrors,
+            ]
         );
 
         try {
@@ -124,9 +124,9 @@ class SolrWarmupJob extends QueuedJob
                 $logger->warning(
                     message: 'SOLR Warmup Job skipped - SOLR not available',
                     context: [
-                            'job_id'       => $this->getId(),
-                            'triggered_by' => $triggeredBy,
-                        ]
+                        'job_id'       => $this->getId(),
+                        'triggered_by' => $triggeredBy,
+                    ]
                 );
                 return;
             }
@@ -137,10 +137,10 @@ class SolrWarmupJob extends QueuedJob
             $logger->info(
                 message: 'Starting SOLR index warmup',
                 context: [
-                        'schemas_found' => count($schemas),
-                        'max_objects'   => $maxObjects,
-                        'mode'          => $mode,
-                    ]
+                    'schemas_found' => count($schemas),
+                    'max_objects'   => $maxObjects,
+                    'mode'          => $mode,
+                ]
             );
 
             // Execute the warmup.
@@ -157,17 +157,17 @@ class SolrWarmupJob extends QueuedJob
                 $logger->info(
                     '✅ SOLR Warmup Job Completed Successfully',
                     [
-                            'job_id'                 => $this->getId(),
-                            'execution_time_seconds' => round($executionTime, 2),
-                            'objects_indexed'        => $result['operations']['objects_indexed'] ?? 0,
-                            'schemas_processed'      => $result['operations']['schemas_processed'] ?? 0,
-                            'fields_created'         => $result['operations']['fields_created'] ?? 0,
-                            'triggered_by'           => $triggeredBy,
-                            'performance_metrics'    => [
-                                'total_time_ms'      => $result['execution_time_ms'] ?? 0,
-                                'objects_per_second' => $this->calculateObjectsPerSecond(result: $result, executionTime: $executionTime),
-                            ],
-                        ]
+                        'job_id'                 => $this->getId(),
+                        'execution_time_seconds' => round($executionTime, 2),
+                        'objects_indexed'        => $result['operations']['objects_indexed'] ?? 0,
+                        'schemas_processed'      => $result['operations']['schemas_processed'] ?? 0,
+                        'fields_created'         => $result['operations']['fields_created'] ?? 0,
+                        'triggered_by'           => $triggeredBy,
+                        'performance_metrics'    => [
+                            'total_time_ms'      => $result['execution_time_ms'] ?? 0,
+                            'objects_per_second' => $this->calculateObjectsPerSecond(result: $result, executionTime: $executionTime),
+                        ],
+                    ]
                 );
             }//end if
 
@@ -175,11 +175,11 @@ class SolrWarmupJob extends QueuedJob
                 $logger->error(
                     '❌ SOLR Warmup Job Failed',
                     [
-                            'job_id'                 => $this->getId(),
-                            'execution_time_seconds' => round($executionTime, 2),
-                            'error'                  => $result['error'] ?? 'Unknown error',
-                            'triggered_by'           => $triggeredBy,
-                        ]
+                        'job_id'                 => $this->getId(),
+                        'execution_time_seconds' => round($executionTime, 2),
+                        'error'                  => $result['error'] ?? 'Unknown error',
+                        'triggered_by'           => $triggeredBy,
+                    ]
                 );
             }//end if
         } catch (\Exception $e) {
@@ -188,14 +188,14 @@ class SolrWarmupJob extends QueuedJob
             $logger->error(
                 message: '🚨 SOLR Warmup Job Exception',
                 context: [
-                        'job_id'                 => $this->getId(),
-                        'execution_time_seconds' => round($executionTime, 2),
-                        'exception'              => $e->getMessage(),
-                        'file'                   => $e->getFile(),
-                        'line'                   => $e->getLine(),
-                        'triggered_by'           => $triggeredBy,
-                        'trace'                  => $e->getTraceAsString(),
-                    ]
+                    'job_id'                 => $this->getId(),
+                    'execution_time_seconds' => round($executionTime, 2),
+                    'exception'              => $e->getMessage(),
+                    'file'                   => $e->getFile(),
+                    'line'                   => $e->getLine(),
+                    'triggered_by'           => $triggeredBy,
+                    'trace'                  => $e->getTraceAsString(),
+                ]
             );
 
             // Re-throw to mark job as failed.

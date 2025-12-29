@@ -28,6 +28,7 @@ use OCP\EventDispatcher\Event;
  */
 class ViewCreatedEvent extends Event
 {
+
     /**
      * The newly created view.
      *

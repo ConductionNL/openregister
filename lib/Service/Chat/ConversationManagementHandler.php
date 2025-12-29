@@ -161,7 +161,7 @@ class ConversationManagementHandler
 
                 // Use native Ollama configuration.
                 $config        = new OllamaConfig();
-                $config->url   = rtrim($ollamaConfig['url'], '/') . '/api/';
+                $config->url   = rtrim($ollamaConfig['url'], '/').'/api/';
                 $config->model = $ollamaConfig['chatModel'] ?? 'llama2';
                 $config->modelOptions['temperature'] = 0.7;
             } else {
@@ -177,7 +177,7 @@ class ConversationManagementHandler
                     $config->apiKey = $openaiConfig['apiKey'];
                     $config->model  = 'gpt-4o-mini';
                     // Use fast model for titles.
-                } elseif ($chatProvider === 'fireworks') {
+                } else if ($chatProvider === 'fireworks') {
                     $fireworksConfig = $llmConfig['fireworksConfig'] ?? [];
                     if (empty($fireworksConfig['apiKey']) === true) {
                         return $this->generateFallbackTitle($firstMessage);
@@ -225,7 +225,7 @@ class ConversationManagementHandler
                     $config->url,
                     $prompt
                 );
-            } elseif ($chatProvider === 'ollama') {
+            } else if ($chatProvider === 'ollama') {
                 // Use native Ollama chat.
                 $chat  = new OllamaChat($config);
                 $title = $chat->generateText($prompt);
@@ -239,7 +239,7 @@ class ConversationManagementHandler
 
             // Ensure title isn't too long.
             if (strlen($title) > 60) {
-                $title = substr($title, 0, 57) . '...';
+                $title = substr($title, 0, 57).'...';
             }
 
             return $title;
@@ -307,7 +307,7 @@ class ConversationManagementHandler
 
         // Find all existing titles that match this pattern.
         // Using LIKE with % to catch both exact matches and numbered variants.
-        $pattern        = $baseTitle . '%';
+        $pattern        = $baseTitle.'%';
         $existingTitles = $this->conversationMapper->findTitlesByUserAgent(userId: $userId, agentId: $agentId, titlePattern: $pattern);
 
         // If no matches, the base title is unique.
@@ -326,7 +326,7 @@ class ConversationManagementHandler
 
         foreach ($existingTitles as $title) {
             // Match "Title (N)" pattern.
-            if (preg_match('/^' . $baseTitleEscaped . ' \((\d+)\)$/', $title, $matches) === 1) {
+            if (preg_match('/^'.$baseTitleEscaped.' \((\d+)\)$/', $title, $matches) === 1) {
                 $number = (int) $matches[1];
                 if ($number > $maxNumber) {
                     $maxNumber = $number;
@@ -335,7 +335,7 @@ class ConversationManagementHandler
         }
 
         // Generate new title with next number.
-        $uniqueTitle = $baseTitle . ' (' . ($maxNumber + 1) . ')';
+        $uniqueTitle = $baseTitle.' ('.($maxNumber + 1).')';
 
         $this->logger->info(
             message: '[ChatService] Generated unique title',
@@ -470,7 +470,7 @@ class ConversationManagementHandler
 
             // Use native Ollama configuration.
             $config        = new OllamaConfig();
-            $config->url   = rtrim($ollamaConfig['url'], '/') . '/api/';
+            $config->url   = rtrim($ollamaConfig['url'], '/').'/api/';
             $config->model = $ollamaConfig['chatModel'] ?? 'llama2';
         } else {
             // OpenAI and Fireworks use OpenAIConfig.
@@ -484,7 +484,7 @@ class ConversationManagementHandler
 
                 $config->apiKey = $openaiConfig['apiKey'];
                 $config->model  = 'gpt-4o-mini';
-            } elseif ($chatProvider === 'fireworks') {
+            } else if ($chatProvider === 'fireworks') {
                 $fireworksConfig = $llmConfig['fireworksConfig'] ?? [];
                 if (empty($fireworksConfig['apiKey']) === true) {
                     throw new Exception('Fireworks AI API key not configured');
@@ -524,7 +524,7 @@ class ConversationManagementHandler
                 $config->url,
                 $prompt
             );
-        } elseif ($chatProvider === 'ollama') {
+        } else if ($chatProvider === 'ollama') {
             // Use native Ollama chat.
             $chat = new OllamaChat($config);
             return $chat->generateText($prompt);

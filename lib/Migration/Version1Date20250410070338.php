@@ -59,71 +59,71 @@ class Version1Date20250410070338 extends SimpleMigrationStep
                 'id',
                 'integer',
                 [
-                        'autoincrement' => true,
-                        'notnull'       => true,
-                    ]
+                    'autoincrement' => true,
+                    'notnull'       => true,
+                ]
             );
             $table->addColumn(
                 'title',
                 'string',
                 [
-                        'notnull' => true,
-                        'length'  => 255,
-                    ]
+                    'notnull' => true,
+                    'length'  => 255,
+                ]
             );
             $table->addColumn(
                 'description',
                 'text',
                 [
-                        'notnull' => false,
-                        'default' => '',
-                    ]
+                    'notnull' => false,
+                    'default' => '',
+                ]
             );
             $table->addColumn(
                 'type',
                 'string',
                 [
-                        'notnull' => true,
-                        'length'  => 64,
-                    ]
+                    'notnull' => true,
+                    'length'  => 64,
+                ]
             );
             $table->addColumn(
                 'registers',
                 Types::JSON,
                 [
-                        'notnull' => false,
-                    ]
+                    'notnull' => false,
+                ]
             );
             $table->addColumn(
                 'version',
                 'string',
                 [
-                        'notnull' => false,
-                        'length'  => 255,
-                        'default' => '0.0.1',
-                    ]
+                    'notnull' => false,
+                    'length'  => 255,
+                    'default' => '0.0.1',
+                ]
             );
             $table->addColumn(
                 'owner',
                 'string',
                 [
-                        'notnull' => false,
-                        'length'  => 64,
-                    ]
+                    'notnull' => false,
+                    'length'  => 64,
+                ]
             );
             $table->addColumn(
                 'created',
                 'datetime',
                 [
-                        'notnull' => true,
-                    ]
+                    'notnull' => true,
+                ]
             );
             $table->addColumn(
                 'updated',
                 'datetime',
                 [
-                        'notnull' => true,
-                    ]
+                    'notnull' => true,
+                ]
             );
 
             $table->setPrimaryKey(['id']);
@@ -142,16 +142,16 @@ class Version1Date20250410070338 extends SimpleMigrationStep
                 'authorization',
                 Types::JSON,
                 [
-                        'notnull' => false,
-                    ]
+                    'notnull' => false,
+                ]
             );
             $table->addColumn(
                 'icon',
                 'string',
                 [
-                        'notnull' => false,
-                        'length'  => 255,
-                    ]
+                    'notnull' => false,
+                    'length'  => 255,
+                ]
             );
         }
 
@@ -164,8 +164,8 @@ class Version1Date20250410070338 extends SimpleMigrationStep
                 'authorization',
                 Types::JSON,
                 [
-                        'notnull' => false,
-                    ]
+                    'notnull' => false,
+                ]
             );
         }
 

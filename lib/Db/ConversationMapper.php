@@ -60,6 +60,7 @@ use OCP\IDBConnection;
  */
 class ConversationMapper extends QBMapper
 {
+
     /**
      * Event dispatcher for dispatching conversation events
      *
@@ -242,10 +243,10 @@ class ConversationMapper extends QBMapper
      */
     public function findByUser(
         string $userId,
-        ?string $organisation = null,
-        bool $includeDeleted = false,
-        int $limit = 50,
-        int $offset = 0
+        ?string $organisation=null,
+        bool $includeDeleted=false,
+        int $limit=50,
+        int $offset=0
     ): array {
         $qb = $this->db->getQueryBuilder();
 
@@ -284,9 +285,9 @@ class ConversationMapper extends QBMapper
      */
     public function findDeletedByUser(
         string $userId,
-        ?string $organisation = null,
-        int $limit = 50,
-        int $offset = 0
+        ?string $organisation=null,
+        int $limit=50,
+        int $offset=0
     ): array {
         $qb = $this->db->getQueryBuilder();
 
@@ -359,8 +360,8 @@ class ConversationMapper extends QBMapper
      */
     public function countByUser(
         string $userId,
-        ?string $organisation = null,
-        bool $includeDeleted = false
+        ?string $organisation=null,
+        bool $includeDeleted=false
     ): int {
         $qb = $this->db->getQueryBuilder();
 
@@ -395,7 +396,7 @@ class ConversationMapper extends QBMapper
      */
     public function countDeletedByUser(
         string $userId,
-        ?string $organisation = null
+        ?string $organisation=null
     ): int {
         $qb = $this->db->getQueryBuilder();
 
@@ -469,7 +470,7 @@ class ConversationMapper extends QBMapper
      *
      * @return bool True if user can access
      */
-    public function canUserAccessConversation(Conversation $conversation, string $userId, ?string $organisationUuid = null): bool
+    public function canUserAccessConversation(Conversation $conversation, string $userId, ?string $organisationUuid=null): bool
     {
         // User must be the owner.
         if ($conversation->getUserId() !== $userId) {

@@ -185,9 +185,9 @@ class MergeHandler
                         $mergeReport['warnings'] = array_merge($mergeReport['warnings'], $fileResult['errors']);
                     }
                 } catch (Exception $e) {
-                    $mergeReport['warnings'][] = 'Failed to transfer files: ' . $e->getMessage();
+                    $mergeReport['warnings'][] = 'Failed to transfer files: '.$e->getMessage();
                 }
-            } elseif ($fileAction === 'delete' && $sourceObject->getFolder() !== null) {
+            } else if ($fileAction === 'delete' && $sourceObject->getFolder() !== null) {
                 try {
                     $deleteResult = $this->deleteObjectFiles($sourceObject);
                     $mergeReport['actions']['files']           = $deleteResult['files'];
@@ -197,7 +197,7 @@ class MergeHandler
                         $mergeReport['warnings'] = array_merge($mergeReport['warnings'], $deleteResult['errors']);
                     }
                 } catch (Exception $e) {
-                    $mergeReport['warnings'][] = 'Failed to delete files: ' . $e->getMessage();
+                    $mergeReport['warnings'][] = 'Failed to delete files: '.$e->getMessage();
                 }
             }//end if
 
@@ -267,7 +267,7 @@ class MergeHandler
             // Soft delete source object using the entity's delete method.
             $sourceObject->delete(
                 userSession: $this->userSession,
-                deletedReason: 'Merged into object ' . $targetObject->getUuid()
+                deletedReason: 'Merged into object '.$targetObject->getUuid()
             );
             $this->objectEntityMapper->update($sourceObject);
 
@@ -278,7 +278,7 @@ class MergeHandler
             // Merge completed successfully.
         } catch (Exception $e) {
             // Handle merge error.
-            $mergeReport['errors'][] = "Merge failed: " . $e->getMessage();
+            $mergeReport['errors'][] = "Merge failed: ".$e->getMessage();
             $mergeReport['errors'][] = $e->getMessage();
             throw $e;
         }//end try
@@ -347,11 +347,11 @@ class MergeHandler
                         'success' => false,
                         'error'   => $e->getMessage(),
                     ];
-                    $result['errors'][] = 'Failed to transfer file ' . $file->getName() . ': ' . $e->getMessage();
+                    $result['errors'][] = 'Failed to transfer file '.$file->getName().': '.$e->getMessage();
                 }//end try
             }//end foreach
         } catch (Exception $e) {
-            $result['errors'][] = 'Failed to access source files: ' . $e->getMessage();
+            $result['errors'][] = 'Failed to access source files: '.$e->getMessage();
         }//end try
 
         return $result;
@@ -404,11 +404,11 @@ class MergeHandler
                         'success' => false,
                         'error'   => $e->getMessage(),
                     ];
-                    $result['errors'][] = 'Failed to delete file ' . $file->getName() . ': ' . $e->getMessage();
+                    $result['errors'][] = 'Failed to delete file '.$file->getName().': '.$e->getMessage();
                 }//end try
             }//end foreach
         } catch (Exception $e) {
-            $result['errors'][] = 'Failed to access source files: ' . $e->getMessage();
+            $result['errors'][] = 'Failed to access source files: '.$e->getMessage();
         }//end try
 
         return $result;

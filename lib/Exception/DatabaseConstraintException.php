@@ -42,6 +42,7 @@ use Exception;
  */
 class DatabaseConstraintException extends Exception
 {
+
     /**
      * HTTP status code for the error response
      *
@@ -60,7 +61,7 @@ class DatabaseConstraintException extends Exception
      * @param int            $httpStatus The HTTP status code (default: 409 Conflict)
      * @param Exception|null $previous   The previous exception
      */
-    public function __construct(string $message, int $code = 0, int $httpStatus = 409, ?Exception $previous = null)
+    public function __construct(string $message, int $code=0, int $httpStatus=409, ?Exception $previous=null)
     {
         parent::__construct($message, $code, $previous);
         $this->httpStatusCode = $httpStatus;
@@ -92,7 +93,7 @@ class DatabaseConstraintException extends Exception
      *
      * @return DatabaseConstraintException The user-friendly exception with parsed message
      */
-    public static function fromDatabaseException(Exception $dbException, string $entityType = 'item'): DatabaseConstraintException
+    public static function fromDatabaseException(Exception $dbException, string $entityType='item'): DatabaseConstraintException
     {
         // Extract original database error message.
         $message = $dbException->getMessage();

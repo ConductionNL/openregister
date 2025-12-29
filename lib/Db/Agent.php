@@ -103,6 +103,7 @@ use Symfony\Component\Uid\Uuid;
  */
 class Agent extends Entity implements JsonSerializable
 {
+
     /**
      * Unique identifier for the agent
      *

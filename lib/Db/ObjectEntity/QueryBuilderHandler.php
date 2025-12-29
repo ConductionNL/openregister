@@ -32,6 +32,7 @@ use Psr\Log\LoggerInterface;
  */
 class QueryBuilderHandler
 {
+
     /**
      * Database connection
      *

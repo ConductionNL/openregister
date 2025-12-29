@@ -303,7 +303,7 @@ class MagicMapper
      *
      * @return true True if table was created/updated successfully
      */
-    public function ensureTableForRegisterSchema(Register $register, Schema $schema, bool $force = false): bool
+    public function ensureTableForRegisterSchema(Register $register, Schema $schema, bool $force=false): bool
     {
         $tableName  = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
         $registerId = $register->getId();
@@ -362,7 +362,7 @@ class MagicMapper
             );
 
             throw new Exception(
-                "Failed to create/update table for register '{$register->getTitle()}' + schema '{$schema->getTitle()}': " . $e->getMessage(),
+                "Failed to create/update table for register '{$register->getTitle()}' + schema '{$schema->getTitle()}': ".$e->getMessage(),
                 0,
                 $e
             );
@@ -383,13 +383,13 @@ class MagicMapper
         $schemaId   = $schema->getId();
 
         // Use numeric IDs for consistent, shorter table names.
-        $tableName = self::TABLE_PREFIX . $registerId . '_' . $schemaId;
+        $tableName = self::TABLE_PREFIX.$registerId.'_'.$schemaId;
 
         // Ensure table name doesn't exceed maximum length (should be fine with numeric IDs).
         if (strlen($tableName) > self::MAX_TABLE_NAME_LENGTH) {
             // This should rarely happen with numeric IDs, but handle it safely.
-            $hash      = substr(md5($registerId . '_' . $schemaId), 0, 8);
-            $tableName = self::TABLE_PREFIX . $hash;
+            $hash      = substr(md5($registerId.'_'.$schemaId), 0, 8);
+            $tableName = self::TABLE_PREFIX.$hash;
         }
 
         // Cache the table name for this register+schema combination.
@@ -586,7 +586,7 @@ class MagicMapper
      */
     private function getCacheKey(int $registerId, int $schemaId): string
     {
-        return $registerId . '_' . $schemaId;
+        return $registerId.'_'.$schemaId;
     }//end getCacheKey()
 
     /**
@@ -781,7 +781,7 @@ class MagicMapper
         if (is_array($schemaProperties) === true) {
             foreach ($schemaProperties as $propertyName => $propertyConfig) {
                 // Skip if property name conflicts with metadata columns.
-                if (($columns[self::METADATA_PREFIX . $propertyName] ?? null) !== null) {
+                if (($columns[self::METADATA_PREFIX.$propertyName] ?? null) !== null) {
                     $this->logger->warning(
                         'Schema property conflicts with metadata column',
                         [
@@ -815,186 +815,186 @@ class MagicMapper
     private function getMetadataColumns(): array
     {
         return [
-            self::METADATA_PREFIX . 'id'             => [
-                'name'          => self::METADATA_PREFIX . 'id',
+            self::METADATA_PREFIX.'id'             => [
+                'name'          => self::METADATA_PREFIX.'id',
                 'type'          => 'bigint',
                 'nullable'      => false,
                 'autoincrement' => true,
                 'primary'       => true,
             ],
-            self::METADATA_PREFIX . 'uuid'           => [
-                'name'     => self::METADATA_PREFIX . 'uuid',
+            self::METADATA_PREFIX.'uuid'           => [
+                'name'     => self::METADATA_PREFIX.'uuid',
                 'type'     => 'string',
                 'length'   => 36,
                 'nullable' => false,
                 'unique'   => true,
                 'index'    => true,
             ],
-            self::METADATA_PREFIX . 'slug'           => [
-                'name'     => self::METADATA_PREFIX . 'slug',
+            self::METADATA_PREFIX.'slug'           => [
+                'name'     => self::METADATA_PREFIX.'slug',
                 'type'     => 'string',
                 'length'   => 255,
                 'nullable' => true,
                 'index'    => true,
             ],
-            self::METADATA_PREFIX . 'uri'            => [
-                'name'     => self::METADATA_PREFIX . 'uri',
+            self::METADATA_PREFIX.'uri'            => [
+                'name'     => self::METADATA_PREFIX.'uri',
                 'type'     => 'text',
                 'nullable' => true,
             ],
-            self::METADATA_PREFIX . 'version'        => [
-                'name'     => self::METADATA_PREFIX . 'version',
+            self::METADATA_PREFIX.'version'        => [
+                'name'     => self::METADATA_PREFIX.'version',
                 'type'     => 'string',
                 'length'   => 50,
                 'nullable' => true,
             ],
-            self::METADATA_PREFIX . 'register'       => [
-                'name'     => self::METADATA_PREFIX . 'register',
+            self::METADATA_PREFIX.'register'       => [
+                'name'     => self::METADATA_PREFIX.'register',
                 'type'     => 'string',
                 'length'   => 255,
                 'nullable' => false,
                 'index'    => true,
             ],
-            self::METADATA_PREFIX . 'schema'         => [
-                'name'     => self::METADATA_PREFIX . 'schema',
+            self::METADATA_PREFIX.'schema'         => [
+                'name'     => self::METADATA_PREFIX.'schema',
                 'type'     => 'string',
                 'length'   => 255,
                 'nullable' => false,
                 'index'    => true,
             ],
-            self::METADATA_PREFIX . 'owner'          => [
-                'name'     => self::METADATA_PREFIX . 'owner',
+            self::METADATA_PREFIX.'owner'          => [
+                'name'     => self::METADATA_PREFIX.'owner',
                 'type'     => 'string',
                 'length'   => 64,
                 'nullable' => true,
                 'index'    => true,
             ],
-            self::METADATA_PREFIX . 'organisation'   => [
-                'name'     => self::METADATA_PREFIX . 'organisation',
+            self::METADATA_PREFIX.'organisation'   => [
+                'name'     => self::METADATA_PREFIX.'organisation',
                 'type'     => 'string',
                 'length'   => 36,
                 'nullable' => true,
                 'index'    => true,
             ],
-            self::METADATA_PREFIX . 'application'    => [
-                'name'     => self::METADATA_PREFIX . 'application',
+            self::METADATA_PREFIX.'application'    => [
+                'name'     => self::METADATA_PREFIX.'application',
                 'type'     => 'string',
                 'length'   => 255,
                 'nullable' => true,
             ],
-            self::METADATA_PREFIX . 'folder'         => [
-                'name'     => self::METADATA_PREFIX . 'folder',
+            self::METADATA_PREFIX.'folder'         => [
+                'name'     => self::METADATA_PREFIX.'folder',
                 'type'     => 'string',
                 'length'   => 255,
                 'nullable' => true,
             ],
-            self::METADATA_PREFIX . 'name'           => [
-                'name'     => self::METADATA_PREFIX . 'name',
+            self::METADATA_PREFIX.'name'           => [
+                'name'     => self::METADATA_PREFIX.'name',
                 'type'     => 'string',
                 'length'   => 255,
                 'nullable' => true,
                 'index'    => true,
             ],
-            self::METADATA_PREFIX . 'description'    => [
-                'name'     => self::METADATA_PREFIX . 'description',
+            self::METADATA_PREFIX.'description'    => [
+                'name'     => self::METADATA_PREFIX.'description',
                 'type'     => 'text',
                 'nullable' => true,
             ],
-            self::METADATA_PREFIX . 'summary'        => [
-                'name'     => self::METADATA_PREFIX . 'summary',
+            self::METADATA_PREFIX.'summary'        => [
+                'name'     => self::METADATA_PREFIX.'summary',
                 'type'     => 'text',
                 'nullable' => true,
             ],
-            self::METADATA_PREFIX . 'image'          => [
-                'name'     => self::METADATA_PREFIX . 'image',
+            self::METADATA_PREFIX.'image'          => [
+                'name'     => self::METADATA_PREFIX.'image',
                 'type'     => 'text',
                 'nullable' => true,
             ],
-            self::METADATA_PREFIX . 'size'           => [
-                'name'     => self::METADATA_PREFIX . 'size',
+            self::METADATA_PREFIX.'size'           => [
+                'name'     => self::METADATA_PREFIX.'size',
                 'type'     => 'string',
                 'length'   => 50,
                 'nullable' => true,
             ],
-            self::METADATA_PREFIX . 'schema_version' => [
-                'name'     => self::METADATA_PREFIX . 'schema_version',
+            self::METADATA_PREFIX.'schema_version' => [
+                'name'     => self::METADATA_PREFIX.'schema_version',
                 'type'     => 'string',
                 'length'   => 50,
                 'nullable' => true,
             ],
-            self::METADATA_PREFIX . 'created'        => [
-                'name'     => self::METADATA_PREFIX . 'created',
+            self::METADATA_PREFIX.'created'        => [
+                'name'     => self::METADATA_PREFIX.'created',
                 'type'     => 'datetime',
                 'nullable' => true,
                 'index'    => true,
             ],
-            self::METADATA_PREFIX . 'updated'        => [
-                'name'     => self::METADATA_PREFIX . 'updated',
+            self::METADATA_PREFIX.'updated'        => [
+                'name'     => self::METADATA_PREFIX.'updated',
                 'type'     => 'datetime',
                 'nullable' => true,
                 'index'    => true,
             ],
-            self::METADATA_PREFIX . 'published'      => [
-                'name'     => self::METADATA_PREFIX . 'published',
+            self::METADATA_PREFIX.'published'      => [
+                'name'     => self::METADATA_PREFIX.'published',
                 'type'     => 'datetime',
                 'nullable' => true,
                 'index'    => true,
             ],
-            self::METADATA_PREFIX . 'depublished'    => [
-                'name'     => self::METADATA_PREFIX . 'depublished',
+            self::METADATA_PREFIX.'depublished'    => [
+                'name'     => self::METADATA_PREFIX.'depublished',
                 'type'     => 'datetime',
                 'nullable' => true,
                 'index'    => true,
             ],
-            self::METADATA_PREFIX . 'expires'        => [
-                'name'     => self::METADATA_PREFIX . 'expires',
+            self::METADATA_PREFIX.'expires'        => [
+                'name'     => self::METADATA_PREFIX.'expires',
                 'type'     => 'datetime',
                 'nullable' => true,
                 'index'    => true,
             ],
             // JSON columns for complex data.
-            self::METADATA_PREFIX . 'files'          => [
-                'name'     => self::METADATA_PREFIX . 'files',
+            self::METADATA_PREFIX.'files'          => [
+                'name'     => self::METADATA_PREFIX.'files',
                 'type'     => 'json',
                 'nullable' => true,
             ],
-            self::METADATA_PREFIX . 'relations'      => [
-                'name'     => self::METADATA_PREFIX . 'relations',
+            self::METADATA_PREFIX.'relations'      => [
+                'name'     => self::METADATA_PREFIX.'relations',
                 'type'     => 'json',
                 'nullable' => true,
             ],
-            self::METADATA_PREFIX . 'locked'         => [
-                'name'     => self::METADATA_PREFIX . 'locked',
+            self::METADATA_PREFIX.'locked'         => [
+                'name'     => self::METADATA_PREFIX.'locked',
                 'type'     => 'json',
                 'nullable' => true,
             ],
-            self::METADATA_PREFIX . 'authorization'  => [
-                'name'     => self::METADATA_PREFIX . 'authorization',
+            self::METADATA_PREFIX.'authorization'  => [
+                'name'     => self::METADATA_PREFIX.'authorization',
                 'type'     => 'json',
                 'nullable' => true,
             ],
-            self::METADATA_PREFIX . 'validation'     => [
-                'name'     => self::METADATA_PREFIX . 'validation',
+            self::METADATA_PREFIX.'validation'     => [
+                'name'     => self::METADATA_PREFIX.'validation',
                 'type'     => 'json',
                 'nullable' => true,
             ],
-            self::METADATA_PREFIX . 'deleted'        => [
-                'name'     => self::METADATA_PREFIX . 'deleted',
+            self::METADATA_PREFIX.'deleted'        => [
+                'name'     => self::METADATA_PREFIX.'deleted',
                 'type'     => 'json',
                 'nullable' => true,
             ],
-            self::METADATA_PREFIX . 'geo'            => [
-                'name'     => self::METADATA_PREFIX . 'geo',
+            self::METADATA_PREFIX.'geo'            => [
+                'name'     => self::METADATA_PREFIX.'geo',
                 'type'     => 'json',
                 'nullable' => true,
             ],
-            self::METADATA_PREFIX . 'retention'      => [
-                'name'     => self::METADATA_PREFIX . 'retention',
+            self::METADATA_PREFIX.'retention'      => [
+                'name'     => self::METADATA_PREFIX.'retention',
                 'type'     => 'json',
                 'nullable' => true,
             ],
-            self::METADATA_PREFIX . 'groups'         => [
-                'name'     => self::METADATA_PREFIX . 'groups',
+            self::METADATA_PREFIX.'groups'         => [
+                'name'     => self::METADATA_PREFIX.'groups',
                 'type'     => 'json',
                 'nullable' => true,
             ],
@@ -1174,7 +1174,7 @@ class MagicMapper
         $intType = 'integer';
         if ($minimum !== null && $minimum >= 0 && $maximum !== null && $maximum <= 65535) {
             $intType = 'smallint';
-        } elseif ($maximum !== null && $maximum > 2147483647) {
+        } else if ($maximum !== null && $maximum > 2147483647) {
             $intType = 'bigint';
         }
 
@@ -1328,29 +1328,29 @@ class MagicMapper
             // Create unique index on UUID.
             // Phpcs:ignore Generic.Files.LineLength.TooLong
             $this->db->executeStatement(
-                "CREATE UNIQUE INDEX IF NOT EXISTS {$tableName}_uuid_idx ON {$tableName} (" . self::METADATA_PREFIX . "uuid)"
+                "CREATE UNIQUE INDEX IF NOT EXISTS {$tableName}_uuid_idx ON {$tableName} (".self::METADATA_PREFIX."uuid)"
             );
 
             // Create composite index on register + schema for multitenancy.
             $this->db->executeStatement(
-                "CREATE INDEX IF NOT EXISTS {$tableName}_register_schema_idx ON {$tableName} (" . self::METADATA_PREFIX . "register, " . self::METADATA_PREFIX . "schema)"
+                "CREATE INDEX IF NOT EXISTS {$tableName}_register_schema_idx ON {$tableName} (".self::METADATA_PREFIX."register, ".self::METADATA_PREFIX."schema)"
             );
 
             // Create index on organisation for multitenancy.
             $this->db->executeStatement(
-                "CREATE INDEX IF NOT EXISTS {$tableName}_organisation_idx ON {$tableName} (" . self::METADATA_PREFIX . "organisation)"
+                "CREATE INDEX IF NOT EXISTS {$tableName}_organisation_idx ON {$tableName} (".self::METADATA_PREFIX."organisation)"
             );
 
             // Create index on owner for RBAC.
             $this->db->executeStatement(
-                "CREATE INDEX IF NOT EXISTS {$tableName}_owner_idx ON {$tableName} (" . self::METADATA_PREFIX . "owner)"
+                "CREATE INDEX IF NOT EXISTS {$tableName}_owner_idx ON {$tableName} (".self::METADATA_PREFIX."owner)"
             );
 
             // Create indexes on frequently filtered metadata fields.
             $indexableMetadataFields = ['created', 'updated', 'published', 'name'];
             foreach ($indexableMetadataFields as $field) {
                 $this->db->executeStatement(
-                    "CREATE INDEX IF NOT EXISTS {$tableName}_{$field}_idx ON {$tableName} (" . self::METADATA_PREFIX . "{$field})"
+                    "CREATE INDEX IF NOT EXISTS {$tableName}_{$field}_idx ON {$tableName} (".self::METADATA_PREFIX."{$field})"
                 );
             }
 
@@ -1391,11 +1391,11 @@ class MagicMapper
         $preparedData = $this->prepareObjectDataForTable(objectData: $objectData, register: $register, schema: $schema);
 
         // Generate UUID if not provided.
-        if (empty($preparedData[self::METADATA_PREFIX . 'uuid']) === true) {
-            $preparedData[self::METADATA_PREFIX . 'uuid'] = Uuid::v4()->toRfc4122();
+        if (empty($preparedData[self::METADATA_PREFIX.'uuid']) === true) {
+            $preparedData[self::METADATA_PREFIX.'uuid'] = Uuid::v4()->toRfc4122();
         }
 
-        $uuid = $preparedData[self::METADATA_PREFIX . 'uuid'];
+        $uuid = $preparedData[self::METADATA_PREFIX.'uuid'];
 
         try {
             // Check if object exists (for update vs insert).
@@ -1513,7 +1513,7 @@ class MagicMapper
 
                 if ($value instanceof DateTime) {
                     $value = $value->format('Y-m-d H:i:s');
-                } elseif (is_string($value) === true) {
+                } else if (is_string($value) === true) {
                     // Validate and convert datetime strings.
                     try {
                         $dateTime = new DateTime($value);
@@ -1531,7 +1531,7 @@ class MagicMapper
                 }
             }
 
-            $preparedData[self::METADATA_PREFIX . $field] = $value;
+            $preparedData[self::METADATA_PREFIX.$field] = $value;
         }//end foreach
 
         // Map schema properties to columns.
@@ -1590,7 +1590,7 @@ class MagicMapper
             foreach ($query['_order'] as $field => $direction) {
                 $columnName = $this->sanitizeColumnName($field);
                 if (str_starts_with($field, '@self.') === true) {
-                    $columnName = self::METADATA_PREFIX . substr($field, 6);
+                    $columnName = self::METADATA_PREFIX.substr($field, 6);
                 }
 
                 $qb->addOrderBy($columnName, strtoupper($direction));
@@ -1686,7 +1686,7 @@ class MagicMapper
             // Set metadata fields on ObjectEntity.
             foreach ($metadata as $field => $value) {
                 if ($value !== null) {
-                    $method = 'set' . ucfirst($field);
+                    $method = 'set'.ucfirst($field);
                     if (method_exists($objectEntity, $method) === true) {
                         $objectEntity->$method($value);
                     }
@@ -1702,7 +1702,7 @@ class MagicMapper
                 'Failed to convert row to ObjectEntity',
                 [
                     'error' => $e->getMessage(),
-                    'uuid'  => $row[self::METADATA_PREFIX . 'uuid'] ?? 'unknown',
+                    'uuid'  => $row[self::METADATA_PREFIX.'uuid'] ?? 'unknown',
                 ]
             );
 
@@ -1738,7 +1738,7 @@ class MagicMapper
 
         // Ensure it starts with a letter or underscore.
         if (preg_match('/^[a-z_]/', $name) === false) {
-            $name = 'table_' . $name;
+            $name = 'table_'.$name;
         }
 
         // Remove consecutive underscores.
@@ -1765,7 +1765,7 @@ class MagicMapper
 
         // Ensure it starts with a letter or underscore.
         if (preg_match('/^[a-z_]/', $name) === false) {
-            $name = 'col_' . $name;
+            $name = 'col_'.$name;
         }
 
         // Remove consecutive underscores.
@@ -1812,7 +1812,7 @@ class MagicMapper
         $cacheKey   = $this->getCacheKey(registerId: $registerId, schemaId: $schemaId);
 
         $version   = $this->calculateRegisterSchemaVersion(register: $register, schema: $schema);
-        $configKey = 'table_version_' . $cacheKey;
+        $configKey = 'table_version_'.$cacheKey;
 
         $this->config->setAppValue('openregister', $configKey, $version);
 
@@ -1831,7 +1831,7 @@ class MagicMapper
     private function getStoredRegisterSchemaVersion(int $registerId, int $schemaId): string|null
     {
         $cacheKey  = $this->getCacheKey(registerId: $registerId, schemaId: $schemaId);
-        $configKey = 'table_version_' . $cacheKey;
+        $configKey = 'table_version_'.$cacheKey;
 
         $version = $this->config->getAppValue('openregister', $configKey, '');
         if ($version === '') {
@@ -1888,7 +1888,7 @@ class MagicMapper
             // Handle @self metadata filters.
             if ($key === '@self' && is_array($value) === true) {
                 foreach ($value as $metaField => $metaValue) {
-                    $columnName = self::METADATA_PREFIX . $metaField;
+                    $columnName = self::METADATA_PREFIX.$metaField;
                     $this->addWhereCondition(qb: $qb, columnName: $columnName, value: $metaValue);
                 }
 
@@ -1942,7 +1942,7 @@ class MagicMapper
             $qb = $this->db->getQueryBuilder();
             $qb->select('*')
                 ->from($tableName)
-                ->where($qb->expr()->eq(self::METADATA_PREFIX . 'uuid', $qb->createNamedParameter($uuid)));
+                ->where($qb->expr()->eq(self::METADATA_PREFIX.'uuid', $qb->createNamedParameter($uuid)));
 
             $result = $qb->executeQuery();
             $row    = $result->fetch();
@@ -2006,12 +2006,12 @@ class MagicMapper
 
         foreach ($data as $column => $value) {
             // Don't update the UUID itself.
-            if ($column !== self::METADATA_PREFIX . 'uuid') {
+            if ($column !== self::METADATA_PREFIX.'uuid') {
                 $qb->set($column, $qb->createNamedParameter($value));
             }
         }
 
-        $qb->where($qb->expr()->eq(self::METADATA_PREFIX . 'uuid', $qb->createNamedParameter($uuid)));
+        $qb->where($qb->expr()->eq(self::METADATA_PREFIX.'uuid', $qb->createNamedParameter($uuid)));
         $qb->executeStatement();
     }//end updateObjectInRegisterSchemaTable()
 
@@ -2145,8 +2145,7 @@ class MagicMapper
 
             // Clear from cache - need to clear by table name pattern.
             foreach (array_keys(self::$tableExistsCache) as $cacheKey) {
-                if (
-                    (self::$registerSchemaTableCache[$cacheKey] ?? null) !== null
+                if ((self::$registerSchemaTableCache[$cacheKey] ?? null) !== null
                     && self::$registerSchemaTableCache[$cacheKey] === $tableName
                 ) {
                     $this->invalidateTableCache($cacheKey);
@@ -2195,7 +2194,7 @@ class MagicMapper
      *
      * @return void
      */
-    public function clearCache(?int $registerId = null, ?int $schemaId = null): void
+    public function clearCache(?int $registerId=null, ?int $schemaId=null): void
     {
         if ($registerId === null || $schemaId === null) {
             // Clear all caches.
@@ -2379,15 +2378,15 @@ class MagicMapper
 
         $qb->where(
             $qb->expr()->orX(
-                $qb->expr()->eq(self::METADATA_PREFIX . 'id', $qb->createNamedParameter($idParam, IQueryBuilder::PARAM_INT)),
-                $qb->expr()->eq(self::METADATA_PREFIX . 'uuid', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
-                $qb->expr()->eq(self::METADATA_PREFIX . 'slug', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
-                $qb->expr()->eq(self::METADATA_PREFIX . 'uri', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR))
+                $qb->expr()->eq(self::METADATA_PREFIX.'id', $qb->createNamedParameter($idParam, IQueryBuilder::PARAM_INT)),
+                $qb->expr()->eq(self::METADATA_PREFIX.'uuid', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
+                $qb->expr()->eq(self::METADATA_PREFIX.'slug', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
+                $qb->expr()->eq(self::METADATA_PREFIX.'uri', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR))
             )
         );
 
         // Exclude deleted objects by default.
-        $qb->andWhere($qb->expr()->isNull(self::METADATA_PREFIX . 'deleted'));
+        $qb->andWhere($qb->expr()->isNull(self::METADATA_PREFIX.'deleted'));
 
         try {
             $result = $qb->executeQuery();
@@ -2443,11 +2442,11 @@ class MagicMapper
     public function findAllInRegisterSchemaTable(
         Register $register,
         Schema $schema,
-        ?int $limit = null,
-        ?int $offset = null,
-        ?array $filters = null,
-        array $sort = [],
-        ?bool $published = null
+        ?int $limit=null,
+        ?int $offset=null,
+        ?array $filters=null,
+        array $sort=[],
+        ?bool $published=null
     ): array {
         $query = [];
 
@@ -2541,7 +2540,7 @@ class MagicMapper
         // Set entity ID from database.
         $row = $this->findObjectInRegisterSchemaTable(uuid: $uuid, tableName: $tableName);
         if ($row !== null) {
-            $entity->setId((int) $row[self::METADATA_PREFIX . 'id']);
+            $entity->setId((int) $row[self::METADATA_PREFIX.'id']);
         }
 
         // Dispatch created event for audit trails.
@@ -2622,7 +2621,7 @@ class MagicMapper
         ObjectEntity $entity,
         Register $register,
         Schema $schema,
-        bool $hardDelete = false
+        bool $hardDelete=false
     ): ObjectEntity {
         // Dispatch deleting event for audit trails.
         $this->eventDispatcher->dispatch(ObjectDeletingEvent::class, new ObjectDeletingEvent(object: $entity));
@@ -2647,7 +2646,7 @@ class MagicMapper
             // Hard delete - actually remove from table.
             $qb = $this->db->getQueryBuilder();
             $qb->delete($tableName)
-                ->where($qb->expr()->eq(self::METADATA_PREFIX . 'uuid', $qb->createNamedParameter($uuid)));
+                ->where($qb->expr()->eq(self::METADATA_PREFIX.'uuid', $qb->createNamedParameter($uuid)));
             $qb->executeStatement();
 
             $this->logger->info(
@@ -2698,7 +2697,7 @@ class MagicMapper
         ObjectEntity $entity,
         Register $register,
         Schema $schema,
-        ?int $lockDuration = null
+        ?int $lockDuration=null
     ): ObjectEntity {
         // Lock using entity method.
         $entity->lock(userSession: $this->userSession, process: 'MagicMapper lock', duration: $lockDuration);

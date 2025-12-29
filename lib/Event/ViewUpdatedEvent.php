@@ -28,6 +28,7 @@ use OCP\EventDispatcher\Event;
  */
 class ViewUpdatedEvent extends Event
 {
+
     /**
      * The updated view state.
      *

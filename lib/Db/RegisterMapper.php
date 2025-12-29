@@ -179,18 +179,18 @@ class RegisterMapper extends QBMapper
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    public function find(string | int $id, ?array $_extend = [], ?bool $published = null, bool $_rbac = true, bool $_multitenancy = true): Register
+    public function find(string | int $id, ?array $_extend=[], ?bool $published=null, bool $_rbac=true, bool $_multitenancy=true): Register
     {
         // Log search attempt for debugging.
         if (isset($this->logger) === true) {
             $this->logger->info(
                 '[RegisterMapper] Searching for register',
                 [
-                        'identifier' => $id,
-                        'rbac'       => $_rbac,
-                        'multi'      => $_multitenancy,
-                        'published'  => $published,
-                    ]
+                    'identifier' => $id,
+                    'rbac'       => $_rbac,
+                    'multi'      => $_multitenancy,
+                    'published'  => $published,
+                ]
             );
         }
 
@@ -221,12 +221,12 @@ class RegisterMapper extends QBMapper
                 $this->logger->debug(
                     '[RegisterMapper] Register exists before filters',
                     [
-                            'identifier'   => $id,
-                            'registerId'   => $testResult->getId(),
-                            'organisation' => $testResult->getOrganisation(),
-                            'published'    => $testResult->getPublished(),
-                            'depublished'  => $testResult->getDepublished(),
-                        ]
+                        'identifier'   => $id,
+                        'registerId'   => $testResult->getId(),
+                        'organisation' => $testResult->getOrganisation(),
+                        'published'    => $testResult->getPublished(),
+                        'depublished'  => $testResult->getDepublished(),
+                    ]
                 );
             }
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
@@ -234,8 +234,8 @@ class RegisterMapper extends QBMapper
                 $this->logger->warning(
                     '[RegisterMapper] Register does not exist in database',
                     [
-                            'identifier' => $id,
-                        ]
+                        'identifier' => $id,
+                    ]
                 );
             }
         }//end try
@@ -271,14 +271,14 @@ class RegisterMapper extends QBMapper
             $this->logger->info(
                 '[RegisterMapper] Applying multitenancy filters',
                 [
-                        'identifier'           => $id,
-                        'multiEnabled'         => $_multitenancy,
-                        'enablePublished'      => $enablePublished,
-                        'activeOrganisations'  => $activeOrgUuids,
-                        'isAdmin'              => $isAdmin,
-                        'adminOverrideEnabled' => $adminOverrideEnabled,
-                        'existsBeforeFilter'   => $existsBeforeFilter,
-                    ]
+                    'identifier'           => $id,
+                    'multiEnabled'         => $_multitenancy,
+                    'enablePublished'      => $enablePublished,
+                    'activeOrganisations'  => $activeOrgUuids,
+                    'isAdmin'              => $isAdmin,
+                    'adminOverrideEnabled' => $adminOverrideEnabled,
+                    'existsBeforeFilter'   => $existsBeforeFilter,
+                ]
             );
         }//end if
 
@@ -300,13 +300,13 @@ class RegisterMapper extends QBMapper
                 $this->logger->error(
                     '[RegisterMapper] Register not found after filters',
                     [
-                            'identifier'         => $id,
-                            'existsBeforeFilter' => $existsBeforeFilter,
-                            'multiEnabled'       => $_multitenancy,
-                            'enablePublished'    => $enablePublished,
-                            'rbacEnabled'        => $_rbac,
-                            'error'              => $e->getMessage(),
-                        ]
+                        'identifier'         => $id,
+                        'existsBeforeFilter' => $existsBeforeFilter,
+                        'multiEnabled'       => $_multitenancy,
+                        'enablePublished'    => $enablePublished,
+                        'rbacEnabled'        => $_rbac,
+                        'error'              => $e->getMessage(),
+                    ]
                 );
             }
 
@@ -331,7 +331,7 @@ class RegisterMapper extends QBMapper
      *
      * @psalm-return list<\OCA\OpenRegister\Db\Register>
      */
-    public function findMultiple(array $ids, ?bool $published = null, bool $_rbac = true, bool $_multitenancy = true): array
+    public function findMultiple(array $ids, ?bool $published=null, bool $_rbac=true, bool $_multitenancy=true): array
     {
         $result = [];
         foreach ($ids as $id) {
@@ -400,15 +400,15 @@ class RegisterMapper extends QBMapper
      * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      */
     public function findAll(
-        ?int $limit = null,
-        ?int $offset = null,
-        ?array $filters = [],
-        ?array $searchConditions = [],
-        ?array $searchParams = [],
-        ?array $_extend = [],
-        ?bool $published = null,
-        bool $_rbac = true,
-        bool $_multitenancy = true
+        ?int $limit=null,
+        ?int $offset=null,
+        ?array $filters=[],
+        ?array $searchConditions=[],
+        ?array $searchParams=[],
+        ?array $_extend=[],
+        ?bool $published=null,
+        bool $_rbac=true,
+        bool $_multitenancy=true
     ): array {
         // Verify RBAC permission to read registers if RBAC is enabled.
         if ($_rbac === true) {
@@ -425,7 +425,7 @@ class RegisterMapper extends QBMapper
         foreach ($filters ?? [] as $filter => $value) {
             if ($value === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull($filter));
-            } elseif ($value === 'IS NULL') {
+            } else if ($value === 'IS NULL') {
                 $qb->andWhere($qb->expr()->isNull($filter));
             } else {
                 $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
@@ -433,7 +433,7 @@ class RegisterMapper extends QBMapper
         }
 
         if (empty($searchConditions) === false) {
-            $qb->andWhere('(' . implode(' OR ', $searchConditions) . ')');
+            $qb->andWhere('('.implode(' OR ', $searchConditions).')');
             foreach ($searchParams ?? [] as $param => $value) {
                 $qb->setParameter($param, $value);
             }
@@ -670,7 +670,7 @@ class RegisterMapper extends QBMapper
      *
      * @psalm-return list<\OCA\OpenRegister\Db\Schema>
      */
-    public function getSchemasByRegisterId(int $registerId, ?bool $published = null, bool $_rbac = true, bool $_multitenancy = true): array
+    public function getSchemasByRegisterId(int $registerId, ?bool $published=null, bool $_rbac=true, bool $_multitenancy=true): array
     {
         $register  = $this->find(id: $registerId, _extend: [], published: $published, _rbac: $_rbac, _multitenancy: $_multitenancy);
         $schemaIds = $register->getSchemas();
@@ -709,7 +709,7 @@ class RegisterMapper extends QBMapper
         $qb = $this->db->getQueryBuilder();
 
         // REGEXP: match number with optional whitespace and newlines.
-        $pattern = '[[:<:]]' . $schemaId . '[[:>:]]';
+        $pattern = '[[:<:]]'.$schemaId.'[[:>:]]';
 
         $qb->select('id')
             ->from('openregister_registers')

@@ -28,6 +28,7 @@ use OCP\EventDispatcher\Event;
  */
 class RegisterDeletedEvent extends Event
 {
+
     /**
      * The deleted register
      *

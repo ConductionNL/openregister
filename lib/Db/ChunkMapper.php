@@ -247,7 +247,7 @@ class ChunkMapper extends QBMapper
      *
      * @psalm-return list<\OCA\OpenRegister\Db\Chunk>
      */
-    public function findUnindexed(?int $limit = null, ?int $offset = null): array
+    public function findUnindexed(?int $limit=null, ?int $offset=null): array
     {
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')

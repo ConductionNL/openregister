@@ -39,6 +39,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
  */
 class ViewsController extends Controller
 {
+
     /**
      * The view service for managing views
      *
@@ -108,8 +109,8 @@ class ViewsController extends Controller
             if (empty($userId) === true) {
                 return new JSONResponse(
                     [
-                            'error' => 'User not authenticated',
-                        ],
+                        'error' => 'User not authenticated',
+                    ],
                     statusCode: 401
                 );
             }
@@ -151,22 +152,22 @@ class ViewsController extends Controller
 
             return new JSONResponse(
                 data: [
-                        'results' => array_map(fn($view) => $view->jsonSerialize(), $views),
-                        'total'   => $total,
-                    ]
+                    'results' => array_map(fn($view) => $view->jsonSerialize(), $views),
+                    'total'   => $total,
+                ]
             );
         } catch (\Exception $e) {
             $this->logger->error(
                 message: 'Error fetching views',
                 context: [
-                        'exception' => $e->getMessage(),
-                    ]
+                    'exception' => $e->getMessage(),
+                ]
             );
             return new JSONResponse(
                 data: [
-                        'error'   => 'Failed to fetch views',
-                        'message' => $e->getMessage(),
-                    ],
+                    'error'   => 'Failed to fetch views',
+                    'message' => $e->getMessage(),
+                ],
                 statusCode: 500
             );
         }//end try
@@ -199,8 +200,8 @@ class ViewsController extends Controller
             if (empty($userId) === true) {
                 return new JSONResponse(
                     data: [
-                         'error' => 'User not authenticated',
-                     ],
+                        'error' => 'User not authenticated',
+                    ],
                     statusCode: 401
                 );
             }
@@ -209,29 +210,29 @@ class ViewsController extends Controller
 
             return new JSONResponse(
                 data: [
-                     'view' => $view->jsonSerialize(),
-                 ]
+                    'view' => $view->jsonSerialize(),
+                ]
             );
         } catch (DoesNotExistException $e) {
             return new JSONResponse(
                 data: [
-                     'error' => 'View not found',
-                 ],
+                    'error' => 'View not found',
+                ],
                 statusCode: 404
             );
         } catch (\Exception $e) {
             $this->logger->error(
                 message: 'Error fetching view',
                 context: [
-                     'id'        => $id,
-                     'exception' => $e->getMessage(),
-                 ]
+                    'id'        => $id,
+                    'exception' => $e->getMessage(),
+                ]
             );
             return new JSONResponse(
                 data: [
-                     'error'   => 'Failed to fetch view',
-                     'message' => $e->getMessage(),
-                 ],
+                    'error'   => 'Failed to fetch view',
+                    'message' => $e->getMessage(),
+                ],
                 statusCode: 500
             );
         }//end try
@@ -260,8 +261,8 @@ class ViewsController extends Controller
             if (empty($userId) === true) {
                 return new JSONResponse(
                     data: [
-                         'error' => 'User not authenticated',
-                     ],
+                        'error' => 'User not authenticated',
+                    ],
                     statusCode: 401
                 );
             }
@@ -272,8 +273,8 @@ class ViewsController extends Controller
             if (isset($data['name']) === false || empty($data['name']) === true) {
                 return new JSONResponse(
                     data: [
-                         'error' => 'View name is required',
-                     ],
+                        'error' => 'View name is required',
+                    ],
                     statusCode: 400
                 );
             }
@@ -290,14 +291,14 @@ class ViewsController extends Controller
                     'facetFilters'  => $config['facetFilters'] ?? [],
                     'enabledFacets' => $config['enabledFacets'] ?? [],
                 ];
-            } elseif (($data['query'] ?? null) !== null && is_array($data['query']) === true) {
+            } else if (($data['query'] ?? null) !== null && is_array($data['query']) === true) {
                 // Direct query parameter.
                 $query = $data['query'];
             } else {
                 return new JSONResponse(
                     data: [
-                         'error' => 'View query or configuration is required',
-                     ],
+                        'error' => 'View query or configuration is required',
+                    ],
                     statusCode: 400
                 );
             }//end if
@@ -313,22 +314,22 @@ class ViewsController extends Controller
 
             return new JSONResponse(
                 data: [
-                     'view' => $view->jsonSerialize(),
-                 ],
+                    'view' => $view->jsonSerialize(),
+                ],
                 statusCode: 201
             );
         } catch (\Exception $e) {
             $this->logger->error(
                 message: 'Error creating view',
                 context: [
-                     'exception' => $e->getMessage(),
-                 ]
+                    'exception' => $e->getMessage(),
+                ]
             );
             return new JSONResponse(
                 data: [
-                     'error'   => 'Failed to create view',
-                     'message' => $e->getMessage(),
-                 ],
+                    'error'   => 'Failed to create view',
+                    'message' => $e->getMessage(),
+                ],
                 statusCode: 500
             );
         }//end try
@@ -361,8 +362,8 @@ class ViewsController extends Controller
             if (empty($userId) === true) {
                 return new JSONResponse(
                     data: [
-                         'error' => 'User not authenticated',
-                     ],
+                        'error' => 'User not authenticated',
+                    ],
                     statusCode: 401
                 );
             }
@@ -373,8 +374,8 @@ class ViewsController extends Controller
             if (isset($data['name']) === false || empty($data['name']) === true) {
                 return new JSONResponse(
                     data: [
-                         'error' => 'View name is required',
-                     ],
+                        'error' => 'View name is required',
+                    ],
                     statusCode: 400
                 );
             }
@@ -391,14 +392,14 @@ class ViewsController extends Controller
                     'facetFilters'  => $config['facetFilters'] ?? [],
                     'enabledFacets' => $config['enabledFacets'] ?? [],
                 ];
-            } elseif (($data['query'] ?? null) !== null && is_array($data['query']) === true) {
+            } else if (($data['query'] ?? null) !== null && is_array($data['query']) === true) {
                 // Direct query parameter.
                 $query = $data['query'];
             } else {
                 return new JSONResponse(
                     data: [
-                         'error' => 'View query or configuration is required',
-                     ],
+                        'error' => 'View query or configuration is required',
+                    ],
                     statusCode: 400
                 );
             }//end if
@@ -415,29 +416,29 @@ class ViewsController extends Controller
 
             return new JSONResponse(
                 data: [
-                     'view' => $view->jsonSerialize(),
-                 ]
+                    'view' => $view->jsonSerialize(),
+                ]
             );
         } catch (DoesNotExistException $e) {
             return new JSONResponse(
                 data: [
-                     'error' => 'View not found',
-                 ],
+                    'error' => 'View not found',
+                ],
                 statusCode: 404
             );
         } catch (\Exception $e) {
             $this->logger->error(
                 message: 'Error updating view',
                 context: [
-                     'id'        => $id,
-                     'exception' => $e->getMessage(),
-                 ]
+                    'id'        => $id,
+                    'exception' => $e->getMessage(),
+                ]
             );
             return new JSONResponse(
                 data: [
-                     'error'   => 'Failed to update view',
-                     'message' => $e->getMessage(),
-                 ],
+                    'error'   => 'Failed to update view',
+                    'message' => $e->getMessage(),
+                ],
                 statusCode: 500
             );
         }//end try
@@ -471,8 +472,8 @@ class ViewsController extends Controller
             if (empty($userId) === true) {
                 return new JSONResponse(
                     data: [
-                         'error' => 'User not authenticated',
-                     ],
+                        'error' => 'User not authenticated',
+                    ],
                     statusCode: 401
                 );
             }
@@ -509,7 +510,7 @@ class ViewsController extends Controller
                     'facetFilters'  => $config['facetFilters'] ?? [],
                     'enabledFacets' => $config['enabledFacets'] ?? [],
                 ];
-            } elseif (($data['query'] ?? null) !== null && is_array($data['query']) === true) {
+            } else if (($data['query'] ?? null) !== null && is_array($data['query']) === true) {
                 $query = $data['query'];
             }
 
@@ -527,29 +528,29 @@ class ViewsController extends Controller
 
             return new JSONResponse(
                 data: [
-                     'view' => $updatedView->jsonSerialize(),
-                 ]
+                    'view' => $updatedView->jsonSerialize(),
+                ]
             );
         } catch (DoesNotExistException $e) {
             return new JSONResponse(
                 data: [
-                     'error' => 'View not found',
-                 ],
+                    'error' => 'View not found',
+                ],
                 statusCode: 404
             );
         } catch (\Exception $e) {
             $this->logger->error(
                 message: 'Error patching view',
                 context: [
-                     'id'        => $id,
-                     'exception' => $e->getMessage(),
-                 ]
+                    'id'        => $id,
+                    'exception' => $e->getMessage(),
+                ]
             );
             return new JSONResponse(
                 data: [
-                     'error'   => 'Failed to patch view',
-                     'message' => $e->getMessage(),
-                 ],
+                    'error'   => 'Failed to patch view',
+                    'message' => $e->getMessage(),
+                ],
                 statusCode: 500
             );
         }//end try
@@ -582,8 +583,8 @@ class ViewsController extends Controller
             if (empty($userId) === true) {
                 return new JSONResponse(
                     data: [
-                            'error' => 'User not authenticated',
-                        ],
+                        'error' => 'User not authenticated',
+                    ],
                     statusCode: 401
                 );
             }
@@ -592,9 +593,9 @@ class ViewsController extends Controller
             if ($user === null) {
                 return new JSONResponse(
                     data: [
-                            'success' => false,
-                            'error'   => 'User not authenticated',
-                        ],
+                        'success' => false,
+                        'error'   => 'User not authenticated',
+                    ],
                     statusCode: 401
                 );
             }
@@ -603,30 +604,30 @@ class ViewsController extends Controller
 
             return new JSONResponse(
                 data: [
-                        'message' => 'View deleted successfully',
-                    ],
+                    'message' => 'View deleted successfully',
+                ],
                 statusCode: 204
             );
         } catch (DoesNotExistException $e) {
             return new JSONResponse(
                 data: [
-                        'error' => 'View not found',
-                    ],
+                    'error' => 'View not found',
+                ],
                 statusCode: 404
             );
         } catch (\Exception $e) {
             $this->logger->error(
                 message: 'Error deleting view',
                 context: [
-                        'id'        => $id,
-                        'exception' => $e->getMessage(),
-                    ]
+                    'id'        => $id,
+                    'exception' => $e->getMessage(),
+                ]
             );
             return new JSONResponse(
                 data: [
-                        'error'   => 'Failed to delete view',
-                        'message' => $e->getMessage(),
-                    ],
+                    'error'   => 'Failed to delete view',
+                    'message' => $e->getMessage(),
+                ],
                 statusCode: 500
             );
         }//end try

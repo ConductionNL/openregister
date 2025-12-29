@@ -37,6 +37,7 @@ use Psr\Log\LoggerInterface;
  */
 class ObjectVectorizationStrategy implements VectorizationStrategyInterface
 {
+
     /**
      * Object service
      *
@@ -92,9 +93,9 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
         $this->logger->debug(
             '[ObjectVectorizationStrategy] Fetching objects',
             [
-                    'views' => $views,
-                    'limit' => $limit,
-                ]
+                'views' => $views,
+                'limit' => $limit,
+            ]
         );
 
         // Get objects using ObjectService with view support.
@@ -121,8 +122,8 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
         $this->logger->debug(
             '[ObjectVectorizationStrategy] Fetched objects',
             [
-                    'count' => $count,
-                ]
+                'count' => $count,
+            ]
         );
 
         return $objects;
@@ -208,12 +209,12 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
         $this->logger->debug(
             '[ObjectVectorizationStrategy] Preparing metadata',
             [
-                    'object_id'       => $objectId,
-                    'has_@self'       => isset($objectData['@self']) === true,
-                    '@self_keys'      => $this->extractSelfKeys($objectData),
-                    'register_direct' => $objectData['_register'] ?? $objectData['register'] ?? 'none',
-                    'register_@self'  => $objectData['@self']['register'] ?? 'none',
-                ]
+                'object_id'       => $objectId,
+                'has_@self'       => isset($objectData['@self']) === true,
+                '@self_keys'      => $this->extractSelfKeys($objectData),
+                'register_direct' => $objectData['_register'] ?? $objectData['register'] ?? 'none',
+                'register_@self'  => $objectData['@self']['register'] ?? 'none',
+            ]
         );
 
         // Extract title/name - check multiple possible fields.
@@ -223,7 +224,7 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
         }
 
         if ($title === null) {
-            $title = 'Object #' . $objectId;
+            $title = 'Object #'.$objectId;
         }
 
         // Extract description - check common variants.
@@ -355,11 +356,11 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
         $this->logger->debug(
             '[ObjectVectorizationStrategy] Serializing object',
             [
-                    'objectId'         => $object['id'] ?? 'unknown',
-                    'includeMetadata'  => $includeMetadata,
-                    'includeRelations' => $includeRelations,
-                    'maxNestingDepth'  => $maxNestingDepth,
-                ]
+                'objectId'         => $object['id'] ?? 'unknown',
+                'includeMetadata'  => $includeMetadata,
+                'includeRelations' => $includeRelations,
+                'maxNestingDepth'  => $maxNestingDepth,
+            ]
         );
 
         // Simple JSON serialization.

@@ -62,9 +62,9 @@ class Version1Date20250430083916 extends SimpleMigrationStep
                 'icon',
                 Types::STRING,
                 [
-                        'notnull' => false,
-                        'length'  => 255,
-                    ]
+                    'notnull' => false,
+                    'length'  => 255,
+                ]
             );
         }
 
@@ -77,8 +77,8 @@ class Version1Date20250430083916 extends SimpleMigrationStep
                 'size',
                 Types::INTEGER,
                 [
-                        'notnull' => false,
-                    ]
+                    'notnull' => false,
+                ]
             );
         }
 
@@ -99,8 +99,8 @@ class Version1Date20250430083916 extends SimpleMigrationStep
                 'size',
                 Types::INTEGER,
                 [
-                        'notnull' => false,
-                    ]
+                    'notnull' => false,
+                ]
             );
         }
 

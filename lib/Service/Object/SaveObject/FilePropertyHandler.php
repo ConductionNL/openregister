@@ -146,7 +146,7 @@ class FilePropertyHandler
      * @return         bool True if the value should be treated as a file property
      * @phpstan-return bool
      */
-    public function isFileProperty($value, ?Schema $schema = null, ?string $propertyName = null): bool
+    public function isFileProperty($value, ?Schema $schema=null, ?string $propertyName=null): bool
     {
         // If we have schema and property name, use schema-based checking.
         if ($schema !== null && $propertyName !== null) {
@@ -186,8 +186,7 @@ class FilePropertyHandler
             }
 
             // URL format (http/https) - but only if it looks like a downloadable file.
-            if (
-                filter_var($value, FILTER_VALIDATE_URL) !== false
+            if (filter_var($value, FILTER_VALIDATE_URL) !== false
                 && (strpos($value, 'http://') === 0 || strpos($value, 'https://') === 0)
             ) {
                 // Parse URL to get path.
@@ -230,8 +229,7 @@ class FilePropertyHandler
                     }
 
                     // URL with file extension.
-                    if (
-                        filter_var($item, FILTER_VALIDATE_URL) !== false
+                    if (filter_var($item, FILTER_VALIDATE_URL) !== false
                         && (strpos($item, 'http://') === 0 || strpos($item, 'https://') === 0)
                     ) {
                         $urlPath = parse_url($item, PHP_URL_PATH);
@@ -248,7 +246,7 @@ class FilePropertyHandler
                     if (base64_encode(base64_decode($item, true)) === $item && strlen($item) > 100) {
                         return true;
                     }
-                } elseif (is_array($item) === true && $this->isFileObject($item) === true) {
+                } else if (is_array($item) === true && $this->isFileObject($item) === true) {
                     // File object in array.
                     return true;
                 }//end if
@@ -372,18 +370,18 @@ class FilePropertyHandler
                                 // TODO->deleteFile(file: (int) $fileId, object: $objectEntity).
                             } catch (Exception $e) {
                                 // Log but don't fail - file might already be deleted.
-                                $this->logger->warning("Failed to delete file $fileId: " . $e->getMessage());
+                                $this->logger->warning("Failed to delete file $fileId: ".$e->getMessage());
                             }
                         }
                     }
-                } elseif (is_numeric($existingFileIds) === true) {
+                } else if (is_numeric($existingFileIds) === true) {
                     // Single file ID.
                     try {
                         null;
                         // TODO->deleteFile(file: (int) $existingFileIds, object: $objectEntity).
                     } catch (Exception $e) {
                         // Log but don't fail - file might already be deleted.
-                        $this->logger->warning("Failed to delete file $existingFileIds: " . $e->getMessage());
+                        $this->logger->warning("Failed to delete file $existingFileIds: ".$e->getMessage());
                     }
                 }//end if
             }//end if
@@ -478,7 +476,7 @@ class FilePropertyHandler
         $fileInput,
         string $propertyName,
         array $fileConfig,
-        ?int $index = null
+        ?int $index=null
     ): int {
         try {
             // Determine input type and process accordingly.
@@ -530,11 +528,10 @@ class FilePropertyHandler
         string $fileInput,
         string $propertyName,
         array $fileConfig,
-        ?int $index = null
+        ?int $index=null
     ): int {
         // Check if it's a URL.
-        if (
-            filter_var($fileInput, FILTER_VALIDATE_URL) !== false
+        if (filter_var($fileInput, FILTER_VALIDATE_URL) !== false
             && (strpos($fileInput, 'http://') === 0 || strpos($fileInput, 'https://') === 0)
         ) {
             // Fetch file content from URL.
@@ -542,8 +539,7 @@ class FilePropertyHandler
             $fileData    = $this->parseFileDataFromUrl(url: $fileInput, content: $fileContent);
         }
 
-        if (
-            is_string($fileInput) === false
+        if (is_string($fileInput) === false
             || (filter_var($fileInput, FILTER_VALIDATE_URL) === false
             && (str_starts_with($fileInput, 'http://') === false && str_starts_with($fileInput, 'https://') === false))
         ) {
@@ -605,7 +601,7 @@ class FilePropertyHandler
         array $fileObject,
         string $propertyName,
         array $fileConfig,
-        ?int $index = null
+        ?int $index=null
     ): int {
         // If file object has an ID, try to use the existing file.
         if (($fileObject['id'] ?? null) !== null) {
@@ -756,7 +752,7 @@ class FilePropertyHandler
      *
      * @throws Exception If validation fails.
      */
-    private function validateExistingFileAgainstConfig(File $file, array $fileConfig, string $propertyName, ?int $index = null): void
+    private function validateExistingFileAgainstConfig(File $file, array $fileConfig, string $propertyName, ?int $index=null): void
     {
         $errorPrefix = "Existing file at $propertyName";
         if ($index !== null) {
@@ -768,7 +764,7 @@ class FilePropertyHandler
             $fileMimeType = $file->getMimeType();
             if (in_array($fileMimeType, $fileConfig['allowedTypes'], true) === false) {
                 throw new Exception(
-                    "$errorPrefix has invalid type '$fileMimeType'. " . "Allowed types: " . implode(', ', $fileConfig['allowedTypes'])
+                    "$errorPrefix has invalid type '$fileMimeType'. "."Allowed types: ".implode(', ', $fileConfig['allowedTypes'])
                 );
             }
         }
@@ -778,7 +774,7 @@ class FilePropertyHandler
             $fileSize = $file->getSize();
             if ($fileSize > $fileConfig['maxSize']) {
                 throw new Exception(
-                    "$errorPrefix exceeds maximum size ({$fileConfig['maxSize']} bytes). " . "File size: {$fileSize} bytes"
+                    "$errorPrefix exceeds maximum size ({$fileConfig['maxSize']} bytes). "."File size: {$fileSize} bytes"
                 );
             }
         }
@@ -806,7 +802,7 @@ class FilePropertyHandler
      * @psalm-return   void
      * @phpstan-return void
      */
-    private function applyAutoTagsToExistingFile(File $file, array $fileConfig, string $propertyName, ?int $index = null): void
+    private function applyAutoTagsToExistingFile(File $file, array $fileConfig, string $propertyName, ?int $index=null): void
     {
         $autoTags = $this->prepareAutoTags(fileConfig: $fileConfig, propertyName: $propertyName, index: $index);
 
@@ -916,7 +912,7 @@ class FilePropertyHandler
      *
      * @throws Exception If validation fails.
      */
-    public function validateFileAgainstConfig(array $fileData, array $fileConfig, string $propertyName, ?int $index = null): void
+    public function validateFileAgainstConfig(array $fileData, array $fileConfig, string $propertyName, ?int $index=null): void
     {
         $errorPrefix = $index !== null ? "File at $propertyName[$index]" : "File at $propertyName";
 
@@ -930,7 +926,7 @@ class FilePropertyHandler
         if (($fileConfig['allowedTypes'] ?? null) !== null && empty($fileConfig['allowedTypes']) === false) {
             if (in_array($fileData['mimeType'], $fileConfig['allowedTypes'], true) === false) {
                 throw new Exception(
-                    "$errorPrefix has invalid type '{$fileData['mimeType']}'. " . "Allowed types: " . implode(', ', $fileConfig['allowedTypes'])
+                    "$errorPrefix has invalid type '{$fileData['mimeType']}'. "."Allowed types: ".implode(', ', $fileConfig['allowedTypes'])
                 );
             }
         }
@@ -939,7 +935,7 @@ class FilePropertyHandler
         if (($fileConfig['maxSize'] ?? null) !== null && $fileConfig['maxSize'] > 0) {
             if ($fileData['size'] > $fileConfig['maxSize']) {
                 throw new Exception(
-                    "$errorPrefix exceeds maximum size ({$fileConfig['maxSize']} bytes). " . "File size: {$fileData['size']} bytes"
+                    "$errorPrefix exceeds maximum size ({$fileConfig['maxSize']} bytes). "."File size: {$fileData['size']} bytes"
                 );
             }
         }
@@ -985,7 +981,7 @@ class FilePropertyHandler
                 );
 
                 throw new Exception(
-                    "$errorPrefix is an executable file (.$extension). " . "Executable files are blocked for security reasons. " . "Allowed formats: documents, images, archives, data files."
+                    "$errorPrefix is an executable file (.$extension). "."Executable files are blocked for security reasons. "."Allowed formats: documents, images, archives, data files."
                 );
             }
         }
@@ -1008,7 +1004,7 @@ class FilePropertyHandler
             );
 
             throw new Exception(
-                "$errorPrefix has executable MIME type '{$fileData['mimeType']}'. " . "Executable files are blocked for security reasons."
+                "$errorPrefix has executable MIME type '{$fileData['mimeType']}'. "."Executable files are blocked for security reasons."
             );
         }
     }//end blockExecutableFiles()
@@ -1066,7 +1062,7 @@ class FilePropertyHandler
                 );
 
                 throw new Exception(
-                    "$errorPrefix contains executable code ($description). " . "Executable files are blocked for security reasons."
+                    "$errorPrefix contains executable code ($description). "."Executable files are blocked for security reasons."
                 );
             }
         }//end foreach
@@ -1075,14 +1071,14 @@ class FilePropertyHandler
         $firstLines = substr($content, 0, 1024);
         if (preg_match('/^#!.*\/(sh|bash|zsh|ksh|csh|python|perl|ruby|php|node)/m', $firstLines) === 1) {
             throw new Exception(
-                "$errorPrefix contains script shebang. " . "Script files are blocked for security reasons."
+                "$errorPrefix contains script shebang. "."Script files are blocked for security reasons."
             );
         }
 
         // Check for embedded PHP tags.
         if (preg_match('/<\?php|<\?=|<script\s+language\s*=\s*["\']php/i', $firstLines) === 1) {
             throw new Exception(
-                "$errorPrefix contains PHP code. " . "PHP files are blocked for security reasons."
+                "$errorPrefix contains PHP code. "."PHP files are blocked for security reasons."
             );
         }
     }//end detectExecutableMagicBytes()
@@ -1105,7 +1101,7 @@ class FilePropertyHandler
      * @psalm-return   string
      * @phpstan-return string
      */
-    private function generateFileName(string $propertyName, string $extension, ?int $index = null): string
+    private function generateFileName(string $propertyName, string $extension, ?int $index=null): string
     {
         $timestamp   = time();
         $indexSuffix = $index !== null ? "_$index" : '';
@@ -1132,7 +1128,7 @@ class FilePropertyHandler
      * @psalm-return   list<string>
      * @phpstan-return array<int, string>
      */
-    private function prepareAutoTags(array $fileConfig, string $propertyName, ?int $index = null): array
+    private function prepareAutoTags(array $fileConfig, string $propertyName, ?int $index=null): array
     {
         $autoTags = $fileConfig['autoTags'] ?? [];
 

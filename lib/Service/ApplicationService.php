@@ -43,6 +43,7 @@ use Psr\Log\LoggerInterface;
  */
 class ApplicationService
 {
+
     /**
      * Application mapper for database operations
      *
@@ -94,7 +95,7 @@ class ApplicationService
      *
      * @psalm-return array<int, Application>
      */
-    public function findAll(?int $limit = null, ?int $offset = null, array $filters = []): array
+    public function findAll(?int $limit=null, ?int $offset=null, array $filters=[]): array
     {
         // Delegate to mapper to retrieve applications with pagination and filters.
         return $this->applicationMapper->findAll(

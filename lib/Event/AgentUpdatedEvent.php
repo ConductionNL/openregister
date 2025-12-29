@@ -28,6 +28,7 @@ use OCP\EventDispatcher\Event;
  */
 class AgentUpdatedEvent extends Event
 {
+
     /**
      * The updated agent state.
      *

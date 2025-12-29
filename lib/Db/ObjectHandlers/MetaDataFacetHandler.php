@@ -62,7 +62,7 @@ class MetaDataFacetHandler
      *
      * @psalm-return array{type: 'terms', buckets: list<array{key: mixed, label: string, results: int}>}
      */
-    public function getTermsFacet(string $field, array $baseQuery = []): array
+    public function getTermsFacet(string $field, array $baseQuery=[]): array
     {
         // FACET FIX: Map @self metadata field names to actual database columns.
         $actualField = $this->mapMetadataFieldToColumn($field);
@@ -150,7 +150,7 @@ class MetaDataFacetHandler
      *
      * @psalm-return array{type: 'date_histogram', interval: string, buckets: list<array{key: mixed, results: int}>}
      */
-    public function getDateHistogramFacet(string $field, string $interval, array $baseQuery = []): array
+    public function getDateHistogramFacet(string $field, string $interval, array $baseQuery=[]): array
     {
         $queryBuilder = $this->db->getQueryBuilder();
 
@@ -210,7 +210,7 @@ class MetaDataFacetHandler
      *
      * @psalm-return array{type: 'range', buckets: list<array{from?: mixed, key: string, results: int, to?: mixed}>}
      */
-    public function getRangeFacet(string $field, array $ranges, array $baseQuery = []): array
+    public function getRangeFacet(string $field, array $ranges, array $baseQuery=[]): array
     {
         $buckets = [];
 
@@ -382,7 +382,7 @@ class MetaDataFacetHandler
 
             // Use case-insensitive JSON_SEARCH with partial matching.
             // This ensures the search is case-insensitive and supports partial matches.
-            $searchFunction = "JSON_SEARCH(LOWER(`object`), 'all', " . $queryBuilder->createNamedParameter('%' . $cleanTerm . '%') . ")";
+            $searchFunction = "JSON_SEARCH(LOWER(`object`), 'all', ".$queryBuilder->createNamedParameter('%'.$cleanTerm.'%').")";
 
             $orConditions->add(
                 $queryBuilder->expr()->isNotNull(
@@ -522,15 +522,15 @@ class MetaDataFacetHandler
                         break;
                     case '~':
                         // Contains (case insensitive).
-                        $queryBuilder->andWhere($queryBuilder->expr()->like($field, $queryBuilder->createNamedParameter('%' . $operatorValue . '%')));
+                        $queryBuilder->andWhere($queryBuilder->expr()->like($field, $queryBuilder->createNamedParameter('%'.$operatorValue.'%')));
                         break;
                     case '^':
                         // Starts with (case insensitive).
-                        $queryBuilder->andWhere($queryBuilder->expr()->like($field, $queryBuilder->createNamedParameter($operatorValue . '%')));
+                        $queryBuilder->andWhere($queryBuilder->expr()->like($field, $queryBuilder->createNamedParameter($operatorValue.'%')));
                         break;
                     case '$':
                         // Ends with (case insensitive).
-                        $queryBuilder->andWhere($queryBuilder->expr()->like($field, $queryBuilder->createNamedParameter('%' . $operatorValue)));
+                        $queryBuilder->andWhere($queryBuilder->expr()->like($field, $queryBuilder->createNamedParameter('%'.$operatorValue)));
                         break;
                     case '===':
                         // Exact match (case sensitive).
@@ -615,14 +615,14 @@ class MetaDataFacetHandler
     private function applyObjectFieldFilters(IQueryBuilder $queryBuilder, array $objectFilters): void
     {
         foreach ($objectFilters as $field => $value) {
-            $jsonPath = '$.' . $field;
+            $jsonPath = '$.'.$field;
 
             // Handle simple values (backwards compatibility).
             if (is_array($value) === false) {
                 if ($value === 'IS NOT NULL') {
                     $queryBuilder->andWhere(
                         $queryBuilder->expr()->isNotNull(
-                            $queryBuilder->createFunction("JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . ")")
+                            $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
                         )
                     );
                     continue;
@@ -631,7 +631,7 @@ class MetaDataFacetHandler
                 if ($value === 'IS NULL') {
                     $queryBuilder->andWhere(
                         $queryBuilder->expr()->isNull(
-                            $queryBuilder->createFunction("JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . ")")
+                            $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
                         )
                     );
                     continue;
@@ -710,7 +710,7 @@ class MetaDataFacetHandler
         // Check for exact match (single value).
         $conditions->add(
             $queryBuilder->expr()->eq(
-                $queryBuilder->createFunction("JSON_UNQUOTE(JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . "))"),
+                $queryBuilder->createFunction("JSON_UNQUOTE(JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath)."))"),
                 $queryBuilder->createNamedParameter($value)
             )
         );
@@ -718,7 +718,7 @@ class MetaDataFacetHandler
         // Check if the value exists within an array using JSON_CONTAINS.
         $conditions->add(
             $queryBuilder->expr()->eq(
-                $queryBuilder->createFunction("JSON_CONTAINS(JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . "), " . $queryBuilder->createNamedParameter(json_encode($value)) . ")"),
+                $queryBuilder->createFunction("JSON_CONTAINS(JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath)."), ".$queryBuilder->createNamedParameter(json_encode($value)).")"),
                 $queryBuilder->createNamedParameter(1)
             )
         );
@@ -746,7 +746,7 @@ class MetaDataFacetHandler
      */
     private function applyObjectFieldOperator(IQueryBuilder $queryBuilder, string $jsonPath, string $operator, mixed $operatorValue): void
     {
-        $jsonExtract = $queryBuilder->createFunction("JSON_UNQUOTE(JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . "))");
+        $jsonExtract = $queryBuilder->createFunction("JSON_UNQUOTE(JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath)."))");
 
         switch ($operator) {
             case 'gt':
@@ -766,15 +766,15 @@ class MetaDataFacetHandler
                 break;
             case '~':
                 // Contains (case insensitive).
-                $queryBuilder->andWhere($queryBuilder->expr()->like($jsonExtract, $queryBuilder->createNamedParameter('%' . $operatorValue . '%')));
+                $queryBuilder->andWhere($queryBuilder->expr()->like($jsonExtract, $queryBuilder->createNamedParameter('%'.$operatorValue.'%')));
                 break;
             case '^':
                 // Starts with (case insensitive).
-                $queryBuilder->andWhere($queryBuilder->expr()->like($jsonExtract, $queryBuilder->createNamedParameter($operatorValue . '%')));
+                $queryBuilder->andWhere($queryBuilder->expr()->like($jsonExtract, $queryBuilder->createNamedParameter($operatorValue.'%')));
                 break;
             case '$':
                 // Ends with (case insensitive).
-                $queryBuilder->andWhere($queryBuilder->expr()->like($jsonExtract, $queryBuilder->createNamedParameter('%' . $operatorValue)));
+                $queryBuilder->andWhere($queryBuilder->expr()->like($jsonExtract, $queryBuilder->createNamedParameter('%'.$operatorValue)));
                 break;
             case '===':
                 // Exact match (case sensitive).
@@ -784,7 +784,7 @@ class MetaDataFacetHandler
                 if ($operatorValue !== true && $operatorValue !== 'true') {
                     $queryBuilder->andWhere(
                         $queryBuilder->expr()->isNull(
-                            $queryBuilder->createFunction("JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . ")")
+                            $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
                         )
                     );
                     break;
@@ -792,7 +792,7 @@ class MetaDataFacetHandler
 
                 $queryBuilder->andWhere(
                     $queryBuilder->expr()->isNotNull(
-                        $queryBuilder->createFunction("JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . ")")
+                        $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
                     )
                 );
                 break;
@@ -801,7 +801,7 @@ class MetaDataFacetHandler
                     $queryBuilder->andWhere(
                         $queryBuilder->expr()->andX(
                             $queryBuilder->expr()->isNotNull(
-                                $queryBuilder->createFunction("JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . ")")
+                                $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
                             ),
                             $queryBuilder->expr()->neq($jsonExtract, $queryBuilder->createNamedParameter(''))
                         )
@@ -812,7 +812,7 @@ class MetaDataFacetHandler
                 $queryBuilder->andWhere(
                     $queryBuilder->expr()->orX(
                         $queryBuilder->expr()->isNull(
-                            $queryBuilder->createFunction("JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . ")")
+                            $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
                         ),
                         $queryBuilder->expr()->eq($jsonExtract, $queryBuilder->createNamedParameter(''))
                     )
@@ -822,7 +822,7 @@ class MetaDataFacetHandler
                 if ($operatorValue !== true && $operatorValue !== 'true') {
                     $queryBuilder->andWhere(
                         $queryBuilder->expr()->isNotNull(
-                            $queryBuilder->createFunction("JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . ")")
+                            $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
                         )
                     );
                     break;
@@ -830,7 +830,7 @@ class MetaDataFacetHandler
 
                 $queryBuilder->andWhere(
                     $queryBuilder->expr()->isNull(
-                        $queryBuilder->createFunction("JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . ")")
+                        $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
                     )
                 );
                 break;
@@ -882,15 +882,15 @@ class MetaDataFacetHandler
     private function generateRangeKey(array $range): string
     {
         if (($range['from'] ?? null) !== null && (($range['to'] ?? null) !== null) === true) {
-            return $range['from'] . '-' . $range['to'];
+            return $range['from'].'-'.$range['to'];
         }
 
         if (($range['from'] ?? null) !== null) {
-            return $range['from'] . '+';
+            return $range['from'].'+';
         }
 
         if (($range['to'] ?? null) !== null) {
-            return '0-' . $range['to'];
+            return '0-'.$range['to'];
         }
 
         return 'all';
@@ -971,7 +971,7 @@ class MetaDataFacetHandler
      *
      * @psalm-return array{register?: array{type: 'categorical'|'date', description: string, facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'}, intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool, sample_values?: list{0?: array{value: mixed, label: string, count: int}|mixed,...}, date_range?: array{min: mixed, max: mixed}}, schema?: array{type: 'categorical'|'date', description: string, facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'}, intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool, sample_values?: list{0?: array{value: mixed, label: string, count: int}|mixed,...}, date_range?: array{min: mixed, max: mixed}}, organisation?: array{type: 'categorical'|'date', description: string, facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'}, intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool, sample_values?: list{0?: array{value: mixed, label: string, count: int}|mixed,...}, date_range?: array{min: mixed, max: mixed}}, application?: array{type: 'categorical'|'date', description: string, facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'}, intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool, sample_values?: list{0?: array{value: mixed, label: string, count: int}|mixed,...}, date_range?: array{min: mixed, max: mixed}}, created?: array{type: 'categorical'|'date', description: string, facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'}, intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool, sample_values?: list{0?: array{value: mixed, label: string, count: int}|mixed,...}, date_range?: array{min: mixed, max: mixed}}, updated?: array{type: 'categorical'|'date', description: string, facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'}, intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool, sample_values?: list{0?: array{value: mixed, label: string, count: int}|mixed,...}, date_range?: array{min: mixed, max: mixed}}, published?: array{type: 'categorical'|'date', description: string, facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'}, intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool, sample_values?: list{0?: array{value: mixed, label: string, count: int}|mixed,...}, date_range?: array{min: mixed, max: mixed}}, depublished?: array{type: 'categorical'|'date', description: string, facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'}, intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool, sample_values?: list{0?: array{value: mixed, label: string, count: int}|mixed,...}, date_range?: array{min: mixed, max: mixed}}}
      */
-    public function getFacetableFields(array $baseQuery = []): array
+    public function getFacetableFields(array $baseQuery=[]): array
     {
         $facetableFields = [];
 

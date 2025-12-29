@@ -49,6 +49,7 @@ use Psr\Log\LoggerInterface;
  */
 class WebhookDeliveryJob extends QueuedJob
 {
+
     /**
      * Webhook mapper
      *
@@ -130,8 +131,8 @@ class WebhookDeliveryJob extends QueuedJob
             $this->logger->error(
                 'WebhookDeliveryJob called with invalid arguments',
                 [
-                        'argument' => $argument,
-                    ]
+                    'argument' => $argument,
+                ]
             );
             return;
         }

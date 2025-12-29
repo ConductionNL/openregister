@@ -28,6 +28,7 @@ use OCP\EventDispatcher\Event;
  */
 class SchemaUpdatedEvent extends Event
 {
+
     /**
      * The updated schema state
      *

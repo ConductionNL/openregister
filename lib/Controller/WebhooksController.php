@@ -48,6 +48,7 @@ use Psr\Log\LoggerInterface;
  */
 class WebhooksController extends Controller
 {
+
     /**
      * Webhook mapper
      *
@@ -136,10 +137,10 @@ class WebhooksController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                message: 'Error listing webhooks: ' . $e->getMessage(),
+                message: 'Error listing webhooks: '.$e->getMessage(),
                 context: [
-                        'trace' => $e->getTraceAsString(),
-                    ]
+                    'trace' => $e->getTraceAsString(),
+                ]
             );
 
             return new JSONResponse(
@@ -189,11 +190,11 @@ class WebhooksController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                message: 'Error retrieving webhook: ' . $e->getMessage(),
+                message: 'Error retrieving webhook: '.$e->getMessage(),
                 context: [
-                        'id'    => $id,
-                        'trace' => $e->getTraceAsString(),
-                    ]
+                    'id'    => $id,
+                    'trace' => $e->getTraceAsString(),
+                ]
             );
 
             return new JSONResponse(
@@ -238,25 +239,25 @@ class WebhooksController extends Controller
             $this->logger->info(
                 message: 'Webhook created',
                 context: [
-                        'id'   => $webhook->getId(),
-                        'name' => $webhook->getName(),
-                        'url'  => $webhook->getUrl(),
-                    ]
+                    'id'   => $webhook->getId(),
+                    'name' => $webhook->getName(),
+                    'url'  => $webhook->getUrl(),
+                ]
             );
 
             return new JSONResponse(data: $webhook, statusCode: 201);
         } catch (\Exception $e) {
             $this->logger->error(
-                'Error creating webhook: ' . $e->getMessage(),
+                'Error creating webhook: '.$e->getMessage(),
                 [
-                        'data'  => $this->request->getParams(),
-                        'trace' => $e->getTraceAsString(),
-                    ]
+                    'data'  => $this->request->getParams(),
+                    'trace' => $e->getTraceAsString(),
+                ]
             );
 
             return new JSONResponse(
                 data: [
-                    'error' => 'Failed to create webhook: ' . $e->getMessage(),
+                    'error' => 'Failed to create webhook: '.$e->getMessage(),
                 ],
                 statusCode: 500
             );
@@ -291,9 +292,9 @@ class WebhooksController extends Controller
             $this->logger->info(
                 message: 'Webhook updated',
                 context: [
-                        'id'   => $webhook->getId(),
-                        'name' => $webhook->getName(),
-                    ]
+                    'id'   => $webhook->getId(),
+                    'name' => $webhook->getName(),
+                ]
             );
 
             return new JSONResponse(data: $webhook);
@@ -306,17 +307,17 @@ class WebhooksController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                'Error updating webhook: ' . $e->getMessage(),
+                'Error updating webhook: '.$e->getMessage(),
                 [
-                        'id'    => $id,
-                        'data'  => $this->request->getParams(),
-                        'trace' => $e->getTraceAsString(),
-                    ]
+                    'id'    => $id,
+                    'data'  => $this->request->getParams(),
+                    'trace' => $e->getTraceAsString(),
+                ]
             );
 
             return new JSONResponse(
                 data: [
-                    'error' => 'Failed to update webhook: ' . $e->getMessage(),
+                    'error' => 'Failed to update webhook: '.$e->getMessage(),
                 ],
                 statusCode: 500
             );
@@ -355,9 +356,9 @@ class WebhooksController extends Controller
             $this->logger->info(
                 message: 'Webhook deleted',
                 context: [
-                        'id'   => $webhook->getId(),
-                        'name' => $webhook->getName(),
-                    ]
+                    'id'   => $webhook->getId(),
+                    'name' => $webhook->getName(),
+                ]
             );
 
             return new JSONResponse(data: null, statusCode: 204);
@@ -370,11 +371,11 @@ class WebhooksController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                'Error deleting webhook: ' . $e->getMessage(),
+                'Error deleting webhook: '.$e->getMessage(),
                 [
-                        'id'    => $id,
-                        'trace' => $e->getTraceAsString(),
-                    ]
+                    'id'    => $id,
+                    'trace' => $e->getTraceAsString(),
+                ]
             );
 
             return new JSONResponse(
@@ -469,32 +470,32 @@ class WebhooksController extends Controller
             );
         } catch (GuzzleException $e) {
             $this->logger->error(
-                'Error testing webhook: ' . $e->getMessage(),
+                'Error testing webhook: '.$e->getMessage(),
                 [
-                        'id'    => $id,
-                        'trace' => $e->getTraceAsString(),
-                    ]
+                    'id'    => $id,
+                    'trace' => $e->getTraceAsString(),
+                ]
             );
 
             return new JSONResponse(
                 data: [
                     'success' => false,
-                    'message' => 'Test webhook delivery failed: ' . $e->getMessage(),
+                    'message' => 'Test webhook delivery failed: '.$e->getMessage(),
                 ],
                 statusCode: 500
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                'Error testing webhook: ' . $e->getMessage(),
+                'Error testing webhook: '.$e->getMessage(),
                 [
-                        'id'    => $id,
-                        'trace' => $e->getTraceAsString(),
-                    ]
+                    'id'    => $id,
+                    'trace' => $e->getTraceAsString(),
+                ]
             );
 
             return new JSONResponse(
                 data: [
-                    'error' => 'Failed to test webhook: ' . $e->getMessage(),
+                    'error' => 'Failed to test webhook: '.$e->getMessage(),
                 ],
                 statusCode: 500
             );
@@ -885,11 +886,11 @@ class WebhooksController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                message: 'Error retrieving webhook logs: ' . $e->getMessage(),
+                message: 'Error retrieving webhook logs: '.$e->getMessage(),
                 context: [
-                        'id'    => $id,
-                        'trace' => $e->getTraceAsString(),
-                    ]
+                    'id'    => $id,
+                    'trace' => $e->getTraceAsString(),
+                ]
             );
 
             return new JSONResponse(
@@ -939,11 +940,11 @@ class WebhooksController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                message: 'Error retrieving webhook log statistics: ' . $e->getMessage(),
+                message: 'Error retrieving webhook log statistics: '.$e->getMessage(),
                 context: [
-                        'id'    => $id,
-                        'trace' => $e->getTraceAsString(),
-                    ]
+                    'id'    => $id,
+                    'trace' => $e->getTraceAsString(),
+                ]
             );
 
             return new JSONResponse(
@@ -1036,15 +1037,15 @@ class WebhooksController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                message: 'Error retrieving webhook logs: ' . $e->getMessage(),
+                message: 'Error retrieving webhook logs: '.$e->getMessage(),
                 context: [
-                        'trace' => $e->getTraceAsString(),
-                    ]
+                    'trace' => $e->getTraceAsString(),
+                ]
             );
 
             return new JSONResponse(
                 data: [
-                    'error' => 'Failed to retrieve webhook logs: ' . $e->getMessage(),
+                    'error' => 'Failed to retrieve webhook logs: '.$e->getMessage(),
                 ],
                 statusCode: 500
             );
@@ -1092,7 +1093,7 @@ class WebhooksController extends Controller
                 if ($decoded !== null) {
                     $payload = $decoded;
                 }
-            } elseif ($log->getPayload() !== null) {
+            } else if ($log->getPayload() !== null) {
                 $payload = $log->getPayloadArray();
             }
 
@@ -1161,11 +1162,11 @@ class WebhooksController extends Controller
             }//end if
         } catch (DoesNotExistException $e) {
             $this->logger->error(
-                message: 'Webhook log not found for retry: ' . $e->getMessage(),
+                message: 'Webhook log not found for retry: '.$e->getMessage(),
                 context: [
-                        'log_id' => $logId,
-                        'trace'  => $e->getTraceAsString(),
-                    ]
+                    'log_id' => $logId,
+                    'trace'  => $e->getTraceAsString(),
+                ]
             );
 
             return new JSONResponse(
@@ -1176,11 +1177,11 @@ class WebhooksController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                message: 'Error retrying webhook: ' . $e->getMessage(),
+                message: 'Error retrying webhook: '.$e->getMessage(),
                 context: [
-                        'log_id' => $logId,
-                        'trace'  => $e->getTraceAsString(),
-                    ]
+                    'log_id' => $logId,
+                    'trace'  => $e->getTraceAsString(),
+                ]
             );
 
             return new JSONResponse(

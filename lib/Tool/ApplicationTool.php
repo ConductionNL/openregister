@@ -39,6 +39,7 @@ use Psr\Log\LoggerInterface;
  */
 class ApplicationTool extends AbstractTool implements ToolInterface
 {
+
     /**
      * Application mapper for database operations
      *
@@ -206,15 +207,15 @@ class ApplicationTool extends AbstractTool implements ToolInterface
      *
      * @psalm-return array{success: bool, error?: string, details?: mixed, message?: string, data?: mixed}
      */
-    public function listApplications(int $limit = 50, int $offset = 0): array
+    public function listApplications(int $limit=50, int $offset=0): array
     {
         try {
             $this->logger->info(
                 '[ApplicationTool] Listing applications',
                 [
-                        'limit'  => $limit,
-                        'offset' => $offset,
-                    ]
+                    'limit'  => $limit,
+                    'offset' => $offset,
+                ]
             );
 
             // Get applications via mapper (RBAC is enforced in mapper).
@@ -226,21 +227,21 @@ class ApplicationTool extends AbstractTool implements ToolInterface
 
             return $this->formatSuccess(
                 data: [
-                        'applications' => $results,
-                        'total'        => $total,
-                        'limit'        => $limit,
-                        'offset'       => $offset,
-                    ],
+                    'applications' => $results,
+                    'total'        => $total,
+                    'limit'        => $limit,
+                    'offset'       => $offset,
+                ],
                 message: "Found {$total} applications."
             );
         } catch (\Exception $e) {
             $this->logger->error(
                 '[ApplicationTool] Failed to list applications',
                 [
-                        'error' => $e->getMessage(),
-                    ]
+                    'error' => $e->getMessage(),
+                ]
             );
-            return $this->formatError(message: 'Failed to list applications: ' . $e->getMessage());
+            return $this->formatError(message: 'Failed to list applications: '.$e->getMessage());
         }//end try
     }//end listApplications()
 
@@ -271,11 +272,11 @@ class ApplicationTool extends AbstractTool implements ToolInterface
             $this->logger->error(
                 '[ApplicationTool] Failed to get application',
                 [
-                        'uuid'  => $uuid,
-                        'error' => $e->getMessage(),
-                    ]
+                    'uuid'  => $uuid,
+                    'error' => $e->getMessage(),
+                ]
             );
-            return $this->formatError(message: 'Failed to get application: ' . $e->getMessage());
+            return $this->formatError(message: 'Failed to get application: '.$e->getMessage());
         }//end try
     }//end getApplication()
 
@@ -292,8 +293,8 @@ class ApplicationTool extends AbstractTool implements ToolInterface
      */
     public function createApplication(
         string $name,
-        ?string $description = null,
-        ?string $_domain = null
+        ?string $description=null,
+        ?string $_domain=null
     ): array {
         try {
             $this->logger->info('[ApplicationTool] Creating application', ['name' => $name]);
@@ -316,11 +317,11 @@ class ApplicationTool extends AbstractTool implements ToolInterface
             $this->logger->error(
                 '[ApplicationTool] Failed to create application',
                 [
-                        'name'  => $name,
-                        'error' => $e->getMessage(),
-                    ]
+                    'name'  => $name,
+                    'error' => $e->getMessage(),
+                ]
             );
-            return $this->formatError(message: 'Failed to create application: ' . $e->getMessage());
+            return $this->formatError(message: 'Failed to create application: '.$e->getMessage());
         }//end try
     }//end createApplication()
 
@@ -338,9 +339,9 @@ class ApplicationTool extends AbstractTool implements ToolInterface
      */
     public function updateApplication(
         string $uuid,
-        ?string $name = null,
-        ?string $description = null,
-        ?string $_domain = null
+        ?string $name=null,
+        ?string $description=null,
+        ?string $_domain=null
     ): array {
         try {
             $this->logger->info('[ApplicationTool] Updating application', ['uuid' => $uuid]);
@@ -370,11 +371,11 @@ class ApplicationTool extends AbstractTool implements ToolInterface
             $this->logger->error(
                 '[ApplicationTool] Failed to update application',
                 [
-                        'uuid'  => $uuid,
-                        'error' => $e->getMessage(),
-                    ]
+                    'uuid'  => $uuid,
+                    'error' => $e->getMessage(),
+                ]
             );
-            return $this->formatError(message: 'Failed to update application: ' . $e->getMessage());
+            return $this->formatError(message: 'Failed to update application: '.$e->getMessage());
         }//end try
     }//end updateApplication()
 
@@ -409,11 +410,11 @@ class ApplicationTool extends AbstractTool implements ToolInterface
             $this->logger->error(
                 '[ApplicationTool] Failed to delete application',
                 [
-                        'uuid'  => $uuid,
-                        'error' => $e->getMessage(),
-                    ]
+                    'uuid'  => $uuid,
+                    'error' => $e->getMessage(),
+                ]
             );
-            return $this->formatError(message: 'Failed to delete application: ' . $e->getMessage());
+            return $this->formatError(message: 'Failed to delete application: '.$e->getMessage());
         }//end try
     }//end deleteApplication()
 
@@ -426,7 +427,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface
      *
      * @return array Response
      */
-    public function executeFunction(string $functionName, array $parameters, ?string $userId = null): array
+    public function executeFunction(string $functionName, array $parameters, ?string $userId=null): array
     {
         // Convert snake_case to camelCase for PSR compliance.
         $methodName = lcfirst(str_replace('_', '', ucwords($functionName, '_')));

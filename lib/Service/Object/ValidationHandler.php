@@ -195,7 +195,7 @@ class ValidationHandler
                     'uuid'  => $object->getUuid(),
                     'name'  => $object->getName(),
                     'data'  => $objectData,
-                    'error' => 'Unexpected error: ' . $e->getMessage(),
+                    'error' => 'Unexpected error: '.$e->getMessage(),
                 ];
             }//end try
         }//end foreach
@@ -272,7 +272,7 @@ class ValidationHandler
                     // Generic error.
                     $errors[] = [
                         'path'    => 'general',
-                        'message' => 'Validation failed: ' . $e->getMessage(),
+                        'message' => 'Validation failed: '.$e->getMessage(),
                         'keyword' => 'exception',
                     ];
                 }

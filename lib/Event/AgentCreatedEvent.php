@@ -28,6 +28,7 @@ use OCP\EventDispatcher\Event;
  */
 class AgentCreatedEvent extends Event
 {
+
     /**
      * The newly created agent.
      *

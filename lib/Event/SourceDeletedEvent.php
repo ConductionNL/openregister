@@ -28,6 +28,7 @@ use OCP\EventDispatcher\Event;
  */
 class SourceDeletedEvent extends Event
 {
+
     /**
      * The deleted source.
      *

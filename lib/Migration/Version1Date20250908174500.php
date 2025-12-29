@@ -70,7 +70,7 @@ class Version1Date20250908174500 extends SimpleMigrationStep
                         $output->info(message: '🎯 This enables proper bulk update operations');
                         $output->info(message: '🚀 INSERT...ON DUPLICATE KEY UPDATE will now work correctly');
                     } catch (\Exception $e) {
-                        $output->info('❌ Could not create UUID unique constraint: ' . $e->getMessage());
+                        $output->info('❌ Could not create UUID unique constraint: '.$e->getMessage());
                         $output->info(message: '⚠️  This may cause duplicate object creation during imports');
 
                         // Don't fail the migration - log the issue but continue.

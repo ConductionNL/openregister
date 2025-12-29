@@ -70,6 +70,7 @@ use OCP\AppFramework\Db\Entity;
  */
 class Register extends Entity implements JsonSerializable
 {
+
     /**
      * Unique identifier for the register
      *
@@ -361,7 +362,7 @@ class Register extends Entity implements JsonSerializable
                 $value = null;
             }
 
-            $method = 'set' . ucfirst($key);
+            $method = 'set'.ucfirst($key);
 
             try {
                 $this->$method($value);
@@ -524,7 +525,7 @@ class Register extends Entity implements JsonSerializable
         // Final fallback with ID.
         // Suppress redundant property initialization check.
         //
-        return 'Register #' . ($this->id ?? 'unknown');
+        return 'Register #'.($this->id ?? 'unknown');
     }//end __toString()
 
     /**
@@ -701,7 +702,7 @@ class Register extends Entity implements JsonSerializable
      *
      * @return static Returns self for method chaining.
      */
-    public function enableMagicMappingForSchema(int $schemaId, bool $autoCreateTable = true, ?string $comment = null): static
+    public function enableMagicMappingForSchema(int $schemaId, bool $autoCreateTable=true, ?string $comment=null): static
     {
         $config = $this->getConfiguration();
 

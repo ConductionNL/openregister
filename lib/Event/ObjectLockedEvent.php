@@ -28,6 +28,7 @@ use OCP\EventDispatcher\Event;
  */
 class ObjectLockedEvent extends Event
 {
+
     /**
      * The locked object entity
      *

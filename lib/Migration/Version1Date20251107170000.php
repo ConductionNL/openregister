@@ -62,10 +62,10 @@ class Version1Date20251107170000 extends SimpleMigrationStep
                     'chunks_json',
                     Types::TEXT,
                     [
-                            'notnull' => false,
-                            'default' => null,
-                            'comment' => 'JSON-encoded array of text chunks with metadata',
-                        ]
+                        'notnull' => false,
+                        'default' => null,
+                        'comment' => 'JSON-encoded array of text chunks with metadata',
+                    ]
                 );
                 $output->info(message: '✅ Added chunks_json column to file_texts table');
                 $updated = true;

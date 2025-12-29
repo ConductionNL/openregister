@@ -46,6 +46,7 @@ use OCA\OpenRegister\Service\IndexService;
  */
 class SearchController extends Controller
 {
+
     /**
      * The SOLR search service
      *
@@ -194,11 +195,11 @@ class SearchController extends Controller
 
             // Add wildcards for partial matching if not already present.
             if (str_starts_with($lowerTerm, '*') === false && str_starts_with($lowerTerm, '%') === false) {
-                $lowerTerm = '*' . $lowerTerm;
+                $lowerTerm = '*'.$lowerTerm;
             }
 
             if (str_ends_with($lowerTerm, '*') === false && str_ends_with($lowerTerm, '%') === false) {
-                $lowerTerm = $lowerTerm . '*';
+                $lowerTerm = $lowerTerm.'*';
             }
 
             $processedTerms[] = $lowerTerm;

@@ -28,6 +28,7 @@ use OCP\EventDispatcher\Event;
  */
 class ConfigurationCreatedEvent extends Event
 {
+
     /**
      * The newly created configuration.
      *

@@ -60,6 +60,7 @@ use OCP\EventDispatcher\Event;
  */
 class ToolRegistrationEvent extends Event
 {
+
     /**
      * Tool registry
      *

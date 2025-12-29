@@ -28,6 +28,7 @@ use OCP\EventDispatcher\Event;
  */
 class ObjectUnlockedEvent extends Event
 {
+
     /**
      * The unlocked object entity
      *

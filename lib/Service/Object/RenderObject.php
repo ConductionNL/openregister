@@ -60,6 +60,7 @@ use Symfony\Component\Uid\Uuid;
  */
 class RenderObject
 {
+
     /**
      * Cache of registers indexed by ID
      *
@@ -137,8 +138,8 @@ class RenderObject
         $this->logger->debug(
             'Ultra preload cache set',
             [
-                    'cachedObjectCount' => count($ultraPreloadCache),
-                ]
+                'cachedObjectCount' => count($ultraPreloadCache),
+            ]
         );
     }//end setUltraPreloadCache()
 
@@ -454,8 +455,7 @@ class RenderObject
         }
 
         // Array of files.
-        if (
-            ($propertyConfig['type'] ?? '') === 'array'
+        if (($propertyConfig['type'] ?? '') === 'array'
             && (($propertyConfig['items'] ?? null) !== null)
             && ($propertyConfig['items']['type'] ?? '') === 'file'
         ) {
@@ -672,17 +672,17 @@ class RenderObject
      */
     public function renderEntity(
         ObjectEntity $entity,
-        array | string | null $_extend = [],
-        int $depth = 0,
-        ?array $filter = [],
-        ?array $fields = [],
-        ?array $unset = [],
-        ?array $registers = [],
-        ?array $schemas = [],
-        ?array $objects = [],
-        ?array $visitedIds = [],
-        bool $_rbac = true,
-        bool $_multitenancy = true
+        array | string | null $_extend=[],
+        int $depth=0,
+        ?array $filter=[],
+        ?array $fields=[],
+        ?array $unset=[],
+        ?array $registers=[],
+        ?array $schemas=[],
+        ?array $objects=[],
+        ?array $visitedIds=[],
+        bool $_rbac=true,
+        bool $_multitenancy=true
     ): ObjectEntity {
         if ($entity->getUuid() !== null && in_array($entity->getUuid(), $visitedIds ?? [], true) === true) {
             // @psalm-suppress NullableReturnStatement - setObject() returns $this (ObjectEntity) despite void annotation
@@ -792,7 +792,7 @@ class RenderObject
                     $_extend[] = $key;
                 }
             }
-        } elseif (is_string($_extend) === true) {
+        } else if (is_string($_extend) === true) {
             $_extend = explode(',', $_extend);
         }
 
@@ -874,7 +874,7 @@ class RenderObject
      *
      * @throws \OCP\DB\Exception
      */
-    private function handleExtendDot(array $data, array &$_extend, int $depth, bool $allFlag = false, array $visitedIds = []): array
+    private function handleExtendDot(array $data, array &$_extend, int $depth, bool $allFlag=false, array $visitedIds=[]): array
     {
         $data = $this->handleWildcardExtends(objectData: $data, _extend: $_extend, depth: $depth + 1);
 
@@ -896,7 +896,7 @@ class RenderObject
                 fn(string $extendedKey) => substr(string: $extendedKey, offset: strlen($key) + 1),
                 array_filter(
                     $_extend,
-                    fn(string $singleKey) => str_starts_with(haystack: $singleKey, needle: $key . '.')
+                    fn(string $singleKey) => str_starts_with(haystack: $singleKey, needle: $key.'.')
                 )
             );
 
@@ -932,9 +932,9 @@ class RenderObject
                             $this->logger->debug(
                                 'Object not found in preloaded cache - skipping to prevent N+1 query',
                                 [
-                                        'identifier' => $identifier,
-                                        'context'    => 'extend_array_processing',
-                                    ]
+                                    'identifier' => $identifier,
+                                    'context'    => 'extend_array_processing',
+                                ]
                             );
                             return null;
                         }
@@ -1044,10 +1044,10 @@ class RenderObject
         array $_extend,
         array $objectData,
         int $depth,
-        ?array $_filter = [],
-        ?array $_fields = [],
-        ?array $_unset = [],
-        ?array $visitedIds = []
+        ?array $_filter=[],
+        ?array $_fields=[],
+        ?array $_unset=[],
+        ?array $visitedIds=[]
     ): array {
         // Add register and schema context to @self if requested.
         if (in_array('@self.register', $_extend) === true || in_array('@self.schema', $_extend) === true) {
@@ -1122,12 +1122,12 @@ class RenderObject
         ObjectEntity $entity,
         array $objectData,
         int $_depth,
-        ?array $_filter = [],
-        ?array $_fields = [],
-        ?array $_unset = [],
-        ?array $_registers = [],
-        ?array $_schemas = [],
-        ?array $_objects = []
+        ?array $_filter=[],
+        ?array $_fields=[],
+        ?array $_unset=[],
+        ?array $_registers=[],
+        ?array $_schemas=[],
+        ?array $_objects=[]
     ): array {
         // Get the schema for this object.
         $schema = $this->getSchema($entity->getSchema());
@@ -1177,7 +1177,7 @@ class RenderObject
                 $isArray            = true;
             }
             // Check if this is a direct object property with inversedBy.
-            elseif (($propertyConfig['inversedBy'] ?? null) !== null) {
+            else if (($propertyConfig['inversedBy'] ?? null) !== null) {
                 $inversedByProperty = $propertyConfig['inversedBy'];
                 $targetSchema       = $propertyConfig['$ref'] ?? null;
                 $isArray            = false;
@@ -1341,12 +1341,12 @@ class RenderObject
      */
     public function renderEntities(
         array $entities,
-        array | string | null $_extend = [],
-        ?array $_filter = null,
-        ?array $_fields = null,
-        ?array $_unset = null,
-        bool $_rbac = true,
-        bool $_multitenancy = true
+        array | string | null $_extend=[],
+        ?array $_filter=null,
+        ?array $_fields=null,
+        ?array $_unset=null,
+        bool $_rbac=true,
+        bool $_multitenancy=true
     ): array {
         $renderedEntities = [];
 

@@ -32,6 +32,7 @@ use Psr\Log\LoggerInterface;
  */
 class SolrCollectionManager
 {
+
     /**
      * HTTP client.
      *
@@ -80,7 +81,7 @@ class SolrCollectionManager
     public function collectionExists(string $collectionName): bool
     {
         try {
-            $url  = $this->httpClient->buildSolrBaseUrl() . '/admin/collections?action=CLUSTERSTATUS&wt=json';
+            $url  = $this->httpClient->buildSolrBaseUrl().'/admin/collections?action=CLUSTERSTATUS&wt=json';
             $data = $this->httpClient->get($url, ['timeout' => 10]);
 
             return isset($data['cluster']['collections'][$collectionName]);
@@ -88,9 +89,9 @@ class SolrCollectionManager
             $this->logger->error(
                 '[SolrCollectionManager] Failed to check collection existence',
                 [
-                        'collection' => $collectionName,
-                        'error'      => $e->getMessage(),
-                    ]
+                    'collection' => $collectionName,
+                    'error'      => $e->getMessage(),
+                ]
             );
             return false;
         }//end try
@@ -115,9 +116,9 @@ class SolrCollectionManager
         $this->logger->warning(
             '[SolrCollectionManager] Tenant collection does not exist',
             [
-                    'tenant_collection' => $tenantCollection,
-                    'base_collection'   => $baseCollection,
-                ]
+                'tenant_collection' => $tenantCollection,
+                'base_collection'   => $baseCollection,
+            ]
         );
 
         return null;
@@ -135,7 +136,7 @@ class SolrCollectionManager
      *
      * @psalm-return array{success: true, message: 'Collection created successfully', collection: string, configSet: 'openregister_configset'|mixed}
      */
-    public function createCollection(string $name, array $config = []): array
+    public function createCollection(string $name, array $config=[]): array
     {
         $configSetName     = $config['configSetName'] ?? 'openregister_configset';
         $numShards         = $config['numShards'] ?? 1;
@@ -145,21 +146,21 @@ class SolrCollectionManager
         $this->logger->info(
             '[SolrCollectionManager] Creating collection',
             [
-                    'name'      => $name,
-                    'configSet' => $configSetName,
-                ]
+                'name'      => $name,
+                'configSet' => $configSetName,
+            ]
         );
 
-        $url = $this->httpClient->buildSolrBaseUrl() . '/admin/collections?' . http_build_query(
+        $url = $this->httpClient->buildSolrBaseUrl().'/admin/collections?'.http_build_query(
             [
-                    'action'                => 'CREATE',
-                    'name'                  => $name,
-                    'collection.configName' => $configSetName,
-                    'numShards'             => $numShards,
-                    'replicationFactor'     => $replicationFactor,
-                    'maxShardsPerNode'      => $maxShardsPerNode,
-                    'wt'                    => 'json',
-                ]
+                'action'                => 'CREATE',
+                'name'                  => $name,
+                'collection.configName' => $configSetName,
+                'numShards'             => $numShards,
+                'replicationFactor'     => $replicationFactor,
+                'maxShardsPerNode'      => $maxShardsPerNode,
+                'wt'                    => 'json',
+            ]
         );
 
         $data = $this->httpClient->get($url, ['timeout' => 60]);
@@ -179,9 +180,9 @@ class SolrCollectionManager
         $this->logger->error(
             '[SolrCollectionManager] Collection creation failed',
             [
-                    'collection' => $name,
-                    'error'      => $errorMessage,
-                ]
+                'collection' => $name,
+                'error'      => $errorMessage,
+            ]
         );
 
         throw new Exception("Solr collection creation failed: {$errorMessage}");
@@ -196,7 +197,7 @@ class SolrCollectionManager
      *
      * @psalm-return array{success: bool, message: string, exception?: string, collection?: string}
      */
-    public function deleteCollection(?string $collectionName = null): array
+    public function deleteCollection(?string $collectionName=null): array
     {
         try {
             $targetCollection = $collectionName ?? $this->getActiveCollectionName();
@@ -210,12 +211,12 @@ class SolrCollectionManager
 
             $this->logger->info('[SolrCollectionManager] Deleting collection', ['collection' => $targetCollection]);
 
-            $url  = $this->httpClient->buildSolrBaseUrl() . '/admin/collections?' . http_build_query(
+            $url  = $this->httpClient->buildSolrBaseUrl().'/admin/collections?'.http_build_query(
                 [
-                        'action' => 'DELETE',
-                        'name'   => $targetCollection,
-                        'wt'     => 'json',
-                    ]
+                    'action' => 'DELETE',
+                    'name'   => $targetCollection,
+                    'wt'     => 'json',
+                ]
             );
             $data = $this->httpClient->get($url, ['timeout' => 60]);
 
@@ -223,8 +224,8 @@ class SolrCollectionManager
                 $this->logger->info(
                     '[SolrCollectionManager] Collection deleted successfully',
                     [
-                            'collection' => $targetCollection,
-                        ]
+                        'collection' => $targetCollection,
+                    ]
                 );
 
                 return [
@@ -238,9 +239,9 @@ class SolrCollectionManager
             $this->logger->error(
                 '[SolrCollectionManager] Collection deletion failed',
                 [
-                        'collection' => $targetCollection,
-                        'error'      => $errorMessage,
-                    ]
+                    'collection' => $targetCollection,
+                    'error'      => $errorMessage,
+                ]
             );
 
             return [
@@ -251,8 +252,8 @@ class SolrCollectionManager
             $this->logger->error(
                 '[SolrCollectionManager] Collection deletion exception',
                 [
-                        'error' => $e->getMessage(),
-                    ]
+                    'error' => $e->getMessage(),
+                ]
             );
 
             return [
@@ -271,7 +272,7 @@ class SolrCollectionManager
     public function listCollections(): array
     {
         try {
-            $url  = $this->httpClient->buildSolrBaseUrl() . '/admin/collections?action=LIST&wt=json';
+            $url  = $this->httpClient->buildSolrBaseUrl().'/admin/collections?action=LIST&wt=json';
             $data = $this->httpClient->get($url);
 
             return $data['collections'] ?? [];
@@ -279,8 +280,8 @@ class SolrCollectionManager
             $this->logger->error(
                 '[SolrCollectionManager] Failed to list collections',
                 [
-                        'error' => $e->getMessage(),
-                    ]
+                    'error' => $e->getMessage(),
+                ]
             );
             return [];
         }//end try
@@ -294,7 +295,7 @@ class SolrCollectionManager
     public function listConfigSets(): array
     {
         try {
-            $url  = $this->httpClient->buildSolrBaseUrl() . '/admin/configs?action=LIST&wt=json&omitHeader=true';
+            $url  = $this->httpClient->buildSolrBaseUrl().'/admin/configs?action=LIST&wt=json&omitHeader=true';
             $data = $this->httpClient->get($url);
 
             return $data['configSets'] ?? [];
@@ -302,8 +303,8 @@ class SolrCollectionManager
             $this->logger->error(
                 '[SolrCollectionManager] Failed to list ConfigSets',
                 [
-                        'error' => $e->getMessage(),
-                    ]
+                    'error' => $e->getMessage(),
+                ]
             );
             return [];
         }//end try
@@ -319,18 +320,18 @@ class SolrCollectionManager
      *
      * @psalm-return array{success: bool, message: 'ConfigSet created successfully'|'Exception during ConfigSet creation'|'Failed to create ConfigSet'|mixed, exception?: string, name?: string}
      */
-    public function createConfigSet(string $name, string $baseConfigSet = '_default'): array
+    public function createConfigSet(string $name, string $baseConfigSet='_default'): array
     {
         try {
             $this->logger->info(
                 '[SolrCollectionManager] Creating ConfigSet',
                 [
-                        'name' => $name,
-                        'base' => $baseConfigSet,
-                    ]
+                    'name' => $name,
+                    'base' => $baseConfigSet,
+                ]
             );
 
-            $url  = $this->httpClient->buildSolrBaseUrl() . '/admin/configs?action=CREATE&name=' . $name . '&baseConfigSet=' . $baseConfigSet . '&wt=json';
+            $url  = $this->httpClient->buildSolrBaseUrl().'/admin/configs?action=CREATE&name='.$name.'&baseConfigSet='.$baseConfigSet.'&wt=json';
             $data = $this->httpClient->get($url);
 
             if (($data['responseHeader']['status'] ?? -1) === 0) {
@@ -349,8 +350,8 @@ class SolrCollectionManager
             $this->logger->error(
                 '[SolrCollectionManager] ConfigSet creation failed',
                 [
-                        'error' => $e->getMessage(),
-                    ]
+                    'error' => $e->getMessage(),
+                ]
             );
 
             return [
@@ -375,7 +376,7 @@ class SolrCollectionManager
         try {
             $this->logger->info('[SolrCollectionManager] Deleting ConfigSet', ['name' => $name]);
 
-            $url  = $this->httpClient->buildSolrBaseUrl() . '/admin/configs?action=DELETE&name=' . $name . '&wt=json';
+            $url  = $this->httpClient->buildSolrBaseUrl().'/admin/configs?action=DELETE&name='.$name.'&wt=json';
             $data = $this->httpClient->get($url);
 
             if (($data['responseHeader']['status'] ?? -1) === 0) {
@@ -394,8 +395,8 @@ class SolrCollectionManager
             $this->logger->error(
                 '[SolrCollectionManager] ConfigSet deletion failed',
                 [
-                        'error' => $e->getMessage(),
-                    ]
+                    'error' => $e->getMessage(),
+                ]
             );
 
             return [

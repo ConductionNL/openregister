@@ -28,6 +28,7 @@ use Psr\Log\LoggerInterface;
  */
 class ElasticsearchHttpClient
 {
+
     /**
      * Guzzle HTTP client for making requests
      *
@@ -100,15 +101,15 @@ class ElasticsearchHttpClient
     {
         $this->httpClient = new GuzzleClient(
             [
-                    'timeout'         => $this->config['timeout'],
-                    'connect_timeout' => 5,
-                    'http_errors'     => false,
-                    'verify'          => false,
-                    'headers'         => [
-                        'Content-Type' => 'application/json',
-                        'Accept'       => 'application/json',
-                    ],
-                ]
+                'timeout'         => $this->config['timeout'],
+                'connect_timeout' => 5,
+                'http_errors'     => false,
+                'verify'          => false,
+                'headers'         => [
+                    'Content-Type' => 'application/json',
+                    'Accept'       => 'application/json',
+                ],
+            ]
         );
     }//end initializeHttpClient()
 
@@ -136,7 +137,7 @@ class ElasticsearchHttpClient
      */
     public function getEndpointUrl(string $index): string
     {
-        return $this->buildBaseUrl() . '/' . $index;
+        return $this->buildBaseUrl().'/'.$index;
     }//end getEndpointUrl()
 
     /**
@@ -161,9 +162,9 @@ class ElasticsearchHttpClient
             $this->logger->error(
                 '[ElasticsearchHttpClient] GET failed',
                 [
-                        'url'   => $url,
-                        'error' => $e->getMessage(),
-                    ]
+                    'url'   => $url,
+                    'error' => $e->getMessage(),
+                ]
             );
             throw $e;
         }
@@ -183,8 +184,8 @@ class ElasticsearchHttpClient
             $response = $this->httpClient->post(
                 $url,
                 [
-                        'json' => $data,
-                    ]
+                    'json' => $data,
+                ]
             );
             $body     = (string) $response->getBody();
             $decoded  = json_decode($body, true);
@@ -197,9 +198,9 @@ class ElasticsearchHttpClient
             $this->logger->error(
                 '[ElasticsearchHttpClient] POST failed',
                 [
-                        'url'   => $url,
-                        'error' => $e->getMessage(),
-                    ]
+                    'url'   => $url,
+                    'error' => $e->getMessage(),
+                ]
             );
             throw $e;
         }//end try
@@ -219,11 +220,11 @@ class ElasticsearchHttpClient
             $response = $this->httpClient->post(
                 $url,
                 [
-                        'body'    => $data,
-                        'headers' => [
-                            'Content-Type' => 'application/x-ndjson',
-                        ],
-                    ]
+                    'body'    => $data,
+                    'headers' => [
+                        'Content-Type' => 'application/x-ndjson',
+                    ],
+                ]
             );
             $body     = (string) $response->getBody();
             $decoded  = json_decode($body, true);
@@ -236,9 +237,9 @@ class ElasticsearchHttpClient
             $this->logger->error(
                 '[ElasticsearchHttpClient] POST (raw) failed',
                 [
-                        'url'   => $url,
-                        'error' => $e->getMessage(),
-                    ]
+                    'url'   => $url,
+                    'error' => $e->getMessage(),
+                ]
             );
             throw $e;
         }//end try
@@ -258,8 +259,8 @@ class ElasticsearchHttpClient
             $response = $this->httpClient->put(
                 $url,
                 [
-                        'json' => $data,
-                    ]
+                    'json' => $data,
+                ]
             );
             $body     = (string) $response->getBody();
             $decoded  = json_decode($body, true);
@@ -272,9 +273,9 @@ class ElasticsearchHttpClient
             $this->logger->error(
                 '[ElasticsearchHttpClient] PUT failed',
                 [
-                        'url'   => $url,
-                        'error' => $e->getMessage(),
-                    ]
+                    'url'   => $url,
+                    'error' => $e->getMessage(),
+                ]
             );
             throw $e;
         }//end try
@@ -302,9 +303,9 @@ class ElasticsearchHttpClient
             $this->logger->error(
                 '[ElasticsearchHttpClient] DELETE failed',
                 [
-                        'url'   => $url,
-                        'error' => $e->getMessage(),
-                    ]
+                    'url'   => $url,
+                    'error' => $e->getMessage(),
+                ]
             );
             throw $e;
         }

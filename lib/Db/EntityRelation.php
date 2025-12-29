@@ -57,6 +57,7 @@ use OCP\AppFramework\Db\Entity;
  */
 class EntityRelation extends Entity implements JsonSerializable
 {
+
     /**
      * Entity ID.
      *

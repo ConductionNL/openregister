@@ -64,6 +64,7 @@ use OCP\AppFramework\Db\Entity;
  */
 class AuditTrail extends Entity implements JsonSerializable
 {
+
     /**
      * Unique identifier for the audit trail entry
      *
@@ -334,7 +335,7 @@ class AuditTrail extends Entity implements JsonSerializable
                 $value = null;
             }
 
-            $method = 'set' . ucfirst($key);
+            $method = 'set'.ucfirst($key);
 
             try {
                 $this->$method($value);
@@ -441,12 +442,12 @@ class AuditTrail extends Entity implements JsonSerializable
 
         // Fallback to action if available.
         if ($this->action !== null && $this->action !== '') {
-            return 'Audit: ' . $this->action;
+            return 'Audit: '.$this->action;
         }
 
         // Fallback to ID if available.
         if ($this->id !== null) {
-            return 'AuditTrail #' . $this->id;
+            return 'AuditTrail #'.$this->id;
         }
 
         // Final fallback.

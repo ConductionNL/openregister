@@ -48,6 +48,7 @@ use Psr\Log\LoggerInterface;
  */
 class DashboardController extends Controller
 {
+
     /**
      * The dashboard service instance
      *
@@ -194,7 +195,7 @@ class DashboardController extends Controller
      *
      * @psalm-return JSONResponse<200|500, array{status: 'error'|'success', message?: string, timestamp: string, scope?: array{register: array{id: int, title: null|string}|null, schema: array{id: int, title: null|string}|null}, results?: array{objects: array, logs: array, total: array{processed: mixed, failed: mixed}}, summary?: array{total_processed: mixed, total_failed: mixed, success_rate: float}}, array<never, never>>
      */
-    public function calculate(?int $registerId = null, ?int $schemaId = null): JSONResponse
+    public function calculate(?int $registerId=null, ?int $schemaId=null): JSONResponse
     {
         try {
             // Calculate sizes and statistics using dashboard service.
@@ -232,7 +233,7 @@ class DashboardController extends Controller
      *
      * @psalm-return JSONResponse<200|500, array, array<never, never>>
      */
-    public function getAuditTrailActionChart(?string $from = null, ?string $till = null, ?int $registerId = null, ?int $schemaId = null): JSONResponse
+    public function getAuditTrailActionChart(?string $from=null, ?string $till=null, ?int $registerId=null, ?int $schemaId=null): JSONResponse
     {
         try {
             if ($from !== null) {
@@ -268,7 +269,7 @@ class DashboardController extends Controller
      *
      * @psalm-return JSONResponse<200|500, array, array<never, never>>
      */
-    public function getObjectsByRegisterChart(?int $registerId = null, ?int $schemaId = null): JSONResponse
+    public function getObjectsByRegisterChart(?int $registerId=null, ?int $schemaId=null): JSONResponse
     {
         try {
             $data = $this->dashboardService->getObjectsByRegisterChartData(registerId: $registerId, schemaId: $schemaId);
@@ -292,7 +293,7 @@ class DashboardController extends Controller
      *
      * @psalm-return JSONResponse<200|500, array, array<never, never>>
      */
-    public function getObjectsBySchemaChart(?int $registerId = null, ?int $schemaId = null): JSONResponse
+    public function getObjectsBySchemaChart(?int $registerId=null, ?int $schemaId=null): JSONResponse
     {
         try {
             $data = $this->dashboardService->getObjectsBySchemaChartData(registerId: $registerId, schemaId: $schemaId);
@@ -316,7 +317,7 @@ class DashboardController extends Controller
      *
      * @psalm-return JSONResponse<200|500, array, array<never, never>>
      */
-    public function getObjectsBySizeChart(?int $registerId = null, ?int $schemaId = null): JSONResponse
+    public function getObjectsBySizeChart(?int $registerId=null, ?int $schemaId=null): JSONResponse
     {
         try {
             $data = $this->dashboardService->getObjectsBySizeChartData(registerId: $registerId, schemaId: $schemaId);
@@ -341,7 +342,7 @@ class DashboardController extends Controller
      *
      * @psalm-return JSONResponse<200|500, array, array<never, never>>
      */
-    public function getAuditTrailStatistics(?int $registerId = null, ?int $schemaId = null, ?int $hours = 24): JSONResponse
+    public function getAuditTrailStatistics(?int $registerId=null, ?int $schemaId=null, ?int $hours=24): JSONResponse
     {
         try {
             $data = $this->dashboardService->getAuditTrailStatistics(registerId: $registerId, schemaId: $schemaId, hours: $hours);
@@ -366,7 +367,7 @@ class DashboardController extends Controller
      *
      * @psalm-return JSONResponse<200|500, array, array<never, never>>
      */
-    public function getAuditTrailActionDistribution(?int $registerId = null, ?int $schemaId = null, ?int $hours = 24): JSONResponse
+    public function getAuditTrailActionDistribution(?int $registerId=null, ?int $schemaId=null, ?int $hours=24): JSONResponse
     {
         try {
             $data = $this->dashboardService->getAuditTrailActionDistribution(registerId: $registerId, schemaId: $schemaId, hours: $hours);
@@ -392,26 +393,26 @@ class DashboardController extends Controller
      *
      * @psalm-return JSONResponse<200|500, array, array<never, never>>
      */
-    public function getMostActiveObjects(?int $registerId = null, ?int $schemaId = null, ?int $limit = 10, ?int $hours = 24): JSONResponse
+    public function getMostActiveObjects(?int $registerId=null, ?int $schemaId=null, ?int $limit=10, ?int $hours=24): JSONResponse
     {
         try {
             $data = $this->dashboardService->getMostActiveObjects(registerId: $registerId, schemaId: $schemaId, limit: $limit, hours: $hours);
             return new JSONResponse(data: $data);
         } catch (\Exception $e) {
             $this->logger->error(
-                message: 'Error retrieving most active objects: ' . $e->getMessage(),
+                message: 'Error retrieving most active objects: '.$e->getMessage(),
                 context: [
-                        'register_id' => $registerId,
-                        'schema_id'   => $schemaId,
-                        'limit'       => $limit,
-                        'hours'       => $hours,
-                        'trace'       => $e->getTraceAsString(),
-                    ]
+                    'register_id' => $registerId,
+                    'schema_id'   => $schemaId,
+                    'limit'       => $limit,
+                    'hours'       => $hours,
+                    'trace'       => $e->getTraceAsString(),
+                ]
             );
 
             return new JSONResponse(
                 data: [
-                    'error' => 'Failed to retrieve most active objects: ' . $e->getMessage(),
+                    'error' => 'Failed to retrieve most active objects: '.$e->getMessage(),
                 ],
                 statusCode: 500
             );

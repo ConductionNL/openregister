@@ -119,7 +119,7 @@ class CacheHandler
         // Step 2: Build session cache key using organisation UUID.
         // This ensures cache is isolated per organisation.
         $orgUuid    = $activeOrg->getUuid();
-        $sessionKey = self::SESSION_KEY_PREFIX . $orgUuid;
+        $sessionKey = self::SESSION_KEY_PREFIX.$orgUuid;
 
         // Step 3: Check if configurations are cached in session.
         $cachedData = $this->session->get($sessionKey);

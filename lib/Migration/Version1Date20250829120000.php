@@ -36,6 +36,7 @@ use OCP\IDBConnection;
  */
 class Version1Date20250829120000 extends SimpleMigrationStep
 {
+
     /**
      * Database connection
      *
@@ -156,15 +157,15 @@ class Version1Date20250829120000 extends SimpleMigrationStep
      *
      * @return string The unique slug
      */
-    private function generateUniqueSlug(string $tableName, string $organisation, string $baseSlug, int $startNumber = 2): string
+    private function generateUniqueSlug(string $tableName, string $organisation, string $baseSlug, int $startNumber=2): string
     {
         $counter = $startNumber;
-        $newSlug = $baseSlug . '-' . $counter;
+        $newSlug = $baseSlug.'-'.$counter;
 
         // Keep incrementing until we find a unique slug.
         while ($this->slugExists(tableName: $tableName, organisation: $organisation, slug: $newSlug) === true) {
             $counter++;
-            $newSlug = $baseSlug . '-' . $counter;
+            $newSlug = $baseSlug.'-'.$counter;
         }
 
         return $newSlug;
@@ -219,9 +220,9 @@ class Version1Date20250829120000 extends SimpleMigrationStep
                     'image',
                     Types::TEXT,
                     [
-                            'notnull' => false,
-                            'comment' => 'Image data or reference representing the object (e.g. logo)',
-                        ]
+                        'notnull' => false,
+                        'comment' => 'Image data or reference representing the object (e.g. logo)',
+                    ]
                 );
                 $output->info(message: 'Added image column to openregister_objects table');
             }

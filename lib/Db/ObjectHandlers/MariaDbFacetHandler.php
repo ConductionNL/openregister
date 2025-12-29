@@ -63,10 +63,10 @@ class MariaDbFacetHandler
      *
      * @psalm-return array{type: 'terms', buckets: list{0?: array{key: mixed|string, results: int},...}}
      */
-    public function getTermsFacet(string $field, array $baseQuery = []): array
+    public function getTermsFacet(string $field, array $baseQuery=[]): array
     {
         // Build JSON path for the field.
-        $jsonPath = '$.' . $field;
+        $jsonPath = '$.'.$field;
 
         // First, check if this field commonly contains arrays.
         if ($this->fieldContainsArrays(field: $field, baseQuery: $baseQuery) === true) {
@@ -78,14 +78,14 @@ class MariaDbFacetHandler
 
         // Build aggregation query for JSON field.
         $queryBuilder->selectAlias(
-            $queryBuilder->createFunction("JSON_UNQUOTE(JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . "))"),
+            $queryBuilder->createFunction("JSON_UNQUOTE(JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath)."))"),
             'field_value'
         )
             ->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'doc_count')
             ->from('openregister_objects')
             ->where(
                 $queryBuilder->expr()->isNotNull(
-                    $queryBuilder->createFunction("JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . ")")
+                    $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
                 )
             )
             ->groupBy('field_value')
@@ -134,14 +134,14 @@ class MariaDbFacetHandler
     private function fieldContainsArrays(string $field, array $baseQuery): bool
     {
         $queryBuilder = $this->db->getQueryBuilder();
-        $jsonPath     = '$.' . $field;
+        $jsonPath     = '$.'.$field;
 
         // Sample a few objects to check if the field contains arrays.
         $queryBuilder->select('object')
             ->from('openregister_objects')
             ->where(
                 $queryBuilder->expr()->isNotNull(
-                    $queryBuilder->createFunction("JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . ")")
+                    $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
                 )
             )
             ->setMaxResults(10);
@@ -191,13 +191,13 @@ class MariaDbFacetHandler
     {
         // Get all objects that have this field.
         $queryBuilder = $this->db->getQueryBuilder();
-        $jsonPath     = '$.' . $field;
+        $jsonPath     = '$.'.$field;
 
         $queryBuilder->select('object')
             ->from('openregister_objects')
             ->where(
                 $queryBuilder->expr()->isNotNull(
-                    $queryBuilder->createFunction("JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . ")")
+                    $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
                 )
             );
 
@@ -318,16 +318,16 @@ class MariaDbFacetHandler
      *
      * @psalm-return array{type: 'date_histogram', interval: string, buckets: list<array{key: mixed, results: int}>}
      */
-    public function getDateHistogramFacet(string $field, string $interval, array $baseQuery = []): array
+    public function getDateHistogramFacet(string $field, string $interval, array $baseQuery=[]): array
     {
         $queryBuilder = $this->db->getQueryBuilder();
 
-        $jsonPath   = '$.' . $field;
+        $jsonPath   = '$.'.$field;
         $dateFormat = $this->getDateFormatForInterval($interval);
 
         $queryBuilder->selectAlias(
             $queryBuilder->createFunction(
-                "DATE_FORMAT(JSON_UNQUOTE(JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . ")), '$dateFormat')"
+                "DATE_FORMAT(JSON_UNQUOTE(JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")), '$dateFormat')"
             ),
             'date_key'
         )
@@ -335,7 +335,7 @@ class MariaDbFacetHandler
             ->from('openregister_objects')
             ->where(
                 $queryBuilder->expr()->isNotNull(
-                    $queryBuilder->createFunction("JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . ")")
+                    $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
                 )
             )
             ->groupBy('date_key')
@@ -386,10 +386,10 @@ class MariaDbFacetHandler
      *
      * @psalm-return array{type: 'range', buckets: list<array{from?: mixed, key: string, results: int, to?: mixed}>}
      */
-    public function getRangeFacet(string $field, array $ranges, array $baseQuery = []): array
+    public function getRangeFacet(string $field, array $ranges, array $baseQuery=[]): array
     {
         $buckets  = [];
-        $jsonPath = '$.' . $field;
+        $jsonPath = '$.'.$field;
 
         foreach ($ranges as $range) {
             $queryBuilder = $this->db->getQueryBuilder();
@@ -398,7 +398,7 @@ class MariaDbFacetHandler
                 ->from('openregister_objects')
                 ->where(
                     $queryBuilder->expr()->isNotNull(
-                        $queryBuilder->createFunction("JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . ")")
+                        $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
                     )
                 );
 
@@ -406,16 +406,16 @@ class MariaDbFacetHandler
             if (($range['from'] ?? null) !== null) {
                 $queryBuilder->andWhere(
                     $queryBuilder->createFunction(
-                        "CAST(JSON_UNQUOTE(JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . ")) AS DECIMAL(10,2))"
-                    ) . ' >= ' . $queryBuilder->createNamedParameter($range['from'])
+                        "CAST(JSON_UNQUOTE(JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")) AS DECIMAL(10,2))"
+                    ).' >= '.$queryBuilder->createNamedParameter($range['from'])
                 );
             }
 
             if (($range['to'] ?? null) !== null) {
                 $queryBuilder->andWhere(
                     $queryBuilder->createFunction(
-                        "CAST(JSON_UNQUOTE(JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . ")) AS DECIMAL(10,2))"
-                    ) . ' < ' . $queryBuilder->createNamedParameter($range['to'])
+                        "CAST(JSON_UNQUOTE(JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")) AS DECIMAL(10,2))"
+                    ).' < '.$queryBuilder->createNamedParameter($range['to'])
                 );
             }
 
@@ -571,7 +571,7 @@ class MariaDbFacetHandler
 
             // Use case-insensitive JSON_SEARCH with partial matching.
             // This ensures the search is case-insensitive and supports partial matches.
-            $searchFunction = "JSON_SEARCH(LOWER(`object`), 'all', " . $queryBuilder->createNamedParameter('%' . $cleanTerm . '%') . ")";
+            $searchFunction = "JSON_SEARCH(LOWER(`object`), 'all', ".$queryBuilder->createNamedParameter('%'.$cleanTerm.'%').")";
 
             $orConditions->add(
                 $queryBuilder->expr()->isNotNull(
@@ -711,15 +711,15 @@ class MariaDbFacetHandler
                         break;
                     case '~':
                         // Contains (case insensitive).
-                        $queryBuilder->andWhere($queryBuilder->expr()->like($field, $queryBuilder->createNamedParameter('%' . $operatorValue . '%')));
+                        $queryBuilder->andWhere($queryBuilder->expr()->like($field, $queryBuilder->createNamedParameter('%'.$operatorValue.'%')));
                         break;
                     case '^':
                         // Starts with (case insensitive).
-                        $queryBuilder->andWhere($queryBuilder->expr()->like($field, $queryBuilder->createNamedParameter($operatorValue . '%')));
+                        $queryBuilder->andWhere($queryBuilder->expr()->like($field, $queryBuilder->createNamedParameter($operatorValue.'%')));
                         break;
                     case '$':
                         // Ends with (case insensitive).
-                        $queryBuilder->andWhere($queryBuilder->expr()->like($field, $queryBuilder->createNamedParameter('%' . $operatorValue)));
+                        $queryBuilder->andWhere($queryBuilder->expr()->like($field, $queryBuilder->createNamedParameter('%'.$operatorValue)));
                         break;
                     case '===':
                         // Exact match (case sensitive).
@@ -788,14 +788,14 @@ class MariaDbFacetHandler
     private function applyObjectFieldFilters(IQueryBuilder $queryBuilder, array $objectFilters): void
     {
         foreach ($objectFilters as $field => $value) {
-            $jsonPath = '$.' . $field;
+            $jsonPath = '$.'.$field;
 
             // Handle simple values (backwards compatibility).
             if (is_array($value) === false) {
                 if ($value === 'IS NOT NULL') {
                     $queryBuilder->andWhere(
                         $queryBuilder->expr()->isNotNull(
-                            $queryBuilder->createFunction("JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . ")")
+                            $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
                         )
                     );
                     continue;
@@ -804,7 +804,7 @@ class MariaDbFacetHandler
                 if ($value === 'IS NULL') {
                     $queryBuilder->andWhere(
                         $queryBuilder->expr()->isNull(
-                            $queryBuilder->createFunction("JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . ")")
+                            $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
                         )
                     );
                     continue;
@@ -883,7 +883,7 @@ class MariaDbFacetHandler
         // Check for exact match (single value).
         $conditions->add(
             $queryBuilder->expr()->eq(
-                $queryBuilder->createFunction("JSON_UNQUOTE(JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . "))"),
+                $queryBuilder->createFunction("JSON_UNQUOTE(JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath)."))"),
                 $queryBuilder->createNamedParameter($value)
             )
         );
@@ -891,7 +891,7 @@ class MariaDbFacetHandler
         // Check if the value exists within an array using JSON_CONTAINS.
         $conditions->add(
             $queryBuilder->expr()->eq(
-                $queryBuilder->createFunction("JSON_CONTAINS(JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . "), " . $queryBuilder->createNamedParameter(json_encode($value)) . ")"),
+                $queryBuilder->createFunction("JSON_CONTAINS(JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath)."), ".$queryBuilder->createNamedParameter(json_encode($value)).")"),
                 $queryBuilder->createNamedParameter(1)
             )
         );
@@ -919,7 +919,7 @@ class MariaDbFacetHandler
      */
     private function applyObjectFieldOperator(IQueryBuilder $queryBuilder, string $jsonPath, string $operator, mixed $operatorValue): void
     {
-        $jsonExtract = $queryBuilder->createFunction("JSON_UNQUOTE(JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . "))");
+        $jsonExtract = $queryBuilder->createFunction("JSON_UNQUOTE(JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath)."))");
 
         switch ($operator) {
             case 'gt':
@@ -939,15 +939,15 @@ class MariaDbFacetHandler
                 break;
             case '~':
                 // Contains (case insensitive).
-                $queryBuilder->andWhere($queryBuilder->expr()->like($jsonExtract, $queryBuilder->createNamedParameter('%' . $operatorValue . '%')));
+                $queryBuilder->andWhere($queryBuilder->expr()->like($jsonExtract, $queryBuilder->createNamedParameter('%'.$operatorValue.'%')));
                 break;
             case '^':
                 // Starts with (case insensitive).
-                $queryBuilder->andWhere($queryBuilder->expr()->like($jsonExtract, $queryBuilder->createNamedParameter($operatorValue . '%')));
+                $queryBuilder->andWhere($queryBuilder->expr()->like($jsonExtract, $queryBuilder->createNamedParameter($operatorValue.'%')));
                 break;
             case '$':
                 // Ends with (case insensitive).
-                $queryBuilder->andWhere($queryBuilder->expr()->like($jsonExtract, $queryBuilder->createNamedParameter('%' . $operatorValue)));
+                $queryBuilder->andWhere($queryBuilder->expr()->like($jsonExtract, $queryBuilder->createNamedParameter('%'.$operatorValue)));
                 break;
             case '===':
                 // Exact match (case sensitive).
@@ -957,7 +957,7 @@ class MariaDbFacetHandler
                 if ($operatorValue !== true && $operatorValue !== 'true') {
                     $queryBuilder->andWhere(
                         $queryBuilder->expr()->isNull(
-                            $queryBuilder->createFunction("JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . ")")
+                            $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
                         )
                     );
                     break;
@@ -965,7 +965,7 @@ class MariaDbFacetHandler
 
                 $queryBuilder->andWhere(
                     $queryBuilder->expr()->isNotNull(
-                        $queryBuilder->createFunction("JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . ")")
+                        $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
                     )
                 );
                 break;
@@ -974,7 +974,7 @@ class MariaDbFacetHandler
                     $queryBuilder->andWhere(
                         $queryBuilder->expr()->andX(
                             $queryBuilder->expr()->isNotNull(
-                                $queryBuilder->createFunction("JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . ")")
+                                $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
                             ),
                             $queryBuilder->expr()->neq($jsonExtract, $queryBuilder->createNamedParameter(''))
                         )
@@ -985,7 +985,7 @@ class MariaDbFacetHandler
                 $queryBuilder->andWhere(
                     $queryBuilder->expr()->orX(
                         $queryBuilder->expr()->isNull(
-                            $queryBuilder->createFunction("JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . ")")
+                            $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
                         ),
                         $queryBuilder->expr()->eq($jsonExtract, $queryBuilder->createNamedParameter(''))
                     )
@@ -995,7 +995,7 @@ class MariaDbFacetHandler
                 if ($operatorValue !== true && $operatorValue !== 'true') {
                     $queryBuilder->andWhere(
                         $queryBuilder->expr()->isNotNull(
-                            $queryBuilder->createFunction("JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . ")")
+                            $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
                         )
                     );
                     break;
@@ -1003,7 +1003,7 @@ class MariaDbFacetHandler
 
                 $queryBuilder->andWhere(
                     $queryBuilder->expr()->isNull(
-                        $queryBuilder->createFunction("JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . ")")
+                        $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
                     )
                 );
                 break;
@@ -1055,15 +1055,15 @@ class MariaDbFacetHandler
     private function generateRangeKey(array $range): string
     {
         if (($range['from'] ?? null) !== null && (($range['to'] ?? null) !== null) === true) {
-            return $range['from'] . '-' . $range['to'];
+            return $range['from'].'-'.$range['to'];
         }
 
         if (($range['from'] ?? null) !== null) {
-            return $range['from'] . '+';
+            return $range['from'].'+';
         }
 
         if (($range['to'] ?? null) !== null) {
-            return '0-' . $range['to'];
+            return '0-'.$range['to'];
         }
 
         return 'all';
@@ -1132,7 +1132,7 @@ class MariaDbFacetHandler
      *
      * @return void
      */
-    private function analyzeObjectFields(array $objectData, array &$fieldAnalysis, string $prefix = '', int $depth = 0): void
+    private function analyzeObjectFields(array $objectData, array &$fieldAnalysis, string $prefix='', int $depth=0): void
     {
         // Limit recursion depth to avoid infinite loops and performance issues.
         if ($depth > 2) {
@@ -1140,7 +1140,7 @@ class MariaDbFacetHandler
         }
 
         foreach ($objectData as $key => $value) {
-            $fieldPath = $prefix . '.' . $key;
+            $fieldPath = $prefix.'.'.$key;
             if ($prefix === '') {
                 $fieldPath = $key;
             }

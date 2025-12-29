@@ -28,6 +28,7 @@ use OCP\EventDispatcher\Event;
  */
 class ConversationDeletedEvent extends Event
 {
+
     /**
      * The deleted conversation.
      *

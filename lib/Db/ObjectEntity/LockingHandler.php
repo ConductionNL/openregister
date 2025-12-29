@@ -116,7 +116,7 @@ class LockingHandler
      *
      * @return ObjectEntity The locked object
      */
-    public function lockObject($identifier, ?string $process = null, ?int $duration = null): ObjectEntity
+    public function lockObject($identifier, ?string $process=null, ?int $duration=null): ObjectEntity
     {
         // Find the object.
         $object = $this->mapper->find($identifier);

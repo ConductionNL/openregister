@@ -64,6 +64,7 @@ use Symfony\Component\Uid\Uuid;
  */
 class Conversation extends Entity implements JsonSerializable
 {
+
     /**
      * Unique identifier for the conversation
      *

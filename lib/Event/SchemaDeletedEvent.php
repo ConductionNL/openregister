@@ -28,6 +28,7 @@ use OCP\EventDispatcher\Event;
  */
 class SchemaDeletedEvent extends Event
 {
+
     /**
      * The deleted schema
      *

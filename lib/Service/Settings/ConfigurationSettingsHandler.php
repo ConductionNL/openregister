@@ -46,6 +46,7 @@ use Psr\Log\LoggerInterface;
  */
 class ConfigurationSettingsHandler
 {
+
     /**
      * Configuration service
      *
@@ -106,7 +107,7 @@ class ConfigurationSettingsHandler
         IUserManager $userManager,
         OrganisationMapper $organisationMapper,
         LoggerInterface $logger,
-        string $appName = 'openregister'
+        string $appName='openregister'
     ) {
         $this->config       = $config;
         $this->groupManager = $groupManager;
@@ -303,7 +304,7 @@ class ConfigurationSettingsHandler
 
             return $data;
         } catch (Exception $e) {
-            throw new RuntimeException('Failed to retrieve settings: ' . $e->getMessage());
+            throw new RuntimeException('Failed to retrieve settings: '.$e->getMessage());
         }//end try
     }//end getSettings()
 
@@ -467,7 +468,7 @@ class ConfigurationSettingsHandler
             // Return the updated settings.
             return $this->getSettings();
         } catch (Exception $e) {
-            throw new RuntimeException('Failed to update settings: ' . $e->getMessage());
+            throw new RuntimeException('Failed to update settings: '.$e->getMessage());
         }//end try
     }//end updateSettings()
 
@@ -513,7 +514,7 @@ class ConfigurationSettingsHandler
 
             return $updatedOptions;
         } catch (Exception $e) {
-            throw new RuntimeException('Failed to update publishing options: ' . $e->getMessage());
+            throw new RuntimeException('Failed to update publishing options: '.$e->getMessage());
         }//end try
     }//end updatePublishingOptions()
 
@@ -559,7 +560,7 @@ class ConfigurationSettingsHandler
                 'availableUsers'  => $this->getAvailableUsers(),
             ];
         } catch (Exception $e) {
-            throw new RuntimeException('Failed to retrieve RBAC settings: ' . $e->getMessage());
+            throw new RuntimeException('Failed to retrieve RBAC settings: '.$e->getMessage());
         }//end try
     }//end getRbacSettingsOnly()
 
@@ -593,7 +594,7 @@ class ConfigurationSettingsHandler
                 'availableUsers'  => $this->getAvailableUsers(),
             ];
         } catch (Exception $e) {
-            throw new RuntimeException('Failed to update RBAC settings: ' . $e->getMessage());
+            throw new RuntimeException('Failed to update RBAC settings: '.$e->getMessage());
         }
     }//end updateRbacSettingsOnly()
 
@@ -631,7 +632,7 @@ class ConfigurationSettingsHandler
                 'organisation' => $organisationData,
             ];
         } catch (Exception $e) {
-            throw new RuntimeException('Failed to retrieve Organisation settings: ' . $e->getMessage());
+            throw new RuntimeException('Failed to retrieve Organisation settings: '.$e->getMessage());
         }//end try
     }//end getOrganisationSettingsOnly()
 
@@ -660,7 +661,7 @@ class ConfigurationSettingsHandler
                 'organisation' => $organisationConfig,
             ];
         } catch (Exception $e) {
-            throw new RuntimeException('Failed to update Organisation settings: ' . $e->getMessage());
+            throw new RuntimeException('Failed to update Organisation settings: '.$e->getMessage());
         }
     }//end updateOrganisationSettingsOnly()
 
@@ -675,7 +676,7 @@ class ConfigurationSettingsHandler
             $settings = $this->getOrganisationSettingsOnly();
             return $settings['organisation']['default_organisation'] ?? null;
         } catch (Exception $e) {
-            $this->logger->warning('Failed to get default organisation UUID: ' . $e->getMessage());
+            $this->logger->warning('Failed to get default organisation UUID: '.$e->getMessage());
             return null;
         }
     }//end getDefaultOrganisationUuid()
@@ -691,7 +692,7 @@ class ConfigurationSettingsHandler
             $multitenancySettings = $this->getMultitenancySettingsOnly();
             return $multitenancySettings['multitenancy']['defaultUserTenant'] ?? null;
         } catch (Exception $e) {
-            $this->logger->warning('Failed to get tenant ID: ' . $e->getMessage());
+            $this->logger->warning('Failed to get tenant ID: '.$e->getMessage());
             return null;
         }
     }//end getTenantId()
@@ -719,7 +720,7 @@ class ConfigurationSettingsHandler
             $settings['organisation']['default_organisation'] = $uuid;
             $this->updateOrganisationSettingsOnly($settings['organisation']);
         } catch (Exception $e) {
-            $this->logger->error('Failed to set default organisation UUID: ' . $e->getMessage());
+            $this->logger->error('Failed to set default organisation UUID: '.$e->getMessage());
         }
     }//end setDefaultOrganisationUuid()
 
@@ -770,7 +771,7 @@ class ConfigurationSettingsHandler
                 'availableTenants' => $this->getAvailableOrganisations(),
             ];
         } catch (Exception $e) {
-            throw new RuntimeException('Failed to retrieve Multitenancy settings: ' . $e->getMessage());
+            throw new RuntimeException('Failed to retrieve Multitenancy settings: '.$e->getMessage());
         }//end try
     }//end getMultitenancySettingsOnly()
 
@@ -804,7 +805,7 @@ class ConfigurationSettingsHandler
                 'availableTenants' => $this->getAvailableOrganisations(),
             ];
         } catch (Exception $e) {
-            throw new RuntimeException('Failed to update Multitenancy settings: ' . $e->getMessage());
+            throw new RuntimeException('Failed to update Multitenancy settings: '.$e->getMessage());
         }
     }//end updateMultitenancySettingsOnly()
 
@@ -878,7 +879,7 @@ class ConfigurationSettingsHandler
 
             return $decoded;
         } catch (Exception $e) {
-            throw new RuntimeException('Failed to retrieve LLM settings: ' . $e->getMessage());
+            throw new RuntimeException('Failed to retrieve LLM settings: '.$e->getMessage());
         }//end try
     }//end getLLMSettingsOnly()
 
@@ -930,7 +931,7 @@ class ConfigurationSettingsHandler
             $this->config->setAppValue($this->appName, 'llm', json_encode($llmConfig));
             return $llmConfig;
         } catch (Exception $e) {
-            throw new RuntimeException('Failed to update LLM settings: ' . $e->getMessage());
+            throw new RuntimeException('Failed to update LLM settings: '.$e->getMessage());
         }//end try
     }//end updateLLMSettingsOnly()
 
@@ -973,7 +974,7 @@ class ConfigurationSettingsHandler
 
             return json_decode($fileConfig, true);
         } catch (Exception $e) {
-            throw new RuntimeException('Failed to retrieve File Management settings: ' . $e->getMessage());
+            throw new RuntimeException('Failed to retrieve File Management settings: '.$e->getMessage());
         }//end try
     }//end getFileSettingsOnly()
 
@@ -1016,7 +1017,7 @@ class ConfigurationSettingsHandler
             $this->config->setAppValue($this->appName, 'fileManagement', json_encode($fileConfig));
             return $fileConfig;
         } catch (Exception $e) {
-            throw new RuntimeException('Failed to update File Management settings: ' . $e->getMessage());
+            throw new RuntimeException('Failed to update File Management settings: '.$e->getMessage());
         }//end try
     }//end updateFileSettingsOnly()
 
@@ -1046,7 +1047,7 @@ class ConfigurationSettingsHandler
 
             return json_decode($n8nConfig, true);
         } catch (Exception $e) {
-            throw new RuntimeException('Failed to retrieve n8n settings: ' . $e->getMessage());
+            throw new RuntimeException('Failed to retrieve n8n settings: '.$e->getMessage());
         }
     }//end getN8nSettingsOnly()
 
@@ -1074,7 +1075,7 @@ class ConfigurationSettingsHandler
             $this->config->setAppValue($this->appName, 'n8n', json_encode($n8nConfig));
             return $n8nConfig;
         } catch (Exception $e) {
-            throw new RuntimeException('Failed to update n8n settings: ' . $e->getMessage());
+            throw new RuntimeException('Failed to update n8n settings: '.$e->getMessage());
         }
     }//end updateN8nSettingsOnly()
 
@@ -1104,7 +1105,7 @@ class ConfigurationSettingsHandler
         } catch (Exception $e) {
             return [
                 'version' => 'unknown',
-                'error'   => 'Failed to retrieve version info: ' . $e->getMessage(),
+                'error'   => 'Failed to retrieve version info: '.$e->getMessage(),
             ];
         }
     }//end getVersionInfoOnly()

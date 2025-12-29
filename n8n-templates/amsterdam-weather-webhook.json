@@ -1,0 +1,90 @@
+{
+  "name": "Amsterdam Weather Webhook",
+  "description": "A simple webhook that returns current weather data for Amsterdam in JSON format. Demonstrates: 1) Webhook trigger, 2) External API call, 3) Data transformation with JavaScript, 4) JSON response. Average response time: ~7-8 seconds (depends on external API).",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "amsterdam-weather",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        250,
+        300
+      ],
+      "webhookId": "amsterdam-weather-webhook"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://wttr.in/Amsterdam?format=j1",
+        "options": {}
+      },
+      "id": "http-request",
+      "name": "Get Weather Data",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        450,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const weather = $input.first().json;\nconst currentCondition = weather.current_condition[0];\nconst location = weather.nearest_area[0];\n\nreturn {\n  location: {\n    city: \"Amsterdam\",\n    country: location.country[0].value,\n    region: location.region[0].value\n  },\n  current: {\n    temperature_celsius: currentCondition.temp_C,\n    temperature_fahrenheit: currentCondition.temp_F,\n    feels_like_celsius: currentCondition.FeelsLikeC,\n    feels_like_fahrenheit: currentCondition.FeelsLikeF,\n    weather_description: currentCondition.weatherDesc[0].value,\n    humidity: currentCondition.humidity,\n    wind_speed_kmph: currentCondition.windspeedKmph,\n    wind_direction: currentCondition.winddir16Point,\n    pressure_mb: currentCondition.pressure,\n    visibility_km: currentCondition.visibility,\n    uv_index: currentCondition.uvIndex,\n    cloudcover: currentCondition.cloudcover\n  },\n  timestamp: new Date().toISOString()\n};"
+      },
+      "id": "code-node",
+      "name": "Format Weather Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        650,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Get Weather Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Weather Data": {
+      "main": [
+        [
+          {
+            "node": "Format Weather Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "openregister-n8n"
+  },
+  "pinData": null,
+  "tags": []
+}
+

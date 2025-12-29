@@ -45,6 +45,7 @@ use Exception;
  */
 class PreparationHandler
 {
+
     /**
      * Static cache for registers to avoid repeated DB queries.
      *
@@ -200,21 +201,21 @@ class PreparationHandler
                     $this->logger->debug(
                         'Auto-publishing NEW object in bulk creation',
                         [
-                                'schema'           => $schema->getTitle(),
-                                'autoPublish'      => true,
-                                'isNewObject'      => true,
-                                'publishedFromCsv' => false,
-                            ]
+                            'schema'           => $schema->getTitle(),
+                            'autoPublish'      => true,
+                            'isNewObject'      => true,
+                            'publishedFromCsv' => false,
+                        ]
                     );
                     $tempEntity->setPublished(new DateTime());
-                } elseif ($publishedFromCsv === true) {
+                } else if ($publishedFromCsv === true) {
                     $this->logger->debug(
                         'Skipping auto-publish - published date provided from CSV',
                         [
-                                'schema'           => $schema->getTitle(),
-                                'publishedFromCsv' => true,
-                                'csvPublishedDate' => $selfData['published'],
-                            ]
+                            'schema'           => $schema->getTitle(),
+                            'publishedFromCsv' => true,
+                            'csvPublishedDate' => $selfData['published'],
+                        ]
                     );
                 }//end if
             }//end if

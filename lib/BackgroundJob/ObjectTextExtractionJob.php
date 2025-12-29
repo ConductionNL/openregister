@@ -43,6 +43,7 @@ use Psr\Log\LoggerInterface;
  */
 class ObjectTextExtractionJob extends QueuedJob
 {
+
     /**
      * Configuration service
      *
@@ -109,8 +110,8 @@ class ObjectTextExtractionJob extends QueuedJob
             $this->logger->error(
                 '[ObjectTextExtractionJob] Missing object_id in job arguments',
                 [
-                        'argument' => $argument,
-                    ]
+                    'argument' => $argument,
+                ]
             );
             return;
         }
@@ -120,9 +121,9 @@ class ObjectTextExtractionJob extends QueuedJob
         $this->logger->info(
             '[ObjectTextExtractionJob] Starting text extraction',
             [
-                    'object_id' => $objectId,
-                    'job_id'    => $this->getId(),
-                ]
+                'object_id' => $objectId,
+                'job_id'    => $this->getId(),
+            ]
         );
 
         $startTime = microtime(true);
@@ -136,9 +137,9 @@ class ObjectTextExtractionJob extends QueuedJob
             $this->logger->info(
                 '[ObjectTextExtractionJob] Text extraction completed successfully',
                 [
-                        'object_id'          => $objectId,
-                        'processing_time_ms' => $processingTime,
-                    ]
+                    'object_id'          => $objectId,
+                    'processing_time_ms' => $processingTime,
+                ]
             );
         } catch (\Exception $e) {
             $processingTime = round((microtime(true) - $startTime) * 1000, 2);
@@ -146,11 +147,11 @@ class ObjectTextExtractionJob extends QueuedJob
             $this->logger->error(
                 '[ObjectTextExtractionJob] Exception during text extraction',
                 [
-                        'object_id'          => $objectId,
-                        'error'              => $e->getMessage(),
-                        'trace'              => $e->getTraceAsString(),
-                        'processing_time_ms' => $processingTime,
-                    ]
+                    'object_id'          => $objectId,
+                    'error'              => $e->getMessage(),
+                    'trace'              => $e->getTraceAsString(),
+                    'processing_time_ms' => $processingTime,
+                ]
             );
         }//end try
     }//end run()

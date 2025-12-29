@@ -74,8 +74,7 @@ class FileChangeListener implements IEventListener
     public function handle(Event $event): void
     {
         // Only handle NodeCreatedEvent and NodeWrittenEvent.
-        if (
-            ($event instanceof NodeCreatedEvent) === false
+        if (($event instanceof NodeCreatedEvent) === false
             && ($event instanceof NodeWrittenEvent) === false
         ) {
             return;
@@ -94,16 +93,15 @@ class FileChangeListener implements IEventListener
 
         // Only process OpenRegister files to avoid unnecessary processing.
         // OpenRegister files are stored in paths containing 'OpenRegister/files'.
-        if (
-            strpos($filePath, 'OpenRegister/files') === false
+        if (strpos($filePath, 'OpenRegister/files') === false
             && strpos($filePath, '/Open Registers/') === false
         ) {
             $this->logger->debug(
                 '[FileChangeListener] Skipping non-OpenRegister file',
                 [
-                        'file_id'   => $fileId,
-                        'file_path' => $filePath,
-                    ]
+                    'file_id'   => $fileId,
+                    'file_path' => $filePath,
+                ]
             );
             return;
         }
@@ -111,11 +109,11 @@ class FileChangeListener implements IEventListener
         $this->logger->debug(
             '[FileChangeListener] File event detected',
             [
-                    'event_type' => get_class($event),
-                    'file_id'    => $fileId,
-                    'file_name'  => $fileName,
-                    'file_path'  => $filePath,
-                ]
+                'event_type' => get_class($event),
+                'file_id'    => $fileId,
+                'file_name'  => $fileName,
+                'file_path'  => $filePath,
+            ]
         );
 
         // Get extraction mode from settings to determine processing strategy.
@@ -140,9 +138,9 @@ class FileChangeListener implements IEventListener
                     $this->logger->info(
                         '[FileChangeListener] Immediate mode - processing synchronously',
                         [
-                                'file_id'   => $fileId,
-                                'file_name' => $fileName,
-                            ]
+                            'file_id'   => $fileId,
+                            'file_name' => $fileName,
+                        ]
                     );
                     try {
                         $this->textExtractionService->extractFile(fileId: $fileId, forceReExtract: false);
@@ -154,9 +152,9 @@ class FileChangeListener implements IEventListener
                         $this->logger->error(
                             '[FileChangeListener] Immediate extraction failed',
                             [
-                                    'file_id' => $fileId,
-                                    'error'   => $e->getMessage(),
-                                ]
+                                'file_id' => $fileId,
+                                'error'   => $e->getMessage(),
+                            ]
                         );
                     }
                     break;
@@ -166,9 +164,9 @@ class FileChangeListener implements IEventListener
                     $this->logger->info(
                         '[FileChangeListener] Background mode - queueing extraction job',
                         [
-                                'file_id'   => $fileId,
-                                'file_name' => $fileName,
-                            ]
+                            'file_id'   => $fileId,
+                            'file_name' => $fileName,
+                        ]
                     );
                     try {
                         $this->jobList->add(job: FileTextExtractionJob::class, argument: ['file_id' => $fileId]);
@@ -180,9 +178,9 @@ class FileChangeListener implements IEventListener
                         $this->logger->error(
                             '[FileChangeListener] Failed to queue background job',
                             [
-                                    'file_id' => $fileId,
-                                    'error'   => $e->getMessage(),
-                                ]
+                                'file_id' => $fileId,
+                                'error'   => $e->getMessage(),
+                            ]
                         );
                     }
                     break;
@@ -208,9 +206,9 @@ class FileChangeListener implements IEventListener
                     $this->logger->warning(
                         '[FileChangeListener] Unknown extraction mode, defaulting to background',
                         [
-                                'file_id'         => $fileId,
-                                'extraction_mode' => $extractionMode,
-                            ]
+                            'file_id'         => $fileId,
+                            'extraction_mode' => $extractionMode,
+                        ]
                     );
                     $this->jobList->add(job: FileTextExtractionJob::class, argument: ['file_id' => $fileId]);
                     break;
@@ -219,10 +217,10 @@ class FileChangeListener implements IEventListener
             $this->logger->error(
                 '[FileChangeListener] Error determining extraction mode',
                 [
-                        'file_id' => $fileId,
-                        'error'   => $e->getMessage(),
-                        'trace'   => $e->getTraceAsString(),
-                    ]
+                    'file_id' => $fileId,
+                    'error'   => $e->getMessage(),
+                    'trace'   => $e->getTraceAsString(),
+                ]
             );
         }//end try
     }//end handle()

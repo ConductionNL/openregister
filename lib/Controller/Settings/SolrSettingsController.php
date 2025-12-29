@@ -164,8 +164,8 @@ class SolrSettingsController extends Controller
                         $this->logger->warning(
                             '[SettingsController] Failed to list Solr collections',
                             [
-                                    'error' => $e->getMessage(),
-                                ]
+                                'error' => $e->getMessage(),
+                            ]
                         );
                         $collections = [];
                     }//end try
@@ -176,30 +176,30 @@ class SolrSettingsController extends Controller
 
             return new JSONResponse(
                 data: [
-                        'success' => true,
-                        'solr'    => [
-                            'available'     => $solrAvailable,
-                            'version'       => $solrVersion,
-                            'vectorSupport' => $vectorSupport,
-                            'collections'   => $collections,
-                            'error'         => $errorMessage,
-                        ],
-                    ]
+                    'success' => true,
+                    'solr'    => [
+                        'available'     => $solrAvailable,
+                        'version'       => $solrVersion,
+                        'vectorSupport' => $vectorSupport,
+                        'collections'   => $collections,
+                        'error'         => $errorMessage,
+                    ],
+                ]
             );
         } catch (Exception $e) {
             $this->logger->error(
                 '[SettingsController] Failed to get Solr info',
                 [
-                        'error' => $e->getMessage(),
-                        'trace' => $e->getTraceAsString(),
-                    ]
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                ]
             );
 
             return new JSONResponse(
                 data: [
-                        'success' => false,
-                        'error'   => 'Failed to get Solr information: ' . $e->getMessage(),
-                    ],
+                    'success' => false,
+                    'error'   => 'Failed to get Solr information: '.$e->getMessage(),
+                ],
                 statusCode: 500
             );
         }//end try
@@ -292,10 +292,10 @@ class SolrSettingsController extends Controller
             if ($guzzleSolrService->isAvailable() === false) {
                 return new JSONResponse(
                     data: [
-                            'success' => false,
-                            'message' => 'SOLR is not available or not configured',
-                            'facets'  => [],
-                        ],
+                        'success' => false,
+                        'message' => 'SOLR is not available or not configured',
+                        'facets'  => [],
+                    ],
                     statusCode: 422
                 );
             }
@@ -305,18 +305,18 @@ class SolrSettingsController extends Controller
 
             return new JSONResponse(
                 data: [
-                        'success' => true,
-                        'message' => 'Facets discovered successfully',
-                        'facets'  => $facetableFields,
-                    ]
+                    'success' => true,
+                    'message' => 'Facets discovered successfully',
+                    'facets'  => $facetableFields,
+                ]
             );
         } catch (Exception $e) {
             return new JSONResponse(
                 data: [
-                        'success' => false,
-                        'message' => 'Failed to discover facets: ' . $e->getMessage(),
-                        'facets'  => [],
-                    ],
+                    'success' => false,
+                    'message' => 'Failed to discover facets: '.$e->getMessage(),
+                    'facets'  => [],
+                ],
                 statusCode: 422
             );
         }//end try
@@ -343,10 +343,10 @@ class SolrSettingsController extends Controller
             if ($guzzleSolrService->isAvailable() === false) {
                 return new JSONResponse(
                     data: [
-                            'success' => false,
-                            'message' => 'SOLR is not available or not configured',
-                            'facets'  => [],
-                        ],
+                        'success' => false,
+                        'message' => 'SOLR is not available or not configured',
+                        'facets'  => [],
+                    ],
                     statusCode: 422
                 );
             }
@@ -374,17 +374,17 @@ class SolrSettingsController extends Controller
                     $mergedFacets['@self'][$key] = array_merge(
                         $facetInfo,
                         [
-                                'config' => [
-                                    'enabled'     => $existingFacetConfig['enabled'] ?? true,
-                                    'title'       => $existingFacetConfig['title'] ?? $facetInfo['displayName'] ?? $key,
-                                    'description' => $existingFacetConfig['description'] ?? ($facetInfo['category'] ?? 'metadata') . " field: " . ($facetInfo['displayName'] ?? $key),
-                                    'order'       => $existingFacetConfig['order'] ?? $index,
-                                    'maxItems'    => $existingFacetConfig['max_items'] ?? $existingFacetConfig['maxItems'] ?? 10,
-                                    'facetType'   => $existingFacetConfig['facet_type'] ?? $existingFacetConfig['facetType'] ?? $facetInfo['suggestedFacetType'] ?? 'terms',
-                                    'displayType' => $existingFacetConfig['display_type'] ?? $existingFacetConfig['displayType'] ?? ($facetInfo['suggestedDisplayTypes'][0] ?? 'select'),
-                                    'showCount'   => $existingFacetConfig['show_count'] ?? $existingFacetConfig['showCount'] ?? true,
-                                ],
-                            ]
+                            'config' => [
+                                'enabled'     => $existingFacetConfig['enabled'] ?? true,
+                                'title'       => $existingFacetConfig['title'] ?? $facetInfo['displayName'] ?? $key,
+                                'description' => $existingFacetConfig['description'] ?? ($facetInfo['category'] ?? 'metadata')." field: ".($facetInfo['displayName'] ?? $key),
+                                'order'       => $existingFacetConfig['order'] ?? $index,
+                                'maxItems'    => $existingFacetConfig['max_items'] ?? $existingFacetConfig['maxItems'] ?? 10,
+                                'facetType'   => $existingFacetConfig['facet_type'] ?? $existingFacetConfig['facetType'] ?? $facetInfo['suggestedFacetType'] ?? 'terms',
+                                'displayType' => $existingFacetConfig['display_type'] ?? $existingFacetConfig['displayType'] ?? ($facetInfo['suggestedDisplayTypes'][0] ?? 'select'),
+                                'showCount'   => $existingFacetConfig['show_count'] ?? $existingFacetConfig['showCount'] ?? true,
+                            ],
+                        ]
                     );
                     $index++;
                 }//end foreach
@@ -400,17 +400,17 @@ class SolrSettingsController extends Controller
                     $mergedFacets['object_fields'][$key] = array_merge(
                         $facetInfo,
                         [
-                                'config' => [
-                                    'enabled'     => $existingFacetConfig['enabled'] ?? false,
-                                    'title'       => $existingFacetConfig['title'] ?? $facetInfo['displayName'] ?? $key,
-                                    'description' => $existingFacetConfig['description'] ?? ($facetInfo['category'] ?? 'object') . " field: " . ($facetInfo['displayName'] ?? $key),
-                                    'order'       => $existingFacetConfig['order'] ?? (100 + $index),
-                                    'maxItems'    => $existingFacetConfig['max_items'] ?? $existingFacetConfig['maxItems'] ?? 10,
-                                    'facetType'   => $existingFacetConfig['facet_type'] ?? $existingFacetConfig['facetType'] ?? $facetInfo['suggestedFacetType'] ?? 'terms',
-                                    'displayType' => $existingFacetConfig['display_type'] ?? $existingFacetConfig['displayType'] ?? ($facetInfo['suggestedDisplayTypes'][0] ?? 'select'),
-                                    'showCount'   => $existingFacetConfig['show_count'] ?? $existingFacetConfig['showCount'] ?? true,
-                                ],
-                            ]
+                            'config' => [
+                                'enabled'     => $existingFacetConfig['enabled'] ?? false,
+                                'title'       => $existingFacetConfig['title'] ?? $facetInfo['displayName'] ?? $key,
+                                'description' => $existingFacetConfig['description'] ?? ($facetInfo['category'] ?? 'object')." field: ".($facetInfo['displayName'] ?? $key),
+                                'order'       => $existingFacetConfig['order'] ?? (100 + $index),
+                                'maxItems'    => $existingFacetConfig['max_items'] ?? $existingFacetConfig['maxItems'] ?? 10,
+                                'facetType'   => $existingFacetConfig['facet_type'] ?? $existingFacetConfig['facetType'] ?? $facetInfo['suggestedFacetType'] ?? 'terms',
+                                'displayType' => $existingFacetConfig['display_type'] ?? $existingFacetConfig['displayType'] ?? ($facetInfo['suggestedDisplayTypes'][0] ?? 'select'),
+                                'showCount'   => $existingFacetConfig['show_count'] ?? $existingFacetConfig['showCount'] ?? true,
+                            ],
+                        ]
                     );
                     $index++;
                 }//end foreach
@@ -418,23 +418,23 @@ class SolrSettingsController extends Controller
 
             return new JSONResponse(
                 data: [
-                        'success'         => true,
-                        'message'         => 'Facets discovered and configured successfully',
-                        'facets'          => $mergedFacets,
-                        'global_settings' => $existingConfig['default_settings'] ?? [
-                            'show_count' => true,
-                            'show_empty' => false,
-                            'max_items'  => 10,
-                        ],
-                    ]
+                    'success'         => true,
+                    'message'         => 'Facets discovered and configured successfully',
+                    'facets'          => $mergedFacets,
+                    'global_settings' => $existingConfig['default_settings'] ?? [
+                        'show_count' => true,
+                        'show_empty' => false,
+                        'max_items'  => 10,
+                    ],
+                ]
             );
         } catch (Exception $e) {
             return new JSONResponse(
                 data: [
-                        'success' => false,
-                        'message' => 'Failed to get facet configuration: ' . $e->getMessage(),
-                        'error'   => $e->getMessage(),
-                    ],
+                    'success' => false,
+                    'message' => 'Failed to get facet configuration: '.$e->getMessage(),
+                    'error'   => $e->getMessage(),
+                ],
                 statusCode: 500
             );
         }//end try
@@ -459,18 +459,18 @@ class SolrSettingsController extends Controller
 
             return new JSONResponse(
                 data: [
-                        'success' => true,
-                        'message' => 'Facet configuration updated successfully',
-                        'config'  => $result,
-                    ]
+                    'success' => true,
+                    'message' => 'Facet configuration updated successfully',
+                    'config'  => $result,
+                ]
             );
         } catch (Exception $e) {
             return new JSONResponse(
                 data: [
-                        'success' => false,
-                        'message' => 'Failed to update facet configuration: ' . $e->getMessage(),
-                        'error'   => $e->getMessage(),
-                    ],
+                    'success' => false,
+                    'message' => 'Failed to update facet configuration: '.$e->getMessage(),
+                    'error'   => $e->getMessage(),
+                ],
                 statusCode: 500
             );
         }//end try

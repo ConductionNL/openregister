@@ -55,6 +55,7 @@ use Symfony\Component\Uid\Uuid;
  */
 class MagicBulkHandler
 {
+
     /**
      * Maximum packet size buffer percentage (0.1 = 10%, 0.5 = 50%)
      * Lower values = more conservative chunk sizes
@@ -229,7 +230,7 @@ class MagicBulkHandler
 
         // Get columns from first object.
         $columns       = array_keys($chunk[0]);
-        $columnList    = '`' . implode('`, `', $columns) . '`';
+        $columnList    = '`'.implode('`, `', $columns).'`';
         $insertedUuids = [];
 
         // Build VALUES clause.
@@ -240,13 +241,13 @@ class MagicBulkHandler
         foreach ($chunk as $objectData) {
             $rowValues = [];
             foreach ($columns as $column) {
-                $paramName   = 'p' . $paramIndex;
-                $rowValues[] = ':' . $paramName;
+                $paramName   = 'p'.$paramIndex;
+                $rowValues[] = ':'.$paramName;
                 $parameters[$paramName] = $objectData[$column] ?? null;
                 $paramIndex++;
             }
 
-            $valuesClause[] = '(' . implode(',', $rowValues) . ')';
+            $valuesClause[] = '('.implode(',', $rowValues).')';
 
             // Collect UUID for return.
             if (($objectData['_uuid'] ?? null) !== null) {
@@ -255,7 +256,7 @@ class MagicBulkHandler
         }
 
         // Execute bulk insert.
-        $sql = "INSERT INTO `{$tableName}` ({$columnList}) VALUES " . implode(',', $valuesClause);
+        $sql = "INSERT INTO `{$tableName}` ({$columnList}) VALUES ".implode(',', $valuesClause);
 
         try {
             $stmt = $this->db->prepare($sql);
@@ -264,10 +265,10 @@ class MagicBulkHandler
             $this->logger->error(
                 'Bulk insert to dynamic table failed',
                 [
-                        'tableName' => $tableName,
-                        'chunkSize' => count($chunk),
-                        'error'     => $e->getMessage(),
-                    ]
+                    'tableName' => $tableName,
+                    'chunkSize' => count($chunk),
+                    'error'     => $e->getMessage(),
+                ]
             );
             throw $e;
         }
@@ -323,10 +324,10 @@ class MagicBulkHandler
                 $this->logger->error(
                     'Failed to update object in dynamic table',
                     [
-                            'tableName' => $tableName,
-                            'uuid'      => $uuid,
-                            'error'     => $e->getMessage(),
-                        ]
+                        'tableName' => $tableName,
+                        'uuid'      => $uuid,
+                        'error'     => $e->getMessage(),
+                    ]
                 );
                 // Continue with other objects.
             }
@@ -406,11 +407,11 @@ class MagicBulkHandler
                 // > 64MB.
                 $this->maxPacketSizeBuffer = 0.6;
                 // 60% buffer.
-            } elseif ($maxPacketSize > 33554432) {
+            } else if ($maxPacketSize > 33554432) {
                 // > 32MB.
                 $this->maxPacketSizeBuffer = 0.5;
                 // 50% buffer.
-            } elseif ($maxPacketSize > 16777216) {
+            } else if ($maxPacketSize > 16777216) {
                 // > 16MB.
                 $this->maxPacketSizeBuffer = 0.4;
                 // 40% buffer.
@@ -437,7 +438,7 @@ class MagicBulkHandler
 
         // Ensure it starts with a letter or underscore.
         if (preg_match('/^[a-zA-Z_]/', $sanitized) === 0) {
-            $sanitized = 'col_' . $sanitized;
+            $sanitized = 'col_'.$sanitized;
         }
 
         // Limit length to 64 characters (MySQL limit).

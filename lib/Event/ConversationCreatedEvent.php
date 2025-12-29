@@ -28,6 +28,7 @@ use OCP\EventDispatcher\Event;
  */
 class ConversationCreatedEvent extends Event
 {
+
     /**
      * The newly created conversation.
      *

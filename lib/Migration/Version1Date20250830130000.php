@@ -62,11 +62,11 @@ class Version1Date20250830130000 extends SimpleMigrationStep
                     'schemaVersion',
                     Types::STRING,
                     [
-                            'notnull' => false,
-                            'length'  => 255,
-                            'default' => null,
-                            'comment' => 'Version of the schema used for this object',
-                        ]
+                        'notnull' => false,
+                        'length'  => 255,
+                        'default' => null,
+                        'comment' => 'Version of the schema used for this object',
+                    ]
                 );
                 $output->info(message: 'Added schemaVersion column to openregister_objects table');
             }

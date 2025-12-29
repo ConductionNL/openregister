@@ -51,6 +51,7 @@ use OCP\AppFramework\Db\Entity;
  */
 class GdprEntity extends Entity implements JsonSerializable
 {
+
     /**
      * UUID.
      *

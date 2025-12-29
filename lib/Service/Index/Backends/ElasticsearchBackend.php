@@ -32,6 +32,7 @@ use Psr\Log\LoggerInterface;
  */
 class ElasticsearchBackend implements SearchBackendInterface
 {
+
     /**
      * Elasticsearch HTTP client for making requests
      *
@@ -95,7 +96,7 @@ class ElasticsearchBackend implements SearchBackendInterface
      *
      * @return bool True on success, false on failure
      */
-    public function indexObject(ObjectEntity $object, bool $commit = false): bool
+    public function indexObject(ObjectEntity $object, bool $commit=false): bool
     {
         return $this->indexer->indexObject(object: $object, refresh: $commit);
     }//end indexObject()
@@ -105,7 +106,7 @@ class ElasticsearchBackend implements SearchBackendInterface
      *
      * @return array Results of bulk indexing operation
      */
-    public function bulkIndexObjects(array $objects, bool $commit = false): array
+    public function bulkIndexObjects(array $objects, bool $commit=false): array
     {
         return $this->indexer->bulkIndexObjects(objects: $objects, refresh: $commit);
     }//end bulkIndexObjects()
@@ -115,7 +116,7 @@ class ElasticsearchBackend implements SearchBackendInterface
      *
      * @return bool True on success, false on failure
      */
-    public function deleteObject(string|int $objectId, bool $commit = false): bool
+    public function deleteObject(string|int $objectId, bool $commit=false): bool
     {
         return $this->indexer->deleteObject(objectId: $objectId, refresh: $commit);
     }//end deleteObject()
@@ -127,7 +128,7 @@ class ElasticsearchBackend implements SearchBackendInterface
      *
      * @psalm-return array{deleted: 0}|true
      */
-    public function deleteByQuery(string $query, bool $commit = false, bool $returnDetails = false): array|bool
+    public function deleteByQuery(string $query, bool $commit=false, bool $returnDetails=false): array|bool
     {
         // Simplified implementation - just return success.
         $this->logger->info('[ElasticsearchBackend] deleteByQuery called (not fully implemented yet)');
@@ -142,11 +143,11 @@ class ElasticsearchBackend implements SearchBackendInterface
      * @psalm-return array{total: 0|mixed, results: array<never, array<never, never>|mixed>, page: 1, limit: 10|mixed}
      */
     public function searchObjectsPaginated(
-        array $query = [],
-        bool $rbac = true,
-        bool $multitenancy = true,
-        bool $published = false,
-        bool $deleted = false
+        array $query=[],
+        bool $rbac=true,
+        bool $multitenancy=true,
+        bool $published=false,
+        bool $deleted=false
     ): array {
         $result = $this->queryExecutor->search($query);
 
@@ -203,7 +204,7 @@ class ElasticsearchBackend implements SearchBackendInterface
      *
      * @psalm-return array{success: true, indexed: 0, message: 'Reindexing should be called via IndexService'}
      */
-    public function reindexAll(int $maxObjects = 0, int $batchSize = 1000, ?string $collectionName = null): array
+    public function reindexAll(int $maxObjects=0, int $batchSize=1000, ?string $collectionName=null): array
     {
         $this->logger->info('[ElasticsearchBackend] reindexAll called (delegates to external handler)');
 
@@ -222,12 +223,12 @@ class ElasticsearchBackend implements SearchBackendInterface
      * @psalm-return array{success: true, index: string, message: 'Index warmed up'}
      */
     public function warmupIndex(
-        array $schemas = [],
-        int $maxObjects = 0,
-        string $mode = 'serial',
-        bool $collectErrors = false,
-        int $batchSize = 1000,
-        array $schemaIds = []
+        array $schemas=[],
+        int $maxObjects=0,
+        string $mode='serial',
+        bool $collectErrors=false,
+        int $batchSize=1000,
+        array $schemaIds=[]
     ): array {
         $index = $this->indexManager->getActiveIndexName();
         $this->indexManager->ensureIndex($index);
@@ -244,7 +245,7 @@ class ElasticsearchBackend implements SearchBackendInterface
      *
      * @return bool True if backend is available
      */
-    public function isAvailable(bool $forceRefresh = false): bool
+    public function isAvailable(bool $forceRefresh=false): bool
     {
         return $this->httpClient->isConfigured();
     }//end isAvailable()
@@ -256,7 +257,7 @@ class ElasticsearchBackend implements SearchBackendInterface
      *
      * @psalm-return array{success: bool, error?: string, document_count?: int}
      */
-    public function testConnection(bool $includeCollectionTests = true): array
+    public function testConnection(bool $includeCollectionTests=true): array
     {
         try {
             $count = $this->getDocumentCount();
@@ -290,7 +291,7 @@ class ElasticsearchBackend implements SearchBackendInterface
      *
      * @psalm-return array{deleted: 0}
      */
-    public function clearIndex(?string $collectionName = null): array
+    public function clearIndex(?string $collectionName=null): array
     {
         $this->indexer->clearIndex();
         return ['deleted' => 0];
@@ -328,7 +329,7 @@ class ElasticsearchBackend implements SearchBackendInterface
      *
      * @psalm-return array{success: bool}
      */
-    public function createCollection(string $name, array $config = []): array
+    public function createCollection(string $name, array $config=[]): array
     {
             $success = $this->indexManager->createIndex(indexName: $name, mapping: $config);
         return ['success' => $success];
@@ -341,7 +342,7 @@ class ElasticsearchBackend implements SearchBackendInterface
      *
      * @psalm-return array{success: bool}
      */
-    public function deleteCollection(?string $collectionName = null): array
+    public function deleteCollection(?string $collectionName=null): array
     {
         $name    = $collectionName ?? $this->indexManager->getActiveIndexName();
         $success = $this->indexManager->deleteIndex($name);
@@ -379,7 +380,7 @@ class ElasticsearchBackend implements SearchBackendInterface
     public function index(array $documents): bool
     {
         // Simplified implementation.
-        $this->logger->info('[ElasticsearchBackend] index() called with ' . count($documents) . ' documents');
+        $this->logger->info('[ElasticsearchBackend] index() called with '.count($documents).' documents');
         return true;
     }//end index()
 

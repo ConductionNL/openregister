@@ -58,6 +58,7 @@ use Psr\Log\LoggerInterface;
 
 class DeleteObject
 {
+
     /**
      * Audit trail mapper
      *
@@ -222,9 +223,9 @@ class DeleteObject
         Register | int | string $register,
         Schema | int | string $schema,
         string $uuid,
-        ?string $originalObjectId = null,
-        bool $_rbac = true,
-        bool $_multitenancy = true
+        ?string $originalObjectId=null,
+        bool $_rbac=true,
+        bool $_multitenancy=true
     ): bool {
         try {
             $object = $this->objectEntityMapper->find($uuid, null, null, true);
@@ -295,7 +296,7 @@ class DeleteObject
             // }
         } catch (\Exception $e) {
             // Log error but don't fail the deletion process.
-            $this->logger->warning('Failed to delete object folder for object ' . $objectEntity->getId() . ': ' . $e->getMessage());
+            $this->logger->warning('Failed to delete object folder for object '.$objectEntity->getId().': '.$e->getMessage());
         }
     }//end deleteObjectFolder()
 

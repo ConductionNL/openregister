@@ -45,6 +45,7 @@ use Psr\Log\LoggerInterface;
  */
 class FileFormattingHandler
 {
+
     /**
      * Reference to FileService for cross-handler coordination (circular dependency break).
      *
@@ -107,7 +108,7 @@ class FileFormattingHandler
             'path'        => $file->getPath(),
             'title'       => $file->getName(),
             'accessUrl'   => count($shares) > 0 ? $this->fileService->getShareLink($shares[0]) : null,
-            'downloadUrl' => count($shares) > 0 ? $this->fileService->getShareLink($shares[0]) . '/download' : null,
+            'downloadUrl' => count($shares) > 0 ? $this->fileService->getShareLink($shares[0]).'/download' : null,
             'type'        => $file->getMimetype(),
             'extension'   => $file->getExtension(),
             'size'        => $file->getSize(),
@@ -134,7 +135,7 @@ class FileFormattingHandler
                 // If key already exists as array, append value.
                 if (isset($metadata[$key]) === true && is_array($metadata[$key]) === true) {
                     $metadata[$key][] = $value;
-                } elseif (isset($metadata[$key]) === true) {
+                } else if (isset($metadata[$key]) === true) {
                     // If key exists but not as array, convert to array with both values.
                     $metadata[$key] = [$metadata[$key], $value];
                 } else {
@@ -176,7 +177,7 @@ class FileFormattingHandler
      * @throws InvalidPathException If any file path is invalid.
      * @throws NotFoundException    If files are not found.
      */
-    public function formatFiles(array $files, ?array $requestParams = []): array
+    public function formatFiles(array $files, ?array $requestParams=[]): array
     {
         // Format all files first.
         $formattedFiles = [];
@@ -249,7 +250,7 @@ class FileFormattingHandler
             $labels = $requestParams['labels'];
             if (is_string($labels) === true) {
                 $filters['labels'] = array_map('trim', explode(',', $labels));
-            } elseif (is_array($labels) === true) {
+            } else if (is_array($labels) === true) {
                 $filters['labels'] = $labels;
             }
         }
@@ -263,7 +264,7 @@ class FileFormattingHandler
             $extensions = $requestParams['extensions'];
             if (is_string($extensions) === true) {
                 $filters['extensions'] = array_map('trim', explode(',', $extensions));
-            } elseif (is_array($extensions) === true) {
+            } else if (is_array($extensions) === true) {
                 $filters['extensions'] = $extensions;
             }
         }

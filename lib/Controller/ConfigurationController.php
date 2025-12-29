@@ -48,6 +48,7 @@ use Psr\Log\LoggerInterface;
  */
 class ConfigurationController extends Controller
 {
+
     /**
      * Configuration mapper instance.
      *
@@ -152,7 +153,7 @@ class ConfigurationController extends Controller
 
             return new JSONResponse(data: $configurations, statusCode: 200);
         } catch (Exception $e) {
-            $this->logger->error(message: 'Failed to fetch configurations: ' . $e->getMessage());
+            $this->logger->error(message: 'Failed to fetch configurations: '.$e->getMessage());
 
             return new JSONResponse(data: ['error' => 'Failed to fetch configurations'], statusCode: 500);
         }//end try
@@ -182,7 +183,7 @@ class ConfigurationController extends Controller
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             return new JSONResponse(data: ['error' => 'Configuration not found'], statusCode: 404);
         } catch (Exception $e) {
-            $this->logger->error(message: "Failed to fetch configuration {$id}: " . $e->getMessage());
+            $this->logger->error(message: "Failed to fetch configuration {$id}: ".$e->getMessage());
 
             return new JSONResponse(data: ['error' => 'Failed to fetch configuration'], statusCode: 500);
         }//end try
@@ -217,11 +218,11 @@ class ConfigurationController extends Controller
             $this->logger->info(
                 message: 'Enriching configuration details',
                 context: [
-                        'source' => $source,
-                        'owner'  => $owner,
-                        'repo'   => $repo,
-                        'path'   => $path,
-                    ]
+                    'source' => $source,
+                    'owner'  => $owner,
+                    'repo'   => $repo,
+                    'path'   => $path,
+                ]
             );
 
             // Call appropriate service.
@@ -242,14 +243,14 @@ class ConfigurationController extends Controller
             return new JSONResponse(data: $details, statusCode: 200);
         } catch (Exception $e) {
             $this->logger->error(
-                message: 'Configuration enrichment failed: ' . $e->getMessage(),
+                message: 'Configuration enrichment failed: '.$e->getMessage(),
                 context: [
-                        'exception' => get_class($e),
-                        'trace'     => $e->getTraceAsString(),
-                    ]
+                    'exception' => get_class($e),
+                    'trace'     => $e->getTraceAsString(),
+                ]
             );
 
-            return new JSONResponse(data: ['error' => 'Failed to enrich configuration: ' . $e->getMessage()], statusCode: 500);
+            return new JSONResponse(data: ['error' => 'Failed to enrich configuration: '.$e->getMessage()], statusCode: 500);
         }//end try
     }//end enrichDetails()
 
@@ -300,9 +301,9 @@ class ConfigurationController extends Controller
             // Return 201 Created with explicit status code.
             return new JSONResponse($created->jsonSerialize(), Http::STATUS_CREATED);
         } catch (Exception $e) {
-            $this->logger->error(message: 'Failed to create configuration: ' . $e->getMessage());
+            $this->logger->error(message: 'Failed to create configuration: '.$e->getMessage());
 
-            return new JSONResponse(data: ['error' => 'Failed to create configuration: ' . $e->getMessage()], statusCode: 500);
+            return new JSONResponse(data: ['error' => 'Failed to create configuration: '.$e->getMessage()], statusCode: 500);
         }//end try
     }//end create()
 
@@ -344,10 +345,10 @@ class ConfigurationController extends Controller
                 statusCode: 404
             );
         } catch (Exception $e) {
-            $this->logger->error("Failed to update configuration {$id}: " . $e->getMessage());
+            $this->logger->error("Failed to update configuration {$id}: ".$e->getMessage());
 
             return new JSONResponse(
-                data: ['error' => 'Failed to update configuration: ' . $e->getMessage()],
+                data: ['error' => 'Failed to update configuration: '.$e->getMessage()],
                 statusCode: 500
             );
         }//end try
@@ -425,7 +426,7 @@ class ConfigurationController extends Controller
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             return new JSONResponse(data: ['error' => 'Configuration not found'], statusCode: 404);
         } catch (Exception $e) {
-            $this->logger->error("Failed to delete configuration {$id}: " . $e->getMessage());
+            $this->logger->error("Failed to delete configuration {$id}: ".$e->getMessage());
 
             return new JSONResponse(data: ['error' => 'Failed to delete configuration'], statusCode: 500);
         }//end try
@@ -463,11 +464,11 @@ class ConfigurationController extends Controller
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             return new JSONResponse(data: ['error' => 'Configuration not found'], statusCode: 404);
         } catch (GuzzleException $e) {
-            $this->logger->error("Failed to check version for configuration {$id}: " . $e->getMessage());
+            $this->logger->error("Failed to check version for configuration {$id}: ".$e->getMessage());
 
-            return new JSONResponse(data: ['error' => 'Failed to fetch remote version: ' . $e->getMessage()], statusCode: 500);
+            return new JSONResponse(data: ['error' => 'Failed to fetch remote version: '.$e->getMessage()], statusCode: 500);
         } catch (Exception $e) {
-            $this->logger->error("Failed to check version for configuration {$id}: " . $e->getMessage());
+            $this->logger->error("Failed to check version for configuration {$id}: ".$e->getMessage());
 
             return new JSONResponse(data: ['error' => 'Failed to check version'], statusCode: 500);
         }//end try
@@ -503,7 +504,7 @@ class ConfigurationController extends Controller
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             return new JSONResponse(data: ['error' => 'Configuration not found'], statusCode: 404);
         } catch (Exception $e) {
-            $this->logger->error("Failed to preview configuration {$id}: " . $e->getMessage());
+            $this->logger->error("Failed to preview configuration {$id}: ".$e->getMessage());
 
             return new JSONResponse(data: ['error' => 'Failed to preview configuration changes'], statusCode: 500);
         }//end try
@@ -538,12 +539,12 @@ class ConfigurationController extends Controller
             $this->notificationService->markConfigurationUpdated($configuration);
 
             $this->logger->info(
-                "Imported configuration {$configuration->getTitle()}: " . json_encode(
+                "Imported configuration {$configuration->getTitle()}: ".json_encode(
                     [
                         'registers' => count($result['registers']),
                         'schemas'   => count($result['schemas']),
                         'objects'   => count($result['objects']),
-                        ]
+                    ]
                 )
             );
 
@@ -559,9 +560,9 @@ class ConfigurationController extends Controller
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             return new JSONResponse(data: ['error' => 'Configuration not found'], statusCode: 404);
         } catch (Exception $e) {
-            $this->logger->error("Failed to import configuration {$id}: " . $e->getMessage());
+            $this->logger->error("Failed to import configuration {$id}: ".$e->getMessage());
 
-            return new JSONResponse(data: ['error' => 'Failed to import configuration: ' . $e->getMessage()], statusCode: 500);
+            return new JSONResponse(data: ['error' => 'Failed to import configuration: '.$e->getMessage()], statusCode: 500);
         }//end try
     }//end import()
 
@@ -598,9 +599,9 @@ class ConfigurationController extends Controller
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             return new JSONResponse(data: ['error' => 'Configuration not found'], statusCode: 404);
         } catch (Exception $e) {
-            $this->logger->error("Failed to export configuration {$id}: " . $e->getMessage());
+            $this->logger->error("Failed to export configuration {$id}: ".$e->getMessage());
 
-            return new JSONResponse(data: ['error' => 'Failed to export configuration: ' . $e->getMessage()], statusCode: 500);
+            return new JSONResponse(data: ['error' => 'Failed to export configuration: '.$e->getMessage()], statusCode: 500);
         }//end try
     }//end export()
 
@@ -628,10 +629,10 @@ class ConfigurationController extends Controller
             $this->logger->info(
                 'Discovering configurations',
                 [
-                        'source'  => $source,
-                        '_search' => $search,
-                        'page'    => $page,
-                    ]
+                    'source'  => $source,
+                    '_search' => $search,
+                    'page'    => $page,
+                ]
             );
 
             // Validate source.
@@ -655,15 +656,15 @@ class ConfigurationController extends Controller
             return new JSONResponse(data: $results, statusCode: 200);
         } catch (Exception $e) {
             $this->logger->error(
-                'Configuration discovery failed: ' . $e->getMessage(),
+                'Configuration discovery failed: '.$e->getMessage(),
                 [
-                        'source'    => $source ?? 'unknown',
-                        'exception' => get_class($e),
-                        'trace'     => $e->getTraceAsString(),
-                    ]
+                    'source'    => $source ?? 'unknown',
+                    'exception' => get_class($e),
+                    'trace'     => $e->getTraceAsString(),
+                ]
             );
 
-            return new JSONResponse(data: ['error' => 'Failed to discover configurations: ' . $e->getMessage()], statusCode: 500);
+            return new JSONResponse(data: ['error' => 'Failed to discover configurations: '.$e->getMessage()], statusCode: 500);
         }//end try
     }//end discover()
 
@@ -694,18 +695,18 @@ class ConfigurationController extends Controller
             $this->logger->info(
                 'Fetching GitHub branches',
                 [
-                        'owner' => $owner,
-                        'repo'  => $repo,
-                    ]
+                    'owner' => $owner,
+                    'repo'  => $repo,
+                ]
             );
 
             $branches = $this->githubHandler->getBranches(owner: $owner, repo: $repo);
 
             return new JSONResponse(data: ['branches' => $branches], statusCode: 200);
         } catch (Exception $e) {
-            $this->logger->error('Failed to get GitHub branches: ' . $e->getMessage());
+            $this->logger->error('Failed to get GitHub branches: '.$e->getMessage());
 
-            return new JSONResponse(data: ['error' => 'Failed to fetch branches: ' . $e->getMessage()], statusCode: 500);
+            return new JSONResponse(data: ['error' => 'Failed to fetch branches: '.$e->getMessage()], statusCode: 500);
         }//end try
     }//end getGitHubBranches()
 
@@ -737,18 +738,18 @@ class ConfigurationController extends Controller
             $this->logger->info(
                 'Fetching GitHub repositories',
                 [
-                        'page'     => $page,
-                        'per_page' => $perPage,
-                    ]
+                    'page'     => $page,
+                    'per_page' => $perPage,
+                ]
             );
 
             $repositories = $this->githubHandler->getRepositories(page: $page, perPage: $perPage);
 
             return new JSONResponse(data: ['repositories' => $repositories], statusCode: 200);
         } catch (Exception $e) {
-            $this->logger->error('Failed to get GitHub repositories: ' . $e->getMessage());
+            $this->logger->error('Failed to get GitHub repositories: '.$e->getMessage());
 
-            return new JSONResponse(data: ['error' => 'Failed to fetch repositories: ' . $e->getMessage()], statusCode: 500);
+            return new JSONResponse(data: ['error' => 'Failed to fetch repositories: '.$e->getMessage()], statusCode: 500);
         }//end try
     }//end getGitHubRepositories()
 
@@ -780,19 +781,19 @@ class ConfigurationController extends Controller
             $this->logger->info(
                 'Fetching GitHub configurations',
                 [
-                        'owner'  => $owner,
-                        'repo'   => $repo,
-                        'branch' => $branch,
-                    ]
+                    'owner'  => $owner,
+                    'repo'   => $repo,
+                    'branch' => $branch,
+                ]
             );
 
             $files = $this->githubHandler->listConfigurationFiles(owner: $owner, repo: $repo, branch: $branch);
 
             return new JSONResponse(data: ['files' => $files], statusCode: 200);
         } catch (Exception $e) {
-            $this->logger->error('Failed to get GitHub configurations: ' . $e->getMessage());
+            $this->logger->error('Failed to get GitHub configurations: '.$e->getMessage());
 
-            return new JSONResponse(data: ['error' => 'Failed to fetch configurations: ' . $e->getMessage()], statusCode: 500);
+            return new JSONResponse(data: ['error' => 'Failed to fetch configurations: '.$e->getMessage()], statusCode: 500);
         }//end try
     }//end getGitHubConfigurations()
 
@@ -827,19 +828,19 @@ class ConfigurationController extends Controller
             $this->logger->info(
                 'Fetching GitLab branches',
                 [
-                        'namespace'  => $namespace,
-                        'project'    => $project,
-                        'project_id' => $projectId,
-                    ]
+                    'namespace'  => $namespace,
+                    'project'    => $project,
+                    'project_id' => $projectId,
+                ]
             );
 
             $branches = $this->gitlabHandler->getBranches($projectId);
 
             return new JSONResponse(data: ['branches' => $branches], statusCode: 200);
         } catch (Exception $e) {
-            $this->logger->error('Failed to get GitLab branches: ' . $e->getMessage());
+            $this->logger->error('Failed to get GitLab branches: '.$e->getMessage());
 
-            return new JSONResponse(data: ['error' => 'Failed to fetch branches: ' . $e->getMessage()], statusCode: 500);
+            return new JSONResponse(data: ['error' => 'Failed to fetch branches: '.$e->getMessage()], statusCode: 500);
         }//end try
     }//end getGitLabBranches()
 
@@ -875,20 +876,20 @@ class ConfigurationController extends Controller
             $this->logger->info(
                 'Fetching GitLab configurations',
                 [
-                        'namespace'  => $namespace,
-                        'project'    => $project,
-                        'project_id' => $projectId,
-                        'ref'        => $ref,
-                    ]
+                    'namespace'  => $namespace,
+                    'project'    => $project,
+                    'project_id' => $projectId,
+                    'ref'        => $ref,
+                ]
             );
 
             $files = $this->gitlabHandler->listConfigurationFiles(projectId: $projectId, ref: $ref);
 
             return new JSONResponse(data: ['files' => $files], statusCode: 200);
         } catch (Exception $e) {
-            $this->logger->error('Failed to get GitLab configurations: ' . $e->getMessage());
+            $this->logger->error('Failed to get GitLab configurations: '.$e->getMessage());
 
-            return new JSONResponse(data: ['error' => 'Failed to fetch configurations: ' . $e->getMessage()], statusCode: 500);
+            return new JSONResponse(data: ['error' => 'Failed to fetch configurations: '.$e->getMessage()], statusCode: 500);
         }//end try
     }//end getGitLabConfigurations()
 
@@ -1010,7 +1011,7 @@ class ConfigurationController extends Controller
 
         $configData = json_decode($content, true);
         if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new Exception('Invalid JSON in URL response: ' . json_last_error_msg());
+            throw new Exception('Invalid JSON in URL response: '.json_last_error_msg());
         }
 
         return [
@@ -1150,10 +1151,10 @@ class ConfigurationController extends Controller
                 $statusCode = 500;
             }
 
-            $this->logger->error("Failed to import from {$sourceType}: " . $e->getMessage());
+            $this->logger->error("Failed to import from {$sourceType}: ".$e->getMessage());
 
             return new JSONResponse(
-                data: ['error' => 'Failed to import configuration: ' . $e->getMessage()],
+                data: ['error' => 'Failed to import configuration: '.$e->getMessage()],
                 statusCode: $statusCode
             );
         }//end try
@@ -1364,7 +1365,7 @@ class ConfigurationController extends Controller
         if (empty($path) === true) {
             $title          = $configuration->getTitle();
             $snakeCaseTitle = $this->toSnakeCase($title ?? 'configuration');
-            $path           = $snakeCaseTitle . '_openregister.json';
+            $path           = $snakeCaseTitle.'_openregister.json';
         }
 
         return [
@@ -1624,10 +1625,10 @@ class ConfigurationController extends Controller
      */
     private function handlePublishingError(Exception $exception): JSONResponse
     {
-        $this->logger->error('Failed to publish to GitHub: ' . $exception->getMessage());
+        $this->logger->error('Failed to publish to GitHub: '.$exception->getMessage());
 
         return new JSONResponse(
-            data: ['error' => 'Failed to publish configuration: ' . $exception->getMessage()],
+            data: ['error' => 'Failed to publish configuration: '.$exception->getMessage()],
             statusCode: 500
         );
     }//end handlePublishingError()

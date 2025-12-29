@@ -49,6 +49,7 @@ use OCP\IRequest;
  */
 class FilesController extends Controller
 {
+
     /**
      * File service for handling file operations
      *
@@ -574,7 +575,7 @@ class FilesController extends Controller
 
             if ($content === false) {
                 throw new Exception(
-                    'Failed to read uploaded file content for: ' . $file['name']
+                    'Failed to read uploaded file content for: '.$file['name']
                 );
             }
 
@@ -607,7 +608,7 @@ class FilesController extends Controller
 
         if ($fileError !== null && ($fileError !== UPLOAD_ERR_OK) === true) {
             throw new Exception(
-                'File upload error for ' . $file['name'] . ': ' . $this->getUploadErrorMessage($fileError)
+                'File upload error for '.$file['name'].': '.$this->getUploadErrorMessage($fileError)
             );
         }
 
@@ -616,7 +617,7 @@ class FilesController extends Controller
 
         if (file_exists($tmpName) === false || is_readable($tmpName) === false) {
             throw new Exception(
-                'Temporary file not found or not readable for: ' . $file['name']
+                'Temporary file not found or not readable for: '.$file['name']
             );
         }
     }//end validateUploadedFile()
@@ -867,7 +868,7 @@ class FilesController extends Controller
             UPLOAD_ERR_NO_TMP_DIR => 'Missing a temporary folder on the server',
             UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk',
             UPLOAD_ERR_EXTENSION => 'A PHP extension stopped the file upload',
-            default => 'Unknown upload error (code: ' . $errorCode . ')',
+            default => 'Unknown upload error (code: '.$errorCode.')',
         };
     }//end getUploadErrorMessage()
 

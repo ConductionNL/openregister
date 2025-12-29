@@ -28,6 +28,7 @@ use OCP\EventDispatcher\Event;
  */
 class SourceUpdatedEvent extends Event
 {
+
     /**
      * The updated source state.
      *

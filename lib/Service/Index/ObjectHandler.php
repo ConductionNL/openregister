@@ -80,19 +80,19 @@ class ObjectHandler
      * @throws Exception If objectCollection is not configured
      */
     public function searchObjects(
-        array $query = [],
-        bool $rbac = true,
-        bool $multitenancy = true,
-        bool $published = false,
-        bool $deleted = false
+        array $query=[],
+        bool $rbac=true,
+        bool $multitenancy=true,
+        bool $published=false,
+        bool $deleted=false
     ): array {
         $this->logger->debug(
             '[ObjectHandler] Searching objects',
             [
-                    'query'        => $query,
-                    'rbac'         => $rbac,
-                    'multitenancy' => $multitenancy,
-                ]
+                'query'        => $query,
+                'rbac'         => $rbac,
+                'multitenancy' => $multitenancy,
+            ]
         );
 
         // Build Solr query from OpenRegister query.
@@ -199,8 +199,8 @@ class ObjectHandler
             $this->logger->error(
                 '[ObjectHandler] Failed to commit to Solr',
                 [
-                        'error' => $e->getMessage(),
-                    ]
+                    'error' => $e->getMessage(),
+                ]
             );
             throw $e;
         }//end try
@@ -217,7 +217,7 @@ class ObjectHandler
      *
      * @return array Reindexing results with statistics.
      */
-    public function reindexAll(int $maxObjects = 0, int $batchSize = 1000, ?string $collectionName = null): array
+    public function reindexAll(int $maxObjects=0, int $batchSize=1000, ?string $collectionName=null): array
     {
         $this->logger->info(
             '[ObjectHandler] Starting full reindex',

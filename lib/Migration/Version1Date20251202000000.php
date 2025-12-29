@@ -73,10 +73,10 @@ class Version1Date20251202000000 extends SimpleMigrationStep
                     'published',
                     Types::DATETIME,
                     [
-                            'notnull' => false,
-                            'default' => null,
-                            'comment' => 'Publication timestamp. When set, schema becomes publicly accessible regardless of organisation restrictions if published bypass is enabled.',
-                        ]
+                        'notnull' => false,
+                        'default' => null,
+                        'comment' => 'Publication timestamp. When set, schema becomes publicly accessible regardless of organisation restrictions if published bypass is enabled.',
+                    ]
                 );
 
                 $output->info('   ✓ Added published column to schemas table');
@@ -90,10 +90,10 @@ class Version1Date20251202000000 extends SimpleMigrationStep
                     'depublished',
                     Types::DATETIME,
                     [
-                            'notnull' => false,
-                            'default' => null,
-                            'comment' => 'Depublication timestamp. When set, schema becomes inaccessible after this date/time.',
-                        ]
+                        'notnull' => false,
+                        'default' => null,
+                        'comment' => 'Depublication timestamp. When set, schema becomes inaccessible after this date/time.',
+                    ]
                 );
 
                 $output->info('   ✓ Added depublished column to schemas table');
@@ -114,10 +114,10 @@ class Version1Date20251202000000 extends SimpleMigrationStep
                     'published',
                     Types::DATETIME,
                     [
-                            'notnull' => false,
-                            'default' => null,
-                            'comment' => 'Publication timestamp. When set, register becomes publicly accessible regardless of organisation restrictions if published bypass is enabled.',
-                        ]
+                        'notnull' => false,
+                        'default' => null,
+                        'comment' => 'Publication timestamp. When set, register becomes publicly accessible regardless of organisation restrictions if published bypass is enabled.',
+                    ]
                 );
 
                 $output->info('   ✓ Added published column to registers table');
@@ -131,10 +131,10 @@ class Version1Date20251202000000 extends SimpleMigrationStep
                     'depublished',
                     Types::DATETIME,
                     [
-                            'notnull' => false,
-                            'default' => null,
-                            'comment' => 'Depublication timestamp. When set, register becomes inaccessible after this date/time.',
-                        ]
+                        'notnull' => false,
+                        'default' => null,
+                        'comment' => 'Depublication timestamp. When set, register becomes inaccessible after this date/time.',
+                    ]
                 );
 
                 $output->info('   ✓ Added depublished column to registers table');

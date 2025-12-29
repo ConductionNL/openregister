@@ -79,6 +79,7 @@ use OCP\AppFramework\Db\Entity;
  */
 class SearchTrail extends Entity implements JsonSerializable
 {
+
     /**
      * Unique identifier for the search trail entry
      *
@@ -421,7 +422,7 @@ class SearchTrail extends Entity implements JsonSerializable
                 $value = null;
             }
 
-            $method = 'set' . ucfirst($key);
+            $method = 'set'.ucfirst($key);
 
             try {
                 $this->$method($value);
@@ -568,12 +569,12 @@ class SearchTrail extends Entity implements JsonSerializable
 
         // Fallback to search term if available.
         if ($this->searchTerm !== null && $this->searchTerm !== '') {
-            return 'Search: ' . $this->searchTerm;
+            return 'Search: '.$this->searchTerm;
         }
 
         // Fallback to ID if available.
         if ($this->id !== null) {
-            return 'SearchTrail #' . $this->id;
+            return 'SearchTrail #'.$this->id;
         }
 
         // Final fallback.

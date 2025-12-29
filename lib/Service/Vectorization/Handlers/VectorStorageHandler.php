@@ -80,11 +80,11 @@ class VectorStorageHandler
         array $embedding,
         string $model,
         int $dimensions,
-        int $chunkIndex = 0,
-        int $totalChunks = 1,
-        ?string $chunkText = null,
-        array $metadata = [],
-        string $backend = 'php'
+        int $chunkIndex=0,
+        int $totalChunks=1,
+        ?string $chunkText=null,
+        array $metadata=[],
+        string $backend='php'
     ): int {
         $this->logger->debug(
             message: '[VectorStorageHandler] Routing vector storage',
@@ -137,7 +137,7 @@ class VectorStorageHandler
                     'entity_id'   => $entityId,
                 ]
             );
-            throw new Exception('Vector storage failed: ' . $e->getMessage());
+            throw new Exception('Vector storage failed: '.$e->getMessage());
         }//end try
     }//end storeVector()
 
@@ -164,10 +164,10 @@ class VectorStorageHandler
         array $embedding,
         string $model,
         int $dimensions,
-        int $chunkIndex = 0,
-        int $totalChunks = 1,
-        ?string $chunkText = null,
-        array $metadata = []
+        int $chunkIndex=0,
+        int $totalChunks=1,
+        ?string $chunkText=null,
+        array $metadata=[]
     ): int {
         $this->logger->debug(
             message: '[VectorStorageHandler] Storing vector in database',
@@ -229,7 +229,7 @@ class VectorStorageHandler
                     'entity_id'   => $entityId,
                 ]
             );
-            throw new Exception('Vector storage failed: ' . $e->getMessage());
+            throw new Exception('Vector storage failed: '.$e->getMessage());
         }//end try
     }//end storeVectorInDatabase()
 
@@ -258,10 +258,10 @@ class VectorStorageHandler
         array $embedding,
         string $model,
         int $dimensions,
-        int $chunkIndex = 0,
-        int $_totalChunks = 1,
-        ?string $_chunkText = null,
-        array $_metadata = []
+        int $chunkIndex=0,
+        int $_totalChunks=1,
+        ?string $_chunkText=null,
+        array $_metadata=[]
     ): string {
         $this->logger->debug(
             message: '[VectorStorageHandler] Storing vector in Solr',
@@ -319,7 +319,7 @@ class VectorStorageHandler
             /*
              * @psalm-suppress UndefinedInterfaceMethod - buildSolrBaseUrl and getHttpClient exist on Solr backend implementation
              */
-            $solrUrl = $solrBackend->buildSolrBaseUrl() . "/{$collection}/update?commit=true";
+            $solrUrl = $solrBackend->buildSolrBaseUrl()."/{$collection}/update?commit=true";
             /*
              * @psalm-suppress UndefinedInterfaceMethod
              */
@@ -334,7 +334,7 @@ class VectorStorageHandler
             $responseData = json_decode((string) $response->getBody(), true);
 
             if (isset($responseData['responseHeader']['status']) === false || $responseData['responseHeader']['status'] !== 0) {
-                throw new Exception('Solr atomic update failed: ' . json_encode($responseData));
+                throw new Exception('Solr atomic update failed: '.json_encode($responseData));
             }
 
             $this->logger->info(
@@ -358,7 +358,7 @@ class VectorStorageHandler
                     'chunk_index' => $chunkIndex,
                 ]
             );
-            throw new Exception('Solr vector storage failed: ' . $e->getMessage());
+            throw new Exception('Solr vector storage failed: '.$e->getMessage());
         }//end try
     }//end storeVectorInSolr()
 

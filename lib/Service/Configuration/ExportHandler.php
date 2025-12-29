@@ -38,6 +38,7 @@ use Psr\Log\LoggerInterface;
  */
 class ExportHandler
 {
+
     /**
      * Schema mapper instance for handling schema operations.
      *
@@ -125,9 +126,9 @@ class ExportHandler
      * @throws \OCP\DB\Exception If database operations fail.
      */
     public function exportConfig(
-        array|Configuration|Register $input = [],
-        bool $includeObjects = false,
-        ?object $openConnectorService = null
+        array|Configuration|Register $input=[],
+        bool $includeObjects=false,
+        ?object $openConnectorService=null
     ): array {
         // Reset the maps for this export.
         $this->registersMap = [];
@@ -181,7 +182,7 @@ class ExportHandler
                     'path'   => $input->getGithubPath(),
                 ],
             ];
-        } elseif ($input instanceof Register) {
+        } else if ($input instanceof Register) {
             // Pass the register as an array to the exportConfig function.
             $registers = [$input];
             // Set the info from the register.

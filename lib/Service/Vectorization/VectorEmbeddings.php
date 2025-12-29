@@ -85,7 +85,7 @@ class VectorEmbeddings
      *
      * @psalm-return array{embedding: array<float>, model: string, dimensions: int<0, max>}
      */
-    public function generateEmbedding(string $text, ?string $provider = null): array
+    public function generateEmbedding(string $text, ?string $provider=null): array
     {
         $config = $this->getEmbeddingConfig($provider);
 
@@ -125,7 +125,7 @@ class VectorEmbeddings
                     'text_length' => strlen($text),
                 ]
             );
-            throw new Exception('Embedding generation failed: ' . $e->getMessage());
+            throw new Exception('Embedding generation failed: '.$e->getMessage());
         }//end try
     }//end generateEmbedding()
 
@@ -171,8 +171,7 @@ class VectorEmbeddings
             }
 
             // Validate API keys for providers that need them.
-            if (
-                in_array($normalizedConfig['provider'], ['openai', 'fireworks'], true) === true
+            if (in_array($normalizedConfig['provider'], ['openai', 'fireworks'], true) === true
                 && empty($normalizedConfig['api_key']) === true
             ) {
                 throw new Exception("API key is required for {$normalizedConfig['provider']}");
@@ -200,7 +199,7 @@ class VectorEmbeddings
                     'text_length' => strlen($text),
                 ]
             );
-            throw new Exception('Embedding generation failed: ' . $e->getMessage());
+            throw new Exception('Embedding generation failed: '.$e->getMessage());
         }//end try
     }//end generateEmbeddingWithCustomConfig()
 
@@ -215,7 +214,7 @@ class VectorEmbeddings
      *
      * @psalm-return array{success: bool, error?: string, message: string, data?: array{provider: string, model: 'unknown'|mixed, vectorLength: int<0, max>, sampleValues: array<float>, testText: string}}
      */
-    public function testEmbedding(string $provider, array $config, string $testText = 'Test.'): array
+    public function testEmbedding(string $provider, array $config, string $testText='Test.'): array
     {
         $this->logger->info(
             message: '[VectorEmbeddings] Testing embedding generation',
@@ -269,7 +268,7 @@ class VectorEmbeddings
             return [
                 'success' => false,
                 'error'   => $e->getMessage(),
-                'message' => 'Failed to generate embedding: ' . $e->getMessage(),
+                'message' => 'Failed to generate embedding: '.$e->getMessage(),
             ];
         }//end try
     }//end testEmbedding()
@@ -284,7 +283,7 @@ class VectorEmbeddings
      *
      * @throws \Exception If batch embedding generation fails
      */
-    public function generateBatchEmbeddings(array $texts, ?string $provider = null): array
+    public function generateBatchEmbeddings(array $texts, ?string $provider=null): array
     {
         $config = $this->getEmbeddingConfig($provider);
 
@@ -347,7 +346,7 @@ class VectorEmbeddings
                     'count' => count($texts),
                 ]
             );
-            throw new Exception('Batch embedding generation failed: ' . $e->getMessage());
+            throw new Exception('Batch embedding generation failed: '.$e->getMessage());
         }//end try
     }//end generateBatchEmbeddings()
 
@@ -378,10 +377,10 @@ class VectorEmbeddings
         array $embedding,
         string $model,
         int $dimensions,
-        int $chunkIndex = 0,
-        int $totalChunks = 1,
-        ?string $chunkText = null,
-        array $metadata = []
+        int $chunkIndex=0,
+        int $totalChunks=1,
+        ?string $chunkText=null,
+        array $metadata=[]
     ): int {
         $backend = $this->getVectorSearchBackend();
 
@@ -417,9 +416,9 @@ class VectorEmbeddings
      */
     public function semanticSearch(
         string $query,
-        int $limit = 10,
-        array $filters = [],
-        ?string $provider = null
+        int $limit=10,
+        array $filters=[],
+        ?string $provider=null
     ): array {
         // Generate query embedding.
         $queryEmbeddingData = $this->generateEmbedding(text: $query, provider: $provider);
@@ -453,10 +452,10 @@ class VectorEmbeddings
      */
     public function hybridSearch(
         string $query,
-        array $solrFilters = [],
-        int $limit = 20,
-        array $weights = ['solr' => 0.5, 'vector' => 0.5],
-        ?string $provider = null
+        array $solrFilters=[],
+        int $limit=20,
+        array $weights=['solr' => 0.5, 'vector' => 0.5],
+        ?string $provider=null
     ): array {
         // Generate query embedding.
         $queryEmbeddingData = $this->generateEmbedding(text: $query, provider: $provider);
@@ -516,9 +515,9 @@ class VectorEmbeddings
 
             if ($currentProvider === 'openai') {
                 $currentModel = $settings['openaiConfig']['model'] ?? null;
-            } elseif ($currentProvider === 'ollama') {
+            } else if ($currentProvider === 'ollama') {
                 $currentModel = $settings['ollamaConfig']['model'] ?? null;
-            } elseif ($currentProvider === 'fireworks') {
+            } else if ($currentProvider === 'fireworks') {
                 $currentModel = $settings['fireworksConfig']['embeddingModel'] ?? null;
             }
 
@@ -583,7 +582,7 @@ class VectorEmbeddings
             $message = 'All vectors use the same embedding model.';
             if ($hasMismatch === true) {
                 $message = 'Multiple embedding models detected. Consider re-embedding all vectors with a single model.';
-            } elseif ($nullModelCount > 0) {
+            } else if ($nullModelCount > 0) {
                 $message = sprintf('%d vectors have no model information.', $nullModelCount);
             }
 
@@ -661,7 +660,7 @@ class VectorEmbeddings
             return [
                 'success' => false,
                 'error'   => $e->getMessage(),
-                'message' => 'Failed to clear embeddings: ' . $e->getMessage(),
+                'message' => 'Failed to clear embeddings: '.$e->getMessage(),
             ];
         }//end try
     }//end clearAllEmbeddings()
@@ -696,7 +695,7 @@ class VectorEmbeddings
      *
      * @return array{provider: string, model: string, dimensions: int, api_key: string|null, base_url: string|null} Configuration
      */
-    private function getEmbeddingConfig(?string $provider = null): array
+    private function getEmbeddingConfig(?string $provider=null): array
     {
         $llmSettings = $this->settingsService->getLLMSettingsOnly();
 

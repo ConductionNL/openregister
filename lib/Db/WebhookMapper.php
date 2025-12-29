@@ -325,7 +325,7 @@ class WebhookMapper extends QBMapper
      *
      * @psalm-suppress PossiblyUnusedReturnValue
      */
-    public function updateStatistics(Webhook $webhook, bool $success, bool $incrementOnly = false): Webhook
+    public function updateStatistics(Webhook $webhook, bool $success, bool $incrementOnly=false): Webhook
     {
         $webhook->setTotalDeliveries($webhook->getTotalDeliveries() + 1);
 

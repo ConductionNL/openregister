@@ -131,6 +131,7 @@ use Psr\Log\LoggerInterface;
  */
 class SettingsController extends Controller
 {
+
     /**
      * The OpenRegister object service
      *
@@ -370,9 +371,9 @@ class SettingsController extends Controller
             if (($solrSettings['enabled'] === false)) {
                 return new JSONResponse(
                     data: [
-                            'success' => false,
-                            'message' => 'SOLR is disabled',
-                        ],
+                        'success' => false,
+                        'message' => 'SOLR is disabled',
+                    ],
                     statusCode: 400
                 );
             }
@@ -388,30 +389,30 @@ class SettingsController extends Controller
             if ($result === true) {
                 return new JSONResponse(
                     data: [
-                            'success' => true,
-                            'message' => 'SOLR setup completed successfully',
-                            'config'  => [
-                                'host'   => $solrSettings['host'],
-                                'port'   => $solrSettings['port'],
-                                'scheme' => $solrSettings['scheme'],
-                            ],
-                        ]
+                        'success' => true,
+                        'message' => 'SOLR setup completed successfully',
+                        'config'  => [
+                            'host'   => $solrSettings['host'],
+                            'port'   => $solrSettings['port'],
+                            'scheme' => $solrSettings['scheme'],
+                        ],
+                    ]
                 );
             } else {
                 return new JSONResponse(
                     data: [
-                            'success' => false,
-                            'message' => 'SOLR setup failed - check logs',
-                        ],
+                        'success' => false,
+                        'message' => 'SOLR setup failed - check logs',
+                    ],
                     statusCode: 422
                 );
             }//end if
         } catch (Exception $e) {
             return new JSONResponse(
                 data: [
-                        'success' => false,
-                        'message' => 'SOLR setup error: ' . $e->getMessage(),
-                    ],
+                    'success' => false,
+                    'message' => 'SOLR setup error: '.$e->getMessage(),
+                ],
                 statusCode: 422
             );
         }//end try
@@ -443,10 +444,10 @@ class SettingsController extends Controller
             if ($batchSize < 1 || $batchSize > 5000) {
                 return new JSONResponse(
                     data: [
-                            'success'    => false,
-                            'message'    => 'Invalid batch size. Must be between 1 and 5000',
-                            'collection' => $name,
-                        ],
+                        'success'    => false,
+                        'message'    => 'Invalid batch size. Must be between 1 and 5000',
+                        'collection' => $name,
+                    ],
                     statusCode: 400
                 );
             }
@@ -454,10 +455,10 @@ class SettingsController extends Controller
             if ($maxObjects < 0) {
                 return new JSONResponse(
                     data: [
-                            'success'    => false,
-                            'message'    => 'Invalid maxObjects. Must be 0 (all) or positive number',
-                            'collection' => $name,
-                        ],
+                        'success'    => false,
+                        'message'    => 'Invalid maxObjects. Must be 0 (all) or positive number',
+                        'collection' => $name,
+                    ],
                     statusCode: 400
                 );
             }
@@ -468,30 +469,30 @@ class SettingsController extends Controller
             if ($result['success'] === true) {
                 return new JSONResponse(
                     data: [
-                            'success'    => true,
-                            'message'    => 'Reindex completed successfully',
-                            'stats'      => $result['stats'] ?? [],
-                            'collection' => $name,
-                        ],
+                        'success'    => true,
+                        'message'    => 'Reindex completed successfully',
+                        'stats'      => $result['stats'] ?? [],
+                        'collection' => $name,
+                    ],
                     statusCode: 200
                 );
             } else {
                 return new JSONResponse(
                     data: [
-                            'success'    => false,
-                            'message'    => $result['message'] ?? 'Failed to reindex collection',
-                            'collection' => $name,
-                        ],
+                        'success'    => false,
+                        'message'    => $result['message'] ?? 'Failed to reindex collection',
+                        'collection' => $name,
+                    ],
                     statusCode: 422
                 );
             }
         } catch (Exception $e) {
             return new JSONResponse(
                 data: [
-                        'success'    => false,
-                        'message'    => 'Reindex failed: ' . $e->getMessage(),
-                        'collection' => $name,
-                    ],
+                    'success'    => false,
+                    'message'    => 'Reindex failed: '.$e->getMessage(),
+                    'collection' => $name,
+                ],
                 statusCode: 422
             );
         }//end try
@@ -554,7 +555,7 @@ class SettingsController extends Controller
                     [
                         'message'         => 'Backend updated successfully. Please reload the application.',
                         'reload_required' => true,
-                        ]
+                    ]
                 )
             );
         } catch (Exception $e) {
@@ -621,7 +622,7 @@ class SettingsController extends Controller
                 $vectorSupport     = false;
                 $recommendedPlugin = 'pgvector for PostgreSQL';
                 $performanceNote   = 'Current: Similarity calculated in PHP (slow). Recommended: Migrate to PostgreSQL + pgvector for 10-100x speedup.';
-            } elseif (strpos($platformName, 'postgres') !== false) {
+            } else if (strpos($platformName, 'postgres') !== false) {
                 $dbType = 'PostgreSQL';
 
                 try {
@@ -654,7 +655,7 @@ class SettingsController extends Controller
                     $recommendedPlugin = 'pgvector (not found)';
                     $performanceNote   = 'Unable to detect pgvector. Install with: CREATE EXTENSION vector;';
                 }
-            } elseif (strpos($platformName, 'sqlite') !== false) {
+            } else if (strpos($platformName, 'sqlite') !== false) {
                 $dbType            = 'SQLite';
                 $vectorSupport     = false;
                 $recommendedPlugin = 'sqlite-vss or migrate to PostgreSQL';
@@ -663,31 +664,31 @@ class SettingsController extends Controller
 
             return new JSONResponse(
                 data: [
-                        'success'  => true,
-                        'database' => [
-                            'type'              => $dbType,
-                            'version'           => $dbVersion,
-                            'platform'          => $platformName,
-                            'vectorSupport'     => $vectorSupport,
-                            'recommendedPlugin' => $recommendedPlugin,
-                            'performanceNote'   => $performanceNote,
-                        ],
-                    ]
+                    'success'  => true,
+                    'database' => [
+                        'type'              => $dbType,
+                        'version'           => $dbVersion,
+                        'platform'          => $platformName,
+                        'vectorSupport'     => $vectorSupport,
+                        'recommendedPlugin' => $recommendedPlugin,
+                        'performanceNote'   => $performanceNote,
+                    ],
+                ]
             );
         } catch (Exception $e) {
             $this->logger->error(
                 '[SettingsController] Failed to get database info',
                 [
-                        'error' => $e->getMessage(),
-                        'trace' => $e->getTraceAsString(),
-                    ]
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                ]
             );
 
             return new JSONResponse(
                 data: [
-                        'success' => false,
-                        'error'   => 'Failed to get database information: ' . $e->getMessage(),
-                    ],
+                    'success' => false,
+                    'error'   => 'Failed to get database information: '.$e->getMessage(),
+                ],
                 statusCode: 500
             );
         }//end try
@@ -742,9 +743,9 @@ class SettingsController extends Controller
         } catch (Exception $e) {
             return new JSONResponse(
                 data: [
-                        'success' => false,
-                        'error'   => $e->getMessage(),
-                    ],
+                    'success' => false,
+                    'error'   => $e->getMessage(),
+                ],
                 statusCode: 422
             );
         }//end try
@@ -924,9 +925,9 @@ class SettingsController extends Controller
         } catch (Exception $e) {
             return new JSONResponse(
                 data: [
-                        'error' => $e->getMessage(),
-                        'trace' => $e->getTraceAsString(),
-                    ],
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                ],
                 statusCode: 500
             );
         }//end try
@@ -948,15 +949,15 @@ class SettingsController extends Controller
      *
      * @psalm-return JSONResponse<200|400|500, array{success: bool, error?: string, trace?: string, query?: string, results?: array<int, array<string, mixed>>, total?: int<0, max>, limit?: int, filters?: array, timestamp?: string}, array<never, never>>
      */
-    public function semanticSearch(string $query, int $limit = 10, array $filters = [], ?string $provider = null): JSONResponse
+    public function semanticSearch(string $query, int $limit=10, array $filters=[], ?string $provider=null): JSONResponse
     {
         try {
             if (empty(trim($query)) === true) {
                 return new JSONResponse(
                     data: [
-                            'success' => false,
-                            'error'   => 'Query parameter is required',
-                        ],
+                        'success' => false,
+                        'error'   => 'Query parameter is required',
+                    ],
                     statusCode: 400
                 );
             }
@@ -969,22 +970,22 @@ class SettingsController extends Controller
 
             return new JSONResponse(
                 data: [
-                        'success'   => true,
-                        'query'     => $query,
-                        'results'   => $results,
-                        'total'     => count($results),
-                        'limit'     => $limit,
-                        'filters'   => $filters,
-                        'timestamp' => date('c'),
-                    ]
+                    'success'   => true,
+                    'query'     => $query,
+                    'results'   => $results,
+                    'total'     => count($results),
+                    'limit'     => $limit,
+                    'filters'   => $filters,
+                    'timestamp' => date('c'),
+                ]
             );
         } catch (Exception $e) {
             return new JSONResponse(
                 data: [
-                        'success' => false,
-                        'error'   => $e->getMessage(),
-                        'trace'   => $e->getTraceAsString(),
-                    ],
+                    'success' => false,
+                    'error'   => $e->getMessage(),
+                    'trace'   => $e->getTraceAsString(),
+                ],
                 statusCode: 500
             );
         }//end try
@@ -1009,18 +1010,18 @@ class SettingsController extends Controller
      */
     public function hybridSearch(
         string $query,
-        int $limit = 20,
-        array $solrFilters = [],
-        array $weights = ['solr' => 0.5, 'vector' => 0.5],
-        ?string $provider = null
+        int $limit=20,
+        array $solrFilters=[],
+        array $weights=['solr' => 0.5, 'vector' => 0.5],
+        ?string $provider=null
     ): JSONResponse {
         try {
             if (empty(trim($query)) === true) {
                 return new JSONResponse(
                     data: [
-                            'success' => false,
-                            'error'   => 'Query parameter is required',
-                        ],
+                        'success' => false,
+                        'error'   => 'Query parameter is required',
+                    ],
                     statusCode: 400
                 );
             }
@@ -1040,19 +1041,19 @@ class SettingsController extends Controller
 
             return new JSONResponse(
                 data: [
-                        'success'   => true,
-                        'query'     => $query,
-                        ...$resultArray,
-                        'timestamp' => date('c'),
-                    ]
+                    'success'   => true,
+                    'query'     => $query,
+                    ...$resultArray,
+                    'timestamp' => date('c'),
+                ]
             );
         } catch (Exception $e) {
             return new JSONResponse(
                 data: [
-                        'success' => false,
-                        'error'   => $e->getMessage(),
-                        'trace'   => $e->getTraceAsString(),
-                    ],
+                    'success' => false,
+                    'error'   => $e->getMessage(),
+                    'trace'   => $e->getTraceAsString(),
+                ],
                 statusCode: 500
             );
         }//end try

@@ -151,14 +151,14 @@ class FileValidationHandler
             $this->logger->warning(
                 message: 'Executable file upload blocked',
                 context: [
-                        'app'       => 'openregister',
-                        'filename'  => $fileName,
-                        'extension' => $extension,
-                    ]
+                    'app'       => 'openregister',
+                    'filename'  => $fileName,
+                    'extension' => $extension,
+                ]
             );
 
             throw new Exception(
-                "File '$fileName' is an executable file (.$extension). " . "Executable files are blocked for security reasons. " . "Allowed formats: documents, images, archives, data files."
+                "File '$fileName' is an executable file (.$extension). "."Executable files are blocked for security reasons. "."Allowed formats: documents, images, archives, data files."
             );
         }
 
@@ -202,14 +202,14 @@ class FileValidationHandler
                 $this->logger->warning(
                     message: 'Executable magic bytes detected',
                     context: [
-                            'app'      => 'openregister',
-                            'filename' => $fileName,
-                            'type'     => $description,
-                        ]
+                        'app'      => 'openregister',
+                        'filename' => $fileName,
+                        'type'     => $description,
+                    ]
                 );
 
                 throw new Exception(
-                    "File '$fileName' contains executable code ($description). " . "Executable files are blocked for security reasons."
+                    "File '$fileName' contains executable code ($description). "."Executable files are blocked for security reasons."
                 );
             }
         }
@@ -218,14 +218,14 @@ class FileValidationHandler
         $firstLines = substr($content, 0, 1024);
         if (preg_match('/^#!.*\/(sh|bash|zsh|ksh|csh|python|perl|ruby|php|node)/m', $firstLines) === 1) {
             throw new Exception(
-                "File '$fileName' contains script shebang. " . "Script files are blocked for security reasons."
+                "File '$fileName' contains script shebang. "."Script files are blocked for security reasons."
             );
         }
 
         // Check for embedded PHP tags.
         if (preg_match('/<\?php|<\?=|<script\s+language\s*=\s*["\']php/i', $firstLines) === 1) {
             throw new Exception(
-                "File '$fileName' contains PHP code. " . "PHP files are blocked for security reasons."
+                "File '$fileName' contains PHP code. "."PHP files are blocked for security reasons."
             );
         }
     }//end detectExecutableMagicBytes()
@@ -256,7 +256,7 @@ class FileValidationHandler
             // Try to read the file to trigger any potential access issues.
             if ($file instanceof File) {
                 $file->getContent();
-            } elseif ($file instanceof Folder) {
+            } else if ($file instanceof Folder) {
                 // For folders, try to list contents.
                 $file->getDirectoryListing();
             }
@@ -291,7 +291,7 @@ class FileValidationHandler
                         $this->logger->error(
                             message: "checkOwnership: Failed to fix ownership for file {$file->getName()} (ID: {$file->getId()})"
                         );
-                        throw new Exception("Failed to fix file ownership for file: " . $file->getName());
+                        throw new Exception("Failed to fix file ownership for file: ".$file->getName());
                     }
                 } else {
                     $this->logger->info(
@@ -300,9 +300,9 @@ class FileValidationHandler
                 }//end if
             } catch (Exception $ownershipException) {
                 $this->logger->error(
-                    message: "checkOwnership: Error checking/fixing ownership for file {$file->getName()}: " . $ownershipException->getMessage()
+                    message: "checkOwnership: Error checking/fixing ownership for file {$file->getName()}: ".$ownershipException->getMessage()
                 );
-                throw new Exception("Ownership check failed for file: " . $file->getName());
+                throw new Exception("Ownership check failed for file: ".$file->getName());
             }//end try
         } catch (NotPermittedException $e) {
             // Permission denied - likely an ownership issue.
@@ -318,9 +318,9 @@ class FileValidationHandler
                 );
             } catch (Exception $ownershipException) {
                 $this->logger->error(
-                    message: "checkOwnership: Failed to fix ownership after permission error for file {$file->getName()}: " . $ownershipException->getMessage()
+                    message: "checkOwnership: Failed to fix ownership after permission error for file {$file->getName()}: ".$ownershipException->getMessage()
                 );
-                throw new Exception("Ownership fix failed after permission error for file: " . $file->getName());
+                throw new Exception("Ownership fix failed after permission error for file: ".$file->getName());
             }
         }//end try
     }//end checkOwnership()
@@ -366,9 +366,9 @@ class FileValidationHandler
             return $result;
         } catch (Exception $e) {
             $this->logger->error(
-                message: "ownFile: Error setting ownership of file {$file->getName()}: " . $e->getMessage()
+                message: "ownFile: Error setting ownership of file {$file->getName()}: ".$e->getMessage()
             );
-            throw new Exception("Failed to set file ownership: " . $e->getMessage());
+            throw new Exception("Failed to set file ownership: ".$e->getMessage());
         }//end try
     }//end ownFile()
 

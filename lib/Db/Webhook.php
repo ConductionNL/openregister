@@ -66,6 +66,7 @@ use OCP\AppFramework\Db\Entity;
  */
 class Webhook extends Entity implements JsonSerializable
 {
+
     /**
      * UUID
      *

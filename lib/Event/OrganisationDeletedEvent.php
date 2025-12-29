@@ -28,6 +28,7 @@ use OCP\EventDispatcher\Event;
  */
 class OrganisationDeletedEvent extends Event
 {
+
     /**
      * The deleted organisation.
      *

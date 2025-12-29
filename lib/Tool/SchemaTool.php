@@ -42,6 +42,7 @@ use Psr\Log\LoggerInterface;
  */
 class SchemaTool extends AbstractTool
 {
+
     /**
      * Schema mapper
      *
@@ -215,7 +216,7 @@ class SchemaTool extends AbstractTool
      *
      * @throws \Exception If function execution fails
      */
-    public function executeFunction(string $functionName, array $parameters, ?string $userId = null): array
+    public function executeFunction(string $functionName, array $parameters, ?string $userId=null): array
     {
             $this->log(functionName: $functionName, parameters: $parameters);
 
@@ -246,7 +247,7 @@ class SchemaTool extends AbstractTool
      *
      * @psalm-return array{success: true, message: string, data: mixed}
      */
-    public function listSchemas(int $limit = 100, int $offset = 0, ?string $register = null): array
+    public function listSchemas(int $limit=100, int $offset=0, ?string $register=null): array
     {
         $filters = [];
         if ($register !== null) {
@@ -322,7 +323,7 @@ class SchemaTool extends AbstractTool
      *
      * @psalm-return array{success: true, message: string, data: mixed}
      */
-    public function createSchema(string $title, array $properties, string $description = '', ?array $required = null): array
+    public function createSchema(string $title, array $properties, string $description='', ?array $required=null): array
     {
         $data = [
             'title'       => $title,
@@ -364,7 +365,7 @@ class SchemaTool extends AbstractTool
      *
      * @psalm-return array{success: true, message: string, data: mixed}
      */
-    public function updateSchema(string $id, ?string $title = null, ?string $description = null, ?array $properties = null, ?array $required = null): array
+    public function updateSchema(string $id, ?string $title=null, ?string $description=null, ?array $properties=null, ?array $required=null): array
     {
         $schema = $this->schemaMapper->find(id: $id);
 

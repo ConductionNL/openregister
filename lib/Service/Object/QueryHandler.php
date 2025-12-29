@@ -95,11 +95,11 @@ class QueryHandler
      * @phpstan-return int
      */
     public function countSearchObjects(
-        array $query = [],
-        bool $_rbac = true,
-        bool $_multitenancy = true,
-        ?array $ids = null,
-        ?string $uses = null
+        array $query=[],
+        bool $_rbac=true,
+        bool $_multitenancy=true,
+        ?array $ids=null,
+        ?string $uses=null
     ): int {
         $activeOrganisationUuid = null;
         if ($_multitenancy === true) {
@@ -143,12 +143,12 @@ class QueryHandler
      * @throws \OCP\DB\Exception If a database error occurs.
      */
     public function searchObjects(
-        array $query = [],
-        bool $_rbac = true,
-        bool $_multitenancy = true,
-        ?array $ids = null,
-        ?string $uses = null,
-        ?array $views = null
+        array $query=[],
+        bool $_rbac=true,
+        bool $_multitenancy=true,
+        ?array $ids=null,
+        ?string $uses=null,
+        ?array $views=null
     ): array|int {
         // Apply view filters if provided.
         if ($views !== null && empty($views) === false) {
@@ -203,8 +203,8 @@ class QueryHandler
             message: '✅ MAPPER CALL - Database search completed',
             context: [
                 'resultCount' => $resultCount,
-                'mapperTime'  => round((microtime(true) - $mapperStart) * 1000, 2) . 'ms',
-                'totalTime'   => round((microtime(true) - $dbStart) * 1000, 2) . 'ms',
+                'mapperTime'  => round((microtime(true) - $mapperStart) * 1000, 2).'ms',
+                'totalTime'   => round((microtime(true) - $dbStart) * 1000, 2).'ms',
             ]
         );
 
@@ -277,14 +277,14 @@ class QueryHandler
      * @phpstan-return array<string, mixed>
      */
     public function searchObjectsPaginated(
-        array $query = [],
-        bool $_rbac = true,
-        bool $_multitenancy = true,
-        bool $published = false,
-        bool $deleted = false,
-        ?array $ids = null,
-        ?string $uses = null,
-        ?array $views = null
+        array $query=[],
+        bool $_rbac=true,
+        bool $_multitenancy=true,
+        bool $published=false,
+        bool $deleted=false,
+        ?array $ids=null,
+        ?string $uses=null,
+        ?array $views=null
     ): array {
         // Apply view filters if provided.
         if ($views !== null && empty($views) === false) {
@@ -303,8 +303,7 @@ class QueryHandler
         $isSolrEnabled   = $this->searchQueryHandler->isSolrAvailable();
         $isNotDatabase   = $requestedSource !== 'database';
 
-        if (
-            (            $isSolrRequested === true
+        if ((            $isSolrRequested === true
             && $hasIdsParam === false && $hasUsesParam === false
             && $hasIds === false && $hasUses === false)
             || (            $requestedSource === null
@@ -373,13 +372,13 @@ class QueryHandler
      * @phpstan-return array<string, mixed>
      */
     public function searchObjectsPaginatedDatabase(
-        array $query = [],
-        bool $_rbac = true,
-        bool $_multitenancy = true,
-        bool $published = false,
-        bool $deleted = false,
-        ?array $ids = null,
-        ?string $uses = null
+        array $query=[],
+        bool $_rbac=true,
+        bool $_multitenancy=true,
+        bool $published=false,
+        bool $deleted=false,
+        ?array $ids=null,
+        ?string $uses=null
     ): array {
         // **PERFORMANCE MONITORING**: Check for _performance=true parameter.
         $includePerformance = ($query['_performance'] ?? false) === true || ($query['_performance'] ?? false) === 'true';
@@ -511,9 +510,9 @@ class QueryHandler
         if ($includePerformance === true) {
             $totalTime = round((microtime(true) - $startTime) * 1000, 2);
             $paginatedResults['@performance'] = [
-                'totalTime'  => $totalTime . 'ms',
-                'searchTime' => $searchTime . 'ms',
-                'countTime'  => $countTime . 'ms',
+                'totalTime'  => $totalTime.'ms',
+                'searchTime' => $searchTime.'ms',
+                'countTime'  => $countTime.'ms',
                 'mode'       => 'simple_sync',
             ];
         }
@@ -538,11 +537,11 @@ class QueryHandler
      * @phpstan-return array<string, mixed>
      */
     public function searchObjectsPaginatedSync(
-        array $query = [],
-        bool $_rbac = true,
-        bool $_multitenancy = true,
-        bool $published = false,
-        bool $deleted = false
+        array $query=[],
+        bool $_rbac=true,
+        bool $_multitenancy=true,
+        bool $published=false,
+        bool $deleted=false
     ): array {
         // Execute async version and wait for result.
         $promise = $this->searchObjectsPaginatedAsync(
@@ -577,11 +576,11 @@ class QueryHandler
      * @phpstan-return PromiseInterface
      */
     public function searchObjectsPaginatedAsync(
-        array $query = [],
-        bool $_rbac = true,
-        bool $_multitenancy = true,
-        bool $_published = false,
-        bool $_deleted = false
+        array $query=[],
+        bool $_rbac=true,
+        bool $_multitenancy=true,
+        bool $_published=false,
+        bool $_deleted=false
     ): PromiseInterface {
         // Start timing execution.
         $startTime = microtime(true);
@@ -670,7 +669,7 @@ class QueryHandler
                     $this->logger->debug(
                         message: 'Search objects completed',
                         context: [
-                            'searchTime'  => $searchTime . 'ms',
+                            'searchTime'  => $searchTime.'ms',
                             'resultCount' => count($result),
                             'limit'       => $paginatedQuery['_limit'] ?? 20,
                         ]
@@ -754,7 +753,7 @@ class QueryHandler
                 $this->logger->debug(
                     message: 'Async search completed',
                     context: [
-                        'totalTime'   => $totalTime . 'ms',
+                        'totalTime'   => $totalTime.'ms',
                         'resultCount' => count($searchResults),
                         'total'       => $total,
                     ]

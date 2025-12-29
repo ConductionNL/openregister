@@ -68,10 +68,10 @@ class Version1Date20251102160000 extends SimpleMigrationStep
                 'id',
                 Types::BIGINT,
                 [
-                        'autoincrement' => true,
-                        'notnull'       => true,
-                        'unsigned'      => true,
-                    ]
+                    'autoincrement' => true,
+                    'notnull'       => true,
+                    'unsigned'      => true,
+                ]
             );
             $table->setPrimaryKey(['id']);
 
@@ -80,10 +80,10 @@ class Version1Date20251102160000 extends SimpleMigrationStep
                 'uuid',
                 Types::STRING,
                 [
-                        'notnull' => true,
-                        'length'  => 255,
-                        'comment' => 'Unique identifier for the agent',
-                    ]
+                    'notnull' => true,
+                    'length'  => 255,
+                    'comment' => 'Unique identifier for the agent',
+                ]
             );
             $table->addUniqueIndex(['uuid'], 'agents_uuid_index');
 
@@ -92,31 +92,31 @@ class Version1Date20251102160000 extends SimpleMigrationStep
                 'name',
                 Types::STRING,
                 [
-                        'notnull' => true,
-                        'length'  => 255,
-                        'comment' => 'Agent name',
-                    ]
+                    'notnull' => true,
+                    'length'  => 255,
+                    'comment' => 'Agent name',
+                ]
             );
 
             $table->addColumn(
                 'description',
                 Types::TEXT,
                 [
-                        'notnull' => false,
-                        'default' => null,
-                        'comment' => 'Agent description',
-                    ]
+                    'notnull' => false,
+                    'default' => null,
+                    'comment' => 'Agent description',
+                ]
             );
 
             $table->addColumn(
                 'type',
                 Types::STRING,
                 [
-                        'notnull' => false,
-                        'length'  => 50,
-                        'default' => 'chat',
-                        'comment' => 'Agent type: chat, automation, analysis, assistant',
-                    ]
+                    'notnull' => false,
+                    'length'  => 50,
+                    'default' => 'chat',
+                    'comment' => 'Agent type: chat, automation, analysis, assistant',
+                ]
             );
 
             // LLM Configuration.
@@ -124,62 +124,62 @@ class Version1Date20251102160000 extends SimpleMigrationStep
                 'provider',
                 Types::STRING,
                 [
-                        'notnull' => false,
-                        'length'  => 50,
-                        'default' => null,
-                        'comment' => 'LLM provider: openai, ollama, fireworks, azure',
-                    ]
+                    'notnull' => false,
+                    'length'  => 50,
+                    'default' => null,
+                    'comment' => 'LLM provider: openai, ollama, fireworks, azure',
+                ]
             );
 
             $table->addColumn(
                 'model',
                 Types::STRING,
                 [
-                        'notnull' => false,
-                        'length'  => 255,
-                        'default' => null,
-                        'comment' => 'Model identifier (e.g., gpt-4o-mini, llama3)',
-                    ]
+                    'notnull' => false,
+                    'length'  => 255,
+                    'default' => null,
+                    'comment' => 'Model identifier (e.g., gpt-4o-mini, llama3)',
+                ]
             );
 
             $table->addColumn(
                 'prompt',
                 Types::TEXT,
                 [
-                        'notnull' => false,
-                        'default' => null,
-                        'comment' => 'System prompt for the agent',
-                    ]
+                    'notnull' => false,
+                    'default' => null,
+                    'comment' => 'System prompt for the agent',
+                ]
             );
 
             $table->addColumn(
                 'temperature',
                 Types::FLOAT,
                 [
-                        'notnull' => false,
-                        'default' => 0.7,
-                        'comment' => 'Temperature setting (0.0-2.0)',
-                    ]
+                    'notnull' => false,
+                    'default' => 0.7,
+                    'comment' => 'Temperature setting (0.0-2.0)',
+                ]
             );
 
             $table->addColumn(
                 'max_tokens',
                 Types::INTEGER,
                 [
-                        'notnull' => false,
-                        'default' => null,
-                        'comment' => 'Maximum tokens to generate',
-                    ]
+                    'notnull' => false,
+                    'default' => null,
+                    'comment' => 'Maximum tokens to generate',
+                ]
             );
 
             $table->addColumn(
                 'configuration',
                 Types::JSON,
                 [
-                        'notnull' => false,
-                        'default' => null,
-                        'comment' => 'Additional configuration settings',
-                    ]
+                    'notnull' => false,
+                    'default' => null,
+                    'comment' => 'Additional configuration settings',
+                ]
             );
 
             // Ownership.
@@ -187,11 +187,11 @@ class Version1Date20251102160000 extends SimpleMigrationStep
                 'organisation',
                 Types::BIGINT,
                 [
-                        'notnull'  => false,
-                        'default'  => null,
-                        'unsigned' => true,
-                        'comment'  => 'Organisation ID that owns this agent',
-                    ]
+                    'notnull'  => false,
+                    'default'  => null,
+                    'unsigned' => true,
+                    'comment'  => 'Organisation ID that owns this agent',
+                ]
             );
             $table->addIndex(['organisation'], 'agents_organisation_index');
 
@@ -199,11 +199,11 @@ class Version1Date20251102160000 extends SimpleMigrationStep
                 'owner',
                 Types::STRING,
                 [
-                        'notnull' => false,
-                        'length'  => 255,
-                        'default' => null,
-                        'comment' => 'Owner user ID',
-                    ]
+                    'notnull' => false,
+                    'length'  => 255,
+                    'default' => null,
+                    'comment' => 'Owner user ID',
+                ]
             );
             $table->addIndex(['owner'], 'agents_owner_index');
 
@@ -212,10 +212,10 @@ class Version1Date20251102160000 extends SimpleMigrationStep
                 'active',
                 Types::BOOLEAN,
                 [
-                        'notnull' => true,
-                        'default' => true,
-                        'comment' => 'Whether the agent is active',
-                    ]
+                    'notnull' => true,
+                    'default' => true,
+                    'comment' => 'Whether the agent is active',
+                ]
             );
 
             // RAG Configuration.
@@ -223,51 +223,51 @@ class Version1Date20251102160000 extends SimpleMigrationStep
                 'enable_rag',
                 Types::BOOLEAN,
                 [
-                        'notnull' => true,
-                        'default' => false,
-                        'comment' => 'Enable Retrieval-Augmented Generation',
-                    ]
+                    'notnull' => true,
+                    'default' => false,
+                    'comment' => 'Enable Retrieval-Augmented Generation',
+                ]
             );
 
             $table->addColumn(
                 'rag_search_mode',
                 Types::STRING,
                 [
-                        'notnull' => false,
-                        'length'  => 20,
-                        'default' => 'hybrid',
-                        'comment' => 'RAG search mode: hybrid, semantic, keyword',
-                    ]
+                    'notnull' => false,
+                    'length'  => 20,
+                    'default' => 'hybrid',
+                    'comment' => 'RAG search mode: hybrid, semantic, keyword',
+                ]
             );
 
             $table->addColumn(
                 'rag_num_sources',
                 Types::INTEGER,
                 [
-                        'notnull' => false,
-                        'default' => 5,
-                        'comment' => 'Number of sources to retrieve for RAG',
-                    ]
+                    'notnull' => false,
+                    'default' => 5,
+                    'comment' => 'Number of sources to retrieve for RAG',
+                ]
             );
 
             $table->addColumn(
                 'rag_include_files',
                 Types::BOOLEAN,
                 [
-                        'notnull' => true,
-                        'default' => false,
-                        'comment' => 'Include files in RAG search',
-                    ]
+                    'notnull' => true,
+                    'default' => false,
+                    'comment' => 'Include files in RAG search',
+                ]
             );
 
             $table->addColumn(
                 'rag_include_objects',
                 Types::BOOLEAN,
                 [
-                        'notnull' => true,
-                        'default' => false,
-                        'comment' => 'Include objects in RAG search',
-                    ]
+                    'notnull' => true,
+                    'default' => false,
+                    'comment' => 'Include objects in RAG search',
+                ]
             );
 
             // Resource Quotas.
@@ -275,20 +275,20 @@ class Version1Date20251102160000 extends SimpleMigrationStep
                 'request_quota',
                 Types::INTEGER,
                 [
-                        'notnull' => false,
-                        'default' => null,
-                        'comment' => 'API request quota per day (0 = unlimited)',
-                    ]
+                    'notnull' => false,
+                    'default' => null,
+                    'comment' => 'API request quota per day (0 = unlimited)',
+                ]
             );
 
             $table->addColumn(
                 'token_quota',
                 Types::INTEGER,
                 [
-                        'notnull' => false,
-                        'default' => null,
-                        'comment' => 'Token quota per request (0 = unlimited)',
-                    ]
+                    'notnull' => false,
+                    'default' => null,
+                    'comment' => 'Token quota per request (0 = unlimited)',
+                ]
             );
 
             // Access Control.
@@ -296,10 +296,10 @@ class Version1Date20251102160000 extends SimpleMigrationStep
                 'groups',
                 Types::JSON,
                 [
-                        'notnull' => false,
-                        'default' => null,
-                        'comment' => 'Nextcloud group IDs with access to this agent',
-                    ]
+                    'notnull' => false,
+                    'default' => null,
+                    'comment' => 'Nextcloud group IDs with access to this agent',
+                ]
             );
 
             // Timestamps.
@@ -307,18 +307,18 @@ class Version1Date20251102160000 extends SimpleMigrationStep
                 'created',
                 Types::DATETIME,
                 [
-                        'notnull' => true,
-                        'comment' => 'Creation timestamp',
-                    ]
+                    'notnull' => true,
+                    'comment' => 'Creation timestamp',
+                ]
             );
 
             $table->addColumn(
                 'updated',
                 Types::DATETIME,
                 [
-                        'notnull' => true,
-                        'comment' => 'Last update timestamp',
-                    ]
+                    'notnull' => true,
+                    'comment' => 'Last update timestamp',
+                ]
             );
 
             $output->info(message: '   ✓ Created agents table structure');

@@ -135,9 +135,9 @@ class MessageHistoryHandler
                 // Use static factory methods based on role.
                 if ($role === 'user') {
                     $history[] = LLPhantMessage::user($content);
-                } elseif ($role === 'assistant') {
+                } else if ($role === 'assistant') {
                     $history[] = LLPhantMessage::assistant($content);
-                } elseif ($role === 'system') {
+                } else if ($role === 'system') {
                     $history[] = LLPhantMessage::system($content);
                 } else {
                     $this->logger->warning(
@@ -184,7 +184,7 @@ class MessageHistoryHandler
         int $conversationId,
         string $role,
         string $content,
-        ?array $sources = null
+        ?array $sources=null
     ): Message {
         $message = new Message();
         $message->setUuid(Uuid::v4()->toRfc4122());

@@ -33,6 +33,7 @@ use Psr\Log\LoggerInterface;
  */
 class AgentHandler
 {
+
     /**
      * Agent mapper instance.
      *

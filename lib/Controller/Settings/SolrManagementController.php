@@ -170,7 +170,7 @@ class SolrManagementController extends Controller
             return new JSONResponse(
                 data: [
                     'success' => false,
-                    'message' => 'Failed to retrieve SOLR field configuration: ' . $e->getMessage(),
+                    'message' => 'Failed to retrieve SOLR field configuration: '.$e->getMessage(),
                     'details' => ['error' => $e->getMessage()],
                 ],
                 statusCode: 422
@@ -200,10 +200,10 @@ class SolrManagementController extends Controller
             if ($guzzleSolrService->isAvailable() === false) {
                 return new JSONResponse(
                     data: [
-                            'success' => false,
-                            'message' => 'SOLR is not available or not configured',
-                            'details' => ['error' => 'SOLR service is not enabled or connection failed'],
-                        ],
+                        'success' => false,
+                        'message' => 'SOLR is not available or not configured',
+                        'details' => ['error' => 'SOLR service is not enabled or connection failed'],
+                    ],
                     statusCode: 422
                 );
             }
@@ -241,7 +241,7 @@ class SolrManagementController extends Controller
             } catch (Exception $e) {
                 $results['objects'] = [
                     'success' => false,
-                    'message' => 'Failed to create object fields: ' . $e->getMessage(),
+                    'message' => 'Failed to create object fields: '.$e->getMessage(),
                 ];
                 $totalErrors++;
             }//end try
@@ -267,7 +267,7 @@ class SolrManagementController extends Controller
             } catch (Exception $e) {
                 $results['files'] = [
                     'success' => false,
-                    'message' => 'Failed to create file fields: ' . $e->getMessage(),
+                    'message' => 'Failed to create file fields: '.$e->getMessage(),
                 ];
                 $totalErrors++;
             }//end try
@@ -276,25 +276,25 @@ class SolrManagementController extends Controller
 
             return new JSONResponse(
                 data: [
-                        'success'           => $totalErrors === 0,
-                        'message'           => sprintf(
+                    'success'           => $totalErrors === 0,
+                    'message'           => sprintf(
                             'Field creation completed: %d total fields created across both collections',
                             $totalCreated
                         ),
-                        'total_created'     => $totalCreated,
-                        'total_errors'      => $totalErrors,
-                        'results'           => $results,
-                        'execution_time_ms' => $executionTime,
-                        'dry_run'           => $dryRun,
-                    ]
+                    'total_created'     => $totalCreated,
+                    'total_errors'      => $totalErrors,
+                    'results'           => $results,
+                    'execution_time_ms' => $executionTime,
+                    'dry_run'           => $dryRun,
+                ]
             );
         } catch (Exception $e) {
             return new JSONResponse(
                 data: [
-                        'success' => false,
-                        'message' => 'Failed to create missing SOLR fields: ' . $e->getMessage(),
-                        'details' => ['error' => $e->getMessage()],
-                    ],
+                    'success' => false,
+                    'message' => 'Failed to create missing SOLR fields: '.$e->getMessage(),
+                    'details' => ['error' => $e->getMessage()],
+                ],
                 statusCode: 422
             );
         }//end try
@@ -335,10 +335,10 @@ class SolrManagementController extends Controller
             if ($guzzleSolrService->isAvailable() === false) {
                 return new JSONResponse(
                     data: [
-                            'success' => false,
-                            'message' => 'SOLR is not available or not configured',
-                            'details' => ['error' => 'SOLR service is not enabled or connection failed'],
-                        ],
+                        'success' => false,
+                        'message' => 'SOLR is not available or not configured',
+                        'details' => ['error' => 'SOLR service is not enabled or connection failed'],
+                    ],
                     statusCode: 422
                 );
             }
@@ -355,10 +355,10 @@ class SolrManagementController extends Controller
             if (($fieldsInfo['success'] === false)) {
                 return new JSONResponse(
                     data: [
-                            'success' => false,
-                            'message' => 'Failed to get SOLR field configuration',
-                            'details' => ['error' => $fieldsInfo['message'] ?? 'Unknown error'],
-                        ],
+                        'success' => false,
+                        'message' => 'Failed to get SOLR field configuration',
+                        'details' => ['error' => $fieldsInfo['message'] ?? 'Unknown error'],
+                    ],
                     statusCode: 422
                 );
             }
@@ -372,11 +372,11 @@ class SolrManagementController extends Controller
             if (empty($comparison['mismatched']) === true) {
                 return new JSONResponse(
                     data: [
-                            'success' => true,
-                            'message' => 'No mismatched fields found - SOLR schema is properly configured',
-                            'fixed'   => [],
-                            'errors'  => [],
-                        ]
+                        'success' => true,
+                        'message' => 'No mismatched fields found - SOLR schema is properly configured',
+                        'fixed'   => [],
+                        'errors'  => [],
+                    ]
                 );
             }
 
@@ -395,10 +395,10 @@ class SolrManagementController extends Controller
         } catch (Exception $e) {
             return new JSONResponse(
                 data: [
-                        'success' => false,
-                        'message' => 'Failed to fix mismatched SOLR fields: ' . $e->getMessage(),
-                        'details' => ['error' => $e->getMessage()],
-                    ],
+                    'success' => false,
+                    'message' => 'Failed to fix mismatched SOLR fields: '.$e->getMessage(),
+                    'details' => ['error' => $e->getMessage()],
+                ],
                 statusCode: 422
             );
         }//end try
@@ -420,18 +420,18 @@ class SolrManagementController extends Controller
             $logger->info(
                 message: '🗑️ Deleting SOLR field via API',
                 context: [
-                        'field_name' => $fieldName,
-                        'user'       => $this->userId,
-                    ]
+                    'field_name' => $fieldName,
+                    'user'       => $this->userId,
+                ]
             );
 
             // Validate field name.
             if (empty($fieldName) === true || is_string($fieldName) === false) {
                 return new JSONResponse(
                     data: [
-                            'success' => false,
-                            'message' => 'Invalid field name provided',
-                        ],
+                        'success' => false,
+                        'message' => 'Invalid field name provided',
+                    ],
                     statusCode: 400
                 );
             }
@@ -441,9 +441,9 @@ class SolrManagementController extends Controller
             if (in_array($fieldName, $protectedFields) === true) {
                 return new JSONResponse(
                     data: [
-                            'success' => false,
-                            'message' => "Cannot delete protected system field: {$fieldName}",
-                        ],
+                        'success' => false,
+                        'message' => "Cannot delete protected system field: {$fieldName}",
+                    ],
                     statusCode: 403
                 );
             }
@@ -456,34 +456,34 @@ class SolrManagementController extends Controller
                 $logger->info(
                     message: '✅ SOLR field deleted successfully via API',
                     context: [
-                            'field_name' => $fieldName,
-                            'user'       => $this->userId,
-                        ]
+                        'field_name' => $fieldName,
+                        'user'       => $this->userId,
+                    ]
                 );
 
                 return new JSONResponse(
                     data: [
-                            'success'    => true,
-                            'message'    => $result['message'],
-                            'field_name' => $fieldName,
-                        ]
+                        'success'    => true,
+                        'message'    => $result['message'],
+                        'field_name' => $fieldName,
+                    ]
                 );
             } else {
                 $logger->warning(
                     '❌ Failed to delete SOLR field via API',
                     [
-                            'field_name' => $fieldName,
-                            'error'      => $result['message'],
-                            'user'       => $this->userId,
-                        ]
+                        'field_name' => $fieldName,
+                        'error'      => $result['message'],
+                        'user'       => $this->userId,
+                    ]
                 );
 
                 return new JSONResponse(
                     data: [
-                            'success' => false,
-                            'message' => $result['message'],
-                            'error'   => $result['error'] ?? null,
-                        ],
+                        'success' => false,
+                        'message' => $result['message'],
+                        'error'   => $result['error'] ?? null,
+                    ],
                     statusCode: 422
                 );
             }//end if
@@ -492,19 +492,19 @@ class SolrManagementController extends Controller
             $logger->error(
                 message: 'Exception deleting SOLR field via API',
                 context: [
-                        'field_name' => $fieldName,
-                        'error'      => $e->getMessage(),
-                        'user'       => $this->userId,
-                        'trace'      => $e->getTraceAsString(),
-                    ]
+                    'field_name' => $fieldName,
+                    'error'      => $e->getMessage(),
+                    'user'       => $this->userId,
+                    'trace'      => $e->getTraceAsString(),
+                ]
             );
 
             return new JSONResponse(
                 data: [
-                        'success' => false,
-                        'message' => 'Failed to delete SOLR field: ' . $e->getMessage(),
-                        'error'   => $e->getMessage(),
-                    ],
+                    'success' => false,
+                    'message' => 'Failed to delete SOLR field: '.$e->getMessage(),
+                    'error'   => $e->getMessage(),
+                ],
                 statusCode: 500
             );
         }//end try
@@ -540,19 +540,19 @@ class SolrManagementController extends Controller
 
             return new JSONResponse(
                 data: [
-                        'success'     => true,
-                        'collections' => $collections,
-                        'count'       => count($collections),
-                        'timestamp'   => date('c'),
-                    ]
+                    'success'     => true,
+                    'collections' => $collections,
+                    'count'       => count($collections),
+                    'timestamp'   => date('c'),
+                ]
             );
         } catch (Exception $e) {
             return new JSONResponse(
                 data: [
-                        'success' => false,
-                        'error'   => $e->getMessage(),
-                        'trace'   => $e->getTraceAsString(),
-                    ],
+                    'success' => false,
+                    'error'   => $e->getMessage(),
+                    'trace'   => $e->getTraceAsString(),
+                ],
                 statusCode: 500
             );
         }//end try
@@ -588,19 +588,19 @@ class SolrManagementController extends Controller
 
             return new JSONResponse(
                 data: [
-                        'success'    => true,
-                        'configSets' => $configSets,
-                        'count'      => count($configSets),
-                        'timestamp'  => date('c'),
-                    ]
+                    'success'    => true,
+                    'configSets' => $configSets,
+                    'count'      => count($configSets),
+                    'timestamp'  => date('c'),
+                ]
             );
         } catch (Exception $e) {
             return new JSONResponse(
                 data: [
-                        'success' => false,
-                        'error'   => $e->getMessage(),
-                        'trace'   => $e->getTraceAsString(),
-                    ],
+                    'success' => false,
+                    'error'   => $e->getMessage(),
+                    'trace'   => $e->getTraceAsString(),
+                ],
                 statusCode: 500
             );
         }//end try
@@ -624,7 +624,7 @@ class SolrManagementController extends Controller
      *     array<never, never>
      * >|JSONResponse<400, array{success: false, error: string}, array<never, never>>
      */
-    public function createSolrConfigSet(string $name, string $baseConfigSet = '_default'): JSONResponse
+    public function createSolrConfigSet(string $name, string $baseConfigSet='_default'): JSONResponse
     {
         try {
             $guzzleSolrService = $this->container->get(IndexService::class);
@@ -634,9 +634,9 @@ class SolrManagementController extends Controller
         } catch (Exception $e) {
             return new JSONResponse(
                 data: [
-                        'success' => false,
-                        'error'   => $e->getMessage(),
-                    ],
+                    'success' => false,
+                    'error'   => $e->getMessage(),
+                ],
                 statusCode: 400
             );
         }
@@ -669,9 +669,9 @@ class SolrManagementController extends Controller
         } catch (Exception $e) {
             return new JSONResponse(
                 data: [
-                        'success' => false,
-                        'error'   => $e->getMessage(),
-                    ],
+                    'success' => false,
+                    'error'   => $e->getMessage(),
+                ],
                 statusCode: 400
             );
         }
@@ -701,9 +701,9 @@ class SolrManagementController extends Controller
     public function createSolrCollection(
         string $collectionName,
         string $configName,
-        int $numShards = 1,
-        int $replicationFactor = 1,
-        int $maxShardsPerNode = 1
+        int $numShards=1,
+        int $replicationFactor=1,
+        int $maxShardsPerNode=1
     ): JSONResponse {
         try {
             $guzzleSolrService = $this->container->get(IndexService::class);
@@ -719,10 +719,10 @@ class SolrManagementController extends Controller
         } catch (Exception $e) {
             return new JSONResponse(
                 data: [
-                        'success' => false,
-                        'error'   => $e->getMessage(),
-                        'trace'   => $e->getTraceAsString(),
-                    ],
+                    'success' => false,
+                    'error'   => $e->getMessage(),
+                    'trace'   => $e->getTraceAsString(),
+                ],
                 statusCode: 500
             );
         }//end try
@@ -747,7 +747,7 @@ class SolrManagementController extends Controller
      *     array<never, never>
      * >|JSONResponse<500, array{success: false, error: string, trace: string}, array<never, never>>
      */
-    public function copySolrCollection(string $sourceCollection, string $targetCollection, bool $copyData = false): JSONResponse
+    public function copySolrCollection(string $sourceCollection, string $targetCollection, bool $copyData=false): JSONResponse
     {
         try {
             $guzzleSolrService = $this->container->get(IndexService::class);
@@ -761,10 +761,10 @@ class SolrManagementController extends Controller
         } catch (Exception $e) {
             return new JSONResponse(
                 data: [
-                        'success' => false,
-                        'error'   => $e->getMessage(),
-                        'trace'   => $e->getTraceAsString(),
-                    ],
+                    'success' => false,
+                    'error'   => $e->getMessage(),
+                    'trace'   => $e->getTraceAsString(),
+                ],
                 statusCode: 500
             );
         }
@@ -788,11 +788,11 @@ class SolrManagementController extends Controller
             $logger->warning(
                 message: '🚨 SOLR collection deletion requested',
                 context: [
-                        'timestamp'  => date('c'),
-                        'user_id'    => $this->userId ?? 'unknown',
-                        'collection' => $name,
-                        'request_id' => $this->request->getId() ?? 'unknown',
-                    ]
+                    'timestamp'  => date('c'),
+                    'user_id'    => $this->userId ?? 'unknown',
+                    'collection' => $name,
+                    'request_id' => $this->request->getId() ?? 'unknown',
+                ]
             );
 
             // Get IndexService.
@@ -805,37 +805,37 @@ class SolrManagementController extends Controller
                 $logger->info(
                     message: '✅ SOLR collection deleted successfully',
                     context: [
-                            'collection' => $name,
-                            'user_id'    => $this->userId ?? 'unknown',
-                        ]
+                        'collection' => $name,
+                        'user_id'    => $this->userId ?? 'unknown',
+                    ]
                 );
 
                 return new JSONResponse(
                     data: [
-                            'success'    => true,
-                            'message'    => 'Collection deleted successfully',
-                            'collection' => $name,
-                        ],
+                        'success'    => true,
+                        'message'    => 'Collection deleted successfully',
+                        'collection' => $name,
+                    ],
                     statusCode: 200
                 );
             } else {
                 $logger->error(
                     '❌ SOLR collection deletion failed',
                     [
-                            'error'      => $result['message'],
-                            'error_code' => $result['error_code'] ?? 'unknown',
-                            'collection' => $name,
-                        ]
+                        'error'      => $result['message'],
+                        'error_code' => $result['error_code'] ?? 'unknown',
+                        'collection' => $name,
+                    ]
                 );
 
                 return new JSONResponse(
                     data: [
-                            'success'    => false,
-                            'message'    => $result['message'],
-                            'error_code' => $result['error_code'] ?? 'unknown',
-                            'collection' => $name,
-                            'solr_error' => $result['solr_error'] ?? null,
-                        ],
+                        'success'    => false,
+                        'message'    => $result['message'],
+                        'error_code' => $result['error_code'] ?? 'unknown',
+                        'collection' => $name,
+                        'solr_error' => $result['solr_error'] ?? null,
+                    ],
                     statusCode: 422
                 );
             }//end if
@@ -844,19 +844,19 @@ class SolrManagementController extends Controller
             $logger->error(
                 message: 'Exception during SOLR collection deletion',
                 context: [
-                        'error'      => $e->getMessage(),
-                        'collection' => $name,
-                        'trace'      => $e->getTraceAsString(),
-                    ]
+                    'error'      => $e->getMessage(),
+                    'collection' => $name,
+                    'trace'      => $e->getTraceAsString(),
+                ]
             );
 
             return new JSONResponse(
                 data: [
-                        'success'    => false,
-                        'message'    => 'Collection deletion failed: ' . $e->getMessage(),
-                        'error_code' => 'EXCEPTION',
-                        'collection' => $name,
-                    ],
+                    'success'    => false,
+                    'message'    => 'Collection deletion failed: '.$e->getMessage(),
+                    'error_code' => 'EXCEPTION',
+                    'collection' => $name,
+                ],
                 statusCode: 422
             );
         }//end try
@@ -888,7 +888,7 @@ class SolrManagementController extends Controller
      *     array<never, never>
      * >
      */
-    public function updateSolrCollectionAssignments(?string $objectCollection = null, ?string $fileCollection = null): JSONResponse
+    public function updateSolrCollectionAssignments(?string $objectCollection=null, ?string $fileCollection=null): JSONResponse
     {
         try {
             // Get current SOLR settings.
@@ -908,20 +908,20 @@ class SolrManagementController extends Controller
 
             return new JSONResponse(
                 data: [
-                        'success'          => true,
-                        'message'          => 'Collection assignments updated successfully',
-                        'objectCollection' => $solrSettings['objectCollection'] ?? null,
-                        'fileCollection'   => $solrSettings['fileCollection'] ?? null,
-                        'timestamp'        => date('c'),
-                    ]
+                    'success'          => true,
+                    'message'          => 'Collection assignments updated successfully',
+                    'objectCollection' => $solrSettings['objectCollection'] ?? null,
+                    'fileCollection'   => $solrSettings['fileCollection'] ?? null,
+                    'timestamp'        => date('c'),
+                ]
             );
         } catch (Exception $e) {
             return new JSONResponse(
                 data: [
-                        'success' => false,
-                        'error'   => $e->getMessage(),
-                        'trace'   => $e->getTraceAsString(),
-                    ],
+                    'success' => false,
+                    'error'   => $e->getMessage(),
+                    'trace'   => $e->getTraceAsString(),
+                ],
                 statusCode: 500
             );
         }//end try

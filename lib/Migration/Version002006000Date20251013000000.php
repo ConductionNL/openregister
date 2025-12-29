@@ -57,11 +57,11 @@ class Version002006000Date20251013000000 extends SimpleMigrationStep
                 'id',
                 'bigint',
                 [
-                        'autoincrement' => true,
-                        'notnull'       => true,
-                        'length'        => 20,
-                        'unsigned'      => true,
-                    ]
+                    'autoincrement' => true,
+                    'notnull'       => true,
+                    'length'        => 20,
+                    'unsigned'      => true,
+                ]
             );
 
             // Nextcloud file reference.
@@ -69,11 +69,11 @@ class Version002006000Date20251013000000 extends SimpleMigrationStep
                 'file_id',
                 'bigint',
                 [
-                        'notnull'  => true,
-                        'length'   => 20,
-                        'unsigned' => true,
-                        'comment'  => 'Nextcloud file ID from oc_filecache',
-                    ]
+                    'notnull'  => true,
+                    'length'   => 20,
+                    'unsigned' => true,
+                    'comment'  => 'Nextcloud file ID from oc_filecache',
+                ]
             );
 
             // File metadata.
@@ -81,51 +81,51 @@ class Version002006000Date20251013000000 extends SimpleMigrationStep
                 'file_path',
                 'string',
                 [
-                        'notnull' => true,
-                        'length'  => 4000,
-                        'comment' => 'Full file path in Nextcloud',
-                    ]
+                    'notnull' => true,
+                    'length'  => 4000,
+                    'comment' => 'Full file path in Nextcloud',
+                ]
             );
 
             $table->addColumn(
                 'file_name',
                 'string',
                 [
-                        'notnull' => true,
-                        'length'  => 255,
-                        'comment' => 'File name with extension',
-                    ]
+                    'notnull' => true,
+                    'length'  => 255,
+                    'comment' => 'File name with extension',
+                ]
             );
 
             $table->addColumn(
                 'mime_type',
                 'string',
                 [
-                        'notnull' => true,
-                        'length'  => 255,
-                        'comment' => 'MIME type (application/pdf, text/plain, etc.)',
-                    ]
+                    'notnull' => true,
+                    'length'  => 255,
+                    'comment' => 'MIME type (application/pdf, text/plain, etc.)',
+                ]
             );
 
             $table->addColumn(
                 'file_size',
                 'bigint',
                 [
-                        'notnull'  => true,
-                        'length'   => 20,
-                        'unsigned' => true,
-                        'comment'  => 'File size in bytes',
-                    ]
+                    'notnull'  => true,
+                    'length'   => 20,
+                    'unsigned' => true,
+                    'comment'  => 'File size in bytes',
+                ]
             );
 
             $table->addColumn(
                 'file_checksum',
                 'string',
                 [
-                        'notnull' => false,
-                        'length'  => 64,
-                        'comment' => 'File checksum for change detection',
-                    ]
+                    'notnull' => false,
+                    'length'  => 64,
+                    'comment' => 'File checksum for change detection',
+                ]
             );
 
             // Extracted text content.
@@ -133,22 +133,22 @@ class Version002006000Date20251013000000 extends SimpleMigrationStep
                 'text_content',
                 'text',
                 [
-                        'notnull' => false,
-                        'length'  => 16777215,
+                    'notnull' => false,
+                    'length'  => 16777215,
                 // MEDIUMTEXT (16MB).
-                        'comment' => 'Extracted text content from file',
-                    ]
+                    'comment' => 'Extracted text content from file',
+                ]
             );
 
             $table->addColumn(
                 'text_length',
                 'integer',
                 [
-                        'notnull'  => true,
-                        'default'  => 0,
-                        'unsigned' => true,
-                        'comment'  => 'Length of extracted text in characters',
-                    ]
+                    'notnull'  => true,
+                    'default'  => 0,
+                    'unsigned' => true,
+                    'comment'  => 'Length of extracted text in characters',
+                ]
             );
 
             // Extraction metadata.
@@ -156,31 +156,31 @@ class Version002006000Date20251013000000 extends SimpleMigrationStep
                 'extraction_method',
                 'string',
                 [
-                        'notnull' => true,
-                        'length'  => 50,
-                        'default' => 'text_extract',
-                        'comment' => 'Method used: text_extract, ocr, tika, api',
-                    ]
+                    'notnull' => true,
+                    'length'  => 50,
+                    'default' => 'text_extract',
+                    'comment' => 'Method used: text_extract, ocr, tika, api',
+                ]
             );
 
             $table->addColumn(
                 'extraction_status',
                 'string',
                 [
-                        'notnull' => true,
-                        'length'  => 20,
-                        'default' => 'pending',
-                        'comment' => 'Status: pending, processing, completed, failed, skipped',
-                    ]
+                    'notnull' => true,
+                    'length'  => 20,
+                    'default' => 'pending',
+                    'comment' => 'Status: pending, processing, completed, failed, skipped',
+                ]
             );
 
             $table->addColumn(
                 'extraction_error',
                 'text',
                 [
-                        'notnull' => false,
-                        'comment' => 'Error message if extraction failed',
-                    ]
+                    'notnull' => false,
+                    'comment' => 'Error message if extraction failed',
+                ]
             );
 
             // Processing flags.
@@ -188,41 +188,41 @@ class Version002006000Date20251013000000 extends SimpleMigrationStep
                 'chunked',
                 'boolean',
                 [
-                        'notnull' => true,
-                        'default' => false,
-                        'comment' => 'Whether text has been chunked',
-                    ]
+                    'notnull' => true,
+                    'default' => false,
+                    'comment' => 'Whether text has been chunked',
+                ]
             );
 
             $table->addColumn(
                 'chunk_count',
                 'integer',
                 [
-                        'notnull'  => true,
-                        'default'  => 0,
-                        'unsigned' => true,
-                        'comment'  => 'Number of chunks created',
-                    ]
+                    'notnull'  => true,
+                    'default'  => 0,
+                    'unsigned' => true,
+                    'comment'  => 'Number of chunks created',
+                ]
             );
 
             $table->addColumn(
                 'indexed_in_solr',
                 'boolean',
                 [
-                        'notnull' => true,
-                        'default' => false,
-                        'comment' => 'Whether text has been indexed in SOLR',
-                    ]
+                    'notnull' => true,
+                    'default' => false,
+                    'comment' => 'Whether text has been indexed in SOLR',
+                ]
             );
 
             $table->addColumn(
                 'vectorized',
                 'boolean',
                 [
-                        'notnull' => true,
-                        'default' => false,
-                        'comment' => 'Whether text has been vectorized for semantic search',
-                    ]
+                    'notnull' => true,
+                    'default' => false,
+                    'comment' => 'Whether text has been vectorized for semantic search',
+                ]
             );
 
             // Timestamps.
@@ -230,27 +230,27 @@ class Version002006000Date20251013000000 extends SimpleMigrationStep
                 'created_at',
                 'datetime',
                 [
-                        'notnull' => true,
-                        'comment' => 'When record was created',
-                    ]
+                    'notnull' => true,
+                    'comment' => 'When record was created',
+                ]
             );
 
             $table->addColumn(
                 'updated_at',
                 'datetime',
                 [
-                        'notnull' => true,
-                        'comment' => 'When record was last updated',
-                    ]
+                    'notnull' => true,
+                    'comment' => 'When record was last updated',
+                ]
             );
 
             $table->addColumn(
                 'extracted_at',
                 'datetime',
                 [
-                        'notnull' => false,
-                        'comment' => 'When text extraction completed',
-                    ]
+                    'notnull' => false,
+                    'comment' => 'When text extraction completed',
+                ]
             );
 
             // Set primary key.

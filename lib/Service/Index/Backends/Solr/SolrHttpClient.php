@@ -34,6 +34,7 @@ use Psr\Log\LoggerInterface;
  */
 class SolrHttpClient
 {
+
     /**
      * HTTP client for Solr requests.
      *
@@ -174,7 +175,7 @@ class SolrHttpClient
      *
      * @return string Endpoint URL
      */
-    public function getEndpointUrl(?string $collection = null): string
+    public function getEndpointUrl(?string $collection=null): string
     {
         $baseUrl = $this->buildSolrBaseUrl();
         $core    = $collection ?? $this->config['core'];
@@ -192,7 +193,7 @@ class SolrHttpClient
      *
      * @throws Exception If request fails
      */
-    public function get(string $url, array $opts = []): array
+    public function get(string $url, array $opts=[]): array
     {
         try {
             $response = $this->httpClient->get($url, $opts);
@@ -216,7 +217,7 @@ class SolrHttpClient
      *
      * @throws Exception If request fails
      */
-    public function post(string $url, array $data = [], array $opts = []): array
+    public function post(string $url, array $data=[], array $opts=[]): array
     {
         try {
             $opts['json'] = $data;

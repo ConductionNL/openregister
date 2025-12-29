@@ -41,6 +41,7 @@ use Psr\Log\LoggerInterface;
  */
 abstract class AbstractTool implements ToolInterface
 {
+
     /**
      * User session
      *
@@ -103,7 +104,7 @@ abstract class AbstractTool implements ToolInterface
      *
      * @return string|null User ID or null if no user context
      */
-    protected function getUserId(?string $explicitUserId = null): ?string
+    protected function getUserId(?string $explicitUserId=null): ?string
     {
         // Use explicit user ID if provided.
         if ($explicitUserId !== null) {
@@ -131,7 +132,7 @@ abstract class AbstractTool implements ToolInterface
      *
      * @return bool True if user context is available
      */
-    protected function hasUserContext(?string $explicitUserId = null): bool
+    protected function hasUserContext(?string $explicitUserId=null): bool
     {
         return $this->getUserId($explicitUserId) !== null;
     }//end hasUserContext()
@@ -174,7 +175,7 @@ abstract class AbstractTool implements ToolInterface
      *
      * @psalm-return array{success: true, message: string, data: mixed}
      */
-    protected function formatSuccess($data, string $message = 'Success'): array
+    protected function formatSuccess($data, string $message='Success'): array
     {
         return [
             'success' => true,
@@ -193,7 +194,7 @@ abstract class AbstractTool implements ToolInterface
      *
      * @psalm-return array{success: false, error: string, details?: mixed}
      */
-    protected function formatError(string $message, $details = null): array
+    protected function formatError(string $message, $details=null): array
     {
         $result = [
             'success' => false,
@@ -223,7 +224,7 @@ abstract class AbstractTool implements ToolInterface
      *
      * @psalm-suppress PossiblyNullArgument
      */
-    protected function log(string $functionName, array $parameters, string $level = 'info', string $message = ''): void
+    protected function log(string $functionName, array $parameters, string $level='info', string $message=''): void
     {
         // Build context array with tool execution metadata.
         // Includes tool name, function name, parameters, agent ID, and user ID.
@@ -363,7 +364,7 @@ abstract class AbstractTool implements ToolInterface
                     } else {
                         $value = null;
                     }
-                } elseif ($param->hasType() === true) {
+                } else if ($param->hasType() === true) {
                     // Step 5c: Type-cast argument to match method signature.
                     // This ensures type safety when LLM provides loosely-typed values.
                     $type = $param->getType();
@@ -375,21 +376,21 @@ abstract class AbstractTool implements ToolInterface
                             $value = (int) $value;
                         }
                         // Cast to float type.
-                        elseif ($typeName === 'float') {
+                        else if ($typeName === 'float') {
                             $value = (float) $value;
                         }
                         // Cast to boolean type using filter_var for proper conversion.
                         // Handles 'true', 'false', '1', '0', etc.
-                        elseif ($typeName === 'bool') {
+                        else if ($typeName === 'bool') {
                             $value = filter_var($value, FILTER_VALIDATE_BOOLEAN);
                         }
                         // Cast to string type.
-                        elseif ($typeName === 'string') {
+                        else if ($typeName === 'string') {
                             $value = (string) $value;
                         }
                         // Cast to array type.
                         // If already array, keep it; otherwise convert to empty array.
-                        elseif ($typeName === 'array') {
+                        else if ($typeName === 'array') {
                             if (is_array($value) === true) {
                                 $value = $value;
                             } else {

@@ -343,15 +343,15 @@ class ObjectServiceFacetExample
         $newQuery = array_merge(
             $baseQuery,
             [
-                    '_facets' => [
-                        '@self'    => [
-                            'register' => ['type' => 'terms'],
-                            'schema'   => ['type' => 'terms'],
-                        ],
-                        'status'   => ['type' => 'terms'],
-                        'priority' => ['type' => 'terms'],
+                '_facets' => [
+                    '@self'    => [
+                        'register' => ['type' => 'terms'],
+                        'schema'   => ['type' => 'terms'],
                     ],
-                ]
+                    'status'   => ['type' => 'terms'],
+                    'priority' => ['type' => 'terms'],
+                ],
+            ]
         );
 
         $startTime  = microtime(true);
@@ -362,8 +362,8 @@ class ObjectServiceFacetExample
         $legacyQuery = array_merge(
             $baseQuery,
             [
-                    '_queries' => ['status', 'priority'],
-                ]
+                '_queries' => ['status', 'priority'],
+            ]
         );
 
         $startTime     = microtime(true);
@@ -458,7 +458,7 @@ class ObjectServiceFacetExample
             if ($field === '@self') {
                 // Handle metadata facets.
                 foreach ($facet as $metaField => $metaFacet) {
-                    $transformed['metadata_' . $metaField] = [
+                    $transformed['metadata_'.$metaField] = [
                         'field'   => $metaField,
                         'type'    => $metaFacet['type'],
                         'label'   => ucfirst(str_replace('_', ' ', $metaField)),
@@ -528,7 +528,7 @@ class ObjectServiceFacetExample
         // Extract metadata filters.
         if (($query['@self'] ?? null) !== null) {
             foreach ($query['@self'] as $field => $value) {
-                $filters['metadata_' . $field] = [
+                $filters['metadata_'.$field] = [
                     'field' => $field,
                     'value' => $value,
                     'type'  => 'metadata',

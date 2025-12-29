@@ -86,11 +86,11 @@ class Version1Date20251111000000 extends SimpleMigrationStep
                     'embedding_model',
                     Types::STRING,
                     [
-                            'notnull' => false,
-                            'length'  => 255,
-                            'default' => null,
-                            'comment' => 'Embedding model used to generate this vector (e.g., text-embedding-ada-002, nomic-embed-text)',
-                        ]
+                        'notnull' => false,
+                        'length'  => 255,
+                        'default' => null,
+                        'comment' => 'Embedding model used to generate this vector (e.g., text-embedding-ada-002, nomic-embed-text)',
+                    ]
                 );
 
                 $output->info(message: '    ✅ vectors.embedding_model column added');

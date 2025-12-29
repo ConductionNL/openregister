@@ -85,7 +85,7 @@ class FileHandler implements TextExtractionHandlerInterface
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    public function extractText(int $sourceId, array $sourceMeta, bool $force = false): array
+    public function extractText(int $sourceId, array $sourceMeta, bool $force=false): array
     {
         $this->logger->info(message: '[FileHandler] Extracting text from file', context: ['fileId' => $sourceId]);
 
@@ -225,8 +225,8 @@ class FileHandler implements TextExtractionHandlerInterface
             $this->logger->warning(
                 '[FileHandler] Complex extraction not yet implemented',
                 [
-                        'mime_type' => $mimeType,
-                    ]
+                    'mime_type' => $mimeType,
+                ]
             );
 
             return null;
@@ -234,8 +234,8 @@ class FileHandler implements TextExtractionHandlerInterface
             $this->logger->error(
                 '[FileHandler] Text extraction failed',
                 [
-                        'error' => $e->getMessage(),
-                    ]
+                    'error' => $e->getMessage(),
+                ]
             );
             return null;
         }//end try

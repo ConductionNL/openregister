@@ -46,6 +46,7 @@ use Psr\Log\LoggerInterface;
  */
 class VectorizationService
 {
+
     /**
      * Vector embeddings coordinator
      *
@@ -95,9 +96,9 @@ class VectorizationService
         $this->logger->debug(
             '[VectorizationService] Strategy registered',
             [
-                    'entityType'    => $entityType,
-                    'strategyClass' => get_class($strategy),
-                ]
+                'entityType'    => $entityType,
+                'strategyClass' => get_class($strategy),
+            ]
         );
     }//end registerStrategy()
 
@@ -116,14 +117,14 @@ class VectorizationService
      *
      * @psalm-return array{success: true, message: string, entity_type: string, total_entities: int<0, max>, total_items: int<0, max>, vectorized: int<0, max>, failed: int<0, max>, errors?: list<array{entity_id: int|string, error: string, item_index?: array-key}>}
      */
-    public function vectorizeBatch(string $entityType, array $options = []): array
+    public function vectorizeBatch(string $entityType, array $options=[]): array
     {
         $this->logger->info(
             '[VectorizationService] Starting batch vectorization',
             [
-                    'entityType' => $entityType,
-                    'options'    => $options,
-                ]
+                'entityType' => $entityType,
+                'options'    => $options,
+            ]
         );
 
         // Get strategy for entity type.
@@ -148,9 +149,9 @@ class VectorizationService
             $this->logger->info(
                 '[VectorizationService] Processing entities',
                 [
-                        'entityType'  => $entityType,
-                        'entityCount' => count($entities),
-                    ]
+                    'entityType'  => $entityType,
+                    'entityCount' => count($entities),
+                ]
             );
 
             // Process each entity.
@@ -175,10 +176,10 @@ class VectorizationService
                     $this->logger->error(
                         '[VectorizationService] Failed to vectorize entity',
                         [
-                                'entityType' => $entityType,
-                                'entityId'   => $entityId,
-                                'error'      => $e->getMessage(),
-                            ]
+                            'entityType' => $entityType,
+                            'entityId'   => $entityId,
+                            'error'      => $e->getMessage(),
+                        ]
                     );
                     $errors[] = [
                         'entity_id' => $entityId,
@@ -190,12 +191,12 @@ class VectorizationService
             $this->logger->info(
                 '[VectorizationService] Batch vectorization completed',
                 [
-                        'entityType'    => $entityType,
-                        'totalEntities' => count($entities),
-                        'totalItems'    => $totalItems,
-                        'vectorized'    => $vectorized,
-                        'failed'        => $failed,
-                    ]
+                    'entityType'    => $entityType,
+                    'totalEntities' => count($entities),
+                    'totalItems'    => $totalItems,
+                    'vectorized'    => $vectorized,
+                    'failed'        => $failed,
+                ]
             );
 
             return [
@@ -212,9 +213,9 @@ class VectorizationService
             $this->logger->error(
                 '[VectorizationService] Batch vectorization failed',
                 [
-                        'entityType' => $entityType,
-                        'error'      => $e->getMessage(),
-                    ]
+                    'entityType' => $entityType,
+                    'error'      => $e->getMessage(),
+                ]
             );
             throw $e;
         }//end try
@@ -304,9 +305,9 @@ class VectorizationService
                     $this->logger->error(
                         '[VectorizationService] Batch processing failed',
                         [
-                                'entityId' => $entityId,
-                                'error'    => $e->getMessage(),
-                            ]
+                            'entityId' => $entityId,
+                            'error'    => $e->getMessage(),
+                        ]
                     );
                 }//end try
             }//end foreach
@@ -403,7 +404,7 @@ class VectorizationService
      *
      * @psalm-return array{embedding: array<float>, model: string, dimensions: int<0, max>}
      */
-    public function generateEmbedding(string $text, ?string $provider = null): array
+    public function generateEmbedding(string $text, ?string $provider=null): array
     {
         return $this->vectorService->generateEmbedding(text: $text, provider: $provider);
     }//end generateEmbedding()
@@ -424,9 +425,9 @@ class VectorizationService
      */
     public function semanticSearch(
         string $query,
-        int $limit = 10,
-        array $filters = [],
-        ?string $provider = null
+        int $limit=10,
+        array $filters=[],
+        ?string $provider=null
     ): array {
         return $this->vectorService->semanticSearch(query: $query, limit: $limit, filters: $filters, provider: $provider);
     }//end semanticSearch()
@@ -448,10 +449,10 @@ class VectorizationService
      */
     public function hybridSearch(
         string $query,
-        array $solrFilters = [],
-        int $limit = 20,
-        array $weights = ['solr' => 0.5, 'vector' => 0.5],
-        ?string $provider = null
+        array $solrFilters=[],
+        int $limit=20,
+        array $weights=['solr' => 0.5, 'vector' => 0.5],
+        ?string $provider=null
     ): array {
         return $this->vectorService->hybridSearch(query: $query, solrFilters: $solrFilters, limit: $limit, weights: $weights, provider: $provider);
     }//end hybridSearch()
@@ -481,7 +482,7 @@ class VectorizationService
      *
      * @psalm-return array{success: bool, error?: string, message: string, data?: array{provider: string, model: 'unknown'|mixed, vectorLength: int<0, max>, sampleValues: array<float>, testText: string}}
      */
-    public function testEmbedding(string $provider, array $config, string $testText = 'Test.'): array
+    public function testEmbedding(string $provider, array $config, string $testText='Test.'): array
     {
         return $this->vectorService->testEmbedding(provider: $provider, config: $config, testText: $testText);
     }//end testEmbedding()

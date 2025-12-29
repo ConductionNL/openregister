@@ -112,7 +112,7 @@ class RelationCascadeHandler
                 }
             }
         } catch (\Exception $e) {
-            $this->logger->error('Error finding schema by slug: ' . $e->getMessage());
+            $this->logger->error('Error finding schema by slug: '.$e->getMessage());
         }
 
         // No match found.
@@ -184,7 +184,7 @@ class RelationCascadeHandler
                 }
             }
         } catch (\Exception $e) {
-            $this->logger->error('Error finding register by slug: ' . $e->getMessage());
+            $this->logger->error('Error finding register by slug: '.$e->getMessage());
         }
 
         // No match found.
@@ -203,7 +203,7 @@ class RelationCascadeHandler
      *
      * @return array Array of relation paths that need resolution.
      */
-    public function scanForRelations(array $data, string $prefix = '', ?Schema $schema = null): array
+    public function scanForRelations(array $data, string $prefix='', ?Schema $schema=null): array
     {
         $relations = [];
 
@@ -236,7 +236,7 @@ class RelationCascadeHandler
                     $nestedRelations = $this->scanForRelations(data: $value, prefix: $currentPath, schema: $schema);
                     $relations       = array_merge($relations, $nestedRelations);
                 }
-            } elseif (is_string($value) === true && $this->isReference($value) === true) {
+            } else if (is_string($value) === true && $this->isReference($value) === true) {
                 // Single reference value.
                 if ($hasRef === true || $this->looksLikeObjectReference($value) === true) {
                     $relations[] = $currentPath;
@@ -329,8 +329,7 @@ class RelationCascadeHandler
         }
 
         // Check for URL patterns.
-        if (
-            str_contains($value, '/objects/') === true
+        if (str_contains($value, '/objects/') === true
             || str_contains($value, '/api/') === true
         ) {
             return true;
@@ -356,7 +355,7 @@ class RelationCascadeHandler
      *
      * @return ObjectEntity The updated object entity.
      */
-    public function updateObjectRelations(ObjectEntity $objectEntity, array $data, ?Schema $schema = null): ObjectEntity
+    public function updateObjectRelations(ObjectEntity $objectEntity, array $data, ?Schema $schema=null): ObjectEntity
     {
         // Scan for relations.
         $relations = $this->scanForRelations(data: $data, prefix: '', schema: $schema);
@@ -421,7 +420,7 @@ class RelationCascadeHandler
             }
 
             $current[$lastKey] = $resolved;
-        } elseif (is_string($value) === true) {
+        } else if (is_string($value) === true) {
             // Single reference.
             $uuid = $this->extractUuidFromReference($value);
             if ($uuid !== null) {
@@ -552,7 +551,7 @@ class RelationCascadeHandler
                 if ($uuid !== null) {
                     $createdUuids[] = $uuid;
                 }
-            } elseif (is_string($object) === true && Uuid::isValid($object) === true) {
+            } else if (is_string($object) === true && Uuid::isValid($object) === true) {
                 // Already a UUID reference.
                 $createdUuids[] = $object;
             }

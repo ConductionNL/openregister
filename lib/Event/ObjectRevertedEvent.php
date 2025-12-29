@@ -29,6 +29,7 @@ use OCP\EventDispatcher\Event;
  */
 class ObjectRevertedEvent extends Event
 {
+
     /**
      * The reverted object entity
      *
@@ -51,7 +52,7 @@ class ObjectRevertedEvent extends Event
      *
      * @return void
      */
-    public function __construct(ObjectEntity $object, $until = null)
+    public function __construct(ObjectEntity $object, $until=null)
     {
         parent::__construct();
         $this->object = $object;

@@ -28,6 +28,7 @@ use OCP\EventDispatcher\Event;
  */
 class RegisterCreatedEvent extends Event
 {
+
     /**
      * The newly created register
      *

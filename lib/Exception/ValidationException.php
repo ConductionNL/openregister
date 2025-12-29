@@ -42,6 +42,7 @@ use Throwable;
  */
 class ValidationException extends Exception
 {
+
     /**
      * The validation errors from JSON schema validator
      *
@@ -68,9 +69,9 @@ class ValidationException extends Exception
      */
     public function __construct(
         string $message,
-        int $code = 0,
-        ?Throwable $previous = null,
-        ?ValidationError $errors = null
+        int $code=0,
+        ?Throwable $previous=null,
+        ?ValidationError $errors=null
     ) {
         // Store validation errors for detailed error reporting.
         $this->errors = $errors;

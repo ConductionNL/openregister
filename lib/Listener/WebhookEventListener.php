@@ -69,6 +69,7 @@ use Psr\Log\LoggerInterface;
  */
 class WebhookEventListener implements IEventListener
 {
+
     /**
      * Webhook service
      *
@@ -113,8 +114,8 @@ class WebhookEventListener implements IEventListener
             $this->logger->debug(
                 'Could not extract payload from event',
                 [
-                        'event' => $eventClass,
-                    ]
+                    'event' => $eventClass,
+                ]
             );
             return;
         }
@@ -122,8 +123,8 @@ class WebhookEventListener implements IEventListener
         $this->logger->debug(
             'Processing event for webhooks',
             [
-                    'event' => $eventClass,
-                ]
+                'event' => $eventClass,
+            ]
         );
 
         // Dispatch to webhook service.
@@ -331,8 +332,7 @@ class WebhookEventListener implements IEventListener
         }
 
         // Configuration events.
-        if (
-            $event instanceof ConfigurationCreatedEvent
+        if ($event instanceof ConfigurationCreatedEvent
             || $event instanceof ConfigurationUpdatedEvent
             || $event instanceof ConfigurationDeletedEvent
         ) {

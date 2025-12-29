@@ -35,6 +35,7 @@ use Exception;
  */
 class OasController extends Controller
 {
+
     /**
      * OAS service instance
      *

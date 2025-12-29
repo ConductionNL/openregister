@@ -28,6 +28,7 @@ use OCP\EventDispatcher\Event;
  */
 class ApplicationUpdatedEvent extends Event
 {
+
     /**
      * The updated application state.
      *

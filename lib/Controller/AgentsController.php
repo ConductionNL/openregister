@@ -55,6 +55,7 @@ use Exception;
  */
 class AgentsController extends Controller
 {
+
     /**
      * Agent mapper for database operations
      *
@@ -360,7 +361,7 @@ class AgentsController extends Controller
 
             // Return error response with message.
             return new JSONResponse(
-                data: ['error' => 'Failed to create agent: ' . $e->getMessage()],
+                data: ['error' => 'Failed to create agent: '.$e->getMessage()],
                 statusCode: Http::STATUS_BAD_REQUEST
             );
         }//end try
@@ -436,7 +437,7 @@ class AgentsController extends Controller
 
             // Return error response with message.
             return new JSONResponse(
-                data: ['error' => 'Failed to update agent: ' . $e->getMessage()],
+                data: ['error' => 'Failed to update agent: '.$e->getMessage()],
                 statusCode: Http::STATUS_BAD_REQUEST
             );
         }//end try

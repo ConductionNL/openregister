@@ -75,7 +75,7 @@ class TaggingHandler
      * @phpstan-param array<int, string> $tags
      * @psalm-param   array<int, string> $tags
      */
-    public function attachTagsToFile(string $fileId, array $tags = []): void
+    public function attachTagsToFile(string $fileId, array $tags=[]): void
     {
         // Get all existing tags for the file and convert to array of just the IDs.
         $oldTagIds = $this->systemTagMapper->getTagIdsForObjects(objIds: [$fileId], objectType: self::FILE_TAG_TYPE);
@@ -104,13 +104,13 @@ class TaggingHandler
                 $newTag      = $this->findOrCreateTag($tag);
                 $newTagIds[] = $newTag->getId();
             } catch (Exception $e) {
-                $this->logger->error('Error processing tag ' . $tag . ': ' . $e->getMessage());
+                $this->logger->error('Error processing tag '.$tag.': '.$e->getMessage());
                 // Try to create it anyway.
                 try {
                     $newTag      = $this->findOrCreateTag($tag);
                     $newTagIds[] = $newTag->getId();
                 } catch (Exception $e2) {
-                    $this->logger->error('Failed to create tag ' . $tag . ': ' . $e2->getMessage());
+                    $this->logger->error('Failed to create tag '.$tag.': '.$e2->getMessage());
                 }
             }//end try
         }//end foreach
@@ -165,7 +165,7 @@ class TaggingHandler
                 }
             }
 
-            throw new Exception('Tag exists but could not be found: ' . $tagName);
+            throw new Exception('Tag exists but could not be found: '.$tagName);
         }//end try
     }//end findOrCreateTag()
 
@@ -201,7 +201,7 @@ class TaggingHandler
 
             return $tagNames;
         } catch (Exception $e) {
-            $this->logger->error('Error getting tags for file ' . $fileId . ': ' . $e->getMessage());
+            $this->logger->error('Error getting tags for file '.$fileId.': '.$e->getMessage());
             return [];
         }//end try
     }//end getFileTags()
@@ -221,7 +221,7 @@ class TaggingHandler
             $identifier = $objectEntity;
         }
 
-        return 'object:' . $identifier;
+        return 'object:'.$identifier;
     }//end generateObjectTag()
 
     /**
@@ -245,7 +245,7 @@ class TaggingHandler
 
             return $tagNames;
         } catch (Exception $e) {
-            $this->logger->error('Error getting all tags: ' . $e->getMessage());
+            $this->logger->error('Error getting all tags: '.$e->getMessage());
             return [];
         }
     }//end getAllTags()

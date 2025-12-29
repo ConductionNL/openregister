@@ -203,7 +203,7 @@ class ViewMapper extends QBMapper
      *
      * @psalm-return list<OCA\OpenRegister\Db\View>
      */
-    public function findAll(?string $owner = null): array
+    public function findAll(?string $owner=null): array
     {
         // Verify RBAC permission to read.
         $this->verifyRbacPermission(action: 'read', entityType: 'view');

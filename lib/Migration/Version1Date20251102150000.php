@@ -75,9 +75,9 @@ class Version1Date20251102150000 extends SimpleMigrationStep
                     'query',
                     Types::JSON,
                     [
-                            'notnull' => true,
-                            'comment' => 'Query parameters: registers, schemas, search terms, and facet filters',
-                        ]
+                        'notnull' => true,
+                        'comment' => 'Query parameters: registers, schemas, search terms, and facet filters',
+                    ]
                 );
                 $output->info(message: '   ✓ Added query column');
             }
@@ -88,10 +88,10 @@ class Version1Date20251102150000 extends SimpleMigrationStep
                     'favored_by',
                     Types::JSON,
                     [
-                            'notnull' => false,
-                            'default' => null,
-                            'comment' => 'Array of user IDs who favorited this view',
-                        ]
+                        'notnull' => false,
+                        'default' => null,
+                        'comment' => 'Array of user IDs who favorited this view',
+                    ]
                 );
                 $output->info(message: '   ✓ Added favored_by column');
             }

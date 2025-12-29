@@ -39,6 +39,7 @@ use OCP\Http\Client\IClientService;
  */
 class N8nSettingsController extends Controller
 {
+
     /**
      * Configuration settings handler.
      *
@@ -117,9 +118,9 @@ class N8nSettingsController extends Controller
 
             return new JSONResponse(data: $settings);
         } catch (Exception $e) {
-            $this->logger->error('Failed to retrieve n8n settings: ' . $e->getMessage());
+            $this->logger->error('Failed to retrieve n8n settings: '.$e->getMessage());
             return new JSONResponse(
-                data: ['error' => 'Failed to retrieve n8n settings: ' . $e->getMessage()],
+                data: ['error' => 'Failed to retrieve n8n settings: '.$e->getMessage()],
                 statusCode: 500
             );
         }
@@ -163,9 +164,9 @@ class N8nSettingsController extends Controller
                 ]
             );
         } catch (Exception $e) {
-            $this->logger->error('Failed to update n8n settings: ' . $e->getMessage());
+            $this->logger->error('Failed to update n8n settings: '.$e->getMessage());
             return new JSONResponse(
-                data: ['error' => 'Failed to update n8n settings: ' . $e->getMessage()],
+                data: ['error' => 'Failed to update n8n settings: '.$e->getMessage()],
                 statusCode: 500
             );
         }//end try
@@ -205,7 +206,7 @@ class N8nSettingsController extends Controller
             // Test the connection by getting the current user.
             $client   = $this->clientService->newClient();
             $response = $client->get(
-                $url . '/api/v1/users',
+                $url.'/api/v1/users',
                 [
                     'headers' => [
                         'Accept'        => 'application/json',
@@ -234,16 +235,16 @@ class N8nSettingsController extends Controller
             return new JSONResponse(
                 data: [
                     'success' => false,
-                    'message' => 'n8n connection failed with status code: ' . $statusCode,
+                    'message' => 'n8n connection failed with status code: '.$statusCode,
                 ],
                 statusCode: 400
             );
         } catch (Exception $e) {
-            $this->logger->error('n8n connection test failed: ' . $e->getMessage());
+            $this->logger->error('n8n connection test failed: '.$e->getMessage());
             return new JSONResponse(
                 data: [
                     'success' => false,
-                    'message' => 'n8n connection test failed: ' . $e->getMessage(),
+                    'message' => 'n8n connection test failed: '.$e->getMessage(),
                 ],
                 statusCode: 400
             );
@@ -290,7 +291,7 @@ class N8nSettingsController extends Controller
             // Check if project already exists.
             try {
                 $response = $client->get(
-                    $url . '/api/v1/projects',
+                    $url.'/api/v1/projects',
                     [
                         'headers' => [
                             'Accept'        => 'application/json',
@@ -315,7 +316,7 @@ class N8nSettingsController extends Controller
                 // Create project if it doesn't exist.
                 if ($projectId === null) {
                     $createResponse = $client->post(
-                        $url . '/api/v1/projects',
+                        $url.'/api/v1/projects',
                         [
                             'headers' => [
                                 'Accept'        => 'application/json',
@@ -344,7 +345,7 @@ class N8nSettingsController extends Controller
 
                 // Get workflow count for this project.
                 $workflowsResponse = $client->get(
-                    $url . '/api/v1/workflows?projectId=' . $projectId,
+                    $url.'/api/v1/workflows?projectId='.$projectId,
                     [
                         'headers' => [
                             'Accept'        => 'application/json',
@@ -367,21 +368,21 @@ class N8nSettingsController extends Controller
                     ]
                 );
             } catch (Exception $e) {
-                $this->logger->error('Project initialization failed: ' . $e->getMessage());
+                $this->logger->error('Project initialization failed: '.$e->getMessage());
                 return new JSONResponse(
                     data: [
                         'success' => false,
-                        'message' => 'Project initialization failed: ' . $e->getMessage(),
+                        'message' => 'Project initialization failed: '.$e->getMessage(),
                     ],
                     statusCode: 500
                 );
             }//end try
         } catch (Exception $e) {
-            $this->logger->error('n8n initialization failed: ' . $e->getMessage());
+            $this->logger->error('n8n initialization failed: '.$e->getMessage());
             return new JSONResponse(
                 data: [
                     'success' => false,
-                    'message' => 'n8n initialization failed: ' . $e->getMessage(),
+                    'message' => 'n8n initialization failed: '.$e->getMessage(),
                 ],
                 statusCode: 500
             );
@@ -425,7 +426,7 @@ class N8nSettingsController extends Controller
 
             // Get project ID.
             $projectsResponse = $client->get(
-                $url . '/api/v1/projects',
+                $url.'/api/v1/projects',
                 [
                     'headers' => [
                         'Accept'        => 'application/json',
@@ -456,7 +457,7 @@ class N8nSettingsController extends Controller
 
             // Get workflows.
             $workflowsResponse = $client->get(
-                $url . '/api/v1/workflows?projectId=' . $projectId,
+                $url.'/api/v1/workflows?projectId='.$projectId,
                 [
                     'headers' => [
                         'Accept'        => 'application/json',
@@ -474,19 +475,14 @@ class N8nSettingsController extends Controller
                 ]
             );
         } catch (Exception $e) {
-            $this->logger->error('Failed to get workflows: ' . $e->getMessage());
+            $this->logger->error('Failed to get workflows: '.$e->getMessage());
             return new JSONResponse(
                 data: [
                     'success' => false,
-                    'message' => 'Failed to get workflows: ' . $e->getMessage(),
+                    'message' => 'Failed to get workflows: '.$e->getMessage(),
                 ],
                 statusCode: 500
             );
         }//end try
     }//end getWorkflows()
 }//end class
-
-
-
-
-

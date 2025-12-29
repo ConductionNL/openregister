@@ -138,7 +138,7 @@ class FacetHandler
      * @psalm-return   array<string, mixed>
      * @phpstan-return array<string, mixed>
      */
-    public function getFacetsForObjects(array $query = []): array
+    public function getFacetsForObjects(array $query=[]): array
     {
         $startTime = microtime(true);
 
@@ -172,11 +172,11 @@ class FacetHandler
         $this->logger->debug(
             message: 'FacetHandler completed facet calculation',
             context: [
-                    'executionTime'     => $executionTime . 'ms',
-                    'strategy'          => $result['performance_metadata']['strategy'] ?? 'unknown',
-                    'cacheUsed'         => false,
-                    'totalFacetResults' => $result['performance_metadata']['total_facet_results'] ?? 0,
-                ]
+                'executionTime'     => $executionTime.'ms',
+                'strategy'          => $result['performance_metadata']['strategy'] ?? 'unknown',
+                'cacheUsed'         => false,
+                'totalFacetResults' => $result['performance_metadata']['total_facet_results'] ?? 0,
+            ]
         );
 
         return $result;
@@ -202,7 +202,7 @@ class FacetHandler
      * @psalm-return   array{'@self': array, object_fields: array}
      * @phpstan-return array<string, mixed>
      */
-    public function getFacetableFields(array $baseQuery = [], int $sampleSize = 100): array
+    public function getFacetableFields(array $baseQuery=[], int $sampleSize=100): array
     {
         $startTime = microtime(true);
 
@@ -217,10 +217,10 @@ class FacetHandler
         $this->logger->debug(
             message: 'Facetable fields discovery completed',
             context: [
-                    'executionTime'       => $executionTime . 'ms',
-                    'schemaCount'         => count($schemas),
-                    'facetableFieldCount' => count($facetableFields['@self'] ?? []) + count($facetableFields['object_fields'] ?? []),
-                ]
+                'executionTime'       => $executionTime.'ms',
+                'schemaCount'         => count($schemas),
+                'facetableFieldCount' => count($facetableFields['@self'] ?? []) + count($facetableFields['object_fields'] ?? []),
+            ]
         );
 
         return $facetableFields;
@@ -307,9 +307,9 @@ class FacetHandler
             $this->logger->debug(
                 message: 'Facets empty with restrictive filters, trying collection-wide fallback',
                 context: [
-                     'originalQuery' => array_keys($facetQuery),
-                     'totalResults'  => $totalFacetResults,
-                 ]
+                    'originalQuery' => array_keys($facetQuery),
+                    'totalResults'  => $totalFacetResults,
+                ]
             );
 
             // Create collection-wide query: keep register/schema context but remove restrictive filters.
@@ -332,10 +332,10 @@ class FacetHandler
                 $this->logger->info(
                     message: 'Smart faceting fallback successful',
                     context: [
-                         'fallbackResults' => $fallbackResults,
-                         'originalResults' => $totalFacetResults,
-                         'collectionQuery' => array_keys($collectionQuery),
-                     ]
+                        'fallbackResults' => $fallbackResults,
+                        'originalResults' => $totalFacetResults,
+                        'collectionQuery' => array_keys($collectionQuery),
+                    ]
                 );
             }
         }//end if
@@ -385,7 +385,7 @@ class FacetHandler
         // Increment to invalidate when RBAC logic changes.
         ];
 
-        return 'facet_rbac_' . md5(json_encode($cacheData));
+        return 'facet_rbac_'.md5(json_encode($cacheData));
     }//end generateFacetCacheKey()
 
     /**
@@ -444,10 +444,10 @@ class FacetHandler
             $this->logger->debug(
                 message: 'Facet response cached',
                 context: [
-                        'cacheKey' => $cacheKey,
-                        'ttl'      => $ttl,
-                        'strategy' => $result['performance_metadata']['strategy'] ?? 'unknown',
-                    ]
+                    'cacheKey' => $cacheKey,
+                    'ttl'      => $ttl,
+                    'strategy' => $result['performance_metadata']['strategy'] ?? 'unknown',
+                ]
             );
         } catch (\Exception $e) {
             // Cache set failed, continue without caching.
@@ -589,9 +589,9 @@ class FacetHandler
                 $this->logger->error(
                     message: 'Failed to get facets from schema',
                     context: [
-                            'error'    => $e->getMessage(),
-                            'schemaId' => $schemaId,
-                        ]
+                        'error'    => $e->getMessage(),
+                        'schemaId' => $schemaId,
+                    ]
                 );
                 continue;
             }//end try

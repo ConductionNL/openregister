@@ -45,6 +45,7 @@ use Psr\Log\LoggerInterface;
  */
 class NotificationService
 {
+
     /**
      * Notification manager instance
      *
@@ -135,7 +136,7 @@ class NotificationService
                 $notificationCount++;
             } catch (\Exception $e) {
                 // Log error but continue sending to other users.
-                $this->logger->error(message: "Failed to send notification to user {$userId}: " . $e->getMessage());
+                $this->logger->error(message: "Failed to send notification to user {$userId}: ".$e->getMessage());
             }
         }
 
@@ -179,11 +180,11 @@ class NotificationService
             ->setSubject(
                 subject: 'configuration_update_available',
                 parameters: [
-                        'configurationTitle' => $configurationTitle,
-                        'configurationId'    => $configurationId,
-                        'currentVersion'     => $currentVersion ?? 'unknown',
-                        'newVersion'         => $newVersion ?? 'unknown',
-                    ]
+                    'configurationTitle' => $configurationTitle,
+                    'configurationId'    => $configurationId,
+                    'currentVersion'     => $currentVersion ?? 'unknown',
+                    'newVersion'         => $newVersion ?? 'unknown',
+                ]
             );
 
         $this->notificationManager->notify($notification);

@@ -44,6 +44,7 @@ use RuntimeException;
  */
 class QueryOptimizationHandler
 {
+
     /**
      * Database connection.
      *
@@ -75,7 +76,7 @@ class QueryOptimizationHandler
     public function __construct(
         IDBConnection $db,
         LoggerInterface $logger,
-        string $tableName = 'openregister_objects'
+        string $tableName='openregister_objects'
     ) {
         $this->db        = $db;
         $this->logger    = $logger;
@@ -92,7 +93,7 @@ class QueryOptimizationHandler
      *
      * @psalm-return array{large: list<mixed>, normal: list<mixed>}
      */
-    public function separateLargeObjects(array $objects, int $maxSafeSize = 1000000): array
+    public function separateLargeObjects(array $objects, int $maxSafeSize=1000000): array
     {
         $largeObjects  = [];
         $normalObjects = [];
@@ -143,8 +144,8 @@ class QueryOptimizationHandler
                 $columns = array_keys($objectData);
 
                 // Build single INSERT statement.
-                $placeholders = ':' . implode(', :', $columns);
-                $sql          = "INSERT INTO {$this->tableName} (" . implode(', ', $columns) . ") VALUES ({$placeholders})";
+                $placeholders = ':'.implode(', :', $columns);
+                $sql          = "INSERT INTO {$this->tableName} (".implode(', ', $columns).") VALUES ({$placeholders})";
 
                 // Prepare parameters.
                 $parameters = [];
@@ -156,7 +157,7 @@ class QueryOptimizationHandler
                         $value = json_encode($value);
                     }
 
-                    $parameters[':' . $column] = $value;
+                    $parameters[':'.$column] = $value;
                 }
 
                 // Execute single insert.
@@ -199,7 +200,7 @@ class QueryOptimizationHandler
      *
      * @psalm-return array{endTime: DateTime, duration: string,...}
      */
-    public function bulkOwnerDeclaration(?string $defaultOwner = null, ?string $defaultOrganisation = null, int $batchSize = 1000): array
+    public function bulkOwnerDeclaration(?string $defaultOwner=null, ?string $defaultOrganisation=null, int $batchSize=1000): array
     {
         if ($defaultOwner === null && $defaultOrganisation === null) {
             throw new InvalidArgumentException('At least one of defaultOwner or defaultOrganisation must be provided');
@@ -275,7 +276,7 @@ class QueryOptimizationHandler
             return $results;
         } catch (Exception $e) {
             $this->logger->error('Error during bulk owner declaration', ['exception' => $e->getMessage()]);
-            throw new RuntimeException('Bulk owner declaration failed: ' . $e->getMessage());
+            throw new RuntimeException('Bulk owner declaration failed: '.$e->getMessage());
         }//end try
     }//end bulkOwnerDeclaration()
 
@@ -315,7 +316,7 @@ class QueryOptimizationHandler
             // Execute the update and return number of affected rows.
             return $qb->executeStatement();
         } catch (Exception $e) {
-            $this->logger->error('Failed to set expiry dates for objects: ' . $e->getMessage(), ['exception' => $e]);
+            $this->logger->error('Failed to set expiry dates for objects: '.$e->getMessage(), ['exception' => $e]);
             throw $e;
         }//end try
     }//end setExpiryDate()
@@ -461,7 +462,7 @@ class QueryOptimizationHandler
                     $this->updateObjectOwnership(objectId: (int) $objectData['id'], updateData: $updateData);
                 }
             } catch (Exception $e) {
-                $error = 'Error updating object ' . $objectData['uuid'] . ': ' . $e->getMessage();
+                $error = 'Error updating object '.$objectData['uuid'].': '.$e->getMessage();
                 $batchResults['errors'][] = $error;
             }//end try
         }//end foreach
@@ -512,15 +513,15 @@ class QueryOptimizationHandler
                 $size += strlen($key);
                 if (is_string($value) === true) {
                     $size += strlen($value);
-                } elseif (is_array($value) === true) {
+                } else if (is_array($value) === true) {
                     $size += strlen(json_encode($value));
-                } elseif (is_numeric($value) === true) {
+                } else if (is_numeric($value) === true) {
                     $size += strlen((string) $value);
                 }
             }
 
             return $size;
-        } elseif (is_object($object) === true && $object instanceof ObjectEntity) {
+        } else if (is_object($object) === true && $object instanceof ObjectEntity) {
             $size       = 0;
             $reflection = new ReflectionClass($object);
             foreach ($reflection->getProperties() as $property) {
@@ -529,9 +530,9 @@ class QueryOptimizationHandler
 
                 if (is_string($value) === true) {
                     $size += strlen($value);
-                } elseif (is_array($value) === true) {
+                } else if (is_array($value) === true) {
                     $size += strlen(json_encode($value));
-                } elseif (is_numeric($value) === true) {
+                } else if (is_numeric($value) === true) {
                     $size += strlen((string) $value);
                 }
             }

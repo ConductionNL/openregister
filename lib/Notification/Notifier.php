@@ -34,6 +34,7 @@ use OCP\Notification\INotifier;
  */
 class Notifier implements INotifier
 {
+
     /**
      * L10N factory for translation.
      *
@@ -142,7 +143,7 @@ class Notifier implements INotifier
                 ->setLink(
                     link: \OC::$server->getURLGenerator()->linkToRouteAbsolute(
                         route: 'openregister.dashboard.page'
-                    ) . '#/configurations/' . $parameters['configurationId'],
+                    ).'#/configurations/'.$parameters['configurationId'],
                     requestType: 'GET'
                 );
 

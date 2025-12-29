@@ -1,0 +1,75 @@
+{
+  "name": "OpenRegister PHPQA - SSH Direct",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "openregister-phpqa-ssh",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "command": "docker exec master-nextcloud-1 bash -c 'cd /var/www/html/apps-extra/openregister && composer phpqa 2>&1'",
+        "cwd": "/tmp"
+      },
+      "id": "run-phpqa",
+      "name": "Run PHPQA via SSH",
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [450, 300],
+      "credentials": {
+        "ssh": {
+          "id": "1",
+          "name": "Docker Host SSH"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const sshOutput = $input.first().json;\n\nreturn {\n  timestamp: new Date().toISOString(),\n  action: 'phpqa',\n  method: 'ssh',\n  status: 'completed',\n  output: sshOutput.stdout || sshOutput,\n  command: 'composer phpqa'\n};"
+      },
+      "id": "format-output",
+      "name": "Format Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Run PHPQA via SSH",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run PHPQA via SSH": {
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true
+  }
+}
+

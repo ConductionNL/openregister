@@ -80,6 +80,7 @@ use Symfony\Component\Uid\Uuid;
 
 class SaveObjects
 {
+
     /**
      * Static schema cache to avoid repeated database lookups
      *
@@ -237,12 +238,12 @@ class SaveObjects
      */
     public function saveObjects(
         array $objects,
-        Register|string|int|null $register = null,
-        Schema|string|int|null $schema = null,
-        bool $_rbac = true,
-        bool $_multitenancy = true,
-        bool $validation = false,
-        bool $events = false
+        Register|string|int|null $register=null,
+        Schema|string|int|null $schema=null,
+        bool $_rbac=true,
+        bool $_multitenancy=true,
+        bool $validation=false,
+        bool $events=false
     ): array {
         // Return early if no objects provided.
         if (empty($objects) === true) {
@@ -745,11 +746,11 @@ class SaveObjects
 
         // For name metadata, try to make it more descriptive.
         if ($metadataType === 'name') {
-            return "$fieldTitle " . substr($uuid, 0, 8);
+            return "$fieldTitle ".substr($uuid, 0, 8);
         }
 
         // For description/summary, use a more generic approach.
-        return "[$fieldTitle: " . substr($uuid, 0, 8) . "]";
+        return "[$fieldTitle: ".substr($uuid, 0, 8)."]";
     }//end generateFallbackName()
 
     /**
@@ -768,13 +769,13 @@ class SaveObjects
         if ($totalObjects <= 100) {
             // Process all at once for small sets.
             return $totalObjects;
-        } elseif ($totalObjects <= 1000) {
+        } else if ($totalObjects <= 1000) {
             // Process all at once for medium sets.
             return $totalObjects;
-        } elseif ($totalObjects <= 5000) {
+        } else if ($totalObjects <= 5000) {
             // Large chunks for large sets.
             return 2000;
-        } elseif ($totalObjects <= 10000) {
+        } else if ($totalObjects <= 10000) {
             // Very large chunks.
             return 3000;
         }
@@ -913,21 +914,21 @@ class SaveObjects
                     $this->logger->debug(
                         'Auto-publishing NEW object in bulk creation',
                         [
-                                'schema'           => $schema->getTitle(),
-                                'autoPublish'      => true,
-                                'isNewObject'      => true,
-                                'publishedFromCsv' => false,
-                            ]
+                            'schema'           => $schema->getTitle(),
+                            'autoPublish'      => true,
+                            'isNewObject'      => true,
+                            'publishedFromCsv' => false,
+                        ]
                     );
                     $tempEntity->setPublished(new DateTime());
-                } elseif ($publishedFromCsv === true) {
+                } else if ($publishedFromCsv === true) {
                     $this->logger->debug(
                         'Skipping auto-publish - published date provided from CSV (mixed schema)',
                         [
-                                'schema'           => $schema->getTitle(),
-                                'publishedFromCsv' => true,
-                                'csvPublishedDate' => $selfData['published'],
-                            ]
+                            'schema'           => $schema->getTitle(),
+                            'publishedFromCsv' => true,
+                            'csvPublishedDate' => $selfData['published'],
+                        ]
                     );
                 }//end if
             }//end if
@@ -1105,9 +1106,9 @@ class SaveObjects
                         $this->logger->warning(
                             'Failed to convert published date to DateTime',
                             [
-                                        'value' => $selfDataForHydration['published'],
-                                        'error' => $e->getMessage(),
-                                    ]
+                                'value' => $selfDataForHydration['published'],
+                                'error' => $e->getMessage(),
+                            ]
                         );
                     }
                 }
@@ -1136,21 +1137,21 @@ class SaveObjects
                     $this->logger->debug(
                         'Auto-publishing NEW object in bulk creation (single schema)',
                         [
-                                    'schema'           => $schemaObj->getTitle(),
-                                    'autoPublish'      => true,
-                                    'isNewObject'      => true,
-                                    'publishedFromCsv' => false,
-                                ]
+                            'schema'           => $schemaObj->getTitle(),
+                            'autoPublish'      => true,
+                            'isNewObject'      => true,
+                            'publishedFromCsv' => false,
+                        ]
                     );
                     $tempEntity->setPublished(new DateTime());
-                } elseif ($publishedFromCsv === true) {
+                } else if ($publishedFromCsv === true) {
                     $this->logger->debug(
                         'Skipping auto-publish - published date provided from CSV',
                         [
-                                    'schema'           => $schemaObj->getTitle(),
-                                    'publishedFromCsv' => true,
-                                    'csvPublishedDate' => $selfData['published'],
-                                ]
+                            'schema'           => $schemaObj->getTitle(),
+                            'publishedFromCsv' => true,
+                            'csvPublishedDate' => $selfData['published'],
+                        ]
                     );
                 }//end if
             }//end if
@@ -1200,12 +1201,12 @@ class SaveObjects
                 $this->logger->info(
                     "[SaveObjects] DEBUG - Single schema object structure",
                     [
-                            'available_keys'      => array_keys($object),
-                            'has_@self'           => (($object['@self'] ?? null) !== null) === true,
-                            '@self_keys'          => $selfKeys,
-                            'has_object_property' => (($object['object'] ?? null) !== null) === true,
+                        'available_keys'      => array_keys($object),
+                        'has_@self'           => (($object['@self'] ?? null) !== null) === true,
+                        '@self_keys'          => $selfKeys,
+                        'has_object_property' => (($object['object'] ?? null) !== null) === true,
                     // First 3 key-value pairs for structure.
-                        ]
+                    ]
                 );
 
                 // TEMPORARY FIX: Extract business data properly based on actual structure.
@@ -1245,10 +1246,10 @@ class SaveObjects
                 $this->logger->info(
                     "[SaveObjects] Metadata removal applied",
                     [
-                                'removed_fields'       => array_intersect($metadataFields, array_keys($object)),
-                                'remaining_keys'       => array_keys($businessData),
-                                'business_data_sample' => array_slice($businessData, 0, 3, true),
-                            ]
+                        'removed_fields'       => array_intersect($metadataFields, array_keys($object)),
+                        'remaining_keys'       => array_keys($businessData),
+                        'business_data_sample' => array_slice($businessData, 0, 3, true),
+                    ]
                 );
             }//end if
 
@@ -1260,11 +1261,11 @@ class SaveObjects
                 $this->logger->info(
                     "[SaveObjects] Relations scanned in preparation (single schema)",
                     [
-                            'uuid'             => $selfData['uuid'] ?? 'unknown',
-                            'relationCount'    => count($relations),
-                            'businessDataKeys' => array_keys($businessData),
-                            'relationsPreview' => array_slice($relations, 0, 5, true),
-                        ]
+                        'uuid'             => $selfData['uuid'] ?? 'unknown',
+                        'relationCount'    => count($relations),
+                        'businessDataKeys' => array_keys($businessData),
+                        'relationsPreview' => array_slice($relations, 0, 5, true),
+                    ]
                 );
 
                 // Store the clean business data in the database object column.
@@ -1284,10 +1285,10 @@ class SaveObjects
             $this->logger->debug(
                 'Single-schema preparation completed',
                 [
-                        'objectsProcessed' => count($preparedObjects),
-                        'timeMs'           => $duration,
-                        'speed'            => round(count($preparedObjects) / max(($endTime - $startTime), 0.001), 2),
-                    ]
+                    'objectsProcessed' => count($preparedObjects),
+                    'timeMs'           => $duration,
+                    'speed'            => round(count($preparedObjects) / max(($endTime - $startTime), 0.001), 2),
+                ]
             );
         }
 
@@ -1429,9 +1430,9 @@ class SaveObjects
         $this->logger->info(
             "[SaveObjects] Using single-call bulk processing (no pre-lookup needed)",
             [
-                    'objects_to_process' => count($transformedObjects),
-                    'approach'           => 'INSERT...ON DUPLICATE KEY UPDATE with database-computed classification',
-                ]
+                'objects_to_process' => count($transformedObjects),
+                'approach'           => 'INSERT...ON DUPLICATE KEY UPDATE with database-computed classification',
+            ]
         );
 
         // STEP 3: DIRECT BULK PROCESSING - No categorization needed upfront.
@@ -1501,9 +1502,9 @@ class SaveObjects
                             $this->logger->warning(
                                 "Unexpected object status: {$objectStatus}",
                                 [
-                                        'uuid'          => $completeObject['uuid'],
-                                        'object_status' => $objectStatus,
-                                    ]
+                                    'uuid'          => $completeObject['uuid'],
+                                    'object_status' => $objectStatus,
+                                ]
                             );
                             $unchangedObjects[] = $completeObject;
                             $result['statistics']['unchanged']++;
@@ -1518,12 +1519,12 @@ class SaveObjects
                 $this->logger->info(
                     "[SaveObjects] Database-computed classification completed",
                     [
-                            'total_processed'       => count($bulkResult),
-                            'created_objects'       => count($createdObjects),
-                            'updated_objects'       => count($updatedObjects),
-                            'unchanged_objects'     => count($unchangedObjects),
-                            'classification_method' => 'database_computed_sql',
-                        ]
+                        'total_processed'       => count($bulkResult),
+                        'created_objects'       => count($createdObjects),
+                        'updated_objects'       => count($updatedObjects),
+                        'unchanged_objects'     => count($unchangedObjects),
+                        'classification_method' => 'database_computed_sql',
+                    ]
                 );
             }//end if
 
@@ -1569,10 +1570,10 @@ class SaveObjects
             $this->logger->info(
                 "[SaveObjects] Using database-computed pre-classified objects for response",
                 [
-                        'saved_objects'     => count($result['saved']),
-                        'updated_objects'   => count($result['updated']),
-                        'unchanged_objects' => count($result['unchanged']),
-                    ]
+                    'saved_objects'     => count($result['saved']),
+                    'updated_objects'   => count($result['updated']),
+                    'unchanged_objects' => count($result['unchanged']),
+                ]
             );
         }//end if
 
@@ -1703,7 +1704,7 @@ class SaveObjects
 
                         $_processedCount++;
                     }
-                } elseif (($propertyInfo['isArray'] === true) && is_array($value) === true) {
+                } else if (($propertyInfo['isArray'] === true) && is_array($value) === true) {
                     // Handle array of object relations.
                     foreach ($value as $relatedUuid) {
                         if (is_string($relatedUuid) === true && \Symfony\Component\Uid\Uuid::isValid($relatedUuid) === true) {
@@ -1863,10 +1864,10 @@ class SaveObjects
             $this->logger->info(
                 "[SaveObjects] DEBUG - Mixed schema object structure",
                 [
-                        'available_keys'      => array_keys($object),
-                        'has_object_property' => isset($object['object']) === true,
-                        'sample_data'         => array_slice($object, 0, 3, true),
-                    ]
+                    'available_keys'      => array_keys($object),
+                    'has_object_property' => isset($object['object']) === true,
+                    'sample_data'         => array_slice($object, 0, 3, true),
+                ]
             );
 
             // TEMPORARY FIX: Extract business data properly based on actual structure.
@@ -1906,10 +1907,10 @@ class SaveObjects
                 $this->logger->info(
                     "[SaveObjects] Metadata removal applied (mixed)",
                     [
-                            'removed_fields'       => array_intersect($metadataFields, array_keys($object)),
-                            'remaining_keys'       => array_keys($businessData),
-                            'business_data_sample' => array_slice($businessData, 0, 3, true),
-                        ]
+                        'removed_fields'       => array_intersect($metadataFields, array_keys($object)),
+                        'remaining_keys'       => array_keys($businessData),
+                        'business_data_sample' => array_slice($businessData, 0, 3, true),
+                    ]
                 );
             }//end if
 
@@ -1924,10 +1925,10 @@ class SaveObjects
                     $this->logger->info(
                         "[SaveObjects] Relations scanned in transformation",
                         [
-                                'uuid'          => $selfData['uuid'] ?? 'unknown',
-                                'relationCount' => count($relations),
-                                'relations'     => array_slice($relations, 0, 3, true),
-                            ]
+                            'uuid'          => $selfData['uuid'] ?? 'unknown',
+                            'relationCount' => count($relations),
+                            'relations'     => array_slice($relations, 0, 3, true),
+                        ]
                     );
                 }
             }
@@ -1936,9 +1937,9 @@ class SaveObjects
                 $this->logger->info(
                     "[SaveObjects] Relations already set from preparation",
                     [
-                            'uuid'          => $selfData['uuid'] ?? 'unknown',
-                            'relationCount' => count($selfData['relations']),
-                        ]
+                        'uuid'          => $selfData['uuid'] ?? 'unknown',
+                        'relationCount' => count($selfData['relations']),
+                    ]
                 );
             }
 
@@ -2022,10 +2023,10 @@ class SaveObjects
                 $this->logger->error(
                     'Object reconstruction failed: Missing UUID after bulk save operation',
                     [
-                            'objectData' => $objData,
-                            'error'      => 'UUID missing in saved object data',
-                            'context'    => 'reconstructSavedObjects',
-                        ]
+                        'objectData' => $objData,
+                        'error'      => 'UUID missing in saved object data',
+                        'context'    => 'reconstructSavedObjects',
+                    ]
                 );
 
                 // Continue to try to reconstruct other objects, but this indicates a serious issue.
@@ -2268,7 +2269,7 @@ class SaveObjects
      *
      * @return array Array of relations with dot notation paths as keys and UUIDs/URLs as values
      */
-    private function scanForRelations(array $data, string $prefix = '', ?Schema $schema = null): array
+    private function scanForRelations(array $data, string $prefix='', ?Schema $schema=null): array
     {
         $relations = [];
 
@@ -2287,7 +2288,7 @@ class SaveObjects
             }
 
             if (($prefix !== '') === true) {
-                $currentPath = $prefix . '.' . $key;
+                $currentPath = $prefix.'.'.$key;
             } else {
                 $currentPath = $key;
             }
@@ -2306,13 +2307,13 @@ class SaveObjects
                         if (is_array($item) === true) {
                             $itemRelations = $this->scanForRelations(
                                 data: $item,
-                                prefix: $currentPath . '.' . $index,
+                                prefix: $currentPath.'.'.$index,
                                 schema: $schema
                             );
                             $relations     = array_merge($relations, $itemRelations);
-                        } elseif (is_string($item) === true && empty($item) === false) {
+                        } else if (is_string($item) === true && empty($item) === false) {
                             // String values in object arrays are always treated as relations.
-                            $relations[$currentPath . '.' . $index] = $item;
+                            $relations[$currentPath.'.'.$index] = $item;
                         }
                     }
                 } else {
@@ -2322,19 +2323,19 @@ class SaveObjects
                             // Recursively scan nested arrays/objects.
                             $itemRelations = $this->scanForRelations(
                                 data: $item,
-                                prefix: $currentPath . '.' . $index,
+                                prefix: $currentPath.'.'.$index,
                                 schema: $schema
                             );
                             $relations     = array_merge($relations, $itemRelations);
-                        } elseif (is_string($item) === true && empty($item) === false && trim($item) !== '') {
+                        } else if (is_string($item) === true && empty($item) === false && trim($item) !== '') {
                             // Check if the string looks like a reference.
                             if ($this->isReference($item) === true) {
-                                $relations[$currentPath . '.' . $index] = $item;
+                                $relations[$currentPath.'.'.$index] = $item;
                             }
                         }
                     }
                 }//end if
-            } elseif (is_string($value) === true && empty($value) === false && trim($value) !== '') {
+            } else if (is_string($value) === true && empty($value) === false && trim($value) !== '') {
                 $shouldTreatAsRelation = false;
 
                 // Check schema property configuration first.
@@ -2346,7 +2347,7 @@ class SaveObjects
                     // Check for explicit relation types.
                     if ($propertyType === 'text' && in_array($propertyFormat, ['uuid', 'uri', 'url'], true) === true) {
                         $shouldTreatAsRelation = true;
-                    } elseif ($propertyType === 'object') {
+                    } else if ($propertyType === 'object') {
                         // Object properties with string values are always relations.
                         $shouldTreatAsRelation = true;
                     }
@@ -2408,8 +2409,7 @@ class SaveObjects
         if (preg_match('/^[a-z0-9][a-z0-9_-]{7,}$/i', $value) === 1) {
             // Must contain at least one hyphen or underscore (indicating it's likely an ID).
             // AND must not contain spaces or common text words.
-            if (
-                (strpos($value, '-') !== false || strpos($value, '_') !== false)
+            if ((strpos($value, '-') !== false || strpos($value, '_') !== false)
                 && preg_match('/\s/', $value) === false
                 && in_array(strtolower($value), ['applicatie', 'systeemsoftware', 'open-source', 'closed-source'], true) === false
             ) {

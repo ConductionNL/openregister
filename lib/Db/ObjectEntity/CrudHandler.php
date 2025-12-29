@@ -37,6 +37,7 @@ use Psr\Log\LoggerInterface;
  */
 class CrudHandler
 {
+
     /**
      * Object entity mapper.
      *
@@ -119,7 +120,7 @@ class CrudHandler
      *
      * @return ObjectEntity The updated entity
      */
-    public function update(Entity $entity, bool $includeDeleted = false): ObjectEntity
+    public function update(Entity $entity, bool $includeDeleted=false): ObjectEntity
     {
         // Find old object for event.
         $qb = $this->db->getQueryBuilder();

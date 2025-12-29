@@ -149,7 +149,7 @@ class TextExtractionService
      * @throws NotFoundException If file doesn't exist in Nextcloud
      * @throws Exception If extraction fails
      */
-    public function extractFile(int $fileId, bool $forceReExtract = false): void
+    public function extractFile(int $fileId, bool $forceReExtract=false): void
     {
         $this->logger->info('[TextExtractionService] Starting file extraction', ['fileId' => $fileId]);
 
@@ -178,10 +178,10 @@ class TextExtractionService
         $chunks  = $this->textToChunks(
             payload: $payload,
             options: [
-                    'chunk_size'    => self::DEFAULT_CHUNK_SIZE,
-                    'chunk_overlap' => self::DEFAULT_CHUNK_OVERLAP,
-                    'strategy'      => self::RECURSIVE_CHARACTER,
-                ]
+                'chunk_size'    => self::DEFAULT_CHUNK_SIZE,
+                'chunk_overlap' => self::DEFAULT_CHUNK_OVERLAP,
+                'strategy'      => self::RECURSIVE_CHARACTER,
+            ]
         );
 
         // Persist textual chunks and include the metadata chunk at the end.
@@ -209,27 +209,27 @@ class TextExtractionService
             $this->logger->info(
                 '[TextExtractionService] Entity extraction complete',
                 [
-                        'fileId'            => $fileId,
-                        'entities_found'    => $entityResult['entities_found'],
-                        'relations_created' => $entityResult['relations_created'],
-                    ]
+                    'fileId'            => $fileId,
+                    'entities_found'    => $entityResult['entities_found'],
+                    'relations_created' => $entityResult['relations_created'],
+                ]
             );
         } catch (Exception $e) {
             $this->logger->error(
                 '[TextExtractionService] Entity extraction failed',
                 [
-                        'fileId' => $fileId,
-                        'error'  => $e->getMessage(),
-                    ]
+                    'fileId' => $fileId,
+                    'error'  => $e->getMessage(),
+                ]
             );
         }//end try
 
         $this->logger->info(
             '[TextExtractionService] File extraction complete',
             [
-                    'fileId'     => $fileId,
-                    'chunkCount' => count($chunks) + 1,
-                ]
+                'fileId'     => $fileId,
+                'chunkCount' => count($chunks) + 1,
+            ]
         );
     }//end extractFile()
 
@@ -249,7 +249,7 @@ class TextExtractionService
      * @throws DoesNotExistException If object doesn't exist
      * @throws Exception If extraction fails
      */
-    public function extractObject(int $objectId, bool $forceReExtract = false): void
+    public function extractObject(int $objectId, bool $forceReExtract=false): void
     {
         $this->logger->info('[TextExtractionService] Starting object extraction', ['objectId' => $objectId]);
 
@@ -342,27 +342,27 @@ class TextExtractionService
             $this->logger->info(
                 '[TextExtractionService] Entity extraction complete',
                 [
-                        'objectId'          => $objectId,
-                        'entities_found'    => $entityResult['entities_found'],
-                        'relations_created' => $entityResult['relations_created'],
-                    ]
+                    'objectId'          => $objectId,
+                    'entities_found'    => $entityResult['entities_found'],
+                    'relations_created' => $entityResult['relations_created'],
+                ]
             );
         } catch (Exception $e) {
             $this->logger->error(
                 '[TextExtractionService] Entity extraction failed',
                 [
-                        'objectId' => $objectId,
-                        'error'    => $e->getMessage(),
-                    ]
+                    'objectId' => $objectId,
+                    'error'    => $e->getMessage(),
+                ]
             );
         }//end try
 
         $this->logger->info(
             '[TextExtractionService] Object extraction completed',
             [
-                    'objectId'   => $objectId,
-                    'chunkCount' => count($chunks) + 1,
-                ]
+                'objectId'   => $objectId,
+                'chunkCount' => count($chunks) + 1,
+            ]
         );
     }//end extractObject()
 
@@ -482,7 +482,7 @@ class TextExtractionService
         if (preg_match('/\b(de|het|een)\b/i', $text) === 1) {
             $language   = 'nl';
             $confidence = 0.35;
-        } elseif (preg_match('/\b(the|and|of)\b/i', $text) === 1) {
+        } else if (preg_match('/\b(the|and|of)\b/i', $text) === 1) {
             $language   = 'en';
             $confidence = 0.35;
         }
@@ -517,7 +517,7 @@ class TextExtractionService
      *     text_content: mixed
      * }>
      */
-    private function textToChunks(array $payload, array $options = []): array
+    private function textToChunks(array $payload, array $options=[]): array
     {
         $chunkSize    = (int) ($options['chunk_size'] ?? self::DEFAULT_CHUNK_SIZE);
         $chunkOverlap = (int) ($options['chunk_overlap'] ?? self::DEFAULT_CHUNK_OVERLAP);
@@ -527,10 +527,10 @@ class TextExtractionService
         $rawChunks = $this->chunkDocument(
             text: $payload['text'],
             options: [
-                    'chunk_size'    => $chunkSize,
-                    'chunk_overlap' => $chunkOverlap,
-                    'strategy'      => $strategy,
-                ]
+                'chunk_size'    => $chunkSize,
+                'chunk_overlap' => $chunkOverlap,
+                'strategy'      => $strategy,
+            ]
         );
 
         $mappedChunks = [];
@@ -713,10 +713,10 @@ class TextExtractionService
             $this->logger->warning(
                 '[TextExtractionService] Failed to encode metadata chunk payload',
                 [
-                        'sourceType' => $sourceType,
-                        'sourceId'   => $sourceId,
-                        'error'      => $exception->getMessage(),
-                    ]
+                    'sourceType' => $sourceType,
+                    'sourceId'   => $sourceId,
+                    'error'      => $exception->getMessage(),
+                ]
             );
             $metadataText = 'metadata_encoding_failed';
         }
@@ -805,10 +805,10 @@ class TextExtractionService
         $this->logger->debug(
             '[TextExtractionService] Attempting extraction',
             [
-                    'fileId'   => $fileId,
-                    'mimeType' => $mimeType,
-                    'filePath' => $filePath,
-                ]
+                'fileId'   => $fileId,
+                'mimeType' => $mimeType,
+                'filePath' => $filePath,
+            ]
         );
 
         // Get the file node from Nextcloud.
@@ -848,17 +848,17 @@ class TextExtractionService
                 $this->logger->debug(
                     '[TextExtractionService] Text file extracted',
                     [
-                            'fileId' => $fileId,
-                            'length' => strlen($extractedText),
-                        ]
+                        'fileId' => $fileId,
+                        'length' => strlen($extractedText),
+                    ]
                 );
-            } elseif ($mimeType === 'application/pdf') {
+            } else if ($mimeType === 'application/pdf') {
                 // Extract text from PDF using Smalot PdfParser.
                 $extractedText = $this->extractPdf($file);
-            } elseif ($this->isWordDocument($mimeType) === true) {
+            } else if ($this->isWordDocument($mimeType) === true) {
                 // Extract text from DOCX/DOC using PhpWord.
                 $extractedText = $this->extractWord($file);
-            } elseif ($this->isSpreadsheet($mimeType) === true) {
+            } else if ($this->isSpreadsheet($mimeType) === true) {
                 // Extract text from XLSX/XLS using PhpSpreadsheet.
                 $extractedText = $this->extractSpreadsheet($file);
             } else {
@@ -866,9 +866,9 @@ class TextExtractionService
                 $this->logger->info(
                     '[TextExtractionService] Unsupported file type',
                     [
-                            'fileId'   => $fileId,
-                            'mimeType' => $mimeType,
-                        ]
+                        'fileId'   => $fileId,
+                        'mimeType' => $mimeType,
+                    ]
                 );
 
                 return null;
@@ -879,9 +879,9 @@ class TextExtractionService
             $this->logger->error(
                 '[TextExtractionService] Failed to read file',
                 [
-                        'fileId' => $fileId,
-                        'error'  => $e->getMessage(),
-                    ]
+                    'fileId' => $fileId,
+                    'error'  => $e->getMessage(),
+                ]
             );
 
             throw $e;
@@ -900,7 +900,7 @@ class TextExtractionService
      *
      * @psalm-return array{discovered: int<0, max>, failed: int<0, max>, total: int<0, max>, error?: string}
      */
-    public function discoverUntrackedFiles(int $limit = 100): array
+    public function discoverUntrackedFiles(int $limit=100): array
     {
         $this->logger->info('[TextExtractionService] Discovering untracked files', ['limit' => $limit]);
 
@@ -919,18 +919,18 @@ class TextExtractionService
                     $this->logger->debug(
                         '[TextExtractionService] Discovered and extracted untracked file',
                         [
-                                'fileId' => $ncFile['fileid'],
-                                'path'   => $ncFile['path'] ?? 'unknown',
-                            ]
+                            'fileId' => $ncFile['fileid'],
+                            'path'   => $ncFile['path'] ?? 'unknown',
+                        ]
                     );
                 } catch (Exception $e) {
                     $failed++;
                     $this->logger->error(
                         '[TextExtractionService] Failed to extract file',
                         [
-                                'fileId' => $ncFile['fileid'] ?? 'unknown',
-                                'error'  => $e->getMessage(),
-                            ]
+                            'fileId' => $ncFile['fileid'] ?? 'unknown',
+                            'error'  => $e->getMessage(),
+                        ]
                     );
                 }//end try
             }//end foreach
@@ -938,9 +938,9 @@ class TextExtractionService
             $this->logger->info(
                 '[TextExtractionService] Discovery complete',
                 [
-                        'discovered' => $discovered,
-                        'failed'     => $failed,
-                    ]
+                    'discovered' => $discovered,
+                    'failed'     => $failed,
+                ]
             );
 
             return [
@@ -971,7 +971,7 @@ class TextExtractionService
      *
      * @psalm-return array{processed: int<0, max>, failed: int<0, max>, total: int<0, max>}
      */
-    public function extractPendingFiles(int $limit = 100): array
+    public function extractPendingFiles(int $limit=100): array
     {
         $this->logger->info('[TextExtractionService] Extracting files without chunks', ['limit' => $limit]);
 
@@ -981,9 +981,9 @@ class TextExtractionService
         $this->logger->info(
             '[TextExtractionService] Found files without chunks',
             [
-                    'count' => count($untrackedFiles),
-                    'limit' => $limit,
-                ]
+                'count' => count($untrackedFiles),
+                'limit' => $limit,
+            ]
         );
 
         $processed = 0;
@@ -994,9 +994,9 @@ class TextExtractionService
                 $this->logger->debug(
                     '[TextExtractionService] Processing file',
                     [
-                            'fileId'   => $ncFile['fileid'],
-                            'fileName' => $ncFile['name'] ?? 'unknown',
-                        ]
+                        'fileId'   => $ncFile['fileid'],
+                        'fileName' => $ncFile['name'] ?? 'unknown',
+                    ]
                 );
 
                 // Trigger extraction for this file.
@@ -1007,9 +1007,9 @@ class TextExtractionService
                 $this->logger->error(
                     '[TextExtractionService] Failed to extract file',
                     [
-                            'fileId' => $ncFile['fileid'] ?? 'unknown',
-                            'error'  => $e->getMessage(),
-                        ]
+                        'fileId' => $ncFile['fileid'] ?? 'unknown',
+                        'error'  => $e->getMessage(),
+                    ]
                 );
             }//end try
         }//end foreach
@@ -1017,10 +1017,10 @@ class TextExtractionService
         $this->logger->info(
             '[TextExtractionService] Extraction complete',
             [
-                    'processed'    => $processed,
-                    'failed'       => $failed,
-                    'foundPending' => count($untrackedFiles),
-                ]
+                'processed'    => $processed,
+                'failed'       => $failed,
+                'foundPending' => count($untrackedFiles),
+            ]
         );
 
         return [
@@ -1039,7 +1039,7 @@ class TextExtractionService
      *
      * @psalm-return array{retried: int<0, max>, failed: int<0, max>, total: int<0, max>}
      */
-    public function retryFailedExtractions(int $limit = 50): array
+    public function retryFailedExtractions(int $limit=50): array
     {
         $this->logger->info('[TextExtractionService] Retrying extractions', ['limit' => $limit]);
 
@@ -1057,9 +1057,9 @@ class TextExtractionService
                 $this->logger->error(
                     '[TextExtractionService] Retry failed for file',
                     [
-                            'fileId' => $ncFile['fileid'] ?? 'unknown',
-                            'error'  => $e->getMessage(),
-                        ]
+                        'fileId' => $ncFile['fileid'] ?? 'unknown',
+                        'error'  => $e->getMessage(),
+                    ]
                 );
             }
         }
@@ -1123,9 +1123,9 @@ class TextExtractionService
             $this->logger->debug(
                 '[TextExtractionService] Unable to count table',
                 [
-                        'table' => $tableName,
-                        'error' => $e->getMessage(),
-                    ]
+                    'table' => $tableName,
+                    'error' => $e->getMessage(),
+                ]
             );
 
             return 0;
@@ -1189,8 +1189,8 @@ class TextExtractionService
             $this->logger->warning(
                 '[TextExtractionService] PDF parser library not available',
                 [
-                        'fileId' => $file->getId(),
-                    ]
+                    'fileId' => $file->getId(),
+                ]
             );
             throw new Exception("PDF parser library (smalot/pdfparser) is not installed. Run: composer require smalot/pdfparser");
         }
@@ -1199,9 +1199,9 @@ class TextExtractionService
             $this->logger->debug(
                 '[TextExtractionService] Extracting PDF',
                 [
-                        'fileId' => $file->getId(),
-                        'name'   => $file->getName(),
-                    ]
+                    'fileId' => $file->getId(),
+                    'name'   => $file->getName(),
+                ]
             );
 
             // Get file content.
@@ -1226,8 +1226,8 @@ class TextExtractionService
                 $this->logger->warning(
                     '[TextExtractionService] PDF extraction returned empty text',
                     [
-                            'fileId' => $file->getId(),
-                        ]
+                        'fileId' => $file->getId(),
+                    ]
                 );
                 return null;
             }
@@ -1235,9 +1235,9 @@ class TextExtractionService
             $this->logger->debug(
                 '[TextExtractionService] PDF extracted successfully',
                 [
-                        'fileId' => $file->getId(),
-                        'length' => strlen($text),
-                    ]
+                    'fileId' => $file->getId(),
+                    'length' => strlen($text),
+                ]
             );
 
             return $text;
@@ -1245,11 +1245,11 @@ class TextExtractionService
             $this->logger->error(
                 '[TextExtractionService] PDF extraction failed',
                 [
-                        'fileId' => $file->getId(),
-                        'error'  => $e->getMessage(),
-                    ]
+                    'fileId' => $file->getId(),
+                    'error'  => $e->getMessage(),
+                ]
             );
-            throw new Exception("PDF extraction failed: " . $e->getMessage());
+            throw new Exception("PDF extraction failed: ".$e->getMessage());
         }//end try
     }//end extractPdf()
 
@@ -1269,8 +1269,8 @@ class TextExtractionService
             $this->logger->warning(
                 '[TextExtractionService] PhpWord library not available',
                 [
-                        'fileId' => $file->getId(),
-                    ]
+                    'fileId' => $file->getId(),
+                ]
             );
             throw new Exception("PhpWord library (phpoffice/phpword) is not installed. Run: composer require phpoffice/phpword");
         }
@@ -1279,9 +1279,9 @@ class TextExtractionService
             $this->logger->debug(
                 '[TextExtractionService] Extracting Word document',
                 [
-                        'fileId' => $file->getId(),
-                        'name'   => $file->getName(),
-                    ]
+                    'fileId' => $file->getId(),
+                    'name'   => $file->getName(),
+                ]
             );
 
             // Get file content.
@@ -1300,12 +1300,12 @@ class TextExtractionService
             foreach ($phpWord->getSections() as $section) {
                 foreach ($section->getElements() as $element) {
                     if (method_exists($element, 'getText') === true) {
-                        $text .= $element->getText() . "\n";
-                    } elseif (method_exists($element, 'getElements') === true) {
+                        $text .= $element->getText()."\n";
+                    } else if (method_exists($element, 'getElements') === true) {
                         // Handle nested elements (tables, etc.).
                         foreach ($element->getElements() as $childElement) {
                             if (method_exists($childElement, 'getText') === true) {
-                                $text .= $childElement->getText() . " ";
+                                $text .= $childElement->getText()." ";
                             }
                         }
 
@@ -1321,8 +1321,8 @@ class TextExtractionService
                 $this->logger->warning(
                     '[TextExtractionService] Word extraction returned empty text',
                     [
-                            'fileId' => $file->getId(),
-                        ]
+                        'fileId' => $file->getId(),
+                    ]
                 );
                 return null;
             }
@@ -1330,9 +1330,9 @@ class TextExtractionService
             $this->logger->debug(
                 '[TextExtractionService] Word document extracted successfully',
                 [
-                        'fileId' => $file->getId(),
-                        'length' => strlen($text),
-                    ]
+                    'fileId' => $file->getId(),
+                    'length' => strlen($text),
+                ]
             );
 
             return $text;
@@ -1340,11 +1340,11 @@ class TextExtractionService
             $this->logger->error(
                 '[TextExtractionService] Word extraction failed',
                 [
-                        'fileId' => $file->getId(),
-                        'error'  => $e->getMessage(),
-                    ]
+                    'fileId' => $file->getId(),
+                    'error'  => $e->getMessage(),
+                ]
             );
-            throw new Exception("Word extraction failed: " . $e->getMessage());
+            throw new Exception("Word extraction failed: ".$e->getMessage());
         }//end try
     }//end extractWord()
 
@@ -1364,8 +1364,8 @@ class TextExtractionService
             $this->logger->warning(
                 '[TextExtractionService] PhpSpreadsheet library not available',
                 [
-                        'fileId' => $file->getId(),
-                    ]
+                    'fileId' => $file->getId(),
+                ]
             );
             throw new Exception("PhpSpreadsheet library (phpoffice/phpspreadsheet) is not installed. Run: composer require phpoffice/phpspreadsheet");
         }
@@ -1374,9 +1374,9 @@ class TextExtractionService
             $this->logger->debug(
                 '[TextExtractionService] Extracting spreadsheet',
                 [
-                        'fileId' => $file->getId(),
-                        'name'   => $file->getName(),
-                    ]
+                    'fileId' => $file->getId(),
+                    'name'   => $file->getName(),
+                ]
             );
 
             // Get file content.
@@ -1393,7 +1393,7 @@ class TextExtractionService
             // Extract text from all sheets.
             $text = '';
             foreach ($spreadsheet->getAllSheets() as $sheet) {
-                $text .= "Sheet: " . $sheet->getTitle() . "\n";
+                $text .= "Sheet: ".$sheet->getTitle()."\n";
 
                 $highestRow    = $sheet->getHighestRow();
                 $highestColumn = $sheet->getHighestColumn();
@@ -1403,20 +1403,20 @@ class TextExtractionService
                     $rowData = [];
                     // @psalm-suppress StringIncrement - Excel column increment is intentional
                     for ($col = 'A'; $col !== $highestColumn; $col++) {
-                        $value = $sheet->getCell($col . $row)->getValue();
+                        $value = $sheet->getCell($col.$row)->getValue();
                         if ($value !== null && $value !== '') {
                             $rowData[] = $value;
                         }
                     }
 
                     // Add last column.
-                    $value = $sheet->getCell($highestColumn . $row)->getValue();
+                    $value = $sheet->getCell($highestColumn.$row)->getValue();
                     if ($value !== null && $value !== '') {
                         $rowData[] = $value;
                     }
 
                     if (empty($rowData) === false) {
-                        $text .= implode("\t", $rowData) . "\n";
+                        $text .= implode("\t", $rowData)."\n";
                     }
                 }
 
@@ -1430,8 +1430,8 @@ class TextExtractionService
                 $this->logger->warning(
                     '[TextExtractionService] Spreadsheet extraction returned empty text',
                     [
-                            'fileId' => $file->getId(),
-                        ]
+                        'fileId' => $file->getId(),
+                    ]
                 );
                 return null;
             }
@@ -1439,9 +1439,9 @@ class TextExtractionService
             $this->logger->debug(
                 '[TextExtractionService] Spreadsheet extracted successfully',
                 [
-                        'fileId' => $file->getId(),
-                        'length' => strlen($text),
-                    ]
+                    'fileId' => $file->getId(),
+                    'length' => strlen($text),
+                ]
             );
 
             return $text;
@@ -1449,11 +1449,11 @@ class TextExtractionService
             $this->logger->error(
                 '[TextExtractionService] Spreadsheet extraction failed',
                 [
-                        'fileId' => $file->getId(),
-                        'error'  => $e->getMessage(),
-                    ]
+                    'fileId' => $file->getId(),
+                    'error'  => $e->getMessage(),
+                ]
             );
-            throw new Exception("Spreadsheet extraction failed: " . $e->getMessage());
+            throw new Exception("Spreadsheet extraction failed: ".$e->getMessage());
         }//end try
     }//end extractSpreadsheet()
 
@@ -1468,7 +1468,7 @@ class TextExtractionService
      *
      * @return array Array of text chunks
      */
-    public function chunkDocument(string $text, array $options = []): array
+    public function chunkDocument(string $text, array $options=[]): array
     {
         $chunkSize    = $options['chunk_size'] ?? self::DEFAULT_CHUNK_SIZE;
         $chunkOverlap = $options['chunk_overlap'] ?? self::DEFAULT_CHUNK_OVERLAP;
@@ -1477,11 +1477,11 @@ class TextExtractionService
         $this->logger->debug(
             '[TextExtractionService] Chunking document',
             [
-                    'text_length'   => strlen($text),
-                    'chunk_size'    => $chunkSize,
-                    'chunk_overlap' => $chunkOverlap,
-                    'strategy'      => $strategy,
-                ]
+                'text_length'   => strlen($text),
+                'chunk_size'    => $chunkSize,
+                'chunk_overlap' => $chunkOverlap,
+                'strategy'      => $strategy,
+            ]
         );
 
         $startTime = microtime(true);
@@ -1501,9 +1501,9 @@ class TextExtractionService
             $this->logger->warning(
                 '[TextExtractionService] File exceeds max chunks, truncating',
                 [
-                        'chunks' => count($chunks),
-                        'max'    => self::MAX_CHUNKS_PER_FILE,
-                    ]
+                    'chunks' => count($chunks),
+                    'max'    => self::MAX_CHUNKS_PER_FILE,
+                ]
             );
             $chunks = array_slice($chunks, 0, self::MAX_CHUNKS_PER_FILE);
         }
@@ -1513,10 +1513,10 @@ class TextExtractionService
         $this->logger->info(
             '[TextExtractionService] Document chunked successfully',
             [
-                    'chunk_count'      => count($chunks),
-                    'chunking_time_ms' => $chunkingTime,
-                    'avg_chunk_size'   => $this->calculateAvgChunkSize($chunks),
-                ]
+                'chunk_count'      => count($chunks),
+                'chunking_time_ms' => $chunkingTime,
+                'avg_chunk_size'   => $this->calculateAvgChunkSize($chunks),
+            ]
         );
 
         return $chunks;
@@ -1703,7 +1703,7 @@ class TextExtractionService
             if ($currentChunk === '') {
                 $testChunk = $split;
             } else {
-                $testChunk = $currentChunk . $separator . $split;
+                $testChunk = $currentChunk.$separator.$split;
             }
 
             if (strlen($testChunk) <= $chunkSize) {
@@ -1727,7 +1727,7 @@ class TextExtractionService
                     // Add overlap from end of previous chunk.
                     if ($chunkOverlap > 0 && strlen($currentChunk) > $chunkOverlap) {
                         $overlapText    = substr($currentChunk, -$chunkOverlap);
-                        $currentChunk   = $overlapText . $separator . $split;
+                        $currentChunk   = $overlapText.$separator.$split;
                         $currentOffset -= $chunkOverlap;
                     } else {
                         $currentChunk = $split;
@@ -1843,7 +1843,7 @@ class TextExtractionService
             // Extract text from chunk.
             if (is_array($chunk) === true && (($chunk['text'] ?? null) !== null)) {
                 $text = $chunk['text'];
-            } elseif (is_string($chunk) === true) {
+            } else if (is_string($chunk) === true) {
                 $text = $chunk;
             } else {
                 $text = '';

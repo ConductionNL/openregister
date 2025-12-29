@@ -73,8 +73,7 @@ class ObjectChangeListener implements IEventListener
     public function handle(Event $event): void
     {
         // Only handle ObjectCreatedEvent and ObjectUpdatedEvent.
-        if (
-            ($event instanceof ObjectCreatedEvent) === false
+        if (($event instanceof ObjectCreatedEvent) === false
             && ($event instanceof ObjectUpdatedEvent) === false
         ) {
             return;
@@ -86,10 +85,10 @@ class ObjectChangeListener implements IEventListener
         $this->logger->debug(
             '[ObjectChangeListener] Object event detected',
             [
-                    'event_type'  => get_class($event),
-                    'object_id'   => $objectId,
-                    'object_uuid' => $object->getUuid(),
-                ]
+                'event_type'  => get_class($event),
+                'object_id'   => $objectId,
+                'object_uuid' => $object->getUuid(),
+            ]
         );
 
         // Get extraction mode and process accordingly.
@@ -102,10 +101,10 @@ class ObjectChangeListener implements IEventListener
             $this->logger->error(
                 '[ObjectChangeListener] Error determining extraction mode',
                 [
-                        'object_id' => $objectId,
-                        'error'     => $e->getMessage(),
-                        'trace'     => $e->getTraceAsString(),
-                    ]
+                    'object_id' => $objectId,
+                    'error'     => $e->getMessage(),
+                    'trace'     => $e->getTraceAsString(),
+                ]
             );
         }//end try
     }//end handle()
@@ -157,9 +156,9 @@ class ObjectChangeListener implements IEventListener
         $this->logger->info(
             '[ObjectChangeListener] Immediate mode - processing synchronously',
             [
-                    'object_id'   => $objectId,
-                    'object_uuid' => $objectUuid,
-                ]
+                'object_id'   => $objectId,
+                'object_uuid' => $objectUuid,
+            ]
         );
 
         try {
@@ -172,9 +171,9 @@ class ObjectChangeListener implements IEventListener
             $this->logger->error(
                 '[ObjectChangeListener] Immediate extraction failed',
                 [
-                        'object_id' => $objectId,
-                        'error'     => $e->getMessage(),
-                    ]
+                    'object_id' => $objectId,
+                    'error'     => $e->getMessage(),
+                ]
             );
         }
     }//end processImmediateExtraction()
@@ -192,9 +191,9 @@ class ObjectChangeListener implements IEventListener
         $this->logger->info(
             '[ObjectChangeListener] Background mode - queueing extraction job',
             [
-                    'object_id'   => $objectId,
-                    'object_uuid' => $objectUuid,
-                ]
+                'object_id'   => $objectId,
+                'object_uuid' => $objectUuid,
+            ]
         );
 
         try {
@@ -207,9 +206,9 @@ class ObjectChangeListener implements IEventListener
             $this->logger->error(
                 '[ObjectChangeListener] Failed to queue background job',
                 [
-                        'object_id' => $objectId,
-                        'error'     => $e->getMessage(),
-                    ]
+                    'object_id' => $objectId,
+                    'error'     => $e->getMessage(),
+                ]
             );
         }
     }//end processBackgroundExtraction()
@@ -257,9 +256,9 @@ class ObjectChangeListener implements IEventListener
         $this->logger->warning(
             '[ObjectChangeListener] Unknown extraction mode, defaulting to background',
             [
-                    'object_id'       => $objectId,
-                    'extraction_mode' => $mode,
-                ]
+                'object_id'       => $objectId,
+                'extraction_mode' => $mode,
+            ]
         );
 
         $this->jobList->add(job: ObjectTextExtractionJob::class, argument: ['object_id' => $objectId]);

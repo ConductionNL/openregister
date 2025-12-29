@@ -113,8 +113,8 @@ class MessageMapper extends QBMapper
      */
     public function findByConversation(
         int $conversationId,
-        int $limit = 100,
-        int $offset = 0
+        int $limit=100,
+        int $offset=0
     ): array {
         // Step 1: Get query builder instance.
         $qb = $this->db->getQueryBuilder();
@@ -144,7 +144,7 @@ class MessageMapper extends QBMapper
      *
      * @psalm-return list<\OCA\OpenRegister\Db\Message>
      */
-    public function findRecentByConversation(int $conversationId, int $limit = 10): array
+    public function findRecentByConversation(int $conversationId, int $limit=10): array
     {
         // Step 1: Get query builder instance.
         $qb = $this->db->getQueryBuilder();

@@ -56,6 +56,7 @@ use OCP\AppFramework\Db\Entity;
  */
 class View extends Entity implements JsonSerializable
 {
+
     /**
      * Unique identifier for the view
      *

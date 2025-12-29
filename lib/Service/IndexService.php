@@ -102,7 +102,7 @@ class IndexService
      *
      * @psalm-return array{success: bool, stats: array{processed: int, indexed: int, failed: int, total_chunks: int, errors: array, execution_time_ms: float}}
      */
-    public function processUnindexedChunks(?int $limit = null): array
+    public function processUnindexedChunks(?int $limit=null): array
     {
         return $this->fileHandler->processUnindexedChunks(limit: $limit);
     }//end processUnindexedChunks()
@@ -153,11 +153,11 @@ class IndexService
      * @return array Search results
      */
     public function searchObjects(
-        array $query = [],
-        bool $rbac = true,
-        bool $multitenancy = true,
-        bool $published = false,
-        bool $deleted = false
+        array $query=[],
+        bool $rbac=true,
+        bool $multitenancy=true,
+        bool $published=false,
+        bool $deleted=false
     ): array {
         return $this->objectHandler->searchObjects(
             query: $query,
@@ -190,7 +190,7 @@ class IndexService
      *
      * @return bool Success status
      */
-    public function indexObject(ObjectEntity $object, bool $commit = false): bool
+    public function indexObject(ObjectEntity $object, bool $commit=false): bool
     {
         return $this->searchBackend->indexObject(object: $object, commit: $commit);
     }//end indexObject()
@@ -205,7 +205,7 @@ class IndexService
      *
      * @return bool Success status
      */
-    public function deleteObject(string|int $objectId, bool $commit = false): bool
+    public function deleteObject(string|int $objectId, bool $commit=false): bool
     {
         return $this->searchBackend->deleteObject(objectId: $objectId, commit: $commit);
     }//end deleteObject()
@@ -227,8 +227,8 @@ class IndexService
      */
     public function ensureVectorFieldType(
         string $collection,
-        int $dimensions = 4096,
-        string $similarity = 'cosine'
+        int $dimensions=4096,
+        string $similarity='cosine'
     ): bool {
         return $this->schemaHandler->ensureVectorFieldType(
             collection: $collection,
@@ -248,7 +248,7 @@ class IndexService
      *
      * @psalm-return array{success: bool, error?: string, stats: array, execution_time_ms?: float, resolved_conflicts?: mixed}
      */
-    public function mirrorSchemas(bool $force = false): array
+    public function mirrorSchemas(bool $force=false): array
     {
         return $this->schemaHandler->mirrorSchemas(force: $force);
     }//end mirrorSchemas()
@@ -309,7 +309,7 @@ class IndexService
      *
      * @return array Result
      */
-    public function createMissingFields(string $collection, array $missingFields, bool $dryRun = false): array
+    public function createMissingFields(string $collection, array $missingFields, bool $dryRun=false): array
     {
         return $this->schemaHandler->createMissingFields(
             collection: $collection,
@@ -329,7 +329,7 @@ class IndexService
      *
      * @return bool Availability status
      */
-    public function isAvailable(bool $forceRefresh = false): bool
+    public function isAvailable(bool $forceRefresh=false): bool
     {
         try {
             return $this->searchBackend->isAvailable(forceRefresh: $forceRefresh);
@@ -351,7 +351,7 @@ class IndexService
      *
      * @return array Test results
      */
-    public function testConnection(bool $includeCollectionTests = true): array
+    public function testConnection(bool $includeCollectionTests=true): array
     {
         try {
             return $this->searchBackend->testConnection(includeCollectionTests: $includeCollectionTests);
@@ -458,7 +458,7 @@ class IndexService
      *
      * @return array Result
      */
-    public function clearIndex(?string $collectionName = null): array
+    public function clearIndex(?string $collectionName=null): array
     {
         try {
             return $this->searchBackend->clearIndex(collectionName: $collectionName);
@@ -510,7 +510,7 @@ class IndexService
      *
      * @return array Reindexing results with statistics.
      */
-    public function reindexAll(int $maxObjects = 0, int $batchSize = 1000, ?string $collectionName = null): array
+    public function reindexAll(int $maxObjects=0, int $batchSize=1000, ?string $collectionName=null): array
     {
         return $this->objectHandler->reindexAll(
             maxObjects: $maxObjects,
@@ -529,7 +529,7 @@ class IndexService
      *
      * @return array Results with fixed/failed fields.
      */
-    public function fixMismatchedFields(array $mismatchedFields, bool $dryRun = false): array
+    public function fixMismatchedFields(array $mismatchedFields, bool $dryRun=false): array
     {
         return $this->schemaHandler->fixMismatchedFields(
             mismatchedFields: $mismatchedFields,
@@ -547,7 +547,7 @@ class IndexService
      *
      * @return array Indexing results.
      */
-    public function indexFiles(array $fileIds, ?string $collectionName = null): array
+    public function indexFiles(array $fileIds, ?string $collectionName=null): array
     {
         return $this->fileHandler->indexFiles(
             fileIds: $fileIds,
@@ -582,12 +582,12 @@ class IndexService
      * @return array Warmup results with statistics and errors.
      */
     public function warmupIndex(
-        array $schemas = [],
-        int $maxObjects = 0,
-        string $mode = 'serial',
-        bool $collectErrors = false,
-        int $batchSize = 1000,
-        array $schemaIds = []
+        array $schemas=[],
+        int $maxObjects=0,
+        string $mode='serial',
+        bool $collectErrors=false,
+        int $batchSize=1000,
+        array $schemaIds=[]
     ): array {
         return $this->searchBackend->warmupIndex(
             schemas: $schemas,
@@ -630,12 +630,12 @@ class IndexService
      * @return array Search results with pagination info
      */
     public function searchObjectsPaginated(
-        array $query = [],
-        int $limit = 30,
-        int $offset = 0,
-        array $facets = [],
-        ?string $collection = null,
-        bool $includeTotal = true
+        array $query=[],
+        int $limit=30,
+        int $offset=0,
+        array $facets=[],
+        ?string $collection=null,
+        bool $includeTotal=true
     ): array {
         // Map IndexService parameters to SearchBackendInterface parameters.
         // Add pagination and other params to query array.
@@ -692,7 +692,7 @@ class IndexService
      *
      * @return array Creation result
      */
-    public function createCollection(string $name, array $config = []): array
+    public function createCollection(string $name, array $config=[]): array
     {
         return $this->searchBackend->createCollection(name: $name, config: $config);
     }//end createCollection()
@@ -727,7 +727,7 @@ class IndexService
      *
      * @psalm-return array{collection: string, exists: true, tenant: null|string}
      */
-    public function ensureTenantCollection(?string $tenant = null): array
+    public function ensureTenantCollection(?string $tenant=null): array
     {
         $collectionName = $this->getTenantSpecificCollectionName($tenant);
 
@@ -751,12 +751,12 @@ class IndexService
      *
      * @return string Collection name
      */
-    public function getTenantSpecificCollectionName(?string $tenant = null): string
+    public function getTenantSpecificCollectionName(?string $tenant=null): string
     {
         $baseName = $this->getConfig()['collection'] ?? 'openregister';
 
         if ($tenant !== null && empty($tenant) === false) {
-            return $baseName . '_' . $tenant;
+            return $baseName.'_'.$tenant;
         }
 
         return $baseName;
@@ -790,16 +790,16 @@ class IndexService
      *
      * @throws Exception If backend is not Solr
      */
-    public function buildSolrBaseUrl(?string $collection = null): string
+    public function buildSolrBaseUrl(?string $collection=null): string
     {
         $config  = $this->getSolrConfig();
         $baseUrl = rtrim($config['endpoint'] ?? '', '/');
 
         if ($collection !== null) {
-            return $baseUrl . '/solr/' . $collection;
+            return $baseUrl.'/solr/'.$collection;
         }
 
-        return $baseUrl . '/solr';
+        return $baseUrl.'/solr';
     }//end buildSolrBaseUrl()
 
     /**

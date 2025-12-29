@@ -35,6 +35,7 @@ use Psr\Log\LoggerInterface;
  */
 class SolrFacetProcessor
 {
+
     /**
      * HTTP client.
      *
@@ -95,7 +96,7 @@ class SolrFacetProcessor
         }
 
         try {
-            $url  = $this->httpClient->getEndpointUrl($collection) . '/schema/fields?wt=json';
+            $url  = $this->httpClient->getEndpointUrl($collection).'/schema/fields?wt=json';
             $data = $this->httpClient->get($url);
 
             $fields    = $data['fields'] ?? [];
@@ -115,8 +116,8 @@ class SolrFacetProcessor
             $this->logger->debug(
                 '[SolrFacetProcessor] Found facetable fields',
                 [
-                        'count' => count($facetable),
-                    ]
+                    'count' => count($facetable),
+                ]
             );
 
             return $facetable;
@@ -124,8 +125,8 @@ class SolrFacetProcessor
             $this->logger->error(
                 '[SolrFacetProcessor] Failed to get facetable fields',
                 [
-                        'error' => $e->getMessage(),
-                    ]
+                    'error' => $e->getMessage(),
+                ]
             );
             return [];
         }//end try

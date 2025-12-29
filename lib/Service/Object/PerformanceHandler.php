@@ -104,7 +104,7 @@ class PerformanceHandler
                     context: [
                         'original'        => $originalExtendCount,
                         'optimized'       => $newExtendCount,
-                        'estimatedSaving' => ($originalExtendCount - $newExtendCount) * (100) . 'ms',
+                        'estimatedSaving' => ($originalExtendCount - $newExtendCount) * (100).'ms',
                     ]
                 );
             }
@@ -136,7 +136,7 @@ class PerformanceHandler
         if (empty($query['_extend']) === false) {
             if (is_array($query['_extend']) === true) {
                 $extendCount = count($query['_extend']);
-            } elseif (is_string($query['_extend']) === true) {
+            } else if (is_string($query['_extend']) === true) {
                 // Count comma-separated extend fields.
                 $extendCount = count(array_filter(array_map('trim', explode(',', $query['_extend']))));
             }
@@ -256,7 +256,7 @@ class PerformanceHandler
                             $allRelatedIds[] = $relatedId;
                         }
                     }
-                } elseif (is_string($value) === true && $this->isUuid($value) === true) {
+                } else if (is_string($value) === true && $this->isUuid($value) === true) {
                     // Handle single ID.
                     $allRelatedIds[] = $value;
                 }
@@ -284,7 +284,7 @@ class PerformanceHandler
                 'related_ids_found'     => count($allRelatedIds),
                 'include_related'       => $includeRelated,
                 'include_related_names' => $includeRelatedNames,
-                'execution_time'        => $executionTime . 'ms',
+                'execution_time'        => $executionTime.'ms',
             ]
         );
 

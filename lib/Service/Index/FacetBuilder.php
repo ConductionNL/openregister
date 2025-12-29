@@ -32,6 +32,7 @@ use Psr\Log\LoggerInterface;
  */
 class FacetBuilder
 {
+
     /**
      * Solr backend service (temporary delegation).
      *

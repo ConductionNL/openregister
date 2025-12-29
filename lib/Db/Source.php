@@ -50,6 +50,7 @@ use OCP\AppFramework\Db\Entity;
  */
 class Source extends Entity implements JsonSerializable
 {
+
     /**
      * Unique identifier for the source
      *
@@ -181,7 +182,7 @@ class Source extends Entity implements JsonSerializable
                 $value = null;
             }
 
-            $method = 'set' . ucfirst($key);
+            $method = 'set'.ucfirst($key);
 
             try {
                 $this->$method($value);
@@ -274,7 +275,7 @@ class Source extends Entity implements JsonSerializable
 
         // Fallback to ID if available.
         if ($this->id !== null) {
-            return 'Source #' . $this->id;
+            return 'Source #'.$this->id;
         }
 
         // Final fallback.

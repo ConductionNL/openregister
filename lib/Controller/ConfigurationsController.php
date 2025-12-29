@@ -90,7 +90,7 @@ class ConfigurationsController extends Controller
         // Disable multitenancy filtering so admins can see all configurations.
         return new JSONResponse(
             data: [
-                    'results' => $this->configurationMapper->findAll(
+                'results' => $this->configurationMapper->findAll(
                         limit: null,
                         offset: null,
                         filters: $filters,
@@ -98,7 +98,7 @@ class ConfigurationsController extends Controller
                         searchParams: $searchParams,
                         _multitenancy: false
                     ),
-                ]
+            ]
         );
     }//end index()
 
@@ -164,9 +164,9 @@ class ConfigurationsController extends Controller
         // External configurations: sourceType === 'github', 'gitlab', or 'url' → isLocal = false.
         if (in_array($data['sourceType'], ['local', 'manual'], true) === true) {
             $data['isLocal'] = true;
-        } elseif (in_array($data['sourceType'], ['github', 'gitlab', 'url'], true) === true) {
+        } else if (in_array($data['sourceType'], ['github', 'gitlab', 'url'], true) === true) {
             $data['isLocal'] = false;
-        } elseif (isset($data['isLocal']) === false) {
+        } else if (isset($data['isLocal']) === false) {
             // Fallback: if sourceType is something else and isLocal not set, default to true.
             $data['isLocal'] = true;
         }
@@ -177,7 +177,7 @@ class ConfigurationsController extends Controller
                 statusCode: 201
             );
         } catch (Exception $e) {
-            return new JSONResponse(data: ['error' => 'Failed to create configuration: ' . $e->getMessage()], statusCode: 400);
+            return new JSONResponse(data: ['error' => 'Failed to create configuration: '.$e->getMessage()], statusCode: 400);
         }
     }//end create()
 
@@ -215,7 +215,7 @@ class ConfigurationsController extends Controller
         if (($data['sourceType'] ?? null) !== null) {
             if (in_array($data['sourceType'], ['local', 'manual'], true) === true) {
                 $data['isLocal'] = true;
-            } elseif (in_array($data['sourceType'], ['github', 'gitlab', 'url'], true) === true) {
+            } else if (in_array($data['sourceType'], ['github', 'gitlab', 'url'], true) === true) {
                 $data['isLocal'] = false;
             }
         }
@@ -225,7 +225,7 @@ class ConfigurationsController extends Controller
                 data: $this->configurationMapper->updateFromArray(id: $id, data: $data)
             );
         } catch (Exception $e) {
-            return new JSONResponse(data: ['error' => 'Failed to update configuration: ' . $e->getMessage()], statusCode: 400);
+            return new JSONResponse(data: ['error' => 'Failed to update configuration: '.$e->getMessage()], statusCode: 400);
         }
     }//end update()
 
@@ -269,7 +269,7 @@ class ConfigurationsController extends Controller
             $this->configurationMapper->delete($configuration);
             return new JSONResponse(data: null, statusCode: 204);
         } catch (Exception $e) {
-            return new JSONResponse(data: ['error' => 'Failed to delete configuration: ' . $e->getMessage()], statusCode: 400);
+            return new JSONResponse(data: ['error' => 'Failed to delete configuration: '.$e->getMessage()], statusCode: 400);
         }
     }//end destroy()
 
@@ -287,7 +287,7 @@ class ConfigurationsController extends Controller
      *
      * @psalm-return DataDownloadResponse<200, 'application/json', array<never, never>>|JSONResponse<400, array{error: string}, array<never, never>>
      */
-    public function export(int $id, bool $includeObjects = false): JSONResponse|DataDownloadResponse
+    public function export(int $id, bool $includeObjects=false): JSONResponse|DataDownloadResponse
     {
         try {
             // Find the configuration.
@@ -316,7 +316,7 @@ class ConfigurationsController extends Controller
                 'application/json'
             );
         } catch (Exception $e) {
-            return new JSONResponse(data: ['error' => 'Failed to export configuration: ' . $e->getMessage()], statusCode: 400);
+            return new JSONResponse(data: ['error' => 'Failed to export configuration: '.$e->getMessage()], statusCode: 400);
         }//end try
     }//end export()
 
@@ -359,12 +359,12 @@ class ConfigurationsController extends Controller
 
             return new JSONResponse(
                 data: [
-                        'message'  => 'Import successful',
-                        'imported' => $result,
-                    ]
+                    'message'  => 'Import successful',
+                    'imported' => $result,
+                ]
             );
         } catch (Exception $e) {
-            return new JSONResponse(data: ['error' => 'Failed to import configuration: ' . $e->getMessage()], statusCode: 400);
+            return new JSONResponse(data: ['error' => 'Failed to import configuration: '.$e->getMessage()], statusCode: 400);
         }//end try
     }//end import()
 }//end class

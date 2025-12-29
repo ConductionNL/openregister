@@ -69,11 +69,11 @@ class Version1Date20250813140000 extends SimpleMigrationStep
                 'slug',
                 'string',
                 [
-                        'notnull' => false,
-                        'length'  => 255,
-                        'default' => null,
-                        'comment' => 'URL-friendly identifier for the object, unique within register+schema combination',
-                    ]
+                    'notnull' => false,
+                    'length'  => 255,
+                    'default' => null,
+                    'comment' => 'URL-friendly identifier for the object, unique within register+schema combination',
+                ]
             );
             $output->info(message: 'Added slug column to openregister_objects table');
         }

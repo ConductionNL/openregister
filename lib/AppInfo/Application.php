@@ -217,7 +217,7 @@ class Application extends App implements IBootstrap
      */
     public function register(IRegistrationContext $context): void
     {
-        include_once __DIR__ . '/../../vendor/autoload.php';
+        include_once __DIR__.'/../../vendor/autoload.php';
 
         /*
          * DEPENDENCY INJECTION STRATEGY:
@@ -446,7 +446,7 @@ class Application extends App implements IBootstrap
             function ($container) {
                 // Get the app data directory path.
                 $dataDir     = $container->get('OCP\IConfig')->getSystemValue('datadirectory', '');
-                $appDataPath = $dataDir . '/appdata_openregister';
+                $appDataPath = $dataDir.'/appdata_openregister';
 
                 return new ConfigurationImportHandler(
                     schemaMapper: $container->get(SchemaMapper::class),
@@ -468,7 +468,7 @@ class Application extends App implements IBootstrap
             function ($container) {
                 // Get the app data directory path.
                 $dataDir     = $container->get('OCP\IConfig')->getSystemValue('datadirectory', '');
-                $appDataPath = $dataDir . '/appdata_openregister';
+                $appDataPath = $dataDir.'/appdata_openregister';
 
                 return new ConfigurationService(
                     schemaMapper: $container->get(SchemaMapper::class),

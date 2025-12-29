@@ -74,6 +74,7 @@ use Symfony\Component\Uid\Uuid;
  */
 class Application extends Entity implements JsonSerializable
 {
+
     /**
      * Unique identifier for the application
      *
@@ -443,7 +444,7 @@ class Application extends Entity implements JsonSerializable
                 $value = null;
             }
 
-            $method = 'set' . ucfirst($key);
+            $method = 'set'.ucfirst($key);
 
             try {
                 $this->$method($value);

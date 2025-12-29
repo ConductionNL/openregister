@@ -123,7 +123,7 @@ class FileCrudHandler
      *
      * @todo Extract full implementation from FileService::addFile()
      */
-    public function addFile(ObjectEntity|string $objectEntity, string $fileName, string $content, bool $share = false, array $tags = [])
+    public function addFile(ObjectEntity|string $objectEntity, string $fileName, string $content, bool $share=false, array $tags=[])
     {
         // TODO: Extract full implementation from FileService
         // This involves:
@@ -160,7 +160,7 @@ class FileCrudHandler
      *
      * @todo Extract full implementation from FileService::updateFile()
      */
-    public function updateFile(string|int $filePath, mixed $content = null, array $tags = [], ?ObjectEntity $object = null)
+    public function updateFile(string|int $filePath, mixed $content=null, array $tags=[], ?ObjectEntity $object=null)
     {
         // TODO: Extract full implementation from FileService
         // This is one of the most complex methods involving:
@@ -191,7 +191,7 @@ class FileCrudHandler
      *
      * @todo Extract full implementation from FileService::deleteFile()
      */
-    public function deleteFile(Node|string|int $file, ?ObjectEntity $object = null)
+    public function deleteFile(Node|string|int $file, ?ObjectEntity $object=null)
     {
         // TODO: Extract full implementation from FileService
         // This involves:
@@ -217,7 +217,7 @@ class FileCrudHandler
      *
      * @todo Extract full implementation from FileService::getFile()
      */
-    public function getFile(ObjectEntity|string|null $object = null, string|int $file = '')
+    public function getFile(ObjectEntity|string|null $object=null, string|int $file='')
     {
         // TODO: Extract full implementation from FileService
         // This involves:
@@ -267,7 +267,7 @@ class FileCrudHandler
      *
      * @todo Extract full implementation from FileService::getFiles()
      */
-    public function getFiles(ObjectEntity|string $object, ?bool $sharedFilesOnly = false)
+    public function getFiles(ObjectEntity|string $object, ?bool $sharedFilesOnly=false)
     {
         // TODO: Extract full implementation from FileService
         // This involves:
@@ -302,7 +302,7 @@ class FileCrudHandler
      *
      * @todo Extract full implementation from FileService::saveFile()
      */
-    public function saveFile(ObjectEntity $objectEntity, string $fileName, string $content, bool $share = false, array $tags = [])
+    public function saveFile(ObjectEntity $objectEntity, string $fileName, string $content, bool $share=false, array $tags=[])
     {
         // TODO: Extract full implementation from FileService
         // This is an upsert operation that:

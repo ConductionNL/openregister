@@ -26,6 +26,7 @@ use Psr\Log\LoggerInterface;
  */
 class ElasticsearchIndexManager
 {
+
     /**
      * Elasticsearch HTTP client for making requests
      *
@@ -71,7 +72,7 @@ class ElasticsearchIndexManager
     public function indexExists(string $indexName): bool
     {
         try {
-            $url      = $this->httpClient->buildBaseUrl() . '/' . $indexName;
+            $url      = $this->httpClient->buildBaseUrl().'/'.$indexName;
             $response = $this->httpClient->get($url);
 
             return isset($response['error']) === false;
@@ -88,10 +89,10 @@ class ElasticsearchIndexManager
      *
      * @return bool True on success
      */
-    public function createIndex(string $indexName, array $mapping = []): bool
+    public function createIndex(string $indexName, array $mapping=[]): bool
     {
         try {
-            $url = $this->httpClient->buildBaseUrl() . '/' . $indexName;
+            $url = $this->httpClient->buildBaseUrl().'/'.$indexName;
 
             $settings = [
                 'settings' => [
@@ -112,8 +113,8 @@ class ElasticsearchIndexManager
                 $this->logger->info(
                     '[ElasticsearchIndexManager] Index created',
                     [
-                         'index' => $indexName,
-                     ]
+                        'index' => $indexName,
+                    ]
                 );
             }
 
@@ -122,9 +123,9 @@ class ElasticsearchIndexManager
             $this->logger->error(
                 '[ElasticsearchIndexManager] Failed to create index',
                 [
-                     'index' => $indexName,
-                     'error' => $e->getMessage(),
-                 ]
+                    'index' => $indexName,
+                    'error' => $e->getMessage(),
+                ]
             );
             return false;
         }//end try
@@ -140,7 +141,7 @@ class ElasticsearchIndexManager
     public function deleteIndex(string $indexName): bool
     {
         try {
-            $url      = $this->httpClient->buildBaseUrl() . '/' . $indexName;
+            $url      = $this->httpClient->buildBaseUrl().'/'.$indexName;
             $response = $this->httpClient->delete($url);
 
             $success = isset($response['acknowledged']) && $response['acknowledged'] === true;
@@ -149,8 +150,8 @@ class ElasticsearchIndexManager
                 $this->logger->info(
                     '[ElasticsearchIndexManager] Index deleted',
                     [
-                         'index' => $indexName,
-                     ]
+                        'index' => $indexName,
+                    ]
                 );
             }
 
@@ -159,9 +160,9 @@ class ElasticsearchIndexManager
             $this->logger->error(
                 '[ElasticsearchIndexManager] Failed to delete index',
                 [
-                     'index' => $indexName,
-                     'error' => $e->getMessage(),
-                 ]
+                    'index' => $indexName,
+                    'error' => $e->getMessage(),
+                ]
             );
             return false;
         }//end try
@@ -180,8 +181,8 @@ class ElasticsearchIndexManager
             $this->logger->debug(
                 '[ElasticsearchIndexManager] Index already exists',
                 [
-                     'index' => $indexName,
-                 ]
+                    'index' => $indexName,
+                ]
             );
             return true;
         }
@@ -207,15 +208,15 @@ class ElasticsearchIndexManager
     public function getIndexStats(string $indexName): array
     {
         try {
-            $url = $this->httpClient->buildBaseUrl() . '/' . $indexName . '/_stats';
+            $url = $this->httpClient->buildBaseUrl().'/'.$indexName.'/_stats';
             return $this->httpClient->get($url);
         } catch (Exception $e) {
             $this->logger->error(
                 '[ElasticsearchIndexManager] Failed to get index stats',
                 [
-                        'index' => $indexName,
-                        'error' => $e->getMessage(),
-                    ]
+                    'index' => $indexName,
+                    'error' => $e->getMessage(),
+                ]
             );
             return [];
         }
@@ -229,7 +230,7 @@ class ElasticsearchIndexManager
     public function refreshIndex(string $indexName): bool
     {
         try {
-            $url      = $this->httpClient->buildBaseUrl() . '/' . $indexName . '/_refresh';
+            $url      = $this->httpClient->buildBaseUrl().'/'.$indexName.'/_refresh';
             $response = $this->httpClient->post($url, []);
 
             return isset($response['error']) === false;
@@ -237,9 +238,9 @@ class ElasticsearchIndexManager
             $this->logger->error(
                 '[ElasticsearchIndexManager] Failed to refresh index',
                 [
-                        'index' => $indexName,
-                        'error' => $e->getMessage(),
-                    ]
+                    'index' => $indexName,
+                    'error' => $e->getMessage(),
+                ]
             );
             return false;
         }

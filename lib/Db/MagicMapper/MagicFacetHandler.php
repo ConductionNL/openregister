@@ -81,7 +81,7 @@ class MagicFacetHandler
     private function getMetadataFieldFacet(string $field, array $config, array $baseQuery, string $tableName): array
     {
         $type       = $config['type'] ?? 'terms';
-        $columnName = '_' . $field;
+        $columnName = '_'.$field;
         // Metadata columns are prefixed with _.
         switch ($type) {
             case 'terms':
@@ -153,7 +153,7 @@ class MagicFacetHandler
      *
      * @psalm-return array{type: 'terms', field: string, buckets: list<array{count: int, value: mixed}>, total_buckets: int<0, max>, error?: string}
      */
-    private function getTermsFacet(string $columnName, array $baseQuery, string $tableName, int $limit = 100): array
+    private function getTermsFacet(string $columnName, array $baseQuery, string $tableName, int $limit=100): array
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -189,10 +189,10 @@ class MagicFacetHandler
             $this->logger->error(
                 'Terms facet query failed',
                 [
-                        'columnName' => $columnName,
-                        'tableName'  => $tableName,
-                        'error'      => $e->getMessage(),
-                    ]
+                    'columnName' => $columnName,
+                    'tableName'  => $tableName,
+                    'error'      => $e->getMessage(),
+                ]
             );
 
             return [
@@ -265,11 +265,11 @@ class MagicFacetHandler
             $this->logger->error(
                 'Date histogram facet query failed',
                 [
-                        'columnName' => $columnName,
-                        'interval'   => $interval,
-                        'tableName'  => $tableName,
-                        'error'      => $e->getMessage(),
-                    ]
+                    'columnName' => $columnName,
+                    'interval'   => $interval,
+                    'tableName'  => $tableName,
+                    'error'      => $e->getMessage(),
+                ]
             );
 
             return [
@@ -317,7 +317,7 @@ class MagicFacetHandler
         foreach ($ranges as $range) {
             $from = $range['from'] ?? null;
             $to   = $range['to'] ?? null;
-            $key  = $range['key'] ?? ($from . '-' . $to);
+            $key  = $range['key'] ?? ($from.'-'.$to);
 
             $qb = $this->db->getQueryBuilder();
             $qb->selectAlias($qb->createFunction('COUNT(*)'), 'count')
@@ -350,10 +350,10 @@ class MagicFacetHandler
                 $this->logger->error(
                     'Range facet query failed for range',
                     [
-                            'columnName' => $columnName,
-                            'range'      => $range,
-                            'error'      => $e->getMessage(),
-                        ]
+                        'columnName' => $columnName,
+                        'range'      => $range,
+                        'error'      => $e->getMessage(),
+                    ]
                 );
             }
         }//end foreach
@@ -401,13 +401,13 @@ class MagicFacetHandler
         // Apply metadata filters (@self).
         if (($baseQuery['@self'] ?? null) !== null && is_array($baseQuery['@self']) === true) {
             foreach ($baseQuery['@self'] ?? [] as $field => $value) {
-                $columnName = '_' . $field;
+                $columnName = '_'.$field;
 
                 if ($value === 'IS NOT NULL') {
                     $qb->andWhere($qb->expr()->isNotNull("t.{$columnName}"));
-                } elseif ($value === 'IS NULL') {
+                } else if ($value === 'IS NULL') {
                     $qb->andWhere($qb->expr()->isNull("t.{$columnName}"));
-                } elseif (is_array($value) === true) {
+                } else if (is_array($value) === true) {
                     $qb->andWhere($qb->expr()->in("t.{$columnName}", $qb->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
                 } else {
                     $qb->andWhere($qb->expr()->eq("t.{$columnName}", $qb->createNamedParameter($value)));
@@ -429,9 +429,9 @@ class MagicFacetHandler
 
             if ($value === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull("t.{$columnName}"));
-            } elseif ($value === 'IS NULL') {
+            } else if ($value === 'IS NULL') {
                 $qb->andWhere($qb->expr()->isNull("t.{$columnName}"));
-            } elseif (is_array($value) === true) {
+            } else if (is_array($value) === true) {
                 $qb->andWhere($qb->expr()->in("t.{$columnName}", $qb->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
             } else {
                 $qb->andWhere($qb->expr()->eq("t.{$columnName}", $qb->createNamedParameter($value)));
@@ -684,10 +684,10 @@ class MagicFacetHandler
             $this->logger->error(
                 'Failed to generate auto ranges',
                 [
-                        'columnName' => $columnName,
-                        'tableName'  => $tableName,
-                        'error'      => $e->getMessage(),
-                    ]
+                    'columnName' => $columnName,
+                    'tableName'  => $tableName,
+                    'error'      => $e->getMessage(),
+                ]
             );
 
             return [];
@@ -708,7 +708,7 @@ class MagicFacetHandler
 
         // Ensure it starts with a letter or underscore.
         if (preg_match('/^[a-zA-Z_]/', $sanitized) === 0) {
-            $sanitized = 'col_' . $sanitized;
+            $sanitized = 'col_'.$sanitized;
         }
 
         // Limit length to 64 characters (MySQL limit).

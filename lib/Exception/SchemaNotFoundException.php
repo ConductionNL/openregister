@@ -56,10 +56,10 @@ class SchemaNotFoundException extends Exception
      * @phpstan-param int $code
      * @phpstan-param Exception|null $previous
      */
-    public function __construct(string $schemaSlugOrId, int $code = 404, ?Exception $previous = null)
+    public function __construct(string $schemaSlugOrId, int $code=404, ?Exception $previous=null)
     {
         // Build error message with schema identifier.
-        $message = "Schema not found: '" . $schemaSlugOrId . "'";
+        $message = "Schema not found: '".$schemaSlugOrId."'";
 
         // Call parent constructor to initialize base exception properties.
         parent::__construct($message, $code, $previous);

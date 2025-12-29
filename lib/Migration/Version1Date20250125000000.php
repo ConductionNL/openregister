@@ -63,9 +63,9 @@ class Version1Date20250125000000 extends SimpleMigrationStep
                 'configuration',
                 Types::TEXT,
                 [
-                        'notnull' => false,
-                        'comment' => 'Additional webhook configuration (JSON object)',
-                    ]
+                    'notnull' => false,
+                    'comment' => 'Additional webhook configuration (JSON object)',
+                ]
             );
             $output->info('✅ Added configuration column to webhooks table');
             return $schema;

@@ -32,6 +32,7 @@ use Psr\Log\LoggerInterface;
  */
 class SolrQueryExecutor
 {
+
     /**
      * HTTP client.
      *
@@ -95,17 +96,17 @@ class SolrQueryExecutor
 
         try {
             $queryString = http_build_query($params);
-            $url         = $this->httpClient->getEndpointUrl($collection) . '/select?' . $queryString;
+            $url         = $this->httpClient->getEndpointUrl($collection).'/select?'.$queryString;
 
             $result = $this->httpClient->get($url);
 
             $this->logger->debug(
                 '[SolrQueryExecutor] Search executed',
                 [
-                        'collection' => $collection,
-                        'query'      => $params['q'] ?? '*:*',
-                        'numFound'   => $result['response']['numFound'] ?? 0,
-                    ]
+                    'collection' => $collection,
+                    'query'      => $params['q'] ?? '*:*',
+                    'numFound'   => $result['response']['numFound'] ?? 0,
+                ]
             );
 
             return $result;
@@ -113,8 +114,8 @@ class SolrQueryExecutor
             $this->logger->error(
                 '[SolrQueryExecutor] Search failed',
                 [
-                        'error' => $e->getMessage(),
-                    ]
+                    'error' => $e->getMessage(),
+                ]
             );
 
             return [
@@ -139,11 +140,11 @@ class SolrQueryExecutor
      * @return array Paginated search results
      */
     public function searchPaginated(
-        array $query = [],
-        bool $rbac = true,
-        bool $multitenancy = true,
-        bool $published = false,
-        bool $deleted = false
+        array $query=[],
+        bool $rbac=true,
+        bool $multitenancy=true,
+        bool $published=false,
+        bool $deleted=false
     ): array {
         // Build Solr query from OpenRegister query format.
         $solrQuery = $this->buildSolrQuery($query);
@@ -267,10 +268,10 @@ class SolrQueryExecutor
      * @return array Inspection results
      */
     public function inspectIndex(
-        string $query = '*:*',
-        int $start = 0,
-        int $rows = 20,
-        string $fields = ''
+        string $query='*:*',
+        int $start=0,
+        int $rows=20,
+        string $fields=''
     ): array {
         $params = [
             'q'     => $query,

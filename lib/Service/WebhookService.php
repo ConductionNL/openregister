@@ -41,6 +41,7 @@ use Psr\Log\LoggerInterface;
  */
 class WebhookService
 {
+
     /**
      * Webhook mapper
      *
@@ -90,7 +91,7 @@ class WebhookService
         WebhookMapper $webhookMapper,
         LoggerInterface $logger,
         WebhookLogMapper $webhookLogMapper,
-        ?CloudEventFormatter $cloudEventFormatter = null
+        ?CloudEventFormatter $cloudEventFormatter=null
     ) {
         $this->webhookMapper    = $webhookMapper;
         $this->logger           = $logger;
@@ -142,9 +143,9 @@ class WebhookService
             $this->logger->debug(
                 'Webhook table does not exist yet, skipping webhook delivery',
                 [
-                        'event' => $eventName,
-                        'error' => $e->getMessage(),
-                    ]
+                    'event' => $eventName,
+                    'error' => $e->getMessage(),
+                ]
             );
             return;
         }
@@ -153,8 +154,8 @@ class WebhookService
             $this->logger->debug(
                 'No webhooks configured for event',
                 [
-                        'event' => $eventName,
-                    ]
+                    'event' => $eventName,
+                ]
             );
             return;
         }
@@ -162,9 +163,9 @@ class WebhookService
         $this->logger->info(
             message: 'Dispatching event to webhooks',
             context: [
-                    'event'         => $eventName,
-                    'webhook_count' => count($webhooks),
-                ]
+                'event'         => $eventName,
+                'webhook_count' => count($webhooks),
+            ]
         );
 
         foreach ($webhooks as $webhook) {
@@ -182,15 +183,15 @@ class WebhookService
      *
      * @return bool Success status
      */
-    public function deliverWebhook(Webhook $webhook, string $eventName, array $payload, int $attempt = 1): bool
+    public function deliverWebhook(Webhook $webhook, string $eventName, array $payload, int $attempt=1): bool
     {
         if ($webhook->getEnabled() === false) {
             $this->logger->debug(
                 message: 'Webhook is disabled, skipping delivery',
                 context: [
-                        'webhook_id' => $webhook->getId(),
-                        'event'      => $eventName,
-                    ]
+                    'webhook_id' => $webhook->getId(),
+                    'event'      => $eventName,
+                ]
             );
             return false;
         }
@@ -200,9 +201,9 @@ class WebhookService
             $this->logger->debug(
                 message: 'Webhook filters did not match, skipping delivery',
                 context: [
-                        'webhook_id' => $webhook->getId(),
-                        'event'      => $eventName,
-                    ]
+                    'webhook_id' => $webhook->getId(),
+                    'event'      => $eventName,
+                ]
             );
             return false;
         }
@@ -229,12 +230,12 @@ class WebhookService
             $this->logger->info(
                 message: 'Webhook delivered successfully',
                 context: [
-                        'webhook_id'   => $webhook->getId(),
-                        'webhook_name' => $webhook->getName(),
-                        'event'        => $eventName,
-                        'status_code'  => $response['status_code'],
-                        'attempt'      => $attempt,
-                    ]
+                    'webhook_id'   => $webhook->getId(),
+                    'webhook_name' => $webhook->getName(),
+                    'event'        => $eventName,
+                    'status_code'  => $response['status_code'],
+                    'attempt'      => $attempt,
+                ]
             );
 
             $this->webhookMapper->updateStatistics(webhook: $webhook, success: true);
@@ -261,9 +262,9 @@ class WebhookService
                     // Try to parse JSON response for better error message.
                     $jsonResponse = json_decode($responseBody, true);
                     if ($jsonResponse !== null && (($jsonResponse['message'] ?? null) !== null)) {
-                        $errorMessage .= ': ' . $jsonResponse['message'];
-                    } elseif ($jsonResponse !== null && (($jsonResponse['error'] ?? null) !== null)) {
-                        $errorMessage .= ': ' . $jsonResponse['error'];
+                        $errorMessage .= ': '.$jsonResponse['message'];
+                    } else if ($jsonResponse !== null && (($jsonResponse['error'] ?? null) !== null)) {
+                        $errorMessage .= ': '.$jsonResponse['error'];
                     }
                 } catch (\Exception $bodyException) {
                     // Ignore body reading errors.
@@ -291,17 +292,17 @@ class WebhookService
             $this->logger->error(
                 message: 'Webhook delivery failed',
                 context: [
-                        'webhook_id'      => $webhook->getId(),
-                        'webhook_name'    => $webhook->getName(),
-                        'event'           => $eventName,
-                        'error'           => $errorMessage,
-                        'error_details'   => $errorDetails,
-                        'attempt'         => $attempt,
-                        'max_retries'     => $webhook->getMaxRetries(),
-                        'exception_class' => get_class($e),
-                        'exception_code'  => $e->getCode(),
-                        'trace'           => $e->getTraceAsString(),
-                    ]
+                    'webhook_id'      => $webhook->getId(),
+                    'webhook_name'    => $webhook->getName(),
+                    'event'           => $eventName,
+                    'error'           => $errorMessage,
+                    'error_details'   => $errorDetails,
+                    'attempt'         => $attempt,
+                    'max_retries'     => $webhook->getMaxRetries(),
+                    'exception_class' => get_class($e),
+                    'exception_code'  => $e->getCode(),
+                    'trace'           => $e->getTraceAsString(),
+                ]
             );
 
             $this->webhookMapper->updateStatistics(webhook: $webhook, success: false);
@@ -326,10 +327,10 @@ class WebhookService
             $this->logger->error(
                 message: 'Unexpected error during webhook delivery',
                 context: [
-                        'webhook_id' => $webhook->getId(),
-                        'event'      => $eventName,
-                        'error'      => $e->getMessage(),
-                    ]
+                    'webhook_id' => $webhook->getId(),
+                    'event'      => $eventName,
+                    'error'      => $e->getMessage(),
+                ]
             );
 
             return false;
@@ -361,7 +362,7 @@ class WebhookService
                 if (in_array($actualValue, $value) === false) {
                     return false;
                 }
-            } elseif ($actualValue !== $value) {
+            } else if ($actualValue !== $value) {
                 return false;
             }
         }
@@ -419,12 +420,12 @@ class WebhookService
             $enrichedPayload = array_merge(
                 $payload,
                 [
-                        'webhook' => [
-                            'id'   => $webhook->getUuid(),
-                            'name' => $webhook->getName(),
-                        ],
-                        'attempt' => $attempt,
-                    ]
+                    'webhook' => [
+                        'id'   => $webhook->getUuid(),
+                        'name' => $webhook->getName(),
+                    ],
+                    'attempt' => $attempt,
+                ]
             );
 
             return $this->cloudEventFormatter->formatAsCloudEvent(
@@ -536,12 +537,12 @@ class WebhookService
         $this->logger->info(
             message: 'Scheduling webhook retry',
             context: [
-                    'webhook_id'   => $webhook->getId(),
-                    'webhook_name' => $webhook->getName(),
-                    'event'        => $eventName,
-                    'attempt'      => $attempt,
-                    'delay'        => $delay,
-                ]
+                'webhook_id'   => $webhook->getId(),
+                'webhook_name' => $webhook->getName(),
+                'event'        => $eventName,
+                'attempt'      => $attempt,
+                'delay'        => $delay,
+            ]
         );
 
         // Note: Retry is handled by WebhookRetryJob cron job.
@@ -561,7 +562,7 @@ class WebhookService
     {
         $delay     = $this->calculateRetryDelay(webhook: $webhook, attempt: $attempt);
         $nextRetry = new DateTime();
-        $nextRetry->modify('+' . $delay . ' seconds');
+        $nextRetry->modify('+'.$delay.' seconds');
 
         return $nextRetry;
     }//end calculateNextRetryTime()
@@ -769,6 +770,6 @@ class WebhookService
         $entity = ucfirst($parts[0]);
         $action = ucfirst($parts[1] ?? 'created');
 
-        return 'OCA\\OpenRegister\\Event\\' . $entity . $action . 'Event';
+        return 'OCA\\OpenRegister\\Event\\'.$entity.$action.'Event';
     }//end eventTypeToEventClass()
 }//end class

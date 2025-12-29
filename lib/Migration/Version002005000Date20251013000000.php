@@ -66,9 +66,9 @@ class Version002005000Date20251013000000 extends SimpleMigrationStep
                 'id',
                 'bigint',
                 [
-                'autoincrement' => true,
-                'notnull'       => true,
-                'length'        => 20,
+                    'autoincrement' => true,
+                    'notnull'       => true,
+                    'length'        => 20,
                 ]
             );
 
@@ -77,8 +77,8 @@ class Version002005000Date20251013000000 extends SimpleMigrationStep
                 'metric_type',
                 'string',
                 [
-                'notnull' => true,
-                'length'  => 64,
+                    'notnull' => true,
+                    'length'  => 64,
                 ]
             );
 
@@ -87,9 +87,9 @@ class Version002005000Date20251013000000 extends SimpleMigrationStep
                 'entity_type',
                 'string',
                 [
-                'notnull' => false,
-                'length'  => 32,
-                'default' => null,
+                    'notnull' => false,
+                    'length'  => 32,
+                    'default' => null,
                 ]
             );
 
@@ -98,9 +98,9 @@ class Version002005000Date20251013000000 extends SimpleMigrationStep
                 'entity_id',
                 'string',
                 [
-                'notnull' => false,
-                'length'  => 64,
-                'default' => null,
+                    'notnull' => false,
+                    'length'  => 64,
+                    'default' => null,
                 ]
             );
 
@@ -109,9 +109,9 @@ class Version002005000Date20251013000000 extends SimpleMigrationStep
                 'user_id',
                 'string',
                 [
-                'notnull' => false,
-                'length'  => 64,
-                'default' => null,
+                    'notnull' => false,
+                    'length'  => 64,
+                    'default' => null,
                 ]
             );
 
@@ -120,9 +120,9 @@ class Version002005000Date20251013000000 extends SimpleMigrationStep
                 'status',
                 'string',
                 [
-                'notnull' => true,
-                'length'  => 20,
-                'default' => 'success',
+                    'notnull' => true,
+                    'length'  => 20,
+                    'default' => 'success',
                 ]
             );
 
@@ -131,8 +131,8 @@ class Version002005000Date20251013000000 extends SimpleMigrationStep
                 'duration_ms',
                 'integer',
                 [
-                'notnull' => false,
-                'default' => null,
+                    'notnull' => false,
+                    'default' => null,
                 ]
             );
 
@@ -141,8 +141,8 @@ class Version002005000Date20251013000000 extends SimpleMigrationStep
                 'metadata',
                 'text',
                 [
-                'notnull' => false,
-                'default' => null,
+                    'notnull' => false,
+                    'default' => null,
                 ]
             );
 
@@ -151,8 +151,8 @@ class Version002005000Date20251013000000 extends SimpleMigrationStep
                 'error_message',
                 'text',
                 [
-                'notnull' => false,
-                'default' => null,
+                    'notnull' => false,
+                    'default' => null,
                 ]
             );
 
@@ -161,7 +161,7 @@ class Version002005000Date20251013000000 extends SimpleMigrationStep
                 'created_at',
                 'bigint',
                 [
-                'notnull' => true,
+                    'notnull' => true,
                 ]
             );
 

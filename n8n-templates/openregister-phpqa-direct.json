@@ -1,0 +1,49 @@
+{
+  "name": "OpenRegister PHPQA Direct Execution",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "openregister-phpqa",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "openregister-phpqa-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const { execSync } = require('child_process');\n\ntry {\n  // Execute composer phpqa in the Nextcloud container.\n  const output = execSync(\n    'docker exec master-nextcloud-1 bash -c \"cd /var/www/html/apps-extra/openregister && composer phpqa 2>&1\"',\n    { \n      encoding: 'utf8',\n      maxBuffer: 10 * 1024 * 1024, // 10MB buffer.\n      timeout: 120000 // 2 minute timeout.\n    }\n  );\n\n  // Parse the PHPQA JSON output if available.\n  let phpqaData = null;\n  try {\n    const jsonMatch = output.match(/\\{[\\s\\S]*\"files\"[\\s\\S]*\\}/g);\n    if (jsonMatch) {\n      phpqaData = JSON.parse(jsonMatch[jsonMatch.length - 1]);\n    }\n  } catch (e) {\n    // JSON parsing failed, that's okay.\n  }\n\n  return {\n    timestamp: new Date().toISOString(),\n    status: 'success',\n    command: 'composer phpqa',\n    container: 'master-nextcloud-1',\n    output: output,\n    phpqa_data: phpqaData,\n    reports: {\n      html: '/var/www/html/apps-extra/openregister/phpqa/phpqa-offline.html',\n      json: '/var/www/html/apps-extra/openregister/phpqa/phpqa.json'\n    }\n  };\n} catch (error) {\n  return {\n    timestamp: new Date().toISOString(),\n    status: 'error',\n    command: 'composer phpqa',\n    container: 'master-nextcloud-1',\n    error: error.message,\n    stdout: error.stdout ? error.stdout.toString() : '',\n    stderr: error.stderr ? error.stderr.toString() : ''\n  };\n}"
+      },
+      "id": "code-execute-phpqa",
+      "name": "Execute PHPQA",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [[{"node": "Execute PHPQA", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "openregister-n8n"
+  },
+  "pinData": null,
+  "tags": []
+}
+

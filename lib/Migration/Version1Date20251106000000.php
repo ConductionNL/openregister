@@ -143,11 +143,11 @@ class Version1Date20251106000000 extends SimpleMigrationStep
                     'organisation',
                     Types::STRING,
                     [
-                            'notnull' => false,
-                            'length'  => 36,
-                            'default' => null,
-                            'comment' => 'Organisation UUID for multi-tenancy',
-                        ]
+                        'notnull' => false,
+                        'length'  => 36,
+                        'default' => null,
+                        'comment' => 'Organisation UUID for multi-tenancy',
+                    ]
                 );
 
                 $output->info(message: '✅ Added openregister_configurations.organisation column (VARCHAR(36))');

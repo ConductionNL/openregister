@@ -45,6 +45,7 @@ use Psr\Log\LoggerInterface;
  */
 class OptimizedBulkOperations
 {
+
     /**
      * Database connection instance
      *
@@ -130,9 +131,9 @@ class OptimizedBulkOperations
             $this->logger->info(
                 "Starting ultra-fast bulk operations",
                 [
-                        'total_objects' => count($allObjects),
-                        'chunks'        => $totalChunks,
-                    ]
+                    'total_objects' => count($allObjects),
+                    'chunks'        => $totalChunks,
+                ]
             );
         }
 
@@ -147,11 +148,11 @@ class OptimizedBulkOperations
             $this->logger->debug(
                 "Processed chunk with optimized bulk operations",
                 [
-                        'chunk'              => $chunkIndex + 1,
-                        'objects'            => count($chunk),
-                        'time_seconds'       => round($chunkTime, 3),
-                        'objects_per_second' => round(count($chunk) / $chunkTime, 0),
-                    ]
+                    'chunk'              => $chunkIndex + 1,
+                    'objects'            => count($chunk),
+                    'time_seconds'       => round($chunkTime, 3),
+                    'objects_per_second' => round(count($chunk) / $chunkTime, 0),
+                ]
             );
 
             // MEMORY MANAGEMENT: Clear processed chunk data.
@@ -163,7 +164,7 @@ class OptimizedBulkOperations
 
         // Calculate performance improvement.
         if ($objectsPerSecond > 165) {
-            $performanceImprovement = round($objectsPerSecond / 165, 1) . 'x faster';
+            $performanceImprovement = round($objectsPerSecond / 165, 1).'x faster';
         } else {
             $performanceImprovement = 'baseline';
         }
@@ -171,11 +172,11 @@ class OptimizedBulkOperations
         $this->logger->info(
             "Completed optimized bulk operations",
             [
-                    'total_objects'           => count($allObjects),
-                    'total_time_seconds'      => round($totalTime, 3),
-                    'objects_per_second'      => round($objectsPerSecond, 0),
-                    'performance_improvement' => $performanceImprovement,
-                ]
+                'total_objects'           => count($allObjects),
+                'total_time_seconds'      => round($totalTime, 3),
+                'objects_per_second'      => round($objectsPerSecond, 0),
+                'performance_improvement' => $performanceImprovement,
+            ]
         );
 
         return $processedUUIDs;
@@ -225,7 +226,7 @@ class OptimizedBulkOperations
             foreach ($dbColumns as $dbColumn) {
                 $value = $this->extractColumnValue(objectData: $objectData, dbColumn: $dbColumn);
 
-                $parameters['param_' . $paramIndex] = $value;
+                $parameters['param_'.$paramIndex] = $value;
                 $paramIndex++;
             }
 
@@ -266,7 +267,7 @@ class OptimizedBulkOperations
             // Mostly creates, some might be unchanged.
             $estimatedCreated = $affectedRows;
             $estimatedUpdated = 0;
-        } elseif ($affectedRows <= $totalObjects * 2) {
+        } else if ($affectedRows <= $totalObjects * 2) {
             // Mixed creates and updates.
             // This is an approximation - exact counts would require separate queries.
             $estimatedCreated = max(0, $totalObjects * 2 - $affectedRows);
@@ -276,16 +277,16 @@ class OptimizedBulkOperations
         $this->logger->info(
             "BULK SAVE: Executed unified bulk operation with statistics",
             [
-                    'chunk'             => $chunkNumber,
-                    'objects_processed' => $totalObjects,
-                    'affected_rows'     => $affectedRows,
-                    'estimated_created' => $estimatedCreated,
-                    'estimated_updated' => $estimatedUpdated,
-                    'sql_size_kb'       => round(strlen($sql) / 1024, 2),
-                    'table_name'        => $tableName,
-                    'sample_params'     => $sampleParams,
-                    'sql_preview'       => substr($sql, 0, 200),
-                ]
+                'chunk'             => $chunkNumber,
+                'objects_processed' => $totalObjects,
+                'affected_rows'     => $affectedRows,
+                'estimated_created' => $estimatedCreated,
+                'estimated_updated' => $estimatedUpdated,
+                'sql_size_kb'       => round(strlen($sql) / 1024, 2),
+                'table_name'        => $tableName,
+                'sample_params'     => $sampleParams,
+                'sql_preview'       => substr($sql, 0, 200),
+            ]
         );
 
         // ENHANCED RETURN: Query back complete objects for precise create/update classification.
@@ -317,11 +318,11 @@ class OptimizedBulkOperations
             $this->logger->info(
                 "BULK SAVE: Retrieved complete objects for classification",
                 [
-                        'chunk'              => $chunkNumber,
-                        'uuids_requested'    => count($uuids),
-                        'objects_returned'   => count($completeObjects),
-                        'select_sql_preview' => substr($selectSql, 0, 200),
-                    ]
+                    'chunk'              => $chunkNumber,
+                    'uuids_requested'    => count($uuids),
+                    'objects_returned'   => count($completeObjects),
+                    'select_sql_preview' => substr($selectSql, 0, 200),
+                ]
             );
         }//end if
 
@@ -358,7 +359,7 @@ class OptimizedBulkOperations
         $sql = '';
 
         // Build INSERT portion.
-        $columnList = '`' . implode('`, `', $columns) . '`';
+        $columnList = '`'.implode('`, `', $columns).'`';
         $sql       .= "INSERT INTO `{$tableName}` ({$columnList}) VALUES ";
 
         // Build VALUES portion - MEMORY INTENSIVE!
@@ -370,11 +371,11 @@ class OptimizedBulkOperations
             $rowValues = [];
             // Iterate over columns (count only matters, not the column name).
             for ($j = 0; $j < $columnCount; $j++) {
-                $rowValues[] = ':param_' . $paramIndex;
+                $rowValues[] = ':param_'.$paramIndex;
                 $paramIndex++;
             }
 
-            $valuesClauses[] = '(' . implode(', ', $rowValues) . ')';
+            $valuesClauses[] = '('.implode(', ', $rowValues).')';
         }
 
         $sql .= implode(', ', $valuesClauses);
@@ -396,7 +397,7 @@ class OptimizedBulkOperations
                         if ($dataCol === 'object') {
                             // SPECIAL HANDLING: JSON comparison for object data.
                             $changeChecks[] = "JSON_EXTRACT(`{$dataCol}`, '$') != JSON_EXTRACT(VALUES(`{$dataCol}`), '$')";
-                        } elseif (in_array($dataCol, ['files', 'relations', 'authorization', 'validation', 'geo', 'retention', 'groups']) === true) {
+                        } else if (in_array($dataCol, ['files', 'relations', 'authorization', 'validation', 'geo', 'retention', 'groups']) === true) {
                             // JSON fields comparison.
                             $changeChecks[] = "COALESCE(`{$dataCol}`, '{}') != COALESCE(VALUES(`{$dataCol}`), '{}')";
                         } else {
@@ -461,9 +462,9 @@ class OptimizedBulkOperations
                 // The UUID might be in getObject() data, so extract it to top level.
                 if (method_exists($updateObj, 'getUuid') === true && $updateObj->getUuid() !== null) {
                     $newFormatArray['uuid'] = $updateObj->getUuid();
-                } elseif (($newFormatArray['object']['uuid'] ?? null) !== null) {
+                } else if (($newFormatArray['object']['uuid'] ?? null) !== null) {
                     $newFormatArray['uuid'] = $newFormatArray['object']['uuid'];
-                } elseif (($newFormatArray['object']['id'] ?? null) !== null) {
+                } else if (($newFormatArray['object']['id'] ?? null) !== null) {
                     // Fallback: use id field as uuid if no uuid field exists.
                     $newFormatArray['uuid'] = $newFormatArray['object']['id'];
                 }
@@ -592,14 +593,14 @@ class OptimizedBulkOperations
                 // We only want to store the 'object' property contents in the database object column.
                 // VALIDATION: object property MUST be set and MUST be an array.
                 if (isset($objectData['object']) === false) {
-                    throw new InvalidArgumentException("Object data is missing required 'object' property. Available keys: " . json_encode(array_keys($objectData)));
+                    throw new InvalidArgumentException("Object data is missing required 'object' property. Available keys: ".json_encode(array_keys($objectData)));
                 }
 
                 $objectContent = $objectData['object'];
 
                 // VALIDATION: object content must be an array, not a string or other type.
                 if (is_array($objectContent) === false) {
-                    throw new InvalidArgumentException("Object content must be an array, got " . gettype($objectContent) . ". This suggests double JSON encoding or malformed CSV parsing.");
+                    throw new InvalidArgumentException("Object content must be an array, got ".gettype($objectContent).". This suggests double JSON encoding or malformed CSV parsing.");
                 }
 
                 // Normal case - array data needs JSON encoding.

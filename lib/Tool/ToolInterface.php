@@ -92,7 +92,7 @@ interface ToolInterface
      *
      * @throws \Exception If function execution fails
      */
-    public function executeFunction(string $functionName, array $parameters, ?string $userId = null): array;
+    public function executeFunction(string $functionName, array $parameters, ?string $userId=null): array;
 
     /**
      * Set the agent context

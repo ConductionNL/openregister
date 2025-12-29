@@ -28,6 +28,7 @@ use OCP\EventDispatcher\Event;
  */
 class ObjectDeletedEvent extends Event
 {
+
     /**
      * The deleted object entity
      *

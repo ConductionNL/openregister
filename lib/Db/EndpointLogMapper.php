@@ -88,7 +88,7 @@ class EndpointLogMapper extends QBMapper
      *
      * @psalm-return list<OCA\OpenRegister\Db\EndpointLog>
      */
-    public function findAll(?int $limit = null, ?int $offset = null): array
+    public function findAll(?int $limit=null, ?int $offset=null): array
     {
         // Step 1: Get query builder instance.
         $qb = $this->db->getQueryBuilder();
@@ -126,7 +126,7 @@ class EndpointLogMapper extends QBMapper
      *
      * @psalm-return list<\OCA\OpenRegister\Db\EndpointLog>
      */
-    public function findByEndpoint(int $endpointId, ?int $limit = null, ?int $offset = null): array
+    public function findByEndpoint(int $endpointId, ?int $limit=null, ?int $offset=null): array
     {
         // Step 1: Get query builder instance.
         $qb = $this->db->getQueryBuilder();
@@ -188,7 +188,7 @@ class EndpointLogMapper extends QBMapper
      *
      * @psalm-return array{total: int, success: int, failed: int}
      */
-    public function getStatistics(?int $endpointId = null): array
+    public function getStatistics(?int $endpointId=null): array
     {
         $qb = $this->db->getQueryBuilder();
 

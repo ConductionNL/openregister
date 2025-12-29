@@ -150,6 +150,7 @@ use function React\Promise\all;
  */
 class ObjectService
 {
+
     /**
      * The current register context.
      *
@@ -298,7 +299,7 @@ class ObjectService
      *
      * @throws \Exception If permission is not granted
      */
-    private function checkPermission(Schema $schema, string $action, ?string $userId = null, ?string $objectOwner = null, bool $_rbac = true): void
+    private function checkPermission(Schema $schema, string $action, ?string $userId=null, ?string $objectOwner=null, bool $_rbac=true): void
     {
         $this->permissionHandler->checkPermission(
             schema: $schema,
@@ -384,7 +385,7 @@ class ObjectService
                 // It's a slug string - find() already supports slugs via orX(id, uuid, slug).
                 $register = $this->registerMapper->find(id: $register, published: null, _rbac: false, _multitenancy: false);
             }
-        }
+        }//end if
 
         $this->currentRegister = $register;
         return $this;
@@ -424,8 +425,8 @@ class ObjectService
                 }
             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                 throw new ValidationException('Schema not found');
-            }
-        }
+            }//end try
+        }//end if
 
         $this->currentSchema = $schema;
         return $this;
@@ -479,12 +480,12 @@ class ObjectService
      */
     public function find(
         int | string $id,
-        ?array $_extend = [],
-        bool $files = false,
-        Register | string | int | null $register = null,
-        Schema | string | int | null $schema = null,
-        bool $_rbac = true,
-        bool $_multitenancy = true
+        ?array $_extend=[],
+        bool $files=false,
+        Register | string | int | null $register=null,
+        Schema | string | int | null $schema=null,
+        bool $_rbac=true,
+        bool $_multitenancy=true
     ): ?ObjectEntity {
         // Check if a register is provided and set the current register context.
         if ($register !== null) {
@@ -525,8 +526,7 @@ class ObjectService
 
         // If the object is not published, check the permissions.
         $now = new DateTime('now');
-        if (
-            $object->getPublished() === null
+        if ($object->getPublished() === null
             || $now < $object->getPublished()
             || ($object->getDepublished() !== null && $object->getDepublished() <= $now)
         ) {
@@ -585,12 +585,12 @@ class ObjectService
      */
     public function findSilent(
         string $id,
-        ?array $_extend = [],
-        bool $files = false,
-        Register | string | int | null $register = null,
-        Schema | string | int | null $schema = null,
-        bool $_rbac = true,
-        bool $_multitenancy = true
+        ?array $_extend=[],
+        bool $files=false,
+        Register | string | int | null $register=null,
+        Schema | string | int | null $schema=null,
+        bool $_rbac=true,
+        bool $_multitenancy=true
     ): ObjectEntity {
         // Check if a register is provided and set the current register context.
         if ($register !== null) {
@@ -642,7 +642,7 @@ class ObjectService
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    public function findAll(array $config = [], bool $_rbac = true, bool $_multitenancy = true): array
+    public function findAll(array $config=[], bool $_rbac=true, bool $_multitenancy=true): array
     {
         // Prepare configuration and set context.
         $config = $this->prepareFindAllConfig($config);
@@ -694,8 +694,7 @@ class ObjectService
         }
 
         // Set the current register context if a register is provided, it's not an array, and it's not empty.
-        if (
-            isset($config['filters']['register']) === true
+        if (isset($config['filters']['register']) === true
             && is_array($config['filters']['register']) === false
             && empty($config['filters']['register']) === false
         ) {
@@ -703,8 +702,7 @@ class ObjectService
         }
 
         // Set the current schema context if a schema is provided, it's not an array, and it's not empty.
-        if (
-            isset($config['filters']['schema']) === true
+        if (isset($config['filters']['schema']) === true
             && is_array($config['filters']['schema']) === false
             && empty($config['filters']['schema']) === false
         ) {
@@ -833,7 +831,7 @@ class ObjectService
      * @throws \Exception If register or schema is not set
      */
     public function count(
-        array $config = []
+        array $config=[]
     ): int {
         // Add register and schema IDs to filters.
         // Ensure we have both register and schema set.
@@ -865,7 +863,7 @@ class ObjectService
      *
      * @psalm-return list<OCA\OpenRegister\Db\OCA\OpenRegister\Db\ObjectEntity>
      */
-    public function findByRelations(string $search, bool $partialMatch = true): array
+    public function findByRelations(string $search, bool $partialMatch=true): array
     {
         // Use the findByRelation method from the ObjectEntityMapper to find objects by their relations.
         return $this->objectEntityMapper->findByRelation(search: $search, partialMatch: $partialMatch);
@@ -885,7 +883,7 @@ class ObjectService
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    public function getLogs(string $uuid, array $filters = [], bool $_rbac = true, bool $_multitenancy = true): array
+    public function getLogs(string $uuid, array $filters=[], bool $_rbac=true, bool $_multitenancy=true): array
     {
         // Get logs for the specified object.
         $object = $this->objectEntityMapper->find($uuid);
@@ -951,14 +949,14 @@ class ObjectService
      */
     public function saveObject(
         array | ObjectEntity $object,
-        ?array $extend = [],
-        Register | string | int | null $register = null,
-        Schema | string | int | null $schema = null,
-        ?string $uuid = null,
-        bool $_rbac = true,
-        bool $_multitenancy = true,
-        bool $silent = false,
-        ?array $uploadedFiles = null
+        ?array $extend=[],
+        Register | string | int | null $register=null,
+        Schema | string | int | null $schema=null,
+        ?string $uuid=null,
+        bool $_rbac=true,
+        bool $_multitenancy=true,
+        bool $silent=false,
+        ?array $uploadedFiles=null
     ): ObjectEntity {
         // Set register/schema context.
         $this->setContextFromParameters(
@@ -1230,7 +1228,7 @@ class ObjectService
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    public function deleteObject(string $uuid, bool $_rbac = true, bool $_multitenancy = true): bool
+    public function deleteObject(string $uuid, bool $_rbac=true, bool $_multitenancy=true): bool
     {
         // Find the object to get its owner for permission check (include soft-deleted objects).
         try {
@@ -1326,9 +1324,9 @@ class ObjectService
      */
     public function buildSearchQuery(
         array $requestParams,
-        int | string | array | null $register = null,
-        int | string | array | null $schema = null,
-        ?array $ids = null
+        int | string | array | null $register=null,
+        int | string | array | null $schema=null,
+        ?array $ids=null
     ): array {
         return $this->searchQueryHandler->buildSearchQuery(
             requestParams: $requestParams,
@@ -1387,12 +1385,12 @@ class ObjectService
      * @throws \OCP\DB\Exception If a database error occurs
      */
     public function searchObjects(
-        array $query = [],
-        bool $_rbac = true,
-        bool $_multitenancy = true,
-        ?array $ids = null,
-        ?string $uses = null,
-        ?array $views = null
+        array $query=[],
+        bool $_rbac=true,
+        bool $_multitenancy=true,
+        ?array $ids=null,
+        ?string $uses=null,
+        ?array $views=null
     ): array|int {
         // ARCHITECTURAL DELEGATION: Delegate to QueryHandler for all search operations.
         return $this->queryHandler->searchObjects(
@@ -1433,7 +1431,7 @@ class ObjectService
      *
      * @throws \OCP\DB\Exception If a database error occurs
      */
-    public function countSearchObjects(array $query = [], bool $_rbac = true, bool $_multitenancy = true, ?array $ids = null, ?string $uses = null): int
+    public function countSearchObjects(array $query=[], bool $_rbac=true, bool $_multitenancy=true, ?array $ids=null, ?string $uses=null): int
     {
         // Get active organization context for multi-tenancy (only if multi is enabled).
         $activeOrganisationUuid = null;
@@ -1473,7 +1471,7 @@ class ObjectService
      *
      * @throws \OCP\DB\Exception If a database error occurs
      */
-    public function getFacetsForObjects(array $query = []): array
+    public function getFacetsForObjects(array $query=[]): array
     {
         // **ARCHITECTURAL IMPROVEMENT**: Delegate to FacetHandler.
         // This provides clean separation of concerns and centralized faceting logic.
@@ -1505,7 +1503,7 @@ class ObjectService
      *
      * @throws \Exception If facetable field discovery fails
      */
-    public function getFacetableFields(array $baseQuery = [], int $sampleSize = 100): array
+    public function getFacetableFields(array $baseQuery=[], int $sampleSize=100): array
     {
         // **ARCHITECTURAL IMPROVEMENT**: Delegate to FacetHandler.
         return $this->facetHandler->getFacetableFields(baseQuery: $baseQuery, sampleSize: $sampleSize);
@@ -1621,14 +1619,14 @@ class ObjectService
      * @throws \Exception If Solr search fails and cannot be recovered
      */
     public function searchObjectsPaginated(
-        array $query = [],
-        bool $_rbac = true,
-        bool $_multitenancy = true,
-        bool $published = false,
-        bool $deleted = false,
-        ?array $ids = null,
-        ?string $uses = null,
-        ?array $views = null
+        array $query=[],
+        bool $_rbac=true,
+        bool $_multitenancy=true,
+        bool $published=false,
+        bool $deleted=false,
+        ?array $ids=null,
+        ?string $uses=null,
+        ?array $views=null
     ): array {
         // Apply view filters if provided.
         if ($views !== null && empty($views) === false) {
@@ -1647,8 +1645,7 @@ class ObjectService
         $isSolrRequested = ($requestedSource === 'index' || $requestedSource === 'solr');
         $isSolrEnabled   = $this->isSolrAvailable() === true;
         $isNotDatabase   = $requestedSource !== 'database';
-        if (
-            (            $isSolrRequested === true
+        if ((            $isSolrRequested === true
             && $hasIdsParam === false && $hasUsesParam === false
             && $hasIds === false && $hasUses === false)
             || (            $requestedSource === null
@@ -1777,11 +1774,11 @@ class ObjectService
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function searchObjectsPaginatedAsync(
-        array $query = [],
-        bool $_rbac = true,
-        bool $_multitenancy = true,
-        bool $_published = false,
-        bool $_deleted = false
+        array $query=[],
+        bool $_rbac=true,
+        bool $_multitenancy=true,
+        bool $_published=false,
+        bool $_deleted=false
     ): PromiseInterface {
         // ARCHITECTURAL DELEGATION: Delegate to QueryHandler for async paginated search.
         return $this->queryHandler->searchObjectsPaginatedAsync(
@@ -1815,11 +1812,11 @@ class ObjectService
      * @throws \OCP\DB\Exception If a database error occurs
      */
     public function searchObjectsPaginatedSync(
-        array $query = [],
-        bool $_rbac = true,
-        bool $_multitenancy = true,
-        bool $published = false,
-        bool $deleted = false
+        array $query=[],
+        bool $_rbac=true,
+        bool $_multitenancy=true,
+        bool $published=false,
+        bool $deleted=false
     ): array {
         // Execute the async version and wait for the result.
         $promise = $this->searchObjectsPaginatedAsync(
@@ -1894,13 +1891,13 @@ class ObjectService
      */
     public function renderEntity(
         ObjectEntity $entity,
-        ?array $_extend = [],
-        ?int $depth = 0,
-        ?array $filter = [],
-        ?array $fields = [],
-        ?array $unset = [],
-        bool $_rbac = true,
-        bool $_multitenancy = true
+        ?array $_extend=[],
+        ?int $depth=0,
+        ?array $filter=[],
+        ?array $fields=[],
+        ?array $unset=[],
+        bool $_rbac=true,
+        bool $_multitenancy=true
     ): array {
         return $this->renderHandler->renderEntity(
             entity: $entity,
@@ -1944,7 +1941,7 @@ class ObjectService
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    public function publish(string $uuid = null, ?\DateTime $date = null, bool $_rbac = true, bool $_multitenancy = true): ObjectEntity
+    public function publish(string $uuid=null, ?\DateTime $date=null, bool $_rbac=true, bool $_multitenancy=true): ObjectEntity
     {
 
         // Use the publish handler to publish the object.
@@ -1970,7 +1967,7 @@ class ObjectService
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    public function depublish(string $uuid = null, ?\DateTime $date = null, bool $_rbac = true, bool $_multitenancy = true): ObjectEntity
+    public function depublish(string $uuid=null, ?\DateTime $date=null, bool $_rbac=true, bool $_multitenancy=true): ObjectEntity
     {
         // Use the publish handler to depublish the object.
         return $this->publishHandler->depublish(
@@ -1994,7 +1991,7 @@ class ObjectService
      *
      * @throws \Exception If lock operation fails
      */
-    public function lockObject(string $identifier, ?string $process = null, ?int $duration = null): array
+    public function lockObject(string $identifier, ?string $process=null, ?int $duration=null): array
     {
         return $this->lockHandler->lock(identifier: $identifier, process: $process, duration: $duration);
     }//end lockObject()
@@ -2074,12 +2071,12 @@ class ObjectService
      */
     public function saveObjects(
         array $objects,
-        Register|string|int|null $register = null,
-        Schema|string|int|null $schema = null,
-        bool $_rbac = true,
-        bool $_multitenancy = true,
-        bool $validation = false,
-        bool $events = false
+        Register|string|int|null $register=null,
+        Schema|string|int|null $schema=null,
+        bool $_rbac=true,
+        bool $_multitenancy=true,
+        bool $validation=false,
+        bool $events=false
     ): array {
 
         // Set register and schema context if provided.
@@ -2238,7 +2235,7 @@ class ObjectService
      * @phpstan-return array<int, int>
      * @psalm-return   array<int, int>
      */
-    public function deleteObjects(array $uuids = [], bool $_rbac = true, bool $_multitenancy = true): array
+    public function deleteObjects(array $uuids=[], bool $_rbac=true, bool $_multitenancy=true): array
     {
         // ARCHITECTURAL DELEGATION: Delegate to BulkOperationsHandler for all bulk delete logic.
         return $this->bulkOperationsHandler->deleteObjects(
@@ -2268,7 +2265,7 @@ class ObjectService
      * @psalm-return   array<int, string>
      * @phpstan-return array<int, string>
      */
-    public function publishObjects(array $uuids = [], \DateTime|bool $datetime = true, bool $_rbac = true, bool $_multitenancy = true): array
+    public function publishObjects(array $uuids=[], \DateTime|bool $datetime=true, bool $_rbac=true, bool $_multitenancy=true): array
     {
         // ARCHITECTURAL DELEGATION: Delegate to BulkOperationsHandler for all bulk publish logic.
         return $this->bulkOperationsHandler->publishObjects(
@@ -2299,7 +2296,7 @@ class ObjectService
      * @psalm-return   array<int, string>
      * @phpstan-return array<int, string>
      */
-    public function depublishObjects(array $uuids = [], \DateTime|bool $datetime = true, bool $_rbac = true, bool $_multitenancy = true): array
+    public function depublishObjects(array $uuids=[], \DateTime|bool $datetime=true, bool $_rbac=true, bool $_multitenancy=true): array
     {
         // ARCHITECTURAL DELEGATION: Delegate to BulkOperationsHandler for all bulk depublish logic.
         return $this->bulkOperationsHandler->depublishObjects(
@@ -2327,7 +2324,7 @@ class ObjectService
      *
      * @psalm-return array{published_count: int<min, max>, published_uuids: array<int, string>, schema_id: int}
      */
-    public function publishObjectsBySchema(int $schemaId, bool $publishAll = false): array
+    public function publishObjectsBySchema(int $schemaId, bool $publishAll=false): array
     {
         // ARCHITECTURAL DELEGATION: Delegate to BulkOperationsHandler for schema-wide publish.
         return $this->bulkOperationsHandler->publishObjectsBySchema(
@@ -2353,7 +2350,7 @@ class ObjectService
      *
      * @psalm-return array{deleted_count: int<min, max>, deleted_uuids: array<int, string>, schema_id: int}
      */
-    public function deleteObjectsBySchema(int $schemaId, bool $hardDelete = false): array
+    public function deleteObjectsBySchema(int $schemaId, bool $hardDelete=false): array
     {
         // ARCHITECTURAL DELEGATION: Delegate to BulkOperationsHandler for schema-wide delete.
         return $this->bulkOperationsHandler->deleteObjectsBySchema(
@@ -2428,7 +2425,7 @@ class ObjectService
      *
      * @return array Contracts data
      */
-    public function getObjectContracts(string $objectId, array $filters = []): array
+    public function getObjectContracts(string $objectId, array $filters=[]): array
     {
         return $this->relationHandler->getContracts(objectId: $objectId, filters: $filters);
     }//end getObjectContracts()
@@ -2445,7 +2442,7 @@ class ObjectService
      *
      * @throws \Exception If retrieval fails
      */
-    public function getObjectUses(string $objectId, array $query = [], bool $rbac = true, bool $_multitenancy = true): array
+    public function getObjectUses(string $objectId, array $query=[], bool $rbac=true, bool $_multitenancy=true): array
     {
         return $this->relationHandler->getUses(objectId: $objectId, query: $query, rbac: $rbac, _multitenancy: $_multitenancy);
     }//end getObjectUses()
@@ -2462,7 +2459,7 @@ class ObjectService
      *
      * @throws \Exception If retrieval fails
      */
-    public function getObjectUsedBy(string $objectId, array $query = [], bool $rbac = true, bool $_multitenancy = true): array
+    public function getObjectUsedBy(string $objectId, array $query=[], bool $rbac=true, bool $_multitenancy=true): array
     {
         return $this->relationHandler->getUsedBy(objectId: $objectId, query: $query, rbac: $rbac, _multitenancy: $_multitenancy);
     }//end getObjectUsedBy()
@@ -2477,7 +2474,7 @@ class ObjectService
      *
      * @throws \Exception If vectorization fails
      */
-    public function vectorizeBatchObjects(?array $views = null, int $batchSize = 25)
+    public function vectorizeBatchObjects(?array $views=null, int $batchSize=25)
     {
         // TODO: TEMPORARILY DISABLED due to circular dependency with VectorizationService.
         // Requires architectural refactoring to fix. See DEBUGGING_REGISTER_CREATION_TIMEOUT.md
@@ -2493,7 +2490,7 @@ class ObjectService
      *
      * @throws \Exception If stats retrieval fails
      */
-    public function getVectorizationStatistics(?array $views = null)
+    public function getVectorizationStatistics(?array $views=null)
     {
         // TODO: TEMPORARILY DISABLED due to circular dependency with VectorizationService.
         throw new Exception('Vectorization temporarily disabled due to circular dependency issues');
@@ -2508,7 +2505,7 @@ class ObjectService
      *
      * @throws \Exception If count fails
      */
-    public function getVectorizationCount(?array $schemas = null)
+    public function getVectorizationCount(?array $schemas=null)
     {
         // TODO: TEMPORARILY DISABLED due to circular dependency with VectorizationService.
         throw new Exception('Vectorization temporarily disabled due to circular dependency issues');
@@ -2537,14 +2534,14 @@ class ObjectService
      * @psalm-return array<int, ObjectEntity>|int
      */
     public function listObjects(
-        array $query = [],
-        bool $rbac = true,
-        bool $_multitenancy = true,
-        bool $published = false,
-        bool $deleted = false,
-        ?array $ids = null,
-        ?string $uses = null,
-        ?array $views = null
+        array $query=[],
+        bool $rbac=true,
+        bool $_multitenancy=true,
+        bool $published=false,
+        bool $deleted=false,
+        ?array $ids=null,
+        ?string $uses=null,
+        ?array $views=null
     ): array|int {
         // REFACTORED: Removed CrudHandler (was unimplemented stub causing circular dependency).
         // Use searchObjects() for actual object listing.
@@ -2566,7 +2563,7 @@ class ObjectService
      *
      * @throws \Exception If creation fails
      */
-    public function createObject(array $data, bool $rbac = true, bool $_multitenancy = true): ObjectEntity
+    public function createObject(array $data, bool $rbac=true, bool $_multitenancy=true): ObjectEntity
     {
         // REFACTORED: Removed CrudHandler (was unimplemented stub). Use saveObject() instead.
         return $this->saveObject(object: $data);
@@ -2587,8 +2584,8 @@ class ObjectService
     public function updateObject(
         string $objectId,
         array $data,
-        bool $rbac = true,
-        bool $_multitenancy = true
+        bool $rbac=true,
+        bool $_multitenancy=true
     ): ObjectEntity {
         // REFACTORED: Removed CrudHandler (was unimplemented stub). Use saveObject() with ID.
         // Get existing object and merge with new data (currently unused but kept for reference).
@@ -2612,8 +2609,8 @@ class ObjectService
     public function patchObject(
         string $objectId,
         array $data,
-        bool $rbac = true,
-        bool $_multitenancy = true
+        bool $rbac=true,
+        bool $_multitenancy=true
     ): ObjectEntity {
         // REFACTORED: Removed CrudHandler (was unimplemented stub). Use saveObject() for patching.
         // Get existing object, merge partial data, and save.
@@ -2657,9 +2654,9 @@ class ObjectService
     public function exportObjects(
         \OCA\OpenRegister\Db\Register $register,
         \OCA\OpenRegister\Db\Schema $schema,
-        array $filters = [],
-        string $type = 'excel',
-        ?\OCP\IUser $currentUser = null
+        array $filters=[],
+        string $type='excel',
+        ?\OCP\IUser $currentUser=null
     ) {
         // TODO: TEMPORARILY DISABLED due to circular dependency with ExportService.
         // Requires architectural refactoring to fix. See DEBUGGING_REGISTER_CREATION_TIMEOUT.md
@@ -2686,13 +2683,13 @@ class ObjectService
     public function importObjects(
         \OCA\OpenRegister\Db\Register $register,
         array $uploadedFile,
-        ?\OCA\OpenRegister\Db\Schema $schema = null,
-        bool $validation = false,
-        bool $events = false,
-        bool $rbac = true,
-        bool $multitenancy = true,
-        bool $publish = false,
-        ?\OCP\IUser $currentUser = null
+        ?\OCA\OpenRegister\Db\Schema $schema=null,
+        bool $validation=false,
+        bool $events=false,
+        bool $rbac=true,
+        bool $multitenancy=true,
+        bool $publish=false,
+        ?\OCP\IUser $currentUser=null
     ) {
         // TODO: TEMPORARILY DISABLED due to circular dependency with ImportService.
         // Requires architectural refactoring to fix. See DEBUGGING_REGISTER_CREATION_TIMEOUT.md

@@ -98,6 +98,7 @@ use Symfony\Component\Uid\Uuid;
  */
 class Configuration extends Entity implements JsonSerializable
 {
+
     /**
      * Unique identifier for the configuration
      *
@@ -442,7 +443,7 @@ class Configuration extends Entity implements JsonSerializable
                 continue;
             }
 
-            $method = 'set' . ucfirst($key);
+            $method = 'set'.ucfirst($key);
 
             try {
                 $this->$method($value);
@@ -602,12 +603,12 @@ class Configuration extends Entity implements JsonSerializable
 
         // Fallback to type if available.
         if ($this->type !== null && $this->type !== '') {
-            return 'Config: ' . $this->type;
+            return 'Config: '.$this->type;
         }
 
         // Fallback to ID if available.
         if ($this->id !== null) {
-            return 'Configuration #' . $this->id;
+            return 'Configuration #'.$this->id;
         }
 
         // Final fallback.

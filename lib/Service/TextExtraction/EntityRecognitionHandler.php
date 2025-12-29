@@ -118,14 +118,14 @@ class EntityRecognitionHandler
      *
      * @psalm-return array{chunks_processed: int<0, max>, entities_found: int, relations_created: int}
      */
-    public function processSourceChunks(string $sourceType, int $sourceId, array $options = []): array
+    public function processSourceChunks(string $sourceType, int $sourceId, array $options=[]): array
     {
         $this->logger->info(
             message: '[EntityRecognitionHandler] Processing chunks for entity extraction',
             context: [
-                    'source_type' => $sourceType,
-                    'source_id'   => $sourceId,
-                ]
+                'source_type' => $sourceType,
+                'source_id'   => $sourceId,
+            ]
         );
 
         // Get all chunks for this source (excluding metadata chunks).
@@ -151,11 +151,11 @@ class EntityRecognitionHandler
                 $this->logger->error(
                     message: '[EntityRecognitionHandler] Failed to process chunk',
                     context: [
-                            'chunk_id'    => $chunk->getId(),
-                            'source_type' => $sourceType,
-                            'source_id'   => $sourceId,
-                            'error'       => $e->getMessage(),
-                        ]
+                        'chunk_id'    => $chunk->getId(),
+                        'source_type' => $sourceType,
+                        'source_id'   => $sourceId,
+                        'error'       => $e->getMessage(),
+                    ]
                 );
             }//end try
         }//end foreach
@@ -163,12 +163,12 @@ class EntityRecognitionHandler
         $this->logger->info(
             message: '[EntityRecognitionHandler] Source processing complete',
             context: [
-                    'source_type'       => $sourceType,
-                    'source_id'         => $sourceId,
-                    'chunks_processed'  => $chunksProcessed,
-                    'entities_found'    => $totalEntities,
-                    'relations_created' => $totalRelations,
-                ]
+                'source_type'       => $sourceType,
+                'source_id'         => $sourceId,
+                'chunks_processed'  => $chunksProcessed,
+                'entities_found'    => $totalEntities,
+                'relations_created' => $totalRelations,
+            ]
         );
 
         return [
@@ -194,15 +194,15 @@ class EntityRecognitionHandler
      *
      * @psalm-return array{entities_found: int<0, max>, relations_created: int<0, max>, entities: list<array{confidence: float, type: string, value: string}>}
      */
-    public function extractFromChunk(Chunk $chunk, array $options = []): array
+    public function extractFromChunk(Chunk $chunk, array $options=[]): array
     {
         $this->logger->debug(
             message: '[EntityRecognitionHandler] Extracting entities from chunk',
             context: [
-                    'chunk_id'    => $chunk->getId(),
-                    'source_type' => $chunk->getSourceType(),
-                    'source_id'   => $chunk->getSourceId(),
-                ]
+                'chunk_id'    => $chunk->getId(),
+                'source_type' => $chunk->getSourceType(),
+                'source_id'   => $chunk->getSourceId(),
+            ]
         );
 
         $method      = $options['method'] ?? self::METHOD_HYBRID;
@@ -265,7 +265,7 @@ class EntityRecognitionHandler
                 // Set source references based on chunk source type.
                 if ($chunk->getSourceType() === 'file') {
                     $relation->setFileId($chunk->getSourceId());
-                } elseif ($chunk->getSourceType() === 'object') {
+                } else if ($chunk->getSourceType() === 'object') {
                     $relation->setObjectId($chunk->getSourceId());
                 }
 
@@ -282,11 +282,11 @@ class EntityRecognitionHandler
                 $this->logger->error(
                     message: '[EntityRecognitionHandler] Failed to store entity',
                     context: [
-                            'chunk_id' => $chunk->getId(),
-                            'type'     => $detected['type'] ?? 'unknown',
-                            'value'    => substr($detected['value'] ?? '', 0, 50),
-                            'error'    => $e->getMessage(),
-                        ]
+                        'chunk_id' => $chunk->getId(),
+                        'type'     => $detected['type'] ?? 'unknown',
+                        'value'    => substr($detected['value'] ?? '', 0, 50),
+                        'error'    => $e->getMessage(),
+                    ]
                 );
             }//end try
         }//end foreach

@@ -63,7 +63,7 @@ class VectorStatsHandler
      *
      * @psalm-return array{total_vectors: int, by_type: array<int>, by_model: array<int|mixed>, object_vectors?: int, file_vectors?: int, source?: 'solr'|'solr_error'|'solr_unavailable'}
      */
-    public function getStats(string $backend = 'php'): array
+    public function getStats(string $backend='php'): array
     {
         try {
             if ($backend === 'solr') {
@@ -283,7 +283,7 @@ class VectorStatsHandler
         }
 
         // Query Solr.
-        $solrUrl  = $solrBackend->buildSolrBaseUrl() . "/{$collection}/select";
+        $solrUrl  = $solrBackend->buildSolrBaseUrl()."/{$collection}/select";
         $response = $solrBackend->getHttpClient()->get($solrUrl, $options);
 
         $data  = json_decode((string) $response->getBody(), true);

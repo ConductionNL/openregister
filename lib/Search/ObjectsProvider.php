@@ -41,6 +41,7 @@ use Psr\Log\LoggerInterface;
  */
 class ObjectsProvider implements IFilteringProvider
 {
+
     /**
      * The localization service
      *
@@ -278,9 +279,9 @@ class ObjectsProvider implements IFilteringProvider
         $this->logger->debug(
             'OpenRegister search requested',
             [
-                    'search_query' => $searchQuery,
-                    'has_search'   => empty($search) === false,
-                ]
+                'search_query' => $searchQuery,
+                'has_search'   => empty($search) === false,
+            ]
         );
 
         // Use searchObjectsPaginated for optimal performance.
@@ -313,9 +314,9 @@ class ObjectsProvider implements IFilteringProvider
         $this->logger->debug(
             'OpenRegister search completed',
             [
-                    'results_count' => count($searchResultEntries),
-                    'total_results' => $searchResults['total'] ?? 0,
-                ]
+                'results_count' => count($searchResultEntries),
+                'total_results' => $searchResults['total'] ?? 0,
+            ]
         );
 
         return SearchResult::complete(
@@ -347,7 +348,7 @@ class ObjectsProvider implements IFilteringProvider
         // Add summary/description if available.
         if (empty($object['summary']) === false) {
             $parts[] = $object['summary'];
-        } elseif (empty($object['description']) === false) {
+        } else if (empty($object['description']) === false) {
             $descriptionPart = substr($object['description'], 0, 100);
             if (strlen($object['description']) > 100) {
                 $descriptionPart .= '...';

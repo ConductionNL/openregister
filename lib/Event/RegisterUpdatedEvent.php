@@ -28,6 +28,7 @@ use OCP\EventDispatcher\Event;
  */
 class RegisterUpdatedEvent extends Event
 {
+
     /**
      * The updated register state
      *

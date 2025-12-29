@@ -73,7 +73,7 @@ class LockHandler
      * @throws LockedException If object is already locked
      * @throws \Exception      If lock operation fails
      */
-    public function lock(string $identifier, ?string $process = null, ?int $duration = null): array
+    public function lock(string $identifier, ?string $process=null, ?int $duration=null): array
     {
         $this->logger->debug(
             message: '[LockHandler] Locking object',

@@ -186,9 +186,9 @@ class ChatService
         int $conversationId,
         string $userId,
         string $userMessage,
-        array $selectedViews = [],
-        array $selectedTools = [],
-        array $ragSettings = []
+        array $selectedViews=[],
+        array $selectedTools=[],
+        array $ragSettings=[]
     ): array {
         $this->logger->info(
             message: '[ChatService] Processing message',
@@ -283,10 +283,10 @@ class ChatService
                 'message' => $aiResponse,
                 'sources' => $context['sources'],
                 'timings' => [
-                    'context' => round($contextTime, 2) . 's',
-                    'history' => round($historyTime, 3) . 's',
-                    'llm'     => round($llmTime, 2) . 's',
-                    'total'   => round($totalTime, 2) . 's',
+                    'context' => round($contextTime, 2).'s',
+                    'history' => round($historyTime, 3).'s',
+                    'llm'     => round($llmTime, 2).'s',
+                    'total'   => round($totalTime, 2).'s',
                 ],
             ];
         } catch (Exception $e) {
@@ -348,7 +348,7 @@ class ChatService
      *
      * @psalm-return array{success: bool, error?: string, message: string, note?: 'Full testChat implementation preserved in ChatService_ORIGINAL_2156.php backup.'}
      */
-    public function testChat(string $provider, array $config, string $testMessage = 'Hello! Please respond with a brief greeting.'): array
+    public function testChat(string $provider, array $config, string $testMessage='Hello! Please respond with a brief greeting.'): array
     {
         $this->logger->info(
             message: '[ChatService] Testing chat functionality',
@@ -376,7 +376,7 @@ class ChatService
             return [
                 'success' => false,
                 'error'   => $e->getMessage(),
-                'message' => 'Failed to test chat: ' . $e->getMessage(),
+                'message' => 'Failed to test chat: '.$e->getMessage(),
             ];
         }//end try
     }//end testChat()

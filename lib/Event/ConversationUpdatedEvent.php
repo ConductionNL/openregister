@@ -28,6 +28,7 @@ use OCP\EventDispatcher\Event;
  */
 class ConversationUpdatedEvent extends Event
 {
+
     /**
      * The updated conversation state.
      *

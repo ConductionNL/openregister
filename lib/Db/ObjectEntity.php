@@ -117,6 +117,7 @@ use OCP\IUserSession;
  */
 class ObjectEntity extends Entity implements JsonSerializable
 {
+
     /**
      * Unique identifier for the object.
      *
@@ -560,7 +561,7 @@ class ObjectEntity extends Entity implements JsonSerializable
                 $value = null;
             }
 
-            $method = 'set' . ucfirst($key);
+            $method = 'set'.ucfirst($key);
 
             try {
                 $this->$method($value);
@@ -639,7 +640,7 @@ class ObjectEntity extends Entity implements JsonSerializable
      *
      * @psalm-return array{id: null|string, slug: null|string, name: null|string, description: int|string, summary: null|string, image: null|string, uri: null|string, version: null|string, register: array|null|string, schema: array|null|string, schemaVersion: null|string, files: array|null, relations: array|null, locked: array|null, owner: array|null|string, organisation: array|null|string, groups: mixed, authorization: array|null, folder: null|string, application: array|null|string, validation: array|null, geo: array|null, retention: array|null, size: null|string, updated: null|string, created: null|string, published: null|string, depublished: null|string, deleted: array|null}
      */
-    public function getObjectArray(array $object = []): array
+    public function getObjectArray(array $object=[]): array
     {
         // Initialize the object array with default properties.
         // Use getters to ensure our custom getter logic is applied (e.g., [] for null arrays).
@@ -733,7 +734,7 @@ class ObjectEntity extends Entity implements JsonSerializable
      *
      * @psalm-suppress PossiblyUnusedReturnValue
      */
-    public function lock(IUserSession $userSession, ?string $process = null, ?int $duration = 3600): bool
+    public function lock(IUserSession $userSession, ?string $process=null, ?int $duration=3600): bool
     {
         $currentUser = $userSession->getUser();
         if ($currentUser === null) {
@@ -757,30 +758,30 @@ class ObjectEntity extends Entity implements JsonSerializable
 
             // If same user, extend the lock.
             $newExpiration = clone $now;
-            $newExpiration->add(new DateInterval('PT' . ($duration ?? 0) . 'S'));
+            $newExpiration->add(new DateInterval('PT'.($duration ?? 0).'S'));
 
             $this->setLocked(
                 locked: [
-                        'user'       => $userId,
-                        'process'    => ($process ?? $lock['process']),
-                        'created'    => $lock['created'],
-                        'duration'   => $duration,
-                        'expiration' => $newExpiration->format('c'),
-                    ]
+                    'user'       => $userId,
+                    'process'    => ($process ?? $lock['process']),
+                    'created'    => $lock['created'],
+                    'duration'   => $duration,
+                    'expiration' => $newExpiration->format('c'),
+                ]
             );
         } else {
             // Create new lock.
             $expiration = clone $now;
-            $expiration->add(new DateInterval('PT' . ($duration ?? 0) . 'S'));
+            $expiration->add(new DateInterval('PT'.($duration ?? 0).'S'));
 
             $this->setLocked(
                 locked: [
-                        'user'       => $userId,
-                        'process'    => $process,
-                        'created'    => $now->format('c'),
-                        'duration'   => $duration,
-                        'expiration' => $expiration->format('c'),
-                    ]
+                    'user'       => $userId,
+                    'process'    => $process,
+                    'created'    => $now->format('c'),
+                    'duration'   => $duration,
+                    'expiration' => $expiration->format('c'),
+                ]
             );
         }//end if
 
@@ -850,7 +851,7 @@ class ObjectEntity extends Entity implements JsonSerializable
             $lockedAt   = new DateTime($this->locked['lockedAt']);
             $duration   = (int) $this->locked['duration'];
             $expiration = clone $lockedAt;
-            $expiration->add(new \DateInterval('PT' . $duration . 'S'));
+            $expiration->add(new \DateInterval('PT'.$duration.'S'));
             return $now < $expiration;
         }
 
@@ -901,7 +902,7 @@ class ObjectEntity extends Entity implements JsonSerializable
      *
      * @return static Returns the entity
      */
-    public function delete(IUserSession $userSession, ?string $deletedReason = null, ?int $retentionPeriod = 30): static
+    public function delete(IUserSession $userSession, ?string $deletedReason=null, ?int $retentionPeriod=30): static
     {
         $currentUser = $userSession->getUser();
         if ($currentUser === null) {
@@ -916,12 +917,12 @@ class ObjectEntity extends Entity implements JsonSerializable
 
         $this->setDeleted(
             deleted: [
-                    'deleted'         => $now->format('c'),
-                    'deletedBy'       => $userId,
-                    'deletedReason'   => $deletedReason,
-                    'retentionPeriod' => $retentionPeriod,
-                    'purgeDate'       => $purgeDate->format('c'),
-                ]
+                'deleted'         => $now->format('c'),
+                'deletedBy'       => $userId,
+                'deletedReason'   => $deletedReason,
+                'retentionPeriod' => $retentionPeriod,
+                'purgeDate'       => $purgeDate->format('c'),
+            ]
         );
 
         return $this;
@@ -949,7 +950,7 @@ class ObjectEntity extends Entity implements JsonSerializable
      *
      * @return void
      */
-    public function setLastLog(?array $log = null): void
+    public function setLastLog(?array $log=null): void
     {
         $this->lastLog = $log;
     }//end setLastLog()
@@ -971,7 +972,7 @@ class ObjectEntity extends Entity implements JsonSerializable
 
         // Fallback to ID if UUID is not available.
         if ($this->id !== null) {
-            return 'Object #' . $this->id;
+            return 'Object #'.$this->id;
         }
 
         // Final fallback.

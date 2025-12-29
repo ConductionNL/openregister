@@ -66,6 +66,7 @@ use OCA\OpenRegister\Service\ObjectService;
  */
 class ConfigurationService
 {
+
     /**
      * Schema mapper instance for handling schema operations.
      *
@@ -337,7 +338,7 @@ class ConfigurationService
      *
      * @throws Exception If configuration is invalid.
      */
-    public function exportConfig(array | Configuration | Register $input = [], bool $includeObjects = false): array
+    public function exportConfig(array | Configuration | Register $input=[], bool $includeObjects=false): array
     {
         // Delegate to ExportHandler for the actual export logic.
         $openConnectorService = null;
@@ -415,7 +416,7 @@ class ConfigurationService
      *
      * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      */
-    private function getJSONfromFile(array $uploadedFile, ?string $_type = null): array|JSONResponse
+    private function getJSONfromFile(array $uploadedFile, ?string $_type=null): array|JSONResponse
     {
         return $this->importHandler->getJSONfromFile(
             uploadedFile: $uploadedFile,
@@ -489,11 +490,11 @@ class ConfigurationService
      */
     public function importFromJson(
         array $data,
-        ?Configuration $configuration = null,
-        ?string $owner = null,
-        ?string $appId = null,
-        ?string $version = null,
-        bool $force = false
+        ?Configuration $configuration=null,
+        ?string $owner=null,
+        ?string $appId=null,
+        ?string $version=null,
+        bool $force=false
     ): array {
         return $this->importHandler->importFromJson(
             data: $data,
@@ -523,7 +524,7 @@ class ConfigurationService
      *
      * @psalm-suppress UnusedReturnValue
      */
-    private function createOrUpdateConfiguration(array $data, string $appId, string $version, array $result, ?string $owner = null): Configuration
+    private function createOrUpdateConfiguration(array $data, string $appId, string $version, array $result, ?string $owner=null): Configuration
     {
         return $this->importHandler->createOrUpdateConfiguration(
             data: $data,
@@ -545,7 +546,7 @@ class ConfigurationService
      *
      * @return Register The imported register or null if skipped.
      */
-    private function importRegister(array $data, ?string $owner = null, ?string $appId = null, ?string $version = null, bool $force = false): Register
+    private function importRegister(array $data, ?string $owner=null, ?string $appId=null, ?string $version=null, bool $force=false): Register
     {
         return $this->importHandler->importRegister(
             data: $data,
@@ -571,10 +572,10 @@ class ConfigurationService
     private function importSchema(
         array $data,
         array $slugsAndIdsMap,
-        ?string $owner = null,
-        ?string $appId = null,
-        ?string $version = null,
-        bool $force = false
+        ?string $owner=null,
+        ?string $appId=null,
+        ?string $version=null,
+        bool $force=false
     ): Schema {
         return $this->importHandler->importSchema(
             data: $data,
@@ -621,7 +622,7 @@ class ConfigurationService
      *     rules: array
      * }
      */
-    public function importFromFilePath(string $appId, string $filePath, string $version, bool $force = false): array
+    public function importFromFilePath(string $appId, string $filePath, string $version, bool $force=false): array
     {
         return $this->importHandler->importFromFilePath(
             appId: $appId,
@@ -660,7 +661,7 @@ class ConfigurationService
      *     rules: array
      * }
      */
-    public function importFromApp(string $appId, array $data, string $version, bool $force = false): array
+    public function importFromApp(string $appId, array $data, string $version, bool $force=false): array
     {
         return $this->importHandler->importFromApp(
             appId: $appId,
@@ -721,10 +722,10 @@ class ConfigurationService
 
             return $remoteVersion;
         } catch (GuzzleException $e) {
-            $this->logger->error(message: "Failed to check remote version for configuration {$configuration->getId()}: " . $e->getMessage());
+            $this->logger->error(message: "Failed to check remote version for configuration {$configuration->getId()}: ".$e->getMessage());
             throw $e;
         } catch (Exception $e) {
-            $this->logger->error(message: "Unexpected error checking remote version: " . $e->getMessage());
+            $this->logger->error(message: "Unexpected error checking remote version: ".$e->getMessage());
             return null;
         }//end try
     }//end checkRemoteVersion()
@@ -788,7 +789,7 @@ class ConfigurationService
         if ($comparison > 0) {
             $result['hasUpdate'] = true;
             $result['message']   = "Update available: {$localVersion} → {$remoteVersion}";
-        } elseif ($comparison === 0) {
+        } else if ($comparison === 0) {
             $result['message'] = 'Local version is up to date';
         } else {
             $result['message'] = 'Local version is newer than remote version';
@@ -840,14 +841,14 @@ class ConfigurationService
             }
 
             $this->logger->info(
-                "Successfully fetched remote configuration with " . count($remoteData['components']['schemas'] ?? []) . " schemas and " . count($remoteData['components']['registers'] ?? []) . " registers"
+                "Successfully fetched remote configuration with ".count($remoteData['components']['schemas'] ?? [])." schemas and ".count($remoteData['components']['registers'] ?? [])." registers"
             );
 
             return $remoteData;
         } catch (GuzzleException $e) {
-            $this->logger->error(message: "Failed to fetch remote configuration: " . $e->getMessage());
+            $this->logger->error(message: "Failed to fetch remote configuration: ".$e->getMessage());
             return new JSONResponse(
-                data: ['error' => 'Failed to fetch remote configuration: ' . $e->getMessage()],
+                data: ['error' => 'Failed to fetch remote configuration: '.$e->getMessage()],
                 statusCode: 500
             );
         }//end try
@@ -1002,7 +1003,7 @@ class ConfigurationService
      *
      * @return array List of differences
      */
-    private function compareArrays(array $current, array $proposed, string $prefix = ''): array
+    private function compareArrays(array $current, array $proposed, string $prefix=''): array
     {
         return $this->previewHandler->compareArrays(
             current: $current,
@@ -1080,7 +1081,7 @@ class ConfigurationService
     {
         // Get the stored version from appconfig.
         // The key format is: <appId>_config_version.
-        $versionKey = $appId . '_config_version';
+        $versionKey = $appId.'_config_version';
 
         try {
             // Try to get the value from appconfig.
@@ -1124,7 +1125,7 @@ class ConfigurationService
     public function setConfiguredAppVersion(string $appId, string $version): void
     {
         // The key format is: <appId>_config_version.
-        $versionKey = $appId . '_config_version';
+        $versionKey = $appId.'_config_version';
 
         try {
             // Store the version in appconfig.
@@ -1169,7 +1170,7 @@ class ConfigurationService
      *
      * @psalm-return array{total_count: 0|mixed, results: list{0?: array{repository: mixed, owner: string, repo: string, path: string, url: mixed, stars: 0|mixed, description: ''|mixed, name: string, branch: string, raw_url: string, sha: null|string, organization: array{name: string, avatar_url: ''|mixed, type: 'User'|mixed, url: ''|mixed}, config: array},...}, page: int, per_page: int}
      */
-    public function searchGitHub(string $search = '', int $page = 1, int $perPage = 30): array
+    public function searchGitHub(string $search='', int $page=1, int $perPage=30): array
     {
         return $this->githubHandler->searchConfigurations(
             search: $search,
@@ -1193,7 +1194,7 @@ class ConfigurationService
      *
      * @psalm-return array{total_count: int<0, max>, results: list{0?: array{project_id: mixed, path: mixed, ref: 'main'|mixed, url: ''|mixed, name: string, config: array{title: string, description: '', version: 'unknown', app: null, type: 'unknown'}},...}, page: int, per_page: int}
      */
-    public function searchGitLab(string $search = '', int $page = 1, int $perPage = 30): array
+    public function searchGitLab(string $search='', int $page=1, int $perPage=30): array
     {
         return $this->gitlabHandler->searchConfigurations(
             search: $search,

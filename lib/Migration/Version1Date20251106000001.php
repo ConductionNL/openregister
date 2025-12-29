@@ -67,10 +67,10 @@ class Version1Date20251106000001 extends SimpleMigrationStep
                     'request_quota',
                     Types::INTEGER,
                     [
-                            'notnull' => false,
-                            'default' => null,
-                            'comment' => 'API request quota per day (0 = unlimited)',
-                        ]
+                        'notnull' => false,
+                        'default' => null,
+                        'comment' => 'API request quota per day (0 = unlimited)',
+                    ]
                 );
                 $output->info(message: '   ✓ Added request_quota column');
                 $updated = true;
@@ -82,10 +82,10 @@ class Version1Date20251106000001 extends SimpleMigrationStep
                     'token_quota',
                     Types::INTEGER,
                     [
-                            'notnull' => false,
-                            'default' => null,
-                            'comment' => 'Token quota per request (0 = unlimited)',
-                        ]
+                        'notnull' => false,
+                        'default' => null,
+                        'comment' => 'Token quota per request (0 = unlimited)',
+                    ]
                 );
                 $output->info(message: '   ✓ Added token_quota column');
                 $updated = true;
@@ -97,10 +97,10 @@ class Version1Date20251106000001 extends SimpleMigrationStep
                     'groups',
                     Types::JSON,
                     [
-                            'notnull' => false,
-                            'default' => null,
-                            'comment' => 'Nextcloud group IDs with access to this agent',
-                        ]
+                        'notnull' => false,
+                        'default' => null,
+                        'comment' => 'Nextcloud group IDs with access to this agent',
+                    ]
                 );
                 $output->info(message: '   ✓ Added groups column');
                 $updated = true;

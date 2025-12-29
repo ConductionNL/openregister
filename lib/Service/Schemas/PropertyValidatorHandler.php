@@ -30,6 +30,7 @@ use Psr\Log\LoggerInterface;
  */
 class PropertyValidatorHandler
 {
+
     /**
      * Valid JSON Schema types
      *
@@ -108,11 +109,11 @@ class PropertyValidatorHandler
      *
      * @psalm-suppress PossiblyUnusedReturnValue
      */
-    public function validateProperty(array $property, string $path = ''): bool
+    public function validateProperty(array $property, string $path=''): bool
     {
         // If property has oneOf, treat the contents as separate properties and return the result of those checks.
         if (($property['oneOf'] ?? null) !== null) {
-            return $this->validateProperties(properties: $property['oneOf'], path: $path . '/oneOf');
+            return $this->validateProperties(properties: $property['oneOf'], path: $path.'/oneOf');
         }
 
         // Type is required.
@@ -123,7 +124,7 @@ class PropertyValidatorHandler
         // Validate type.
         if (in_array($property['type'], $this->validTypes) === false) {
             throw new Exception(
-                "Invalid type '{$property['type']}' at '$path'. Must be one of: " . implode(', ', $this->validTypes)
+                "Invalid type '{$property['type']}' at '$path'. Must be one of: ".implode(', ', $this->validTypes)
             );
         }
 
@@ -131,19 +132,19 @@ class PropertyValidatorHandler
         if ($property['type'] === 'string' && (($property['format'] ?? null) !== null)) {
             if (in_array($property['format'], $this->validStringFormats) === false) {
                 throw new Exception(
-                    "Invalid string format '{$property['format']}' at '$path'. Must be one of: " . implode(', ', $this->validStringFormats)
+                    "Invalid string format '{$property['format']}' at '$path'. Must be one of: ".implode(', ', $this->validStringFormats)
                 );
             }
         }
 
         // Validate array items if type is array.
         if ($property['type'] === 'array' && (($property['items'] ?? null) !== null) && isset($property['items']['$ref']) === false) {
-            $this->validateProperty(property: $property['items'], path: $path . '/items');
+            $this->validateProperty(property: $property['items'], path: $path.'/items');
         }
 
         // Validate nested properties if type is object.
         if ($property['type'] === 'object' && (($property['properties'] ?? null) !== null)) {
-            $this->validateProperties(properties: $property['properties'], path: $path . '/properties');
+            $this->validateProperties(properties: $property['properties'], path: $path.'/properties');
         }
 
         // Validate minimum/maximum for numeric types.
@@ -201,14 +202,14 @@ class PropertyValidatorHandler
      *
      * @return true True if all properties are valid
      */
-    public function validateProperties(array $properties, string $path = ''): bool
+    public function validateProperties(array $properties, string $path=''): bool
     {
         foreach ($properties as $propertyName => $property) {
             if (is_array($property) === false) {
                 throw new Exception("Property '$propertyName' at '$path' must be an object");
             }
 
-            $this->validateProperty(property: $property, path: $path . '/' . $propertyName);
+            $this->validateProperty(property: $property, path: $path.'/'.$propertyName);
         }
 
         return true;

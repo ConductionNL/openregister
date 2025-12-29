@@ -161,11 +161,11 @@ class Version1Date20251106120000 extends SimpleMigrationStep
                     'organisation',
                     Types::STRING,
                     [
-                            'notnull' => false,
-                            'length'  => 255,
-                            'default' => null,
-                            'comment' => 'Organisation UUID for multi-tenancy',
-                        ]
+                        'notnull' => false,
+                        'length'  => 255,
+                        'default' => null,
+                        'comment' => 'Organisation UUID for multi-tenancy',
+                    ]
                 );
 
                 // Add index for faster filtering.
@@ -189,11 +189,11 @@ class Version1Date20251106120000 extends SimpleMigrationStep
                     'organisation',
                     Types::STRING,
                     [
-                            'notnull' => false,
-                            'length'  => 255,
-                            'default' => null,
-                            'comment' => 'Organisation UUID for multi-tenancy',
-                        ]
+                        'notnull' => false,
+                        'length'  => 255,
+                        'default' => null,
+                        'comment' => 'Organisation UUID for multi-tenancy',
+                    ]
                 );
 
                 // Add index for faster filtering.
@@ -217,11 +217,11 @@ class Version1Date20251106120000 extends SimpleMigrationStep
                     'organisation',
                     Types::STRING,
                     [
-                            'notnull' => false,
-                            'length'  => 255,
-                            'default' => null,
-                            'comment' => 'Organisation UUID for multi-tenancy',
-                        ]
+                        'notnull' => false,
+                        'length'  => 255,
+                        'default' => null,
+                        'comment' => 'Organisation UUID for multi-tenancy',
+                    ]
                 );
 
                 // Add index for faster filtering.

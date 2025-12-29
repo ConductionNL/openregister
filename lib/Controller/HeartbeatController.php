@@ -91,9 +91,9 @@ class HeartbeatController extends Controller
         // Minimal processing ensures fast response time.
         return new JSONResponse(
             data: [
-              'status'    => 'alive',
-              'timestamp' => time(),
-              'message'   => 'Heartbeat successful - connection kept alive',
+                'status'    => 'alive',
+                'timestamp' => time(),
+                'message'   => 'Heartbeat successful - connection kept alive',
             ]
         );
     }//end heartbeat()

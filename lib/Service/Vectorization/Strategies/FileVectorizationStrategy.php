@@ -38,6 +38,7 @@ use Psr\Log\LoggerInterface;
  */
 class FileVectorizationStrategy implements VectorizationStrategyInterface
 {
+
     /**
      * Chunk mapper
      *
@@ -93,9 +94,9 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
         $this->logger->debug(
             '[FileVectorizationStrategy] Fetching file chunks',
             [
-                    'maxFiles'  => $maxFiles,
-                    'fileTypes' => $fileTypes,
-                ]
+                'maxFiles'  => $maxFiles,
+                'fileTypes' => $fileTypes,
+            ]
         );
 
         // Get all chunks for files (source_type = 'file').

@@ -76,7 +76,7 @@ class DeleteFileHandler
      *
      * @psalm-param Node|string|int $file
      */
-    public function deleteFile(Node|string|int $file, ?ObjectEntity $object = null): bool
+    public function deleteFile(Node|string|int $file, ?ObjectEntity $object=null): bool
     {
         if ($file instanceof Node === false) {
             $fileName = (string) $file;
@@ -84,12 +84,12 @@ class DeleteFileHandler
         }
 
         if ($file === null) {
-            $this->logger->error(message: 'File ' . $fileName . ' not found for object ' . ($object?->getId() ?? 'unknown'));
+            $this->logger->error(message: 'File '.$fileName.' not found for object '.($object?->getId() ?? 'unknown'));
             return false;
         }
 
         if ($file instanceof File === false) {
-            $this->logger->error(message: 'File is not a File instance, it\'s a: ' . get_class($file));
+            $this->logger->error(message: 'File is not a File instance, it\'s a: '.get_class($file));
             return false;
         }
 
@@ -99,7 +99,7 @@ class DeleteFileHandler
         try {
             $file->delete();
         } catch (Exception $e) {
-            $this->logger->error(message: 'Failed to delete file: ' . $e->getMessage());
+            $this->logger->error(message: 'Failed to delete file: '.$e->getMessage());
             return false;
         }
 
@@ -116,7 +116,7 @@ class DeleteFileHandler
      *
      * @psalm-return list<array{error?: string, file: OCP\Files\Node|int|mixed|string, success: bool}>
      */
-    public function deleteFiles(array $files, ?ObjectEntity $object = null): array
+    public function deleteFiles(array $files, ?ObjectEntity $object=null): array
     {
         $results = [];
         foreach ($files as $file) {

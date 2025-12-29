@@ -38,6 +38,7 @@ use Psr\Log\LoggerInterface;
 
 class MetricsService
 {
+
     /**
      * Database connection instance.
      *
@@ -139,13 +140,13 @@ class MetricsService
      */
     public function recordMetric(
         string $metricType,
-        ?string $entityType = null,
-        ?string $entityId = null,
-        string $status = 'success',
-        ?int $durationMs = null,
-        ?array $metadata = null,
-        ?string $errorMessage = null,
-        ?string $userId = null
+        ?string $entityType=null,
+        ?string $entityId=null,
+        string $status='success',
+        ?int $durationMs=null,
+        ?array $metadata=null,
+        ?string $errorMessage=null,
+        ?string $userId=null
     ): void {
         try {
             // Get query builder instance for database operations.
@@ -156,18 +157,18 @@ class MetricsService
             $qb->insert('openregister_metrics')
                 ->values(
                     values: [
-                            [
-                                'metric_type'   => $qb->createNamedParameter($metricType),
-                                'entity_type'   => $qb->createNamedParameter($entityType),
-                                'entity_id'     => $qb->createNamedParameter($entityId),
-                                'user_id'       => $qb->createNamedParameter($userId),
-                                'status'        => $qb->createNamedParameter($status),
-                                'duration_ms'   => $qb->createNamedParameter($durationMs),
-                                'metadata'      => $qb->createNamedParameter($this->encodeMetadata($metadata)),
-                                'error_message' => $qb->createNamedParameter($errorMessage),
-                                'created_at'    => $qb->createNamedParameter(time()),
-                            ],
-                        ]
+                        [
+                            'metric_type'   => $qb->createNamedParameter($metricType),
+                            'entity_type'   => $qb->createNamedParameter($entityType),
+                            'entity_id'     => $qb->createNamedParameter($entityId),
+                            'user_id'       => $qb->createNamedParameter($userId),
+                            'status'        => $qb->createNamedParameter($status),
+                            'duration_ms'   => $qb->createNamedParameter($durationMs),
+                            'metadata'      => $qb->createNamedParameter($this->encodeMetadata($metadata)),
+                            'error_message' => $qb->createNamedParameter($errorMessage),
+                            'created_at'    => $qb->createNamedParameter(time()),
+                        ],
+                    ]
                 );
 
             // Execute the insert query.
@@ -178,9 +179,9 @@ class MetricsService
             $this->logger->error(
                 message: '[MetricsService] Failed to record metric',
                 context: [
-                        'metric_type' => $metricType,
-                        'error'       => $e->getMessage(),
-                    ]
+                    'metric_type' => $metricType,
+                    'error'       => $e->getMessage(),
+                ]
             );
         }//end try
     }//end recordMetric()
@@ -194,7 +195,7 @@ class MetricsService
      *
      * @psalm-return array<int>
      */
-    public function getFilesProcessedPerDay(int $days = 30): array
+    public function getFilesProcessedPerDay(int $days=30): array
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -239,7 +240,7 @@ class MetricsService
      *
      * @psalm-return array{total: int, successful: int, failed: int, success_rate: float, estimated_cost_usd: float, period_days: int}
      */
-    public function getEmbeddingStats(int $days = 30): array
+    public function getEmbeddingStats(int $days=30): array
     {
         // Get query builder instance.
         $qb = $this->db->getQueryBuilder();
@@ -299,7 +300,7 @@ class MetricsService
      *
      * @psalm-return array<string, array{count: int, avg_ms: float, min_ms: int, max_ms: int}>
      */
-    public function getSearchLatencyStats(int $days = 7): array
+    public function getSearchLatencyStats(int $days=7): array
     {
         // Calculate start timestamp (N days ago).
         $startTime = time() - ($days * 86400);
@@ -369,7 +370,7 @@ class MetricsService
      *
      * @psalm-return array{daily_vectors_added: array<string, int>, current_storage_bytes: int, current_storage_mb: float, avg_vectors_per_day: float, period_days: int}
      */
-    public function getStorageGrowth(int $days = 30): array
+    public function getStorageGrowth(int $days=30): array
     {
         // Get query builder instance for daily vector counts.
         $qb = $this->db->getQueryBuilder();
@@ -453,7 +454,7 @@ class MetricsService
      *
      * @psalm-suppress PossiblyInvalidMethodCall
      */
-    public function cleanOldMetrics(int $retentionDays = 90): int
+    public function cleanOldMetrics(int $retentionDays=90): int
     {
         // Get query builder instance.
         $qb = $this->db->getQueryBuilder();

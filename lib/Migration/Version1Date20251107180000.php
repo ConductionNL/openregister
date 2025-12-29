@@ -70,10 +70,10 @@ class Version1Date20251107180000 extends SimpleMigrationStep
                     'tools',
                     Types::TEXT,
                     [
-                            'notnull' => false,
-                            'default' => null,
-                            'comment' => 'JSON array of enabled tool names for agent function calling',
-                        ]
+                        'notnull' => false,
+                        'default' => null,
+                        'comment' => 'JSON array of enabled tool names for agent function calling',
+                    ]
                 );
                 $output->info(message: '✅ Added tools column to agents table');
                 $updated = true;
@@ -87,11 +87,11 @@ class Version1Date20251107180000 extends SimpleMigrationStep
                     'user',
                     Types::STRING,
                     [
-                            'notnull' => false,
-                            'length'  => 255,
-                            'default' => null,
-                            'comment' => 'User ID for running agent in cron/background scenarios',
-                        ]
+                        'notnull' => false,
+                        'length'  => 255,
+                        'default' => null,
+                        'comment' => 'User ID for running agent in cron/background scenarios',
+                    ]
                 );
                 $output->info(message: '✅ Added user column to agents table');
                 $updated = true;

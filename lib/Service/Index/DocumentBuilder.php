@@ -34,6 +34,7 @@ use Psr\Log\LoggerInterface;
  */
 class DocumentBuilder
 {
+
     /**
      * Logger for operation tracking.
      *
@@ -67,8 +68,8 @@ class DocumentBuilder
      */
     public function __construct(
         LoggerInterface $logger,
-        ?SchemaMapper $schemaMapper = null,
-        ?RegisterMapper $registerMapper = null
+        ?SchemaMapper $schemaMapper=null,
+        ?RegisterMapper $registerMapper=null
     ) {
         $this->logger         = $logger;
         $this->schemaMapper   = $schemaMapper;
@@ -90,13 +91,13 @@ class DocumentBuilder
      */
     public function createDocument(
         ObjectEntity $object,
-        array $solrFieldTypes = []
+        array $solrFieldTypes=[]
     ): array {
         $this->logger->debug(
             'DocumentBuilder: Creating basic Solr document',
             [
-                    'object_id' => $object->getId(),
-                ]
+                'object_id' => $object->getId(),
+            ]
         );
 
         // Build basic Solr document from object.
@@ -151,10 +152,10 @@ class DocumentBuilder
         $this->logger->debug(
             'Processing relations for SOLR',
             [
-                    'relations_type'  => gettype($relations),
-                    'relations_value' => $relations,
-                    'is_empty'        => empty($relations),
-                ]
+                'relations_type'  => gettype($relations),
+                'relations_value' => $relations,
+                'is_empty'        => empty($relations),
+            ]
         );
 
         if (empty($relations) === true) {
@@ -184,10 +185,10 @@ class DocumentBuilder
             $this->logger->debug(
                 'Flattened relations result',
                 [
-                        'input_count'  => count($relations),
-                        'output_count' => count($values),
-                        'values'       => $values,
-                    ]
+                    'input_count'  => count($relations),
+                    'output_count' => count($values),
+                    'values'       => $values,
+                ]
             );
 
             return $values;
@@ -223,9 +224,9 @@ class DocumentBuilder
             foreach ($files as $file) {
                 if (is_string($file) === true) {
                     $flattened[] = $file;
-                } elseif (is_array($file) === true && (($file['id'] ?? null) !== null)) {
+                } else if (is_array($file) === true && (($file['id'] ?? null) !== null)) {
                     $flattened[] = (string) $file['id'];
-                } elseif (is_array($file) === true && (($file['uuid'] ?? null) !== null)) {
+                } else if (is_array($file) === true && (($file['uuid'] ?? null) !== null)) {
                     $flattened[] = $file['uuid'];
                 }
             }
@@ -323,10 +324,10 @@ class DocumentBuilder
         $this->logger->debug(
             'Extracted arrays from relations',
             [
-                    'field_count'  => count($arrays),
-                    'fields'       => array_keys($arrays),
-                    'total_values' => array_sum(array_map('count', $arrays)),
-                ]
+                'field_count'  => count($arrays),
+                'fields'       => array_keys($arrays),
+                'total_values' => array_sum(array_map('count', $arrays)),
+            ]
         );
 
         return $arrays;
@@ -355,13 +356,13 @@ class DocumentBuilder
             if (is_string($item) === true) {
                 // Direct string value - use as-is.
                 $extractedValues[] = $item;
-            } elseif (is_array($item) === true) {
+            } else if (is_array($item) === true) {
                 // Object/array - try to extract ID/UUID.
                 $idValue = $this->extractIdFromObject($item);
                 if ($idValue !== null) {
                     $extractedValues[] = $idValue;
                 }
-            } elseif (is_scalar($item) === true) {
+            } else if (is_scalar($item) === true) {
                 // Other scalar values (int, float, bool) - convert to string.
                 $extractedValues[] = (string) $item;
             }
@@ -372,11 +373,11 @@ class DocumentBuilder
         $this->logger->debug(
             'Extracted indexable array values',
             [
-                    'field'            => $fieldName,
-                    'original_count'   => count($arrayValue),
-                    'extracted_count'  => count($extractedValues),
-                    'extracted_values' => $extractedValues,
-                ]
+                'field'            => $fieldName,
+                'original_count'   => count($arrayValue),
+                'extracted_count'  => count($extractedValues),
+                'extracted_values' => $extractedValues,
+            ]
         );
 
         return $extractedValues;
@@ -499,7 +500,7 @@ class DocumentBuilder
      *
      * @return mixed Truncated value or original if within limits
      */
-    public function truncateFieldValue($value, string $fieldName = ''): mixed
+    public function truncateFieldValue($value, string $fieldName=''): mixed
     {
         // Only truncate string values.
         if (is_string($value) === false) {
@@ -524,11 +525,11 @@ class DocumentBuilder
         $this->logger->info(
             'Field value truncated for SOLR indexing',
             [
-                    'field'            => $fieldName,
-                    'original_bytes'   => strlen($value),
-                    'truncated_bytes'  => strlen($truncated),
-                    'truncation_point' => $maxBytes - 100,
-                ]
+                'field'            => $fieldName,
+                'original_bytes'   => strlen($value),
+                'truncated_bytes'  => strlen($truncated),
+                'truncation_point' => $maxBytes - 100,
+            ]
         );
 
         return $truncated;
@@ -544,14 +545,13 @@ class DocumentBuilder
      *
      * @return bool True if field should be truncated
      */
-    public function shouldTruncateField(string $fieldName, array $fieldDefinition = []): bool
+    public function shouldTruncateField(string $fieldName, array $fieldDefinition=[]): bool
     {
         $type   = $fieldDefinition['type'] ?? '';
         $format = $fieldDefinition['format'] ?? '';
 
         // File fields should always be truncated.
-        if (
-            $type === 'file' || $format === 'file' || $format === 'binary'
+        if ($type === 'file' || $format === 'file' || $format === 'binary'
             || in_array($format, ['data-url', 'base64', 'image', 'document']) === true
         ) {
             return true;
@@ -611,12 +611,12 @@ class DocumentBuilder
             $this->logger->warning(
                 '🛡️ Field validation prevented type mismatch',
                 [
-                        'field'           => $fieldName,
-                        'value'           => $fieldValue,
-                        'value_type'      => gettype($fieldValue),
-                        'solr_field_type' => $solrFieldType,
-                        'action'          => 'SKIPPED',
-                    ]
+                    'field'           => $fieldName,
+                    'value'           => $fieldValue,
+                    'value_type'      => gettype($fieldValue),
+                    'solr_field_type' => $solrFieldType,
+                    'action'          => 'SKIPPED',
+                ]
             );
             return false;
         }
@@ -624,10 +624,10 @@ class DocumentBuilder
         $this->logger->debug(
             '✅ Field validation passed',
             [
-                    'field'     => $fieldName,
-                    'value'     => $fieldValue,
-                    'solr_type' => $solrFieldType,
-                ]
+                'field'     => $fieldName,
+                'value'     => $fieldValue,
+                'solr_type' => $solrFieldType,
+            ]
         );
 
         return true;
@@ -699,7 +699,7 @@ class DocumentBuilder
      *
      * @return int The resolved register ID
      */
-    public function resolveRegisterToId($registerValue, ?\OCA\OpenRegister\Db\Register $register = null): int
+    public function resolveRegisterToId($registerValue, ?\OCA\OpenRegister\Db\Register $register=null): int
     {
         if (empty($registerValue) === true) {
             return 0;
@@ -752,7 +752,7 @@ class DocumentBuilder
      *
      * @return int The resolved schema ID
      */
-    public function resolveSchemaToId($schemaValue, ?\OCA\OpenRegister\Db\Schema $schema = null): int
+    public function resolveSchemaToId($schemaValue, ?\OCA\OpenRegister\Db\Schema $schema=null): int
     {
         if (empty($schemaValue) === true) {
             return 0;

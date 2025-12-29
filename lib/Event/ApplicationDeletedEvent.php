@@ -28,6 +28,7 @@ use OCP\EventDispatcher\Event;
  */
 class ApplicationDeletedEvent extends Event
 {
+
     /**
      * The deleted application.
      *

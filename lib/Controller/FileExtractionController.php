@@ -91,17 +91,17 @@ class FileExtractionController extends Controller
             // For now, return empty array as this endpoint needs to be redesigned for chunk-based architecture.
             return new JSONResponse(
                 data: [
-                        'success' => true,
-                        'data'    => [],
-                        'message' => 'This endpoint needs to be updated for chunk-based architecture',
-                    ]
+                    'success' => true,
+                    'data'    => [],
+                    'message' => 'This endpoint needs to be updated for chunk-based architecture',
+                ]
             );
         } catch (\Exception $e) {
             return new JSONResponse(
                 data: [
-                        'success' => false,
-                        'error'   => $e->getMessage(),
-                    ],
+                    'success' => false,
+                    'error'   => $e->getMessage(),
+                ],
                 statusCode: 500
             );
         }//end try
@@ -129,27 +129,27 @@ class FileExtractionController extends Controller
             if (empty($chunks) === true) {
                 return new JSONResponse(
                     data: [
-                            'success' => false,
-                            'error'   => 'File not found in extraction system',
-                            'message' => 'No chunks found for file ID: ' . $id,
-                        ],
+                        'success' => false,
+                        'error'   => 'File not found in extraction system',
+                        'message' => 'No chunks found for file ID: '.$id,
+                    ],
                     statusCode: 404
                 );
             }
 
             return new JSONResponse(
                 data: [
-                        'success' => true,
-                        'data'    => array_map(fn($chunk) => $chunk->jsonSerialize(), $chunks),
-                    ]
+                    'success' => true,
+                    'data'    => array_map(fn($chunk) => $chunk->jsonSerialize(), $chunks),
+                ]
             );
         } catch (\Exception $e) {
             return new JSONResponse(
                 data: [
-                        'success' => false,
-                        'error'   => 'File not found in extraction system',
-                        'message' => $e->getMessage(),
-                    ],
+                    'success' => false,
+                    'error'   => 'File not found in extraction system',
+                    'message' => $e->getMessage(),
+                ],
                 statusCode: 404
             );
         }//end try
@@ -180,7 +180,7 @@ class FileExtractionController extends Controller
      *     array<never, never>
      * >
      */
-    public function extract(int $id, bool $forceReExtract = false): JSONResponse
+    public function extract(int $id, bool $forceReExtract=false): JSONResponse
     {
         try {
             // ExtractFile returns void, not an object.
@@ -188,26 +188,26 @@ class FileExtractionController extends Controller
 
             return new JSONResponse(
                 data: [
-                        'success' => true,
-                        'message' => 'File extraction completed',
-                    ]
+                    'success' => true,
+                    'message' => 'File extraction completed',
+                ]
             );
         } catch (NotFoundException $e) {
             return new JSONResponse(
                 data: [
-                        'success' => false,
-                        'error'   => 'File not found in Nextcloud',
-                        'message' => $e->getMessage(),
-                    ],
+                    'success' => false,
+                    'error'   => 'File not found in Nextcloud',
+                    'message' => $e->getMessage(),
+                ],
                 statusCode: 404
             );
         } catch (\Exception $e) {
             return new JSONResponse(
                 data: [
-                        'success' => false,
-                        'error'   => 'Extraction failed',
-                        'message' => $e->getMessage(),
-                    ],
+                    'success' => false,
+                    'error'   => 'Extraction failed',
+                    'message' => $e->getMessage(),
+                ],
                 statusCode: 500
             );
         }//end try
@@ -243,25 +243,25 @@ class FileExtractionController extends Controller
      *     array<never, never>
      * >
      */
-    public function discover(int $limit = 100): JSONResponse
+    public function discover(int $limit=100): JSONResponse
     {
         try {
             $stats = $this->textExtractionService->discoverUntrackedFiles($limit);
 
             return new JSONResponse(
                 data: [
-                        'success' => true,
-                        'message' => 'File discovery completed',
-                        'data'    => $stats,
-                    ]
+                    'success' => true,
+                    'message' => 'File discovery completed',
+                    'data'    => $stats,
+                ]
             );
         } catch (\Exception $e) {
             return new JSONResponse(
                 data: [
-                        'success' => false,
-                        'error'   => 'File discovery failed',
-                        'message' => $e->getMessage(),
-                    ],
+                    'success' => false,
+                    'error'   => 'File discovery failed',
+                    'message' => $e->getMessage(),
+                ],
                 statusCode: 500
             );
         }
@@ -292,25 +292,25 @@ class FileExtractionController extends Controller
      *     array<never, never>
      * >
      */
-    public function extractAll(int $limit = 100): JSONResponse
+    public function extractAll(int $limit=100): JSONResponse
     {
         try {
             $stats = $this->textExtractionService->extractPendingFiles($limit);
 
             return new JSONResponse(
                 data: [
-                        'success' => true,
-                        'message' => 'Batch extraction completed',
-                        'data'    => $stats,
-                    ]
+                    'success' => true,
+                    'message' => 'Batch extraction completed',
+                    'data'    => $stats,
+                ]
             );
         } catch (\Exception $e) {
             return new JSONResponse(
                 data: [
-                        'success' => false,
-                        'error'   => 'Batch extraction failed',
-                        'message' => $e->getMessage(),
-                    ],
+                    'success' => false,
+                    'error'   => 'Batch extraction failed',
+                    'message' => $e->getMessage(),
+                ],
                 statusCode: 500
             );
         }
@@ -338,25 +338,25 @@ class FileExtractionController extends Controller
      *     array<never, never>
      * >
      */
-    public function retryFailed(int $limit = 50): JSONResponse
+    public function retryFailed(int $limit=50): JSONResponse
     {
         try {
             $stats = $this->textExtractionService->retryFailedExtractions($limit);
 
             return new JSONResponse(
                 data: [
-                        'success' => true,
-                        'message' => 'Retry completed',
-                        'data'    => $stats,
-                    ]
+                    'success' => true,
+                    'message' => 'Retry completed',
+                    'data'    => $stats,
+                ]
             );
         } catch (\Exception $e) {
             return new JSONResponse(
                 data: [
-                        'success' => false,
-                        'error'   => 'Retry failed',
-                        'message' => $e->getMessage(),
-                    ],
+                    'success' => false,
+                    'error'   => 'Retry failed',
+                    'message' => $e->getMessage(),
+                ],
                 statusCode: 500
             );
         }
@@ -395,17 +395,17 @@ class FileExtractionController extends Controller
 
             return new JSONResponse(
                 data: [
-                        'success' => true,
-                        'data'    => $stats,
-                    ]
+                    'success' => true,
+                    'data'    => $stats,
+                ]
             );
         } catch (\Exception $e) {
             return new JSONResponse(
                 data: [
-                        'success' => false,
-                        'error'   => 'Failed to retrieve statistics',
-                        'message' => $e->getMessage(),
-                    ],
+                    'success' => false,
+                    'error'   => 'Failed to retrieve statistics',
+                    'message' => $e->getMessage(),
+                ],
                 statusCode: 500
             );
         }
@@ -440,21 +440,21 @@ class FileExtractionController extends Controller
             // Note: cleanupInvalidEntries not available in TextExtractionService.
             return new JSONResponse(
                 data: [
-                        'success' => true,
-                        'message' => 'Cleanup completed',
-                        'data'    => [
-                            'deleted' => 0,
-                            'reasons' => [],
-                        ],
-                    ]
+                    'success' => true,
+                    'message' => 'Cleanup completed',
+                    'data'    => [
+                        'deleted' => 0,
+                        'reasons' => [],
+                    ],
+                ]
             );
         } catch (\Exception $e) {
             return new JSONResponse(
                 data: [
-                        'success' => false,
-                        'error'   => 'Cleanup failed',
-                        'message' => $e->getMessage(),
-                    ],
+                    'success' => false,
+                    'error'   => 'Cleanup failed',
+                    'message' => $e->getMessage(),
+                ],
                 statusCode: 500
             );
         }//end try
@@ -491,17 +491,17 @@ class FileExtractionController extends Controller
 
             return new JSONResponse(
                 data: [
-                        'success' => true,
-                        'data'    => $types,
-                    ]
+                    'success' => true,
+                    'data'    => $types,
+                ]
             );
         } catch (\Exception $e) {
             return new JSONResponse(
                 data: [
-                        'success' => false,
-                        'error'   => 'Failed to retrieve file types',
-                        'message' => $e->getMessage(),
-                    ],
+                    'success' => false,
+                    'error'   => 'Failed to retrieve file types',
+                    'message' => $e->getMessage(),
+                ],
                 statusCode: 500
             );
         }
@@ -534,26 +534,26 @@ class FileExtractionController extends Controller
             $result = $this->vectorizationService->vectorizeBatch(
                 entityType: 'file',
                 options: [
-                        'mode'       => $mode,
-                        'max_files'  => $maxFiles,
-                        'batch_size' => $batchSize,
-                        'file_types' => $fileTypes,
-                    ]
+                    'mode'       => $mode,
+                    'max_files'  => $maxFiles,
+                    'batch_size' => $batchSize,
+                    'file_types' => $fileTypes,
+                ]
             );
 
             return new JSONResponse(
                 data: [
-                        'success' => true,
-                        'data'    => $result,
-                    ]
+                    'success' => true,
+                    'data'    => $result,
+                ]
             );
         } catch (\Exception $e) {
             return new JSONResponse(
                 data: [
-                        'success' => false,
-                        'error'   => 'Vectorization failed',
-                        'message' => $e->getMessage(),
-                    ],
+                    'success' => false,
+                    'error'   => 'Vectorization failed',
+                    'message' => $e->getMessage(),
+                ],
                 statusCode: 500
             );
         }//end try

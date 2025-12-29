@@ -116,6 +116,7 @@ use Psr\Log\LoggerInterface;
  */
 class SettingsService
 {
+
     /**
      * Configuration service
      *
@@ -339,18 +340,18 @@ class SettingsService
         SearchTrailMapper $searchTrailMapper,
         IUserManager $userManager,
         IDBConnection $db,
-        ?SetupHandler $setupHandler = null,
-        ?CacheHandler $objectCacheService = null,
-        ?IAppContainer $container = null,
-        string $appName = 'openregister',
-        ?ValidationOperationsHandler $validationOperationsHandler = null,
-        ?SearchBackendHandler $searchBackendHandler = null,
-        ?LlmSettingsHandler $llmSettingsHandler = null,
-        ?FileSettingsHandler $fileSettingsHandler = null,
-        ?ObjectRetentionHandler $objectRetentionHandler = null,
-        ?CacheSettingsHandler $cacheSettingsHandler = null,
-        ?SolrSettingsHandler $solrSettingsHandler = null,
-        ?ConfigurationSettingsHandler $configurationSettingsHandler = null
+        ?SetupHandler $setupHandler=null,
+        ?CacheHandler $objectCacheService=null,
+        ?IAppContainer $container=null,
+        string $appName='openregister',
+        ?ValidationOperationsHandler $validationOperationsHandler=null,
+        ?SearchBackendHandler $searchBackendHandler=null,
+        ?LlmSettingsHandler $llmSettingsHandler=null,
+        ?FileSettingsHandler $fileSettingsHandler=null,
+        ?ObjectRetentionHandler $objectRetentionHandler=null,
+        ?CacheSettingsHandler $cacheSettingsHandler=null,
+        ?SolrSettingsHandler $solrSettingsHandler=null,
+        ?ConfigurationSettingsHandler $configurationSettingsHandler=null
     ) {
         $this->config           = $config;
         $this->auditTrailMapper = $auditTrailMapper;
@@ -406,7 +407,7 @@ class SettingsService
 
             return json_decode($backendConfig, true);
         } catch (\Exception $e) {
-            $this->logger->error('Failed to retrieve search backend configuration: ' . $e->getMessage());
+            $this->logger->error('Failed to retrieve search backend configuration: '.$e->getMessage());
             return [
                 'active'    => 'solr',
                 'available' => ['solr', 'elasticsearch'],
@@ -551,7 +552,7 @@ class SettingsService
      *
      * @psalm-return array{type: string, userId: null|string, timestamp: string, results: array{names?: array, distributed?: array, facet?: array, schema?: array, object?: array}, errors: array<never, never>, totalCleared: 0|mixed}
      */
-    public function clearCache(?string $cacheType = null): array
+    public function clearCache(?string $cacheType=null): array
     {
         return $this->cacheSettingsHandler->clearCache($cacheType);
     }//end clearCache()
@@ -651,12 +652,12 @@ class SettingsService
      * @return never Warmup result
      */
     public function warmupSolrIndex(
-        array $schemas = [],
-        int $maxObjects = 0,
-        string $mode = 'serial',
-        bool $collectErrors = false,
-        int $batchSize = 1000,
-        array $schemaIds = []
+        array $schemas=[],
+        int $maxObjects=0,
+        string $mode='serial',
+        bool $collectErrors=false,
+        int $batchSize=1000,
+        array $schemaIds=[]
     ) {
         // NOTE: This method calls a deprecated method that always throws.
         // TODO: Refactor to use IndexService->warmupIndex() directly.
@@ -885,10 +886,10 @@ class SettingsService
      * @psalm-return array{stats: array{total_objects: int<1, max>|mixed, processed_objects: 0, successful_saves: 0, failed_saves: 0, duration_seconds: float, batches_processed: int<0, max>, objects_per_second: 0|float}, memory_usage: array{start_memory: int, end_memory: int, peak_memory: int, memory_used: int, peak_percentage: float, formatted: array{actual_used: string, peak_usage: string, peak_percentage: string}}, success?: bool|mixed, message?: mixed|string,...}
      */
     public function massValidateObjects(
-        int $maxObjects = 0,
-        int $batchSize = 1000,
-        string $mode = 'serial',
-        bool $collectErrors = false
+        int $maxObjects=0,
+        int $batchSize=1000,
+        string $mode='serial',
+        bool $collectErrors=false
     ): array {
         $startTime   = microtime(true);
         $startMemory = memory_get_usage(true);
@@ -964,7 +965,7 @@ class SettingsService
             '📋 BATCH JOBS CREATED',
             [
                 'totalBatches'      => count($batchJobs),
-                'estimatedDuration' => round((count($batchJobs) * 2)) . 's',
+                'estimatedDuration' => round((count($batchJobs) * 2)).'s',
             ]
         );
 
@@ -1016,7 +1017,7 @@ class SettingsService
                 'peak_percentage' => round(
                     (max($peakMemory, $finalPeakMemory) / (1024 * 1024 * 1024)) * 100,
                     1
-                ) . '%',
+                ).'%',
             ],
         ];
 
@@ -1050,7 +1051,7 @@ class SettingsService
                 'successful'       => $results['stats']['successful_saves'],
                 'failed'           => $results['stats']['failed_saves'],
                 'total'            => $results['stats']['processed_objects'],
-                'duration'         => $results['stats']['duration_seconds'] . 's',
+                'duration'         => $results['stats']['duration_seconds'].'s',
                 'objectsPerSecond' => $results['stats']['objects_per_second'],
                 'mode'             => $mode,
             ]
@@ -1164,7 +1165,7 @@ class SettingsService
                     ];
 
                     $this->logger->error(
-                        'Mass validation failed for object ' . $object->getUuid() . ': ' . $e->getMessage()
+                        'Mass validation failed for object '.$object->getUuid().': '.$e->getMessage()
                     );
 
                     if ($collectErrors === false) {
@@ -1190,7 +1191,7 @@ class SettingsService
                     'processed'        => $batchProcessed,
                     'successful'       => $batchSuccesses,
                     'failed'           => count($batchErrors),
-                    'batchDuration'    => round($batchDuration * 1000) . 'ms',
+                    'batchDuration'    => round($batchDuration * 1000).'ms',
                     'objectsPerSecond' => $objectsPerSecond,
                     'totalProcessed'   => $results['stats']['processed_objects'],
                 ]
@@ -1204,8 +1205,8 @@ class SettingsService
                 $this->logger->debug(
                     '🧹 MEMORY CLEANUP',
                     [
-                        'memoryUsage' => round(memory_get_usage() / 1024 / 1024, 2) . 'MB',
-                        'peakMemory'  => round(memory_get_peak_usage() / 1024 / 1024, 2) . 'MB',
+                        'memoryUsage' => round(memory_get_usage() / 1024 / 1024, 2).'MB',
+                        'peakMemory'  => round(memory_get_peak_usage() / 1024 / 1024, 2).'MB',
                     ]
                 );
                 gc_collect_cycles();
@@ -1278,7 +1279,7 @@ class SettingsService
                 '✅ COMPLETED PARALLEL CHUNK',
                 [
                     'chunkIndex'       => $chunkIndex + 1,
-                    'chunkTime'        => $chunkTime . 'ms',
+                    'chunkTime'        => $chunkTime.'ms',
                     'objectsProcessed' => $chunkProcessed,
                     'totalProcessed'   => $results['stats']['processed_objects'],
                 ]
@@ -1387,7 +1388,7 @@ class SettingsService
      *
      * @return string Formatted string.
      */
-    public function formatBytes(int $bytes, int $precision = 2): string
+    public function formatBytes(int $bytes, int $precision=2): string
     {
         $units     = ['B', 'KB', 'MB', 'GB', 'TB'];
         $unitCount = count($units);
@@ -1400,7 +1401,7 @@ class SettingsService
         // Ensure $i is within bounds (0-4) for the $units array.
         $i = min($i, $unitCount - 1);
 
-        return round($bytes, $precision) . ' ' . $units[$i];
+        return round($bytes, $precision).' '.$units[$i];
     }//end formatBytes()
 
     /**
@@ -1449,7 +1450,7 @@ class SettingsService
         $end    = substr($token, -4);
         $middle = str_repeat('*', min(20, strlen($token) - 8));
 
-        return $start . $middle . $end;
+        return $start.$middle.$end;
     }//end maskToken()
 
     /**
@@ -1558,8 +1559,7 @@ class SettingsService
                 $actualDocValues     = $actualField['docValues'] ?? false;
 
                 // Check if any configuration differs.
-                if (
-                    $expectedType !== $actualType
+                if ($expectedType !== $actualType
                     || $expectedMultiValued !== $actualMultiValued
                     || $expectedDocValues !== $actualDocValues
                 ) {
@@ -1664,7 +1664,7 @@ class SettingsService
      *
      * @psalm-return array{success: bool, error?: 'Rebase failed', message: string, rebased?: array{solr?: array{success: true, message: 'Solr configuration rebased'}, cache?: array{success: true, message: 'Cache cleared and ready for rebuild'}}, timestamp?: int<1, max>}
      */
-    public function rebase(array $options = []): array
+    public function rebase(array $options=[]): array
     {
         try {
             $this->logger->info('[SettingsService] Rebase requested', ['options' => $options]);

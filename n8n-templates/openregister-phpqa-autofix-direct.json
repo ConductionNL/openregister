@@ -1,0 +1,75 @@
+{
+  "name": "OpenRegister PHPQA + Auto-fix",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "openregister-quality-check",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "openregister-quality-check-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const { execSync } = require('child_process');\n\ntry {\n  // Execute composer phpqa in the Nextcloud container.\n  const output = execSync(\n    'docker exec master-nextcloud-1 bash -c \"cd /var/www/html/apps-extra/openregister && composer phpqa 2>&1\"',\n    { \n      encoding: 'utf8',\n      maxBuffer: 10 * 1024 * 1024,\n      timeout: 120000\n    }\n  );\n\n  // Parse the PHPQA JSON output if available.\n  let phpqaData = null;\n  try {\n    const jsonMatch = output.match(/\\{[\\s\\S]*\"files\"[\\s\\S]*\\}/g);\n    if (jsonMatch) {\n      phpqaData = JSON.parse(jsonMatch[jsonMatch.length - 1]);\n    }\n  } catch (e) {\n    // JSON parsing failed.\n  }\n\n  return {\n    timestamp: new Date().toISOString(),\n    step: 'initial_phpqa',\n    status: 'success',\n    output: output,\n    phpqa_data: phpqaData\n  };\n} catch (error) {\n  return {\n    timestamp: new Date().toISOString(),\n    step: 'initial_phpqa',\n    status: 'error',\n    error: error.message,\n    stdout: error.stdout ? error.stdout.toString() : '',\n    stderr: error.stderr ? error.stderr.toString() : ''\n  };\n}"
+      },
+      "id": "code-initial-phpqa",
+      "name": "Initial PHPQA Analysis",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const { execSync } = require('child_process');\n\ntry {\n  // Execute composer cs:fix in the Nextcloud container.\n  const output = execSync(\n    'docker exec master-nextcloud-1 bash -c \"cd /var/www/html/apps-extra/openregister && composer cs:fix 2>&1\"',\n    { \n      encoding: 'utf8',\n      maxBuffer: 10 * 1024 * 1024,\n      timeout: 120000\n    }\n  );\n\n  const filesFixed = (output.match(/fixed/gi) || []).length;\n  const previousData = $input.first().json;\n\n  return {\n    ...previousData,\n    cs_fix: {\n      timestamp: new Date().toISOString(),\n      step: 'cs_fix',\n      status: 'success',\n      files_fixed: filesFixed,\n      output: output\n    }\n  };\n} catch (error) {\n  const previousData = $input.first().json;\n  return {\n    ...previousData,\n    cs_fix: {\n      timestamp: new Date().toISOString(),\n      step: 'cs_fix',\n      status: 'error',\n      error: error.message,\n      stdout: error.stdout ? error.stdout.toString() : '',\n      stderr: error.stderr ? error.stderr.toString() : ''\n    }\n  };\n}"
+      },
+      "id": "code-cs-fix",
+      "name": "Auto-fix with CS Fix",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const { execSync } = require('child_process');\n\ntry {\n  // Execute composer phpqa again.\n  const output = execSync(\n    'docker exec master-nextcloud-1 bash -c \"cd /var/www/html/apps-extra/openregister && composer phpqa 2>&1\"',\n    { \n      encoding: 'utf8',\n      maxBuffer: 10 * 1024 * 1024,\n      timeout: 120000\n    }\n  );\n\n  // Parse the PHPQA JSON output.\n  let phpqaData = null;\n  try {\n    const jsonMatch = output.match(/\\{[\\s\\S]*\"files\"[\\s\\S]*\\}/g);\n    if (jsonMatch) {\n      phpqaData = JSON.parse(jsonMatch[jsonMatch.length - 1]);\n    }\n  } catch (e) {\n    // JSON parsing failed.\n  }\n\n  const previousData = $input.first().json;\n\n  return {\n    ...previousData,\n    final_phpqa: {\n      timestamp: new Date().toISOString(),\n      step: 'final_phpqa',\n      status: 'success',\n      output: output,\n      phpqa_data: phpqaData\n    },\n    summary: {\n      container: 'master-nextcloud-1',\n      workflow: 'phpqa_autofix',\n      files_fixed: previousData.cs_fix?.files_fixed || 0,\n      initial_issues: previousData.phpqa_data?.totals?.errors || 0,\n      final_issues: phpqaData?.totals?.errors || 0,\n      improvement: (previousData.phpqa_data?.totals?.errors || 0) - (phpqaData?.totals?.errors || 0)\n    }\n  };\n} catch (error) {\n  const previousData = $input.first().json;\n  return {\n    ...previousData,\n    final_phpqa: {\n      timestamp: new Date().toISOString(),\n      step: 'final_phpqa',\n      status: 'error',\n      error: error.message,\n      stdout: error.stdout ? error.stdout.toString() : '',\n      stderr: error.stderr ? error.stderr.toString() : ''\n    }\n  };\n}"
+      },
+      "id": "code-final-phpqa",
+      "name": "Final PHPQA Analysis",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [[{"node": "Initial PHPQA Analysis", "type": "main", "index": 0}]]
+    },
+    "Initial PHPQA Analysis": {
+      "main": [[{"node": "Auto-fix with CS Fix", "type": "main", "index": 0}]]
+    },
+    "Auto-fix with CS Fix": {
+      "main": [[{"node": "Final PHPQA Analysis", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "openregister-n8n"
+  },
+  "pinData": null,
+  "tags": []
+}
+

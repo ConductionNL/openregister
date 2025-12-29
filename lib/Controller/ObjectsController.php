@@ -68,6 +68,7 @@ use OCP\AppFramework\Http\DataDownloadResponse;
 
 class ObjectsController extends Controller
 {
+
     /**
      * Export service for handling data exports
      *
@@ -119,8 +120,8 @@ class ObjectsController extends Controller
         private readonly IGroupManager $groupManager,
         ExportService $exportService,
         ImportService $importService,
-        private readonly ?WebhookService $webhookService = null,
-        private readonly ?LoggerInterface $logger = null
+        private readonly ?WebhookService $webhookService=null,
+        private readonly ?LoggerInterface $logger=null
     ) {
         parent::__construct(appName: $appName, request: $request);
         $this->exportService = $exportService;
@@ -181,7 +182,7 @@ class ObjectsController extends Controller
      *     prev?: string
      * }
      */
-    private function paginate(array $results, ?int $total = 0, ?int $limit = 20, ?int $offset = 0, ?int $page = 1): array
+    private function paginate(array $results, ?int $total=0, ?int $limit=20, ?int $offset=0, ?int $page=1): array
     {
         // Ensure we have valid values (never null).
         $total = max(0, $total ?? 0);
@@ -226,11 +227,11 @@ class ObjectsController extends Controller
         // Add next page link if there are more pages.
         if ($page < $pages) {
             $nextPage = $page + 1;
-            $nextUrl  = preg_replace('/([?&])page=\d+/', '$1page=' . $nextPage, $currentUrl);
+            $nextUrl  = preg_replace('/([?&])page=\d+/', '$1page='.$nextPage, $currentUrl);
             if (strpos($nextUrl, 'page=') === false) {
-                $nextUrl .= '&page=' . $nextPage;
+                $nextUrl .= '&page='.$nextPage;
                 if (strpos($nextUrl, '?') === false) {
-                    $nextUrl .= '?page=' . $nextPage;
+                    $nextUrl .= '?page='.$nextPage;
                 }
             }
 
@@ -240,11 +241,11 @@ class ObjectsController extends Controller
         // Add previous page link if not on first page.
         if ($page > 1) {
             $prevPage = $page - 1;
-            $prevUrl  = preg_replace('/([?&])page=\d+/', '$1page=' . $prevPage, $currentUrl);
+            $prevUrl  = preg_replace('/([?&])page=\d+/', '$1page='.$prevPage, $currentUrl);
             if (strpos($prevUrl, 'page=') === false) {
-                $prevUrl .= '&page=' . $prevPage;
+                $prevUrl .= '&page='.$prevPage;
                 if (strpos($prevUrl, '?') === false) {
-                    $prevUrl .= '?page=' . $prevPage;
+                    $prevUrl .= '?page='.$prevPage;
                 }
             }
 
@@ -292,7 +293,7 @@ class ObjectsController extends Controller
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    private function getConfig(?string $_register = null, ?string $_schema = null, ?array $ids = null): array
+    private function getConfig(?string $_register=null, ?string $_schema=null, ?array $ids=null): array
     {
         $params = $this->request->getParams();
 
@@ -736,7 +737,7 @@ class ObjectsController extends Controller
                 $fileCount = count($nameArray);
                 for ($i = 0; $i < $fileCount; $i++) {
                     // Use indexed key to preserve all files: images[0], images[1], images[2].
-                    $uploadedFiles[$fieldName . '[' . $i . ']'] = [
+                    $uploadedFiles[$fieldName.'['.$i.']'] = [
                         'name'     => $nameArray[$i],
                         'type'     => $typeArray[$i] ?? '',
                         'tmp_name' => $tmpNameArray[$i] ?? '',
@@ -907,7 +908,7 @@ class ObjectsController extends Controller
                 $fileCount = count($nameArray);
                 for ($i = 0; $i < $fileCount; $i++) {
                     // Use indexed key to preserve all files: images[0], images[1], images[2].
-                    $uploadedFiles[$fieldName . '[' . $i . ']'] = [
+                    $uploadedFiles[$fieldName.'['.$i.']'] = [
                         'name'     => $nameArray[$i],
                         'type'     => $typeArray[$i] ?? '',
                         'tmp_name' => $tmpNameArray[$i] ?? '',
@@ -952,22 +953,20 @@ class ObjectsController extends Controller
             $resolvedSchemaId = $objectService->getSchema();
             // Returns the current schema ID.
             // Verify that the object belongs to the specified register and schema.
-            if (
-                (int) $existingObject->getRegister() !== $resolvedRegisterId
+            if ((int) $existingObject->getRegister() !== $resolvedRegisterId
                 || (int) $existingObject->getSchema() !== $resolvedSchemaId
             ) {
                 return new JSONResponse(data: ['error' => 'Object not found in specified register/schema'], statusCode: 404);
             }
 
             // Check if the object is locked.
-            if (
-                $existingObject->isLocked() === true
+            if ($existingObject->isLocked() === true
                 && $existingObject->getLockedBy() !== $this->container->get('userId')
             ) {
                 // Return a "locked" error with the user who has the lock.
                 return new JSONResponse(
                     data: [
-                        'error'    => 'Object is locked by ' . $existingObject->getLockedBy(),
+                        'error'    => 'Object is locked by '.$existingObject->getLockedBy(),
                         'lockedBy' => $existingObject->getLockedBy(),
                     ],
                     statusCode: 423
@@ -1067,22 +1066,20 @@ class ObjectsController extends Controller
             $resolvedSchemaId   = $objectService->getSchema();
 
             // Verify that the object belongs to the specified register and schema.
-            if (
-                (int) $existingObject->getRegister() !== $resolvedRegisterId
+            if ((int) $existingObject->getRegister() !== $resolvedRegisterId
                 || (int) $existingObject->getSchema() !== $resolvedSchemaId
             ) {
                 return new JSONResponse(data: ['error' => 'Object not found in specified register/schema'], statusCode: 404);
             }
 
             // Check if the object is locked.
-            if (
-                $existingObject->isLocked() === true
+            if ($existingObject->isLocked() === true
                 && $existingObject->getLockedBy() !== $this->container->get('userId')
             ) {
                 // Return a "locked" error with the user who has the lock.
                 return new JSONResponse(
                     data: [
-                        'error'    => 'Object is locked by ' . $existingObject->getLockedBy(),
+                        'error'    => 'Object is locked by '.$existingObject->getLockedBy(),
                         'lockedBy' => $existingObject->getLockedBy(),
                     ],
                     statusCode: 423
@@ -1817,7 +1814,7 @@ class ObjectsController extends Controller
         } catch (\Exception $exception) {
             return new JSONResponse(
                 data: [
-                    'error' => 'Failed to merge objects: ' . $exception->getMessage(),
+                    'error' => 'Failed to merge objects: '.$exception->getMessage(),
                 ],
                 statusCode: 500
             );
@@ -1912,7 +1909,7 @@ class ObjectsController extends Controller
         } catch (\Exception $exception) {
             return new JSONResponse(
                 data: [
-                    'error' => 'Failed to migrate objects: ' . $exception->getMessage(),
+                    'error' => 'Failed to migrate objects: '.$exception->getMessage(),
                 ],
                 statusCode: 500
             );
@@ -1996,7 +1993,7 @@ class ObjectsController extends Controller
         } catch (\Exception $exception) {
             return new JSONResponse(
                 data: [
-                    'error' => 'Failed to create ZIP file: ' . $exception->getMessage(),
+                    'error' => 'Failed to create ZIP file: '.$exception->getMessage(),
                 ],
                 statusCode: 500
             );

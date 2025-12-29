@@ -72,7 +72,7 @@ class Version1Date20250904170000 extends SimpleMigrationStep
                     $table->addIndex(['schema'], 'idx_schema_only');
                     $output->info(message: '✅ Added basic schema index');
                 } catch (\Exception $e) {
-                    $output->info('⚠️  Could not create schema index: ' . $e->getMessage());
+                    $output->info('⚠️  Could not create schema index: '.$e->getMessage());
                 }
             }
 
@@ -82,7 +82,7 @@ class Version1Date20250904170000 extends SimpleMigrationStep
                     $table->addIndex(['register'], 'idx_register_only');
                     $output->info(message: '✅ Added basic register index');
                 } catch (\Exception $e) {
-                    $output->info('⚠️  Could not create register index: ' . $e->getMessage());
+                    $output->info('⚠️  Could not create register index: '.$e->getMessage());
                 }
             }
 
@@ -120,7 +120,7 @@ class Version1Date20250904170000 extends SimpleMigrationStep
                     $table->addIndex(['source_id', 'target_id'], 'idx_source_target');
                     $output->info(message: "✅ Optimized {$tableName} with source+target index");
                 } catch (\Exception $e) {
-                    $output->info("⚠️  Could not optimize {$tableName}: " . $e->getMessage());
+                    $output->info("⚠️  Could not optimize {$tableName}: ".$e->getMessage());
                 }
             }
         }
@@ -132,7 +132,7 @@ class Version1Date20250904170000 extends SimpleMigrationStep
                     $table->addIndex(['schema_id'], 'idx_schema_property');
                     $output->info(message: "✅ Optimized {$tableName} with schema index (name column skipped due to key length limits)");
                 } catch (\Exception $e) {
-                    $output->info("⚠️  Could not optimize {$tableName}: " . $e->getMessage());
+                    $output->info("⚠️  Could not optimize {$tableName}: ".$e->getMessage());
                 }
             }
         }
@@ -143,7 +143,7 @@ class Version1Date20250904170000 extends SimpleMigrationStep
                     $table->addIndex(['register_id', 'schema_id'], 'idx_register_schema');
                     $output->info(message: "✅ Optimized {$tableName} with register+schema index");
                 } catch (\Exception $e) {
-                    $output->info("⚠️  Could not optimize {$tableName}: " . $e->getMessage());
+                    $output->info("⚠️  Could not optimize {$tableName}: ".$e->getMessage());
                 }
             }
         }

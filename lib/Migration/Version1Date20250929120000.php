@@ -67,10 +67,10 @@ class Version1Date20250929120000 extends SimpleMigrationStep
                     'searchable',
                     Types::BOOLEAN,
                     [
-                            'notnull' => true,
-                            'default' => true,
-                            'comment' => 'Whether objects of this schema should be indexed in SOLR for searching',
-                        ]
+                        'notnull' => true,
+                        'default' => true,
+                        'comment' => 'Whether objects of this schema should be indexed in SOLR for searching',
+                    ]
                 );
 
                 $output->info(message: '✅ Added searchable column with default value true');
@@ -125,7 +125,7 @@ class Version1Date20250929120000 extends SimpleMigrationStep
 
             $output->info(message: '🎯 All schemas are now properly configured for SOLR indexing control');
         } catch (\Exception $e) {
-            $output->info('❌ Failed to verify schemas: ' . $e->getMessage());
+            $output->info('❌ Failed to verify schemas: '.$e->getMessage());
             $output->info(message: '⚠️  This may indicate an issue with the searchable column');
             $output->info('💡 Manual check: SELECT searchable FROM oc_openregister_schemas LIMIT 1');
         }

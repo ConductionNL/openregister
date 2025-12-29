@@ -50,6 +50,7 @@ use Exception;
  */
 class ApplicationsController extends Controller
 {
+
     /**
      * Application service for business logic
      *
@@ -286,7 +287,7 @@ class ApplicationsController extends Controller
 
             // Return error response with message.
             return new JSONResponse(
-                data: ['error' => 'Failed to create application: ' . $e->getMessage()],
+                data: ['error' => 'Failed to create application: '.$e->getMessage()],
                 statusCode: Http::STATUS_BAD_REQUEST
             );
         }//end try
@@ -332,14 +333,14 @@ class ApplicationsController extends Controller
             $this->logger->error(
                 message: 'Failed to update application',
                 context: [
-                 'id'    => $id,
-                 'error' => $e->getMessage(),
+                    'id'    => $id,
+                    'error' => $e->getMessage(),
                 ]
             );
 
             // Return error response with message.
             return new JSONResponse(
-                data: ['error' => 'Failed to update application: ' . $e->getMessage()],
+                data: ['error' => 'Failed to update application: '.$e->getMessage()],
                 statusCode: Http::STATUS_BAD_REQUEST
             );
         }//end try

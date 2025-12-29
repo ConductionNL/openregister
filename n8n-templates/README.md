@@ -10,7 +10,187 @@ This directory contains ready-to-use n8n workflow templates for integrating Open
 
 ## Available Templates
 
-### 1. openregister-object-sync.json
+### Example Templates
+
+#### amsterdam-weather-webhook.json
+**Description:** A simple example webhook that returns current weather data for Amsterdam in JSON format.
+
+**Use Cases:**
+- Learning how to create webhooks in n8n
+- Testing n8n workflow execution
+- Example of external API integration with data transformation
+
+**Features:**
+- Webhook trigger (GET request)
+- External API call (wttr.in weather API)
+- JavaScript data transformation
+- JSON response
+
+**Performance:** Average response time: ~7-8 seconds (depends on external API)
+
+**Test URL:** `http://localhost:5678/webhook/amsterdam-weather`
+
+---
+
+### Code Quality Templates (Direct Execution)
+
+**NEW:** These workflows use n8n's Code node to execute commands directly in the Nextcloud container via `docker exec`, eliminating the need for an intermediate API server.
+
+📚 **Detailed Documentation:** [DIRECT_EXECUTION_WORKFLOWS.md](./DIRECT_EXECUTION_WORKFLOWS.md)
+
+#### openregister-phpqa-direct.json
+**Description:** Runs `composer phpqa` directly in the Nextcloud container using Docker exec from n8n.
+
+**Use Cases:**
+- Automated code quality checks without API server.
+- CI/CD integration.
+- Pre-commit quality gates.
+- Code review automation.
+
+**Features:**
+- Direct container execution via Docker socket.
+- No intermediate API server required.
+- Real-time command output.
+- Comprehensive JSON report.
+
+**Performance:** ~30-60 seconds (depends on codebase size).
+
+**Test URL:** `http://localhost:5678/webhook/openregister-phpqa`
+
+---
+
+#### openregister-cs-fix-direct.json
+**Description:** Automatically fixes code style issues using `composer cs:fix` executed directly in the container.
+
+**Use Cases:**
+- Automated code style fixing.
+- Pre-commit hooks.
+- Continuous code cleanup.
+
+**Features:**
+- Direct execution without API server.
+- Returns count of files fixed.
+- Detailed output of all changes.
+
+**Performance:** ~10-30 seconds.
+
+**Test URL:** `http://localhost:5678/webhook/openregister-cs-fix`
+
+---
+
+#### openregister-phpqa-autofix-direct.json
+**Description:** Complete 3-step workflow: Analyze → Auto-fix → Re-analyze, all via direct container execution.
+
+**Use Cases:**
+- Automated code improvement pipeline.
+- CI/CD with auto-fixing.
+- Before/after quality comparison.
+
+**Features:**
+- 3-step workflow with direct execution.
+- Comprehensive before/after comparison.
+- Shows improvement metrics.
+
+**Performance:** ~60-120 seconds (2 full analyses + fixing).
+
+**Test URL:** `http://localhost:5678/webhook/openregister-quality-check`
+
+**Workflow Steps:**
+1. Initial PHPQA analysis (~30-60s).
+2. Run CS Fix to auto-fix issues (~10-30s).
+3. Final PHPQA analysis to verify (~30-60s).
+4. Format combined report with comparison.
+
+---
+
+### Code Quality Templates (API Server - Legacy)
+
+**DEPRECATED:** The following workflows require a Python API server. Use the **Direct Execution** workflows above instead.
+
+---
+
+#### openregister-phpqa-workflow.json
+**Description:** Runs composer phpqa in the OpenRegister app to perform automated code quality analysis and returns results as JSON.
+
+**Use Cases:**
+- Automated code quality checks
+- CI/CD integration
+- Pre-commit quality gates
+- Code review automation
+- Quality metrics tracking
+
+**Features:**
+- Webhook trigger (POST request)
+- Runs PHPCS, PHPMD, PHPStan, Psalm, PHPMetrics, PDepend
+- Returns comprehensive JSON report
+- Includes command output and analysis results
+
+**Requirements:**
+- PHPQA API server running on host (see Setup section below)
+
+**Performance:** Response time: ~60 seconds (full code analysis suite)
+
+**Test URL:** `http://localhost:5678/webhook/openregister-phpqa`
+
+---
+
+#### openregister-cs-fix-workflow.json
+**Description:** Automatically fixes code style issues in the OpenRegister app using `composer cs:fix` (PHP CS Fixer).
+
+**Use Cases:**
+- Automated code style fixing
+- Pre-commit hooks
+- Continuous code cleanup
+- PSR-2 compliance automation
+
+**Features:**
+- Webhook trigger (POST request)
+- Runs PHP CS Fixer in dry-run mode first, then fixes
+- Returns count of files fixed
+- Detailed output of all changes
+
+**Requirements:**
+- PHPQA API server running on host (see Setup section below)
+
+**Performance:** Response time: ~15-20 seconds
+
+**Test URL:** `http://localhost:5678/webhook/openregister-cs-fix`
+
+---
+
+#### openregister-phpqa-autofix-workflow.json
+**Description:** Complete code quality workflow that analyzes, fixes, and re-analyzes code automatically.
+
+**Use Cases:**
+- Automated code improvement pipeline
+- CI/CD with auto-fixing
+- Quality gate with automatic remediation
+- Before/after quality comparison
+
+**Features:**
+- 3-step workflow: Analyze → Fix → Re-analyze
+- Comprehensive before/after comparison
+- Shows improvement metrics
+- Full detailed reports for each step
+
+**Requirements:**
+- PHPQA API server running on host (see Setup section below)
+
+**Performance:** Response time: ~120 seconds (2 full analyses + fixing)
+
+**Test URL:** `http://localhost:5678/webhook/openregister-phpqa-autofix`
+
+**Workflow Steps:**
+1. Initial PHPQA analysis (60s)
+2. Run CS Fix to auto-fix issues (15s)
+3. Final PHPQA analysis to verify (60s)
+4. Format combined report with comparison
+
+---
+
+### OpenRegister Integration Templates
+
+#### 1. openregister-object-sync.json
 **Description:** Sync OpenRegister objects to an external system whenever they are created or updated.
 
 **Use Cases:**
@@ -22,7 +202,7 @@ This directory contains ready-to-use n8n workflow templates for integrating Open
 
 ---
 
-### 2. openregister-to-database.json
+#### 2. openregister-to-database.json
 **Description:** Write OpenRegister objects directly to an external database with transformation logic.
 
 **Use Cases:**
@@ -34,7 +214,7 @@ This directory contains ready-to-use n8n workflow templates for integrating Open
 
 ---
 
-### 3. openregister-bidirectional-sync.json
+#### 3. openregister-bidirectional-sync.json
 **Description:** Two-way synchronization between OpenRegister and an external system.
 
 **Use Cases:**
@@ -46,7 +226,7 @@ This directory contains ready-to-use n8n workflow templates for integrating Open
 
 ---
 
-### 4. openregister-schema-notifications.json
+#### 4. openregister-schema-notifications.json
 **Description:** Send notifications when schemas are created, updated, or deleted.
 
 **Use Cases:**
@@ -55,6 +235,56 @@ This directory contains ready-to-use n8n workflow templates for integrating Open
 - Automated documentation updates
 
 **Events:** `SchemaCreatedEvent`, `SchemaUpdatedEvent`, `SchemaDeletedEvent`
+
+---
+
+## Setup for PHPQA Workflows
+
+The OpenRegister PHPQA workflows require a simple API server running on the host machine to execute docker commands.
+
+### Start the PHPQA API Server
+
+```bash
+# Navigate to the scripts directory.
+cd /path/to/openregister/scripts
+
+# Start the API server (runs on port 9090).
+python3 phpqa-api.py &
+
+# Or use nohup to run in background.
+nohup python3 phpqa-api.py > /tmp/phpqa-api.log 2>&1 &
+echo $! > /tmp/phpqa-api.pid
+```
+
+### API Endpoints
+
+The API server provides the following endpoints:
+
+- **POST /phpqa** - Run full PHPQA analysis (~60 seconds)
+- **POST /cs-fix** - Run composer cs:fix to auto-fix code style (~15-20 seconds)
+
+### Test the API Server
+
+```bash
+# Check status.
+curl http://localhost:9090/
+
+# Run PHPQA (takes ~60 seconds).
+curl -X POST http://localhost:9090/phpqa | jq .
+
+# Run CS Fix (takes ~15-20 seconds).
+curl -X POST http://localhost:9090/cs-fix | jq .
+```
+
+### Stop the API Server
+
+```bash
+# If you saved the PID.
+kill $(cat /tmp/phpqa-api.pid)
+
+# Or find and kill the process.
+pkill -f phpqa-api.py
+```
 
 ---
 

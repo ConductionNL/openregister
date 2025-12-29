@@ -84,10 +84,10 @@ class SolrNightlyWarmupJob extends TimedJob
         $logger->info(
             message: '🌙 SOLR Nightly Warmup Job Started',
             context: [
-                    'job_id'         => $this->getId(),
-                    'scheduled_time' => date('Y-m-d H:i:s'),
-                    'timezone'       => date_default_timezone_get(),
-                ]
+                'job_id'         => $this->getId(),
+                'scheduled_time' => date('Y-m-d H:i:s'),
+                'timezone'       => date_default_timezone_get(),
+            ]
         );
 
         try {
@@ -126,11 +126,11 @@ class SolrNightlyWarmupJob extends TimedJob
             $logger->info(
                 'Starting nightly SOLR index warmup',
                 context: [
-                        'schemas_found'  => count($schemas),
-                        'max_objects'    => $config['maxObjects'],
-                        'mode'           => $config['mode'],
-                        'collect_errors' => $config['collectErrors'],
-                    ]
+                    'schemas_found'  => count($schemas),
+                    'max_objects'    => $config['maxObjects'],
+                    'mode'           => $config['mode'],
+                    'collect_errors' => $config['collectErrors'],
+                ]
             );
 
             // Execute the comprehensive nightly warmup.
@@ -147,19 +147,19 @@ class SolrNightlyWarmupJob extends TimedJob
                 $logger->info(
                     '✅ SOLR Nightly Warmup Job Completed Successfully',
                     [
-                            'job_id'                 => $this->getId(),
-                            'execution_time_seconds' => round($executionTime, 2),
-                            'objects_indexed'        => $result['operations']['objects_indexed'] ?? 0,
-                            'schemas_processed'      => $result['operations']['schemas_processed'] ?? 0,
-                            'fields_created'         => $result['operations']['fields_created'] ?? 0,
-                            'conflicts_resolved'     => $result['operations']['conflicts_resolved'] ?? 0,
-                            'performance_metrics'    => [
-                                'total_time_ms'      => $result['execution_time_ms'] ?? 0,
-                                'objects_per_second' => $this->calculateObjectsPerSecond(result: $result, executionTime: $executionTime),
-                                'next_run'           => date('Y-m-d H:i:s', time() + self::DEFAULT_INTERVAL),
-                            ],
-                            'operations_summary'     => $this->summarizeOperations($result['operations'] ?? []),
-                        ]
+                        'job_id'                 => $this->getId(),
+                        'execution_time_seconds' => round($executionTime, 2),
+                        'objects_indexed'        => $result['operations']['objects_indexed'] ?? 0,
+                        'schemas_processed'      => $result['operations']['schemas_processed'] ?? 0,
+                        'fields_created'         => $result['operations']['fields_created'] ?? 0,
+                        'conflicts_resolved'     => $result['operations']['conflicts_resolved'] ?? 0,
+                        'performance_metrics'    => [
+                            'total_time_ms'      => $result['execution_time_ms'] ?? 0,
+                            'objects_per_second' => $this->calculateObjectsPerSecond(result: $result, executionTime: $executionTime),
+                            'next_run'           => date('Y-m-d H:i:s', time() + self::DEFAULT_INTERVAL),
+                        ],
+                        'operations_summary'     => $this->summarizeOperations($result['operations'] ?? []),
+                    ]
                 );
 
                 // Log performance statistics for monitoring.
@@ -170,11 +170,11 @@ class SolrNightlyWarmupJob extends TimedJob
                 $logger->error(
                     '❌ SOLR Nightly Warmup Job Failed',
                     [
-                            'job_id'                 => $this->getId(),
-                            'execution_time_seconds' => round($executionTime, 2),
-                            'error'                  => $result['error'] ?? 'Unknown error',
-                            'next_retry'             => date('Y-m-d H:i:s', time() + self::DEFAULT_INTERVAL),
-                        ]
+                        'job_id'                 => $this->getId(),
+                        'execution_time_seconds' => round($executionTime, 2),
+                        'error'                  => $result['error'] ?? 'Unknown error',
+                        'next_retry'             => date('Y-m-d H:i:s', time() + self::DEFAULT_INTERVAL),
+                    ]
                 );
             }//end if
         } catch (\Exception $e) {
@@ -183,14 +183,14 @@ class SolrNightlyWarmupJob extends TimedJob
             $logger->error(
                 message: '🚨 SOLR Nightly Warmup Job Exception',
                 context: [
-                        'job_id'                 => $this->getId(),
-                        'execution_time_seconds' => round($executionTime, 2),
-                        'exception'              => $e->getMessage(),
-                        'file'                   => $e->getFile(),
-                        'line'                   => $e->getLine(),
-                        'next_retry'             => date('Y-m-d H:i:s', time() + self::DEFAULT_INTERVAL),
-                        'trace'                  => $e->getTraceAsString(),
-                    ]
+                    'job_id'                 => $this->getId(),
+                    'execution_time_seconds' => round($executionTime, 2),
+                    'exception'              => $e->getMessage(),
+                    'file'                   => $e->getFile(),
+                    'line'                   => $e->getLine(),
+                    'next_retry'             => date('Y-m-d H:i:s', time() + self::DEFAULT_INTERVAL),
+                    'trace'                  => $e->getTraceAsString(),
+                ]
             );
 
             // Don't re-throw for recurring jobs - let them retry next time.

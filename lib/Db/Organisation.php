@@ -68,6 +68,7 @@ use Symfony\Component\Uid\Uuid;
  */
 class Organisation extends Entity implements JsonSerializable
 {
+
     /**
      * Unique identifier for the organisation
      *

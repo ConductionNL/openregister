@@ -40,6 +40,7 @@ use Psr\Log\LoggerInterface;
  */
 class SolrBackend implements SearchBackendInterface
 {
+
     /**
      * HTTP client for Solr operations.
      *
@@ -127,7 +128,7 @@ class SolrBackend implements SearchBackendInterface
      *
      * @return bool True if available
      */
-    public function isAvailable(bool $forceRefresh = false): bool
+    public function isAvailable(bool $forceRefresh=false): bool
     {
         return $this->httpClient->isConfigured();
     }//end isAvailable()
@@ -141,7 +142,7 @@ class SolrBackend implements SearchBackendInterface
      *
      * @psalm-return array{success: bool, configured?: true, collection?: null|string, collection_exists?: bool, error?: 'Solr is not configured'}
      */
-    public function testConnection(bool $includeCollectionTests = true): array
+    public function testConnection(bool $includeCollectionTests=true): array
     {
         if ($this->httpClient->isConfigured() === false) {
             return [
@@ -172,7 +173,7 @@ class SolrBackend implements SearchBackendInterface
      *
      * @return bool True if successful
      */
-    public function indexObject(ObjectEntity $object, bool $commit = false): bool
+    public function indexObject(ObjectEntity $object, bool $commit=false): bool
     {
         return $this->indexer->indexObject(
             object: $object,
@@ -188,7 +189,7 @@ class SolrBackend implements SearchBackendInterface
      *
      * @return array Result with statistics
      */
-    public function bulkIndexObjects(array $objects, bool $commit = true): array
+    public function bulkIndexObjects(array $objects, bool $commit=true): array
     {
         return $this->indexer->bulkIndexObjects(
             objects: $objects,
@@ -204,7 +205,7 @@ class SolrBackend implements SearchBackendInterface
      *
      * @return bool True if successful
      */
-    public function deleteObject(string|int $objectId, bool $commit = false): bool
+    public function deleteObject(string|int $objectId, bool $commit=false): bool
     {
         return $this->indexer->deleteObject(
             objectId: $objectId,
@@ -221,7 +222,7 @@ class SolrBackend implements SearchBackendInterface
      *
      * @return array|bool Results
      */
-    public function deleteByQuery(string $query, bool $commit = false, bool $returnDetails = false): array|bool
+    public function deleteByQuery(string $query, bool $commit=false, bool $returnDetails=false): array|bool
     {
         return $this->indexer->deleteByQuery(
             query: $query,
@@ -242,11 +243,11 @@ class SolrBackend implements SearchBackendInterface
      * @return array Search results
      */
     public function searchObjectsPaginated(
-        array $query = [],
-        bool $rbac = true,
-        bool $multitenancy = true,
-        bool $published = false,
-        bool $deleted = false
+        array $query=[],
+        bool $rbac=true,
+        bool $multitenancy=true,
+        bool $published=false,
+        bool $deleted=false
     ): array {
         return $this->queryExecutor->searchPaginated(
             query: $query,
@@ -294,7 +295,7 @@ class SolrBackend implements SearchBackendInterface
      *
      * @return array Results
      */
-    public function clearIndex(?string $collectionName = null): array
+    public function clearIndex(?string $collectionName=null): array
     {
         return $this->indexer->clearIndex($collectionName);
     }//end clearIndex()
@@ -317,21 +318,21 @@ class SolrBackend implements SearchBackendInterface
      * @psalm-return array{success: true, message: 'Simplified warmup - collection exists', collection_exists: bool}
      */
     public function warmupIndex(
-        array $schemas = [],
-        int $maxObjects = 0,
-        string $mode = 'serial',
-        bool $collectErrors = false,
-        int $batchSize = 1000,
-        array $schemaIds = []
+        array $schemas=[],
+        int $maxObjects=0,
+        string $mode='serial',
+        bool $collectErrors=false,
+        int $batchSize=1000,
+        array $schemaIds=[]
     ): array {
         // Simplified warmup - just test connection.
         // Full implementation is 200+ lines in SolrBackend.php.old.
         $this->logger->info(
             '[SolrBackend] Warmup requested (simplified version)',
             [
-                    'maxObjects' => $maxObjects,
-                    'mode'       => $mode,
-                ]
+                'maxObjects' => $maxObjects,
+                'mode'       => $mode,
+            ]
         );
 
         return [
@@ -369,7 +370,7 @@ class SolrBackend implements SearchBackendInterface
      *
      * @return array Results
      */
-    public function createCollection(string $name, array $config = []): array
+    public function createCollection(string $name, array $config=[]): array
     {
         return $this->collectionManager->createCollection(
             name: $name,
@@ -384,7 +385,7 @@ class SolrBackend implements SearchBackendInterface
      *
      * @return array Results
      */
-    public function deleteCollection(?string $collectionName = null): array
+    public function deleteCollection(?string $collectionName=null): array
     {
         return $this->collectionManager->deleteCollection($collectionName);
     }//end deleteCollection()
@@ -505,14 +506,14 @@ class SolrBackend implements SearchBackendInterface
      *
      * @psalm-return array{success: false|mixed, message: 'Index cleared (simplified reindex)', indexed: 0}
      */
-    public function reindexAll(int $maxObjects = 0, int $batchSize = 1000, ?string $collectionName = null): array
+    public function reindexAll(int $maxObjects=0, int $batchSize=1000, ?string $collectionName=null): array
     {
         $this->logger->info(
             '[SolrBackend] Reindex requested (simplified version)',
             [
-                    'maxObjects' => $maxObjects,
-                    'batchSize'  => $batchSize,
-                ]
+                'maxObjects' => $maxObjects,
+                'batchSize'  => $batchSize,
+            ]
         );
 
         // Simplified - clear and return.

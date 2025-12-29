@@ -68,10 +68,10 @@ class Version1Date20251102130000 extends SimpleMigrationStep
                     'groups',
                     Types::JSON,
                     [
-                            'notnull' => false,
-                            'default' => null,
-                            'comment' => 'Array of Nextcloud group IDs that have access to this application',
-                        ]
+                        'notnull' => false,
+                        'default' => null,
+                        'comment' => 'Array of Nextcloud group IDs that have access to this application',
+                    ]
                 );
 
                 $output->info(message: '✅ Added groups column to openregister_applications table');

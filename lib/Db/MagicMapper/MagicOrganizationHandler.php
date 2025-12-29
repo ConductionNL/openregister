@@ -145,8 +145,8 @@ class MagicOrganizationHandler
             $this->logger->error(
                 'Failed to get system default organization from configuration',
                 [
-                        'error' => $e->getMessage(),
-                    ]
+                    'error' => $e->getMessage(),
+                ]
             );
             return null;
         }

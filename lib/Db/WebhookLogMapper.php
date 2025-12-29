@@ -87,7 +87,7 @@ class WebhookLogMapper extends QBMapper
      *
      * @psalm-return list<\OCA\OpenRegister\Db\WebhookLog>
      */
-    public function findByWebhook(int $webhookId, ?int $limit = null, ?int $offset = null): array
+    public function findByWebhook(int $webhookId, ?int $limit=null, ?int $offset=null): array
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -117,7 +117,7 @@ class WebhookLogMapper extends QBMapper
      *
      * @psalm-return list<OCA\OpenRegister\Db\WebhookLog>
      */
-    public function findAll(?int $limit = null, ?int $offset = null): array
+    public function findAll(?int $limit=null, ?int $offset=null): array
     {
         $qb = $this->db->getQueryBuilder();
 

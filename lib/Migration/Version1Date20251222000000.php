@@ -48,6 +48,7 @@ use OCP\Migration\SimpleMigrationStep;
 
 class Version1Date20251222000000 extends SimpleMigrationStep
 {
+
     /**
      * Database connection
      *
@@ -110,13 +111,8 @@ class Version1Date20251222000000 extends SimpleMigrationStep
 
             $output->info(message: '✅ Migration completed successfully - all schemas now have valid required fields');
         } catch (\Exception $e) {
-            $output->warning(message: '   ⚠️  Error during migration: ' . $e->getMessage());
+            $output->warning(message: '   ⚠️  Error during migration: '.$e->getMessage());
             $output->warning(message: '   ⚠️  This may cause validation errors during object creation');
         }//end try
     }//end postSchemaChange()
 }//end class
-
-
-
-
-

@@ -28,6 +28,7 @@ use OCP\EventDispatcher\Event;
  */
 class SourceCreatedEvent extends Event
 {
+
     /**
      * The newly created source.
      *

@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\Organisation;
  */
 class OrganisationCreatedEvent extends Event
 {
+
     /**
      * The organisation that was created
      *
