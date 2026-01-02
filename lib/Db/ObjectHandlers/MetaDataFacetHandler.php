@@ -60,7 +60,8 @@ class MetaDataFacetHandler
      *
      * @return ((int|mixed|string)[][]|string)[]
      *
-     * @psalm-return array{type: 'terms', buckets: list<array{key: mixed, label: string, results: int}>}
+     * @psalm-return array{type: 'terms',
+     *     buckets: list<array{key: mixed, label: string, results: int}>}
      */
     public function getTermsFacet(string $field, array $baseQuery=[]): array
     {
@@ -148,7 +149,8 @@ class MetaDataFacetHandler
      *
      * @return ((int|mixed)[][]|string)[]
      *
-     * @psalm-return array{type: 'date_histogram', interval: string, buckets: list<array{key: mixed, results: int}>}
+     * @psalm-return array{type: 'date_histogram', interval: string,
+     *     buckets: list<array{key: mixed, results: int}>}
      */
     public function getDateHistogramFacet(string $field, string $interval, array $baseQuery=[]): array
     {
@@ -208,7 +210,9 @@ class MetaDataFacetHandler
      *
      * @return ((int|mixed|string)[][]|string)[]
      *
-     * @psalm-return array{type: 'range', buckets: list<array{from?: mixed, key: string, results: int, to?: mixed}>}
+     * @psalm-return array{type: 'range',
+     *     buckets: list<array{from?: mixed, key: string, results: int,
+     *     to?: mixed}>}
      */
     public function getRangeFacet(string $field, array $ranges, array $baseQuery=[]): array
     {
@@ -498,7 +502,14 @@ class MetaDataFacetHandler
             // Handle array of values (OR condition).
             if (($value[0] ?? null) !== null && is_string($value[0]) === false) {
                 // This is an array of values, not operators.
-                $queryBuilder->andWhere($queryBuilder->expr()->in($field, $queryBuilder->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+                $queryBuilder->andWhere(
+                    $queryBuilder->expr()->in(
+                        $field,
+                        $queryBuilder->createNamedParameter(
+                            $value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY
+                        )
+                    )
+                );
                 continue;
             }
 
@@ -718,7 +729,13 @@ class MetaDataFacetHandler
         // Check if the value exists within an array using JSON_CONTAINS.
         $conditions->add(
             $queryBuilder->expr()->eq(
-                $queryBuilder->createFunction("JSON_CONTAINS(JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath)."), ".$queryBuilder->createNamedParameter(json_encode($value)).")"),
+                $queryBuilder->createFunction(
+                    "JSON_CONTAINS(JSON_EXTRACT(object, ".
+                    $queryBuilder->createNamedParameter($jsonPath)."), ".
+                    $queryBuilder->createNamedParameter(
+                        json_encode($value)
+                    ).")"
+                ),
                 $queryBuilder->createNamedParameter(1)
             )
         );
@@ -969,7 +986,47 @@ class MetaDataFacetHandler
      *
      * @return (((int|mixed|string)[]|mixed|string)[]|bool|string)[][]
      *
-     * @psalm-return array{register?: array{type: 'categorical'|'date', description: string, facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'}, intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool, sample_values?: list{0?: array{value: mixed, label: string, count: int}|mixed,...}, date_range?: array{min: mixed, max: mixed}}, schema?: array{type: 'categorical'|'date', description: string, facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'}, intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool, sample_values?: list{0?: array{value: mixed, label: string, count: int}|mixed,...}, date_range?: array{min: mixed, max: mixed}}, organisation?: array{type: 'categorical'|'date', description: string, facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'}, intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool, sample_values?: list{0?: array{value: mixed, label: string, count: int}|mixed,...}, date_range?: array{min: mixed, max: mixed}}, application?: array{type: 'categorical'|'date', description: string, facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'}, intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool, sample_values?: list{0?: array{value: mixed, label: string, count: int}|mixed,...}, date_range?: array{min: mixed, max: mixed}}, created?: array{type: 'categorical'|'date', description: string, facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'}, intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool, sample_values?: list{0?: array{value: mixed, label: string, count: int}|mixed,...}, date_range?: array{min: mixed, max: mixed}}, updated?: array{type: 'categorical'|'date', description: string, facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'}, intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool, sample_values?: list{0?: array{value: mixed, label: string, count: int}|mixed,...}, date_range?: array{min: mixed, max: mixed}}, published?: array{type: 'categorical'|'date', description: string, facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'}, intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool, sample_values?: list{0?: array{value: mixed, label: string, count: int}|mixed,...}, date_range?: array{min: mixed, max: mixed}}, depublished?: array{type: 'categorical'|'date', description: string, facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'}, intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool, sample_values?: list{0?: array{value: mixed, label: string, count: int}|mixed,...}, date_range?: array{min: mixed, max: mixed}}}
+     * @psalm-return array{register?: array{type: 'categorical'|'date',
+     *     description: string, facet_types: list{0: 'date_histogram'|'terms',
+     *     1?: 'range'}, intervals?: list{'day', 'week', 'month', 'year'},
+     *     has_labels: bool,
+     *     sample_values?: list{0?: array{value: mixed, label: string,
+     *     count: int}|mixed,...}, date_range?: array{min: mixed, max: mixed}},
+     *     schema?: array{type: 'categorical'|'date', description: string,
+     *     facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'},
+     *     intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool,
+     *     sample_values?: list{0?: array{value: mixed, label: string,
+     *     count: int}|mixed,...}, date_range?: array{min: mixed, max: mixed}},
+     *     organisation?: array{type: 'categorical'|'date', description: string,
+     *     facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'},
+     *     intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool,
+     *     sample_values?: list{0?: array{value: mixed, label: string,
+     *     count: int}|mixed,...}, date_range?: array{min: mixed, max: mixed}},
+     *     application?: array{type: 'categorical'|'date', description: string,
+     *     facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'},
+     *     intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool,
+     *     sample_values?: list{0?: array{value: mixed, label: string,
+     *     count: int}|mixed,...}, date_range?: array{min: mixed, max: mixed}},
+     *     created?: array{type: 'categorical'|'date', description: string,
+     *     facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'},
+     *     intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool,
+     *     sample_values?: list{0?: array{value: mixed, label: string,
+     *     count: int}|mixed,...}, date_range?: array{min: mixed, max: mixed}},
+     *     updated?: array{type: 'categorical'|'date', description: string,
+     *     facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'},
+     *     intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool,
+     *     sample_values?: list{0?: array{value: mixed, label: string,
+     *     count: int}|mixed,...}, date_range?: array{min: mixed, max: mixed}},
+     *     published?: array{type: 'categorical'|'date', description: string,
+     *     facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'},
+     *     intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool,
+     *     sample_values?: list{0?: array{value: mixed, label: string,
+     *     count: int}|mixed,...}, date_range?: array{min: mixed, max: mixed}},
+     *     depublished?: array{type: 'categorical'|'date', description: string,
+     *     facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'},
+     *     intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool,
+     *     sample_values?: list{0?: array{value: mixed, label: string,
+     *     count: int}|mixed,...}, date_range?: array{min: mixed, max: mixed}}}
      */
     public function getFacetableFields(array $baseQuery=[]): array
     {

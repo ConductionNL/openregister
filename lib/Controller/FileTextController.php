@@ -171,7 +171,9 @@ class FileTextController extends Controller
      *
      * @return JSONResponse JSON response with bulk extraction results
      *
-     * @psalm-return JSONResponse<200|500, array{success: bool, message?: string, processed?: int<0, max>, failed?: int<0, max>, total?: int<0, max>}, array<never, never>>
+     * @psalm-return JSONResponse<200|500,
+     *     array{success: bool, message?: string, processed?: int<0, max>,
+     *     failed?: int<0, max>, total?: int<0, max>}, array<never, never>>
      */
     public function bulkExtract(): JSONResponse
     {
@@ -216,7 +218,10 @@ class FileTextController extends Controller
      *
      * @return JSONResponse JSON response with file text statistics
      *
-     * @psalm-return JSONResponse<200|500, array{success: bool, message?: string, stats?: array{totalFiles: int, untrackedFiles: int, totalChunks: int, totalObjects: int, totalEntities: int}}, array<never, never>>
+     * @psalm-return JSONResponse<200|500,
+     *     array{success: bool, message?: string,
+     *     stats?: array{totalFiles: int, untrackedFiles: int, totalChunks: int,
+     *     totalObjects: int, totalEntities: int}}, array<never, never>>
      */
     public function getStats(): JSONResponse
     {
@@ -305,7 +310,11 @@ class FileTextController extends Controller
      *
      * @return JSONResponse Processing result with statistics
      *
-     * @psalm-return JSONResponse<200|500, array{success: bool, message?: string, stats?: array{processed: 0|1|2, indexed: 0|1|2, failed: int, total_chunks: 0|mixed, errors: array<int, mixed|string>, execution_time_ms: float}}, array<never, never>>
+     * @psalm-return JSONResponse<200|500,
+     *     array{success: bool, message?: string,
+     *     stats?: array{processed: 0|1|2, indexed: 0|1|2, failed: int,
+     *     total_chunks: 0|mixed, errors: array<int, mixed|string>,
+     *     execution_time_ms: float}}, array<never, never>>
      */
     public function processAndIndexExtracted(?int $limit=null, ?int $chunkSize=null, ?int $chunkOverlap=null): JSONResponse
     {
@@ -396,7 +405,11 @@ class FileTextController extends Controller
      *
      * @return JSONResponse JSON response with chunking statistics
      *
-     * @psalm-return JSONResponse<200|500, array{success: bool, message?: string, stats?: array{total_chunks: int, indexed_chunks: int, unindexed_chunks: int, vectorized_chunks: int}}, array<never, never>>
+     * @psalm-return JSONResponse<200|500,
+     *     array{success: bool, message?: string,
+     *     stats?: array{total_chunks: int, indexed_chunks: int,
+     *     unindexed_chunks: int, vectorized_chunks: int}},
+     *     array<never, never>>
      */
     public function getChunkingStats(): JSONResponse
     {

@@ -118,7 +118,17 @@ class FileExtractionController extends Controller
      *
      * @return JSONResponse JSON response with file extraction details
      *
-     * @psalm-return JSONResponse<200|404, array{success: bool, error?: 'File not found in extraction system', message?: string, data?: non-empty-list<array{checksum: null|string, chunkIndex: int, createdAt: null|string, embeddingProvider: null|string, endOffset: int, id: int, indexed: bool, language: null|string, languageConfidence: float|null, languageLevel: null|string, organisation: null|string, overlapSize: int, owner: null|string, positionReference: array|null, sourceId: int|null, sourceType: null|string, startOffset: int, updatedAt: null|string, uuid: null|string, vectorized: bool}>}, array<never, never>>
+     * @psalm-return JSONResponse<200|404,
+     *     array{success: bool, error?: 'File not found in extraction system',
+     *     message?: string,
+     *     data?: non-empty-list<array{checksum: null|string, chunkIndex: int,
+     *     createdAt: null|string, embeddingProvider: null|string,
+     *     endOffset: int, id: int, indexed: bool, language: null|string,
+     *     languageConfidence: float|null, languageLevel: null|string,
+     *     organisation: null|string, overlapSize: int, owner: null|string,
+     *     positionReference: array|null, sourceId: int|null,
+     *     sourceType: null|string, startOffset: int, updatedAt: null|string,
+     *     uuid: null|string, vectorized: bool}>}, array<never, never>>
      */
     public function show(int $id): JSONResponse
     {
@@ -519,7 +529,13 @@ class FileExtractionController extends Controller
      *
      * @return JSONResponse JSON response with batch vectorization results
      *
-     * @psalm-return JSONResponse<200|500, array{success: bool, error?: 'Vectorization failed', message?: string, data?: array{success: true, message: string, entity_type: string, total_entities: int<0, max>, total_items: int<0, max>, vectorized: int<0, max>, failed: int<0, max>, errors?: list{0?: array{entity_id: int|string, error: string, item_index?: array-key},...}}}, array<never, never>>
+     * @psalm-return JSONResponse<200|500,
+     *     array{success: bool, error?: 'Vectorization failed', message?: string,
+     *     data?: array{success: true, message: string, entity_type: string,
+     *     total_entities: int<0, max>, total_items: int<0, max>,
+     *     vectorized: int<0, max>, failed: int<0, max>,
+     *     errors?: list{0?: array{entity_id: int|string, error: string,
+     *     item_index?: array-key},...}}}, array<never, never>>
      */
     public function vectorizeBatch(): JSONResponse
     {

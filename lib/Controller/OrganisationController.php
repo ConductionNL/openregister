@@ -97,7 +97,18 @@ class OrganisationController extends Controller
      *
      * @return JSONResponse JSON response with list of organisations
      *
-     * @psalm-return JSONResponse<200|500, array{error?: 'Failed to retrieve organisations', total?: int<0, max>, active?: array{id: int, uuid: null|string, slug: null|string, name: null|string, description: null|string, users: array, groups: array|null, owner: null|string, active: bool|null, parent: null|string, children: array, quota: array{storage: int|null, bandwidth: int|null, requests: int|null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: int<0, max>, groups: int<0, max>}, authorization: array, created: null|string, updated: null|string}|null, results?: array}, array<never, never>>
+     * @psalm-return JSONResponse<200|500,
+     *     array{error?: 'Failed to retrieve organisations', total?: int<0, max>,
+     *     active?: array{id: int, uuid: null|string, slug: null|string,
+     *     name: null|string, description: null|string, users: array,
+     *     groups: array|null, owner: null|string, active: bool|null,
+     *     parent: null|string, children: array,
+     *     quota: array{storage: int|null, bandwidth: int|null,
+     *     requests: int|null, users: null, groups: null},
+     *     usage: array{storage: 0, bandwidth: 0, requests: 0,
+     *     users: int<0, max>, groups: int<0, max>}, authorization: array,
+     *     created: null|string, updated: null|string}|null, results?: array},
+     *     array<never, never>>
      */
     public function index(): JSONResponse
     {
@@ -134,7 +145,17 @@ class OrganisationController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400, array{error?: string, message?: 'Active organisation set successfully', activeOrganisation?: array{id: int, uuid: null|string, slug: null|string, name: null|string, description: null|string, users: array, groups: array|null, owner: null|string, active: bool|null, parent: null|string, children: array, quota: array{storage: int|null, bandwidth: int|null, requests: int|null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: int<0, max>, groups: int<0, max>}, authorization: array, created: null|string, updated: null|string}|null}, array<never, never>>
+     * @psalm-return JSONResponse<200|400,
+     *     array{error?: string, message?: 'Active organisation set successfully',
+     *     activeOrganisation?: array{id: int, uuid: null|string,
+     *     slug: null|string, name: null|string, description: null|string,
+     *     users: array, groups: array|null, owner: null|string,
+     *     active: bool|null, parent: null|string, children: array,
+     *     quota: array{storage: int|null, bandwidth: int|null,
+     *     requests: int|null, users: null, groups: null},
+     *     usage: array{storage: 0, bandwidth: 0, requests: 0,
+     *     users: int<0, max>, groups: int<0, max>}, authorization: array,
+     *     created: null|string, updated: null|string}|null}, array<never, never>>
      */
     public function setActive(string $uuid): JSONResponse
     {
@@ -190,7 +211,17 @@ class OrganisationController extends Controller
      *
      * @return JSONResponse Active organisation data
      *
-     * @psalm-return JSONResponse<200|500, array{error?: 'Failed to retrieve active organisation', activeOrganisation?: array{id: int, uuid: null|string, slug: null|string, name: null|string, description: null|string, users: array, groups: array|null, owner: null|string, active: bool|null, parent: null|string, children: array, quota: array{storage: int|null, bandwidth: int|null, requests: int|null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: int<0, max>, groups: int<0, max>}, authorization: array, created: null|string, updated: null|string}|null}, array<never, never>>
+     * @psalm-return JSONResponse<200|500,
+     *     array{error?: 'Failed to retrieve active organisation',
+     *     activeOrganisation?: array{id: int, uuid: null|string,
+     *     slug: null|string, name: null|string, description: null|string,
+     *     users: array, groups: array|null, owner: null|string,
+     *     active: bool|null, parent: null|string, children: array,
+     *     quota: array{storage: int|null, bandwidth: int|null,
+     *     requests: int|null, users: null, groups: null},
+     *     usage: array{storage: 0, bandwidth: 0, requests: 0,
+     *     users: int<0, max>, groups: int<0, max>}, authorization: array,
+     *     created: null|string, updated: null|string}|null}, array<never, never>>
      */
     public function getActive(): JSONResponse
     {
@@ -237,7 +268,17 @@ class OrganisationController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<201|400, array{error?: string, message?: 'Organisation created successfully', organisation?: array{id: int, uuid: null|string, slug: null|string, name: null|string, description: null|string, users: array, groups: array|null, owner: null|string, active: bool|null, parent: null|string, children: array, quota: array{storage: int|null, bandwidth: int|null, requests: int|null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: int<0, max>, groups: int<0, max>}, authorization: array, created: null|string, updated: null|string}}, array<never, never>>
+     * @psalm-return JSONResponse<201|400,
+     *     array{error?: string, message?: 'Organisation created successfully',
+     *     organisation?: array{id: int, uuid: null|string, slug: null|string,
+     *     name: null|string, description: null|string, users: array,
+     *     groups: array|null, owner: null|string, active: bool|null,
+     *     parent: null|string, children: array,
+     *     quota: array{storage: int|null, bandwidth: int|null,
+     *     requests: int|null, users: null, groups: null},
+     *     usage: array{storage: 0, bandwidth: 0, requests: 0,
+     *     users: int<0, max>, groups: int<0, max>}, authorization: array,
+     *     created: null|string, updated: null|string}}, array<never, never>>
      */
     public function create(string $name, string $description=''): JSONResponse
     {
@@ -294,7 +335,9 @@ class OrganisationController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400, array{error?: string, message?: 'Successfully joined organisation'}, array<never, never>>
+     * @psalm-return JSONResponse<200|400,
+     *     array{error?: string, message?: 'Successfully joined organisation'},
+     *     array<never, never>>
      */
     public function join(string $uuid): JSONResponse
     {
@@ -351,7 +394,10 @@ class OrganisationController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400, array{error?: string, message?: 'Successfully left organisation'|'Successfully removed user from organisation'}, array<never, never>>
+     * @psalm-return JSONResponse<200|400,
+     *     array{error?: string,
+     *     message?: 'Successfully left organisation'|
+     *     'Successfully removed user from organisation'}, array<never, never>>
      */
     public function leave(string $uuid): JSONResponse
     {
@@ -412,7 +458,18 @@ class OrganisationController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|403|404, array{error?: 'Access denied to this organisation'|'Organisation not found', organisation?: array{id: int, uuid: null|string, slug: null|string, name: null|string, description: null|string, users: array, groups: array|null, owner: null|string, active: bool|null, parent: null|string, children: array, quota: array{storage: int|null, bandwidth: int|null, requests: int|null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: int<0, max>, groups: int<0, max>}, authorization: array, created: null|string, updated: null|string}}, array<never, never>>
+     * @psalm-return JSONResponse<200|403|404,
+     *     array{error?: 'Access denied to this organisation'|
+     *     'Organisation not found',
+     *     organisation?: array{id: int, uuid: null|string, slug: null|string,
+     *     name: null|string, description: null|string, users: array,
+     *     groups: array|null, owner: null|string, active: bool|null,
+     *     parent: null|string, children: array,
+     *     quota: array{storage: int|null, bandwidth: int|null,
+     *     requests: int|null, users: null, groups: null},
+     *     usage: array{storage: 0, bandwidth: 0, requests: 0,
+     *     users: int<0, max>, groups: int<0, max>}, authorization: array,
+     *     created: null|string, updated: null|string}}, array<never, never>>
      */
     public function show(string $uuid): JSONResponse
     {
@@ -468,7 +525,16 @@ class OrganisationController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400|403, array{error?: string, id?: int, uuid?: null|string, slug?: null|string, name?: null|string, description?: null|string, users?: array, groups?: array|null, owner?: null|string, active?: bool|null, parent?: null|string, children?: array, quota?: array{storage: int|null, bandwidth: int|null, requests: int|null, users: null, groups: null}, usage?: array{storage: 0, bandwidth: 0, requests: 0, users: int<0, max>, groups: int<0, max>}, authorization?: array, created?: null|string, updated?: null|string}, array<never, never>>
+     * @psalm-return JSONResponse<200|400|403,
+     *     array{error?: string, id?: int, uuid?: null|string,
+     *     slug?: null|string, name?: null|string, description?: null|string,
+     *     users?: array, groups?: array|null, owner?: null|string,
+     *     active?: bool|null, parent?: null|string, children?: array,
+     *     quota?: array{storage: int|null, bandwidth: int|null,
+     *     requests: int|null, users: null, groups: null},
+     *     usage?: array{storage: 0, bandwidth: 0, requests: 0,
+     *     users: int<0, max>, groups: int<0, max>}, authorization?: array,
+     *     created?: null|string, updated?: null|string}, array<never, never>>
      */
     public function update(string $uuid): JSONResponse
     {
@@ -519,7 +585,16 @@ class OrganisationController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400|403, array{error?: string, id?: int, uuid?: null|string, slug?: null|string, name?: null|string, description?: null|string, users?: array, groups?: array|null, owner?: null|string, active?: bool|null, parent?: null|string, children?: array, quota?: array{storage: int|null, bandwidth: int|null, requests: int|null, users: null, groups: null}, usage?: array{storage: 0, bandwidth: 0, requests: 0, users: int<0, max>, groups: int<0, max>}, authorization?: array, created?: null|string, updated?: null|string}, array<never, never>>
+     * @psalm-return JSONResponse<200|400|403,
+     *     array{error?: string, id?: int, uuid?: null|string,
+     *     slug?: null|string, name?: null|string, description?: null|string,
+     *     users?: array, groups?: array|null, owner?: null|string,
+     *     active?: bool|null, parent?: null|string, children?: array,
+     *     quota?: array{storage: int|null, bandwidth: int|null,
+     *     requests: int|null, users: null, groups: null},
+     *     usage?: array{storage: 0, bandwidth: 0, requests: 0,
+     *     users: int<0, max>, groups: int<0, max>}, authorization?: array,
+     *     created?: null|string, updated?: null|string}, array<never, never>>
      */
     public function patch(string $uuid): JSONResponse
     {
@@ -537,7 +612,19 @@ class OrganisationController extends Controller
      *
      * @return JSONResponse JSON response with organisation search results
      *
-     * @psalm-return JSONResponse<200|500, array{error?: 'Search failed', organisations?: array<array{id: int, uuid: null|string, slug: null|string, name: null|string, description: null|string, groups: array|null, active: bool|null, parent: null|string, children: array, quota: array{storage: int|null, bandwidth: int|null, requests: int|null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: int<0, max>, groups: int<0, max>}, authorization: array, created: null|string, updated: null|string}>, limit?: int<1, 100>, offset?: int<0, max>, count?: int<0, max>}, array<never, never>>
+     * @psalm-return JSONResponse<200|500,
+     *     array{error?: 'Search failed',
+     *     organisations?: array<array{id: int, uuid: null|string,
+     *     slug: null|string, name: null|string, description: null|string,
+     *     groups: array|null, active: bool|null, parent: null|string,
+     *     children: array,
+     *     quota: array{storage: int|null, bandwidth: int|null,
+     *     requests: int|null, users: null, groups: null},
+     *     usage: array{storage: 0, bandwidth: 0, requests: 0,
+     *     users: int<0, max>, groups: int<0, max>}, authorization: array,
+     *     created: null|string, updated: null|string}>,
+     *     limit?: int<1, 100>, offset?: int<0, max>, count?: int<0, max>},
+     *     array<never, never>>
      */
     public function search(string $query=''): JSONResponse
     {

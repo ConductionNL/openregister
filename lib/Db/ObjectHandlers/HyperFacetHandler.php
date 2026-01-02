@@ -265,7 +265,10 @@ class HyperFacetHandler
                 break;
 
             case 'hyperloglog_estimation':
-                $results = $this->calculateApproximateFacetsHyperLogLog(facetConfig: $facetConfig, baseQuery: $baseQuery, datasetStats: $datasetStats);
+                $results = $this->calculateApproximateFacetsHyperLogLog(
+                    facetConfig: $facetConfig, baseQuery: $baseQuery,
+                    datasetStats: $datasetStats
+                );
                 break;
 
             default:
@@ -542,7 +545,10 @@ class HyperFacetHandler
 
         // **STATISTICAL EXTRAPOLATION**: Scale up sample results.
         $extrapolationFactor = 1 / $sampleRate;
-        $extrapolatedFacets  = $this->extrapolateFacetResults(sampleFacets: $sampleFacets, factor: $extrapolationFactor, sampleSize: $sampleSize, totalSize: $totalSize);
+        $extrapolatedFacets  = $this->extrapolateFacetResults(
+            sampleFacets: $sampleFacets, factor: $extrapolationFactor,
+            sampleSize: $sampleSize, totalSize: $totalSize
+        );
 
         return $extrapolatedFacets;
     }//end calculateSampledFacetsParallel()
@@ -569,7 +575,10 @@ class HyperFacetHandler
      * @psalm-param array<string, mixed> $baseQuery
      * @psalm-param array<string, mixed> $datasetStats
      *
-     * @psalm-return array<string, array{type?: 'terms'|mixed, buckets?: list{array{key: 'estimated', results: int, approximate: true}}}>
+     * @psalm-return array<string,
+     *     array{type?: 'terms'|mixed,
+     *     buckets?: list{array{key: 'estimated', results: int,
+     *     approximate: true}}}>
      */
     private function calculateApproximateFacetsHyperLogLog(array $facetConfig, array $baseQuery, array $datasetStats): array
     {
@@ -595,7 +604,10 @@ class HyperFacetHandler
                 );
             } else {
                 // JSON field facets use statistical estimation.
-                $approximateFacets[$facetName] = $this->estimateJsonFieldFacet(_field: $facetName, config: $config, _baseQuery: $baseQuery, stats: $datasetStats);
+                $approximateFacets[$facetName] = $this->estimateJsonFieldFacet(
+                    _field: $facetName, config: $config,
+                    _baseQuery: $baseQuery, stats: $datasetStats
+                );
             }
         }
 
@@ -686,7 +698,9 @@ class HyperFacetHandler
      * @psalm-param array<string, mixed> $facetConfig
      * @psalm-param array<string, mixed> $baseQuery
      *
-     * @psalm-return array<string, array{type: 'terms', buckets: list<array{key: mixed, label: string, results: int}>}>
+     * @psalm-return array<string,
+     *     array{type: 'terms',
+     *     buckets: list<array{key: mixed, label: string, results: int}>}>
      */
     private function getBatchedMetadataFacets(array $fields, array $facetConfig, array $baseQuery): array
     {
@@ -770,17 +784,25 @@ class HyperFacetHandler
     {
         // **INDEX OPTIMIZATION**: Apply filters in order of our composite indexes.
         // 1. FIRST: Apply register+schema filters (uses objects_register_schema_idx).
+        // Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
         if (($baseQuery['@self']['register'] ?? null) !== null) {
-            $queryBuilder->andWhere($queryBuilder->expr()->eq('register', $queryBuilder->createNamedParameter($baseQuery['@self']['register'])));
+            $queryBuilder->andWhere($queryBuilder->expr()->eq('register', $queryBuilder->createNamedParameter((string) $baseQuery['@self']['register'], IQueryBuilder::PARAM_STR)));
         }
 
         if (($baseQuery['@self']['schema'] ?? null) !== null) {
-            $queryBuilder->andWhere($queryBuilder->expr()->eq('schema', $queryBuilder->createNamedParameter($baseQuery['@self']['schema'])));
+            $queryBuilder->andWhere($queryBuilder->expr()->eq('schema', $queryBuilder->createNamedParameter((string) $baseQuery['@self']['schema'], IQueryBuilder::PARAM_STR)));
         }
 
         // 2. SECOND: Apply organisation filter (uses objects_perf_super_idx with register+schema).
         if (($baseQuery['@self']['organisation'] ?? null) !== null) {
-            $queryBuilder->andWhere($queryBuilder->expr()->eq('organisation', $queryBuilder->createNamedParameter($baseQuery['@self']['organisation'])));
+            $queryBuilder->andWhere(
+                $queryBuilder->expr()->eq(
+                    'organisation',
+                    $queryBuilder->createNamedParameter(
+                        $baseQuery['@self']['organisation']
+                    )
+                )
+            );
         }
 
         // 3. THIRD: Apply other indexed filters.
@@ -1131,7 +1153,8 @@ class HyperFacetHandler
      *
      * @return (int|mixed|string[])[] Query with sample size limit and random ordering
      *
-     * @psalm-return array{_limit: int, _order: array{'RAND()': 'ASC'},...}
+     * @psalm-return array{_limit: int,
+     *     _order: array{'RAND()': 'ASC'}, ...}
      */
     private function buildSampleQuery(array $baseQuery, int $sampleSize): array
     {

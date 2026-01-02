@@ -452,7 +452,9 @@ class OptimizedBulkOperations
 
         // Convert update objects to array format using the correct ObjectEntity methods.
         foreach ($updateObjects as $updateObj) {
-            if (is_object($updateObj) === true && method_exists($updateObj, 'getObjectArray') === true && method_exists($updateObj, 'getObject') === true) {
+            if (is_object($updateObj) === true
+                && method_exists($updateObj, 'getObjectArray') === true
+                && method_exists($updateObj, 'getObject') === true) {
                 // Use the proper ObjectEntity methods to get the correct structure directly.
                 $newFormatArray = $updateObj->getObjectArray();
                 // Gets metadata at top level.
@@ -593,14 +595,22 @@ class OptimizedBulkOperations
                 // We only want to store the 'object' property contents in the database object column.
                 // VALIDATION: object property MUST be set and MUST be an array.
                 if (isset($objectData['object']) === false) {
-                    throw new InvalidArgumentException("Object data is missing required 'object' property. Available keys: ".json_encode(array_keys($objectData)));
+                    throw new InvalidArgumentException(
+                        "Object data is missing required 'object' property. ".
+                        "Available keys: ".json_encode(array_keys($objectData))
+                    );
                 }
 
                 $objectContent = $objectData['object'];
 
                 // VALIDATION: object content must be an array, not a string or other type.
                 if (is_array($objectContent) === false) {
-                    throw new InvalidArgumentException("Object content must be an array, got ".gettype($objectContent).". This suggests double JSON encoding or malformed CSV parsing.");
+                    throw new InvalidArgumentException(
+                        "Object content must be an array, got ".
+                        gettype($objectContent).
+                        ". This suggests double JSON encoding or ".
+                        "malformed CSV parsing."
+                    );
                 }
 
                 // Normal case - array data needs JSON encoding.

@@ -196,7 +196,9 @@ class ConfigurationSettingsController extends Controller
      *
      * @return JSONResponse Object configuration
      *
-     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, data?: array}, array<never, never>>
+     * @psalm-return JSONResponse<200|500,
+     *     array{success: bool, error?: string, data?: array},
+     *     array<never, never>>
      */
     public function getObjectSettings(): JSONResponse
     {
@@ -228,7 +230,10 @@ class ConfigurationSettingsController extends Controller
      *
      * @return JSONResponse Updated object settings
      *
-     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, message?: 'Object settings updated successfully', data?: array}, array<never, never>>
+     * @psalm-return JSONResponse<200|500,
+     *     array{success: bool, error?: string,
+     *     message?: 'Object settings updated successfully', data?: array},
+     *     array<never, never>>
      */
     public function updateObjectSettings(): JSONResponse
     {
@@ -268,7 +273,10 @@ class ConfigurationSettingsController extends Controller
      *
      * @return JSONResponse Updated settings
      *
-     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, message?: 'Object settings updated successfully', data?: array}, array<never, never>>
+     * @psalm-return JSONResponse<200|500,
+     *     array{success: bool, error?: string,
+     *     message?: 'Object settings updated successfully', data?: array},
+     *     array<never, never>>
      */
     public function patchObjectSettings(): JSONResponse
     {

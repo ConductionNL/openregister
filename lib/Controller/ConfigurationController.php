@@ -172,7 +172,10 @@ class ConfigurationController extends Controller
      *
      * @return JSONResponse JSON response with single configuration
      *
-     * @psalm-return JSONResponse<200, Configuration, array<never, never>>|JSONResponse<404|500, array{error: 'Configuration not found'|'Failed to fetch configuration'}, array<never, never>>
+     * @psalm-return JSONResponse<200, Configuration,
+     *     array<never, never>>|JSONResponse<404|500,
+     *     array{error: 'Configuration not found'|'Failed to fetch configuration'},
+     *     array<never, never>>
      */
     public function show(int $id): JSONResponse
     {
@@ -196,7 +199,10 @@ class ConfigurationController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<int, array{error?: string, title?: mixed|string, description?: ''|mixed, version?: 'v.unknown'|mixed, app?: mixed|null, type?: 'unknown'|mixed, openregister?: mixed|null}, array<never, never>>
+     * @psalm-return JSONResponse<int,
+     *     array{error?: string, title?: mixed|string, description?: ''|mixed,
+     *     version?: 'v.unknown'|mixed, app?: mixed|null, type?: 'unknown'|mixed,
+     *     openregister?: mixed|null}, array<never, never>>
      *
      * @return JSONResponse JSON response with enriched configuration details
      */
@@ -412,7 +418,9 @@ class ConfigurationController extends Controller
      *
      * @return JSONResponse Success response
      *
-     * @psalm-return JSONResponse<200|404|500, array{error?: 'Configuration not found'|'Failed to delete configuration', success?: true}, array<never, never>>
+     * @psalm-return JSONResponse<200|404|500,
+     *     array{error?: 'Configuration not found'|'Failed to delete configuration',
+     *     success?: true}, array<never, never>>
      */
     public function destroy(int $id): JSONResponse
     {
@@ -443,7 +451,10 @@ class ConfigurationController extends Controller
      *
      * @return JSONResponse JSON response with update check result
      *
-     * @psalm-return JSONResponse<200|404|500, array{error?: string, hasUpdate?: bool, localVersion?: null|string, remoteVersion?: null|string, lastChecked?: null|string, message?: string}, array<never, never>>
+     * @psalm-return JSONResponse<200|404|500,
+     *     array{error?: string, hasUpdate?: bool, localVersion?: null|string,
+     *     remoteVersion?: null|string, lastChecked?: null|string, message?: string},
+     *     array<never, never>>
      */
     public function checkVersion(int $id): JSONResponse
     {
@@ -487,14 +498,32 @@ class ConfigurationController extends Controller
      *
      * @return JSONResponse JSON response with preview of configuration changes
      *
-     * @psalm-return JSONResponse<200|404|500, array{error?: 'Configuration not found'|'Failed to preview configuration changes', registers?: list<array{action: string, changes: array, current: array|null, proposed: array, slug: string, title: string, type: string}>, schemas?: list<array{action: string, changes: array, current: array|null, proposed: array, slug: string, title: string, type: string}>, objects?: list<array{action: string, changes: array, current: array|null, proposed: array, register: string, schema: string, slug: string, title: string, type: string}>, endpoints?: array<never, never>, sources?: array<never, never>, mappings?: array<never, never>, jobs?: array<never, never>, synchronizations?: array<never, never>, rules?: array<never, never>, metadata?: array{configurationId: int, configurationTitle: null|string, sourceUrl: null|string, remoteVersion: mixed|null, localVersion: null|string, previewedAt: string, totalChanges: int<0, max>}}, array<never, never>>|JSONResponse<int, \JsonSerializable|array|null|scalar|stdClass, array<string, mixed>>
+     * @psalm-return JSONResponse<200|404|500,
+     *     array{error?: 'Configuration not found'|'Failed to preview configuration changes',
+     *     registers?: list<array{action: string, changes: array, current: array|null,
+     *     proposed: array, slug: string, title: string, type: string}>,
+     *     schemas?: list<array{action: string, changes: array, current: array|null,
+     *     proposed: array, slug: string, title: string, type: string}>,
+     *     objects?: list<array{action: string, changes: array, current: array|null,
+     *     proposed: array, register: string, schema: string, slug: string,
+     *     title: string, type: string}>, endpoints?: array<never, never>,
+     *     sources?: array<never, never>, mappings?: array<never, never>,
+     *     jobs?: array<never, never>, synchronizations?: array<never, never>,
+     *     rules?: array<never, never>,
+     *     metadata?: array{configurationId: int, configurationTitle: null|string,
+     *     sourceUrl: null|string, remoteVersion: mixed|null,
+     *     localVersion: null|string, previewedAt: string,
+     *     totalChanges: int<0, max>}}, array<never, never>>|JSONResponse<int,
+     *     \JsonSerializable|array|null|scalar|stdClass, array<string, mixed>>
      */
     public function preview(int $id): JSONResponse
     {
         try {
             $configuration = $this->configurationMapper->find($id);
 
-            $preview = $this->configurationService->previewConfigurationChanges($configuration);
+            $preview = $this->configurationService->previewConfigurationChanges(
+                $configuration
+            );
 
             if ($preview instanceof JSONResponse) {
                 return $preview;
@@ -521,7 +550,10 @@ class ConfigurationController extends Controller
      *
      * @return JSONResponse JSON response with sync result
      *
-     * @psalm-return JSONResponse<200|404|500, array{error?: string, success?: true, registersCount?: int<0, max>, schemasCount?: int<0, max>, objectsCount?: int<0, max>}, array<never, never>>
+     * @psalm-return JSONResponse<200|404|500,
+     *     array{error?: string, success?: true, registersCount?: int<0, max>,
+     *     schemasCount?: int<0, max>, objectsCount?: int<0, max>},
+     *     array<never, never>>
      */
     public function import(int $id): JSONResponse
     {
@@ -616,7 +648,16 @@ class ConfigurationController extends Controller
      *
      * @return JSONResponse JSON response with search results from GitHub
      *
-     * @psalm-return JSONResponse<200|400|500, array{error?: string, total_count?: int<0, max>|mixed, results?: list{0?: array{repository?: mixed, owner?: string, repo?: string, path: mixed|string, url: ''|mixed, stars?: 0|mixed, description?: ''|mixed, name: string, branch?: string, raw_url?: string, sha?: null|string, organization?: array{name: string, avatar_url: ''|mixed, type: 'User'|mixed, url: ''|mixed}, config: array, project_id?: mixed, ref?: 'main'|mixed}|mixed,...}, page?: int, per_page?: int}, array<never, never>>
+     * @psalm-return JSONResponse<200|400|500,
+     *     array{error?: string, total_count?: int<0, max>|mixed,
+     *     results?: list{0?: array{repository?: mixed, owner?: string,
+     *     repo?: string, path: mixed|string, url: ''|mixed, stars?: 0|mixed,
+     *     description?: ''|mixed, name: string, branch?: string,
+     *     raw_url?: string, sha?: null|string,
+     *     organization?: array{name: string, avatar_url: ''|mixed,
+     *     type: 'User'|mixed, url: ''|mixed}, config: array,
+     *     project_id?: mixed, ref?: 'main'|mixed}|mixed,...},
+     *     page?: int, per_page?: int}, array<never, never>>
      */
     public function discover(): JSONResponse
     {
@@ -649,8 +690,14 @@ class ConfigurationController extends Controller
 
             if ($source !== 'github') {
                 $this->logger->info('About to call GitLab search service');
-                $results = $this->gitlabHandler->searchConfigurations(search: $search, page: $page);
-                $this->logger->info('GitLab search completed', ['result_count' => count($results['results'] ?? [])]);
+                $results = $this->gitlabHandler->searchConfigurations(
+                    search: $search,
+                    page: $page
+                );
+                $this->logger->info(
+                    'GitLab search completed',
+                    ['result_count' => count($results['results'] ?? [])]
+                );
             }
 
             return new JSONResponse(data: $results, statusCode: 200);
@@ -679,7 +726,10 @@ class ConfigurationController extends Controller
      *
      * @return JSONResponse JSON response with branches list
      *
-     * @psalm-return JSONResponse<200|400|500, array{error?: string, branches?: array<array{name: mixed, commit: mixed|null, protected: false|mixed}>}, array<never, never>>
+     * @psalm-return JSONResponse<200|400|500,
+     *     array{error?: string,
+     *     branches?: array<array{name: mixed, commit: mixed|null,
+     *     protected: false|mixed}>}, array<never, never>>
      */
     public function getGitHubBranches(): JSONResponse
     {
@@ -719,7 +769,12 @@ class ConfigurationController extends Controller
      *
      * @return JSONResponse JSON response with GitHub repositories list
      *
-     * @psalm-return JSONResponse<200|500, array{error?: string, repositories?: array<array{id: mixed, name: mixed, full_name: mixed, owner: mixed, owner_type: mixed, private: mixed, description: ''|mixed, default_branch: 'main'|mixed, url: mixed, api_url: mixed}>}, array<never, never>>
+     * @psalm-return JSONResponse<200|500,
+     *     array{error?: string,
+     *     repositories?: array<array{id: mixed, name: mixed, full_name: mixed,
+     *     owner: mixed, owner_type: mixed, private: mixed,
+     *     description: ''|mixed, default_branch: 'main'|mixed, url: mixed,
+     *     api_url: mixed}>}, array<never, never>>
      */
     public function getGitHubRepositories(): JSONResponse
     {
@@ -743,7 +798,10 @@ class ConfigurationController extends Controller
                 ]
             );
 
-            $repositories = $this->githubHandler->getRepositories(page: $page, perPage: $perPage);
+            $repositories = $this->githubHandler->getRepositories(
+                page: $page,
+                perPage: $perPage
+            );
 
             return new JSONResponse(data: ['repositories' => $repositories], statusCode: 200);
         } catch (Exception $e) {
@@ -764,7 +822,12 @@ class ConfigurationController extends Controller
      *
      * @return JSONResponse JSON response with configuration files list
      *
-     * @psalm-return JSONResponse<200|400|500, array{error?: string, files?: list{0?: array{path: mixed, sha: mixed|null, url: mixed|null, config: array{title: mixed|string, description: ''|mixed, version: '1.0.0'|mixed, app: mixed|null, type: 'manual'|mixed}},...}}, array<never, never>>
+     * @psalm-return JSONResponse<200|400|500,
+     *     array{error?: string,
+     *     files?: list{0?: array{path: mixed, sha: mixed|null, url: mixed|null,
+     *     config: array{title: mixed|string, description: ''|mixed,
+     *     version: '1.0.0'|mixed, app: mixed|null, type: 'manual'|mixed}},...}},
+     *     array<never, never>>
      */
     public function getGitHubConfigurations(): JSONResponse
     {
@@ -808,7 +871,11 @@ class ConfigurationController extends Controller
      *
      * @return JSONResponse JSON response with GitLab branches list
      *
-     * @psalm-return JSONResponse<200|400|500, array{error?: string, branches?: array<array{name: mixed, commit: mixed|null, protected: false|mixed, default: false|mixed}>}, array<never, never>>
+     * @psalm-return JSONResponse<200|400|500,
+     *     array{error?: string,
+     *     branches?: array<array{name: mixed, commit: mixed|null,
+     *     protected: false|mixed, default: false|mixed}>},
+     *     array<never, never>>
      */
     public function getGitLabBranches(): JSONResponse
     {
@@ -855,7 +922,12 @@ class ConfigurationController extends Controller
      *
      * @return JSONResponse JSON response with GitLab configuration files list
      *
-     * @psalm-return JSONResponse<200|400|500, array{error?: string, files?: list<array{config: array{app: mixed|null, description: ''|mixed, title: mixed|string, type: 'manual'|mixed, version: '1.0.0'|mixed}, id: mixed|null, path: mixed}>}, array<never, never>>
+     * @psalm-return JSONResponse<200|400|500,
+     *     array{error?: string,
+     *     files?: list<array{config: array{app: mixed|null,
+     *     description: ''|mixed, title: mixed|string, type: 'manual'|mixed,
+     *     version: '1.0.0'|mixed}, id: mixed|null, path: mixed}>},
+     *     array<never, never>>
      */
     public function getGitLabConfigurations(): JSONResponse
     {
@@ -942,7 +1014,9 @@ class ConfigurationController extends Controller
      *
      * @throws Exception If parameters are missing or GitLab API call fails
      *
-     * @psalm-return array{configData: array, sourceUrl: string, metadata: array{namespace: string, project: string, projectId: int, path: string, ref: string}}
+     * @psalm-return array{configData: array, sourceUrl: string,
+     *     metadata: array{namespace: string, project: string,
+     *     projectId: int, path: string, ref: string}}
      */
     private function fetchConfigFromGitLab(array $params): array
     {
@@ -1041,7 +1115,11 @@ class ConfigurationController extends Controller
      *
      * @return JSONResponse JSON response with import result
      *
-     * @psalm-return JSONResponse<int, array{error?: string, existingConfigurationId?: int, success?: true, message?: string, configurationId?: int, result?: array{registersCount: int<0, max>, schemasCount: int<0, max>, objectsCount: int<0, max>}}, array<never, never>>
+     * @psalm-return JSONResponse<int,
+     *     array{error?: string, existingConfigurationId?: int, success?: true,
+     *     message?: string, configurationId?: int,
+     *     result?: array{registersCount: int<0, max>, schemasCount: int<0, max>,
+     *     objectsCount: int<0, max>}}, array<never, never>>
      */
     private function importFromSource(callable $fetchConfig, array $params, string $sourceType): JSONResponse
     {
@@ -1173,7 +1251,12 @@ class ConfigurationController extends Controller
      *
      * @return JSONResponse JSON response with import result
      *
-     * @psalm-return JSONResponse<int, array{error?: string, existingConfigurationId?: int, success?: true, message?: 'Configuration imported successfully from GitHub', configurationId?: int, result?: array{registersCount: int<0, max>, schemasCount: int<0, max>, objectsCount: int<0, max>}}, array<never, never>>
+     * @psalm-return JSONResponse<int,
+     *     array{error?: string, existingConfigurationId?: int, success?: true,
+     *     message?: 'Configuration imported successfully from GitHub',
+     *     configurationId?: int,
+     *     result?: array{registersCount: int<0, max>, schemasCount: int<0, max>,
+     *     objectsCount: int<0, max>}}, array<never, never>>
      */
     public function importFromGitHub(): JSONResponse
     {
@@ -1197,7 +1280,12 @@ class ConfigurationController extends Controller
      *
      * @return JSONResponse JSON response with import result
      *
-     * @psalm-return JSONResponse<int, array{error?: string, existingConfigurationId?: int, success?: true, message?: 'Configuration imported successfully from GitLab', configurationId?: int, result?: array{registersCount: int<0, max>, schemasCount: int<0, max>, objectsCount: int<0, max>}}, array<never, never>>
+     * @psalm-return JSONResponse<int,
+     *     array{error?: string, existingConfigurationId?: int, success?: true,
+     *     message?: 'Configuration imported successfully from GitLab',
+     *     configurationId?: int,
+     *     result?: array{registersCount: int<0, max>, schemasCount: int<0, max>,
+     *     objectsCount: int<0, max>}}, array<never, never>>
      */
     public function importFromGitLab(): JSONResponse
     {
@@ -1221,7 +1309,12 @@ class ConfigurationController extends Controller
      *
      * @return JSONResponse JSON response with import result
      *
-     * @psalm-return JSONResponse<int, array{error?: string, existingConfigurationId?: int, success?: true, message?: 'Configuration imported successfully from URL', configurationId?: int, result?: array{registersCount: int<0, max>, schemasCount: int<0, max>, objectsCount: int<0, max>}}, array<never, never>>
+     * @psalm-return JSONResponse<int,
+     *     array{error?: string, existingConfigurationId?: int, success?: true,
+     *     message?: 'Configuration imported successfully from URL',
+     *     configurationId?: int,
+     *     result?: array{registersCount: int<0, max>, schemasCount: int<0, max>,
+     *     objectsCount: int<0, max>}}, array<never, never>>
      */
     public function importFromUrl(): JSONResponse
     {
@@ -1246,7 +1339,12 @@ class ConfigurationController extends Controller
      *
      * @return JSONResponse JSON response with publish result
      *
-     * @psalm-return JSONResponse<200|400|500, array{error?: string, success?: true, message?: string, configurationId?: int, commit_sha?: mixed|null, commit_url?: mixed|null, file_url?: mixed|null, branch?: string, default_branch?: 'main'|mixed|null, indexing_note?: string}, array<never, never>>
+     * @psalm-return JSONResponse<200|400|500,
+     *     array{error?: string, success?: true, message?: string,
+     *     configurationId?: int, commit_sha?: mixed|null,
+     *     commit_url?: mixed|null, file_url?: mixed|null, branch?: string,
+     *     default_branch?: 'main'|mixed|null, indexing_note?: string},
+     *     array<never, never>>
      */
     public function publishToGitHub(int $id): JSONResponse
     {

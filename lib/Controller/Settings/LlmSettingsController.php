@@ -93,7 +93,10 @@ class LlmSettingsController extends Controller
      *
      * @return JSONResponse Updated LLM settings
      *
-     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, message?: 'LLM settings updated successfully', data?: array}, array<never, never>>
+     * @psalm-return JSONResponse<200|500,
+     *     array{success: bool, error?: string,
+     *     message?: 'LLM settings updated successfully', data?: array},
+     *     array<never, never>>
      */
     public function updateLLMSettings(): JSONResponse
     {
@@ -157,7 +160,10 @@ class LlmSettingsController extends Controller
      *
      * @return JSONResponse Updated LLM settings
      *
-     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, message?: 'LLM settings updated successfully', data?: array}, array<never, never>>
+     * @psalm-return JSONResponse<200|500,
+     *     array{success: bool, error?: string,
+     *     message?: 'LLM settings updated successfully', data?: array},
+     *     array<never, never>>
      */
     public function patchLLMSettings(): JSONResponse
     {
@@ -178,7 +184,10 @@ class LlmSettingsController extends Controller
      *
      * @return JSONResponse Test result with embedding info
      *
-     * @psalm-return JSONResponse<200|400, array<array-key, mixed>, array<never, never>>|JSONResponse<400, array{success: false, error: string, message: string}, array<never, never>>
+     * @psalm-return JSONResponse<200|400, array<array-key, mixed>,
+     *     array<never, never>>|JSONResponse<400,
+     *     array{success: false, error: string, message: string},
+     *     array<never, never>>
      */
     public function testEmbedding(): JSONResponse
     {
@@ -248,7 +257,10 @@ class LlmSettingsController extends Controller
      *
      * @return JSONResponse Test result with chat response
      *
-     * @psalm-return JSONResponse<200|400, array<array-key, mixed>, array<never, never>>|JSONResponse<400, array{success: false, error: string, message: string}, array<never, never>>
+     * @psalm-return JSONResponse<200|400, array<array-key, mixed>,
+     *     array<never, never>>|JSONResponse<400,
+     *     array{success: false, error: string, message: string},
+     *     array<never, never>>
      */
     public function testChat(): JSONResponse
     {
@@ -313,7 +325,11 @@ class LlmSettingsController extends Controller
      *
      * @return JSONResponse List of available models
      *
-     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, models: list<array{description: mixed|string, id: 'unknown'|mixed, modified: mixed|null, name: 'unknown'|mixed, size: 0|mixed}>, count?: int<0, max>}, array<never, never>>
+     * @psalm-return JSONResponse<200|500,
+     *     array{success: bool, error?: string,
+     *     models: list<array{description: mixed|string, id: 'unknown'|mixed,
+     *     modified: mixed|null, name: 'unknown'|mixed, size: 0|mixed}>,
+     *     count?: int<0, max>}, array<never, never>>
      */
     public function getOllamaModels(): JSONResponse
     {
@@ -446,7 +462,12 @@ class LlmSettingsController extends Controller
      *
      * @return JSONResponse Mismatch status
      *
-     * @psalm-return JSONResponse<200|500, array{has_vectors: bool, mismatch: bool, error?: string, message?: 'No embedding model configured'|'No vectors exist yet'|mixed, current_model?: mixed, existing_models?: list<mixed>, total_vectors?: int, null_model_count?: int, mismatched_models?: list<mixed>}, array<never, never>>
+     * @psalm-return JSONResponse<200|500,
+     *     array{has_vectors: bool, mismatch: bool, error?: string,
+     *     message?: 'No embedding model configured'|'No vectors exist yet'|mixed,
+     *     current_model?: mixed, existing_models?: list<mixed>,
+     *     total_vectors?: int, null_model_count?: int,
+     *     mismatched_models?: list<mixed>}, array<never, never>>
      */
     public function checkEmbeddingModelMismatch(): JSONResponse
     {
@@ -475,7 +496,9 @@ class LlmSettingsController extends Controller
      *
      * @return JSONResponse Result with deleted count
      *
-     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, message?: string, deleted?: int}, array<never, never>>
+     * @psalm-return JSONResponse<200|500,
+     *     array{success: bool, error?: string, message?: string, deleted?: int},
+     *     array<never, never>>
      */
     public function clearAllEmbeddings(): JSONResponse
     {
@@ -507,7 +530,9 @@ class LlmSettingsController extends Controller
      *
      * @return JSONResponse JSON response with vector statistics
      *
-     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, trace?: string, stats?: array, timestamp?: string}, array<never, never>>
+     * @psalm-return JSONResponse<200|500,
+     *     array{success: bool, error?: string, trace?: string, stats?: array,
+     *     timestamp?: string}, array<never, never>>
      */
     public function getVectorStats(): JSONResponse
     {

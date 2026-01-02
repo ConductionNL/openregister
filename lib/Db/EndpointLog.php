@@ -279,7 +279,11 @@ class EndpointLog extends Entity implements JsonSerializable
      *
      * @phpstan-return array<string,mixed>
      *
-     * @psalm-return array{id: int, uuid: null|string, statusCode: int|null, statusMessage: null|string, request: array|null, response: array|null, endpointId: int|null, userId: null|string, sessionId: null|string, expires: null|string, created: null|string, size: int}
+     * @psalm-return array{id: int, uuid: null|string, statusCode: int|null,
+     *     statusMessage: null|string, request: array|null,
+     *     response: array|null, endpointId: int|null, userId: null|string,
+     *     sessionId: null|string, expires: null|string,
+     *     created: null|string, size: int}
      */
     public function jsonSerialize(): array
     {

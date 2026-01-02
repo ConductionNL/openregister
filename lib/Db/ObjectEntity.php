@@ -602,7 +602,19 @@ class ObjectEntity extends Entity implements JsonSerializable
      *
      * @return ((array|int|mixed|null|string)[]|mixed)[]
      *
-     * @psalm-return array{'@self': array{id: null|string, slug: null|string, name: null|string, description: int|string, summary: null|string, image: null|string, uri: null|string, version: null|string, register: array|null|string, schema: array|null|string, schemaVersion: null|string, files: array|null, relations: array|null, locked: array|null, owner: array|null|string, organisation: array|null|string, groups: mixed, authorization: array|null, folder: null|string, application: array|null|string, validation: array|null, geo: array|null, retention: array|null, size: null|string, updated: null|string, created: null|string, published: null|string, depublished: null|string, deleted: array|null},...}
+     * @psalm-return array{'@self': array{id: null|string, slug: null|string,
+     *     name: null|string, description: int|string, summary: null|string,
+     *     image: null|string, uri: null|string, version: null|string,
+     *     register: array|null|string, schema: array|null|string,
+     *     schemaVersion: null|string, files: array|null,
+     *     relations: array|null, locked: array|null,
+     *     owner: array|null|string, organisation: array|null|string,
+     *     groups: mixed, authorization: array|null, folder: null|string,
+     *     application: array|null|string, validation: array|null,
+     *     geo: array|null, retention: array|null, size: null|string,
+     *     updated: null|string, created: null|string,
+     *     published: null|string, depublished: null|string,
+     *     deleted: array|null},...}
      */
     public function jsonSerialize(): array
     {
@@ -638,7 +650,19 @@ class ObjectEntity extends Entity implements JsonSerializable
      *
      * @return (array|int|mixed|null|string)[] Array containing all object properties
      *
-     * @psalm-return array{id: null|string, slug: null|string, name: null|string, description: int|string, summary: null|string, image: null|string, uri: null|string, version: null|string, register: array|null|string, schema: array|null|string, schemaVersion: null|string, files: array|null, relations: array|null, locked: array|null, owner: array|null|string, organisation: array|null|string, groups: mixed, authorization: array|null, folder: null|string, application: array|null|string, validation: array|null, geo: array|null, retention: array|null, size: null|string, updated: null|string, created: null|string, published: null|string, depublished: null|string, deleted: array|null}
+     * @psalm-return array{id: null|string, slug: null|string,
+     *     name: null|string, description: int|string, summary: null|string,
+     *     image: null|string, uri: null|string, version: null|string,
+     *     register: array|null|string, schema: array|null|string,
+     *     schemaVersion: null|string, files: array|null,
+     *     relations: array|null, locked: array|null,
+     *     owner: array|null|string, organisation: array|null|string,
+     *     groups: mixed, authorization: array|null, folder: null|string,
+     *     application: array|null|string, validation: array|null,
+     *     geo: array|null, retention: array|null, size: null|string,
+     *     updated: null|string, created: null|string,
+     *     published: null|string, depublished: null|string,
+     *     deleted: array|null}
      */
     public function getObjectArray(array $object=[]): array
     {

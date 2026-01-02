@@ -89,7 +89,10 @@ class FileSettingsController extends Controller
      *
      * @return JSONResponse Updated file settings
      *
-     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, message?: 'File settings updated successfully', data?: array}, array<never, never>>
+     * @psalm-return JSONResponse<200|500,
+     *     array{success: bool, error?: string,
+     *     message?: 'File settings updated successfully', data?: array},
+     *     array<never, never>>
      */
     public function updateFileSettings(): JSONResponse
     {
@@ -317,7 +320,11 @@ class FileSettingsController extends Controller
      *
      * @return JSONResponse JSON response with file warmup results
      *
-     * @psalm-return JSONResponse<200|500, array{success: bool, message: string, files_processed?: int<0, max>, indexed?: 0|mixed, failed?: 0|mixed, errors?: array, mode?: mixed}, array<never, never>>
+     * @psalm-return JSONResponse<200|500,
+     *     array{success: bool, message: string,
+     *     files_processed?: int<0, max>, indexed?: 0|mixed,
+     *     failed?: 0|mixed, errors?: array, mode?: mixed},
+     *     array<never, never>>
      */
     public function warmupFiles(): JSONResponse
     {
@@ -483,7 +490,10 @@ class FileSettingsController extends Controller
      *
      * @return JSONResponse JSON response with file reindexing results
      *
-     * @psalm-return JSONResponse<200|500, array{success: bool, message: string, indexed?: 0|mixed, files_processed?: int<0, max>, failed?: mixed, errors?: array}, array<never, never>>
+     * @psalm-return JSONResponse<200|500,
+     *     array{success: bool, message: string, indexed?: 0|mixed,
+     *     files_processed?: int<0, max>, failed?: mixed, errors?: array},
+     *     array<never, never>>
      */
     public function reindexFiles(): JSONResponse
     {
@@ -558,7 +568,9 @@ class FileSettingsController extends Controller
      *
      * @return JSONResponse File index statistics
      *
-     * @psalm-return JSONResponse<200, array<array-key, mixed>, array<never, never>>|JSONResponse<500, array{success: false, message: string}, array<never, never>>
+     * @psalm-return JSONResponse<200, array<array-key, mixed>,
+     *     array<never, never>>|JSONResponse<500,
+     *     array{success: false, message: string}, array<never, never>>
      */
     public function getFileIndexStats(): JSONResponse
     {
@@ -599,9 +611,25 @@ class FileSettingsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse File extraction statistics including: - totalFiles: All files in Nextcloud (from oc_filecache) - processedFiles: Files tracked in extraction system (from oc_openregister_file_texts) - pendingFiles: Files discovered and waiting for extraction (status='pending') - untrackedFiles: Files in Nextcloud not yet discovered - totalChunks: Number of text chunks in SOLR (one file = multiple chunks) - completed, failed, indexed, processing, vectorized: Detailed processing status counts
+     * @return JSONResponse File extraction statistics including:
+     *     - totalFiles: All files in Nextcloud (from oc_filecache)
+     *     - processedFiles: Files tracked in extraction system
+     *       (from oc_openregister_file_texts)
+     *     - pendingFiles: Files discovered and waiting for extraction
+     *       (status='pending')
+     *     - untrackedFiles: Files in Nextcloud not yet discovered
+     *     - totalChunks: Number of text chunks in SOLR
+     *       (one file = multiple chunks)
+     *     - completed, failed, indexed, processing, vectorized:
+     *       Detailed processing status counts
      *
-     * @psalm-return JSONResponse<200, array{success: true, totalFiles: 0|mixed, processedFiles: 0|mixed, pendingFiles: 0|mixed, untrackedFiles: 0|mixed, totalChunks: 0|mixed, extractedTextStorageMB: string, totalFilesStorageMB: string, completed: 0|mixed, failed: 0|mixed, indexed: 0|mixed, processing: 0|mixed, vectorized: 0|mixed, error?: string}, array<never, never>>
+     * @psalm-return JSONResponse<200,
+     *     array{success: true, totalFiles: 0|mixed, processedFiles: 0|mixed,
+     *     pendingFiles: 0|mixed, untrackedFiles: 0|mixed, totalChunks: 0|mixed,
+     *     extractedTextStorageMB: string, totalFilesStorageMB: string,
+     *     completed: 0|mixed, failed: 0|mixed, indexed: 0|mixed,
+     *     processing: 0|mixed, vectorized: 0|mixed, error?: string},
+     *     array<never, never>>
      */
     public function getFileExtractionStats(): JSONResponse
     {

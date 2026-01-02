@@ -56,7 +56,9 @@ class SearchTrailController extends Controller
      *
      * @return ((mixed|string)[]|DateTime|int|mixed|null)[]
      *
-     * @psalm-return array{limit: int, offset: int|null, page: int|null, filters: array, sort: array<array-key|mixed, 'DESC'|mixed>, search: mixed|null, from: DateTime|null, to: DateTime|null}
+     * @psalm-return array{limit: int, offset: int|null, page: int|null,
+     *     filters: array, sort: array<array-key|mixed, 'DESC'|mixed>,
+     *     search: mixed|null, from: DateTime|null, to: DateTime|null}
      */
     private function extractRequestParameters(): array
     {
@@ -293,7 +295,11 @@ class SearchTrailController extends Controller
      *
      * @return JSONResponse JSON response with search trail logs
      *
-     * @psalm-return JSONResponse<200|500, array{error?: string, results?: array<int, mixed>, total?: int<0, max>, page?: float|int<1, max>, pages?: 1|float, limit?: int<1, max>, offset?: int<0, max>, next?: null|string, prev?: null|string}, array<never, never>>
+     * @psalm-return JSONResponse<200|500,
+     *     array{error?: string, results?: array<int, mixed>,
+     *     total?: int<0, max>, page?: float|int<1, max>, pages?: 1|float,
+     *     limit?: int<1, max>, offset?: int<0, max>, next?: null|string,
+     *     prev?: null|string}, array<never, never>>
      */
     public function index(): JSONResponse
     {
@@ -337,7 +343,9 @@ class SearchTrailController extends Controller
      *
      * @return JSONResponse JSON response with single search trail log
      *
-     * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\SearchTrail, array<never, never>>|JSONResponse<404|500, array{error: string}, array<never, never>>
+     * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\SearchTrail,
+     *     array<never, never>>|JSONResponse<404|500, array{error: string},
+     *     array<never, never>>
      */
     public function show(int $id): JSONResponse
     {
@@ -409,7 +417,13 @@ class SearchTrailController extends Controller
      *
      * @return JSONResponse JSON response with popular search terms
      *
-     * @psalm-return JSONResponse<200|500, array{error?: string, results?: array<int, mixed>, total?: int<0, max>, page?: float|int<1, max>, pages?: 1|float, limit?: int<1, max>, offset?: int<0, max>, next?: null|string, prev?: null|string, total_searches?: float|int, period?: array{from: null|string, to: null|string}|null}, array<never, never>>
+     * @psalm-return JSONResponse<200|500,
+     *     array{error?: string, results?: array<int, mixed>,
+     *     total?: int<0, max>, page?: float|int<1, max>, pages?: 1|float,
+     *     limit?: int<1, max>, offset?: int<0, max>, next?: null|string,
+     *     prev?: null|string, total_searches?: float|int,
+     *     period?: array{from: null|string, to: null|string}|null},
+     *     array<never, never>>
      */
     public function popularTerms(): JSONResponse
     {
@@ -455,7 +469,14 @@ class SearchTrailController extends Controller
      *
      * @return JSONResponse JSON response with search activity by time period
      *
-     * @psalm-return JSONResponse<200|500, array{error?: string, activity?: array, insights?: array{peak_period: mixed|null, peak_count?: mixed, low_period: mixed|null, low_count?: mixed, trend: string, average_searches_per_period: 0|float, total_periods?: int<1, max>}, interval?: string, period?: array{from: null|string, to: null|string}}, array<never, never>>
+     * @psalm-return JSONResponse<200|500,
+     *     array{error?: string, activity?: array,
+     *     insights?: array{peak_period: mixed|null, peak_count?: mixed,
+     *     low_period: mixed|null, low_count?: mixed, trend: string,
+     *     average_searches_per_period: 0|float,
+     *     total_periods?: int<1, max>}, interval?: string,
+     *     period?: array{from: null|string, to: null|string}},
+     *     array<never, never>>
      */
     public function activity(): JSONResponse
     {
@@ -485,7 +506,13 @@ class SearchTrailController extends Controller
      *
      * @return JSONResponse JSON response with search statistics by register and schema
      *
-     * @psalm-return JSONResponse<200|500, array{error?: string, results?: array<int, mixed>, total?: int<0, max>, page?: float|int<1, max>, pages?: 1|float, limit?: int<1, max>, offset?: int<0, max>, next?: null|string, prev?: null|string, total_searches?: float|int, period?: array{from: null|string, to: null|string}|null}, array<never, never>>
+     * @psalm-return JSONResponse<200|500,
+     *     array{error?: string, results?: array<int, mixed>,
+     *     total?: int<0, max>, page?: float|int<1, max>, pages?: 1|float,
+     *     limit?: int<1, max>, offset?: int<0, max>, next?: null|string,
+     *     prev?: null|string, total_searches?: float|int,
+     *     period?: array{from: null|string, to: null|string}|null},
+     *     array<never, never>>
      */
     public function registerSchemaStats(): JSONResponse
     {
@@ -531,7 +558,14 @@ class SearchTrailController extends Controller
      *
      * @return JSONResponse JSON response with user agent statistics
      *
-     * @psalm-return JSONResponse<200|500, array{error?: string, results?: array<int, mixed>, total?: int<0, max>, page?: float|int<1, max>, pages?: 1|float, limit?: int<1, max>, offset?: int<0, max>, next?: null|string, prev?: null|string, total_searches?: 0, period?: array{from: null|string, to: null|string}|null, browser_breakdown?: non-empty-list<array{browser: array-key, count: 0|mixed, percentage: 0|float}>}, array<never, never>>
+     * @psalm-return JSONResponse<200|500,
+     *     array{error?: string, results?: array<int, mixed>,
+     *     total?: int<0, max>, page?: float|int<1, max>, pages?: 1|float,
+     *     limit?: int<1, max>, offset?: int<0, max>, next?: null|string,
+     *     prev?: null|string, total_searches?: 0,
+     *     period?: array{from: null|string, to: null|string}|null,
+     *     browser_breakdown?: non-empty-list<array{browser: array-key,
+     *     count: 0|mixed, percentage: 0|float}>}, array<never, never>>
      */
     public function userAgentStats(): JSONResponse
     {
@@ -652,7 +686,11 @@ class SearchTrailController extends Controller
      *
      * @return JSONResponse JSON response with exported search trail data
      *
-     * @psalm-return JSONResponse<200|500, array{error?: string, success?: true, data?: array{content: false|string, filename: string, contentType: 'application/json'|'text/csv', size: int<0, max>}}, array<never, never>>
+     * @psalm-return JSONResponse<200|500,
+     *     array{error?: string, success?: true,
+     *     data?: array{content: false|string, filename: string,
+     *     contentType: 'application/json'|'text/csv', size: int<0, max>}},
+     *     array<never, never>>
      */
     public function export(): JSONResponse
     {
@@ -757,7 +795,10 @@ class SearchTrailController extends Controller
      *
      * @return JSONResponse JSON response confirming deletion
      *
-     * @psalm-return JSONResponse<200|404|500, array{error?: string, success?: true, message?: 'Search trail deletion not implemented yet'}, array<never, never>>
+     * @psalm-return JSONResponse<200|404|500,
+     *     array{error?: string, success?: true,
+     *     message?: 'Search trail deletion not implemented yet'},
+     *     array<never, never>>
      */
     public function destroy(int $id): JSONResponse
     {
@@ -799,7 +840,12 @@ class SearchTrailController extends Controller
      *
      * @return JSONResponse JSON response with deletion results
      *
-     * @psalm-return JSONResponse<200|500, array{error?: string, success?: true, results?: array{deleted: 0, failed: 0, message: 'Multiple search trail deletion not implemented yet'}, message?: 'Multiple search trail deletion not implemented yet'}, array<never, never>>
+     * @psalm-return JSONResponse<200|500,
+     *     array{error?: string, success?: true,
+     *     results?: array{deleted: 0, failed: 0,
+     *     message: 'Multiple search trail deletion not implemented yet'},
+     *     message?: 'Multiple search trail deletion not implemented yet'},
+     *     array<never, never>>
      */
     public function destroyMultiple(): JSONResponse
     {

@@ -76,7 +76,10 @@ class MagicFacetHandler
      *
      * @return ((int|mixed|null|string)[][]|int|string)[] Facet data for the metadata field
      *
-     * @psalm-return array{type: 'date_histogram'|'range'|'terms', field: string, buckets: list<array{count: int, from?: mixed|null, key?: mixed|string, to?: mixed|null, value?: mixed}>, total_buckets: int<0, max>, error?: string, interval?: string}
+     * @psalm-return array{type: 'date_histogram'|'range'|'terms', field: string,
+     *     buckets: list<array{count: int, from?: mixed|null,
+     *     key?: mixed|string, to?: mixed|null, value?: mixed}>,
+     *     total_buckets: int<0, max>, error?: string, interval?: string}
      */
     private function getMetadataFieldFacet(string $field, array $config, array $baseQuery, string $tableName): array
     {
@@ -111,7 +114,11 @@ class MagicFacetHandler
      *
      * @return ((int|mixed|null|string)[][]|int|string)[] Facet data for the schema property field
      *
-     * @psalm-return array{type?: 'date_histogram'|'range'|'terms', field?: string, buckets?: list<array{count: int, from?: mixed|null, key?: mixed|string, to?: mixed|null, value?: mixed}>, total_buckets?: int<0, max>, error?: string, interval?: string}
+     * @psalm-return array{type?: 'date_histogram'|'range'|'terms',
+     *     field?: string,
+     *     buckets?: list<array{count: int, from?: mixed|null,
+     *     key?: mixed|string, to?: mixed|null, value?: mixed}>,
+     *     total_buckets?: int<0, max>, error?: string, interval?: string}
      */
     private function getSchemaPropertyFacet(string $field, array $config, array $baseQuery, Schema $schema, string $tableName): array
     {
@@ -151,7 +158,9 @@ class MagicFacetHandler
      *
      * @return ((int|mixed)[][]|int|string)[] Terms facet data
      *
-     * @psalm-return array{type: 'terms', field: string, buckets: list<array{count: int, value: mixed}>, total_buckets: int<0, max>, error?: string}
+     * @psalm-return array{type: 'terms', field: string,
+     *     buckets: list<array{count: int, value: mixed}>,
+     *     total_buckets: int<0, max>, error?: string}
      */
     private function getTermsFacet(string $columnName, array $baseQuery, string $tableName, int $limit=100): array
     {
@@ -536,7 +545,10 @@ class MagicFacetHandler
      *
      * @return (mixed|string[])[][]
      *
-     * @psalm-return array<array{type: 'string'|mixed, format: ''|mixed, title: mixed, description: mixed|string, facet_types: list{0: 'date_histogram'|'range'|'terms', 1?: 'range'|'terms'}}>
+     * @psalm-return array<array{type: 'string'|mixed, format: ''|mixed,
+     *     title: mixed, description: mixed|string,
+     *     facet_types: list{0: 'date_histogram'|'range'|'terms',
+     *     1?: 'range'|'terms'}}>
      */
     private function getSchemaFacetableFields(Schema $schema): array
     {

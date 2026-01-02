@@ -182,7 +182,12 @@ class EntityRelation extends Entity implements JsonSerializable
      *
      * @return (null|scalar)[]
      *
-     * @psalm-return array{id: int, entityId: int|null, chunkId: int|null, role: null|string, fileId: int|null, objectId: int|null, emailId: int|null, positionStart: int, positionEnd: int, confidence: float, detectionMethod: null|string, context: null|string, anonymized: bool, anonymizedValue: null|string, createdAt: null|string}
+     * @psalm-return array{id: int, entityId: int|null, chunkId: int|null,
+     *     role: null|string, fileId: int|null, objectId: int|null,
+     *     emailId: int|null, positionStart: int, positionEnd: int,
+     *     confidence: float, detectionMethod: null|string,
+     *     context: null|string, anonymized: bool,
+     *     anonymizedValue: null|string, createdAt: null|string}
      */
     public function jsonSerialize(): array
     {

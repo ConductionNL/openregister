@@ -518,13 +518,15 @@ class AuditTrailMapper extends QBMapper
                 ->from($this->getTableName());
 
             // Add register filter if provided.
+            // Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
             if ($registerId !== null) {
-                $qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)));
+                $qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter((string) $registerId, IQueryBuilder::PARAM_STR)));
             }
 
             // Add schema filter if provided.
+            // Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
             if ($schemaId !== null) {
-                $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
+                $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter((string) $schemaId, IQueryBuilder::PARAM_STR)));
             }
 
             // Add exclusions if provided.
@@ -614,7 +616,8 @@ class AuditTrailMapper extends QBMapper
      *
      * @return ((int[]|string)[]|(int|string))[][]
      *
-     * @psalm-return array{labels: list<array-key>, series: list<array{data: list<int>, name: string}>}
+     * @psalm-return array{labels: list<array-key>,
+     *     series: list<array{data: list<int>, name: string}>}
      */
     public function getActionChartData(?\DateTime $from=null, ?\DateTime $till=null, ?int $registerId=null, ?int $schemaId=null): array
     {
@@ -641,13 +644,15 @@ class AuditTrailMapper extends QBMapper
             }
 
             // Add register filter if provided.
+            // Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
             if ($registerId !== null) {
-                $qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)));
+                $qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter((string) $registerId, IQueryBuilder::PARAM_STR)));
             }
 
             // Add schema filter if provided.
+            // Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
             if ($schemaId !== null) {
-                $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
+                $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter((string) $schemaId, IQueryBuilder::PARAM_STR)));
             }
 
             $results = $qb->executeQuery()->fetchAll();
@@ -707,7 +712,8 @@ class AuditTrailMapper extends QBMapper
      *
      * @return int[]
      *
-     * @psalm-return array{total: int, creates: int, updates: int, deletes: int, reads: int}
+     * @psalm-return array{total: int, creates: int, updates: int,
+     *     deletes: int, reads: int}
      */
     public function getDetailedStatistics(?int $registerId=null, ?int $schemaId=null, ?int $hours=24): array
     {
@@ -735,13 +741,15 @@ class AuditTrailMapper extends QBMapper
                 ->groupBy('action');
 
             // Add register filter if provided.
+            // Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
             if ($registerId !== null) {
-                $qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)));
+                $qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter((string) $registerId, IQueryBuilder::PARAM_STR)));
             }
 
             // Add schema filter if provided.
+            // Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
             if ($schemaId !== null) {
-                $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
+                $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter((string) $schemaId, IQueryBuilder::PARAM_STR)));
             }
 
             $results = $qb->executeQuery()->fetchAll();
@@ -826,13 +834,15 @@ class AuditTrailMapper extends QBMapper
                 ->groupBy('action');
 
             // Add register filter if provided.
+            // Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
             if ($registerId !== null) {
-                $qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)));
+                $qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter((string) $registerId, IQueryBuilder::PARAM_STR)));
             }
 
             // Add schema filter if provided.
+            // Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
             if ($schemaId !== null) {
-                $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
+                $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter((string) $schemaId, IQueryBuilder::PARAM_STR)));
             }
 
             $results = $qb->executeQuery()->fetchAll();
@@ -903,13 +913,15 @@ class AuditTrailMapper extends QBMapper
                 ->orderBy('count', 'DESC');
 
             // Add register filter if provided.
+            // Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
             if ($registerId !== null) {
-                $qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)));
+                $qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter((string) $registerId, IQueryBuilder::PARAM_STR)));
             }
 
             // Add schema filter if provided.
+            // Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
             if ($schemaId !== null) {
-                $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
+                $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter((string) $schemaId, IQueryBuilder::PARAM_STR)));
             }
 
             // Apply limit.

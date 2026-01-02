@@ -125,7 +125,9 @@ class CreateFileHandler
                 try {
                     $objectEntity = $this->objectEntityMapper->find($objectEntity);
                 } catch (DoesNotExistException) {
-                    // In this case it is a possibility the object gets created later in a process (for example: synchronization) so we create the file for a given uuid.
+                    // In this case it is a possibility the object gets created later
+                    // in a process (for example: synchronization) so we create
+                    // the file for a given uuid.
                 }
             }
 

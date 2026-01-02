@@ -199,14 +199,19 @@ class SchemaMapper extends QBMapper
 
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
-            ->from('openregister_schemas')
-            ->where(
-                $qb->expr()->orX(
-                    $qb->expr()->eq('id', $qb->createNamedParameter(value: $id, type: IQueryBuilder::PARAM_INT)),
-                    $qb->expr()->eq('uuid', $qb->createNamedParameter(value: $id, type: IQueryBuilder::PARAM_STR)),
-                    $qb->expr()->eq('slug', $qb->createNamedParameter(value: $id, type: IQueryBuilder::PARAM_STR))
-                )
-            );
+            ->from('openregister_schemas');
+
+        // Build OR conditions for matching against id, uuid, or slug.
+        // Note: Only include id comparison if $id is actually numeric (PostgreSQL strict typing).
+        $orConditions = [];
+        if (is_numeric($id) === true) {
+            $orConditions[] = $qb->expr()->eq('id', $qb->createNamedParameter(value: (int) $id, type: IQueryBuilder::PARAM_INT));
+        }
+
+        $orConditions[] = $qb->expr()->eq('uuid', $qb->createNamedParameter(value: $id, type: IQueryBuilder::PARAM_STR));
+        $orConditions[] = $qb->expr()->eq('slug', $qb->createNamedParameter(value: $id, type: IQueryBuilder::PARAM_STR));
+
+        $qb->where($qb->expr()->orX(...$orConditions));
 
         // Apply organisation filter with published entity bypass support
         // Published schemas can bypass multi-tenancy restrictions if configured

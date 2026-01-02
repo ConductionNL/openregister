@@ -373,7 +373,15 @@ class Endpoint extends Entity implements JsonSerializable
      *
      * @phpstan-return array<string,mixed>
      *
-     * @psalm-return array{id: int, uuid: null|string, name: null|string, description: null|string, reference: null|string, version: null|string, endpoint: null|string, endpointArray: array, endpointRegex: null|string, method: null|string, targetType: null|string, targetId: null|string, conditions: array, inputMapping: null|string, outputMapping: null|string, rules: array, configurations: array, slug: string, groups: array<string, list<string>>, organisation: null|string, created: null|string, updated: null|string}
+     * @psalm-return array{id: int, uuid: null|string, name: null|string,
+     *     description: null|string, reference: null|string,
+     *     version: null|string, endpoint: null|string, endpointArray: array,
+     *     endpointRegex: null|string, method: null|string,
+     *     targetType: null|string, targetId: null|string, conditions: array,
+     *     inputMapping: null|string, outputMapping: null|string, rules: array,
+     *     configurations: array, slug: string,
+     *     groups: array<string, list<string>>, organisation: null|string,
+     *     created: null|string, updated: null|string}
      */
     public function jsonSerialize(): array
     {

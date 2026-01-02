@@ -95,7 +95,18 @@ class ViewsController extends Controller
      *
      * @return JSONResponse A JSON response with views list or error
      *
-     * @psalm-return JSONResponse<200|401|500, array{error?: 'Failed to fetch views'|'User not authenticated', message?: string, results?: array<array{id: int, uuid: null|string, name: null|string, description: null|string, owner: null|string, organisation: null|string, isPublic: bool, isDefault: bool, query: array|null, favoredBy: array, quota: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: int<0, max>, groups: 0}, created: null|string, updated: null|string, managedByConfiguration: array<string, mixed>|null}>, total?: int<0, max>}, array<never, never>>
+     * @psalm-return JSONResponse<200|401|500,
+     *     array{error?: 'Failed to fetch views'|'User not authenticated',
+     *     message?: string,
+     *     results?: array<array{id: int, uuid: null|string, name: null|string,
+     *     description: null|string, owner: null|string, organisation: null|string,
+     *     isPublic: bool, isDefault: bool, query: array|null, favoredBy: array,
+     *     quota: array{storage: null, bandwidth: null, requests: null,
+     *     users: null, groups: null},
+     *     usage: array{storage: 0, bandwidth: 0, requests: 0, users: int<0, max>,
+     *     groups: 0}, created: null|string, updated: null|string,
+     *     managedByConfiguration: array<string, mixed>|null}>,
+     *     total?: int<0, max>}, array<never, never>>
      */
     public function index(): JSONResponse
     {
@@ -186,7 +197,18 @@ class ViewsController extends Controller
      *
      * @return JSONResponse A JSON response with view data or error
      *
-     * @psalm-return JSONResponse<int, array{error?: 'Failed to fetch view'|'User not authenticated'|'View not found', message?: string, view?: array{id: int, uuid: null|string, name: null|string, description: null|string, owner: null|string, organisation: null|string, isPublic: bool, isDefault: bool, query: array|null, favoredBy: array, quota: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: int<0, max>, groups: 0}, created: null|string, updated: null|string, managedByConfiguration: array<string, mixed>|null}}, array<never, never>>
+     * @psalm-return JSONResponse<int,
+     *     array{error?: 'Failed to fetch view'|'User not authenticated'|'View not found',
+     *     message?: string,
+     *     view?: array{id: int, uuid: null|string, name: null|string,
+     *     description: null|string, owner: null|string, organisation: null|string,
+     *     isPublic: bool, isDefault: bool, query: array|null, favoredBy: array,
+     *     quota: array{storage: null, bandwidth: null, requests: null,
+     *     users: null, groups: null},
+     *     usage: array{storage: 0, bandwidth: 0, requests: 0, users: int<0, max>,
+     *     groups: 0}, created: null|string, updated: null|string,
+     *     managedByConfiguration: array<string, mixed>|null}},
+     *     array<never, never>>
      */
     public function show(string $id): JSONResponse
     {
@@ -247,7 +269,17 @@ class ViewsController extends Controller
      *
      * @return JSONResponse A JSON response with created view or error
      *
-     * @psalm-return JSONResponse<int, array{error?: string, message?: string, view?: array{id: int, uuid: null|string, name: null|string, description: null|string, owner: null|string, organisation: null|string, isPublic: bool, isDefault: bool, query: array|null, favoredBy: array, quota: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: int<0, max>, groups: 0}, created: null|string, updated: null|string, managedByConfiguration: array<string, mixed>|null}}, array<never, never>>
+     * @psalm-return JSONResponse<int,
+     *     array{error?: string, message?: string,
+     *     view?: array{id: int, uuid: null|string, name: null|string,
+     *     description: null|string, owner: null|string, organisation: null|string,
+     *     isPublic: bool, isDefault: bool, query: array|null, favoredBy: array,
+     *     quota: array{storage: null, bandwidth: null, requests: null,
+     *     users: null, groups: null},
+     *     usage: array{storage: 0, bandwidth: 0, requests: 0, users: int<0, max>,
+     *     groups: 0}, created: null|string, updated: null|string,
+     *     managedByConfiguration: array<string, mixed>|null}},
+     *     array<never, never>>
      */
     public function create(): JSONResponse
     {
@@ -348,7 +380,17 @@ class ViewsController extends Controller
      *
      * @return JSONResponse A JSON response with updated view or error
      *
-     * @psalm-return JSONResponse<int, array{error?: string, message?: string, view?: array{id: int, uuid: null|string, name: null|string, description: null|string, owner: null|string, organisation: null|string, isPublic: bool, isDefault: bool, query: array|null, favoredBy: array, quota: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: int<0, max>, groups: 0}, created: null|string, updated: null|string, managedByConfiguration: array<string, mixed>|null}}, array<never, never>>
+     * @psalm-return JSONResponse<int,
+     *     array{error?: string, message?: string,
+     *     view?: array{id: int, uuid: null|string, name: null|string,
+     *     description: null|string, owner: null|string, organisation: null|string,
+     *     isPublic: bool, isDefault: bool, query: array|null, favoredBy: array,
+     *     quota: array{storage: null, bandwidth: null, requests: null,
+     *     users: null, groups: null},
+     *     usage: array{storage: 0, bandwidth: 0, requests: 0, users: int<0, max>,
+     *     groups: 0}, created: null|string, updated: null|string,
+     *     managedByConfiguration: array<string, mixed>|null}},
+     *     array<never, never>>
      */
     public function update(string $id): JSONResponse
     {
@@ -458,7 +500,18 @@ class ViewsController extends Controller
      *
      * @return JSONResponse JSON response with patched view
      *
-     * @psalm-return JSONResponse<int, array{error?: 'Failed to patch view'|'User not authenticated'|'View not found', message?: string, view?: array{id: int, uuid: null|string, name: null|string, description: null|string, owner: null|string, organisation: null|string, isPublic: bool, isDefault: bool, query: array|null, favoredBy: array, quota: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: int<0, max>, groups: 0}, created: null|string, updated: null|string, managedByConfiguration: array<string, mixed>|null}}, array<never, never>>
+     * @psalm-return JSONResponse<int,
+     *     array{error?: 'Failed to patch view'|'User not authenticated'|'View not found',
+     *     message?: string,
+     *     view?: array{id: int, uuid: null|string, name: null|string,
+     *     description: null|string, owner: null|string, organisation: null|string,
+     *     isPublic: bool, isDefault: bool, query: array|null, favoredBy: array,
+     *     quota: array{storage: null, bandwidth: null, requests: null,
+     *     users: null, groups: null},
+     *     usage: array{storage: 0, bandwidth: 0, requests: 0, users: int<0, max>,
+     *     groups: 0}, created: null|string, updated: null|string,
+     *     managedByConfiguration: array<string, mixed>|null}},
+     *     array<never, never>>
      */
     public function patch(string $id): JSONResponse
     {
@@ -569,7 +622,9 @@ class ViewsController extends Controller
      *
      * @return JSONResponse A JSON response confirming deletion or error
      *
-     * @psalm-return JSONResponse<int, array{error?: 'Failed to delete view'|'User not authenticated'|'View not found', message?: string, success?: false}, array<never, never>>
+     * @psalm-return JSONResponse<int,
+     *     array{error?: 'Failed to delete view'|'User not authenticated'|'View not found',
+     *     message?: string, success?: false}, array<never, never>>
      */
     public function destroy(string $id): JSONResponse
     {

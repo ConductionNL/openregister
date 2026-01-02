@@ -1602,7 +1602,9 @@ class FileService
      *
      * @return (float|int|string)[]|null File information or null if not found
      *
-     * @psalm-return array{id: int, name: string, path: string, type: string, mimetype: string, size: float|int, parent_id: int, parent_path: string}|null
+     * @psalm-return array{id: int, name: string, path: string,
+     *     type: string, mimetype: string, size: float|int,
+     *     parent_id: int, parent_path: string}|null
      */
     public function debugFindFileById(int $fileId): array|null
     {
@@ -1645,7 +1647,8 @@ class FileService
      *
      * @return (float|int|string)[][]
      *
-     * @psalm-return list<array{id: int, mimetype: string, name: string, path: string, size: float|int, type: string}>
+     * @psalm-return list<array{id: int, mimetype: string, name: string,
+     *     path: string, size: float|int, type: string}>
      */
     public function debugListObjectFiles(ObjectEntity $object): array
     {

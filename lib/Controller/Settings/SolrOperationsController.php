@@ -325,7 +325,10 @@ class SolrOperationsController extends Controller
      *
      * @return JSONResponse The test results
      *
-     * @psalm-return JSONResponse<200, array<array-key, mixed>, array<never, never>>|JSONResponse<422, array{success: false, message: string, details: array{exception: string}}, array<never, never>>
+     * @psalm-return JSONResponse<200, array<array-key, mixed>,
+     *     array<never, never>>|JSONResponse<422,
+     *     array{success: false, message: string,
+     *     details: array{exception: string}}, array<never, never>>
      */
     public function testSolrConnection(): JSONResponse
     {
@@ -414,7 +417,14 @@ class SolrOperationsController extends Controller
 
             // Phase 1: Use IndexService directly for SOLR operations.
             $guzzleSolrService = $this->container->get(IndexService::class);
-            $result            = $guzzleSolrService->warmupIndex(schemas: [], maxObjects: $maxObjects, mode: $mode, collectErrors: $collectErrors, batchSize: $batchSize, schemaIds: $schemaIds);
+            $result            = $guzzleSolrService->warmupIndex(
+                schemas: [],
+                maxObjects: $maxObjects,
+                mode: $mode,
+                collectErrors: $collectErrors,
+                batchSize: $batchSize,
+                schemaIds: $schemaIds
+            );
             return new JSONResponse(data: $result);
         } catch (Exception $e) {
             // **ERROR VISIBILITY**: Let exceptions bubble up with full details.
@@ -512,7 +522,10 @@ class SolrOperationsController extends Controller
      *
      * @return JSONResponse JSON response with Solr memory prediction
      *
-     * @psalm-return JSONResponse<200|422, array{success: bool, message: string, prediction: array{error: string, prediction_safe: false}|mixed}, array<never, never>>
+     * @psalm-return JSONResponse<200|422,
+     *     array{success: bool, message: string,
+     *     prediction: array{error: string, prediction_safe: false}|mixed},
+     *     array<never, never>>
      */
     public function getSolrMemoryPrediction(): JSONResponse
     {
@@ -575,7 +588,11 @@ class SolrOperationsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400|500, array{error?: mixed|null|string, success?: false|mixed, operation?: 'clear'|'commit'|'optimize', message?: string, timestamp?: string, error_details?: mixed|null}, array<never, never>>
+     * @psalm-return JSONResponse<200|400|500,
+     *     array{error?: mixed|null|string, success?: false|mixed,
+     *     operation?: 'clear'|'commit'|'optimize', message?: string,
+     *     timestamp?: string, error_details?: mixed|null},
+     *     array<never, never>>
      */
     public function manageSolr(string $operation): JSONResponse
     {

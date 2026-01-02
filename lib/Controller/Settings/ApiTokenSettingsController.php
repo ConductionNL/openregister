@@ -65,7 +65,9 @@ class ApiTokenSettingsController extends Controller
      *
      * @return JSONResponse The API tokens
      *
-     * @psalm-return JSONResponse<200|500, array{error?: string, github_token?: string, gitlab_token?: string, gitlab_url?: string}, array<never, never>>
+     * @psalm-return JSONResponse<200|500,
+     *     array{error?: string, github_token?: string, gitlab_token?: string,
+     *     gitlab_url?: string}, array<never, never>>
      */
     public function getApiTokens(): JSONResponse
     {
@@ -111,7 +113,9 @@ class ApiTokenSettingsController extends Controller
      *
      * @return JSONResponse JSON response confirming API tokens save
      *
-     * @psalm-return JSONResponse<200|500, array{error?: string, success?: true, message?: 'API tokens saved successfully'}, array<never, never>>
+     * @psalm-return JSONResponse<200|500,
+     *     array{error?: string, success?: true,
+     *     message?: 'API tokens saved successfully'}, array<never, never>>
      */
     public function saveApiTokens(): JSONResponse
     {

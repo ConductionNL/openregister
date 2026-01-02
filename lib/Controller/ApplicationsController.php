@@ -144,7 +144,10 @@ class ApplicationsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|500, array{error?: 'Failed to retrieve applications', results?: array<\OCA\OpenRegister\Db\Application>}, array<never, never>>
+     * @psalm-return JSONResponse<200|500,
+     *     array{error?: 'Failed to retrieve applications',
+     *     results?: array<\OCA\OpenRegister\Db\Application>},
+     *     array<never, never>>
      */
     public function index(): JSONResponse
     {
@@ -216,7 +219,9 @@ class ApplicationsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Application, array<never, never>>|JSONResponse<404, array{error: 'Application not found'}, array<never, never>>
+     * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Application,
+     *     array<never, never>>|JSONResponse<404,
+     *     array{error: 'Application not found'}, array<never, never>>
      */
     public function show(int $id): JSONResponse
     {
@@ -258,7 +263,9 @@ class ApplicationsController extends Controller
      * @NoCSRFRequired
      *
      * @return       JSONResponse The created application or an error
-     * @psalm-return JSONResponse<201, \OCA\OpenRegister\Db\Application, array<never, never>>|JSONResponse<400, array{error: string}, array<never, never>>
+     * @psalm-return JSONResponse<201, \OCA\OpenRegister\Db\Application,
+     *     array<never, never>>|JSONResponse<400, array{error: string},
+     *     array<never, never>>
      */
     public function create(): JSONResponse
     {
@@ -306,7 +313,9 @@ class ApplicationsController extends Controller
      * @NoCSRFRequired
      *
      * @return       JSONResponse The updated application or an error
-     * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Application, array<never, never>>|JSONResponse<400, array{error: string}, array<never, never>>
+     * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Application,
+     *     array<never, never>>|JSONResponse<400, array{error: string},
+     *     array<never, never>>
      */
     public function update(int $id): JSONResponse
     {
@@ -360,7 +369,9 @@ class ApplicationsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Application, array<never, never>>|JSONResponse<400, array{error: string}, array<never, never>>
+     * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Application,
+     *     array<never, never>>|JSONResponse<400, array{error: string},
+     *     array<never, never>>
      */
     public function patch(int $id): JSONResponse
     {
@@ -382,7 +393,9 @@ class ApplicationsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400, array{error?: 'Failed to delete application', message?: 'Application deleted successfully'}, array<never, never>>
+     * @psalm-return JSONResponse<200|400,
+     *     array{error?: 'Failed to delete application',
+     *     message?: 'Application deleted successfully'}, array<never, never>>
      */
     public function destroy(int $id): JSONResponse
     {

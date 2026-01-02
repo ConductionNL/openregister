@@ -108,7 +108,10 @@ class FilesController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|404|500, array{error?: string, results?: array<int, array<string, mixed>>, total?: int, page?: int, pages?: int, limit?: int, offset?: int}, array<never, never>>
+     * @psalm-return JSONResponse<200|404|500,
+     *     array{error?: string, results?: array<int, array<string, mixed>>,
+     *     total?: int, page?: int, pages?: int, limit?: int, offset?: int},
+     *     array<never, never>>
      */
     public function index(
         string $register,
@@ -131,7 +134,10 @@ class FilesController extends Controller
 
             return new JSONResponse(data: $formattedFiles);
         } catch (DoesNotExistException $e) {
-            return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+            return new JSONResponse(
+                data: ['error' => 'Object not found'],
+                statusCode: 404
+            );
         } catch (NotFoundException $e) {
             return new JSONResponse(data: ['error' => 'Files folder not found'], statusCode: 404);
         } catch (\Exception $e) {
@@ -423,7 +429,9 @@ class FilesController extends Controller
     /**
      * Extract uploaded files from request.
      *
-     * @return array<int, array{name: string, type: string, tmp_name: string, error: int, size: int, share: bool, tags: array<int, string>}> Normalized uploaded files array
+     * @return array<int, array{name: string, type: string, tmp_name: string,
+     *     error: int, size: int, share: bool, tags: array<int, string>}>
+     *     Normalized uploaded files array
      *
      * @throws Exception If no files are uploaded
      */
@@ -459,7 +467,10 @@ class FilesController extends Controller
      * @param array<string, array<int, string>|string|int> $files Files from $_FILES
      * @param array                                        $data  Request parameters
      *
-     * @return array<int, array{name: string, type: string, tmp_name: string, error: int, size: int, share: bool, tags: array<int, string>}> Normalized files array
+     * @return array<int,
+     *     array{name: string, type: string, tmp_name: string, error: int,
+     *     size: int, share: bool, tags: array<int, string>}>
+     *     Normalized files array
      */
     private function normalizeMultipartFiles(array $files, array $data): array
     {
@@ -513,7 +524,10 @@ class FilesController extends Controller
      * @param array                                        $data      Request parameters
      * @param array<int, string>                           $fileNames Array of file names
      *
-     * @return array<int, array{name: string, type: string, tmp_name: string, error: int, size: int, share: bool, tags: array<int, string>}> Normalized files array
+     * @return array<int,
+     *     array{name: string, type: string, tmp_name: string, error: int,
+     *     size: int, share: bool, tags: array<int, string>}>
+     *     Normalized files array
      */
     private function normalizeMultipleFiles(array $files, array $data, array $fileNames): array
     {
@@ -826,7 +840,9 @@ class FilesController extends Controller
      *
      * @phpstan-return JSONResponse|\OCP\AppFramework\Http\StreamResponse
      *
-     * @psalm-return JSONResponse<404|500, array{error: string}, array<never, never>>|\OCP\AppFramework\Http\StreamResponse<200, array<never, never>>
+     * @psalm-return JSONResponse<404|500, array{error: string},
+     *     array<never, never>>|\OCP\AppFramework\Http\StreamResponse<200,
+     *     array<never, never>>
      */
     public function downloadById(int $fileId): JSONResponse|\OCP\AppFramework\Http\StreamResponse
     {

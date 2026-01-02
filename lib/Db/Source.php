@@ -224,7 +224,13 @@ class Source extends Entity implements JsonSerializable
      *
      * @return ((int|null|string)[]|int|null|string)[]
      *
-     * @psalm-return array{id: int, uuid: null|string, title: null|string, version: null|string, description: null|string, databaseUrl: null|string, type: null|string, organisation: null|string, updated: null|string, created: null|string, managedByConfiguration: array{id: int, uuid: null|string, title: null|string}|null}
+     * @psalm-return array{id: int, uuid: null|string, title: null|string,
+     *     version: null|string, description: null|string,
+     *     databaseUrl: null|string, type: null|string,
+     *     organisation: null|string, updated: null|string,
+     *     created: null|string,
+     *     managedByConfiguration: array{id: int, uuid: null|string,
+     *     title: null|string}|null}
      */
     public function jsonSerialize(): array
     {

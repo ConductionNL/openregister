@@ -127,8 +127,14 @@ class ValidationHandler
      *
      * @return array Array containing 'valid' and 'invalid' objects with details.
      *
-     * @psalm-return   array{valid: array<int, array{id: int, uuid: string, name: string|null, data: array<string, mixed>}>, invalid: array<int, array{id: int, uuid: string, name: string|null, data: array<string, mixed>, error: string}>}
-     * @phpstan-return array{valid: array<int, array{id: int, uuid: string, name: string|null, data: array<string, mixed>}>, invalid: array<int, array{id: int, uuid: string, name: string|null, data: array<string, mixed>, error: string}>}
+     * @psalm-return array{valid: array<int, array{id: int, uuid: string,
+     *     name: string|null, data: array<string, mixed>}>,
+     *     invalid: array<int, array{id: int, uuid: string,
+     *     name: string|null, data: array<string, mixed>, error: string}>}
+     * @phpstan-return array{valid: array<int, array{id: int, uuid: string,
+     *     name: string|null, data: array<string, mixed>}>,
+     *     invalid: array<int, array{id: int, uuid: string,
+     *     name: string|null, data: array<string, mixed>, error: string}>}
      */
     public function validateObjectsBySchema(int $schemaId, callable $saveCallback): array
     {
@@ -219,8 +225,17 @@ class ValidationHandler
      *
      * @throws \Exception If the validation operation fails.
      *
-     * @phpstan-return array{valid_count: int, invalid_count: int, valid_objects: array<int, array>, invalid_objects: array<int, array>, schema_id: int}
-     * @psalm-return   array{valid_count: int<0, max>, invalid_count: int<0, max>, valid_objects: list<array{data: array, id: int, name: null|string, uuid: null|string}>, invalid_objects: list<array{data: array, errors: list<array{keyword: 'exception'|'validation'|mixed, message: mixed|non-falsy-string, path: 'general'|'unknown'|mixed}>, id: int, name: null|string, uuid: null|string}>, schema_id: int}
+     * @phpstan-return array{valid_count: int, invalid_count: int,
+     *     valid_objects: array<int, array>, invalid_objects: array<int, array>,
+     *     schema_id: int}
+     * @psalm-return array{valid_count: int<0, max>,
+     *     invalid_count: int<0, max>,
+     *     valid_objects: list<array{data: array, id: int,
+     *     name: null|string, uuid: null|string}>,
+     *     invalid_objects: list<array{data: array,
+     *     errors: list<array{keyword: 'exception'|'validation'|mixed,
+     *     message: mixed|non-falsy-string, path: 'general'|'unknown'|mixed}>,
+     *     id: int, name: null|string, uuid: null|string}>, schema_id: int}
      */
     public function validateSchemaObjects(int $schemaId, callable $saveCallback): array
     {

@@ -763,10 +763,10 @@ class MagicMapper
      *
      * @return (bool|int|mixed|null|string)[][]
      *
-     * @phpcs:disable Generic.Files.LineLength.TooLong
-     * @psalm-return array<array{name: string, type: string, nullable: bool, index?: bool, length?: int, unique?: bool, autoincrement?: true, primary?: true, default?: mixed|null, precision?: 10, scale?: 2}>
-     *
-     * @phpcs:enable
+     * @psalm-return array<array{name: string, type: string, nullable: bool,
+     *     index?: bool, length?: int, unique?: bool,
+     *     autoincrement?: true, primary?: true, default?: mixed|null,
+     *     precision?: 10, scale?: 2}>
      */
     private function buildTableColumnsFromSchema(Schema $schema): array
     {
@@ -807,10 +807,58 @@ class MagicMapper
      *
      * @return (bool|int|string)[][]
      *
-     * @phpcs:disable Generic.Files.LineLength.TooLong
-     * @psalm-return array{_id: array{name: '_id', type: 'bigint', nullable: false, autoincrement: true, primary: true}, _uuid: array{name: '_uuid', type: 'string', length: 36, nullable: false, unique: true, index: true}, _slug: array{name: '_slug', type: 'string', length: 255, nullable: true, index: true}, _uri: array{name: '_uri', type: 'text', nullable: true}, _version: array{name: '_version', type: 'string', length: 50, nullable: true}, _register: array{name: '_register', type: 'string', length: 255, nullable: false, index: true}, _schema: array{name: '_schema', type: 'string', length: 255, nullable: false, index: true}, _owner: array{name: '_owner', type: 'string', length: 64, nullable: true, index: true}, _organisation: array{name: '_organisation', type: 'string', length: 36, nullable: true, index: true}, _application: array{name: '_application', type: 'string', length: 255, nullable: true}, _folder: array{name: '_folder', type: 'string', length: 255, nullable: true}, _name: array{name: '_name', type: 'string', length: 255, nullable: true, index: true}, _description: array{name: '_description', type: 'text', nullable: true}, _summary: array{name: '_summary', type: 'text', nullable: true}, _image: array{name: '_image', type: 'text', nullable: true}, _size: array{name: '_size', type: 'string', length: 50, nullable: true}, _schema_version: array{name: '_schema_version', type: 'string', length: 50, nullable: true}, _created: array{name: '_created', type: 'datetime', nullable: true, index: true}, _updated: array{name: '_updated', type: 'datetime', nullable: true, index: true}, _published: array{name: '_published', type: 'datetime', nullable: true, index: true}, _depublished: array{name: '_depublished', type: 'datetime', nullable: true, index: true}, _expires: array{name: '_expires', type: 'datetime', nullable: true, index: true}, _files: array{name: '_files', type: 'json', nullable: true}, _relations: array{name: '_relations', type: 'json', nullable: true}, _locked: array{name: '_locked', type: 'json', nullable: true}, _authorization: array{name: '_authorization', type: 'json', nullable: true}, _validation: array{name: '_validation', type: 'json', nullable: true}, _deleted: array{name: '_deleted', type: 'json', nullable: true}, _geo: array{name: '_geo', type: 'json', nullable: true}, _retention: array{name: '_retention', type: 'json', nullable: true}, _groups: array{name: '_groups', type: 'json', nullable: true}}
-     *
-     * @phpcs:enable
+     * @psalm-return array{_id: array{name: '_id', type: 'bigint',
+     *     nullable: false, autoincrement: true, primary: true},
+     *     _uuid: array{name: '_uuid', type: 'string', length: 36,
+     *     nullable: false, unique: true, index: true},
+     *     _slug: array{name: '_slug', type: 'string', length: 255,
+     *     nullable: true, index: true},
+     *     _uri: array{name: '_uri', type: 'text', nullable: true},
+     *     _version: array{name: '_version', type: 'string', length: 50,
+     *     nullable: true},
+     *     _register: array{name: '_register', type: 'string', length: 255,
+     *     nullable: false, index: true},
+     *     _schema: array{name: '_schema', type: 'string', length: 255,
+     *     nullable: false, index: true},
+     *     _owner: array{name: '_owner', type: 'string', length: 64,
+     *     nullable: true, index: true},
+     *     _organisation: array{name: '_organisation', type: 'string',
+     *     length: 36, nullable: true, index: true},
+     *     _application: array{name: '_application', type: 'string',
+     *     length: 255, nullable: true},
+     *     _folder: array{name: '_folder', type: 'string', length: 255,
+     *     nullable: true},
+     *     _name: array{name: '_name', type: 'string', length: 255,
+     *     nullable: true, index: true},
+     *     _description: array{name: '_description', type: 'text',
+     *     nullable: true},
+     *     _summary: array{name: '_summary', type: 'text', nullable: true},
+     *     _image: array{name: '_image', type: 'text', nullable: true},
+     *     _size: array{name: '_size', type: 'string', length: 50,
+     *     nullable: true},
+     *     _schema_version: array{name: '_schema_version', type: 'string',
+     *     length: 50, nullable: true},
+     *     _created: array{name: '_created', type: 'datetime',
+     *     nullable: true, index: true},
+     *     _updated: array{name: '_updated', type: 'datetime',
+     *     nullable: true, index: true},
+     *     _published: array{name: '_published', type: 'datetime',
+     *     nullable: true, index: true},
+     *     _depublished: array{name: '_depublished', type: 'datetime',
+     *     nullable: true, index: true},
+     *     _expires: array{name: '_expires', type: 'datetime',
+     *     nullable: true, index: true},
+     *     _files: array{name: '_files', type: 'json', nullable: true},
+     *     _relations: array{name: '_relations', type: 'json', nullable: true},
+     *     _locked: array{name: '_locked', type: 'json', nullable: true},
+     *     _authorization: array{name: '_authorization', type: 'json',
+     *     nullable: true},
+     *     _validation: array{name: '_validation', type: 'json',
+     *     nullable: true},
+     *     _deleted: array{name: '_deleted', type: 'json', nullable: true},
+     *     _geo: array{name: '_geo', type: 'json', nullable: true},
+     *     _retention: array{name: '_retention', type: 'json', nullable: true},
+     *     _groups: array{name: '_groups', type: 'json', nullable: true}}
      */
     private function getMetadataColumns(): array
     {
@@ -1011,10 +1059,9 @@ class MagicMapper
      *
      * @psalm-param SchemaPropertyConfig $propertyConfig
      *
-     * @phpcs:disable Generic.Files.LineLength.TooLong
-     * @psalm-return array{name: string, type: string, nullable: bool, index?: bool, length?: int<min, 320>, default?: mixed|null, precision?: 10, scale?: 2}
-     *
-     * @phpcs:enable
+     * @psalm-return array{name: string, type: string, nullable: bool,
+     *     index?: bool, length?: int<min, 320>, default?: mixed|null,
+     *     precision?: 10, scale?: 2}
      */
     private function mapSchemaPropertyToColumn(string $propertyName, array $propertyConfig): array
     {
@@ -1172,7 +1219,8 @@ class MagicMapper
 
         // Choose appropriate integer type based on range.
         $intType = 'integer';
-        if ($minimum !== null && $minimum >= 0 && $maximum !== null && $maximum <= 65535) {
+        if ($minimum !== null && $minimum >= 0 && $maximum !== null
+            && $maximum <= 65535) {
             $intType = 'smallint';
         } else if ($maximum !== null && $maximum > 2147483647) {
             $intType = 'bigint';
@@ -1333,7 +1381,9 @@ class MagicMapper
 
             // Create composite index on register + schema for multitenancy.
             $this->db->executeStatement(
-                "CREATE INDEX IF NOT EXISTS {$tableName}_register_schema_idx ON {$tableName} (".self::METADATA_PREFIX."register, ".self::METADATA_PREFIX."schema)"
+                "CREATE INDEX IF NOT EXISTS {$tableName}_register_schema_idx ".
+                "ON {$tableName} (".self::METADATA_PREFIX."register, ".
+                self::METADATA_PREFIX."schema)"
             );
 
             // Create index on organisation for multitenancy.
@@ -1659,12 +1709,17 @@ class MagicMapper
                     $metadataField = substr($columnName, strlen(self::METADATA_PREFIX));
 
                     // Handle datetime fields.
-                    if (in_array($metadataField, ['created', 'updated', 'published', 'depublished', 'expires'], true) === true && ($value !== null) === true) {
+                    if (in_array($metadataField, ['created', 'updated',
+                        'published', 'depublished', 'expires'], true) === true
+                        && ($value !== null) === true) {
                         $value = new DateTime($value);
                     }
 
                     // Handle JSON fields.
-                    if (in_array($metadataField, ['files', 'relations', 'locked', 'authorization', 'validation', 'deleted', 'geo', 'retention', 'groups'], true) === true && ($value !== null) === true) {
+                    if (in_array($metadataField, ['files', 'relations',
+                        'locked', 'authorization', 'validation', 'deleted',
+                        'geo', 'retention', 'groups'], true) === true
+                        && ($value !== null) === true) {
                         $value = json_decode($value, true);
                     }
 

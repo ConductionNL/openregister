@@ -63,7 +63,10 @@ class CloudEventFormatter
      *
      * @return (array|null|string)[] CloudEvent-formatted payload
      *
-     * @psalm-return array{specversion: '1.0', type: string, source: string, id: string, time: string, datacontenttype: 'application/json', subject: null|string, dataschema: null, data: array, openregister: array{app: 'openregister', version: '1.0.0'}}
+     * @psalm-return array{specversion: '1.0', type: string, source: string,
+     *     id: string, time: string, datacontenttype: 'application/json',
+     *     subject: null|string, dataschema: null, data: array,
+     *     openregister: array{app: 'openregister', version: '1.0.0'}}
      */
     public function formatAsCloudEvent(
         string $eventType,
@@ -114,7 +117,12 @@ class CloudEventFormatter
      *
      * @return ((array|false|mixed|string)[]|null|string)[] CloudEvent-formatted payload
      *
-     * @psalm-return array{specversion: '1.0', type: string, source: string, id: string, time: string, datacontenttype: string, subject: null|string, dataschema: null, data: array{method: mixed|string, path: false|mixed|string, queryParams: array|mixed, headers: array|mixed, body: array|mixed,...}, openregister: array{app: 'openregister', version: '1.0.0'}}
+     * @psalm-return array{specversion: '1.0', type: string, source: string,
+     *     id: string, time: string, datacontenttype: string,
+     *     subject: null|string, dataschema: null,
+     *     data: array{method: mixed|string, path: false|mixed|string,
+     *     queryParams: array|mixed, headers: array|mixed, body: array|mixed,...},
+     *     openregister: array{app: 'openregister', version: '1.0.0'}}
      */
     public function formatRequestAsCloudEvent(
         IRequest $request,

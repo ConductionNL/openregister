@@ -58,7 +58,9 @@ class AuditTrailController extends Controller
      *
      * @return ((mixed|string)[]|int|mixed|null)[]
      *
-     * @psalm-return array{limit: int, offset: int|null, page: int|null, filters: array, sort: array<array-key|mixed, 'DESC'|mixed>, search: mixed|null}
+     * @psalm-return array{limit: int, offset: int|null, page: int|null,
+     *     filters: array, sort: array<array-key|mixed, 'DESC'|mixed>,
+     *     search: mixed|null}
      */
     private function extractRequestParameters(): array
     {
@@ -156,7 +158,10 @@ class AuditTrailController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200, array{results: array<\OCA\OpenRegister\Db\AuditTrail>, total: int<0, max>, page: int|null, pages: float, limit: int, offset: int|null}, array<never, never>>
+     * @psalm-return JSONResponse<200,
+     *     array{results: array<\OCA\OpenRegister\Db\AuditTrail>,
+     *     total: int<0, max>, page: int|null, pages: float, limit: int,
+     *     offset: int|null}, array<never, never>>
      */
     public function index(): JSONResponse
     {
@@ -226,7 +231,11 @@ class AuditTrailController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400|404, array{error?: string, results?: array<\OCA\OpenRegister\Db\AuditTrail>, total?: int<0, max>, page?: int|null, pages?: float, limit?: int, offset?: int|null}, array<never, never>>
+     * @psalm-return JSONResponse<200|400|404,
+     *     array{error?: string,
+     *     results?: array<\OCA\OpenRegister\Db\AuditTrail>,
+     *     total?: int<0, max>, page?: int|null, pages?: float, limit?: int,
+     *     offset?: int|null}, array<never, never>>
      */
     public function objects(string $register, string $schema, string $id): JSONResponse
     {
@@ -272,7 +281,10 @@ class AuditTrailController extends Controller
      *
      * @return JSONResponse JSON response with exported audit trail data
      *
-     * @psalm-return JSONResponse<200|400|500, array{error?: string, success?: true, data?: array{content: bool|string, filename: string, contentType: string, size: int<0, max>}}, array<never, never>>
+     * @psalm-return JSONResponse<200|400|500,
+     *     array{error?: string, success?: true,
+     *     data?: array{content: bool|string, filename: string,
+     *     contentType: string, size: int<0, max>}}, array<never, never>>
      */
     public function export(): JSONResponse
     {
@@ -338,7 +350,9 @@ class AuditTrailController extends Controller
      *
      * @return JSONResponse JSON response confirming audit trail deletion
      *
-     * @psalm-return JSONResponse<200|404|500, array{error?: string, success?: true, message?: 'Audit trail deleted successfully'}, array<never, never>>
+     * @psalm-return JSONResponse<200|404|500,
+     *     array{error?: string, success?: true,
+     *     message?: 'Audit trail deleted successfully'}, array<never, never>>
      */
     public function destroy(int $id): JSONResponse
     {
@@ -387,7 +401,10 @@ class AuditTrailController extends Controller
      *
      * @return JSONResponse JSON response with multiple deletion results
      *
-     * @psalm-return JSONResponse<200|500, array{error?: string, success?: true, results?: array{deleted: int<0, max>, failed: int<0, max>, total: int<0, max>}, message?: string}, array<never, never>>
+     * @psalm-return JSONResponse<200|500,
+     *     array{error?: string, success?: true,
+     *     results?: array{deleted: int<0, max>, failed: int<0, max>,
+     *     total: int<0, max>}, message?: string}, array<never, never>>
      */
     public function destroyMultiple(): JSONResponse
     {
@@ -443,7 +460,12 @@ class AuditTrailController extends Controller
      *
      * @return JSONResponse JSON response confirming clear all operation
      *
-     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, message?: 'All audit trails cleared successfully'|'No expired audit trails found to clear', deleted?: 'All expired audit trails have been deleted'|0}, array<never, never>>
+     * @psalm-return JSONResponse<200|500,
+     *     array{success: bool, error?: string,
+     *     message?: 'All audit trails cleared successfully'|
+     *     'No expired audit trails found to clear',
+     *     deleted?: 'All expired audit trails have been deleted'|0},
+     *     array<never, never>>
      */
     public function clearAll(): JSONResponse
     {

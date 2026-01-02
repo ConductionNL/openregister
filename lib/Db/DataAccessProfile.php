@@ -102,7 +102,9 @@ class DataAccessProfile extends Entity implements JsonSerializable
      *
      * @return (array|int|null|string)[]
      *
-     * @psalm-return array{id: int, uuid: null|string, name: null|string, description: null|string, permissions: array|null, created: null|string, updated: null|string}
+     * @psalm-return array{id: int, uuid: null|string, name: null|string,
+     *     description: null|string, permissions: array|null,
+     *     created: null|string, updated: null|string}
      */
     public function jsonSerialize(): array
     {

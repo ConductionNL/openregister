@@ -180,7 +180,9 @@ class ChatService
      *
      * @throws \Exception If processing fails
      *
-     * @psalm-return array{message: string, sources: list<array>, timings: array{context: string, history: string, llm: string, total: string}}
+     * @psalm-return array{message: string, sources: list<array>,
+     *     timings: array{context: string, history: string, llm: string,
+     *     total: string}}
      */
     public function processMessage(
         int $conversationId,
@@ -346,7 +348,9 @@ class ChatService
      *
      * @return (bool|string)[] Test results with success status
      *
-     * @psalm-return array{success: bool, error?: string, message: string, note?: 'Full testChat implementation preserved in ChatService_ORIGINAL_2156.php backup.'}
+     * @psalm-return array{success: bool, error?: string, message: string,
+     *     note?: 'Full testChat implementation preserved in '.
+     *     'ChatService_ORIGINAL_2156.php backup.'}
      */
     public function testChat(string $provider, array $config, string $testMessage='Hello! Please respond with a brief greeting.'): array
     {

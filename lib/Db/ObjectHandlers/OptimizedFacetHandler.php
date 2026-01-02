@@ -151,7 +151,10 @@ class OptimizedFacetHandler
      *
      * @return (((int|mixed|string)[]|mixed)[]|string)[][]
      *
-     * @psalm-return array<string, array{type: 'terms', buckets: list{0?: array{key: mixed, results: int, label: string}|mixed,...}}>
+     * @psalm-return array<string,
+     *     array{type: 'terms',
+     *     buckets: list{0?: array{key: mixed, results: int,
+     *     label: string}|mixed,...}}>
      */
     private function getBatchedMetadataFacets(array $metadataConfig, array $baseQuery): array
     {
@@ -192,7 +195,8 @@ class OptimizedFacetHandler
      *
      * @return ((int|mixed|string)[][]|string)[]
      *
-     * @psalm-return array{type: 'terms', buckets: list<array{key: mixed, label: string, results: int}>}
+     * @psalm-return array{type: 'terms',
+     *     buckets: list<array{key: mixed, label: string, results: int}>}
      */
     private function getOptimizedMetadataTermsFacet(string $field, array $baseQuery): array
     {
@@ -255,7 +259,9 @@ class OptimizedFacetHandler
      *
      * @return ((int|mixed)[][]|string)[]
      *
-     * @psalm-return array{type: 'terms', buckets: list<array{key: mixed, results: int}>, note?: 'Skipped due to large dataset size for performance'}
+     * @psalm-return array{type: 'terms',
+     *     buckets: list<array{key: mixed, results: int}>,
+     *     note?: 'Skipped due to large dataset size for performance'}
      */
     private function getOptimizedJsonTermsFacet(string $field, array $baseQuery): array
     {
@@ -340,12 +346,13 @@ class OptimizedFacetHandler
         }
 
         // 2. High selectivity: register/schema filters.
+        // Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
         if (($baseQuery['@self']['register'] ?? null) !== null) {
-            $queryBuilder->andWhere($queryBuilder->expr()->eq('register', $queryBuilder->createNamedParameter($baseQuery['@self']['register'])));
+            $queryBuilder->andWhere($queryBuilder->expr()->eq('register', $queryBuilder->createNamedParameter((string) $baseQuery['@self']['register'], IQueryBuilder::PARAM_STR)));
         }
 
         if (($baseQuery['@self']['schema'] ?? null) !== null) {
-            $queryBuilder->andWhere($queryBuilder->expr()->eq('schema', $queryBuilder->createNamedParameter($baseQuery['@self']['schema'])));
+            $queryBuilder->andWhere($queryBuilder->expr()->eq('schema', $queryBuilder->createNamedParameter((string) $baseQuery['@self']['schema'], IQueryBuilder::PARAM_STR)));
         }
 
         // 3. Medium selectivity: lifecycle filters (use composite indexes).
@@ -371,7 +378,14 @@ class OptimizedFacetHandler
 
         // 4. Low selectivity: organization filters.
         if (($baseQuery['@self']['organisation'] ?? null) !== null) {
-            $queryBuilder->andWhere($queryBuilder->expr()->eq('organisation', $queryBuilder->createNamedParameter($baseQuery['@self']['organisation'])));
+            $queryBuilder->andWhere(
+                $queryBuilder->expr()->eq(
+                    'organisation',
+                    $queryBuilder->createNamedParameter(
+                        $baseQuery['@self']['organisation']
+                    )
+                )
+            );
         }
 
         // Skip expensive operations like full-text search for faceting to improve performance.
@@ -398,12 +412,13 @@ class OptimizedFacetHandler
             ->from('openregister_objects');
 
         // Apply only the most selective filters for estimation.
+        // Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
         if (($baseQuery['@self']['register'] ?? null) !== null) {
-            $queryBuilder->andWhere($queryBuilder->expr()->eq('register', $queryBuilder->createNamedParameter($baseQuery['@self']['register'])));
+            $queryBuilder->andWhere($queryBuilder->expr()->eq('register', $queryBuilder->createNamedParameter((string) $baseQuery['@self']['register'], IQueryBuilder::PARAM_STR)));
         }
 
         if (($baseQuery['@self']['schema'] ?? null) !== null) {
-            $queryBuilder->andWhere($queryBuilder->expr()->eq('schema', $queryBuilder->createNamedParameter($baseQuery['@self']['schema'])));
+            $queryBuilder->andWhere($queryBuilder->expr()->eq('schema', $queryBuilder->createNamedParameter((string) $baseQuery['@self']['schema'], IQueryBuilder::PARAM_STR)));
         }
 
         $includeDeleted = $baseQuery['_includeDeleted'] ?? false;

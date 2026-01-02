@@ -174,7 +174,10 @@ class FileHandler
      *
      * @return ((float|int|string[])[]|true)[]
      *
-     * @psalm-return array{success: true, stats: array{processed: 0|1|2, indexed: 0|1|2, failed: int, total_chunks: int, errors: list<non-empty-string>, execution_time_ms: float}}
+     * @psalm-return array{success: true,
+     *     stats: array{processed: 0|1|2, indexed: 0|1|2, failed: int,
+     *     total_chunks: int, errors: list<non-empty-string>,
+     *     execution_time_ms: float}}
      */
     public function processUnindexedChunks(?int $limit=null): array
     {
@@ -270,7 +273,8 @@ class FileHandler
      *
      * @return array Chunking statistics
      *
-     * @psalm-return array{total_chunks: int, indexed_chunks: int, unindexed_chunks: int, vectorized_chunks: int}
+     * @psalm-return array{total_chunks: int, indexed_chunks: int,
+     *     unindexed_chunks: int, vectorized_chunks: int}
      */
     public function getChunkingStats(): array
     {

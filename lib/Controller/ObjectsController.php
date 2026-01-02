@@ -620,7 +620,10 @@ class ObjectsController extends Controller
      *
      * @return JSONResponse JSON response with created object
      *
-     * @psalm-return JSONResponse<201|403|404, array{'@self'?: array{name: mixed|null|string,...}|mixed, message?: mixed|string, error?: mixed|string,...}, array<never, never>>|JSONResponse<400, string, array<never, never>>
+     * @psalm-return JSONResponse<201|403|404,
+     *     array{'@self'?: array{name: mixed|null|string,...}|mixed,
+     *     message?: mixed|string, error?: mixed|string,...},
+     *     array<never, never>>|JSONResponse<400, string, array<never, never>>
      */
     public function create(
         string $register,
@@ -1184,7 +1187,11 @@ class ObjectsController extends Controller
      *
      * @todo Implement contract functionality to handle object contracts and their relationships
      *
-     * @psalm-return JSONResponse<200, array{results: array<int, mixed>, total: int<0, max>, page: float|int<1, max>, pages: 1|float, limit: int<1, max>, offset: int<0, max>, next?: string, prev?: string}, array<never, never>>
+     * @psalm-return JSONResponse<200,
+     *     array{results: array<int, mixed>, total: int<0, max>,
+     *     page: float|int<1, max>, pages: 1|float, limit: int<1, max>,
+     *     offset: int<0, max>, next?: string, prev?: string},
+     *     array<never, never>>
      */
     public function contracts(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -1342,7 +1349,12 @@ class ObjectsController extends Controller
      *
      * @return JSONResponse JSON response with object audit logs
      *
-     * @psalm-return JSONResponse<200|404, array{results?: array<int, mixed>, total?: int<0, max>, page?: float|int<1, max>, pages?: 1|float, limit?: int<1, max>, offset?: int<0, max>, next?: string, prev?: string, message?: 'Object does not belong to specified register/schema'|'Object not found'}, array<never, never>>
+     * @psalm-return JSONResponse<200|404,
+     *     array{results?: array<int, mixed>, total?: int<0, max>,
+     *     page?: float|int<1, max>, pages?: 1|float, limit?: int<1, max>,
+     *     offset?: int<0, max>, next?: string, prev?: string,
+     *     message?: 'Object does not belong to specified register/schema'|'Object not found'},
+     *     array<never, never>>
      */
     public function logs(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -1648,7 +1660,10 @@ class ObjectsController extends Controller
      *
      * @return JSONResponse JSON response with published object
      *
-     * @psalm-return JSONResponse<200|400, array{error?: mixed|string, name?: mixed|null|string, '@self'?: array{name: mixed|null|string,...}|mixed,...}, array<never, never>>
+     * @psalm-return JSONResponse<200|400,
+     *     array{error?: mixed|string, name?: mixed|null|string,
+     *     '@self'?: array{name: mixed|null|string,...}|mixed,...},
+     *     array<never, never>>
      */
     public function publish(
         string $id,
@@ -1700,7 +1715,10 @@ class ObjectsController extends Controller
      *
      * @return JSONResponse JSON response with depublished object
      *
-     * @psalm-return JSONResponse<200|400, array{error?: mixed|string, name?: mixed|null|string, '@self'?: array{name: mixed|null|string,...}|mixed,...}, array<never, never>>
+     * @psalm-return JSONResponse<200|400,
+     *     array{error?: mixed|string, name?: mixed|null|string,
+     *     '@self'?: array{name: mixed|null|string,...}|mixed,...},
+     *     array<never, never>>
      */
     public function depublish(
         string $id,

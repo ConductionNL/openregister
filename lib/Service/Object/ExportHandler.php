@@ -90,7 +90,9 @@ class ExportHandler
      *
      * @throws \Exception If export fails
      *
-     * @psalm-return array{content: false|string, filename: string, mimetype: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'|'text/csv'}
+     * @psalm-return array{content: false|string, filename: string,
+     *     mimetype: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'|
+     *     'text/csv'}
      */
     public function export(
         Register $register,
@@ -196,7 +198,16 @@ class ExportHandler
      *
      * @throws \Exception If import fails
      *
-     * @psalm-return array<string, array{created: array, errors: array, found: int, unchanged?: array, updated: array, deduplication_efficiency?: string, schema?: array{id: int, title: null|string, slug: null|string}|null, debug?: array{headers: array<never, never>, processableHeaders: array<never, never>, schemaProperties: list<array-key>}, performance?: array{efficiency: 0|float, objectsPerSecond: float, totalFound: int<0, max>, totalProcessed: int<0, max>, totalTime: float, totalTimeMs: float}}>
+     * @psalm-return array<string,
+     *     array{created: array, errors: array, found: int, unchanged?: array,
+     *     updated: array, deduplication_efficiency?: string,
+     *     schema?: array{id: int, title: null|string, slug: null|string}|null,
+     *     debug?: array{headers: array<never, never>,
+     *     processableHeaders: array<never, never>,
+     *     schemaProperties: list<array-key>},
+     *     performance?: array{efficiency: 0|float, objectsPerSecond: float,
+     *     totalFound: int<0, max>, totalProcessed: int<0, max>,
+     *     totalTime: float, totalTimeMs: float}}>
      */
     public function import(
         Register $register,

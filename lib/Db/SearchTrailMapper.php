@@ -267,7 +267,9 @@ class SearchTrailMapper extends QBMapper
      *
      * @return (float|int)[] Array of search statistics
      *
-     * @psalm-return array{total_searches: int, total_results: int, avg_results_per_search: float, avg_response_time: float, non_empty_searches: int}
+     * @psalm-return array{total_searches: int, total_results: int,
+     *     avg_results_per_search: float, avg_response_time: float,
+     *     non_empty_searches: int}
      */
     public function getSearchStatistics(?DateTime $from=null, ?DateTime $to=null): array
     {
@@ -316,7 +318,8 @@ class SearchTrailMapper extends QBMapper
      *
      * @return (float|int|mixed)[][] Array of popular search terms with counts
      *
-     * @psalm-return array<array{term: mixed, count: int, avg_results: float, avg_response_time: float}>
+     * @psalm-return array<array{term: mixed, count: int,
+     *     avg_results: float, avg_response_time: float}>
      */
     public function getPopularSearchTerms(int $limit=10, ?DateTime $from=null, ?DateTime $to=null): array
     {
@@ -372,7 +375,8 @@ class SearchTrailMapper extends QBMapper
      *
      * @return (float|int|mixed)[][] Array of search activity by time period
      *
-     * @psalm-return array<array{period: mixed, count: int, avg_results: float, avg_response_time: float}>
+     * @psalm-return array<array{period: mixed, count: int,
+     *     avg_results: float, avg_response_time: float}>
      */
     public function getSearchActivityByTime(string $interval='day', ?DateTime $from=null, ?DateTime $to=null): array
     {
@@ -401,8 +405,22 @@ class SearchTrailMapper extends QBMapper
         // Add date formatting based on database type.
         // GetDatabasePlatform() returns a platform instance.
         $platform = $this->db->getDatabasePlatform();
-        if ($platform->getName() !== 'mysql') {
-            // For SQLite and PostgreSQL - convert MySQL format to SQLite format.
+        
+        if ($platform->getName() === 'mysql') {
+            $qb->addSelect($qb->createFunction("DATE_FORMAT(created, '{$dateFormat}') AS date_period"));
+        } elseif ($platform->getName() === 'postgresql') {
+            // PostgreSQL uses TO_CHAR for date formatting.
+            $postgresFormat = match ($interval) {
+                'hour' => 'YYYY-MM-DD HH24:00:00',
+                'day' => 'YYYY-MM-DD',
+                'week' => 'IYYY-IW',  // ISO week format.
+                'month' => 'YYYY-MM',
+                default => 'YYYY-MM-DD',
+            };
+
+            $qb->addSelect($qb->createFunction("TO_CHAR(created, '{$postgresFormat}') AS date_period"));
+        } else {
+            // For SQLite - use strftime.
             $sqliteFormat = match ($interval) {
                 'hour' => '%Y-%m-%d %H:00:00',
                 'day' => '%Y-%m-%d',
@@ -412,10 +430,6 @@ class SearchTrailMapper extends QBMapper
             };
 
             $qb->addSelect($qb->createFunction("strftime('{$sqliteFormat}', created) AS date_period"));
-        }
-
-        if ($platform->getName() === 'mysql') {
-            $qb->addSelect($qb->createFunction("DATE_FORMAT(created, '{$dateFormat}') AS date_period"));
         }
 
         // Apply date filters.
@@ -452,7 +466,9 @@ class SearchTrailMapper extends QBMapper
      *
      * @return (float|int|mixed)[][] Array of search statistics by register and schema
      *
-     * @psalm-return array<array{register: mixed, schema: mixed, register_uuid: mixed, schema_uuid: mixed, count: int, avg_results: float, avg_response_time: float}>
+     * @psalm-return array<array{register: mixed, schema: mixed,
+     *     register_uuid: mixed, schema_uuid: mixed, count: int,
+     *     avg_results: float, avg_response_time: float}>
      */
     public function getSearchStatisticsByRegisterSchema(?DateTime $from=null, ?DateTime $to=null): array
     {
@@ -511,7 +527,8 @@ class SearchTrailMapper extends QBMapper
      *
      * @return (float|int|mixed)[][] Array of user agent statistics
      *
-     * @psalm-return array<array{user_agent: mixed, count: int, avg_results: float, avg_response_time: float}>
+     * @psalm-return array<array{user_agent: mixed, count: int,
+     *     avg_results: float, avg_response_time: float}>
      */
     public function getUserAgentStatistics(int $limit=10, ?DateTime $from=null, ?DateTime $to=null): array
     {

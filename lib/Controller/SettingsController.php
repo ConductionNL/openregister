@@ -429,7 +429,9 @@ class SettingsController extends Controller
      *
      * @return JSONResponse The reindex result
      *
-     * @psalm-return JSONResponse<200|400|422, array{success: bool, message: mixed|string, collection: string, stats?: array<never, never>|mixed}, array<never, never>>
+     * @psalm-return JSONResponse<200|400|422,
+     *     array{success: bool, message: mixed|string, collection: string,
+     *     stats?: array<never, never>|mixed}, array<never, never>>
      */
     public function reindexSpecificCollection(string $name): JSONResponse
     {
@@ -532,7 +534,10 @@ class SettingsController extends Controller
      *
      * @return JSONResponse Updated backend configuration
      *
-     * @psalm-return JSONResponse<200|400|500, array{error?: mixed|string, message?: 'Backend updated successfully. Please reload the application.', reload_required?: true,...}, array<never, never>>
+     * @psalm-return JSONResponse<200|400|500,
+     *     array{error?: mixed|string,
+     *     message?: 'Backend updated successfully. Please reload the application.',
+     *     reload_required?: true,...}, array<never, never>>
      */
     public function updateSearchBackend(): JSONResponse
     {
@@ -575,7 +580,11 @@ class SettingsController extends Controller
      *
      * @return JSONResponse JSON response with database information
      *
-     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, database?: array{type: string, version: string, platform: string, vectorSupport: bool, recommendedPlugin: null|string, performanceNote: null|string}}, array<never, never>>
+     * @psalm-return JSONResponse<200|500,
+     *     array{success: bool, error?: string,
+     *     database?: array{type: string, version: string, platform: string,
+     *     vectorSupport: bool, recommendedPlugin: null|string,
+     *     performanceNote: null|string}}, array<never, never>>
      */
     public function getDatabaseInfo(): JSONResponse
     {
@@ -621,7 +630,8 @@ class SettingsController extends Controller
                 // MariaDB/MySQL do not support native vector operations.
                 $vectorSupport     = false;
                 $recommendedPlugin = 'pgvector for PostgreSQL';
-                $performanceNote   = 'Current: Similarity calculated in PHP (slow). Recommended: Migrate to PostgreSQL + pgvector for 10-100x speedup.';
+                $performanceNote   = 'Current: Similarity calculated in PHP (slow). '.
+                    'Recommended: Migrate to PostgreSQL + pgvector for 10-100x speedup.';
             } else if (strpos($platformName, 'postgres') !== false) {
                 $dbType = 'PostgreSQL';
 
@@ -724,7 +734,9 @@ class SettingsController extends Controller
      *
      * @return JSONResponse Test results
      *
-     * @psalm-return JSONResponse<200, array<array-key, mixed>, array<never, never>>|JSONResponse<422, array{success: false, error: string}, array<never, never>>
+     * @psalm-return JSONResponse<200, array<array-key, mixed>,
+     *     array<never, never>>|JSONResponse<422,
+     *     array{success: false, error: string}, array<never, never>>
      */
     public function testSchemaMapping(): JSONResponse
     {
@@ -760,7 +772,24 @@ class SettingsController extends Controller
      *
      * @return JSONResponse JSON response with type filtering debug information
      *
-     * @psalm-return JSONResponse<200|500, array{error?: string, trace?: string, all_organizations?: array{count: int<0, max>, organizations: array<array{id: int, name: null|string, type: 'NO TYPE'|mixed, object_data: array|null}>}, type_samenwerking?: array{count: int<0, max>, organizations: array<array{id: int, name: null|string, type: 'NO TYPE'|mixed}>}, type_community?: array{count: int<0, max>, organizations: array<array{id: int, name: null|string, type: 'NO TYPE'|mixed}>}, type_both?: array{count: int<0, max>, organizations: array<array{id: int, name: null|string, type: 'NO TYPE'|mixed}>}, direct_database_query?: array{count: int<0, max>, organizations: array<array{id: mixed, name: mixed, type: 'NO TYPE'|mixed, object_json: mixed}>}}, array<never, never>>
+     * @psalm-return JSONResponse<200|500,
+     *     array{error?: string, trace?: string,
+     *     all_organizations?: array{count: int<0, max>,
+     *     organizations: array<array{id: int, name: null|string,
+     *     type: 'NO TYPE'|mixed, object_data: array|null}>},
+     *     type_samenwerking?: array{count: int<0, max>,
+     *     organizations: array<array{id: int, name: null|string,
+     *     type: 'NO TYPE'|mixed}>},
+     *     type_community?: array{count: int<0, max>,
+     *     organizations: array<array{id: int, name: null|string,
+     *     type: 'NO TYPE'|mixed}>},
+     *     type_both?: array{count: int<0, max>,
+     *     organizations: array<array{id: int, name: null|string,
+     *     type: 'NO TYPE'|mixed}>},
+     *     direct_database_query?: array{count: int<0, max>,
+     *     organizations: array<array{id: mixed, name: mixed,
+     *     type: 'NO TYPE'|mixed, object_json: mixed}>}},
+     *     array<never, never>>
      */
     public function debugTypeFiltering(): JSONResponse
     {
@@ -947,7 +976,11 @@ class SettingsController extends Controller
      *
      * @return JSONResponse JSON response with semantic search results
      *
-     * @psalm-return JSONResponse<200|400|500, array{success: bool, error?: string, trace?: string, query?: string, results?: array<int, array<string, mixed>>, total?: int<0, max>, limit?: int, filters?: array, timestamp?: string}, array<never, never>>
+     * @psalm-return JSONResponse<200|400|500,
+     *     array{success: bool, error?: string, trace?: string, query?: string,
+     *     results?: array<int, array<string, mixed>>, total?: int<0, max>,
+     *     limit?: int, filters?: array, timestamp?: string},
+     *     array<never, never>>
      */
     public function semanticSearch(string $query, int $limit=10, array $filters=[], ?string $provider=null): JSONResponse
     {
@@ -1006,7 +1039,9 @@ class SettingsController extends Controller
      *
      * @return JSONResponse Combined search results
      *
-     * @psalm-return JSONResponse<200|400|500, array{success: bool|mixed, error?: mixed|string, trace?: mixed|string, query?: mixed|string, timestamp?: string,...}, array<never, never>>
+     * @psalm-return JSONResponse<200|400|500,
+     *     array{success: bool|mixed, error?: mixed|string, trace?: mixed|string,
+     *     query?: mixed|string, timestamp?: string,...}, array<never, never>>
      */
     public function hybridSearch(
         string $query,

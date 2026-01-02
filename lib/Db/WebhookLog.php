@@ -215,7 +215,11 @@ class WebhookLog extends Entity implements JsonSerializable
      *
      * @return (array|bool|int|null|string)[]
      *
-     * @psalm-return array{id: int, webhook: int, eventClass: string, payload: array, url: string, method: string, success: bool, statusCode: int|null, requestBody: null|string, responseBody: null|string, errorMessage: null|string, attempt: int, nextRetryAt: null|string, created: string}
+     * @psalm-return array{id: int, webhook: int, eventClass: string,
+     *     payload: array, url: string, method: string, success: bool,
+     *     statusCode: int|null, requestBody: null|string,
+     *     responseBody: null|string, errorMessage: null|string, attempt: int,
+     *     nextRetryAt: null|string, created: string}
      */
     public function jsonSerialize(): array
     {

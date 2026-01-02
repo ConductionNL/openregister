@@ -89,7 +89,8 @@ class StatisticsHandler
      *
      * @return int[] Array containing statistics: total, size, invalid, deleted, locked, published.
      *
-     * @psalm-return array{total: int, size: int, invalid: int, deleted: int, locked: int, published: int}
+     * @psalm-return array{total: int, size: int, invalid: int, deleted: int,
+     *     locked: int, published: int}
      */
     public function getStatistics(int|array|null $registerId=null, int|array|null $schemaId=null, array $exclude=[]): array
     {
@@ -101,7 +102,8 @@ class StatisticsHandler
                 $qb->createFunction('COALESCE(SUM(size), 0) as size'),
                 $qb->createFunction('COUNT(CASE WHEN validation IS NOT NULL THEN 1 END) as invalid'),
                 $qb->createFunction('COUNT(CASE WHEN deleted IS NOT NULL THEN 1 END) as deleted'),
-                $qb->createFunction('COUNT(CASE WHEN locked IS NOT NULL AND locked = TRUE THEN 1 END) as locked'),
+                // Note: locked is a JSON column - if it's NOT NULL, the object is locked.
+                $qb->createFunction('COUNT(CASE WHEN locked IS NOT NULL THEN 1 END) as locked'),
                 // Only count as published if published <= now and (depublished is null or depublished > now).
                 $qb->createFunction(
                     "COUNT(CASE WHEN published IS NOT NULL AND published <= '".$now."' AND (depublished IS NULL OR depublished > '".$now."') THEN 1 END) as published"
@@ -110,20 +112,26 @@ class StatisticsHandler
                 ->from($this->tableName);
 
             // Add register filter if provided (support int or array).
+            // Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
             if ($registerId !== null) {
                 if (is_array($registerId) === true) {
-                    $qb->andWhere($qb->expr()->in('register', $qb->createNamedParameter($registerId, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY)));
+                    // Convert array of integers to array of strings.
+                    $stringIds = array_map('strval', $registerId);
+                    $qb->andWhere($qb->expr()->in('register', $qb->createNamedParameter($stringIds, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
                 } else {
-                    $qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)));
+                    $qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter((string) $registerId, IQueryBuilder::PARAM_STR)));
                 }
             }
 
             // Add schema filter if provided (support int or array).
+            // Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
             if ($schemaId !== null) {
                 if (is_array($schemaId) === true) {
-                    $qb->andWhere($qb->expr()->in('schema', $qb->createNamedParameter($schemaId, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY)));
+                    // Convert array of integers to array of strings.
+                    $stringIds = array_map('strval', $schemaId);
+                    $qb->andWhere($qb->expr()->in('schema', $qb->createNamedParameter($stringIds, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
                 } else {
-                    $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
+                    $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter((string) $schemaId, IQueryBuilder::PARAM_STR)));
                 }
             }
 
@@ -182,21 +190,34 @@ class StatisticsHandler
      *
      * @return (int|mixed|string)[][] Array containing chart data with 'labels' and 'series' keys.
      *
-     * @psalm-return array{labels: array<'Unknown'|mixed>, series: array<int>}
+     * @psalm-return array{labels: array<'Unknown'|mixed>,
+     *     series: array<int>}
      */
     public function getRegisterChartData(?int $registerId=null, ?int $schemaId=null): array
     {
         try {
             $qb = $this->db->getQueryBuilder();
 
+            // Get database platform to determine casting method.
+            $platform = $qb->getConnection()->getDatabasePlatform()->getName();
+
             // Join with registers table to get register names.
+            // Note: o.register is VARCHAR, r.id is BIGINT - need explicit cast for PostgreSQL.
             $qb->select(
                 'r.title as register_name',
                 $qb->createFunction('COUNT(o.id) as count')
             )
-                ->from($this->tableName, 'o')
-                ->leftJoin('o', 'openregister_registers', 'r', 'o.register = r.id')
-                ->groupBy('r.id', 'r.title')
+                ->from($this->tableName, 'o');
+
+            // PostgreSQL requires explicit casting for VARCHAR to BIGINT comparison.
+            if ($platform === 'postgresql') {
+                $qb->leftJoin('o', 'openregister_registers', 'r', 'CAST(o.register AS BIGINT) = r.id');
+            } else {
+                // MySQL/MariaDB does implicit type conversion.
+                $qb->leftJoin('o', 'openregister_registers', 'r', 'o.register = r.id');
+            }
+
+            $qb->groupBy('r.id', 'r.title')
                 ->orderBy('count', 'DESC');
 
             // Add register filter if provided.
@@ -242,21 +263,34 @@ class StatisticsHandler
      *
      * @return (int|mixed|string)[][] Array containing chart data with 'labels' and 'series' keys.
      *
-     * @psalm-return array{labels: array<'Unknown'|mixed>, series: array<int>}
+     * @psalm-return array{labels: array<'Unknown'|mixed>,
+     *     series: array<int>}
      */
     public function getSchemaChartData(?int $registerId=null, ?int $schemaId=null): array
     {
         try {
             $qb = $this->db->getQueryBuilder();
 
+            // Get database platform to determine casting method.
+            $platform = $qb->getConnection()->getDatabasePlatform()->getName();
+
             // Join with schemas table to get schema names.
+            // Note: o.schema is VARCHAR, s.id is BIGINT - need explicit cast for PostgreSQL.
             $qb->select(
                 's.title as schema_name',
                 $qb->createFunction('COUNT(o.id) as count')
             )
-                ->from($this->tableName, 'o')
-                ->leftJoin('o', 'openregister_schemas', 's', 'o.schema = s.id')
-                ->groupBy('s.id', 's.title')
+                ->from($this->tableName, 'o');
+
+            // PostgreSQL requires explicit casting for VARCHAR to BIGINT comparison.
+            if ($platform === 'postgresql') {
+                $qb->leftJoin('o', 'openregister_schemas', 's', 'CAST(o.schema AS BIGINT) = s.id');
+            } else {
+                // MySQL/MariaDB does implicit type conversion.
+                $qb->leftJoin('o', 'openregister_schemas', 's', 'o.schema = s.id');
+            }
+
+            $qb->groupBy('s.id', 's.title')
                 ->orderBy('count', 'DESC');
 
             // Add register filter if provided.
@@ -302,7 +336,8 @@ class StatisticsHandler
      *
      * @return (int|string)[][] Array containing chart data with 'labels' and 'series' keys.
      *
-     * @psalm-return array{labels: list<'0-1 KB'|'1-10 KB'|'10-100 KB'|'100 KB-1 MB'|'> 1 MB'>, series: list<int>}
+     * @psalm-return array{labels: list<'0-1 KB'|'1-10 KB'|'10-100 KB'|
+     *     '100 KB-1 MB'|'> 1 MB'>, series: list<int>}
      */
     public function getSizeDistributionChartData(?int $registerId=null, ?int $schemaId=null): array
     {
@@ -332,13 +367,15 @@ class StatisticsHandler
                 }
 
                 // Add register filter if provided.
+                // Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
                 if ($registerId !== null) {
-                    $qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)));
+                    $qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter((string) $registerId, IQueryBuilder::PARAM_STR)));
                 }
 
                 // Add schema filter if provided.
+                // Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
                 if ($schemaId !== null) {
-                    $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
+                    $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter((string) $schemaId, IQueryBuilder::PARAM_STR)));
                 }
 
                 $count     = $qb->executeQuery()->fetchOne();

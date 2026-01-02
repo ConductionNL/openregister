@@ -87,7 +87,9 @@ class DeletedController extends Controller
      *
      * @return ((mixed|string)[]|int|mixed|null)[]
      *
-     * @psalm-return array{limit: int, offset: int|null, page: int|null, filters: array, sort: array<array-key|mixed, 'DESC'|mixed>, search: mixed|null}
+     * @psalm-return array{limit: int, offset: int|null, page: int|null,
+     *     filters: array, sort: array<array-key|mixed, 'DESC'|mixed>,
+     *     search: mixed|null}
      */
     private function extractRequestParameters(): array
     {
@@ -175,7 +177,11 @@ class DeletedController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|500, array{error?: string, results?: list<\OCA\OpenRegister\Db\ObjectEntity>, total?: int, page?: int, pages?: 1|float, limit?: int|null, offset?: int|null}, array<never, never>>
+     * @psalm-return JSONResponse<200|500,
+     *     array{error?: string,
+     *     results?: list<\OCA\OpenRegister\Db\ObjectEntity>, total?: int,
+     *     page?: int, pages?: 1|float, limit?: int|null, offset?: int|null},
+     *     array<never, never>>
      */
     public function index(): JSONResponse
     {
@@ -248,7 +254,9 @@ class DeletedController extends Controller
      *
      * @return JSONResponse JSON response with deletion statistics
      *
-     * @psalm-return JSONResponse<200|500, array{error?: string, totalDeleted?: int, deletedToday?: int, deletedThisWeek?: int, oldestDays?: 0}, array<never, never>>
+     * @psalm-return JSONResponse<200|500,
+     *     array{error?: string, totalDeleted?: int, deletedToday?: int,
+     *     deletedThisWeek?: int, oldestDays?: 0}, array<never, never>>
      */
     public function statistics(): JSONResponse
     {
@@ -306,7 +314,10 @@ class DeletedController extends Controller
      *
      * @return JSONResponse JSON response with top deleters
      *
-     * @psalm-return JSONResponse<200|500, array{error?: string, 0?: array{user: 'admin', count: 0}, 1?: array{user: 'user1', count: 0}, 2?: array{user: 'user2', count: 0}}, array<never, never>>
+     * @psalm-return JSONResponse<200|500,
+     *     array{error?: string, 0?: array{user: 'admin', count: 0},
+     *     1?: array{user: 'user1', count: 0},
+     *     2?: array{user: 'user2', count: 0}}, array<never, never>>
      */
     public function topDeleters(): JSONResponse
     {
@@ -341,7 +352,9 @@ class DeletedController extends Controller
      *
      * @return JSONResponse JSON response confirming restoration
      *
-     * @psalm-return JSONResponse<200|400|500, array{error?: string, success?: true, message?: 'Object restored successfully'}, array<never, never>>
+     * @psalm-return JSONResponse<200|400|500,
+     *     array{error?: string, success?: true,
+     *     message?: 'Object restored successfully'}, array<never, never>>
      */
     public function restore(string $id): JSONResponse
     {
@@ -397,7 +410,10 @@ class DeletedController extends Controller
      *
      * @return JSONResponse JSON response with multiple restoration results
      *
-     * @psalm-return JSONResponse<200|400|500, array{error?: string, success?: true, restored?: int<0, max>, failed?: int<0, max>, notFound?: int<0, max>, message?: string}, array<never, never>>
+     * @psalm-return JSONResponse<200|400|500,
+     *     array{error?: string, success?: true, restored?: int<0, max>,
+     *     failed?: int<0, max>, notFound?: int<0, max>, message?: string},
+     *     array<never, never>>
      */
     public function restoreMultiple(): JSONResponse
     {
@@ -483,7 +499,9 @@ class DeletedController extends Controller
      *
      * @return JSONResponse JSON response confirming permanent deletion
      *
-     * @psalm-return JSONResponse<200|400|500, array{error?: string, success?: true, message?: 'Object permanently deleted'}, array<never, never>>
+     * @psalm-return JSONResponse<200|400|500,
+     *     array{error?: string, success?: true,
+     *     message?: 'Object permanently deleted'}, array<never, never>>
      */
     public function destroy(string $id): JSONResponse
     {
@@ -531,7 +549,10 @@ class DeletedController extends Controller
      *
      * @return JSONResponse JSON response with multiple deletion results
      *
-     * @psalm-return JSONResponse<200|400|500, array{error?: string, success?: true, deleted?: int<0, max>, failed?: int<0, max>, notFound?: int<0, max>, message?: string}, array<never, never>>
+     * @psalm-return JSONResponse<200|400|500,
+     *     array{error?: string, success?: true, deleted?: int<0, max>,
+     *     failed?: int<0, max>, notFound?: int<0, max>, message?: string},
+     *     array<never, never>>
      */
     public function destroyMultiple(): JSONResponse
     {

@@ -79,7 +79,9 @@ class UploadHandler
      * @throws Exception
      * @throws GuzzleException
      *
-     * @psalm-return JSONResponse<400, array{error?: string, 'MIME-type'?: string, message?: 'Expected only 1 file.', 'Content-Type'?: string}, array<never, never>>|array
+     * @psalm-return JSONResponse<400, array{error?: string, 'MIME-type'?: string,
+     *     message?: 'Expected only 1 file.', 'Content-Type'?: string},
+     *     array<never, never>>|array
      */
     public function getUploadedJson(array $data, ?array $uploadedFiles): array|JSONResponse
     {

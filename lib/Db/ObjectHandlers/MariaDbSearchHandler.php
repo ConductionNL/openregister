@@ -54,7 +54,10 @@ class MariaDbSearchHandler
     public function applyMetadataFilters(IQueryBuilder $queryBuilder, array $metadataFilters): IQueryBuilder
     {
         try {
-            $mainFields = ['register', 'schema', 'uuid', 'name', 'description', 'uri', 'version', 'folder', 'application', 'organisation', 'owner', 'size', 'schemaVersion', 'created', 'updated', 'published', 'depublished'];
+            $mainFields = ['register', 'schema', 'uuid', 'name',
+                'description', 'uri', 'version', 'folder', 'application',
+                'organisation', 'owner', 'size', 'schemaVersion',
+                'created', 'updated', 'published', 'depublished'];
             $dateFields = ['created', 'updated', 'published', 'depublished'];
             $textFields = ['name', 'description', 'uri', 'folder', 'application', 'organisation', 'owner', 'schemaVersion'];
 
@@ -366,7 +369,9 @@ class MariaDbSearchHandler
                 }//end if
 
                 // Handle [or] and [and] operators for non-text, non-date fields (e.g. schema, register).
-                if (is_array($value) === true && ((($value['or'] ?? null) !== null) === true || (($value['and'] ?? null) !== null) === true) === true) {
+                if (is_array($value) === true
+                    && ((($value['or'] ?? null) !== null) === true
+                    || (($value['and'] ?? null) !== null) === true) === true) {
                     if (($value['and'] ?? null) !== null) {
                         // AND logic: multiple andWhere clauses.
                         $values = $value['and'];
@@ -545,7 +550,13 @@ class MariaDbSearchHandler
                     // Check if the value exists within an array using JSON_CONTAINS.
                     $orConditions->add(
                         $queryBuilder->expr()->eq(
-                            $queryBuilder->createFunction("JSON_CONTAINS(JSON_EXTRACT(`object`, ".$queryBuilder->createNamedParameter($jsonPath)."), ".$queryBuilder->createNamedParameter(json_encode($arrayValue)).")"),
+                            $queryBuilder->createFunction(
+                                "JSON_CONTAINS(JSON_EXTRACT(`object`, ".
+                                $queryBuilder->createNamedParameter($jsonPath).
+                                "), ".$queryBuilder->createNamedParameter(
+                                    json_encode($arrayValue)
+                                ).")"
+                            ),
                             $queryBuilder->createNamedParameter(1)
                         )
                     );
@@ -565,7 +576,13 @@ class MariaDbSearchHandler
                 // Check if the value exists within an array using JSON_CONTAINS (case-insensitive).
                 $orConditions->add(
                     $queryBuilder->expr()->eq(
-                        $queryBuilder->createFunction("JSON_CONTAINS(LOWER(JSON_EXTRACT(`object`, ".$queryBuilder->createNamedParameter($jsonPath).")), ".$queryBuilder->createNamedParameter(json_encode(strtolower($arrayValue))).")"),
+                        $queryBuilder->createFunction(
+                            "JSON_CONTAINS(LOWER(JSON_EXTRACT(`object`, ".
+                            $queryBuilder->createNamedParameter($jsonPath).
+                            ")), ".$queryBuilder->createNamedParameter(
+                                json_encode(strtolower($arrayValue))
+                            ).")"
+                        ),
                         $queryBuilder->createNamedParameter(1)
                     )
                 );
@@ -593,7 +610,13 @@ class MariaDbSearchHandler
             // Check if the value exists within an array using JSON_CONTAINS.
             $singleValueConditions->add(
                 $queryBuilder->expr()->eq(
-                    $queryBuilder->createFunction("JSON_CONTAINS(JSON_EXTRACT(`object`, ".$queryBuilder->createNamedParameter($jsonPath)."), ".$queryBuilder->createNamedParameter(json_encode($value)).")"),
+                            $queryBuilder->createFunction(
+                                "JSON_CONTAINS(JSON_EXTRACT(`object`, ".
+                                $queryBuilder->createNamedParameter($jsonPath).
+                                "), ".$queryBuilder->createNamedParameter(
+                                    json_encode($value)
+                                ).")"
+                            ),
                     $queryBuilder->createNamedParameter(1)
                 )
             );

@@ -822,23 +822,22 @@ class ObjectEntityMapper extends QBMapper
     {
         $qb = $this->db->getQueryBuilder();
 
-        // Determine ID parameter based on whether identifier is numeric.
-        $idParam = -1;
-        if (is_numeric($identifier) === true) {
-            $idParam = $identifier;
-        }
-
         // Build the base query.
         $qb->select('*')
-            ->from('openregister_objects')
-            ->where(
-                $qb->expr()->orX(
-                    $qb->expr()->eq('id', $qb->createNamedParameter($idParam, IQueryBuilder::PARAM_INT)),
-                    $qb->expr()->eq('uuid', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
-                    $qb->expr()->eq('slug', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
-                    $qb->expr()->eq('uri', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR))
-                )
-            );
+            ->from('openregister_objects');
+
+        // Build OR conditions for matching against id, uuid, slug, or uri.
+        // Note: Only include id comparison if identifier is actually numeric (PostgreSQL strict typing).
+        $orConditions = [];
+        if (is_numeric($identifier) === true) {
+            $orConditions[] = $qb->expr()->eq('id', $qb->createNamedParameter((int) $identifier, IQueryBuilder::PARAM_INT));
+        }
+
+        $orConditions[] = $qb->expr()->eq('uuid', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR));
+        $orConditions[] = $qb->expr()->eq('slug', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR));
+        $orConditions[] = $qb->expr()->eq('uri', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR));
+
+        $qb->where($qb->expr()->orX(...$orConditions));
 
         // By default, only include objects where 'deleted' is NULL unless $includeDeleted is true.
         if ($includeDeleted === false) {
@@ -925,10 +924,21 @@ class ObjectEntityMapper extends QBMapper
     {
         $qb = $this->db->getQueryBuilder();
 
+        // Get database platform to determine casting method.
+        $platform = $qb->getConnection()->getDatabasePlatform()->getName();
+
         $qb->select('o.*')
-            ->from('openregister_objects', 'o')
-            ->leftJoin('o', 'openregister_schemas', 's', 'o.schema = s.id')
-            ->where($qb->expr()->eq('o.schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)))
+            ->from('openregister_objects', 'o');
+
+        // PostgreSQL requires explicit casting for VARCHAR to BIGINT comparison.
+        if ($platform === 'postgresql') {
+            $qb->leftJoin('o', 'openregister_schemas', 's', 'CAST(o.schema AS BIGINT) = s.id');
+        } else {
+            // MySQL/MariaDB does implicit type conversion.
+            $qb->leftJoin('o', 'openregister_schemas', 's', 'o.schema = s.id');
+        }
+
+        $qb->where($qb->expr()->eq('o.schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)))
             ->andWhere($qb->expr()->isNull('o.deleted'));
 
         return $this->findEntities($qb);
@@ -999,12 +1009,13 @@ class ObjectEntityMapper extends QBMapper
             $qb->andWhere($qb->expr()->isNull('deleted'));
         }
 
+        // Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
         if ($register !== null) {
-            $qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter($register->getId(), IQueryBuilder::PARAM_INT)));
+            $qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter((string) $register->getId(), IQueryBuilder::PARAM_STR)));
         }
 
         if ($schema !== null) {
-            $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter($schema->getId(), IQueryBuilder::PARAM_INT)));
+            $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter((string) $schema->getId(), IQueryBuilder::PARAM_STR)));
         }
 
         // Apply ID filters.
@@ -1180,12 +1191,13 @@ class ObjectEntityMapper extends QBMapper
             ->from('openregister_objects')
             ->where($qb->expr()->isNull('deleted'));
 
+        // Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
         if ($schema !== null) {
-            $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter($schema->getId(), IQueryBuilder::PARAM_INT)));
+            $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter((string) $schema->getId(), IQueryBuilder::PARAM_STR)));
         }
 
         if ($register !== null) {
-            $qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter($register->getId(), IQueryBuilder::PARAM_INT)));
+            $qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter((string) $register->getId(), IQueryBuilder::PARAM_STR)));
         }
 
         $result = $qb->executeQuery();

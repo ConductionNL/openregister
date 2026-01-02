@@ -198,7 +198,7 @@ class QueryOptimizationHandler
      *
      * @throws \Exception If the bulk operation fails.
      *
-     * @psalm-return array{endTime: DateTime, duration: string,...}
+     * @psalm-return array{endTime: DateTime, duration: string, ...}
      */
     public function bulkOwnerDeclaration(?string $defaultOwner=null, ?string $defaultOrganisation=null, int $batchSize=1000): array
     {
@@ -428,7 +428,8 @@ class QueryOptimizationHandler
      *
      * @return (int|string[])[] Batch processing results.
      *
-     * @psalm-return array{ownersAssigned: 0|1|2, organisationsAssigned: 0|1|2, errors: list<non-falsy-string>}
+     * @psalm-return array{ownersAssigned: 0|1|2,
+     *     organisationsAssigned: 0|1|2, errors: list<non-falsy-string>}
      */
     private function processBulkOwnerDeclarationBatch(array $objects, ?string $defaultOwner, ?string $defaultOrganisation): array
     {

@@ -236,3 +236,5 @@ The "Direct Execution" approach (using Code node with child_process) is not poss
 - Workflow Templates: `/home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/n8n-templates/openregister-phpqa-*.json`
 - This Documentation: `/home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/n8n-templates/API_SERVER_SOLUTION.md`
 
+
+

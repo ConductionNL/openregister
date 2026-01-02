@@ -360,3 +360,5 @@ curl -X POST http://localhost:9090/build-js | jq '{
 
 `/home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/scripts/container-api.py`
 
+
+

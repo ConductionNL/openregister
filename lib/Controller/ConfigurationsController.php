@@ -113,7 +113,9 @@ class ConfigurationsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Configuration, array<never, never>>|JSONResponse<404, array{error: 'Configuration not found'}, array<never, never>>
+     * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Configuration,
+     *     array<never, never>>|JSONResponse<404,
+     *     array{error: 'Configuration not found'}, array<never, never>>
      */
     public function show(int $id): JSONResponse
     {
@@ -135,7 +137,9 @@ class ConfigurationsController extends Controller
      *
      * @return JSONResponse JSON response with created configuration
      *
-     * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Configuration, array<never, never>>|JSONResponse<400, array{error: string}, array<never, never>>
+     * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Configuration,
+     *     array<never, never>>|JSONResponse<400, array{error: string},
+     *     array<never, never>>
      */
     public function create(): JSONResponse
     {
@@ -192,7 +196,9 @@ class ConfigurationsController extends Controller
      *
      * @return JSONResponse JSON response with updated configuration
      *
-     * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Configuration, array<never, never>>|JSONResponse<400, array{error: string}, array<never, never>>
+     * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Configuration,
+     *     array<never, never>>|JSONResponse<400, array{error: string},
+     *     array<never, never>>
      */
     public function update(int $id): JSONResponse
     {
@@ -240,7 +246,9 @@ class ConfigurationsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Configuration, array<never, never>>|JSONResponse<400, array{error: string}, array<never, never>>
+     * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Configuration,
+     *     array<never, never>>|JSONResponse<400, array{error: string},
+     *     array<never, never>>
      */
     public function patch(int $id): JSONResponse
     {

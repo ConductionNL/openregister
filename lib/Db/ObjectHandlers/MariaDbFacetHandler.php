@@ -61,7 +61,8 @@ class MariaDbFacetHandler
      *
      * @return (((int|mixed|string)[]|mixed)[]|string)[] Terms facet data with buckets containing key and results
      *
-     * @psalm-return array{type: 'terms', buckets: list{0?: array{key: mixed|string, results: int},...}}
+     * @psalm-return array{type: 'terms',
+     *     buckets: list{0?: array{key: mixed|string, results: int},...}>
      */
     public function getTermsFacet(string $field, array $baseQuery=[]): array
     {
@@ -185,7 +186,9 @@ class MariaDbFacetHandler
      *
      * @return ((int|string)[][]|string)[]
      *
-     * @psalm-return array{type: 'terms', buckets: list<array{key: non-empty-string, results: 0|1|2|3|4}>}
+     * @psalm-return array{type: 'terms',
+     *     buckets: list<array{key: non-empty-string,
+     *     results: 0|1|2|3|4}>}
      */
     private function getTermsFacetForArrayField(string $field, array $baseQuery): array
     {
@@ -316,7 +319,8 @@ class MariaDbFacetHandler
      *
      * @return ((int|mixed)[][]|string)[]
      *
-     * @psalm-return array{type: 'date_histogram', interval: string, buckets: list<array{key: mixed, results: int}>}
+     * @psalm-return array{type: 'date_histogram', interval: string,
+     *     buckets: list<array{key: mixed, results: int}>}
      */
     public function getDateHistogramFacet(string $field, string $interval, array $baseQuery=[]): array
     {
@@ -384,7 +388,9 @@ class MariaDbFacetHandler
      *
      * @return ((int|mixed|string)[][]|string)[]
      *
-     * @psalm-return array{type: 'range', buckets: list<array{from?: mixed, key: string, results: int, to?: mixed}>}
+     * @psalm-return array{type: 'range',
+     *     buckets: list<array{from?: mixed, key: string, results: int,
+     *     to?: mixed}>}
      */
     public function getRangeFacet(string $field, array $ranges, array $baseQuery=[]): array
     {
@@ -687,7 +693,14 @@ class MariaDbFacetHandler
             // Handle array of values (OR condition).
             if (($value[0] ?? null) !== null && is_string($value[0]) === false) {
                 // This is an array of values, not operators.
-                $queryBuilder->andWhere($queryBuilder->expr()->in($field, $queryBuilder->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+                $queryBuilder->andWhere(
+                    $queryBuilder->expr()->in(
+                        $field,
+                        $queryBuilder->createNamedParameter(
+                            $value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY
+                        )
+                    )
+                );
                 continue;
             }
 
@@ -891,7 +904,13 @@ class MariaDbFacetHandler
         // Check if the value exists within an array using JSON_CONTAINS.
         $conditions->add(
             $queryBuilder->expr()->eq(
-                $queryBuilder->createFunction("JSON_CONTAINS(JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath)."), ".$queryBuilder->createNamedParameter(json_encode($value)).")"),
+                $queryBuilder->createFunction(
+                    "JSON_CONTAINS(JSON_EXTRACT(object, ".
+                    $queryBuilder->createNamedParameter($jsonPath)."), ".
+                    $queryBuilder->createNamedParameter(
+                        json_encode($value)
+                    ).")"
+                ),
                 $queryBuilder->createNamedParameter(1)
             )
         );
@@ -1383,7 +1402,11 @@ class MariaDbFacetHandler
      *
      * @return (array|false|mixed|string)[]|null
      *
-     * @psalm-return array{type: string, description: string, sample_values: array, appearance_rate: mixed, is_array: false|mixed, facet_types: list{0: 'date_histogram'|'range'|'terms', 1?: 'range'|'terms'}, cardinality?: 'binary'|'low'|'numeric', intervals?: list{'day', 'week', 'month', 'year'}}|null
+     * @psalm-return array{type: string, description: string,
+     *     sample_values: array, appearance_rate: mixed, is_array: false|mixed,
+     *     facet_types: list{0: 'date_histogram'|'range'|'terms',
+     *     1?: 'range'|'terms'}, cardinality?: 'binary'|'low'|'numeric',
+     *     intervals?: list{'day', 'week', 'month', 'year'}}|null
      */
     private function determineFieldConfiguration(string $fieldPath, array $analysis): array|null
     {

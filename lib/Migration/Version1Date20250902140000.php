@@ -102,10 +102,15 @@ class Version1Date20250902140000 extends SimpleMigrationStep
         }
 
         // Soft delete filtering.
-        if ($table->hasIndex('objects_deleted_idx') === false) {
-            $table->addIndex(['deleted'], 'objects_deleted_idx');
-            $output->info(message: 'Added index objects_deleted_idx for soft delete filtering');
-        }
+        // Note: 'deleted' column is JSON type in PostgreSQL, which cannot have a standard btree index.
+        // PostgreSQL requires GIN or expression indexes for JSON columns, which are not supported
+        // by Nextcloud's database abstraction layer. Queries on this column will use sequential scans
+        // or can be optimized using PostgreSQL-specific indexes created manually if needed.
+        // if ($table->hasIndex('objects_deleted_idx') === false) {
+        //     $table->addIndex(['deleted'], 'objects_deleted_idx');
+        //     $output->info(message: 'Added index objects_deleted_idx for soft delete filtering');
+        // }
+        $output->info(message: 'Skipped objects_deleted_idx - JSON columns cannot have btree indexes in PostgreSQL');
 
         // Skip super-performance index creation for now to avoid MySQL key length issues.
         // TODO: Add indexes after app is enabled.

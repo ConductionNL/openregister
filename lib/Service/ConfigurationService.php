@@ -748,7 +748,9 @@ class ConfigurationService
      *     message: string
      * }
      *
-     * @psalm-return array{hasUpdate: bool, localVersion: null|string, remoteVersion: null|string, lastChecked: null|string, message: string}
+     * @psalm-return array{hasUpdate: bool, localVersion: null|string,
+     *     remoteVersion: null|string, lastChecked: null|string,
+     *     message: string}
      */
     public function compareVersions(Configuration $configuration): array
     {
@@ -810,7 +812,10 @@ class ConfigurationService
      *
      * @throws GuzzleException If HTTP request fails
      *
-     * @psalm-return JSONResponse<400|500, array{error: string}, array<never, never>>|JSONResponse<int, \JsonSerializable|array|null|scalar|stdClass, array<string, mixed>>|array
+     * @psalm-return JSONResponse<400|500, array{error: string},
+     *     array<never, never>>|JSONResponse<int,
+     *     \JsonSerializable|array|null|scalar|stdClass,
+     *     array<string, mixed>>|array
      */
     public function fetchRemoteConfiguration(Configuration $configuration): array|JSONResponse
     {
@@ -841,7 +846,11 @@ class ConfigurationService
             }
 
             $this->logger->info(
-                "Successfully fetched remote configuration with ".count($remoteData['components']['schemas'] ?? [])." schemas and ".count($remoteData['components']['registers'] ?? [])." registers"
+                "Successfully fetched remote configuration with ".
+                count($remoteData['components']['schemas'] ?? []).
+                " schemas and ".
+                count($remoteData['components']['registers'] ?? []).
+                " registers"
             );
 
             return $remoteData;
@@ -1168,7 +1177,14 @@ class ConfigurationService
      *
      * @throws Exception If search fails
      *
-     * @psalm-return array{total_count: 0|mixed, results: list{0?: array{repository: mixed, owner: string, repo: string, path: string, url: mixed, stars: 0|mixed, description: ''|mixed, name: string, branch: string, raw_url: string, sha: null|string, organization: array{name: string, avatar_url: ''|mixed, type: 'User'|mixed, url: ''|mixed}, config: array},...}, page: int, per_page: int}
+     * @psalm-return array{total_count: 0|mixed,
+     *     results: list{0?: array{repository: mixed, owner: string,
+     *     repo: string, path: string, url: mixed, stars: 0|mixed,
+     *     description: ''|mixed, name: string, branch: string,
+     *     raw_url: string, sha: null|string,
+     *     organization: array{name: string, avatar_url: ''|mixed,
+     *     type: 'User'|mixed, url: ''|mixed}, config: array},...},
+     *     page: int, per_page: int}
      */
     public function searchGitHub(string $search='', int $page=1, int $perPage=30): array
     {
@@ -1192,7 +1208,12 @@ class ConfigurationService
      *
      * @throws Exception If search fails
      *
-     * @psalm-return array{total_count: int<0, max>, results: list{0?: array{project_id: mixed, path: mixed, ref: 'main'|mixed, url: ''|mixed, name: string, config: array{title: string, description: '', version: 'unknown', app: null, type: 'unknown'}},...}, page: int, per_page: int}
+     * @psalm-return array{total_count: int<0, max>,
+     *     results: list{0?: array{project_id: mixed, path: mixed,
+     *     ref: 'main'|mixed, url: ''|mixed, name: string,
+     *     config: array{title: string, description: '',
+     *     version: 'unknown', app: null, type: 'unknown'}},...},
+     *     page: int, per_page: int}
      */
     public function searchGitLab(string $search='', int $page=1, int $perPage=30): array
     {

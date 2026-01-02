@@ -277,7 +277,8 @@ class BulkOperationsHandler
      *
      * @throws \Exception If the publishing operation fails.
      *
-     * @psalm-return array{published_count: int<0, max>, published_uuids: list<mixed>, schema_id: int}
+     * @psalm-return array{published_count: int<0, max>,
+     *     published_uuids: list<mixed>, schema_id: int}
      */
     public function publishObjectsBySchema(int $schemaId, bool $publishAll=false): array
     {
@@ -325,7 +326,8 @@ class BulkOperationsHandler
      *
      * @throws \Exception If the deletion operation fails.
      *
-     * @psalm-return array{deleted_count: int<0, max>, deleted_uuids: array, schema_id: int}
+     * @psalm-return array{deleted_count: int<0, max>, deleted_uuids: array,
+     *     schema_id: int}
      */
     public function deleteObjectsBySchema(int $schemaId, bool $hardDelete=false): array
     {
@@ -378,7 +380,8 @@ class BulkOperationsHandler
      *
      * @throws \Exception If the deletion operation fails.
      *
-     * @psalm-return array{deleted_count: int<0, max>, deleted_uuids: array, register_id: int}
+     * @psalm-return array{deleted_count: int<0, max>, deleted_uuids: array,
+     *     register_id: int}
      */
     public function deleteObjectsByRegister(int $registerId): array
     {

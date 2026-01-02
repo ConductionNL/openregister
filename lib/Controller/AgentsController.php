@@ -246,7 +246,10 @@ class AgentsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200, Agent, array<never, never>>|JSONResponse<403|404, array{error: 'Access denied to this agent'|'Agent not found'}, array<never, never>>
+     * @psalm-return JSONResponse<200, Agent,
+     *     array<never, never>>|JSONResponse<403|404,
+     *     array{error: 'Access denied to this agent'|'Agent not found'},
+     *     array<never, never>>
      */
     public function show(int $id): JSONResponse
     {
@@ -478,7 +481,11 @@ class AgentsController extends Controller
      *
      * @return JSONResponse Success message
      *
-     * @psalm-return JSONResponse<200|400|403, array{error?: 'Failed to delete agent'|'You do not have permission to delete this agent'|'User not authenticated', message?: 'Agent deleted successfully'}, array<never, never>>
+     * @psalm-return JSONResponse<200|400|403,
+     *     array{error?: 'Failed to delete agent'|
+     *     'You do not have permission to delete this agent'|
+     *     'User not authenticated', message?: 'Agent deleted successfully'},
+     *     array<never, never>>
      */
     public function destroy(int $id): JSONResponse
     {
@@ -535,7 +542,9 @@ class AgentsController extends Controller
      *
      * @return JSONResponse Agent statistics
      *
-     * @psalm-return JSONResponse<200|500, array{error?: 'Failed to retrieve statistics', total?: int, active?: int, inactive?: int}, array<never, never>>
+     * @psalm-return JSONResponse<200|500,
+     *     array{error?: 'Failed to retrieve statistics', total?: int,
+     *     active?: int, inactive?: int}, array<never, never>>
      */
     public function stats(): JSONResponse
     {

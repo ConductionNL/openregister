@@ -258,7 +258,14 @@ class Chunk extends Entity implements JsonSerializable
      *
      * @return (array|null|scalar)[]
      *
-     * @psalm-return array{id: int, uuid: null|string, sourceType: null|string, sourceId: int|null, chunkIndex: int, startOffset: int, endOffset: int, language: null|string, languageLevel: null|string, languageConfidence: float|null, indexed: bool, vectorized: bool, embeddingProvider: null|string, overlapSize: int, owner: null|string, organisation: null|string, checksum: null|string, createdAt: null|string, updatedAt: null|string, positionReference: array|null}
+     * @psalm-return array{id: int, uuid: null|string, sourceType: null|string,
+     *     sourceId: int|null, chunkIndex: int, startOffset: int, endOffset: int,
+     *     language: null|string, languageLevel: null|string,
+     *     languageConfidence: float|null, indexed: bool, vectorized: bool,
+     *     embeddingProvider: null|string, overlapSize: int, owner: null|string,
+     *     organisation: null|string, checksum: null|string,
+     *     createdAt: null|string, updatedAt: null|string,
+     *     positionReference: array|null}
      */
     public function jsonSerialize(): array
     {

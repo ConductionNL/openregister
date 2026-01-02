@@ -766,7 +766,18 @@ class Schema extends Entity implements JsonSerializable
      *
      * @return ((mixed|string[])[]|bool|int|null|string)[] The serialized schema data
      *
-     * @psalm-return array{id: int, uuid: null|string, uri: null|string, slug: null|string, title: null|string, description: null|string, version: null|string, summary: null|string, icon: null|string, required: array, properties: array, archive: array|null, source: null|string, hardValidation: bool, immutable: bool, searchable: bool, updated: null|string, created: null|string, maxDepth: int, owner: null|string, application: null|string, organisation: null|string, groups: array<string, list<string>>|null, authorization: array|null, deleted: null|string, published: null|string, depublished: null|string, configuration: array|null|string, allOf: array|null, oneOf: array|null, anyOf: array|null}
+     * @psalm-return array{id: int, uuid: null|string, uri: null|string,
+     *     slug: null|string, title: null|string, description: null|string,
+     *     version: null|string, summary: null|string, icon: null|string,
+     *     required: array, properties: array, archive: array|null,
+     *     source: null|string, hardValidation: bool, immutable: bool,
+     *     searchable: bool, updated: null|string, created: null|string,
+     *     maxDepth: int, owner: null|string, application: null|string,
+     *     organisation: null|string,
+     *     groups: array<string, list<string>>|null, authorization: array|null,
+     *     deleted: null|string, published: null|string,
+     *     depublished: null|string, configuration: array|null|string,
+     *     allOf: array|null, oneOf: array|null, anyOf: array|null}
      */
     public function jsonSerialize(): array
     {

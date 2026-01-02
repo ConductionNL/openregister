@@ -222,9 +222,25 @@ class OrganisationMapper extends QBMapper
     {
         $qb = $this->db->getQueryBuilder();
 
+        // Get database platform to determine JSON handling.
+        $platform = $qb->getConnection()->getDatabasePlatform()->getName();
+
         $qb->select('*')
-            ->from($this->getTableName())
-            ->where($qb->expr()->like('users', $qb->createNamedParameter('%"'.$userId.'"%')));
+            ->from($this->getTableName());
+
+        // PostgreSQL requires explicit cast to text for LIKE on JSON columns.
+        if ($platform === 'postgresql') {
+            // Cast JSON column to text for comparison.
+            $qb->where(
+                $qb->expr()->like(
+                    $qb->createFunction('CAST(users AS TEXT)'),
+                    $qb->createNamedParameter('%"'.$userId.'"%')
+                )
+            );
+        } else {
+            // MySQL/MariaDB can use LIKE directly on JSON columns.
+            $qb->where($qb->expr()->like('users', $qb->createNamedParameter('%"'.$userId.'"%')));
+        }
 
         return $this->findEntities($qb);
     }//end findByUserId()

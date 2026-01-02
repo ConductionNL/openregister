@@ -100,7 +100,12 @@ class FacetsHandler
      *
      * @return ((((int|mixed|string)[]|int|mixed|string)[]|mixed|string)[]|mixed|string)[][] Simple facet data using the new handlers.
      *
-     * @psalm-return array<array<array{type?: 'date_histogram'|'range'|'terms', buckets?: list{0?: array{key: mixed|string, results: int, from?: mixed, to?: mixed, label?: string}|mixed,...}, interval?: string, 0?: array{key: mixed|string, results: int, from?: mixed, to?: mixed}|mixed,...}|mixed|string>>
+     * @psalm-return array<array<array{type?: 'date_histogram'|'range'|'terms',
+     *     buckets?: list{0?: array{key: mixed|string, results: int,
+     *     from?: mixed, to?: mixed, label?: string}|mixed,...},
+     *     interval?: string,
+     *     0?: array{key: mixed|string, results: int, from?: mixed,
+     *     to?: mixed}|mixed,...}|mixed|string>>
      */
     public function getSimpleFacets(array $query=[]): array
     {
@@ -134,7 +139,11 @@ class FacetsHandler
                     );
                 } else if ($type === 'date_histogram') {
                     $interval = $config['interval'] ?? 'month';
-                    $facets['@self'][$field] = $this->metaDataFacetHandler->getDateHistogramFacet(field: $field, interval: $interval, baseQuery: $baseQuery);
+                    $facets['@self'][$field] = $this->metaDataFacetHandler
+                        ->getDateHistogramFacet(
+                            field: $field, interval: $interval,
+                            baseQuery: $baseQuery
+                        );
                 } else if ($type === 'range') {
                     $ranges = $config['ranges'] ?? [];
                     $facets['@self'][$field] = $this->metaDataFacetHandler->getRangeFacet(field: $field, ranges: $ranges, baseQuery: $baseQuery);
@@ -299,7 +308,10 @@ class FacetsHandler
      *
      * @return (array|mixed|string)[]|null Field configuration or null if not suitable for faceting.
      *
-     * @psalm-return array{type: string, format: string, title: mixed|string, description: mixed|string, facet_types: array, source: 'schema', example?: mixed, cardinality?: string, minimum?: mixed, maximum?: mixed, intervals?: list{'day', 'week', 'month', 'year'}}|null
+     * @psalm-return array{type: string, format: string, title: mixed|string,
+     *     description: mixed|string, facet_types: array, source: 'schema',
+     *     example?: mixed, cardinality?: string, minimum?: mixed,
+     *     maximum?: mixed, intervals?: list{'day', 'week', 'month', 'year'}}|null
      */
     private function generateFieldConfigFromProperty(string $propertyKey, array $property): array|null
     {

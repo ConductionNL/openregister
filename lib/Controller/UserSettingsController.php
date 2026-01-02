@@ -90,7 +90,11 @@ class UserSettingsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|401|500, array{error?: 'Failed to get token status'|'User not authenticated', hasToken?: bool, isValid?: bool, message?: 'No GitHub token configured'|'Token is invalid or expired'|'Token is valid'}, array<never, never>>
+     * @psalm-return JSONResponse<200|401|500,
+     *     array{error?: 'Failed to get token status'|'User not authenticated',
+     *     hasToken?: bool, isValid?: bool,
+     *     message?: 'No GitHub token configured'|'Token is invalid or expired'|
+     *     'Token is valid'}, array<never, never>>
      */
     public function getGitHubTokenStatus(): JSONResponse
     {
@@ -141,7 +145,9 @@ class UserSettingsController extends Controller
      *
      * @return JSONResponse JSON response confirming GitHub token save
      *
-     * @psalm-return JSONResponse<int, array{error?: string, success?: true, message?: 'GitHub token saved successfully'}, array<never, never>>
+     * @psalm-return JSONResponse<int,
+     *     array{error?: string, success?: true,
+     *     message?: 'GitHub token saved successfully'}, array<never, never>>
      */
     public function setGitHubToken(): JSONResponse
     {

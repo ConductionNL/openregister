@@ -198,7 +198,17 @@ class View extends Entity implements JsonSerializable
      *
      * @return (array|bool|int|null|string)[]
      *
-     * @psalm-return array{id: int, uuid: null|string, name: null|string, description: null|string, owner: null|string, organisation: null|string, isPublic: bool, isDefault: bool, query: array|null, favoredBy: array, quota: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: int<0, max>, groups: 0}, created: null|string, updated: null|string, managedByConfiguration: array{id: int, uuid: null|string, title: null|string}|null}
+     * @psalm-return array{id: int, uuid: null|string, name: null|string,
+     *     description: null|string, owner: null|string,
+     *     organisation: null|string, isPublic: bool, isDefault: bool,
+     *     query: array|null, favoredBy: array,
+     *     quota: array{storage: null, bandwidth: null, requests: null,
+     *     users: null, groups: null},
+     *     usage: array{storage: 0, bandwidth: 0, requests: 0,
+     *     users: int<0, max>, groups: 0}, created: null|string,
+     *     updated: null|string,
+     *     managedByConfiguration: array{id: int, uuid: null|string,
+     *     title: null|string}|null}
      */
     public function jsonSerialize(): array
     {

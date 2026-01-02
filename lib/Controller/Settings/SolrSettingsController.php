@@ -114,7 +114,13 @@ class SolrSettingsController extends Controller
      *
      * @return JSONResponse JSON response with Solr information
      *
-     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, solr?: array{available: false|mixed, version: '9.x (detection pending)'|'Unknown', vectorSupport: false, collections: array<array{id: mixed, name: mixed, documentCount: 0|mixed, shards: 0|mixed, health: 'unknown'|mixed}>, error: null|string}}, array<never, never>>
+     * @psalm-return JSONResponse<200|500,
+     *     array{success: bool, error?: string,
+     *     solr?: array{available: false|mixed,
+     *     version: '9.x (detection pending)'|'Unknown', vectorSupport: false,
+     *     collections: array<array{id: mixed, name: mixed,
+     *     documentCount: 0|mixed, shards: 0|mixed, health: 'unknown'|mixed}>,
+     *     error: null|string}}, array<never, never>>
      */
     public function getSolrInfo(): JSONResponse
     {
@@ -147,7 +153,9 @@ class SolrSettingsController extends Controller
                                 /*
                                  * @return (int|mixed|string)[]
                                  *
-                                 * @psalm-return array{id: mixed, name: mixed, documentCount: 0|mixed, shards: 0|mixed, health: 'unknown'|mixed}
+                                 * @psalm-return array{id: mixed, name: mixed,
+                                 *     documentCount: 0|mixed, shards: 0|mixed,
+                                 *     health: 'unknown'|mixed}
                                  */
                             function (array $collection): array {
                                 return [
@@ -214,7 +222,9 @@ class SolrSettingsController extends Controller
      *
      * @return JSONResponse SOLR dashboard metrics and statistics
      *
-     * @psalm-return JSONResponse<200, array<array-key, mixed>, array<never, never>>|JSONResponse<500, array{error: string}, array<never, never>>
+     * @psalm-return JSONResponse<200, array<array-key, mixed>,
+     *     array<never, never>>|JSONResponse<500, array{error: string},
+     *     array<never, never>>
      */
     public function getSolrDashboardStats(): JSONResponse
     {
@@ -280,7 +290,9 @@ class SolrSettingsController extends Controller
      *
      * @return JSONResponse JSON response with discovered Solr facets
      *
-     * @psalm-return JSONResponse<200|422, array{success: bool, message: string, facets: array<never, never>|mixed}, array<never, never>>
+     * @psalm-return JSONResponse<200|422,
+     *     array{success: bool, message: string,
+     *     facets: array<never, never>|mixed}, array<never, never>>
      */
     public function discoverSolrFacets(): JSONResponse
     {
@@ -331,7 +343,11 @@ class SolrSettingsController extends Controller
      *
      * @return JSONResponse JSON response with Solr facet configuration and discovery
      *
-     * @psalm-return JSONResponse<200|422|500, array{success: bool, message: string, error?: string, facets?: array{'@self'?: array<array>, object_fields?: array<array>}, global_settings?: array{show_count: true, show_empty: false, max_items: 10}|mixed}, array<never, never>>
+     * @psalm-return JSONResponse<200|422|500,
+     *     array{success: bool, message: string, error?: string,
+     *     facets?: array{'@self'?: array<array>, object_fields?: array<array>},
+     *     global_settings?: array{show_count: true, show_empty: false,
+     *     max_items: 10}|mixed}, array<never, never>>
      */
     public function getSolrFacetConfigWithDiscovery(): JSONResponse
     {
@@ -377,10 +393,14 @@ class SolrSettingsController extends Controller
                             'config' => [
                                 'enabled'     => $existingFacetConfig['enabled'] ?? true,
                                 'title'       => $existingFacetConfig['title'] ?? $facetInfo['displayName'] ?? $key,
-                                'description' => $existingFacetConfig['description'] ?? ($facetInfo['category'] ?? 'metadata')." field: ".($facetInfo['displayName'] ?? $key),
+                                'description' => $existingFacetConfig['description'] ??
+                                    ($facetInfo['category'] ?? 'metadata').
+                                    " field: ".($facetInfo['displayName'] ?? $key),
                                 'order'       => $existingFacetConfig['order'] ?? $index,
                                 'maxItems'    => $existingFacetConfig['max_items'] ?? $existingFacetConfig['maxItems'] ?? 10,
-                                'facetType'   => $existingFacetConfig['facet_type'] ?? $existingFacetConfig['facetType'] ?? $facetInfo['suggestedFacetType'] ?? 'terms',
+                                'facetType'   => $existingFacetConfig['facet_type'] ??
+                                    $existingFacetConfig['facetType'] ??
+                                    $facetInfo['suggestedFacetType'] ?? 'terms',
                                 'displayType' => $existingFacetConfig['display_type'] ?? $existingFacetConfig['displayType'] ?? ($facetInfo['suggestedDisplayTypes'][0] ?? 'select'),
                                 'showCount'   => $existingFacetConfig['show_count'] ?? $existingFacetConfig['showCount'] ?? true,
                             ],
@@ -403,10 +423,14 @@ class SolrSettingsController extends Controller
                             'config' => [
                                 'enabled'     => $existingFacetConfig['enabled'] ?? false,
                                 'title'       => $existingFacetConfig['title'] ?? $facetInfo['displayName'] ?? $key,
-                                'description' => $existingFacetConfig['description'] ?? ($facetInfo['category'] ?? 'object')." field: ".($facetInfo['displayName'] ?? $key),
+                                'description' => $existingFacetConfig['description'] ??
+                                    ($facetInfo['category'] ?? 'object').
+                                    " field: ".($facetInfo['displayName'] ?? $key),
                                 'order'       => $existingFacetConfig['order'] ?? (100 + $index),
                                 'maxItems'    => $existingFacetConfig['max_items'] ?? $existingFacetConfig['maxItems'] ?? 10,
-                                'facetType'   => $existingFacetConfig['facet_type'] ?? $existingFacetConfig['facetType'] ?? $facetInfo['suggestedFacetType'] ?? 'terms',
+                                'facetType'   => $existingFacetConfig['facet_type'] ??
+                                    $existingFacetConfig['facetType'] ??
+                                    $facetInfo['suggestedFacetType'] ?? 'terms',
                                 'displayType' => $existingFacetConfig['display_type'] ?? $existingFacetConfig['displayType'] ?? ($facetInfo['suggestedDisplayTypes'][0] ?? 'select'),
                                 'showCount'   => $existingFacetConfig['show_count'] ?? $existingFacetConfig['showCount'] ?? true,
                             ],
@@ -449,7 +473,9 @@ class SolrSettingsController extends Controller
      *
      * @return JSONResponse JSON response with updated Solr facet configuration
      *
-     * @psalm-return JSONResponse<200|500, array{success: bool, message: string, error?: string, config?: array}, array<never, never>>
+     * @psalm-return JSONResponse<200|500,
+     *     array{success: bool, message: string, error?: string,
+     *     config?: array}, array<never, never>>
      */
     public function updateSolrFacetConfigWithDiscovery(): JSONResponse
     {
