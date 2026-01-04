@@ -154,9 +154,11 @@ class SolrSettingsHandler
      * 3. Performing cache warmup queries
      * 4. Committing and optimizing the index
      *
-     * @param  int $batchSize  Number of objects to process per batch (default 1000, parameter kept for API compatibility)
-     * @param  int $maxObjects Maximum number of objects to index (0 = all)
+     * @param int $batchSize  Number of objects to process per batch (default 1000, parameter kept for API compatibility)
+     * @param int $maxObjects Maximum number of objects to index (0 = all)
+     *
      * @return array Warmup operation results with statistics and status
+     *
      * @throws \RuntimeException If SOLR warmup fails
      */
 
@@ -167,10 +169,10 @@ class SolrSettingsHandler
      * This method is kept for backward compatibility but should not be used.
      * The controller now uses IndexService directly to avoid circular dependencies.
      *
-     * @param int    $_batchSize    Number of objects to process per batch (unused, kept for API compatibility)
-     * @param int    $maxObjects    Maximum number of objects to index (unused, kept for API compatibility)
-     * @param string $mode          Processing mode (unused, kept for API compatibility)
-     * @param bool   $collectErrors Whether to collect errors (unused, kept for API compatibility)
+     * @param int    $_batchSize    Number of objects to process per batch
+     * @param int    $maxObjects    Maximum number of objects to index
+     * @param string $mode          Processing mode
+     * @param bool   $collectErrors Whether to collect errors
      *
      * @return never Warmup operation results with statistics and status
      *
@@ -196,7 +198,24 @@ class SolrSettingsHandler
      *
      * @throws \RuntimeException If SOLR statistics retrieval fails
      *
-     * @psalm-return array{overview: array{available: bool, connection_status: 'unavailable'|'unknown'|mixed, response_time_ms: 0, total_documents: 0|mixed, index_size: string, last_commit: mixed|null}, cores: array{active_core: 'unknown'|mixed, core_status: 'active'|'inactive', endpoint_url: 'N/A'}, performance: array{total_searches: 0|mixed, total_indexes: 0|mixed, total_deletes: 0|mixed, avg_search_time_ms: 0|float, avg_index_time_ms: 0|float, total_search_time: 0|mixed, total_index_time: 0|mixed, operations_per_sec: 0|float, error_rate: 0|float}, health: array{status: 'unavailable'|'unknown'|mixed, uptime: 'N/A', memory_usage: array{used: 'N/A', max: 'N/A', percentage: 0}, disk_usage: array{used: 'N/A', available: 'N/A', percentage: 0}, warnings: list{0?: 'SOLR service is not available or not configured'|mixed}, last_optimization: null}, operations: array{recent_activity: array<never, never>, queue_status: array{pending_operations: 0, processing: false, last_processed: null}, commit_frequency: array{auto_commit: bool, commit_within: 0|1000, last_commit: mixed|null}, optimization_needed: false}, generated_at: string, error?: mixed|string}
+     * @psalm-return array{overview: array{available: bool,
+     *     connection_status: 'unavailable'|'unknown'|mixed, response_time_ms: 0,
+     *     total_documents: 0|mixed, index_size: string, last_commit: mixed|null},
+     *     cores: array{active_core: 'unknown'|mixed, core_status: 'active'|'inactive',
+     *     endpoint_url: 'N/A'}, performance: array{total_searches: 0|mixed,
+     *     total_indexes: 0|mixed, total_deletes: 0|mixed, avg_search_time_ms: 0|float,
+     *     avg_index_time_ms: 0|float, total_search_time: 0|mixed,
+     *     total_index_time: 0|mixed, operations_per_sec: 0|float,
+     *     error_rate: 0|float}, health: array{status: 'unavailable'|'unknown'|mixed,
+     *     uptime: 'N/A', memory_usage: array{used: 'N/A', max: 'N/A',
+     *     percentage: 0}, disk_usage: array{used: 'N/A', available: 'N/A',
+     *     percentage: 0}, warnings: list{0?: 'SOLR service is not available or '.
+     *     'not configured'|mixed}, last_optimization: null},
+     *     operations: array{recent_activity: array<never, never>,
+     *     queue_status: array{pending_operations: 0, processing: false,
+     *     last_processed: null}, commit_frequency: array{auto_commit: bool,
+     *     commit_within: 0|1000, last_commit: mixed|null},
+     *     optimization_needed: false}, generated_at: string, error?: mixed|string}
      */
     public function getSolrDashboardStats(): array
     {
@@ -272,7 +291,25 @@ class SolrSettingsHandler
      *
      * @return (((bool|int|mixed|null|string)[]|bool|float|int|mixed|null|string)[]|mixed|string)[] Transformed dashboard statistics
      *
-     * @psalm-return array{overview: array{available: bool, connection_status: 'unavailable'|'unknown'|mixed, response_time_ms: 0, total_documents: 0|mixed, index_size: string, last_commit: mixed|null}, cores: array{active_core: 'unknown'|mixed, core_status: 'active'|'inactive', endpoint_url: 'N/A'}, performance: array{total_searches: 0|mixed, total_indexes: 0|mixed, total_deletes: 0|mixed, avg_search_time_ms: 0|float, avg_index_time_ms: 0|float, total_search_time: 0|mixed, total_index_time: 0|mixed, operations_per_sec: 0|float, error_rate: 0|float}, health: array{status: 'unavailable'|'unknown'|mixed, uptime: 'N/A', memory_usage: array{used: 'N/A', max: 'N/A', percentage: 0}, disk_usage: array{used: 'N/A', available: 'N/A', percentage: 0}, warnings: list{0?: 'SOLR service is not available or not configured'|mixed}, last_optimization: null}, operations: array{recent_activity: array<never, never>, queue_status: array{pending_operations: 0, processing: false, last_processed: null}, commit_frequency: array{auto_commit: bool, commit_within: 0|1000, last_commit: mixed|null}, optimization_needed: false}, generated_at: string, error?: 'SOLR service unavailable'|mixed}
+     * @psalm-return array{overview: array{available: bool,
+     *     connection_status: 'unavailable'|'unknown'|mixed, response_time_ms: 0,
+     *     total_documents: 0|mixed, index_size: string, last_commit: mixed|null},
+     *     cores: array{active_core: 'unknown'|mixed, core_status: 'active'|'inactive',
+     *     endpoint_url: 'N/A'}, performance: array{total_searches: 0|mixed,
+     *     total_indexes: 0|mixed, total_deletes: 0|mixed, avg_search_time_ms: 0|float,
+     *     avg_index_time_ms: 0|float, total_search_time: 0|mixed,
+     *     total_index_time: 0|mixed, operations_per_sec: 0|float,
+     *     error_rate: 0|float}, health: array{status: 'unavailable'|'unknown'|mixed,
+     *     uptime: 'N/A', memory_usage: array{used: 'N/A', max: 'N/A',
+     *     percentage: 0}, disk_usage: array{used: 'N/A', available: 'N/A',
+     *     percentage: 0}, warnings: list{0?: 'SOLR service is not available or '.
+     *     'not configured'|mixed}, last_optimization: null},
+     *     operations: array{recent_activity: array<never, never>,
+     *     queue_status: array{pending_operations: 0, processing: false,
+     *     last_processed: null}, commit_frequency: array{auto_commit: bool,
+     *     commit_within: 0|1000, last_commit: mixed|null},
+     *     optimization_needed: false}, generated_at: string,
+     *     error?: 'SOLR service unavailable'|mixed}
      */
     private function transformSolrStatsToDashboard(array $rawStats): array
     {
@@ -436,7 +473,15 @@ class SolrSettingsHandler
      *
      * @throws \RuntimeException If SOLR settings retrieval fails
      *
-     * @psalm-return array{enabled: false|mixed, host: 'solr'|mixed, port: 8983|mixed, path: '/solr'|mixed, core: 'openregister'|mixed, configSet: '_default'|mixed, scheme: 'http'|mixed, username: 'solr'|mixed, password: 'SolrRocks'|mixed, timeout: 30|mixed, autoCommit: mixed|true, commitWithin: 1000|mixed, enableLogging: mixed|true, zookeeperHosts: 'zookeeper:2181'|mixed, zookeeperUsername: ''|mixed, zookeeperPassword: ''|mixed, collection: 'openregister'|mixed, useCloud: mixed|true, objectCollection: mixed|null, fileCollection: mixed|null}
+     * @psalm-return array{enabled: false|mixed, host: 'solr'|mixed, port: 8983|mixed,
+     *     path: '/solr'|mixed, core: 'openregister'|mixed,
+     *     configSet: '_default'|mixed, scheme: 'http'|mixed, username: 'solr'|mixed,
+     *     password: 'SolrRocks'|mixed, timeout: 30|mixed, autoCommit: mixed|true,
+     *     commitWithin: 1000|mixed, enableLogging: mixed|true,
+     *     zookeeperHosts: 'zookeeper:2181'|mixed, zookeeperUsername: ''|mixed,
+     *     zookeeperPassword: ''|mixed, collection: 'openregister'|mixed,
+     *     useCloud: mixed|true, objectCollection: mixed|null,
+     *     fileCollection: mixed|null}
      */
     public function getSolrSettingsOnly(): array
     {
@@ -505,7 +550,15 @@ class SolrSettingsHandler
      *
      * @throws \RuntimeException If SOLR settings update fails
      *
-     * @psalm-return array{enabled: false|mixed, host: 'solr'|mixed, port: int, path: '/solr'|mixed, core: 'openregister'|mixed, configSet: '_default'|mixed, scheme: 'http'|mixed, username: 'solr'|mixed, password: 'SolrRocks'|mixed, timeout: int, autoCommit: mixed|true, commitWithin: int, enableLogging: mixed|true, zookeeperHosts: 'zookeeper:2181'|mixed, zookeeperUsername: ''|mixed, zookeeperPassword: ''|mixed, collection: 'openregister'|mixed, useCloud: mixed|true, objectCollection: mixed|null, fileCollection: mixed|null}
+     * @psalm-return array{enabled: false|mixed, host: 'solr'|mixed, port: int,
+     *     path: '/solr'|mixed, core: 'openregister'|mixed,
+     *     configSet: '_default'|mixed, scheme: 'http'|mixed, username: 'solr'|mixed,
+     *     password: 'SolrRocks'|mixed, timeout: int, autoCommit: mixed|true,
+     *     commitWithin: int, enableLogging: mixed|true,
+     *     zookeeperHosts: 'zookeeper:2181'|mixed, zookeeperUsername: ''|mixed,
+     *     zookeeperPassword: ''|mixed, collection: 'openregister'|mixed,
+     *     useCloud: mixed|true, objectCollection: mixed|null,
+     *     fileCollection: mixed|null}
      */
     public function updateSolrSettingsOnly(array $solrData): array
     {
@@ -679,7 +732,11 @@ class SolrSettingsHandler
      *
      * @throws \RuntimeException If facet configuration update fails
      *
-     * @psalm-return array{facets: array<string, array{title: mixed|string, description: ''|mixed, order: int, enabled: bool, show_count: bool, max_items: int}>, global_order: array<string>, default_settings: array{show_count: bool, show_empty: bool, max_items: int}}
+     * @psalm-return array{facets: array<string, array{title: mixed|string,
+     *     description: ''|mixed, order: int, enabled: bool, show_count: bool,
+     *     max_items: int}>, global_order: array<string>,
+     *     default_settings: array{show_count: bool, show_empty: bool,
+     *     max_items: int}}
      */
     public function updateSolrFacetConfiguration(array $facetConfig): array
     {
@@ -703,7 +760,11 @@ class SolrSettingsHandler
      *
      * @throws \InvalidArgumentException If configuration is invalid
      *
-     * @psalm-return array{facets: array<string, array{title: mixed|string, description: ''|mixed, order: int, enabled: bool, show_count: bool, max_items: int}>, global_order: array<string>, default_settings: array{show_count: bool, show_empty: bool, max_items: int}}
+     * @psalm-return array{facets: array<string, array{title: mixed|string,
+     *     description: ''|mixed, order: int, enabled: bool, show_count: bool,
+     *     max_items: int}>, global_order: array<string>,
+     *     default_settings: array{show_count: bool, show_empty: bool,
+     *     max_items: int}}
      */
     private function validateFacetConfiguration(array $config): array
     {

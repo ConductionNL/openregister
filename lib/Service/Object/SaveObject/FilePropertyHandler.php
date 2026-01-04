@@ -45,8 +45,8 @@ class FilePropertyHandler
     /**
      * Constructor for FilePropertyHandler.
      *
-     * @param FileService     $fileService File service for managing files.
-     * @param LoggerInterface $logger      Logger for logging operations.
+     * @param FileService     $fileService File service for managing files
+     * @param LoggerInterface $logger      Logger for logging operations
      */
     public function __construct(
         // REMOVED: private readonly.
@@ -286,7 +286,20 @@ class FilePropertyHandler
 
         // Should not be a regular data array with other purposes.
         // File objects typically have file-specific properties.
-        $fileProperties    = ['id', 'title', 'path', 'type', 'size', 'accessUrl', 'downloadUrl', 'labels', 'extension', 'hash', 'modified', 'published'];
+        $fileProperties    = [
+            'id',
+            'title',
+            'path',
+            'type',
+            'size',
+            'accessUrl',
+            'downloadUrl',
+            'labels',
+            'extension',
+            'hash',
+            'modified',
+            'published',
+        ];
         $hasFileProperties = false;
 
         foreach ($fileProperties as $prop) {
@@ -482,18 +495,30 @@ class FilePropertyHandler
             // Determine input type and process accordingly.
             if (is_string($fileInput) === true) {
                 // Handle string inputs (base64, data URI, or URL).
-                return $this->processStringFileInput(objectEntity: $objectEntity, fileInput: $fileInput, propertyName: $propertyName, fileConfig: $fileConfig, index: $index);
+                return $this->processStringFileInput(
+                    objectEntity: $objectEntity,
+                        fileInput: $fileInput,
+                    propertyName: $propertyName,
+                        fileConfig: $fileConfig,
+                    index: $index
+                );
             }
 
             if (is_array($fileInput) === true && $this->isFileObject($fileInput) === true) {
                 // Handle file object input.
-                return $this->processFileObjectInput(objectEntity: $objectEntity, fileObject: $fileInput, propertyName: $propertyName, fileConfig: $fileConfig, index: $index);
+                return $this->processFileObjectInput(
+                    objectEntity: $objectEntity,
+                        fileObject: $fileInput,
+                    propertyName: $propertyName,
+                        fileConfig: $fileConfig,
+                    index: $index
+                );
             }
 
             throw new Exception("Unsupported file input type for property '$propertyName'");
         } catch (Exception $e) {
             throw $e;
-        }
+        }//end try
     }//end processSingleFileProperty()
 
     /**
@@ -565,7 +590,7 @@ class FilePropertyHandler
         // Content: $fileData['content'],
         // Share: $autoPublish,
         // Tags: $autoTags
-        // );
+        // );.
         return $file->getId();
     }//end processStringFileInput()
 
@@ -640,7 +665,13 @@ class FilePropertyHandler
         }
 
         // Fetch and process as URL.
-        return $this->processStringFileInput(objectEntity: $objectEntity, fileInput: $fileUrl, propertyName: $propertyName, fileConfig: $fileConfig, index: $index);
+        return $this->processStringFileInput(
+            objectEntity: $objectEntity,
+                fileInput: $fileUrl,
+            propertyName: $propertyName,
+                fileConfig: $fileConfig,
+            index: $index
+        );
     }//end processFileObjectInput()
 
     /**
@@ -764,7 +795,7 @@ class FilePropertyHandler
             $fileMimeType = $file->getMimeType();
             if (in_array($fileMimeType, $fileConfig['allowedTypes'], true) === false) {
                 throw new Exception(
-                    "$errorPrefix has invalid type '$fileMimeType'. "."Allowed types: ".implode(', ', $fileConfig['allowedTypes'])
+                    "$errorPrefix has invalid type '$fileMimeType'. Allowed types: ".implode(', ', $fileConfig['allowedTypes'])
                 );
             }
         }
@@ -774,7 +805,7 @@ class FilePropertyHandler
             $fileSize = $file->getSize();
             if ($fileSize > $fileConfig['maxSize']) {
                 throw new Exception(
-                    "$errorPrefix exceeds maximum size ({$fileConfig['maxSize']} bytes). "."File size: {$fileSize} bytes"
+                    "$errorPrefix exceeds maximum size ({$fileConfig['maxSize']} bytes). File size: {$fileSize} bytes"
                 );
             }
         }
@@ -815,9 +846,9 @@ class FilePropertyHandler
                 // $allTags = array_unique(array_merge($existingTags, $autoTags));
                 // $this->fileService->updateFile(
                 // FilePath: $file->getId(),
-                // Content: null,  // Don't change content
+                // Content: null,  // Don't change content.
                 // Tags: $allTags
-                // );
+                // );.
             } catch (Exception $e) {
                 // Log but don't fail - auto tagging is not critical.
             }
@@ -914,7 +945,11 @@ class FilePropertyHandler
      */
     public function validateFileAgainstConfig(array $fileData, array $fileConfig, string $propertyName, ?int $index=null): void
     {
-        $errorPrefix = $index !== null ? "File at $propertyName[$index]" : "File at $propertyName";
+        if ($index !== null) {
+            $errorPrefix = "File at $propertyName[$index]";
+        } else {
+            $errorPrefix = "File at $propertyName";
+        }
 
         // Security: Block executable files (unless explicitly allowed).
         $allowExecutables = $fileConfig['allowExecutables'] ?? false;
@@ -926,7 +961,7 @@ class FilePropertyHandler
         if (($fileConfig['allowedTypes'] ?? null) !== null && empty($fileConfig['allowedTypes']) === false) {
             if (in_array($fileData['mimeType'], $fileConfig['allowedTypes'], true) === false) {
                 throw new Exception(
-                    "$errorPrefix has invalid type '{$fileData['mimeType']}'. "."Allowed types: ".implode(', ', $fileConfig['allowedTypes'])
+                    "$errorPrefix has invalid type '{$fileData['mimeType']}'. Allowed types: ".implode(', ', $fileConfig['allowedTypes'])
                 );
             }
         }
@@ -935,7 +970,7 @@ class FilePropertyHandler
         if (($fileConfig['maxSize'] ?? null) !== null && $fileConfig['maxSize'] > 0) {
             if ($fileData['size'] > $fileConfig['maxSize']) {
                 throw new Exception(
-                    "$errorPrefix exceeds maximum size ({$fileConfig['maxSize']} bytes). "."File size: {$fileData['size']} bytes"
+                    "$errorPrefix exceeds maximum size ({$fileConfig['maxSize']} bytes). File size: {$fileData['size']} bytes"
                 );
             }
         }
@@ -981,7 +1016,7 @@ class FilePropertyHandler
                 );
 
                 throw new Exception(
-                    "$errorPrefix is an executable file (.$extension). "."Executable files are blocked for security reasons. "."Allowed formats: documents, images, archives, data files."
+                    "$errorPrefix is an executable file (.$extension). Executable files are blocked for security reasons. Allowed formats: documents, images, archives, data files."
                 );
             }
         }
@@ -1004,7 +1039,7 @@ class FilePropertyHandler
             );
 
             throw new Exception(
-                "$errorPrefix has executable MIME type '{$fileData['mimeType']}'. "."Executable files are blocked for security reasons."
+                "$errorPrefix has executable MIME type '{$fileData['mimeType']}'. Executable files are blocked for security reasons."
             );
         }
     }//end blockExecutableFiles()
@@ -1062,7 +1097,7 @@ class FilePropertyHandler
                 );
 
                 throw new Exception(
-                    "$errorPrefix contains executable code ($description). "."Executable files are blocked for security reasons."
+                    "$errorPrefix contains executable code ($description). Executable files are blocked for security reasons."
                 );
             }
         }//end foreach
@@ -1071,14 +1106,14 @@ class FilePropertyHandler
         $firstLines = substr($content, 0, 1024);
         if (preg_match('/^#!.*\/(sh|bash|zsh|ksh|csh|python|perl|ruby|php|node)/m', $firstLines) === 1) {
             throw new Exception(
-                "$errorPrefix contains script shebang. "."Script files are blocked for security reasons."
+                "$errorPrefix contains script shebang. Script files are blocked for security reasons."
             );
         }
 
         // Check for embedded PHP tags.
         if (preg_match('/<\?php|<\?=|<script\s+language\s*=\s*["\']php/i', $firstLines) === 1) {
             throw new Exception(
-                "$errorPrefix contains PHP code. "."PHP files are blocked for security reasons."
+                "$errorPrefix contains PHP code. PHP files are blocked for security reasons."
             );
         }
     }//end detectExecutableMagicBytes()
@@ -1098,13 +1133,19 @@ class FilePropertyHandler
      * @phpstan-param string $extension
      * @phpstan-param int|null $index
      *
+     * @return string
+     *
      * @psalm-return   string
      * @phpstan-return string
      */
     private function generateFileName(string $propertyName, string $extension, ?int $index=null): string
     {
-        $timestamp   = time();
-        $indexSuffix = $index !== null ? "_$index" : '';
+        $timestamp = time();
+        if ($index !== null) {
+            $indexSuffix = "_$index";
+        } else {
+            $indexSuffix = '';
+        }
 
         return "{$propertyName}{$indexSuffix}_{$timestamp}.{$extension}";
     }//end generateFileName()
@@ -1168,6 +1209,8 @@ class FilePropertyHandler
      * @psalm-param string $mimeType
      *
      * @phpstan-param string $mimeType
+     *
+     * @return string
      *
      * @psalm-return   string
      * @phpstan-return string
@@ -1239,7 +1282,12 @@ class FilePropertyHandler
      *
      * @return string[]
      *
-     * @psalm-return   list{'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'odt', 'ods', 'odp', 'rtf', 'txt', 'csv', 'jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp', 'tiff', 'ico', 'mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv', '3gp', 'mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a', 'wma', 'zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'xz', 'xml', 'json', 'sql', 'exe', 'dmg', 'iso', 'deb', 'rpm'}
+     * @psalm-return   list{'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx',
+     *     'odt', 'ods', 'odp', 'rtf', 'txt', 'csv', 'jpg', 'jpeg', 'png',
+     *     'gif', 'bmp', 'svg', 'webp', 'tiff', 'ico', 'mp4', 'avi', 'mov',
+     *     'wmv', 'flv', 'webm', 'mkv', '3gp', 'mp3', 'wav', 'ogg', 'flac',
+     *     'aac', 'm4a', 'wma', 'zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'xz',
+     *     'xml', 'json', 'sql', 'exe', 'dmg', 'iso', 'deb', 'rpm'}
      * @phpstan-return array<int, string>
      */
     private function getCommonFileExtensions(): array
@@ -1311,7 +1359,13 @@ class FilePropertyHandler
      *
      * @return string[]
      *
-     * @psalm-return   list{'exe', 'bat', 'cmd', 'com', 'msi', 'scr', 'vbs', 'vbe', 'js', 'jse', 'wsf', 'wsh', 'ps1', 'dll', 'sh', 'bash', 'csh', 'ksh', 'zsh', 'run', 'bin', 'app', 'deb', 'rpm', 'php', 'phtml', 'php3', 'php4', 'php5', 'phps', 'phar', 'py', 'pyc', 'pyo', 'pyw', 'pl', 'pm', 'cgi', 'rb', 'rbw', 'jar', 'war', 'ear', 'class', 'appimage', 'snap', 'flatpak', 'dmg', 'pkg', 'command', 'apk', 'elf', 'out', 'o', 'so', 'dylib'}
+     * @psalm-return   list{'exe', 'bat', 'cmd', 'com', 'msi', 'scr', 'vbs',
+     *     'vbe', 'js', 'jse', 'wsf', 'wsh', 'ps1', 'dll', 'sh', 'bash', 'csh',
+     *     'ksh', 'zsh', 'run', 'bin', 'app', 'deb', 'rpm', 'php', 'phtml',
+     *     'php3', 'php4', 'php5', 'phps', 'phar', 'py', 'pyc', 'pyo', 'pyw',
+     *     'pl', 'pm', 'cgi', 'rb', 'rbw', 'jar', 'war', 'ear', 'class',
+     *     'appimage', 'snap', 'flatpak', 'dmg', 'pkg', 'command', 'apk', 'elf',
+     *     'out', 'o', 'so', 'dylib'}
      * @phpstan-return array<int, string>
      */
     private function getDangerousExecutableExtensions(): array
@@ -1388,7 +1442,13 @@ class FilePropertyHandler
      *
      * @return string[]
      *
-     * @psalm-return   list{'application/x-executable', 'application/x-sharedlib', 'application/x-dosexec', 'application/x-msdownload', 'application/x-msdos-program', 'application/x-sh', 'application/x-shellscript', 'application/x-php', 'application/x-httpd-php', 'text/x-php', 'text/x-shellscript', 'text/x-script.python', 'application/x-python-code', 'application/java-archive'}
+     * @psalm-return   list{'application/x-executable',
+     *     'application/x-sharedlib', 'application/x-dosexec',
+     *     'application/x-msdownload', 'application/x-msdos-program',
+     *     'application/x-sh', 'application/x-shellscript',
+     *     'application/x-php', 'application/x-httpd-php', 'text/x-php',
+     *     'text/x-shellscript', 'text/x-script.python',
+     *     'application/x-python-code', 'application/java-archive'}
      * @phpstan-return array<int, string>
      */
     private function getExecutableMimeTypes(): array

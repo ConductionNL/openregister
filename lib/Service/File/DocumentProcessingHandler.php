@@ -8,7 +8,7 @@
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0
+ * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link     https://github.com/ConductionNL/openregister
  */
 
@@ -41,7 +41,7 @@ use Psr\Log\LoggerInterface;
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0
+ * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
  */
@@ -98,6 +98,8 @@ class DocumentProcessingHandler
      * @phpstan-param array<string, string> $replacements
      *
      * @psalm-param array<string, string> $replacements
+     *
+     * @return File
      *
      * @phpstan-return Node
      *
@@ -200,10 +202,11 @@ class DocumentProcessingHandler
         array $replacements,
         string $outputName
     ): File {
-        // Get the file content as a stream and save to a temp file.
         /*
+         * Get the file content as a stream and save to a temp file.
          * @psalm-suppress UndefinedInterfaceMethod - fopen exists on File implementation
          */
+
         $stream   = $node->fopen('r');
         $tempFile = tempnam(sys_get_temp_dir(), 'openregister_word_');
         if ($tempFile === false) {
@@ -347,10 +350,11 @@ class DocumentProcessingHandler
         array $replacements,
         string $outputName
     ): File {
-        // Get file content.
         /*
+         * Get file content.
          * @psalm-suppress UndefinedInterfaceMethod - getContent exists on File implementation
          */
+
         $content = $node->getContent();
         if ($content === false) {
             throw new Exception('Failed to get content from file: '.$node->getPath());

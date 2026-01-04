@@ -95,7 +95,41 @@ class AgentTool extends AbstractTool implements ToolInterface
      *
      * @return (((string|string[])[]|string)[]|string)[][]
      *
-     * @psalm-return list{array{name: 'list_agents', description: 'List all agents accessible to current user. Returns name, type, status with privacy settings respected.', parameters: array{type: 'object', properties: array{limit: array{type: 'integer', description: 'Maximum number of results to return (default: 50)'}, offset: array{type: 'integer', description: 'Number of results to skip for pagination (default: 0)'}}, required: array<never, never>}}, array{name: 'get_agent', description: 'Get detailed agent information by UUID. Returns configuration, system prompt, model settings, and tools.', parameters: array{type: 'object', properties: array{uuid: array{type: 'string', description: 'UUID of the agent to retrieve'}}, required: list{'uuid'}}}, array{name: 'create_agent', description: 'Create a new AI agent. Requires name and system prompt. Configure model, temperature, tools, and privacy.', parameters: array{type: 'object', properties: array{name: array{type: 'string', description: 'Name of the agent (required)'}, description: array{type: 'string', description: 'Description of what the agent does'}, type: array{type: 'string', description: 'Type of agent (e.g., "assistant", "support", "analyzer")'}, systemPrompt: array{type: 'string', description: 'System prompt that defines the agent's behavior and personality'}}, required: list{'name'}}}, array{name: 'update_agent', description: 'Update an existing agent. Only the owner can modify agents. Provide the UUID and fields to update.', parameters: array{type: 'object', properties: array{uuid: array{type: 'string', description: 'UUID of the agent to update'}, name: array{type: 'string', description: 'New name for the agent'}, description: array{type: 'string', description: 'New description'}, systemPrompt: array{type: 'string', description: 'New system prompt'}}, required: list{'uuid'}}}, array{name: 'delete_agent', description: 'Permanently delete agent (owner only). Deletes all associated conversations. Cannot be undone.', parameters: array{type: 'object', properties: array{uuid: array{type: 'string', description: 'UUID of the agent to delete'}}, required: list{'uuid'}}}}
+     * @psalm-return list{array{name: 'list_agents',
+     *     description: 'List all agents accessible to current user. '.
+     *     'Returns name, type, status with privacy settings respected.',
+     *     parameters: array{type: 'object', properties: array{limit: array{type: 'integer',
+     *     description: 'Maximum number of results to return (default: 50)'},
+     *     offset: array{type: 'integer',
+     *     description: 'Number of results to skip for pagination (default: 0)'}},
+     *     required: array<never, never>}},
+     *     array{name: 'get_agent',
+     *     description: 'Get detailed agent information by UUID. '.
+     *     'Returns configuration, system prompt, model settings, and tools.',
+     *     parameters: array{type: 'object', properties: array{uuid: array{type: 'string',
+     *     description: 'UUID of the agent to retrieve'}}, required: list{'uuid'}}},
+     *     array{name: 'create_agent',
+     *     description: 'Create a new AI agent. Requires name and system prompt. '.
+     *     'Configure model, temperature, tools, and privacy.',
+     *     parameters: array{type: 'object', properties: array{name: array{type: 'string',
+     *     description: 'Name of the agent (required)'}, description: array{type: 'string',
+     *     description: 'Description of what the agent does'}, type: array{type: 'string',
+     *     description: 'Type of agent (e.g., "assistant", "support", "analyzer")'},
+     *     systemPrompt: array{type: 'string',
+     *     description: 'System prompt that defines the agent\'s behavior and personality'}},
+     *     required: list{'name'}}}, array{name: 'update_agent',
+     *     description: 'Update an existing agent. Only the owner can modify agents. '.
+     *     'Provide the UUID and fields to update.',
+     *     parameters: array{type: 'object', properties: array{uuid: array{type: 'string',
+     *     description: 'UUID of the agent to update'}, name: array{type: 'string',
+     *     description: 'New name for the agent'}, description: array{type: 'string',
+     *     description: 'New description'}, systemPrompt: array{type: 'string',
+     *     description: 'New system prompt'}}, required: list{'uuid'}}},
+     *     array{name: 'delete_agent',
+     *     description: 'Permanently delete agent (owner only). '.
+     *     'Deletes all associated conversations. Cannot be undone.',
+     *     parameters: array{type: 'object', properties: array{uuid: array{type: 'string',
+     *     description: 'UUID of the agent to delete'}}, required: list{'uuid'}}}>
      */
     public function getFunctions(): array
     {

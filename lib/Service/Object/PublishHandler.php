@@ -270,7 +270,9 @@ class PublishHandler
      *
      * @return (bool|mixed|null)[] Publication status information
      *
-     * @psalm-return array{is_published: bool, publication_date: mixed|null, depublication_date: mixed|null, publication_scheduled: bool, depublication_scheduled: bool}
+     * @psalm-return array{is_published: bool, publication_date: mixed|null,
+     *     depublication_date: mixed|null, publication_scheduled: bool,
+     *     depublication_scheduled: bool}
      */
     public function getPublicationStatus(ObjectEntity $object): array
     {

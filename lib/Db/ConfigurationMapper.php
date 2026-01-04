@@ -471,6 +471,7 @@ class ConfigurationMapper extends QBMapper
      * @param array|null $filters          The filters to apply
      * @param array|null $searchConditions Array of search conditions
      * @param array|null $searchParams     Array of search parameters
+     * @param bool       $_multitenancy    Whether to apply multitenancy filtering
      *
      * @return Configuration[]
      *
@@ -541,6 +542,6 @@ class ConfigurationMapper extends QBMapper
         return;
         // Legacy code - no longer used..
         // $sessionKey = self::SESSION_KEY_PREFIX.$orgUuid;
-        // $this->session->remove($sessionKey);
+        // $this->session->remove($sessionKey);.
     }//end invalidateConfigurationCache()
 }//end class

@@ -111,11 +111,11 @@ class ApplicationMapper extends QBMapper
      * Initializes mapper with database connection and required dependencies
      * for multi-tenancy, RBAC, and event dispatching.
      *
-     * @param IDBConnection       $db                  Database connection for queries
-     * @param OrganisationService $organisationService Organisation service for multi-tenancy
-     * @param IUserSession        $userSession         User session for current user context
-     * @param IGroupManager       $groupManager        Group manager for RBAC checks
-     * @param IEventDispatcher    $eventDispatcher     Event dispatcher for application events
+     * @param IDBConnection      $db                 Database connection for queries
+     * @param OrganisationMapper $organisationMapper Organisation mapper for multi-tenancy
+     * @param IUserSession       $userSession        User session for current user context
+     * @param IGroupManager      $groupManager       Group manager for RBAC checks
+     * @param IEventDispatcher   $eventDispatcher    Event dispatcher for application events
      *
      * @return void
      */

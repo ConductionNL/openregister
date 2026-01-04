@@ -405,15 +405,16 @@ class SearchTrailMapper extends QBMapper
         // Add date formatting based on database type.
         // GetDatabasePlatform() returns a platform instance.
         $platform = $this->db->getDatabasePlatform();
-        
+
         if ($platform->getName() === 'mysql') {
             $qb->addSelect($qb->createFunction("DATE_FORMAT(created, '{$dateFormat}') AS date_period"));
-        } elseif ($platform->getName() === 'postgresql') {
+        } else if ($platform->getName() === 'postgresql') {
             // PostgreSQL uses TO_CHAR for date formatting.
             $postgresFormat = match ($interval) {
                 'hour' => 'YYYY-MM-DD HH24:00:00',
                 'day' => 'YYYY-MM-DD',
-                'week' => 'IYYY-IW',  // ISO week format.
+                'week' => 'IYYY-IW',
+                // ISO week format.
                 'month' => 'YYYY-MM',
                 default => 'YYYY-MM-DD',
             };
@@ -430,7 +431,7 @@ class SearchTrailMapper extends QBMapper
             };
 
             $qb->addSelect($qb->createFunction("strftime('{$sqliteFormat}', created) AS date_period"));
-        }
+        }//end if
 
         // Apply date filters.
         if ($from !== null) {

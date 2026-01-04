@@ -61,8 +61,8 @@ class DocumentBuilder
      *
      * @param SolrBackend         $solrBackend    The backend implementation
      * @param LoggerInterface     $logger         Logger
-     * @param SchemaMapper|null   $schemaMapper   Schema mapper (unused for now)
-     * @param RegisterMapper|null $registerMapper Register mapper (unused for now)
+     * @param SchemaMapper|null   $schemaMapper   Schema mapper
+     * @param RegisterMapper|null $registerMapper Register mapper
      *
      * @return void
      */

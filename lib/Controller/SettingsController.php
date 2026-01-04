@@ -630,8 +630,7 @@ class SettingsController extends Controller
                 // MariaDB/MySQL do not support native vector operations.
                 $vectorSupport     = false;
                 $recommendedPlugin = 'pgvector for PostgreSQL';
-                $performanceNote   = 'Current: Similarity calculated in PHP (slow). '.
-                    'Recommended: Migrate to PostgreSQL + pgvector for 10-100x speedup.';
+                $performanceNote   = 'Current: Similarity calculated in PHP (slow). Recommended: Migrate to PostgreSQL + pgvector for 10-100x speedup.';
             } else if (strpos($platformName, 'postgres') !== false) {
                 $dbType = 'PostgreSQL';
 
@@ -879,6 +878,7 @@ class SettingsController extends Controller
                          *
                          * @psalm-return array{id: int, name: null|string, type: 'NO TYPE'|mixed}
                          */
+
                     function (\OCA\OpenRegister\Db\ObjectEntity $org): array {
                         $objectData = $org->getObject();
                         return [
@@ -907,6 +907,7 @@ class SettingsController extends Controller
                          *
                          * @psalm-return array{id: int, name: null|string, type: 'NO TYPE'|mixed}
                          */
+
                     function (\OCA\OpenRegister\Db\ObjectEntity $org): array {
                         $objectData = $org->getObject();
                         return [
@@ -937,6 +938,7 @@ class SettingsController extends Controller
                          *
                          * @psalm-return array{id: mixed, name: mixed, type: 'NO TYPE'|mixed, object_json: mixed}
                          */
+
                     function (array $row): array {
                         $objectData = json_decode($row['object'], true);
                         return [

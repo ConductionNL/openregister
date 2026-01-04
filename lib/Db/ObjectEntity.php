@@ -856,7 +856,7 @@ class ObjectEntity extends Entity implements JsonSerializable
      */
     public function isLocked(): bool
     {
-        if ($this->locked === null || empty($this->locked)) {
+        if ($this->locked === null || empty($this->locked) === true) {
             return false;
         }
 

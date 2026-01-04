@@ -163,9 +163,13 @@ class FilePublishingHandler
                 try {
                     $this->logger->info(message: "publishFile: Attempting to get file '$filePath' (full path) from object folder");
                     $fileNode = $objectFolder->get($filePath);
-                    $this->logger->info(message: "publishFile: Successfully found file using full path: ".$fileNode->getName()." at ".$fileNode->getPath());
+                    $this->logger->info(
+                        message: "publishFile: Successfully found file using full path: ".$fileNode->getName()." at ".$fileNode->getPath()
+                    );
                 } catch (NotFoundException $e2) {
-                    $this->logger->error(message: "publishFile: File '$fileName' and '$filePath' not found in object folder. NotFoundException: ".$e2->getMessage());
+                    $this->logger->error(
+                        message: "publishFile: File '$fileName' and '$filePath' not found in object folder. NotFoundException: ".$e2->getMessage()
+                    );
                     throw new Exception('File not found.');
                 }
             } catch (Exception $e) {
@@ -195,7 +199,11 @@ class FilePublishingHandler
                 // Read only.
             );
 
-            $this->logger->info(message: "publishFile: Successfully created public share via FileMapper - ID: {$shareInfo['id']}, Token: {$shareInfo['token']}, URL: {$shareInfo['accessUrl']}");
+            $shareId = $shareInfo['id'];
+            $token = $shareInfo['token'];
+            $url = $shareInfo['accessUrl'];
+            $message = "publishFile: Successfully created public share via FileMapper - ID: {$shareId}, Token: {$token}, URL: {$url}";
+            $this->logger->info(message: $message);
         } catch (Exception $e) {
             $this->logger->error(message: "publishFile: Failed to create share via FileMapper: ".$e->getMessage());
             throw new Exception('Failed to create share link: '.$e->getMessage());
@@ -292,7 +300,9 @@ class FilePublishingHandler
                     $file = $objectFolder->get($filePath);
                     $this->logger->info(message: "unpublishFile: Successfully found file using full path: ".$file->getName()." at ".$file->getPath());
                 } catch (NotFoundException $e2) {
-                    $this->logger->error(message: "unpublishFile: File '$fileName' and '$filePath' not found in object folder. NotFoundException: ".$e2->getMessage());
+                    $this->logger->error(
+                        message: "unpublishFile: File '$fileName' and '$filePath' not found in object folder. NotFoundException: ".$e2->getMessage()
+                    );
                     throw new Exception('File not found.');
                 }
             } catch (Exception $e) {
@@ -316,7 +326,10 @@ class FilePublishingHandler
         try {
             $deletionInfo = $this->fileMapper->depublishFile($file->getId());
 
-            $this->logger->info(message: "unpublishFile: Successfully removed public shares via FileMapper - Deleted shares: {$deletionInfo['deleted_shares']}, File ID: {$deletionInfo['file_id']}");
+            $deletedShares = $deletionInfo['deleted_shares'];
+            $fileId = $deletionInfo['file_id'];
+            $message = "unpublishFile: Successfully removed public shares via FileMapper - Deleted shares: {$deletedShares}, File ID: {$fileId}";
+            $this->logger->info(message: $message);
 
             if ($deletionInfo['deleted_shares'] === 0) {
                 $this->logger->info(message: "unpublishFile: No public shares were found to delete for file: ".$file->getName());
@@ -460,6 +473,8 @@ class FilePublishingHandler
      * Get a human-readable error message for ZipArchive error codes.
      *
      * @param int $errorCode The ZipArchive error code.
+     *
+     * @return string
      *
      * @psalm-return   string
      * @phpstan-return string

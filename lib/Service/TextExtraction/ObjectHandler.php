@@ -220,7 +220,9 @@ class ObjectHandler implements TextExtractionHandlerInterface
      *
      * @throws DoesNotExistException If object not found.
      *
-     * @psalm-return array{id: int, uuid: null|string, schema: null|string, register: null|string, version: null|string, organization: mixed, owner: null|string, updated: \DateTime|null}
+     * @psalm-return array{id: int, uuid: null|string, schema: null|string,
+     *     register: null|string, version: null|string, organization: mixed,
+     *     owner: null|string, updated: \DateTime|null}
      */
     public function getSourceMetadata(int $sourceId): array
     {

@@ -1,8 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * OpenRegister ObjectService
  *
  * Service class for managing objects in the OpenRegister application.
@@ -21,6 +19,8 @@ declare(strict_types=1);
  *
  * @link https://www.OpenRegister.app
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
@@ -424,6 +424,15 @@ class ObjectService
                     $schema = $this->schemaMapper->find(id: $schema, published: null, _rbac: false, _multitenancy: false);
                 }
             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+                // Debug logging to understand WHY schema lookup fails.
+                $this->logger->error(
+                    '[ObjectService] Schema not found during setSchema()',
+                    [
+                        'schema_identifier' => $schema,
+                        'error'             => $e->getMessage(),
+                        'trace'             => $e->getTraceAsString(),
+                    ]
+                );
                 throw new ValidationException('Schema not found');
             }//end try
         }//end if
@@ -508,8 +517,8 @@ class ObjectService
             _multitenancy: $_multitenancy
         );
 
-        // If the object is not found, return null.
         /*
+         * If the object is not found, return null.
          * Suppress type check - GetObject::find() may return null
          *
          * @psalm-suppress TypeDoesNotContainNull - GetObject::find() may return null
@@ -786,15 +795,17 @@ class ObjectService
                             _rbac: $_rbac,
                             _multitenancy: $_multitenancy
                         );
+
                         /*
                          * Type annotation for resolve callback
                          *
                          * @var callable(mixed): void $resolve
                          */
+
                         $resolve($renderedObject);
                     } catch (\Throwable $e) {
                         $reject($e);
-                    }
+                    }//end try
                 }
             );
         }//end foreach
@@ -1827,13 +1838,14 @@ class ObjectService
             _deleted: $deleted
         );
 
-        // Use React's await functionality to get the result synchronously.
-        // Note: The async version already logs the search trail, so we don't need to log again.
         /*
+         * Use React's await functionality to get the result synchronously.
+         * Note: The async version already logs the search trail, so we don't need to log again.
          * Suppress undefined function check - React\Async\await is from external library
          *
          * @psalm-suppress UndefinedFunction - React\Async\await is from external library
          */
+
         return \React\Async\await($promise);
     }//end searchObjectsPaginatedSync()
 
@@ -1875,7 +1887,7 @@ class ObjectService
      * Renders the rendered object.
      *
      * @param ObjectEntity $entity        The entity to be rendered
-     * @param array|null   $extend        Optional array to extend the entity
+     * @param array|null   $_extend       Optional array to extend the entity
      * @param int|null     $depth         Optional depth for rendering
      * @param array|null   $filter        Optional filters to apply
      * @param array|null   $fields        Optional fields to include
@@ -1920,7 +1932,10 @@ class ObjectService
      *
      * @deprecated
      *
-     * @psalm-return \OCP\AppFramework\Http\JSONResponse<400, array{status: 'error', message: 'Validation failed', errors: list{0?: array<array|mixed|null|string>|string,...}}, array<never, never>>
+     * @psalm-return \OCP\AppFramework\Http\JSONResponse<400,
+     *     array{status: 'error', message: 'Validation failed',
+     *     errors: list{0?: array<array|mixed|null|string>|string,...}>,
+     *     array<never, never>>
      */
     public function handleValidationException(ValidationException|CustomValidationException $exception): \OCP\AppFramework\Http\JSONResponse
     {
@@ -2118,32 +2133,6 @@ class ObjectService
      */
 
     /**
-     * Merge two objects within the same register and schema
-     *
-     * This method merges a source object into a target object, handling properties,
-     * files, and relations according to the specified actions. The source object
-     * is deleted after successful merge.
-     *
-     * @param string     $sourceObjectId The ID/UUID of the source object (object A)
-     * @param array      $mergeData      Merge request data containing:
-     *                                   - target: Target object ID
-     *                                   (object to merge into) -
-     *                                   object: Merged object data
-     *                                   (without id) - fileAction:
-     *                                   File action ('transfer' or
-     *                                   'delete') - relationAction:
-     *                                   Relation action ('transfer' or
-     *                                   'drop')
-     *
-     * @return (array|mixed|true)[]
-     *
-     * @throws \OCP\AppFramework\Db\DoesNotExistException If either object doesn't exist
-     * @throws \InvalidArgumentException If objects are not in the same register/schema or required data is missing
-     * @throws \Exception If there's an error during the merge process
-     *
-
-
-    /**
      * Migrate objects between registers and/or schemas
      *
      * This method migrates multiple objects from one register/schema combination
@@ -2154,22 +2143,21 @@ class ObjectService
      * @param string|int $targetRegister The target register ID or slug
      * @param string|int $targetSchema   The target schema ID or slug
      * @param array      $objectIds      Array of object IDs to migrate
-     * @param array      $mapping        Simple mapping where keys are target properties, values are source properties
+     * @param array      $mapping        Mapping where keys are target properties, values are source properties
      *
-     * @psalm-param   string|int $sourceRegister
-     * @psalm-param   string|int $sourceSchema
-     * @psalm-param   string|int $targetRegister
-     * @psalm-param   string|int $targetSchema
-     * @psalm-param   array $objectIds
-     * @psalm-param   array $mapping
-     * @phpstan-param string|int $sourceRegister
-     * @phpstan-param string|int $sourceSchema
-     * @phpstan-param string|int $targetRegister
-     * @phpstan-param string|int $targetSchema
-     * @phpstan-param array $objectIds
-     * @phpstan-param array $mapping
+     * @return array Migration results with statistics and details
      *
-     * @psalm-return   array{
+     * @throws \OCP\AppFramework\Db\DoesNotExistException If register or schema not found
+     * @throws \InvalidArgumentException If invalid parameters provided
+     *
+     * @psalm-param string|int $sourceRegister
+     * @psalm-param string|int $sourceSchema
+     * @psalm-param string|int $targetRegister
+     * @psalm-param string|int $targetSchema
+     * @psalm-param array $objectIds
+     * @psalm-param array $mapping
+     *
+     * @psalm-return array{
      *     success: bool,
      *     statistics: array{
      *         objectsMigrated: 0|1|2,
@@ -2190,12 +2178,15 @@ class ObjectService
      *     warnings: list<'Some objects failed to migrate. Check details for specific errors.'>,
      *     errors: list{0?: string,...}
      * }
+     *
+     * @phpstan-param string|int $sourceRegister
+     * @phpstan-param string|int $sourceSchema
+     * @phpstan-param string|int $targetRegister
+     * @phpstan-param string|int $targetSchema
+     * @phpstan-param array $objectIds
+     * @phpstan-param array $mapping
+     *
      * @phpstan-return array<string, mixed>
-     *
-     * @return (((bool|mixed|null|string)[]|int|string)[]|bool)[]
-     *
-     * @throws \OCP\AppFramework\Db\DoesNotExistException If register or schema not found
-     * @throws \InvalidArgumentException If invalid parameters provided
      */
     public function migrateObjects(
         string|int $sourceRegister,
@@ -2238,10 +2229,13 @@ class ObjectService
     public function deleteObjects(array $uuids=[], bool $_rbac=true, bool $_multitenancy=true): array
     {
         // ARCHITECTURAL DELEGATION: Delegate to BulkOperationsHandler for all bulk delete logic.
+        // Pass register and schema context for magic mapper support.
         return $this->bulkOperationsHandler->deleteObjects(
             uuids: $uuids,
             _rbac: $_rbac,
-            _multitenancy: $_multitenancy
+            _multitenancy: $_multitenancy,
+            register: $this->currentRegister,
+            schema: $this->currentSchema
         );
     }//end deleteObjects()
 
@@ -2268,11 +2262,14 @@ class ObjectService
     public function publishObjects(array $uuids=[], \DateTime|bool $datetime=true, bool $_rbac=true, bool $_multitenancy=true): array
     {
         // ARCHITECTURAL DELEGATION: Delegate to BulkOperationsHandler for all bulk publish logic.
+        // Pass register and schema context for magic mapper support.
         return $this->bulkOperationsHandler->publishObjects(
             uuids: $uuids,
             datetime: $datetime,
             _rbac: $_rbac,
-            _multitenancy: $_multitenancy
+            _multitenancy: $_multitenancy,
+            register: $this->currentRegister,
+            schema: $this->currentSchema
         );
     }//end publishObjects()
 
@@ -2299,11 +2296,14 @@ class ObjectService
     public function depublishObjects(array $uuids=[], \DateTime|bool $datetime=true, bool $_rbac=true, bool $_multitenancy=true): array
     {
         // ARCHITECTURAL DELEGATION: Delegate to BulkOperationsHandler for all bulk depublish logic.
+        // Pass register and schema context for magic mapper support.
         return $this->bulkOperationsHandler->depublishObjects(
             uuids: $uuids,
             datetime: $datetime,
             _rbac: $_rbac,
-            _multitenancy: $_multitenancy
+            _multitenancy: $_multitenancy,
+            register: $this->currentRegister,
+            schema: $this->currentSchema
         );
     }//end depublishObjects()
 
@@ -2381,38 +2381,8 @@ class ObjectService
         return $this->bulkOperationsHandler->deleteObjectsByRegister($registerId);
     }//end deleteObjectsByRegister()
 
-    /**
-     * Validate all objects belonging to a specific schema
-     *
-     * This method validates all objects that belong to the specified schema against their schema definition.
-     * It returns detailed validation results including valid and invalid objects with error details.
-     *
-     * @param int    $schemaId The ID of the schema whose objects should be validated
-     *
-     * @return ((array|int|null|string)[][]|int)[]
-     *
-     * @throws \Exception If the validation operation fails
-     *
-     * @phpstan-return array{valid_count: int, invalid_count: int, valid_objects: array<int, array>,
-     *                      invalid_objects: array<int, array>, schema_id: int}
-
-
-
     // **REMOVED**: clearResponseCache method removed since SOLR is now our index.
-
-
     // **REMOVED**: generateCacheKey method removed since SOLR is now our index.
-
-
-
-
-    /**
-     * Get cached entities (schemas or registers) with automatic database fallback
-     *
-     * **PERFORMANCE OPTIMIZATION**: Cache frequently accessed schemas and registers
-     * to avoid repeated database queries. Entities are cached with 15-minute TTL
-
-
     // =========================================================================
     // NEW HANDLER DELEGATION METHODS
     // =========================================================================
@@ -2421,7 +2391,7 @@ class ObjectService
      * Get object contracts
      *
      * @param string $objectId Object ID or UUID
-     * @param array  $filters  Optional filters for pagination
+     * @param array  $filters  Filters for pagination
      *
      * @return array Contracts data
      */
@@ -2477,7 +2447,7 @@ class ObjectService
     public function vectorizeBatchObjects(?array $views=null, int $batchSize=25)
     {
         // TODO: TEMPORARILY DISABLED due to circular dependency with VectorizationService.
-        // Requires architectural refactoring to fix. See DEBUGGING_REGISTER_CREATION_TIMEOUT.md
+        // Requires architectural refactoring to fix. See DEBUGGING_REGISTER_CREATION_TIMEOUT.md.
         throw new Exception('Vectorization temporarily disabled due to circular dependency issues');
     }//end vectorizeBatchObjects()
 
@@ -2589,7 +2559,7 @@ class ObjectService
     ): ObjectEntity {
         // REFACTORED: Removed CrudHandler (was unimplemented stub). Use saveObject() with ID.
         // Get existing object and merge with new data (currently unused but kept for reference).
-        // $existing = $this->objectEntityMapper->find((int) $objectId);
+        // $existing = $this->objectEntityMapper->find((int) $objectId);.
         $data['id'] = $objectId;
         return $this->saveObject(object: $data);
     }//end updateObject()
@@ -2659,7 +2629,7 @@ class ObjectService
         ?\OCP\IUser $currentUser=null
     ) {
         // TODO: TEMPORARILY DISABLED due to circular dependency with ExportService.
-        // Requires architectural refactoring to fix. See DEBUGGING_REGISTER_CREATION_TIMEOUT.md
+        // Requires architectural refactoring to fix. See DEBUGGING_REGISTER_CREATION_TIMEOUT.md.
         throw new Exception('Export temporarily disabled due to circular dependency issues');
     }//end exportObjects()
 
@@ -2692,7 +2662,7 @@ class ObjectService
         ?\OCP\IUser $currentUser=null
     ) {
         // TODO: TEMPORARILY DISABLED due to circular dependency with ImportService.
-        // Requires architectural refactoring to fix. See DEBUGGING_REGISTER_CREATION_TIMEOUT.md
+        // Requires architectural refactoring to fix. See DEBUGGING_REGISTER_CREATION_TIMEOUT.md.
         throw new Exception('Import temporarily disabled due to circular dependency issues');
     }//end importObjects()
 

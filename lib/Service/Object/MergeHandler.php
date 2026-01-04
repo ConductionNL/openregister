@@ -80,7 +80,20 @@ class MergeHandler
      *
      * @phpstan-param array<string, mixed> $mergeData
      *
-     * @psalm-return   array{success: true, sourceObject: array{'@self': array{name: mixed|null|string,...},...}, targetObject: array{'@self': array{name: mixed|null|string,...},...}, mergedObject: array{'@self': array{name: mixed|null|string,...},...}, actions: array{properties: list<array{newValue: mixed, oldValue: mixed|null, property: mixed}>, files: list<array<string, mixed>>, relations: array{action: 'dropped'|'transferred', relations: array|null}, references: list<array{objectId: null|string, title: mixed|null|string}>}, statistics: array{propertiesChanged: 0|1|2, filesTransferred: int, filesDeleted: int, relationsTransferred: 0|1|2, relationsDropped: int<0, max>, referencesUpdated: int}, warnings: list<string>, errors: array<never, never>}
+     * @psalm-return   array{success: true,
+     *     sourceObject: array{'@self': array{name: mixed|null|string,...},...},
+     *     targetObject: array{'@self': array{name: mixed|null|string,...},...},
+     *     mergedObject: array{'@self': array{name: mixed|null|string,...},...},
+     *     actions: array{properties: list<array{newValue: mixed,
+     *     oldValue: mixed|null, property: mixed}>,
+     *     files: list<array<string, mixed>>,
+     *     relations: array{action: 'dropped'|'transferred', relations: array|null},
+     *     references: list<array{objectId: null|string,
+     *     title: mixed|null|string}>},
+     *     statistics: array{propertiesChanged: 0|1|2, filesTransferred: int,
+     *     filesDeleted: int, relationsTransferred: 0|1|2,
+     *     relationsDropped: int<0, max>, referencesUpdated: int},
+     *     warnings: list<string>, errors: array<never, never>}
      * @phpstan-return array<string, mixed>
      */
     public function mergeObjects(string $sourceObjectId, array $mergeData): array
@@ -296,8 +309,11 @@ class MergeHandler
      *
      * @return (((bool|string)[]|string)[]|int)[]
      *
-     * @psalm-return   array{files: list<array{action: 'transfer_failed'|'transferred', error?: string, name: string, success: bool}>, transferred: 0|1|2, errors: list<non-falsy-string>}
-     * @phpstan-return array{files: list<array<string, mixed>>, transferred: int, errors: list<string>}
+     * @psalm-return   array{files: list<array{action: 'transfer_failed'|'transferred',
+     *     error?: string, name: string, success: bool}>,
+     *     transferred: 0|1|2, errors: list<non-falsy-string>}
+     * @phpstan-return array{files: list<array<string, mixed>>, transferred: int,
+     *     errors: list<string>}
      */
     private function transferObjectFiles(ObjectEntity $sourceObject, ObjectEntity $targetObject): array
     {
@@ -364,8 +380,11 @@ class MergeHandler
      *
      * @return (((bool|string)[]|string)[]|int)[]
      *
-     * @psalm-return   array{files: list<array{action: 'delete_failed'|'deleted', error?: string, name: string, success: bool}>, deleted: 0|1|2, errors: list<non-falsy-string>}
-     * @phpstan-return array{files: list<array<string, mixed>>, deleted: int, errors: list<string>}
+     * @psalm-return   array{files: list<array{action: 'delete_failed'|'deleted',
+     *     error?: string, name: string, success: bool}>,
+     *     deleted: 0|1|2, errors: list<non-falsy-string>}
+     * @phpstan-return array{files: list<array<string, mixed>>, deleted: int,
+     *     errors: list<string>}
      */
     private function deleteObjectFiles(ObjectEntity $sourceObject): array
     {

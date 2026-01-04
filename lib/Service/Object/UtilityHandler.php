@@ -152,6 +152,8 @@ class UtilityHandler
      *
      * @phpstan-param array<string, mixed> $lookupMap
      *
+     * @return string
+     *
      * @psalm-return   string
      * @phpstan-return string
      */

@@ -115,7 +115,11 @@ class VectorizationService
      *
      * @throws \Exception If strategy not found or vectorization fails
      *
-     * @psalm-return array{success: true, message: string, entity_type: string, total_entities: int<0, max>, total_items: int<0, max>, vectorized: int<0, max>, failed: int<0, max>, errors?: list<array{entity_id: int|string, error: string, item_index?: array-key}>}
+     * @psalm-return array{success: true, message: string, entity_type: string,
+     *     total_entities: int<0, max>, total_items: int<0, max>,
+     *     vectorized: int<0, max>, failed: int<0, max>,
+     *     errors?: list<array{entity_id: int|string, error: string,
+     *     item_index?: array-key}>}
      */
     public function vectorizeBatch(string $entityType, array $options=[]): array
     {
@@ -480,7 +484,10 @@ class VectorizationService
      *
      * @return ((float[]|int|mixed|string)[]|bool|string)[] Test results
      *
-     * @psalm-return array{success: bool, error?: string, message: string, data?: array{provider: string, model: 'unknown'|mixed, vectorLength: int<0, max>, sampleValues: array<float>, testText: string}}
+     * @psalm-return array{success: bool, error?: string, message: string,
+     *     data?: array{provider: string, model: 'unknown'|mixed,
+     *     vectorLength: int<0, max>, sampleValues: array<float>,
+     *     testText: string}}
      */
     public function testEmbedding(string $provider, array $config, string $testText='Test.'): array
     {
@@ -494,7 +501,10 @@ class VectorizationService
      *
      * @return (array|bool|int|mixed|string)[] Model mismatch information
      *
-     * @psalm-return array{has_vectors: bool, mismatch: bool, error?: string, message?: string, current_model?: mixed, existing_models?: list{0?: mixed,...}, total_vectors?: int, null_model_count?: int, mismatched_models?: list<mixed>}
+     * @psalm-return array{has_vectors: bool, mismatch: bool, error?: string,
+     *     message?: string, current_model?: mixed,
+     *     existing_models?: list{0?: mixed,...}, total_vectors?: int,
+     *     null_model_count?: int, mismatched_models?: list<mixed>}
      */
     public function checkEmbeddingModelMismatch(): array
     {

@@ -87,7 +87,12 @@ class RelationCascadeHandler
         $cleanReference = $this->removeQueryParameters($reference);
 
         // First, try direct ID lookup (numeric ID or UUID).
-        if (is_numeric($cleanReference) === true || preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $cleanReference) === true) {
+        if (is_numeric($cleanReference) === true
+            || preg_match(
+                '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i',
+                $cleanReference
+            ) === true
+        ) {
             try {
                 $schema = $this->schemaMapper->find(id: $cleanReference);
                 return (string) $schema->getId();
@@ -160,7 +165,12 @@ class RelationCascadeHandler
         $cleanReference = $this->removeQueryParameters($reference);
 
         // First, try direct ID lookup (numeric ID or UUID).
-        if (is_numeric($cleanReference) === true || preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $cleanReference) === true) {
+        if (is_numeric($cleanReference) === true
+            || preg_match(
+                '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i',
+                $cleanReference
+            ) === true
+        ) {
             try {
                 $register = $this->registerMapper->find(id: $cleanReference);
                 return (string) $register->getId();
@@ -208,7 +218,11 @@ class RelationCascadeHandler
         $relations = [];
 
         foreach ($data as $key => $value) {
-            $currentPath = $prefix !== '' ? "{$prefix}.{$key}" : $key;
+            if ($prefix !== '') {
+                $currentPath = "{$prefix}.{$key}";
+            } else {
+                $currentPath = $key;
+            }
 
             // Skip if this is a special metadata field.
             if ($key === '_self' || $key === '_schema' || $key === '_register') {

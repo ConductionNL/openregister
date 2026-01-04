@@ -115,7 +115,10 @@ class Version1Date20250904170000 extends SimpleMigrationStep
 
         // Add composite indexes based on common relationship query patterns.
         if ($tableName === 'openregister_object_relations') {
-            if ($table->hasIndex('idx_source_target') === false && $table->hasColumn('source_id') === true && $table->hasColumn('target_id') === true) {
+            if ($table->hasIndex('idx_source_target') === false
+                && $table->hasColumn('source_id') === true
+                && $table->hasColumn('target_id') === true
+            ) {
                 try {
                     $table->addIndex(['source_id', 'target_id'], 'idx_source_target');
                     $output->info(message: "✅ Optimized {$tableName} with source+target index");
@@ -138,7 +141,10 @@ class Version1Date20250904170000 extends SimpleMigrationStep
         }
 
         if ($tableName === 'openregister_register_schemas') {
-            if ($table->hasIndex('idx_register_schema') === false && $table->hasColumn('register_id') === true && $table->hasColumn('schema_id') === true) {
+            if ($table->hasIndex('idx_register_schema') === false
+                && $table->hasColumn('register_id') === true
+                && $table->hasColumn('schema_id') === true
+            ) {
                 try {
                     $table->addIndex(['register_id', 'schema_id'], 'idx_register_schema');
                     $output->info(message: "✅ Optimized {$tableName} with register+schema index");

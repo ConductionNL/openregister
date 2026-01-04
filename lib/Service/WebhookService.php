@@ -406,7 +406,13 @@ class WebhookService
      *
      * @return array Formatted webhook payload
      *
-     * @psalm-return array{event: string, webhook: array{id: string, name: string}, data: array, timestamp: string, attempt: int}|array{specversion: '1.0', type: string, source: string, id: string, time: string, datacontenttype: 'application/json', subject: null|string, dataschema: null, data: array, openregister: array{app: 'openregister', version: string}}
+     * @psalm-return array{event: string,
+     *     webhook: array{id: string, name: string}, data: array,
+     *     timestamp: string, attempt: int}|array{specversion: '1.0',
+     *     type: string, source: string, id: string, time: string,
+     *     datacontenttype: 'application/json', subject: null|string,
+     *     dataschema: null, data: array,
+     *     openregister: array{app: 'openregister', version: string}}
      */
     private function buildPayload(Webhook $webhook, string $eventName, array $payload, int $attempt): array
     {

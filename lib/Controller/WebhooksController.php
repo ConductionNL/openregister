@@ -812,8 +812,7 @@ class WebhooksController extends Controller
                 'properties'  => ['newSchema', 'oldSchema'],
             ],
             [
-                'class'       => 'OCA\OpenRegister\Event'.
-                    '\SchemaDeletedEvent',
+                'class'       => 'OCA\OpenRegister\Event\SchemaDeletedEvent',
                 'name'        => 'Schema Deleted',
                 'description' => 'Triggered after a schema is deleted',
                 'category'    => 'Schema',
@@ -1144,7 +1143,10 @@ class WebhooksController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|500, array{error?: string, results?: array<\OCA\OpenRegister\Db\WebhookLog>, total?: int<0, max>}, array<never, never>>
+     * @psalm-return JSONResponse<200|500,
+     *     array{error?: string,
+     *     results?: array<\OCA\OpenRegister\Db\WebhookLog>,
+     *     total?: int<0, max>}, array<never, never>>
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]

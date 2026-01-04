@@ -506,7 +506,8 @@ class MetaDataFacetHandler
                     $queryBuilder->expr()->in(
                         $field,
                         $queryBuilder->createNamedParameter(
-                            $value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY
+                            $value,
+                                \Doctrine\DBAL\Connection::PARAM_STR_ARRAY
                         )
                     )
                 );
@@ -730,9 +731,7 @@ class MetaDataFacetHandler
         $conditions->add(
             $queryBuilder->expr()->eq(
                 $queryBuilder->createFunction(
-                    "JSON_CONTAINS(JSON_EXTRACT(object, ".
-                    $queryBuilder->createNamedParameter($jsonPath)."), ".
-                    $queryBuilder->createNamedParameter(
+                    "JSON_CONTAINS(JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath)."), ".$queryBuilder->createNamedParameter(
                         json_encode($value)
                     ).")"
                 ),

@@ -89,11 +89,12 @@ class SourceMapper extends QBMapper
     /**
      * Constructor
      *
-     * @param IDBConnection       $db                  Database connection
-     * @param OrganisationService $organisationService Organisation service
-     * @param IUserSession        $userSession         User session
-     * @param IGroupManager       $groupManager        Group manager
-     * @param IEventDispatcher    $eventDispatcher     Event dispatcher
+     * @param IDBConnection    $db                 Database connection
+     * @param OrganisationMapper $organisationMapper Organisation mapper
+     * @param IUserSession     $userSession        User session
+     * @param IGroupManager    $groupManager       Group manager
+     * @param IEventDispatcher $eventDispatcher    Event dispatcher
+     * @param IAppConfig       $appConfig          App configuration
      */
     public function __construct(
         IDBConnection $db,

@@ -173,10 +173,11 @@ class FilesController extends Controller
         // Set the schema and register to the object service (forces a check if they are valid).
         $this->objectService->setSchema($schema);
         $this->objectService->setRegister($register);
-        $this->objectService->setObject($id);
-        $object = $this->objectService->getObject();
 
         try {
+            $this->objectService->setObject($id);
+            $object = $this->objectService->getObject();
+
             $file = $this->fileService->getFile(object: $object, file: $fileId);
 
             if ($file === null) {
@@ -187,6 +188,8 @@ class FilesController extends Controller
             }
 
             return new JSONResponse(data: $this->fileService->formatFile($file));
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
         }//end try
@@ -215,22 +218,26 @@ class FilesController extends Controller
         // Set the schema and register to the object service (forces a check if the are valid).
         $this->objectService->setSchema($schema);
         $this->objectService->setRegister($register);
-        $this->objectService->setObject($id);
-        $object = $this->objectService->getObject();
-
-        if ($object === null) {
-            return new JSONResponse(
-                data: ['error' => 'Object not found'],
-                statusCode: 404
-            );
-        }
 
         try {
+            $this->objectService->setObject($id);
+            $object = $this->objectService->getObject();
+
+            if ($object === null) {
+                return new JSONResponse(
+                    data: ['error' => 'Object not found'],
+                    statusCode: 404
+                );
+            }
+
             $data = $this->request->getParams();
 
-            if (empty($data['name']) === true) {
+            // Support both 'name' and 'filename' for compatibility.
+            $fileName = $data['name'] ?? $data['filename'] ?? null;
+
+            if (empty($fileName) === true) {
                 return new JSONResponse(
-                    data: ['error' => 'File name is required'],
+                    data: ['error' => 'File name is required (use "name" or "filename")'],
                     statusCode: 400
                 );
             }
@@ -247,12 +254,14 @@ class FilesController extends Controller
 
             $result = $this->fileService->addFile(
                 objectEntity: $object,
-                fileName: $data['name'],
+                fileName: $fileName,
                 content: (string) $data['content'],
                 share: $share,
                 tags: $tags
             );
             return new JSONResponse(data: $this->fileService->formatFile($result));
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
         }//end try
@@ -285,17 +294,18 @@ class FilesController extends Controller
         // Set the schema and register to the object service (forces a check if the are valid).
         $this->objectService->setSchema($schema);
         $this->objectService->setRegister($register);
-        $this->objectService->setObject($id);
-        $object = $this->objectService->getObject();
-
-        if ($object === null) {
-            return new JSONResponse(
-                data: ['error' => 'Object not found'],
-                statusCode: 404
-            );
-        }
 
         try {
+            $this->objectService->setObject($id);
+            $object = $this->objectService->getObject();
+
+            if ($object === null) {
+                return new JSONResponse(
+                    data: ['error' => 'Object not found'],
+                    statusCode: 404
+                );
+            }
+
             $data = $this->request->getParams();
 
             // Validate required parameters.
@@ -316,9 +326,17 @@ class FilesController extends Controller
                 );
             }
 
-            // Extract parameters with defaults.
-            $fileName = (string) $data['name'];
-            $content  = (string) $data['content'];
+            // Extract parameters with defaults. Support both 'name' and 'filename' for compatibility.
+            $fileName = $data['name'] ?? $data['filename'] ?? null;
+
+            if (empty($fileName) === true) {
+                return new JSONResponse(
+                    data: ['error' => 'File name is required (use "name" or "filename")'],
+                    statusCode: 400
+                );
+            }
+
+            $content = (string) $data['content'];
 
             $share = false;
             if (isset($data['share']) === true && $data['share'] === true) {
@@ -342,6 +360,8 @@ class FilesController extends Controller
             );
 
             return new JSONResponse(data: $this->fileService->formatFile($result));
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
         }//end try
@@ -541,16 +561,43 @@ class FilesController extends Controller
             }
 
             // Extract file arrays safely.
-            $typeArray    = is_array($files['type'] ?? null) === true ? $files['type'] : [];
-            $tmpNameArray = is_array($files['tmp_name'] ?? null) === true ? $files['tmp_name'] : [];
+            if (is_array($files['type'] ?? null) === true) {
+                $typeArray = $files['type'];
+            } else {
+                $typeArray = [];
+            }
 
-            $errorValue  = $files['error'] ?? null;
-            $errorArray  = is_array($errorValue) === true ? $errorValue : [];
-            $errorScalar = is_int($errorValue) === true ? $errorValue : null;
+            if (is_array($files['tmp_name'] ?? null) === true) {
+                $tmpNameArray = $files['tmp_name'];
+            } else {
+                $tmpNameArray = [];
+            }
 
-            $sizeValue  = $files['size'] ?? null;
-            $sizeArray  = is_array($sizeValue) === true ? $sizeValue : [];
-            $sizeScalar = is_int($sizeValue) === true ? $sizeValue : null;
+            $errorValue = $files['error'] ?? null;
+            if (is_array($errorValue) === true) {
+                $errorArray = $errorValue;
+            } else {
+                $errorArray = [];
+            }
+
+            if (is_int($errorValue) === true) {
+                $errorScalar = $errorValue;
+            } else {
+                $errorScalar = null;
+            }
+
+            $sizeValue = $files['size'] ?? null;
+            if (is_array($sizeValue) === true) {
+                $sizeArray = $sizeValue;
+            } else {
+                $sizeArray = [];
+            }
+
+            if (is_int($sizeValue) === true) {
+                $sizeScalar = $sizeValue;
+            } else {
+                $sizeScalar = null;
+            }
 
             $uploadedFiles[] = [
                 'name'     => $fileNames[$i] ?? '',
@@ -661,9 +708,10 @@ class FilesController extends Controller
         // Set the schema and register to the object service (forces a check if the are valid).
         $this->objectService->setSchema($schema);
         $this->objectService->setRegister($register);
-        $this->objectService->setObject($id);
 
         try {
+            $this->objectService->setObject($id);
+
             $data = $this->request->getParams();
 
             // Ensure tags is set to empty array if not provided.
@@ -680,6 +728,8 @@ class FilesController extends Controller
             );
 
             return new JSONResponse(data: $this->fileService->formatFile($result));
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
         }//end try
@@ -710,15 +760,18 @@ class FilesController extends Controller
         // Set the schema and register to the object service (forces a check if the are valid).
         $this->objectService->setSchema($schema);
         $this->objectService->setRegister($register);
-        $this->objectService->setObject($id);
 
         try {
+            $this->objectService->setObject($id);
+
             $result = $this->fileService->deleteFile(
                 file: $fileId,
                 object: $this->objectService->getObject()
             );
 
             return new JSONResponse(data: ['success' => $result]);
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
         } catch (Exception $e) {
             return new JSONResponse(
                 data: ['error' => $e->getMessage()],
@@ -752,23 +805,26 @@ class FilesController extends Controller
         // Set the schema and register to the object service (forces a check if the are valid).
         $this->objectService->setSchema($schema);
         $this->objectService->setRegister($register);
-        $this->objectService->setObject($id);
-        $object = $this->objectService->getObject();
-
-        if ($object === null) {
-            return new JSONResponse(
-                data: ['error' => 'Object not found'],
-                statusCode: 404
-            );
-        }
 
         try {
+            $this->objectService->setObject($id);
+            $object = $this->objectService->getObject();
+
+            if ($object === null) {
+                return new JSONResponse(
+                    data: ['error' => 'Object not found'],
+                    statusCode: 404
+                );
+            }
+
             $result = $this->fileService->publishFile(
                 object: $object,
                 file: $fileId
             );
 
             return new JSONResponse(data: $this->fileService->formatFile($result));
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
         }//end try
@@ -799,23 +855,26 @@ class FilesController extends Controller
         // Set the schema and register to the object service (forces a check if the are valid).
         $this->objectService->setSchema($schema);
         $this->objectService->setRegister($register);
-        $this->objectService->setObject($id);
-        $object = $this->objectService->getObject();
-
-        if ($object === null) {
-            return new JSONResponse(
-                data: ['error' => 'Object not found'],
-                statusCode: 404
-            );
-        }
 
         try {
+            $this->objectService->setObject($id);
+            $object = $this->objectService->getObject();
+
+            if ($object === null) {
+                return new JSONResponse(
+                    data: ['error' => 'Object not found'],
+                    statusCode: 404
+                );
+            }
+
             $result = $this->fileService->unpublishFile(
                 object: $object,
                 filePath: $fileId
             );
 
             return new JSONResponse(data: $this->fileService->formatFile($result));
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
         }//end try

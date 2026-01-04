@@ -487,6 +487,7 @@ class AuditTrailMapper extends QBMapper
                  *
                  * @psalm-suppress UnusedMethodCall
                  */
+
                 $property->setAccessible(true);
                 $property->setValue($object, $change['old']);
             }

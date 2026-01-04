@@ -157,7 +157,18 @@ class LlmSettingsHandler
      *
      * @throws \RuntimeException If LLM settings update fails.
      *
-     * @psalm-return array{enabled: false|mixed, embeddingProvider: mixed|null, chatProvider: mixed|null, openaiConfig: array{apiKey: ''|mixed, model: mixed|null, chatModel: mixed|null, organizationId: ''|mixed}, ollamaConfig: array{url: 'http://localhost:11434'|mixed, model: mixed|null, chatModel: mixed|null}, fireworksConfig: array{apiKey: ''|mixed, embeddingModel: mixed|null, chatModel: mixed|null, baseUrl: 'https://api.fireworks.ai/inference/v1'|mixed}, vectorConfig: array{backend: 'php'|mixed, solrField: '_embedding_'|mixed}}
+     * @psalm-return array{enabled: false|mixed, embeddingProvider: mixed|null,
+     *     chatProvider: mixed|null, openaiConfig: array{apiKey: ''|mixed,
+     *     model: mixed|null, chatModel: mixed|null, organizationId: ''|mixed},
+     *     ollamaConfig: array{
+     *         url: 'http://localhost:11434'|mixed,
+     *         model: mixed|null,
+     *         chatModel: mixed|null
+     *     },
+     *     fireworksConfig: array{apiKey: ''|mixed, embeddingModel: mixed|null,
+     *     chatModel: mixed|null,
+     *     baseUrl: 'https://api.fireworks.ai/inference/v1'|mixed},
+     *     vectorConfig: array{backend: 'php'|mixed, solrField: '_embedding_'|mixed}>
      */
     public function updateLLMSettingsOnly(array $llmData): array
     {
@@ -185,7 +196,10 @@ class LlmSettingsHandler
                     'apiKey'         => $llmData['fireworksConfig']['apiKey'] ?? $existingConfig['fireworksConfig']['apiKey'] ?? '',
                     'embeddingModel' => $llmData['fireworksConfig']['embeddingModel'] ?? $existingConfig['fireworksConfig']['embeddingModel'] ?? null,
                     'chatModel'      => $llmData['fireworksConfig']['chatModel'] ?? $existingConfig['fireworksConfig']['chatModel'] ?? null,
-                    'baseUrl'        => $llmData['fireworksConfig']['baseUrl'] ?? $existingConfig['fireworksConfig']['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1',
+                    // phpcs:ignore Generic.Files.LineLength.TooLong -- URL cannot be split
+                    'baseUrl'        => $llmData['fireworksConfig']['baseUrl'] ?? // phpcs:ignore Generic.Files.LineLength.TooLong -- URL
+                        $existingConfig['fireworksConfig']['baseUrl'] ??
+                        'https://api.fireworks.ai/inference/v1',
                 ],
                 'vectorConfig'      => [
                     'backend'   => $llmData['vectorConfig']['backend'] ?? $existingConfig['vectorConfig']['backend'] ?? 'php',

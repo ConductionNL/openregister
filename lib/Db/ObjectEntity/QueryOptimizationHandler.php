@@ -254,7 +254,11 @@ class QueryOptimizationHandler
                 }
 
                 // Process batch of objects.
-                $batchResults = $this->processBulkOwnerDeclarationBatch(objects: $objects, defaultOwner: $defaultOwner, defaultOrganisation: $defaultOrganisation);
+                $batchResults = $this->processBulkOwnerDeclarationBatch(
+                    objects: $objects,
+                        defaultOwner: $defaultOwner,
+                    defaultOrganisation: $defaultOrganisation
+                );
 
                 // Update statistics.
                 $results['totalProcessed']        += count($objects);

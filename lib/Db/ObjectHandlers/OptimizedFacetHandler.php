@@ -1,8 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * OpenRegister Optimized Facet Handler
  *
  * This handler provides high-performance faceting by using optimized
@@ -17,6 +15,8 @@ declare(strict_types=1);
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db\ObjectHandlers;
 
@@ -348,11 +348,27 @@ class OptimizedFacetHandler
         // 2. High selectivity: register/schema filters.
         // Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
         if (($baseQuery['@self']['register'] ?? null) !== null) {
-            $queryBuilder->andWhere($queryBuilder->expr()->eq('register', $queryBuilder->createNamedParameter((string) $baseQuery['@self']['register'], IQueryBuilder::PARAM_STR)));
+            $queryBuilder->andWhere(
+                $queryBuilder->expr()->eq(
+                    'register',
+                    $queryBuilder->createNamedParameter(
+                        (string) $baseQuery['@self']['register'],
+                        IQueryBuilder::PARAM_STR
+                    )
+                )
+            );
         }
 
         if (($baseQuery['@self']['schema'] ?? null) !== null) {
-            $queryBuilder->andWhere($queryBuilder->expr()->eq('schema', $queryBuilder->createNamedParameter((string) $baseQuery['@self']['schema'], IQueryBuilder::PARAM_STR)));
+            $queryBuilder->andWhere(
+                $queryBuilder->expr()->eq(
+                    'schema',
+                    $queryBuilder->createNamedParameter(
+                        (string) $baseQuery['@self']['schema'],
+                        IQueryBuilder::PARAM_STR
+                    )
+                )
+            );
         }
 
         // 3. Medium selectivity: lifecycle filters (use composite indexes).
@@ -414,11 +430,27 @@ class OptimizedFacetHandler
         // Apply only the most selective filters for estimation.
         // Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
         if (($baseQuery['@self']['register'] ?? null) !== null) {
-            $queryBuilder->andWhere($queryBuilder->expr()->eq('register', $queryBuilder->createNamedParameter((string) $baseQuery['@self']['register'], IQueryBuilder::PARAM_STR)));
+            $queryBuilder->andWhere(
+                $queryBuilder->expr()->eq(
+                    'register',
+                    $queryBuilder->createNamedParameter(
+                        (string) $baseQuery['@self']['register'],
+                        IQueryBuilder::PARAM_STR
+                    )
+                )
+            );
         }
 
         if (($baseQuery['@self']['schema'] ?? null) !== null) {
-            $queryBuilder->andWhere($queryBuilder->expr()->eq('schema', $queryBuilder->createNamedParameter((string) $baseQuery['@self']['schema'], IQueryBuilder::PARAM_STR)));
+            $queryBuilder->andWhere(
+                $queryBuilder->expr()->eq(
+                    'schema',
+                    $queryBuilder->createNamedParameter(
+                        (string) $baseQuery['@self']['schema'],
+                        IQueryBuilder::PARAM_STR
+                    )
+                )
+            );
         }
 
         $includeDeleted = $baseQuery['_includeDeleted'] ?? false;

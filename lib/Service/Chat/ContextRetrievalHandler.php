@@ -95,7 +95,12 @@ class ContextRetrievalHandler
      *
      * @return ((float|mixed|null|string)[][]|string)[]
      *
-     * @psalm-return array{text: string, sources: list<array{file_id?: mixed|null, file_path?: mixed|null, id: mixed|null, mime_type?: mixed|null, name: string, register?: mixed|null, schema?: mixed|null, similarity: float(1)|mixed, text: ''|mixed, type: 'unknown'|mixed, uri?: mixed|null, uuid?: mixed|null}>}
+     * @psalm-return array{text: string,
+     *     sources: list<array{file_id?: mixed|null, file_path?: mixed|null,
+     *     id: mixed|null, mime_type?: mixed|null, name: string,
+     *     register?: mixed|null, schema?: mixed|null,
+     *     similarity: float(1)|mixed, text: ''|mixed,
+     *     type: 'unknown'|mixed, uri?: mixed|null, uuid?: mixed|null}>}
      */
     public function retrieveContext(string $query, ?Agent $agent, array $selectedViews=[], array $ragSettings=[]): array
     {

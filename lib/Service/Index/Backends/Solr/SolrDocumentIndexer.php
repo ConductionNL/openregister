@@ -107,7 +107,13 @@ class SolrDocumentIndexer
             $document = $this->documentBuilder->createDocument($object);
 
             // Index the document.
-            $url = $this->httpClient->getEndpointUrl($collection).'/update?commit='.($commit === true ? 'true' : 'false');
+            if ($commit === true) {
+                $commitValue = 'true';
+            } else {
+                $commitValue = 'false';
+            }
+
+            $url = $this->httpClient->getEndpointUrl($collection).'/update?commit='.$commitValue;
 
             $this->httpClient->post($url, [$document]);
 
@@ -177,7 +183,13 @@ class SolrDocumentIndexer
 
         if (empty($documents) === false) {
             try {
-                $url = $this->httpClient->getEndpointUrl($collection).'/update?commit='.($commit === true ? 'true' : 'false');
+                if ($commit === true) {
+                    $commitValue = 'true';
+                } else {
+                    $commitValue = 'false';
+                }
+
+                $url = $this->httpClient->getEndpointUrl($collection).'/update?commit='.$commitValue;
                 $this->httpClient->post($url, $documents);
 
                 $this->logger->info(
@@ -230,7 +242,13 @@ class SolrDocumentIndexer
         }
 
         try {
-            $url = $this->httpClient->getEndpointUrl($collection).'/update?commit='.($commit === true ? 'true' : 'false');
+            if ($commit === true) {
+                $commitValue = 'true';
+            } else {
+                $commitValue = 'false';
+            }
+
+            $url = $this->httpClient->getEndpointUrl($collection).'/update?commit='.$commitValue;
             $this->httpClient->post($url, $documents);
 
             $this->logger->info(
@@ -271,7 +289,13 @@ class SolrDocumentIndexer
         }
 
         try {
-            $url = $this->httpClient->getEndpointUrl($collection).'/update?commit='.($commit === true ? 'true' : 'false');
+            if ($commit === true) {
+                $commitValue = 'true';
+            } else {
+                $commitValue = 'false';
+            }
+
+            $url = $this->httpClient->getEndpointUrl($collection).'/update?commit='.$commitValue;
 
             $deleteCommand = [
                 'delete' => [
@@ -318,11 +342,21 @@ class SolrDocumentIndexer
         $collection = $this->collectionManager->getActiveCollectionName();
 
         if ($collection === null) {
-            return $returnDetails === true ? ['success' => false, 'error' => 'No active collection'] : false;
+            if ($returnDetails === true) {
+                return ['success' => false, 'error' => 'No active collection'];
+            } else {
+                return false;
+            }
         }
 
         try {
-            $url = $this->httpClient->getEndpointUrl($collection).'/update?commit='.($commit === true ? 'true' : 'false');
+            if ($commit === true) {
+                $commitValue = 'true';
+            } else {
+                $commitValue = 'false';
+            }
+
+            $url = $this->httpClient->getEndpointUrl($collection).'/update?commit='.$commitValue;
 
             $deleteCommand = [
                 'delete' => [

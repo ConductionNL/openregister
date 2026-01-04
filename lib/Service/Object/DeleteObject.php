@@ -85,13 +85,13 @@ class DeleteObject
      *
      * @param ObjectEntityMapper $objectEntityMapper      Object entity data mapper.
      * @param FileService        $fileService             File service for managing files.
-     * @param CacheHandler       $cacheHandler            Object cache service for entity and query caching.
-     * @param SchemaCacheHandler $schemaCacheService      Schema cache handler for schema entity caching.
-     * @param FacetCacheHandler  $schemaFacetCacheService Schema facet cache service for facet caching.
-     * @param IUserSession       $userSession             User session service for tracking who deletes.
-     * @param AuditTrailMapper   $auditTrailMapper        Audit trail mapper for logs.
-     * @param SettingsService    $settingsService         Settings service for accessing trail settings.
-     * @param LoggerInterface    $logger                  Logger for error handling.
+     * @param CacheHandler       $cacheHandler            Object cache service for entity and query caching
+     * @param SchemaCacheHandler $schemaCacheService      Schema cache handler for schema entity caching
+     * @param FacetCacheHandler  $schemaFacetCacheService Schema facet cache service for facet caching
+     * @param IUserSession       $userSession             User session service for tracking who deletes
+     * @param AuditTrailMapper   $auditTrailMapper        Audit trail mapper for logs
+     * @param SettingsService    $settingsService         Settings service for accessing trail settings
+     * @param LoggerInterface    $logger                  Logger for error handling
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
@@ -126,8 +126,12 @@ class DeleteObject
 
         // **SOFT DELETE**: Mark object as deleted instead of removing from database.
         // Set deletion metadata with user, timestamp, and organization information.
-        $user   = $this->userSession->getUser();
-        $userId = $user !== null ? $user->getUID() : 'system';
+        $user = $this->userSession->getUser();
+        if ($user !== null) {
+            $userId = $user->getUID();
+        } else {
+            $userId = 'system';
+        }
 
         // Get the active organization from session at time of deletion for audit trail.
         $activeOrganisation = null;
@@ -152,17 +156,18 @@ class DeleteObject
 
         $objectEntity->setDeleted($deletionData);
 
-        // Update the object in database (soft delete - keeps record with deleted metadata).
         /*
+         * Update the object in database (soft delete - keeps record with deleted metadata).
          * @psalm-suppress InvalidArgument - ObjectEntity extends Entity
          */
+
         $result = $this->objectEntityMapper->update($objectEntity) !== null;
 
         // **CACHE INVALIDATION**: Clear collection and facet caches so soft-deleted objects disappear from regular queries.
         if ($result === true) {
-            // ObjectEntity has getRegister() and getSchema() methods that return string|null.
-            // Convert to int|null for invalidateForObjectChange which expects ?int.
             /*
+             * ObjectEntity has getRegister() and getSchema() methods that return string|null.
+             * Convert to int|null for invalidateForObjectChange which expects ?int.
              * @var ObjectEntity $objectEntity
              */
 
@@ -293,7 +298,7 @@ class DeleteObject
             // If ($folder !== null) {
             // $folder->delete();
             // $this->logger->info('Deleted object folder for hard deleted object: '.$objectEntity->getId());
-            // }
+            // }.
         } catch (\Exception $e) {
             // Log error but don't fail the deletion process.
             $this->logger->warning('Failed to delete object folder for object '.$objectEntity->getId().': '.$e->getMessage());

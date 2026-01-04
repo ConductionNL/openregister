@@ -199,7 +199,11 @@ class SolrQueryExecutor
 
         // Handle field selection.
         if (isset($query['_fields']) === true) {
-            $solrQuery['fl'] = is_array($query['_fields']) === true ? implode(',', $query['_fields']) : $query['_fields'];
+            if (is_array($query['_fields']) === true) {
+                $solrQuery['fl'] = implode(',', $query['_fields']);
+            } else {
+                $solrQuery['fl'] = $query['_fields'];
+            }
         }
 
         return $solrQuery;
@@ -220,7 +224,12 @@ class SolrQueryExecutor
 
         $sortParts = [];
         foreach ($order as $field => $direction) {
-            $dir         = (strtolower((string) $direction) === 'desc') ? 'desc' : 'asc';
+            if (strtolower((string) $direction) === 'desc') {
+                $dir = 'desc';
+            } else {
+                $dir = 'asc';
+            }
+
             $sortParts[] = "{$field} {$dir}";
         }
 
@@ -247,13 +256,19 @@ class SolrQueryExecutor
         $limit = (int) ($query['_limit'] ?? 30);
         $page  = (int) ($query['_page'] ?? 1);
 
+        if ($limit > 0) {
+            $pages = (int) ceil($numFound / $limit);
+        } else {
+            $pages = 0;
+        }
+
         return [
             'results' => $docs,
             'total'   => $numFound,
             'limit'   => $limit,
             'offset'  => $start,
             'page'    => $page,
-            'pages'   => $limit > 0 ? (int) ceil($numFound / $limit) : 0,
+            'pages'   => $pages,
         ];
     }//end convertToPaginatedFormat()
 

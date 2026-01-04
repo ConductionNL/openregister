@@ -71,7 +71,11 @@ class VectorizationHandler
      *
      * @throws \Exception If vectorization fails
      *
-     * @psalm-return array{success: true, message: string, entity_type: string, total_entities: int<0, max>, total_items: int<0, max>, vectorized: int<0, max>, failed: int<0, max>, errors?: list{0?: array{entity_id: int|string, error: string, item_index?: array-key},...}, processed?: mixed}
+     * @psalm-return array{success: true, message: string, entity_type: string,
+     *     total_entities: int<0, max>, total_items: int<0, max>,
+     *     vectorized: int<0, max>, failed: int<0, max>,
+     *     errors?: list{0?: array{entity_id: int|string, error: string,
+     *     item_index?: array-key},...}, processed?: mixed}
      */
     public function vectorizeBatch(?array $views=null, int $batchSize=25): array
     {

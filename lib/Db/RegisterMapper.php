@@ -206,15 +206,22 @@ class RegisterMapper extends QBMapper
 
         // Build OR conditions for matching against id, uuid, or slug.
         // Note: Only include id comparison if $id is actually numeric (PostgreSQL strict typing).
-        $orConditions = [];
         if (is_numeric($id) === true) {
-            $orConditions[] = $qb->expr()->eq('id', $qb->createNamedParameter((int) $id, IQueryBuilder::PARAM_INT));
+            $qb->where(
+                $qb->expr()->orX(
+                    $qb->expr()->eq('id', $qb->createNamedParameter((int) $id, IQueryBuilder::PARAM_INT)),
+                    $qb->expr()->eq('uuid', $qb->createNamedParameter($id, IQueryBuilder::PARAM_STR)),
+                    $qb->expr()->eq('slug', $qb->createNamedParameter($id, IQueryBuilder::PARAM_STR))
+                )
+            );
+        } else {
+            $qb->where(
+                $qb->expr()->orX(
+                    $qb->expr()->eq('uuid', $qb->createNamedParameter($id, IQueryBuilder::PARAM_STR)),
+                    $qb->expr()->eq('slug', $qb->createNamedParameter($id, IQueryBuilder::PARAM_STR))
+                )
+            );
         }
-
-        $orConditions[] = $qb->expr()->eq('uuid', $qb->createNamedParameter($id, IQueryBuilder::PARAM_STR));
-        $orConditions[] = $qb->expr()->eq('slug', $qb->createNamedParameter($id, IQueryBuilder::PARAM_STR));
-
-        $qb->where($qb->expr()->orX(...$orConditions));
 
         // Check if register exists before applying filters (for debugging).
         $qbBeforeFilter     = clone $qb;
@@ -353,7 +360,8 @@ class RegisterMapper extends QBMapper
     /**
      * Find multiple registers by IDs using a single optimized query
      *
-     * This method performs a single database query to fetch multiple registers, register: * significantly improving performance compared to individual queries.
+     * This method performs a single database query to fetch multiple registers,
+     * register: * significantly improving performance compared to individual queries.
      *
      * @param array $ids Array of register IDs to find.
      *

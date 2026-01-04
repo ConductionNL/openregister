@@ -3,8 +3,12 @@
 /**
  * OpenRegister Objects Schema Version Migration
  *
- * This migration adds the schemaVersion column to the openregister_objects table
+ * This migration adds the schema_version column to the openregister_objects table
  * to track the version of the schema used for each object.
+ *
+ * NOTE: Uses snake_case (schema_version) for PostgreSQL compatibility.
+ * PostgreSQL converts unquoted identifiers to lowercase, so camelCase columns
+ * would become 'schemaversion' and break Entity property mapping.
  *
  * @category Migration
  * @package  OCA\OpenRegister\Migration
@@ -29,7 +33,9 @@ use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
 /**
- * Add schemaVersion column to objects table migration
+ * Add schema_version column to objects table migration
+ *
+ * Uses snake_case naming for cross-database compatibility.
  */
 class Version1Date20250830130000 extends SimpleMigrationStep
 {
@@ -56,10 +62,10 @@ class Version1Date20250830130000 extends SimpleMigrationStep
         if ($schema->hasTable('openregister_objects') === true) {
             $table = $schema->getTable('openregister_objects');
 
-            // Add schemaVersion column if it doesn't exist.
-            if ($table->hasColumn('schemaVersion') === false) {
+            // Add schema_version column if it doesn't exist.
+            if ($table->hasColumn('schema_version') === false) {
                 $table->addColumn(
-                    'schemaVersion',
+                    'schema_version',
                     Types::STRING,
                     [
                         'notnull' => false,
@@ -68,7 +74,7 @@ class Version1Date20250830130000 extends SimpleMigrationStep
                         'comment' => 'Version of the schema used for this object',
                     ]
                 );
-                $output->info(message: 'Added schemaVersion column to openregister_objects table');
+                $output->info(message: 'Added schema_version column to openregister_objects table');
             }
         }
 

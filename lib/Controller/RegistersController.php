@@ -521,6 +521,9 @@ class RegistersController extends Controller
 
             // Return an empty response.
             return new JSONResponse(data: []);
+        } catch (DoesNotExistException $e) {
+            // Return 404 Not Found when register doesn't exist or is not accessible.
+            return new JSONResponse(data: ['error' => 'Register not found'], statusCode: 404);
         } catch (\OCA\OpenRegister\Exception\ValidationException $e) {
             // Return 409 Conflict for cascade protection (objects still attached).
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 409);
@@ -810,7 +813,7 @@ class RegistersController extends Controller
 
             $message = 'Register OAS published successfully to GitHub';
             if (($defaultBranch !== null && $defaultBranch !== '') === true && $branch !== $defaultBranch) {
-                $message .= ". Note: Published to branch '{$branch}' (default is '{$defaultBranch}'). "."GitHub Code Search primarily indexes the default branch, "."so this may not appear in search results immediately.";
+                $message .= ". Note: Published to branch '{$branch}' (default is '{$defaultBranch}'). GitHub Code Search primarily indexes the default branch, so this may not appear in search results immediately.";
             } else {
                 $message .= ". Note: GitHub Code Search may take a few minutes to index new files.";
             }

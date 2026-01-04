@@ -95,7 +95,38 @@ class ApplicationTool extends AbstractTool implements ToolInterface
      *
      * @return (((string|string[])[]|string)[]|string)[][]
      *
-     * @psalm-return list{array{name: 'list_applications', description: 'List all accessible applications. Returns basic information. Use filters to narrow results.', parameters: array{type: 'object', properties: array{limit: array{type: 'integer', description: 'Maximum number of results to return (default: 50)'}, offset: array{type: 'integer', description: 'Number of results to skip for pagination (default: 0)'}}, required: array<never, never>}}, array{name: 'get_application', description: 'Get detailed application information by UUID. Returns name, description, metadata, and configuration.', parameters: array{type: 'object', properties: array{uuid: array{type: 'string', description: 'UUID of the application to retrieve'}}, required: list{'uuid'}}}, array{name: 'create_application', description: 'Create a new application. Requires unique name. Can include description, metadata, and configuration.', parameters: array{type: 'object', properties: array{name: array{type: 'string', description: 'Name of the application (required)'}, description: array{type: 'string', description: 'Description of what the application does'}, domain: array{type: 'string', description: 'Domain or URL where the application is hosted'}}, required: list{'name'}}}, array{name: 'update_application', description: 'Update application (owner/update permission required). Provide UUID and fields to update.', parameters: array{type: 'object', properties: array{uuid: array{type: 'string', description: 'UUID of the application to update'}, name: array{type: 'string', description: 'New name for the application'}, description: array{type: 'string', description: 'New description'}, domain: array{type: 'string', description: 'New domain or URL'}}, required: list{'uuid'}}}, array{name: 'delete_application', description: 'Permanently delete application (owner/delete permission required). Cannot be undone.', parameters: array{type: 'object', properties: array{uuid: array{type: 'string', description: 'UUID of the application to delete'}}, required: list{'uuid'}}}}
+     * @psalm-return list{array{name: 'list_applications',
+     *     description: 'List all accessible applications. Returns basic information. '.
+     *     'Use filters to narrow results.',
+     *     parameters: array{type: 'object', properties: array{limit: array{type: 'integer',
+     *     description: 'Maximum number of results to return (default: 50)'},
+     *     offset: array{type: 'integer',
+     *     description: 'Number of results to skip for pagination (default: 0)'}},
+     *     required: array<never, never>}}, array{name: 'get_application',
+     *     description: 'Get detailed application information by UUID. '.
+     *     'Returns name, description, metadata, and configuration.',
+     *     parameters: array{type: 'object', properties: array{uuid: array{type: 'string',
+     *     description: 'UUID of the application to retrieve'}}, required: list{'uuid'}}},
+     *     array{name: 'create_application',
+     *     description: 'Create a new application. Requires unique name. '.
+     *     'Can include description, metadata, and configuration.',
+     *     parameters: array{type: 'object', properties: array{name: array{type: 'string',
+     *     description: 'Name of the application (required)'}, description: array{type: 'string',
+     *     description: 'Description of what the application does'}, domain: array{type: 'string',
+     *     description: 'Domain or URL where the application is hosted'}},
+     *     required: list{'name'}}}, array{name: 'update_application',
+     *     description: 'Update application (owner/update permission required). '.
+     *     'Provide UUID and fields to update.',
+     *     parameters: array{type: 'object', properties: array{uuid: array{type: 'string',
+     *     description: 'UUID of the application to update'}, name: array{type: 'string',
+     *     description: 'New name for the application'}, description: array{type: 'string',
+     *     description: 'New description'}, domain: array{type: 'string',
+     *     description: 'New domain or URL'}}, required: list{'uuid'}}},
+     *     array{name: 'delete_application',
+     *     description: 'Permanently delete application (owner/delete permission required). '.
+     *     'Cannot be undone.',
+     *     parameters: array{type: 'object', properties: array{uuid: array{type: 'string',
+     *     description: 'UUID of the application to delete'}}, required: list{'uuid'}}}>
      */
     public function getFunctions(): array
     {

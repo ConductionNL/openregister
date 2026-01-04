@@ -341,7 +341,19 @@ class ImportService
      *     performance?: array
      * }>
      *
-     * @psalm-return array<string, array{found: int<0, max>, created: array<never, mixed|null>, updated: array<never, mixed|null>, unchanged: array<never, mixed|null>, errors: list{0?: array{object: array<never, never>|mixed, error: 'No data rows found in CSV file'|'No valid headers found in CSV file'|'Validation failed'|mixed, type?: 'ValidationException'|mixed, row?: 1},...}, deduplication_efficiency?: string, performance?: array{totalTime: float, totalTimeMs: float, objectsPerSecond: float, totalProcessed: int<0, max>, totalFound: int<0, max>, efficiency: 0|float}, schema: array{id: int, title: null|string, slug: null|string}}>
+     * @psalm-return array<string,
+     *     array{found: int<0, max>, created: array<never, mixed|null>,
+     *     updated: array<never, mixed|null>,
+     *     unchanged: array<never, mixed|null>,
+     *     errors: list{0?: array{object: array<never, never>|mixed,
+     *     error: 'No data rows found in CSV file'|
+     *     'No valid headers found in CSV file'|'Validation failed'|mixed,
+     *     type?: 'ValidationException'|mixed, row?: 1},...},
+     *     deduplication_efficiency?: string,
+     *     performance?: array{totalTime: float, totalTimeMs: float,
+     *     objectsPerSecond: float, totalProcessed: int<0, max>,
+     *     totalFound: int<0, max>, efficiency: 0|float},
+     *     schema: array{id: int, title: null|string, slug: null|string}}>
      */
     public function importFromCsv(
         string $filePath,
@@ -558,7 +570,14 @@ class ImportService
      *     deduplication_efficiency?: string
      * }
      *
-     * @psalm-return array{found: int<0, max>, created: array<never, mixed|null>, updated: array<never, mixed|null>, unchanged: array<never, mixed|null>, errors: list<array{error: 'No data rows found in sheet'|'No valid headers found in sheet'|'Validation failed'|mixed, object: array<never, never>|mixed, row?: 1, sheet: string, type?: 'ValidationException'|mixed}>, deduplication_efficiency?: string}
+     * @psalm-return array{found: int<0, max>, created: array<never, mixed|null>,
+     *     updated: array<never, mixed|null>,
+     *     unchanged: array<never, mixed|null>,
+     *     errors: list<array{error: 'No data rows found in sheet'|
+     *     'No valid headers found in sheet'|'Validation failed'|mixed,
+     *     object: array<never, never>|mixed, row?: 1, sheet: string,
+     *     type?: 'ValidationException'|mixed}>,
+     *     deduplication_efficiency?: string}
      */
     private function processSpreadsheetBatch(
         Spreadsheet $spreadsheet,
@@ -693,7 +712,7 @@ class ImportService
 
         // NO ERROR SUPPRESSION: Row parsing errors will bubble up immediately - no need to collect them.
         // Note: Processing time calculation removed as it was unused.
-        // $processingTime = microtime(true) - $startTime;
+        // $processingTime = microtime(true) - $startTime;.
         return $summary;
     }//end processSpreadsheetBatch()
 
@@ -729,7 +748,17 @@ class ImportService
      *     deduplication_efficiency?: string
      * }
      *
-     * @psalm-return array{found: int<0, max>, created: array<never, mixed|null>, updated: array<never, mixed|null>, unchanged: array<never, mixed|null>, errors: list<array{error: 'No data rows found in CSV file'|'No valid headers found in CSV file'|'Validation failed'|mixed, object: array<never, never>|mixed, row?: 1, type?: 'ValidationException'|mixed}>, deduplication_efficiency?: string, performance?: array{totalTime: float, totalTimeMs: float, objectsPerSecond: float, totalProcessed: int<0, max>, totalFound: int<0, max>, efficiency: 0|float}}
+     * @psalm-return array{found: int<0, max>, created: array<never, mixed|null>,
+     *     updated: array<never, mixed|null>,
+     *     unchanged: array<never, mixed|null>,
+     *     errors: list<array{error: 'No data rows found in CSV file'|
+     *     'No valid headers found in CSV file'|'Validation failed'|mixed,
+     *     object: array<never, never>|mixed, row?: 1,
+     *     type?: 'ValidationException'|mixed}>,
+     *     deduplication_efficiency?: string,
+     *     performance?: array{totalTime: float, totalTimeMs: float,
+     *     objectsPerSecond: float, totalProcessed: int<0, max>,
+     *     totalFound: int<0, max>, efficiency: 0|float}>
      */
     private function processCsvSheet(
         \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet,
@@ -1293,6 +1322,7 @@ class ImportService
                     function (callable $resolve, callable $_reject) use ($rowData, $index, $register, $schema, $startRow) {
                         // NO ERROR SUPPRESSION: Let processRow errors bubble up immediately!
                         $result = $this->processRow(rowData: $rowData, register: $register, schema: $schema, _rowIndex: $startRow + $index);
+
                         /*
                          * @var callable(mixed): void $resolve
                          */
@@ -1307,6 +1337,7 @@ class ImportService
             $promiseCount = count($promises);
             for ($i = 0; $i < $promiseCount; $i += $batchSize) {
                 $batch = array_slice($promises, $i, $batchSize);
+
                 /*
                  * @psalm-suppress UndefinedFunction - React\Async\await is from external library
                  */

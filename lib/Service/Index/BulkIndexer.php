@@ -155,7 +155,10 @@ class BulkIndexer
      *
      * @throws \RuntimeException If indexing fails
      *
-     * @psalm-return array{success: bool, indexed: int<0, max>, batches: int<0, max>, batch_size?: int, skipped_non_searchable?: int, error?: 'Search backend is not available'}
+     * @psalm-return array{success: bool, indexed: int<0, max>,
+     *     batches: int<0, max>, batch_size?: int,
+     *     skipped_non_searchable?: int,
+     *     error?: 'Search backend is not available'}
      */
     public function bulkIndexFromDatabase(
         int $batchSize=1000,
@@ -184,14 +187,22 @@ class BulkIndexer
 
             // Get count of searchable objects for planning.
             $totalObjects = $this->countSearchableObjects($schemaIds);
+            if ($maxObjects > 0) {
+                $estimatedBatches = ceil(min($totalObjects, $maxObjects) / $batchSize);
+                $willProcess      = min($totalObjects, $maxObjects);
+            } else {
+                $estimatedBatches = ceil($totalObjects / $batchSize);
+                $willProcess      = $totalObjects;
+            }
+
             $this->logger->info(
                 '[BulkIndexer] Planning bulk index',
                 [
                     'totalSearchableObjects' => $totalObjects,
                     'maxObjects'             => $maxObjects,
                     'batchSize'              => $batchSize,
-                    'estimatedBatches'       => $maxObjects > 0 ? ceil(min($totalObjects, $maxObjects) / $batchSize) : ceil($totalObjects / $batchSize),
-                    'willProcess'            => $maxObjects > 0 ? min($totalObjects, $maxObjects) : $totalObjects,
+                    'estimatedBatches'       => $estimatedBatches,
+                    'willProcess'            => $willProcess,
                 ]
             );
 

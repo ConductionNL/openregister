@@ -733,6 +733,7 @@ class BulkOperationsHandler
                     /*
                      * @var string $column
                      */
+
                     $paramName   = 'param_'.$paramIndex.'_'.$column;
                     $rowValues[] = ':'.$paramName;
 
@@ -1161,7 +1162,11 @@ class BulkOperationsHandler
 
         // Handle boolean values.
         if (is_bool($value) === true) {
-            $value = $value === true ? 1 : 0;
+            if ($value === true) {
+                $value = 1;
+            } else {
+                $value = 0;
+            }
         }
 
         // Handle null values.
@@ -1175,7 +1180,20 @@ class BulkOperationsHandler
         }
 
         // Handle other array values that might need JSON encoding.
-        if (is_array($value) === true && in_array($column, ['files', 'relations', 'locked', 'authorization', 'deleted', 'validation'], true) === true) {
+        if (is_array($value) === true
+            && in_array(
+                $column,
+                [
+                    'files',
+                    'relations',
+                    'locked',
+                    'authorization',
+                    'deleted',
+                    'validation',
+                ],
+                true
+            ) === true
+        ) {
             $value = json_encode($value);
         }
 

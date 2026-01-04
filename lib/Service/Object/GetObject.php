@@ -93,7 +93,14 @@ class GetObject
         bool $_rbac=true,
         bool $_multitenancy=true
     ): ObjectEntity {
-        $object = $this->objectEntityMapper->find(identifier: $id, register: $register, schema: $schema, includeDeleted: false, _rbac: $_rbac, _multitenancy: $_multitenancy);
+        $object = $this->objectEntityMapper->find(
+            identifier: $id,
+                register: $register,
+                schema: $schema,
+            includeDeleted: false,
+                _rbac: $_rbac,
+                _multitenancy: $_multitenancy
+        );
 
         if ($files === true) {
             $object = $this->hydrateFiles(object: $object, files: []);
@@ -138,7 +145,14 @@ class GetObject
         bool $_rbac=true,
         bool $_multitenancy=true
     ): ObjectEntity {
-        $object = $this->objectEntityMapper->find(identifier: $id, register: $register, schema: $schema, includeDeleted: false, _rbac: $_rbac, _multitenancy: $_multitenancy);
+        $object = $this->objectEntityMapper->find(
+            identifier: $id,
+                register: $register,
+                schema: $schema,
+            includeDeleted: false,
+                _rbac: $_rbac,
+                _multitenancy: $_multitenancy
+        );
 
         if ($files === true) {
             $object = $this->hydrateFiles(object: $object, files: []);

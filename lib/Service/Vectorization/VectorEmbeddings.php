@@ -212,7 +212,9 @@ class VectorEmbeddings
      *
      * @return ((float[]|int|mixed|string)[]|bool|string)[]
      *
-     * @psalm-return array{success: bool, error?: string, message: string, data?: array{provider: string, model: 'unknown'|mixed, vectorLength: int<0, max>, sampleValues: array<float>, testText: string}}
+     * @psalm-return array{success: bool, error?: string, message: string,
+     *     data?: array{provider: string, model: 'unknown'|mixed,
+     *     vectorLength: int<0, max>, sampleValues: array<float>, testText: string}>
      */
     public function testEmbedding(string $provider, array $config, string $testText='Test.'): array
     {
@@ -448,7 +450,15 @@ class VectorEmbeddings
      *
      * @throws \Exception If hybrid search fails
      *
-     * @psalm-return array{results: list<array{chunk_index: 0|mixed, chunk_text: mixed|null, combined_score: 0|float, entity_id: mixed, entity_type: mixed, in_solr: bool, in_vector: bool, metadata: array<never, never>|mixed, solr_rank: float|int|null, solr_score: mixed|null, vector_rank: float|int|null, vector_similarity: mixed|null}>, total: int<0, max>, search_time_ms: float, source_breakdown: array{vector_only: int<0, max>, solr_only: int<0, max>, both: int<0, max>}, weights: array{solr: float, vector: float}}
+     * @psalm-return array{results: list<array{chunk_index: 0|mixed,
+     *     chunk_text: mixed|null, combined_score: 0|float, entity_id: mixed,
+     *     entity_type: mixed, in_solr: bool, in_vector: bool,
+     *     metadata: array<never, never>|mixed, solr_rank: float|int|null,
+     *     solr_score: mixed|null, vector_rank: float|int|null,
+     *     vector_similarity: mixed|null}>, total: int<0, max>,
+     *     search_time_ms: float, source_breakdown: array{vector_only: int<0, max>,
+     *     solr_only: int<0, max>, both: int<0, max>},
+     *     weights: array{solr: float, vector: float}>
      */
     public function hybridSearch(
         string $query,
@@ -485,7 +495,9 @@ class VectorEmbeddings
      *
      * @return ((int|mixed)[]|int|string)[] Statistics about stored vectors
      *
-     * @psalm-return array{total_vectors: int, by_type: array<int>, by_model: array<int|mixed>, object_vectors?: int, file_vectors?: int, source?: 'solr'|'solr_error'|'solr_unavailable'}
+     * @psalm-return array{total_vectors: int, by_type: array<int>,
+     *     by_model: array<int|mixed>, object_vectors?: int, file_vectors?: int,
+     *     source?: 'solr'|'solr_error'|'solr_unavailable'}
      */
     public function getVectorStats(): array
     {
@@ -503,7 +515,10 @@ class VectorEmbeddings
      *
      * @return (array|bool|int|mixed|string)[]
      *
-     * @psalm-return array{has_vectors: bool, mismatch: bool, error?: string, message?: string, current_model?: mixed, existing_models?: list<mixed>, total_vectors?: int, null_model_count?: int, mismatched_models?: list<mixed>}
+     * @psalm-return array{has_vectors: bool, mismatch: bool, error?: string,
+     *     message?: string, current_model?: mixed, existing_models?: list<mixed>,
+     *     total_vectors?: int, null_model_count?: int,
+     *     mismatched_models?: list<mixed>}
      */
     public function checkEmbeddingModelMismatch(): array
     {

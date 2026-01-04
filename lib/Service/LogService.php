@@ -144,15 +144,15 @@ class LogService
     public function getLogs(string $register, string $schema, string $id, array $config=[]): array
     {
         // Step 1: Get the object to ensure it exists.
-        // Include deleted objects so audit trail is accessible even after soft-delete
+        // Include deleted objects so audit trail is accessible even after soft-delete.
         $object = $this->objectEntityMapper->find($id, null, null, true);
 
-        // Step 2: Validate object belongs to specified register/schema by comparing stored IDs
-        // We skip entity resolution to allow access even if register/schema are soft-deleted
-        // The object's register/schema fields store IDs as strings
-        // We need to resolve the slugs to IDs for comparison
+        // Step 2: Validate object belongs to specified register/schema by comparing stored IDs.
+        // We skip entity resolution to allow access even if register/schema are soft-deleted.
+        // The object's register/schema fields store IDs as strings.
+        // We need to resolve the slugs to IDs for comparison.
         try {
-            // Try to resolve slugs, but allow deleted entities
+            // Try to resolve slugs, but allow deleted entities.
             $registerEntity = $this->registerMapper->find($register, _multitenancy: false, _rbac: false);
             $schemaEntity   = $this->schemaMapper->find($schema, _multitenancy: false, _rbac: false);
 
@@ -160,8 +160,8 @@ class LogService
                 throw new InvalidArgumentException('Object does not belong to specified register/schema');
             }
         } catch (\Exception $e) {
-            // If register/schema not found (likely deleted), we can't validate
-            // But we still allow audit trail access for the object
+            // If register/schema not found (likely deleted), we can't validate.
+            // But we still allow audit trail access for the object.
         }
 
         // Step 3: Add object ID to filters to restrict logs to this object.
@@ -202,13 +202,13 @@ class LogService
     public function count(string $register, string $schema, string $id): int
     {
         // Step 1: Get the object to ensure it exists.
-        // Include deleted objects so audit trail count is accessible even after soft-delete
+        // Include deleted objects so audit trail count is accessible even after soft-delete.
         $object = $this->objectEntityMapper->find($id, null, null, true);
 
-        // Step 2: Validate object belongs to specified register/schema by comparing stored IDs
-        // We skip entity resolution to allow access even if register/schema are soft-deleted
+        // Step 2: Validate object belongs to specified register/schema by comparing stored IDs.
+        // We skip entity resolution to allow access even if register/schema are soft-deleted.
         try {
-            // Try to resolve slugs, but allow deleted entities
+            // Try to resolve slugs, but allow deleted entities.
             $registerEntity = $this->registerMapper->find($register, _multitenancy: false, _rbac: false);
             $schemaEntity   = $this->schemaMapper->find($schema, _multitenancy: false, _rbac: false);
 
@@ -216,8 +216,8 @@ class LogService
                 throw new InvalidArgumentException('Object does not belong to specified register/schema');
             }
         } catch (\Exception $e) {
-            // If register/schema not found (likely deleted), we can't validate
-            // But we still allow audit trail access for the object
+            // If register/schema not found (likely deleted), we can't validate.
+            // But we still allow audit trail access for the object.
         }
 
         // Step 3: Get all logs for this object using filter.

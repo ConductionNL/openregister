@@ -358,9 +358,18 @@ class OptimizedBulkOperations
         // Build SQL string.
         $sql = '';
 
-        // Build INSERT portion.
-        $columnList = '`'.implode('`, `', $columns).'`';
-        $sql       .= "INSERT INTO `{$tableName}` ({$columnList}) VALUES ";
+        // Determine database platform for proper quoting.
+        $platform   = $this->db->getDatabasePlatform();
+        $isPostgres = $platform->getName() === 'postgresql';
+
+        // Build INSERT portion with proper column quoting.
+        if ($isPostgres === true) {
+            $columnList = '"'.implode('", "', $columns).'"';
+            $sql       .= "INSERT INTO \"{$tableName}\" ({$columnList}) VALUES ";
+        } else {
+            $columnList = '`'.implode('`, `', $columns).'`';
+            $sql       .= "INSERT INTO `{$tableName}` ({$columnList}) VALUES ";
+        }
 
         // Build VALUES portion - MEMORY INTENSIVE!
         $valuesClauses = [];
@@ -381,7 +390,18 @@ class OptimizedBulkOperations
         $sql .= implode(', ', $valuesClauses);
 
         // Add ON DUPLICATE KEY UPDATE portion for unified insert/update behavior.
-        $sql          .= ' ON DUPLICATE KEY UPDATE ';
+        // Note: Use database-specific syntax (MySQL vs PostgreSQL).
+        $platform   = $this->db->getDatabasePlatform();
+        $isPostgres = $platform->getName() === 'postgresql';
+
+        if ($isPostgres === true) {
+            // PostgreSQL uses ON CONFLICT ... DO UPDATE SET.
+            $sql .= ' ON CONFLICT (uuid) DO UPDATE SET ';
+        } else {
+            // MySQL/MariaDB uses ON DUPLICATE KEY UPDATE.
+            $sql .= ' ON DUPLICATE KEY UPDATE ';
+        }
+
         $updateClauses = [];
 
         foreach ($columns as $column) {
@@ -394,23 +414,47 @@ class OptimizedBulkOperations
                     $changeChecks          = [];
 
                     foreach ($dataColumns as $dataCol) {
-                        if ($dataCol === 'object') {
-                            // SPECIAL HANDLING: JSON comparison for object data.
-                            $changeChecks[] = "JSON_EXTRACT(`{$dataCol}`, '$') != JSON_EXTRACT(VALUES(`{$dataCol}`), '$')";
-                        } else if (in_array($dataCol, ['files', 'relations', 'authorization', 'validation', 'geo', 'retention', 'groups']) === true) {
-                            // JSON fields comparison.
-                            $changeChecks[] = "COALESCE(`{$dataCol}`, '{}') != COALESCE(VALUES(`{$dataCol}`), '{}')";
+                        if ($isPostgres === true) {
+                            // PostgreSQL: Use EXCLUDED.column for new values.
+                            if ($dataCol === 'object') {
+                                // JSON comparison for PostgreSQL.
+                                $changeChecks[] = "(\"{$dataCol}\" IS DISTINCT FROM EXCLUDED.\"{$dataCol}\")";
+                            } else if (in_array($dataCol, ['files', 'relations', 'authorization', 'validation', 'geo', 'retention', 'groups']) === true) {
+                                // JSON fields comparison.
+                                $changeChecks[] = "(\"{$dataCol}\" IS DISTINCT FROM EXCLUDED.\"{$dataCol}\")";
+                            } else {
+                                // Regular field comparison.
+                                $changeChecks[] = "(\"{$dataCol}\" IS DISTINCT FROM EXCLUDED.\"{$dataCol}\")";
+                            }
                         } else {
-                            // Regular field comparison with NULL handling.
-                            $changeChecks[] = "COALESCE(`{$dataCol}`, '') != COALESCE(VALUES(`{$dataCol}`), '')";
-                        }
-                    }
+                            // MySQL/MariaDB: Use VALUES(column) for new values.
+                            if ($dataCol === 'object') {
+                                // SPECIAL HANDLING: JSON comparison for object data.
+                                $changeChecks[] = "JSON_EXTRACT(`{$dataCol}`, '$') != JSON_EXTRACT(VALUES(`{$dataCol}`), '$')";
+                            } else if (in_array($dataCol, ['files', 'relations', 'authorization', 'validation', 'geo', 'retention', 'groups']) === true) {
+                                // JSON fields comparison.
+                                $changeChecks[] = "COALESCE(`{$dataCol}`, '{}') != COALESCE(VALUES(`{$dataCol}`), '{}')";
+                            } else {
+                                // Regular field comparison with NULL handling.
+                                $changeChecks[] = "COALESCE(`{$dataCol}`, '') != COALESCE(VALUES(`{$dataCol}`), '')";
+                            }
+                        }//end if
+                    }//end foreach
 
                     $changeCondition = implode(' OR ', $changeChecks);
-                    $updateClauses[] = "`updated` = CASE WHEN ({$changeCondition}) THEN NOW() ELSE `updated` END";
+
+                    if ($isPostgres === true) {
+                        $updateClauses[] = "\"updated\" = CASE WHEN ({$changeCondition}) THEN NOW() ELSE \"updated\" END";
+                    } else {
+                        $updateClauses[] = "`updated` = CASE WHEN ({$changeCondition}) THEN NOW() ELSE `updated` END";
+                    }
                 } else {
                     // Regular field updates.
-                    $updateClauses[] = "`{$column}` = VALUES(`{$column}`)";
+                    if ($isPostgres === true) {
+                        $updateClauses[] = "\"{$column}\" = EXCLUDED.\"{$column}\"";
+                    } else {
+                        $updateClauses[] = "`{$column}` = VALUES(`{$column}`)";
+                    }
                 }//end if
             }//end if
         }//end foreach
@@ -454,7 +498,8 @@ class OptimizedBulkOperations
         foreach ($updateObjects as $updateObj) {
             if (is_object($updateObj) === true
                 && method_exists($updateObj, 'getObjectArray') === true
-                && method_exists($updateObj, 'getObject') === true) {
+                && method_exists($updateObj, 'getObject') === true
+            ) {
                 // Use the proper ObjectEntity methods to get the correct structure directly.
                 $newFormatArray = $updateObj->getObjectArray();
                 // Gets metadata at top level.
@@ -596,8 +641,7 @@ class OptimizedBulkOperations
                 // VALIDATION: object property MUST be set and MUST be an array.
                 if (isset($objectData['object']) === false) {
                     throw new InvalidArgumentException(
-                        "Object data is missing required 'object' property. ".
-                        "Available keys: ".json_encode(array_keys($objectData))
+                        "Object data is missing required 'object' property. Available keys: ".json_encode(array_keys($objectData))
                     );
                 }
 
@@ -606,10 +650,7 @@ class OptimizedBulkOperations
                 // VALIDATION: object content must be an array, not a string or other type.
                 if (is_array($objectContent) === false) {
                     throw new InvalidArgumentException(
-                        "Object content must be an array, got ".
-                        gettype($objectContent).
-                        ". This suggests double JSON encoding or ".
-                        "malformed CSV parsing."
+                        "Object content must be an array, got ".gettype($objectContent).". This suggests double JSON encoding or malformed CSV parsing."
                     );
                 }
 

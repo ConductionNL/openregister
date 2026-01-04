@@ -130,7 +130,11 @@ class GitLabHandler
      *
      * @since 0.2.10
      *
-     * @psalm-return array{total_count: int<0, max>, results: list<array{config: array{app: null, description: '', title: string, type: 'unknown', version: 'unknown'}, name: string, path: mixed, project_id: mixed, ref: 'main'|mixed, url: ''|mixed}>, page: int, per_page: int}
+     * @psalm-return array{total_count: int<0, max>,
+     *     results: list<array{config: array{app: null, description: '',
+     *     title: string, type: 'unknown', version: 'unknown'}, name: string,
+     *     path: mixed, project_id: mixed, ref: 'main'|mixed,
+     *     url: ''|mixed}>, page: int, per_page: int}
      */
     public function searchConfigurations(string $search='', int $page=1, int $perPage=30): array
     {
@@ -245,11 +249,12 @@ class GitLabHandler
             $branches = json_decode($response->getBody(), true);
 
             return array_map(
-                /*
+                /**
                  * @return (false|mixed|null)[]
                  *
                  * @psalm-return array{name: mixed, commit: mixed|null, protected: false|mixed, default: false|mixed}
                  */
+
                 function (array $branch): array {
                     return [
                         'name'      => $branch['name'],
@@ -345,7 +350,9 @@ class GitLabHandler
      *
      * @since 0.2.10
      *
-     * @psalm-return list<array{config: array{app: mixed|null, description: ''|mixed, title: mixed|string, type: 'manual'|mixed, version: '1.0.0'|mixed}, id: mixed|null, path: mixed}>
+     * @psalm-return list<array{config: array{app: mixed|null,
+     *     description: ''|mixed, title: mixed|string, type: 'manual'|mixed,
+     *     version: '1.0.0'|mixed}, id: mixed|null, path: mixed}>
      */
     public function listConfigurationFiles(int $projectId, string $ref='main', string $path=''): array
     {

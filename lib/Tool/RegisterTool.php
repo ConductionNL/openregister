@@ -96,7 +96,32 @@ class RegisterTool extends AbstractTool
      *
      * @return (((string|string[])[]|string)[]|string)[][]
      *
-     * @psalm-return list{array{name: 'list_registers', description: 'Get a list of all accessible registers', parameters: array{type: 'object', properties: array{limit: array{type: 'integer', description: 'Maximum number of registers to return (default: 100)'}, offset: array{type: 'integer', description: 'Number of registers to skip for pagination (default: 0)'}}, required: array<never, never>}}, array{name: 'get_register', description: 'Get details about a specific register by ID or slug', parameters: array{type: 'object', properties: array{id: array{type: 'string', description: 'The register ID or slug to retrieve'}}, required: list{'id'}}}, array{name: 'create_register', description: 'Create a new register', parameters: array{type: 'object', properties: array{title: array{type: 'string', description: 'The title of the register'}, description: array{type: 'string', description: 'A description of what this register is for'}, slug: array{type: 'string', description: 'URL-friendly identifier (optional, generated from title if not provided)'}}, required: list{'title'}}}, array{name: 'update_register', description: 'Update an existing register', parameters: array{type: 'object', properties: array{id: array{type: 'string', description: 'The register ID to update'}, title: array{type: 'string', description: 'New title for the register'}, description: array{type: 'string', description: 'New description for the register'}}, required: list{'id'}}}, array{name: 'delete_register', description: 'Delete a register (only if it has no objects)', parameters: array{type: 'object', properties: array{id: array{type: 'string', description: 'The register ID to delete'}}, required: list{'id'}}}}
+     * @psalm-return list{array{name: 'list_registers',
+     *     description: 'Get a list of all accessible registers',
+     *     parameters: array{type: 'object', properties: array{limit: array{type: 'integer',
+     *     description: 'Maximum number of registers to return (default: 100)'},
+     *     offset: array{type: 'integer',
+     *     description: 'Number of registers to skip for pagination (default: 0)'}},
+     *     required: array<never, never>}}, array{name: 'get_register',
+     *     description: 'Get details about a specific register by ID or slug',
+     *     parameters: array{type: 'object', properties: array{id: array{type: 'string',
+     *     description: 'The register ID or slug to retrieve'}}, required: list{'id'}}},
+     *     array{name: 'create_register', description: 'Create a new register',
+     *     parameters: array{type: 'object', properties: array{title: array{type: 'string',
+     *     description: 'The title of the register'}, description: array{type: 'string',
+     *     description: 'A description of what this register is for'},
+     *     slug: array{type: 'string',
+     *     description: 'URL-friendly identifier (optional, generated from title if not provided)'}},
+     *     required: list{'title'}}}, array{name: 'update_register',
+     *     description: 'Update an existing register',
+     *     parameters: array{type: 'object', properties: array{id: array{type: 'string',
+     *     description: 'The register ID to update'}, title: array{type: 'string',
+     *     description: 'New title for the register'}, description: array{type: 'string',
+     *     description: 'New description for the register'}}, required: list{'id'}}},
+     *     array{name: 'delete_register',
+     *     description: 'Delete a register (only if it has no objects)',
+     *     parameters: array{type: 'object', properties: array{id: array{type: 'string',
+     *     description: 'The register ID to delete'}}, required: list{'id'}}}>
      */
     public function getFunctions(): array
     {

@@ -333,17 +333,17 @@ class SchemasController extends Controller
             // Create a new schema from the data.
             $schema = $this->schemaMapper->createFromArray(object: $data);
 
-            // NOTE: Organization should already be set from the request data.
-            // The update() call below was causing duplicate schema creation with different timestamps.
-            // Since createFromArray() already handles organization assignment, this is commented out.
             /*
+             * NOTE: Organization should already be set from the request data.
+             * The update() call below was causing duplicate schema creation with different timestamps.
+             * Since createFromArray() already handles organization assignment, this is commented out.
                 // Set organisation from active organisation for multi-tenancy (if not already set).
                 if ($schema->getOrganisation() === null || $schema->getOrganisation() === '') {
                 $organisationUuid = $this->organisationService->getOrganisationForNewEntity();
                 $schema->setOrganisation($organisationUuid);
                 $schema = $this->schemaMapper->update($schema);
                 }
-            */
+             */
 
             return new JSONResponse(data: $schema, statusCode: 201);
         } catch (DBException $e) {
@@ -768,7 +768,8 @@ class SchemasController extends Controller
                     targetSchemaId: (string) $schema->getId(),
                     targetSchemaUuid: $schema->getUuid() ?? '',
                     targetSchemaSlug: $schema->getSlug() ?? ''
-                ) === true) {
+                ) === true
+                ) {
                     $outgoingSchemas[$schema->getId()] = $schema;
                 }
             }

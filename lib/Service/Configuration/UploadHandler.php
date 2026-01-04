@@ -187,7 +187,7 @@ class UploadHandler
      * Gets uploaded file content from a file in the api request as PHP array.
      *
      * @param array       $uploadedFile The uploaded file.
-     * @param string|null $type         If the uploaded file should be a specific type of object.
+     * @param string|null $_type        If the uploaded file should be a specific type of object.
      *
      * @return array|JSONResponse A PHP array with the uploaded json data or a JSONResponse in case of an error.
      *
@@ -261,7 +261,6 @@ class UploadHandler
      * Uses the given string or array as PHP array for creating/updating an object.
      *
      * @param array|string $phpArray An array or string containing a json blob of data.
-     * @param string|null  $type     If the object should be a specific type of object.
      *
      * @return array|JSONResponse A PHP array with the uploaded json data or a JSONResponse in case of an error.
      *

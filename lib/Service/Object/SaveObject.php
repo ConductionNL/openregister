@@ -121,20 +121,19 @@ class SaveObject
     /**
      * Constructor for SaveObject handler.
      *
-     * @param ObjectEntityMapper       $objectEntityMapper       Object entity data mapper.
-     * @param MetadataHydrationHandler $metadataHydrationHandler Handler for metadata extraction.
-     * @param FilePropertyHandler      $filePropertyHandler      Handler for file property operations.
-     * @param FileService              $fileService              File service for managing files.
-     * @param IUserSession             $userSession              User session service.
-     * @param AuditTrailMapper         $auditTrailMapper         Audit trail mapper for logging changes.
-     * @param SchemaMapper             $schemaMapper             Schema mapper for schema operations.
-     * @param RegisterMapper           $registerMapper           Register mapper for register operations.
-     * @param IURLGenerator            $urlGenerator             URL generator service.
-     * @param OrganisationService      $organisationService      Service for organisation operations.
-     * @param CacheHandler             $cacheHandler             Object cache service for entity and query caching.
-     * @param SettingsService          $settingsService          Settings service for accessing trail settings.
-     * @param LoggerInterface          $logger                   Logger interface for logging operations.
-     * @param ArrayLoader              $arrayLoader              Twig array loader for template rendering.
+     * @param ObjectEntityMapper       $objectEntityMapper       Object entity mapper
+     * @param MetadataHydrationHandler $metadataHydrationHandler Handler for metadata extraction
+     * @param FilePropertyHandler      $filePropertyHandler      Handler for file property operations
+     * @param IUserSession             $userSession              User session service
+     * @param AuditTrailMapper         $auditTrailMapper         Audit trail mapper for logging changes
+     * @param SchemaMapper             $schemaMapper             Schema mapper for schema operations
+     * @param RegisterMapper           $registerMapper           Register mapper for register operations
+     * @param IURLGenerator            $urlGenerator             URL generator service
+     * @param OrganisationService      $organisationService      Service for organisation operations
+     * @param CacheHandler             $cacheHandler             Object cache service for entity and query caching
+     * @param SettingsService          $settingsService          Settings service for accessing trail settings
+     * @param LoggerInterface          $logger                   Logger interface for logging operations
+     * @param ArrayLoader              $arrayLoader              Twig array loader for template rendering
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
@@ -339,7 +338,11 @@ class SaveObject
                     continue;
                 }
 
-                $currentPath = (($prefix !== '') === true) ? $prefix.'.'.$key : $key;
+                if (($prefix !== '') === true) {
+                    $currentPath = $prefix.'.'.$key;
+                } else {
+                    $currentPath = $key;
+                }
 
                 if (is_array($value) === true && empty($value) === true) {
                     // Check if this is an array property in the schema.
@@ -519,11 +522,11 @@ class SaveObject
      * During bulk imports, it's called from SaveObjects for each object to ensure consistent
      * metadata extraction across all import paths.
      *
-     * @see website/docs/developers/import-flow.md for complete import flow documentation
-     * @see website/docs/core/schema.md for schema configuration details
-     *
      * @param ObjectEntity $entity The entity to hydrate
      * @param Schema       $schema The schema containing the configuration
+     *
+     * @see website/docs/developers/import-flow.md for complete import flow documentation
+     * @see website/docs/core/schema.md for schema configuration details
      *
      * @return void
      *
@@ -648,10 +651,10 @@ class SaveObject
                     );
                 }//end try
             } else if (is_array($imageValue) === true) {
-                // Check for downloadUrl first (preferred).
-                // Use array_key_exists to safely check and access array keys.
-                // Add type assertion to help Psalm understand this is a non-empty array.
                 /*
+                 * Check for downloadUrl first (preferred).
+                 * Use array_key_exists to safely check and access array keys.
+                 * Add type assertion to help Psalm understand this is a non-empty array.
                  * @var array<string, mixed> $imageValue
                  */
 
@@ -841,7 +844,11 @@ class SaveObject
         $result = preg_replace('/\s+/', ' ', $result);
         $result = trim($result);
 
-        return ($result !== '') ? $result : null;
+        if ($result !== '') {
+            return $result;
+        } else {
+            return null;
+        }
     }//end processTwigLikeTemplate()
 
     /**
@@ -1143,7 +1150,11 @@ class SaveObject
             }
 
             // Convert object to array if needed.
-            $objectData = (is_object($data[$property]) === true) ? (array) $data[$property] : $data[$property];
+            if (is_object($data[$property]) === true) {
+                $objectData = (array) $data[$property];
+            } else {
+                $objectData = $data[$property];
+            }
 
             // Skip if the object is effectively empty (only contains empty values).
             if ($this->isEffectivelyEmptyObject($objectData) === true) {
@@ -1291,10 +1302,12 @@ class SaveObject
     /**
      * Cascade a single object form an object in the source data
      *
-     * @param  ObjectEntity $objectEntity The parent object.
-     * @param  array        $definition   The definition of the property the cascaded object is found in.
-     * @param  array        $object       The object to cascade.
+     * @param ObjectEntity $objectEntity The parent object
+     * @param array        $definition   The definition of the property the cascaded object is found in
+     * @param array        $object       The object to cascade
+     *
      * @return string|null  The UUID of the created object, or null if no object was created
+     *
      * @throws Exception
      */
     private function cascadeSingleObject(ObjectEntity $objectEntity, array $definition, array $object): ?string
@@ -1594,9 +1607,8 @@ class SaveObject
                 } else if (is_array($value) === true && empty($value) === true && ($isRequired === true)) {
                     // Keep empty object {} for required properties - will fail validation with clear error.
                 }
-            }
-            // Handle array properties.
-            else if ($propertyType === 'array') {
+            } else if ($propertyType === 'array') {
+                // Handle array properties.
                 if ($value === '') {
                     // Empty string to null for array properties.
                     $sanitizedData[$propertyName] = null;
@@ -1617,7 +1629,12 @@ class SaveObject
                         $sanitizedArray = [];
                         $hasChanges     = false;
                         foreach ($value as $index => $item) {
-                            $sanitizedArray[$index] = ($item === '') ? null : $item;
+                            if ($item === '') {
+                                $sanitizedArray[$index] = null;
+                            } else {
+                                $sanitizedArray[$index] = $item;
+                            }
+
                             if ($item === '') {
                                 $hasChanges = true;
                             }
@@ -1628,9 +1645,8 @@ class SaveObject
                         }
                     }//end if
                 }//end if
-            }
-            // Handle other property types with empty strings.
-            else if ($value === '' && in_array($propertyType, ['string', 'number', 'integer', 'boolean']) === true) {
+            } else if ($value === '' && in_array($propertyType, ['string', 'number', 'integer', 'boolean']) === true) {
+                // Handle other property types with empty strings.
                 if ($isRequired === false) {
                     // Convert empty string to null for non-required scalar properties.
                     $sanitizedData[$propertyName] = null;
@@ -1640,7 +1656,7 @@ class SaveObject
                     // Keep empty string for required properties - will fail validation with clear error.
                     // No action needed - property stays as is.
                 }
-            }
+            }//end if
         }//end foreach
 
         return $sanitizedData;
@@ -1659,6 +1675,7 @@ class SaveObject
      * @param bool                     $persist       Whether to persist the object to database (default: true).
      * @param bool                     $silent        Whether to skip audit trail creation and events (default: false).
      * @param bool                     $_validation   Whether to validate the object (default: true).
+     * @param array|null               $uploadedFiles Uploaded files array (optional).
      *
      * @return ObjectEntity The saved object entity.
      *
@@ -1840,15 +1857,20 @@ class SaveObject
 
             // Check if object is locked - prevent updates on locked objects.
             $lockData = $existingObject->getLocked();
-            if ($lockData !== null && is_array($lockData)) {
-                $currentUser   = $this->userSession->getUser();
-                $currentUserId = $currentUser !== null ? $currentUser->getUID() : null;
-                $lockOwner     = $lockData['userId'] ?? null;
+            if ($lockData !== null && is_array($lockData) === true) {
+                $currentUser = $this->userSession->getUser();
+                if ($currentUser !== null) {
+                    $currentUserId = $currentUser->getUID();
+                } else {
+                    $currentUserId = null;
+                }
+
+                $lockOwner = $lockData['userId'] ?? null;
 
                 // If object is locked by someone other than the current user, prevent update.
                 if ($lockOwner !== null && $lockOwner !== $currentUserId) {
                     throw new Exception(
-                        "Cannot update object: Object is locked by user '{$lockOwner}'. "."Please unlock the object before attempting to update it."
+                        "Cannot update object: Object is locked by user '{$lockOwner}'. Please unlock the object before attempting to update it."
                     );
                 }
             }
@@ -2371,11 +2393,10 @@ class SaveObject
             $data = $this->sanitizeEmptyStringsForObjectProperties(data: $data, schema: $schema);
         } catch (Exception $e) {
             // CRITICAL FIX: Sanitization failures indicate serious data problems - don't suppress!
-            throw new Exception(
-                'Object data sanitization failed: '.$e->getMessage().'. This indicates invalid or corrupted object data that cannot be processed safely.',
-                0,
-                $e
-            );
+            $part1        = 'Object data sanitization failed: '.$e->getMessage();
+            $part2        = '. This indicates invalid or corrupted object data that cannot be processed safely.';
+            $errorMessage = $part1.$part2;
+            throw new Exception($errorMessage, 0, $e);
         }
 
         // Apply cascading operations.
@@ -2424,10 +2445,18 @@ class SaveObject
         unset($data['@self'], $data['id']);
 
         // Set register ID based on input type.
-        $registerId = ($register instanceof Register === true) ? $register->getId() : $register;
+        if ($register instanceof Register === true) {
+            $registerId = $register->getId();
+        } else {
+            $registerId = $register;
+        }
 
         // Set schema ID based on input type.
-        $schemaId = ($schema instanceof Schema === true) ? $schema->getId() : $schema;
+        if ($schema instanceof Schema === true) {
+            $schemaId = $schema->getId();
+        } else {
+            $schemaId = $schema;
+        }
 
         // Prepare the object for update using the new structure.
         $preparedObject = $this->prepareObjectForUpdate(

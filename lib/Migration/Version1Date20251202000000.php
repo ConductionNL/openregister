@@ -75,7 +75,7 @@ class Version1Date20251202000000 extends SimpleMigrationStep
                     [
                         'notnull' => false,
                         'default' => null,
-                        'comment' => 'Publication timestamp. When set, schema becomes publicly accessible regardless of organisation restrictions if published bypass is enabled.',
+                        'comment' => 'Publication timestamp. When set, schema becomes publicly accessible regardless of organisation restrictions.',
                     ]
                 );
 
@@ -116,7 +116,7 @@ class Version1Date20251202000000 extends SimpleMigrationStep
                     [
                         'notnull' => false,
                         'default' => null,
-                        'comment' => 'Publication timestamp. When set, register becomes publicly accessible regardless of organisation restrictions if published bypass is enabled.',
+                        'comment' => 'Publication timestamp. When set, register becomes publicly accessible regardless of organisation restrictions.',
                     ]
                 );
 

@@ -288,7 +288,10 @@ class FacetHandler
      *
      * @return array[] Facet results with fallback metadata.
      *
-     * @psalm-return array{facets: array, performance_metadata: array{strategy: 'collection_fallback'|'filtered', fallback_used: bool, total_facet_results: int, has_restrictive_filters: bool}}
+     * @psalm-return array{facets: array,
+     *     performance_metadata: array{strategy: 'collection_fallback'|'filtered',
+     *     fallback_used: bool, total_facet_results: int,
+     *     has_restrictive_filters: bool}}
      */
     private function calculateFacetsWithFallback(array $facetQuery, array $facetConfig): array
     {

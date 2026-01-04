@@ -427,7 +427,8 @@ class SolrManagementController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param  string $fieldName Name of the field to delete
+     * @param string $fieldName Name of the field to delete
+     *
      * @return JSONResponse
      */
     public function deleteSolrField(string $fieldName): JSONResponse

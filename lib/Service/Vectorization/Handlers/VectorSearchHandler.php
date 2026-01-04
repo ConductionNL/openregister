@@ -193,7 +193,10 @@ class VectorSearchHandler
      *
      * @throws \Exception If search fails or Solr is not configured
      *
-     * @psalm-return list<array{chunk_index: 0|mixed, chunk_text: mixed|null, dimensions: 0|mixed, entity_id: string, entity_type: string, metadata: array, model: ''|mixed, similarity: float(0)|mixed, total_chunks: 1|mixed, vector_id: mixed}>
+     * @psalm-return list<array{chunk_index: 0|mixed, chunk_text: mixed|null,
+     *     dimensions: 0|mixed, entity_id: string, entity_type: string,
+     *     metadata: array, model: ''|mixed, similarity: float(0)|mixed,
+     *     total_chunks: 1|mixed, vector_id: mixed}>
      */
     private function searchVectorsInSolr(
         array $queryEmbedding,
@@ -216,10 +219,12 @@ class VectorSearchHandler
             }
 
             $settings = $this->settingsService->getSettings();
-            // Get vector field from LLM configuration, default to '_embedding_'.
+
             /*
+             * Get vector field from LLM configuration, default to '_embedding_'.
              * @psalm-suppress InvalidArrayOffset
              */
+
             $vectorField = $settings['llm']['vectorConfig']['solrField'] ?? '_embedding_';
             $allResults  = [];
 
@@ -249,12 +254,14 @@ class VectorSearchHandler
                 /*
                  * @psalm-suppress UndefinedInterfaceMethod - buildSolrBaseUrl and getHttpClient exist on Solr backend implementation
                  */
+
                 $solrUrl = $solrBackend->buildSolrBaseUrl()."/{$collection}/select";
 
                 try {
                     /*
                      * @psalm-suppress UndefinedInterfaceMethod
                      */
+
                     $response = $solrBackend->getHttpClient()->get(
                         $solrUrl,
                         ['query' => $queryParams]
@@ -324,7 +331,16 @@ class VectorSearchHandler
      *
      * @throws \Exception If hybrid search fails
      *
-     * @psalm-return array{results: list<array{chunk_index: 0|mixed, chunk_text: mixed|null, combined_score: 0|float, entity_id: mixed, entity_type: mixed, in_solr: bool, in_vector: bool, metadata: array<never, never>|mixed, solr_rank: int|null, solr_score: mixed|null, vector_rank: int|null, vector_similarity: mixed|null}>, total: int<0, max>, search_time_ms: float, source_breakdown: array{vector_only: int<0, max>, solr_only: int<0, max>, both: int<0, max>}, weights: array{solr: float, vector: float}}
+     * @psalm-return array{results: list<array{chunk_index: 0|mixed,
+     *     chunk_text: mixed|null, combined_score: 0|float, entity_id: mixed,
+     *     entity_type: mixed, in_solr: bool, in_vector: bool,
+     *     metadata: array<never, never>|mixed, solr_rank: int|null,
+     *     solr_score: mixed|null, vector_rank: int|null,
+     *     vector_similarity: mixed|null}>, total: int<0, max>,
+     *     search_time_ms: float,
+     *     source_breakdown: array{vector_only: int<0, max>,
+     *     solr_only: int<0, max>, both: int<0, max>},
+     *     weights: array{solr: float, vector: float}}
      */
     public function hybridSearch(
         array $queryEmbedding,
@@ -429,7 +445,12 @@ class VectorSearchHandler
      *
      * @return (array|bool|float|int|mixed|null)[][]
      *
-     * @psalm-return list<array{chunk_index: 0|mixed, chunk_text: mixed|null, combined_score: 0|float, entity_id: mixed, entity_type: mixed, in_solr: bool, in_vector: bool, metadata: array<never, never>|mixed, solr_rank: int|null, solr_score: mixed|null, vector_rank: int|null, vector_similarity: mixed|null}>
+     * @psalm-return list<array{chunk_index: 0|mixed, chunk_text: mixed|null,
+     *     combined_score: 0|float, entity_id: mixed, entity_type: mixed,
+     *     in_solr: bool, in_vector: bool,
+     *     metadata: array<never, never>|mixed, solr_rank: int|null,
+     *     solr_score: mixed|null, vector_rank: int|null,
+     *     vector_similarity: mixed|null}>
      */
     private function reciprocalRankFusion(
         array $vectorResults,
@@ -634,7 +655,11 @@ class VectorSearchHandler
         $settings            = $this->settingsService->getSettings();
 
         if (($filters['entity_type'] ?? null) !== null) {
-            $entityTypes = is_array($filters['entity_type']) === true ? $filters['entity_type'] : [$filters['entity_type']];
+            if (is_array($filters['entity_type']) === true) {
+                $entityTypes = $filters['entity_type'];
+            } else {
+                $entityTypes = [$filters['entity_type']];
+            }
 
             foreach ($entityTypes as $entityType) {
                 $collection = $this->getSolrCollectionForEntityType(

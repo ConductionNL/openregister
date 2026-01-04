@@ -192,7 +192,9 @@ class EntityRecognitionHandler
      *
      * @throws Exception When extraction fails.
      *
-     * @psalm-return array{entities_found: int<0, max>, relations_created: int<0, max>, entities: list<array{confidence: float, type: string, value: string}>}
+     * @psalm-return array{entities_found: int<0, max>,
+     *     relations_created: int<0, max>,
+     *     entities: list<array{confidence: float, type: string, value: string}>}
      */
     public function extractFromChunk(Chunk $chunk, array $options=[]): array
     {
@@ -335,7 +337,10 @@ class EntityRecognitionHandler
      *
      * @return (float|int|string)[][]
      *
-     * @psalm-return array<int<0, max>, array{type: 'EMAIL'|'IBAN'|'PHONE', value: string, category: 'personal_data'|'sensitive_pii', position_start: int, position_end: int<min, max>, confidence: float}>
+     * @psalm-return array<int<0, max>,
+     *     array{type: 'EMAIL'|'IBAN'|'PHONE', value: string,
+     *     category: 'personal_data'|'sensitive_pii', position_start: int,
+     *     position_end: int<min, max>, confidence: float}>
      */
     private function detectWithRegex(string $text, ?array $entityTypes, float $confidenceThreshold): array
     {

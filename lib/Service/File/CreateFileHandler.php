@@ -8,7 +8,7 @@
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0
+ * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link     https://github.com/ConductionNL/openregister
  */
 
@@ -40,7 +40,7 @@ use Psr\Log\LoggerInterface;
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0
+ * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
  */
@@ -134,9 +134,22 @@ class CreateFileHandler
             // Use the new ID-based folder approach.
             $folder = $this->folderManagementHandler->getObjectFolder(objectEntity: $objectEntity, registerId: $registerId);
 
+            // Check if content is a data URI and extract the base64 content.
+            if (str_starts_with($content, 'data:') === true) {
+                // Extract the base64 content from the data URI.
+                // Format: data:mime/type;base64,actual-base64-data.
+                $parts = explode(',', $content, 2);
+                if (count($parts) === 2 && str_contains($parts[0], 'base64') === true) {
+                    $content = $parts[1];
+                }
+
+                // If it's not base64-encoded data URI, leave it as is (it might be URL-encoded).
+            }
+
             // Check if the content is base64 encoded and decode it if necessary.
-            if (base64_encode(base64_decode($content, true)) === $content) {
-                $content = base64_decode($content);
+            $decodedContent = base64_decode($content, true);
+            if ($decodedContent !== false && base64_encode($decodedContent) === $content) {
+                $content = $decodedContent;
             }
 
             // Check if the file name is empty.

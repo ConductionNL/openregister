@@ -266,7 +266,8 @@ class HyperFacetHandler
 
             case 'hyperloglog_estimation':
                 $results = $this->calculateApproximateFacetsHyperLogLog(
-                    facetConfig: $facetConfig, baseQuery: $baseQuery,
+                    facetConfig: $facetConfig,
+                        baseQuery: $baseQuery,
                     datasetStats: $datasetStats
                 );
                 break;
@@ -274,7 +275,7 @@ class HyperFacetHandler
             default:
                 // Fallback to exact calculation.
                 $results = $this->calculateExactFacetsParallel(facetConfig: $facetConfig, baseQuery: $baseQuery, _datasetStats: $datasetStats);
-        }
+        }//end switch
 
         // **STEP 4**: Enhanced response with performance metadata.
         $executionTime = round((microtime(true) - $startTime) * 1000, 2);
@@ -467,12 +468,13 @@ class HyperFacetHandler
             );
         }
 
-        // Execute all facet calculations in parallel.
         /*
+         * Execute all facet calculations in parallel.
          * Suppress undefined function check - React\Async\await is from external library
          *
          * @psalm-suppress UndefinedFunction - React\Async\await is from external library
          */
+
         $results = \React\Async\await(\React\Promise\all($promises));
 
         // Combine results from different facet types.
@@ -546,8 +548,10 @@ class HyperFacetHandler
         // **STATISTICAL EXTRAPOLATION**: Scale up sample results.
         $extrapolationFactor = 1 / $sampleRate;
         $extrapolatedFacets  = $this->extrapolateFacetResults(
-            sampleFacets: $sampleFacets, factor: $extrapolationFactor,
-            sampleSize: $sampleSize, totalSize: $totalSize
+            sampleFacets: $sampleFacets,
+                factor: $extrapolationFactor,
+            sampleSize: $sampleSize,
+                totalSize: $totalSize
         );
 
         return $extrapolatedFacets;
@@ -605,8 +609,10 @@ class HyperFacetHandler
             } else {
                 // JSON field facets use statistical estimation.
                 $approximateFacets[$facetName] = $this->estimateJsonFieldFacet(
-                    _field: $facetName, config: $config,
-                    _baseQuery: $baseQuery, stats: $datasetStats
+                    _field: $facetName,
+                        config: $config,
+                    _baseQuery: $baseQuery,
+                        stats: $datasetStats
                 );
             }
         }
@@ -626,9 +632,11 @@ class HyperFacetHandler
      * @phpstan-param array<string, mixed> $metadataFacets
      * @phpstan-param array<string, mixed> $baseQuery
      *
-     * @phpstan-return PromiseInterface
-     *
      * @psalm-param array<string, mixed> $metadataFacets
+     *
+     * @return Promise
+     *
+     * @phpstan-return PromiseInterface
      *
      * @psalm-return Promise<T>
      */
@@ -668,6 +676,7 @@ class HyperFacetHandler
                          *
                          * @var callable(mixed): void $resolve
                      */
+
                     $resolve($results);
                 } catch (\Throwable $e) {
                     $reject($e);
@@ -786,11 +795,27 @@ class HyperFacetHandler
         // 1. FIRST: Apply register+schema filters (uses objects_register_schema_idx).
         // Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
         if (($baseQuery['@self']['register'] ?? null) !== null) {
-            $queryBuilder->andWhere($queryBuilder->expr()->eq('register', $queryBuilder->createNamedParameter((string) $baseQuery['@self']['register'], IQueryBuilder::PARAM_STR)));
+            $queryBuilder->andWhere(
+                $queryBuilder->expr()->eq(
+                    'register',
+                    $queryBuilder->createNamedParameter(
+                        (string) $baseQuery['@self']['register'],
+                        IQueryBuilder::PARAM_STR
+                    )
+                )
+            );
         }
 
         if (($baseQuery['@self']['schema'] ?? null) !== null) {
-            $queryBuilder->andWhere($queryBuilder->expr()->eq('schema', $queryBuilder->createNamedParameter((string) $baseQuery['@self']['schema'], IQueryBuilder::PARAM_STR)));
+            $queryBuilder->andWhere(
+                $queryBuilder->expr()->eq(
+                    'schema',
+                    $queryBuilder->createNamedParameter(
+                        (string) $baseQuery['@self']['schema'],
+                        IQueryBuilder::PARAM_STR
+                    )
+                )
+            );
         }
 
         // 2. SECOND: Apply organisation filter (uses objects_perf_super_idx with register+schema).
@@ -894,10 +919,12 @@ class HyperFacetHandler
      * @phpstan-param array<string, mixed> $facetConfig
      * @phpstan-param array<string, mixed> $baseQuery
      *
-     * @phpstan-return string
-     *
      * @psalm-param array<string, mixed> $facetConfig
      * @psalm-param array<string, mixed> $baseQuery
+     *
+     * @return string
+     *
+     * @phpstan-return string
      *
      * @psalm-return string
      */
@@ -1127,6 +1154,8 @@ class HyperFacetHandler
     /**
      * Process JSON facets in parallel
      *
+     * @return Promise
+     *
      * @psalm-return     Promise<T>
      * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      */
@@ -1134,12 +1163,13 @@ class HyperFacetHandler
     {
         return new Promise(
             function ($resolve) {
-                // Simplified for now.
                 /*
+                 * Simplified for now.
                  * Type annotation for resolve callback
                      *
                      * @var callable(mixed): void $resolve
                  */
+
                 $resolve([]);
             }
         );

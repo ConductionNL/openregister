@@ -29,6 +29,8 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ViewMapper;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\ChunkMapper;
 use OCA\OpenRegister\Db\GdprEntityMapper;
@@ -335,9 +337,44 @@ class Application extends App implements IBootstrap
             }
         );
 
-        // NOTE: SearchTrailService can be autowired (only type-hinted parameters).
-        // Removed manual registration - Nextcloud will autowire it automatically.
+        // Register MagicMapper for column-mapped storage (magic mapper tables).
+        $context->registerService(
+            MagicMapper::class,
+            function ($container) {
+                return new MagicMapper(
+                    db: $container->get('OCP\IDBConnection'),
+                    objectEntityMapper: $container->get(ObjectEntityMapper::class),
+                    schemaMapper: $container->get(SchemaMapper::class),
+                    registerMapper: $container->get(RegisterMapper::class),
+                    config: $container->get('OCP\IConfig'),
+                    eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    groupManager: $container->get('OCP\IGroupManager'),
+                    userManager: $container->get('OCP\IUserManager'),
+                    appConfig: $container->get('OCP\IAppConfig'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                    settingsService: $container->get(SettingsService::class)
+                );
+            }
+        );
+
+        // Register UnifiedObjectMapper for automatic routing between blob and magic storage.
+        $context->registerService(
+            UnifiedObjectMapper::class,
+            function ($container) {
+                return new UnifiedObjectMapper(
+                    objectEntityMapper: $container->get(ObjectEntityMapper::class),
+                    magicMapper: $container->get(MagicMapper::class),
+                    registerMapper: $container->get(RegisterMapper::class),
+                    schemaMapper: $container->get(SchemaMapper::class),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
         /*
+         * NOTE: SearchTrailService can be autowired (only type-hinted parameters).
+         * Removed manual registration - Nextcloud will autowire it automatically.
          * Register SolrService for advanced search capabilities (disabled due to performance issues).
          * Issue: Even with lazy loading, DI registration causes performance problems.
          *

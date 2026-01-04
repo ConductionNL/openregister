@@ -193,8 +193,6 @@ class ViewsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @param string $id View ID or UUID
-     *
      * @return JSONResponse A JSON response with view data or error
      *
      * @psalm-return JSONResponse<int,
@@ -375,8 +373,6 @@ class ViewsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
-     *
-     * @param string $id View ID or UUID
      *
      * @return JSONResponse A JSON response with updated view or error
      *
@@ -617,8 +613,6 @@ class ViewsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
-     *
-     * @param string $id View ID or UUID
      *
      * @return JSONResponse A JSON response confirming deletion or error
      *

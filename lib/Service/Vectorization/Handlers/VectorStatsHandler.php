@@ -61,7 +61,9 @@ class VectorStatsHandler
      *
      * @return ((int|mixed)[]|int|string)[] Statistics about stored vectors
      *
-     * @psalm-return array{total_vectors: int, by_type: array<int>, by_model: array<int|mixed>, object_vectors?: int, file_vectors?: int, source?: 'solr'|'solr_error'|'solr_unavailable'}
+     * @psalm-return array{total_vectors: int, by_type: array<int>,
+     *     by_model: array<int|mixed>, object_vectors?: int, file_vectors?: int,
+     *     source?: 'solr'|'solr_error'|'solr_unavailable'}
      */
     public function getStats(string $backend='php'): array
     {
@@ -169,10 +171,12 @@ class VectorStatsHandler
             }
 
             $settings = $this->settingsService->getSettings();
-            // Get vector field from LLM configuration, default to '_embedding_'.
+
             /*
+             * Get vector field from LLM configuration, default to '_embedding_'.
              * @psalm-suppress InvalidArrayOffset
              */
+
             $vectorField      = $settings['llm']['vectorConfig']['solrField'] ?? '_embedding_';
             $objectCollection = $settings['solr']['objectCollection'] ?? $settings['solr']['collection'] ?? null;
             $fileCollection   = $settings['solr']['fileCollection'] ?? null;

@@ -131,8 +131,10 @@ class MagicMapper
 {
     /**
      * Table name prefix for register+schema-specific tables
+     *
+     * NOTE: Does NOT include 'oc_' prefix as Nextcloud's QueryBuilder adds that automatically.
      */
-    private const TABLE_PREFIX = 'oc_openregister_table_';
+    private const TABLE_PREFIX = 'openregister_table_';
 
     /**
      * Metadata column prefix to avoid conflicts with schema properties
@@ -592,6 +594,8 @@ class MagicMapper
     /**
      * Check if table exists in database (bypassing cache)
      *
+     * Uses Nextcloud 32+ compatible API for checking table existence.
+     *
      * @param string $tableName The table name to check
      *
      * @return bool True if table exists in database
@@ -599,15 +603,19 @@ class MagicMapper
     private function checkTableExistsInDatabase(string $tableName): bool
     {
         try {
-            /*
-             * @psalm-suppress UndefinedInterfaceMethod - getSchemaManager() exists on Doctrine DBAL Connection
-             */
+            // Nextcloud 32+ uses a different API. We use a simple SELECT query.
+            $qb = $this->db->getQueryBuilder();
+            $qb->select($qb->createFunction('1'))
+                ->from($tableName)
+                ->setMaxResults(1);
 
-            $schemaManager = $this->db->getSchemaManager();
-            return $schemaManager->tablesExist([$tableName]);
-        } catch (Exception $e) {
-            $this->logger->warning(
-                'Failed to check table existence in database',
+            $qb->executeQuery();
+
+            return true;
+        } catch (\Exception $e) {
+            // Table doesn't exist or query failed.
+            $this->logger->debug(
+                '[MagicMapper] Table does not exist in database',
                 [
                     'tableName' => $tableName,
                     'error'     => $e->getMessage(),
@@ -615,7 +623,7 @@ class MagicMapper
             );
 
             return false;
-        }
+        }//end try
     }//end checkTableExistsInDatabase()
 
     /**
@@ -780,18 +788,9 @@ class MagicMapper
 
         if (is_array($schemaProperties) === true) {
             foreach ($schemaProperties as $propertyName => $propertyConfig) {
-                // Skip if property name conflicts with metadata columns.
-                if (($columns[self::METADATA_PREFIX.$propertyName] ?? null) !== null) {
-                    $this->logger->warning(
-                        'Schema property conflicts with metadata column',
-                        [
-                            'propertyName' => $propertyName,
-                            'schemaId'     => $schema->getId(),
-                        ]
-                    );
-                    continue;
-                }
-
+                // Note: Schema properties do NOT conflict with metadata columns.
+                // Metadata columns have '_' prefix, schema properties don't.
+                // Both '_name' (metadata) and 'name' (schema property) can coexist.
                 $column = $this->mapSchemaPropertyToColumn(propertyName: $propertyName, propertyConfig: $propertyConfig);
                 if ($column !== null && $column !== '') {
                     $columns[$propertyName] = $column;
@@ -1087,21 +1086,30 @@ class MagicMapper
                 if (is_array($propertyConfig) === true && array_key_exists('default', $propertyConfig) === true) {
                     $defaultValue = $propertyConfig['default'];
                 }
+
+                // Handle 'required' - can be boolean (property level) or array (schema level).
+                $required   = $propertyConfig['required'] ?? [];
+                $isRequired = is_array($required) ? in_array($propertyName, $required) : ($required === true);
+
                 return [
                     'name'     => $columnName,
                     'type'     => 'boolean',
-                    'nullable' => in_array($propertyName, $propertyConfig['required'] ?? []) === false,
+                    'nullable' => $isRequired === false,
                     // PropertyConfig may contain 'default' key even if not in type definition.
                     'default'  => $defaultValue,
                 ];
 
             case 'array':
             case 'object':
+                // Handle 'required' - can be boolean (property level) or array (schema level).
+                $required   = $propertyConfig['required'] ?? [];
+                $isRequired = is_array($required) ? in_array($propertyName, $required) : ($required === true);
+
                 // Store complex types as JSON.
                 return [
                     'name'     => $columnName,
                     'type'     => 'json',
-                    'nullable' => in_array($propertyName, $propertyConfig['required'] ?? []) === false,
+                    'nullable' => $isRequired === false,
                 ];
 
             default:
@@ -1137,8 +1145,10 @@ class MagicMapper
      */
     private function mapStringProperty(string $columnName, array $propertyConfig, ?string $format): array
     {
-        $maxLength  = $propertyConfig['maxLength'] ?? null;
-        $isRequired = in_array($columnName, $propertyConfig['required'] ?? []);
+        $maxLength = $propertyConfig['maxLength'] ?? null;
+        // Handle 'required' - can be boolean (property level) or array (schema level).
+        $required   = $propertyConfig['required'] ?? [];
+        $isRequired = is_array($required) ? in_array($columnName, $required) : ($required === true);
 
         // Handle special formats.
         switch ($format) {
@@ -1213,14 +1223,17 @@ class MagicMapper
      */
     private function mapIntegerProperty(string $columnName, array $propertyConfig): array
     {
-        $minimum    = $propertyConfig['minimum'] ?? null;
-        $maximum    = $propertyConfig['maximum'] ?? null;
-        $isRequired = in_array($columnName, $propertyConfig['required'] ?? []);
+        $minimum = $propertyConfig['minimum'] ?? null;
+        $maximum = $propertyConfig['maximum'] ?? null;
+        // Handle 'required' - can be boolean (property level) or array (schema level).
+        $required   = $propertyConfig['required'] ?? [];
+        $isRequired = is_array($required) ? in_array($columnName, $required) : ($required === true);
 
         // Choose appropriate integer type based on range.
         $intType = 'integer';
         if ($minimum !== null && $minimum >= 0 && $maximum !== null
-            && $maximum <= 65535) {
+            && $maximum <= 65535
+        ) {
             $intType = 'smallint';
         } else if ($maximum !== null && $maximum > 2147483647) {
             $intType = 'bigint';
@@ -1256,7 +1269,9 @@ class MagicMapper
      */
     private function mapNumberProperty(string $columnName, array $propertyConfig): array
     {
-        $isRequired = in_array($columnName, $propertyConfig['required'] ?? []);
+        // Handle 'required' - can be boolean (property level) or array (schema level).
+        $required   = $propertyConfig['required'] ?? [];
+        $isRequired = is_array($required) ? in_array($columnName, $required) : ($required === true);
 
         // Determine default value.
         $defaultValue = null;
@@ -1287,30 +1302,148 @@ class MagicMapper
      *
      * @return void
      */
+
+    /**
+     * Create a new table with specified columns.
+     *
+     * Uses Nextcloud 32+ compatible schema API for table creation.
+     *
+     * @param string $tableName The table name
+     * @param array  $columns   The column definitions
+     *
+     * @throws Exception If table creation fails
+     *
+     * @return void
+     *
+     * @psalm-param array<array{name: string, type: string, nullable?: bool, length?: int, default?: mixed, autoincrement?: bool, primary?: bool, precision?: int, scale?: int}> $columns
+     */
     private function createTable(string $tableName, array $columns): void
     {
-        /*
-         * @var DoctrineSchema $schema
-         */
+        try {
+            // Build CREATE TABLE SQL manually for Nextcloud 32 compatibility.
+            $platform   = $this->db->getDatabasePlatform();
+            $isPostgres = ($platform->getName() === 'postgresql');
 
-        $schema = $this->db->createSchema();
-        $table  = $schema->createTable($tableName);
+            // Get database table prefix from Nextcloud config.
+            $tablePrefix   = $this->config->getSystemValue('dbtableprefix', 'oc_');
+            $fullTableName = $tablePrefix.$tableName;
 
-        foreach ($columns as $column) {
-            $this->addColumnToTable(table: $table, column: $column);
-        }
+            // Build column definitions.
+            $columnDefs = [];
+            $primaryKey = null;
 
-        // Execute table creation.
-        $this->db->migrateToSchema($schema);
+            foreach ($columns as $column) {
+                $colName = $isPostgres ? '"'.$column['name'].'"' : '`'.$column['name'].'`';
+                $def     = $colName.' ';
 
-        $this->logger->debug(
-            'Created schema table with columns',
-            [
-                'tableName' => $tableName,
-                'columns'   => array_keys($columns),
-            ]
-        );
+                // Map type to SQL.
+                $def .= $this->mapColumnTypeToSQL($column['type'], $column);
+
+                // NOT NULL constraint.
+                if (($column['nullable'] ?? true) === false) {
+                    $def .= ' NOT NULL';
+                }
+
+                // DEFAULT value.
+                if (isset($column['default']) === true) {
+                    $defaultValue = is_string($column['default']) ? "'".$column['default']."'" : $column['default'];
+                    $def         .= ' DEFAULT '.$defaultValue;
+                }
+
+                // AUTOINCREMENT (primary key columns).
+                if (($column['autoincrement'] ?? false) === true) {
+                    if ($isPostgres === true) {
+                        // PostgreSQL uses BIGSERIAL.
+                        $def = $colName.' BIGSERIAL';
+                    } else {
+                        // MySQL uses AUTO_INCREMENT.
+                        $def .= ' AUTO_INCREMENT';
+                    }
+                }
+
+                $columnDefs[] = $def;
+
+                // Track primary key.
+                if (($column['primary'] ?? false) === true) {
+                    $primaryKey = $isPostgres ? '"'.$column['name'].'"' : '`'.$column['name'].'`';
+                }
+            }//end foreach
+
+            // Build CREATE TABLE SQL with full table name (including prefix).
+            $tableNameQuoted = $isPostgres ? '"'.$fullTableName.'"' : '`'.$fullTableName.'`';
+            $sql  = 'CREATE TABLE IF NOT EXISTS '.$tableNameQuoted.' (';
+            $sql .= implode(', ', $columnDefs);
+
+            // Add PRIMARY KEY constraint.
+            if ($primaryKey !== null) {
+                $sql .= ', PRIMARY KEY ('.$primaryKey.')';
+            }
+
+            $sql .= ')';
+
+            // Execute table creation.
+            $this->db->executeStatement($sql);
+
+            $this->logger->debug(
+                '[MagicMapper] Created table with columns',
+                [
+                    'tableName'     => $tableName,
+                    'fullTableName' => $fullTableName,
+                    'columns'       => array_column($columns, 'name'),
+                ]
+            );
+        } catch (\Exception $e) {
+            $this->logger->error(
+                '[MagicMapper] Failed to create table',
+                [
+                    'tableName' => $tableName,
+                    'error'     => $e->getMessage(),
+                ]
+            );
+
+            throw new Exception('Failed to create table '.$tableName.': '.$e->getMessage(), 0, $e);
+        }//end try
     }//end createTable()
+
+    /**
+     * Map column type to SQL type string.
+     *
+     * @param string $type   The Doctrine type
+     * @param array  $column The column configuration
+     *
+     * @return string The SQL type string
+     */
+    private function mapColumnTypeToSQL(string $type, array $column): string
+    {
+        $platform   = $this->db->getDatabasePlatform();
+        $isPostgres = ($platform->getName() === 'postgresql');
+
+        switch ($type) {
+            case 'bigint':
+                return 'BIGINT';
+            case 'integer':
+                return 'INTEGER';
+            case 'smallint':
+                return 'SMALLINT';
+            case 'string':
+                $length = $column['length'] ?? 255;
+                return "VARCHAR($length)";
+            case 'text':
+                return 'TEXT';
+            case 'datetime':
+                return ($isPostgres === true) ? 'TIMESTAMP' : 'DATETIME';
+            case 'boolean':
+                return 'BOOLEAN';
+            case 'decimal':
+                $precision = $column['precision'] ?? 10;
+                $scale     = $column['scale'] ?? 2;
+                return "DECIMAL($precision,$scale)";
+            case 'json':
+                return ($isPostgres === true) ? 'JSONB' : 'JSON';
+            default:
+                return 'TEXT';
+        }//end switch
+    }//end mapColumnTypeToSQL()
 
     /**
      * Add column to table definition
@@ -1381,9 +1514,7 @@ class MagicMapper
 
             // Create composite index on register + schema for multitenancy.
             $this->db->executeStatement(
-                "CREATE INDEX IF NOT EXISTS {$tableName}_register_schema_idx ".
-                "ON {$tableName} (".self::METADATA_PREFIX."register, ".
-                self::METADATA_PREFIX."schema)"
+                "CREATE INDEX IF NOT EXISTS {$tableName}_register_schema_idx ON {$tableName} (".self::METADATA_PREFIX."register, ".self::METADATA_PREFIX."schema)"
             );
 
             // Create index on organisation for multitenancy.
@@ -1576,8 +1707,14 @@ class MagicMapper
 
             // Handle JSON fields.
             if (in_array($field, ['files', 'relations', 'locked', 'authorization', 'validation', 'deleted', 'geo', 'retention', 'groups']) === true) {
-                if ($value !== null && is_string($value) === false) {
-                    $value = json_encode($value);
+                // Convert to JSON if not already a string, but treat empty arrays as NULL.
+                if ($value !== null) {
+                    if (is_array($value) === true && empty($value) === true) {
+                        // Empty array should be NULL for proper IS NULL checks.
+                        $value = null;
+                    } else if (is_string($value) === false) {
+                        $value = json_encode($value);
+                    }
                 }
             }
 
@@ -1699,6 +1836,10 @@ class MagicMapper
         try {
             $objectEntity = new ObjectEntity();
 
+            // Set register and schema from parameters (these are the context we're in).
+            $objectEntity->setRegister((string) $_register->getId());
+            $objectEntity->setSchema((string) $_schema->getId());
+
             // Extract metadata fields (remove prefix).
             $metadata   = [];
             $objectData = [];
@@ -1709,31 +1850,57 @@ class MagicMapper
                     $metadataField = substr($columnName, strlen(self::METADATA_PREFIX));
 
                     // Handle datetime fields.
-                    if (in_array($metadataField, ['created', 'updated',
-                        'published', 'depublished', 'expires'], true) === true
-                        && ($value !== null) === true) {
+                    if (in_array(
+                            $metadataField,
+                            [
+                                'created',
+                                'updated',
+                                'published',
+                                'depublished',
+                                'expires',
+                            ],
+                            true
+                            ) === true
+                        && ($value !== null) === true
+                    ) {
                         $value = new DateTime($value);
                     }
 
                     // Handle JSON fields.
-                    if (in_array($metadataField, ['files', 'relations',
-                        'locked', 'authorization', 'validation', 'deleted',
-                        'geo', 'retention', 'groups'], true) === true
-                        && ($value !== null) === true) {
+                    if (in_array(
+                            $metadataField,
+                            [
+                                'files',
+                                'relations',
+                                'locked',
+                                'authorization',
+                                'validation',
+                                'deleted',
+                                'geo',
+                                'retention',
+                                'groups',
+                            ],
+                            true
+                            ) === true
+                        && ($value !== null) === true
+                    ) {
                         $value = json_decode($value, true);
                     }
 
                     $metadata[$metadataField] = $value;
                     continue;
-                }
+                }//end if
 
                 // This is a schema property.
+                // Convert snake_case column name back to camelCase property name.
+                $propertyName = $this->columnNameToPropertyName($columnName);
+
                 // Decode JSON values if they're JSON strings.
-                $objectData[$columnName] = $value;
+                $objectData[$propertyName] = $value;
                 if (is_string($value) === true && $this->isJsonString($value) === true) {
                     $decodedValue = json_decode($value, true);
                     if ($decodedValue !== null) {
-                        $objectData[$columnName] = $decodedValue;
+                        $objectData[$propertyName] = $decodedValue;
                     }
                 }
             }//end foreach
@@ -1744,12 +1911,29 @@ class MagicMapper
                     $method = 'set'.ucfirst($field);
                     if (method_exists($objectEntity, $method) === true) {
                         $objectEntity->$method($value);
+                    } else {
+                        $this->logger->warning(
+                            '[MagicMapper] Method does not exist for metadata field',
+                            ['field' => $field, 'method' => $method]
+                        );
                     }
                 }
             }
 
             // Set object data.
             $objectEntity->setObject($objectData);
+
+            // Debug logging.
+            $this->logger->debug(
+                '[MagicMapper] Successfully converted row to ObjectEntity',
+                [
+                    'uuid'           => $metadata['uuid'] ?? 'unknown',
+                    'register'       => $metadata['register'] ?? 'missing',
+                    'schema'         => $metadata['schema'] ?? 'missing',
+                    'objectDataKeys' => array_keys($objectData),
+                    'metadataCount'  => count($metadata),
+                ]
+            );
 
             return $objectEntity;
         } catch (Exception $e) {
@@ -1812,10 +1996,32 @@ class MagicMapper
      *
      * @return string Sanitized column name
      */
+
+    /**
+     * Sanitize column name for database compatibility.
+     *
+     * Converts camelCase to snake_case for PostgreSQL compatibility while
+     * maintaining readability. OpenRegister properties are typically camelCase,
+     * but PostgreSQL lowercases unquoted identifiers, so we explicitly convert
+     * to snake_case.
+     *
+     * Examples:
+     * - inStock -> in_stock
+     * - firstName -> first_name
+     * - isActive -> is_active
+     *
+     * @param string $name The property name to sanitize
+     *
+     * @return string The sanitized column name
+     */
     private function sanitizeColumnName(string $name): string
     {
-        // Convert to lowercase and replace invalid characters.
+        // Convert camelCase to snake_case.
+        // Insert underscore before uppercase letters, then lowercase everything.
+        $name = preg_replace('/([a-z0-9])([A-Z])/', '$1_$2', $name);
         $name = strtolower($name);
+
+        // Replace any remaining invalid characters with underscore.
         $name = preg_replace('/[^a-z0-9_]/', '_', $name);
 
         // Ensure it starts with a letter or underscore.
@@ -1831,6 +2037,27 @@ class MagicMapper
 
         return $name;
     }//end sanitizeColumnName()
+
+    /**
+     * Convert snake_case column name back to camelCase property name.
+     *
+     * Used when reading data from magic mapper tables to restore the original
+     * property names that OpenRegister expects.
+     *
+     * Examples:
+     * - in_stock -> inStock
+     * - first_name -> firstName
+     * - is_active -> isActive
+     *
+     * @param string $columnName The snake_case column name
+     *
+     * @return string The camelCase property name
+     */
+    private function columnNameToPropertyName(string $columnName): string
+    {
+        // Convert snake_case to camelCase.
+        return lcfirst(str_replace('_', '', ucwords($columnName, '_')));
+    }//end columnNameToPropertyName()
 
     /**
      * Check if register+schema combination has changed since last table update

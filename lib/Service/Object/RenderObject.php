@@ -599,7 +599,10 @@ class RenderObject
      *
      * @return (int|null|string[])[]|null
      *
-     * @psalm-return   array{id: numeric-string, path: string, title: string, accessUrl: null|string, downloadUrl: null|string, type: string, extension: string, size: int, hash: string, published: null|string, modified: int|null, labels: list<string>}|null
+     * @psalm-return   array{id: numeric-string, path: string, title: string,
+     *     accessUrl: null|string, downloadUrl: null|string, type: string,
+     *     extension: string, size: int, hash: string, published: null|string,
+     *     modified: int|null, labels: list<string>}|null
      * @phpstan-return array<string, mixed>|null
      */
     private function getFileObject($fileId): array|null
@@ -798,7 +801,16 @@ class RenderObject
 
         // Handle extensions if depth limit not reached.
         if (empty($_extend) === false && $depth < 10) {
-            $objectData = $this->extendObject(entity: $entity, _extend: $_extend, objectData: $objectData, depth: $depth, _filter: $filter, _fields: $fields, _unset: $unset, visitedIds: $visitedIds);
+            $objectData = $this->extendObject(
+                entity: $entity,
+                    _extend: $_extend,
+                    objectData: $objectData,
+                depth: $depth,
+                    _filter: $filter,
+                    _fields: $fields,
+                _unset: $unset,
+                    visitedIds: $visitedIds
+            );
         }
 
         $entity->setObject($objectData);
@@ -948,7 +960,15 @@ class RenderObject
                             $subExtend = array_merge(['all'], $keyExtends);
                         }
 
-                        return $this->renderEntity(entity: $object, _extend: $subExtend, depth: $depth + 1, filter: [], fields: [], unset: [], visitedIds: $visitedIds)->jsonSerialize();
+                        return $this->renderEntity(
+                            entity: $object,
+                                _extend: $subExtend,
+                            depth: $depth + 1,
+                                filter: [],
+                                fields: [],
+                            unset: [],
+                                visitedIds: $visitedIds
+                        )->jsonSerialize();
                     },
                     $value
                 );
@@ -968,7 +988,10 @@ class RenderObject
             }//end if
 
             // Skip if the value starts with '@' or '_'.
-            if (is_string($value) === true && ((str_starts_with(haystack: $value, needle: '@') === true) || (str_starts_with(haystack: $value, needle: '_') === true)) === true) {
+            if (is_string($value) === true
+                && ((str_starts_with(haystack: $value, needle: '@') === true)
+                || (str_starts_with(haystack: $value, needle: '_') === true)) === true
+            ) {
                 continue;
             }
 
@@ -1070,7 +1093,13 @@ class RenderObject
             $objectData['@self'] = $self;
         }
 
-        $objectDataDot = $this->handleExtendDot(data: $objectData, _extend: $_extend, depth: $depth, allFlag: in_array('all', $_extend, true), visitedIds: $visitedIds);
+        $objectDataDot = $this->handleExtendDot(
+            data: $objectData,
+                _extend: $_extend,
+                depth: $depth,
+            allFlag: in_array('all', $_extend, true),
+                visitedIds: $visitedIds
+        );
 
         return $objectDataDot;
     }//end extendObject()
@@ -1093,7 +1122,10 @@ class RenderObject
         $inversedProperties = array_filter(
             $properties,
             function ($property) {
-                return (isset($property['inversedBy']) && empty($property['inversedBy']) === false) || (isset($property['items']['inversedBy']) && empty($property['items']['inversedBy']) === false);
+                return (isset($property['inversedBy'])
+                    && empty($property['inversedBy']) === false)
+                    || (isset($property['items']['inversedBy'])
+                    && empty($property['items']['inversedBy']) === false);
             }
         );
 
@@ -1171,7 +1203,10 @@ class RenderObject
 
             // Extract inversedBy configuration based on property structure.
             // Check if this is an array property with inversedBy in items.
-            if (($propertyConfig['type'] ?? null) !== null && ($propertyConfig['type'] === 'array') === true && (($propertyConfig['items']['inversedBy'] ?? null) !== null) === true) {
+            if (($propertyConfig['type'] ?? null) !== null
+                && ($propertyConfig['type'] === 'array') === true
+                && (($propertyConfig['items']['inversedBy'] ?? null) !== null) === true
+            ) {
                 $inversedByProperty = $propertyConfig['items']['inversedBy'];
                 $targetSchema       = $propertyConfig['items']['$ref'] ?? null;
                 $isArray            = true;

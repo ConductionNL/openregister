@@ -62,7 +62,11 @@ class AgentMapper extends QBMapper
      *
      * @var OrganisationService
      */
-    // REMOVED: Services should not be in mappers.
+    /**
+     * Organisation mapper for organisation-related operations.
+     *
+     * @var OrganisationMapper
+     */
     protected OrganisationMapper $organisationMapper;
 
     /**
@@ -90,7 +94,7 @@ class AgentMapper extends QBMapper
      * Constructor
      *
      * @param IDBConnection       $db                  Database connection
-     * @param OrganisationService $organisationService Organisation service
+     * @param OrganisationMapper  $organisationMapper  Organisation mapper
      * @param IUserSession        $userSession         User session
      * @param IGroupManager       $groupManager        Group manager
      * @param IEventDispatcher    $eventDispatcher     Event dispatcher

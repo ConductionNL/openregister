@@ -160,7 +160,7 @@ class UploadService
     /**
      * Process file upload source
      *
-     * @param mixed $file File upload data.
+     * @param mixed $_file File upload data
      *
      * @return never Processed data or error response.
      *

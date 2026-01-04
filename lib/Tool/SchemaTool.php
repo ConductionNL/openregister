@@ -95,7 +95,37 @@ class SchemaTool extends AbstractTool
      *
      * @return (((string|string[])[]|string)[]|string)[][]
      *
-     * @psalm-return list{array{name: 'list_schemas', description: 'Get a list of all accessible schemas', parameters: array{type: 'object', properties: array{limit: array{type: 'integer', description: 'Maximum number of schemas to return (default: 100)'}, offset: array{type: 'integer', description: 'Number of schemas to skip for pagination (default: 0)'}, register: array{type: 'string', description: 'Filter schemas by register ID (optional)'}}, required: array<never, never>}}, array{name: 'get_schema', description: 'Get details about a specific schema by ID', parameters: array{type: 'object', properties: array{id: array{type: 'string', description: 'The schema ID to retrieve'}}, required: list{'id'}}}, array{name: 'create_schema', description: 'Create a new schema with properties definition', parameters: array{type: 'object', properties: array{title: array{type: 'string', description: 'The title of the schema'}, description: array{type: 'string', description: 'A description of what this schema represents'}, properties: array{type: 'object', description: 'JSON Schema properties definition'}, required: array{type: 'array', description: 'Array of required property names'}}, required: list{'title', 'properties'}}}, array{name: 'update_schema', description: 'Update an existing schema', parameters: array{type: 'object', properties: array{id: array{type: 'string', description: 'The schema ID to update'}, title: array{type: 'string', description: 'New title for the schema'}, description: array{type: 'string', description: 'New description for the schema'}, properties: array{type: 'object', description: 'Updated JSON Schema properties definition'}}, required: list{'id'}}}, array{name: 'delete_schema', description: 'Delete a schema (only if it has no objects)', parameters: array{type: 'object', properties: array{id: array{type: 'string', description: 'The schema ID to delete'}}, required: list{'id'}}}}
+     * @psalm-return list{array{name: 'list_schemas',
+     *     description: 'Get a list of all accessible schemas',
+     *     parameters: array{type: 'object', properties: array{limit: array{type: 'integer',
+     *     description: 'Maximum number of schemas to return (default: 100)'},
+     *     offset: array{type: 'integer',
+     *     description: 'Number of schemas to skip for pagination (default: 0)'},
+     *     register: array{type: 'string',
+     *     description: 'Filter schemas by register ID (optional)'}},
+     *     required: array<never, never>}}, array{name: 'get_schema',
+     *     description: 'Get details about a specific schema by ID',
+     *     parameters: array{type: 'object', properties: array{id: array{type: 'string',
+     *     description: 'The schema ID to retrieve'}}, required: list{'id'}}},
+     *     array{name: 'create_schema',
+     *     description: 'Create a new schema with properties definition',
+     *     parameters: array{type: 'object', properties: array{title: array{type: 'string',
+     *     description: 'The title of the schema'}, description: array{type: 'string',
+     *     description: 'A description of what this schema represents'},
+     *     properties: array{type: 'object',
+     *     description: 'JSON Schema properties definition'},
+     *     required: array{type: 'array', description: 'Array of required property names'}},
+     *     required: list{'title', 'properties'}}}, array{name: 'update_schema',
+     *     description: 'Update an existing schema',
+     *     parameters: array{type: 'object', properties: array{id: array{type: 'string',
+     *     description: 'The schema ID to update'}, title: array{type: 'string',
+     *     description: 'New title for the schema'}, description: array{type: 'string',
+     *     description: 'New description for the schema'}, properties: array{type: 'object',
+     *     description: 'Updated JSON Schema properties definition'}},
+     *     required: list{'id'}}}, array{name: 'delete_schema',
+     *     description: 'Delete a schema (only if it has no objects)',
+     *     parameters: array{type: 'object', properties: array{id: array{type: 'string',
+     *     description: 'The schema ID to delete'}}, required: list{'id'}}}>
      */
     public function getFunctions(): array
     {

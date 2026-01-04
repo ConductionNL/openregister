@@ -851,7 +851,12 @@ class DashboardService
      * @param int|null $schemaId   Optional schema ID to filter by
      * @param int|null $hours      Optional number of hours to look back for recent activity (default: 24)
      *
-     * @return (int|mixed)[] Array containing audit trail statistics: - total: Total number of audit trails - creates: Number of create actions in timeframe - updates: Number of update actions in timeframe - deletes: Number of delete actions in timeframe - reads: Number of read actions in timeframe
+     * @return (int|mixed)[] Array containing audit trail statistics:
+     *     - total: Total number of audit trails
+     *     - creates: Number of create actions in timeframe
+     *     - updates: Number of update actions in timeframe
+     *     - deletes: Number of delete actions in timeframe
+     *     - reads: Number of read actions in timeframe
      *
      * @psalm-return array{total: 0|mixed, creates: int, updates: int, deletes: int, reads: int}
      */

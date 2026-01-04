@@ -179,15 +179,190 @@ Documentation is available at [https://openregisters.app/](https://openregisters
 
 - Nextcloud 25 or higher
 - PHP 8.1 or higher
-- Database: PostgreSQL 12+ (with pgvector and pg_trgm extensions)
+- Database: PostgreSQL 12+ (with pgvector and pg_trgm extensions) **OR** MariaDB 10.5+ / MySQL 8.0+
 
-<!-- ## Installation
+## Installation
 
-[Installation instructions](https://conduction.nl/openconnector/installation)
+### Quick Start with Docker Compose
 
-## Support
+The fastest way to get started with OpenRegister for development or evaluation:
 
-[Support information](https://conduction.nl/openconnector/support) -->
+```bash
+# Clone the repository
+git clone https://github.com/ConductionNL/openregister.git
+cd openregister
+
+# Start with PostgreSQL (recommended)
+docker-compose up -d
+
+# Access Nextcloud at http://localhost:8080
+# Username: admin
+# Password: admin
+```
+
+**That's it!** OpenRegister will be automatically installed and ready to use.
+
+### Production Installation
+
+For production environments, install from the **Nextcloud App Store**:
+
+1. Log in to Nextcloud as administrator
+2. Go to **Settings** → **Apps**
+3. Search for **"OpenRegister"**
+4. Click **"Download and enable"**
+
+For detailed installation instructions including manual installation, database setup, and configuration options, see the [Complete Installation Guide](https://openregisters.app/docs/installation).
+
+## Docker Compose Setup
+
+OpenRegister includes a complete Docker Compose setup for local development and testing.
+
+### Services Overview
+
+| Service | Description | Port | Status |
+|---------|-------------|------|--------|
+| **nextcloud** | Nextcloud application server | 8080 | Required |
+| **db** | PostgreSQL with pgvector | 5432 | Required (default) |
+| **ollama** | Local LLM (Llama, Mistral) | 11434 | Required |
+| **presidio-analyzer** | PII detection | 5001 | Required |
+| **solr** | Search engine (legacy) | 8983 | Optional |
+| **n8n** | Workflow automation | 5678 | Optional |
+| **elasticsearch** | Alternative search | 9200 | Optional |
+
+### Database Options
+
+**PostgreSQL (Default - Recommended):**
+```bash
+docker-compose up -d
+```
+✅ Vector search, full-text search, strict type safety
+
+**MariaDB (For Compatibility Testing):**
+```bash
+docker-compose --profile mariadb up -d
+```
+✅ Backward compatibility, widely supported
+
+### Optional Services
+
+Start with additional services using profiles:
+
+```bash
+# Enable Solr search engine
+docker-compose --profile solr up -d
+
+# Enable n8n workflow automation
+docker-compose --profile n8n up -d
+
+# Enable multiple profiles
+docker-compose --profile solr --profile n8n up -d
+```
+
+### Common Commands
+
+```bash
+# Start services
+docker-compose up -d
+
+# View logs
+docker-compose logs -f nextcloud
+
+# Stop services
+docker-compose down
+
+# Stop and remove all data (fresh start)
+docker-compose down -v
+
+# Restart a service
+docker-compose restart nextcloud
+
+# Execute commands in Nextcloud container
+docker exec -u 33 nextcloud php occ app:list
+docker exec -u 33 nextcloud php occ app:enable openregister
+```
+
+### Database Management
+
+**PostgreSQL:**
+```bash
+# Access PostgreSQL CLI
+docker exec -it openregister-postgres psql -U nextcloud -d nextcloud
+
+# Check extensions
+docker exec openregister-postgres psql -U nextcloud -d nextcloud \
+  -c "SELECT extname, extversion FROM pg_extension;"
+
+# View tables
+docker exec openregister-postgres psql -U nextcloud -d nextcloud -c "\dt"
+```
+
+**MariaDB:**
+```bash
+# Access MariaDB CLI
+docker exec -it openregister-mariadb mysql -u nextcloud -p'!ChangeMe!' nextcloud
+
+# View tables
+docker exec openregister-mariadb mysql -u nextcloud -p'!ChangeMe!' -e "SHOW TABLES;" nextcloud
+```
+
+### AI Services
+
+**Pull Ollama Models:**
+```bash
+# Llama 3.2 (recommended)
+docker exec openregister-ollama ollama pull llama3.2
+
+# Mistral
+docker exec openregister-ollama ollama pull mistral
+
+# Code Llama
+docker exec openregister-ollama ollama pull codellama
+
+# List available models
+docker exec openregister-ollama ollama list
+```
+
+**Test Presidio:**
+```bash
+curl http://localhost:5001/health
+```
+
+### Troubleshooting
+
+**Port Already in Use:**
+```bash
+# Check what's using port 8080
+sudo lsof -i :8080
+
+# Or change the port in docker-compose.yml
+ports:
+  - "8081:80"  # Use 8081 instead
+```
+
+**Container Won't Start:**
+```bash
+# Check container logs
+docker-compose logs nextcloud
+docker-compose logs db
+
+# Restart containers
+docker-compose restart
+
+# Fresh start (removes all data!)
+docker-compose down -v
+docker-compose up -d
+```
+
+**Permission Errors:**
+```bash
+# Fix permissions on mounted volumes
+docker exec -u root nextcloud chown -R www-data:www-data /var/www/html
+```
+
+For more detailed Docker setup information, see:
+- [Docker Development Guide](website/docs/development/docker-setup.md)
+- [Database Testing Guide](docker/README-DATABASE-TESTING.md)
+- [Docker Profiles Guide](website/docs/development/docker-profiles.md)
 
 ## Project Structure
 
@@ -316,6 +491,63 @@ See the [Docker Development Setup Guide](website/docs/Development/docker-setup.m
 ### Development Environment
 
 If you are looking to contribute, please setup your own development environment following [setting up a development environment](https://cloud.nextcloud.com/s/iyNGp8ryWxc7Efa?dir=/1%20Setting%20up%20a%20development%20environment/Tutorial%20for%20Windows&openfile=true) or use our docker-compose setup.
+
+### Database Support & Testing
+
+OpenRegister supports both **PostgreSQL** (recommended) and **MariaDB/MySQL** for maximum flexibility.
+
+**PostgreSQL (Recommended):**
+- ✅ Vector search (pgvector) for semantic search
+- ✅ Full-text search (pg_trgm)
+- ✅ Strict type checking (catches errors early)
+- ✅ Advanced JSON operations
+
+**MariaDB/MySQL:**
+- ✅ Backward compatibility
+- ✅ Widely supported
+- ⚠️ No vector search
+- ⚠️ Basic full-text search
+
+**Quick Start:**
+
+```bash
+# Start with PostgreSQL (default)
+docker-compose up -d
+
+# Start with MariaDB (for compatibility testing)
+docker-compose --profile mariadb up -d
+
+# Run automated tests on both databases
+./docker/test-database-compatibility.sh
+```
+
+**Documentation:**
+- [Database Testing Guide](docker/README-DATABASE-TESTING.md) - Complete guide for testing both databases
+- [PostgreSQL Search Guide](website/docs/development/postgresql-search.md) - Vector search setup and usage
+- [Docker Profiles Guide](website/docs/development/docker-profiles.md) - Using Docker Compose profiles
+
+**Continuous Testing:**
+
+To ensure ongoing compatibility with both database types, run the automated test suite before releases:
+
+```bash
+# Test both PostgreSQL and MariaDB
+./docker/test-database-compatibility.sh
+
+# Test only PostgreSQL
+./docker/test-database-compatibility.sh --skip-mariadb
+
+# Test only MariaDB
+./docker/test-database-compatibility.sh --skip-postgres
+```
+
+The test suite will automatically:
+1. Start the database stack
+2. Initialize Nextcloud
+3. Enable OpenRegister
+4. Run Newman integration tests
+5. Report results
+6. Clean up containers and volumes
 
 ## Code Quality
 

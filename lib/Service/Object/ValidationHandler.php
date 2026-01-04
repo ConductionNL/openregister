@@ -127,7 +127,7 @@ class ValidationHandler
      *
      * @return array Array containing 'valid' and 'invalid' objects with details.
      *
-     * @psalm-return array{valid: array<int, array{id: int, uuid: string,
+     * @psalm-return   array{valid: array<int, array{id: int, uuid: string,
      *     name: string|null, data: array<string, mixed>}>,
      *     invalid: array<int, array{id: int, uuid: string,
      *     name: string|null, data: array<string, mixed>, error: string}>}
@@ -228,7 +228,7 @@ class ValidationHandler
      * @phpstan-return array{valid_count: int, invalid_count: int,
      *     valid_objects: array<int, array>, invalid_objects: array<int, array>,
      *     schema_id: int}
-     * @psalm-return array{valid_count: int<0, max>,
+     * @psalm-return   array{valid_count: int<0, max>,
      *     invalid_count: int<0, max>,
      *     valid_objects: list<array{data: array, id: int,
      *     name: null|string, uuid: null|string}>,

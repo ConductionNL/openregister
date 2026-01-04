@@ -157,6 +157,7 @@ class SolrSettingsController extends Controller
                                  *     documentCount: 0|mixed, shards: 0|mixed,
                                  *     health: 'unknown'|mixed}
                                  */
+
                             function (array $collection): array {
                                 return [
                                     'id'            => $collection['name'],
@@ -393,14 +394,10 @@ class SolrSettingsController extends Controller
                             'config' => [
                                 'enabled'     => $existingFacetConfig['enabled'] ?? true,
                                 'title'       => $existingFacetConfig['title'] ?? $facetInfo['displayName'] ?? $key,
-                                'description' => $existingFacetConfig['description'] ??
-                                    ($facetInfo['category'] ?? 'metadata').
-                                    " field: ".($facetInfo['displayName'] ?? $key),
+                                'description' => $existingFacetConfig['description'] ?? ($facetInfo['category'] ?? 'metadata')." field: ".($facetInfo['displayName'] ?? $key),
                                 'order'       => $existingFacetConfig['order'] ?? $index,
                                 'maxItems'    => $existingFacetConfig['max_items'] ?? $existingFacetConfig['maxItems'] ?? 10,
-                                'facetType'   => $existingFacetConfig['facet_type'] ??
-                                    $existingFacetConfig['facetType'] ??
-                                    $facetInfo['suggestedFacetType'] ?? 'terms',
+                                'facetType'   => $existingFacetConfig['facet_type'] ?? $existingFacetConfig['facetType'] ?? $facetInfo['suggestedFacetType'] ?? 'terms',
                                 'displayType' => $existingFacetConfig['display_type'] ?? $existingFacetConfig['displayType'] ?? ($facetInfo['suggestedDisplayTypes'][0] ?? 'select'),
                                 'showCount'   => $existingFacetConfig['show_count'] ?? $existingFacetConfig['showCount'] ?? true,
                             ],
@@ -423,14 +420,10 @@ class SolrSettingsController extends Controller
                             'config' => [
                                 'enabled'     => $existingFacetConfig['enabled'] ?? false,
                                 'title'       => $existingFacetConfig['title'] ?? $facetInfo['displayName'] ?? $key,
-                                'description' => $existingFacetConfig['description'] ??
-                                    ($facetInfo['category'] ?? 'object').
-                                    " field: ".($facetInfo['displayName'] ?? $key),
+                                'description' => $existingFacetConfig['description'] ?? ($facetInfo['category'] ?? 'object')." field: ".($facetInfo['displayName'] ?? $key),
                                 'order'       => $existingFacetConfig['order'] ?? (100 + $index),
                                 'maxItems'    => $existingFacetConfig['max_items'] ?? $existingFacetConfig['maxItems'] ?? 10,
-                                'facetType'   => $existingFacetConfig['facet_type'] ??
-                                    $existingFacetConfig['facetType'] ??
-                                    $facetInfo['suggestedFacetType'] ?? 'terms',
+                                'facetType'   => $existingFacetConfig['facet_type'] ?? $existingFacetConfig['facetType'] ?? $facetInfo['suggestedFacetType'] ?? 'terms',
                                 'displayType' => $existingFacetConfig['display_type'] ?? $existingFacetConfig['displayType'] ?? ($facetInfo['suggestedDisplayTypes'][0] ?? 'select'),
                                 'showCount'   => $existingFacetConfig['show_count'] ?? $existingFacetConfig['showCount'] ?? true,
                             ],

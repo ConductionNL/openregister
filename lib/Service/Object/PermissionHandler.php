@@ -366,7 +366,7 @@ class PermissionHandler
             // }
             // If (is_string($activeOrganisation) === true) {
             // Return $activeOrganisation;.
-            // }
+            // }.
             return null;
         } catch (Exception $e) {
             return null;

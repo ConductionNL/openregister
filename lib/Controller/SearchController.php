@@ -122,11 +122,21 @@ class SearchController extends Controller
         // Step 5: Format search results for JSON response.
         // Extract relevant fields from each object and standardize format.
         $formattedResults = array_map(
+            // phpcs:ignore Squiz.Commenting.BlockComment.NoEmptyLineBefore -- Empty line conflicts with "first argument must be on line after opening parenthesis" rule
             /*
+             * Format search result item.
+             *
              * @return (mixed|null|string)[]
              *
-             * @psalm-return array{id: mixed|null, name: 'Unknown'|mixed, type: 'object', url: mixed|null, source: 'openregister'}
+             * @psalm-return array{
+             *     id: mixed|null,
+             *     name: 'Unknown'|mixed,
+             *     type: 'object',
+             *     url: mixed|null,
+             *     source: 'openregister'
+             * }
              */
+
             function (array $object): array {
                 return [
                     'id'     => $object['uuid'] ?? $object['id'] ?? null,

@@ -71,7 +71,11 @@ class ObjectRetentionHandler
      *
      * @throws \RuntimeException If Object settings retrieval fails
      *
-     * @psalm-return array{vectorizationEnabled: false|mixed, vectorizeOnCreate: mixed|true, vectorizeOnUpdate: false|mixed, vectorizeAllViews: mixed|true, enabledViews: array<never, never>|mixed, includeMetadata: mixed|true, includeRelations: mixed|true, maxNestingDepth: 10|mixed, batchSize: 25|mixed, autoRetry: mixed|true}
+     * @psalm-return array{vectorizationEnabled: false|mixed,
+     *     vectorizeOnCreate: mixed|true, vectorizeOnUpdate: false|mixed,
+     *     vectorizeAllViews: mixed|true, enabledViews: array<never, never>|mixed,
+     *     includeMetadata: mixed|true, includeRelations: mixed|true,
+     *     maxNestingDepth: 10|mixed, batchSize: 25|mixed, autoRetry: mixed|true}
      */
     public function getObjectSettingsOnly(): array
     {
@@ -120,7 +124,11 @@ class ObjectRetentionHandler
      *
      * @throws \RuntimeException If update fails
      *
-     * @psalm-return array{vectorizationEnabled: false|mixed, vectorizeOnCreate: mixed|true, vectorizeOnUpdate: false|mixed, vectorizeAllViews: mixed|true, enabledViews: array<never, never>|mixed, includeMetadata: mixed|true, includeRelations: mixed|true, maxNestingDepth: 10|mixed, batchSize: 25|mixed, autoRetry: mixed|true}
+     * @psalm-return array{vectorizationEnabled: false|mixed,
+     *     vectorizeOnCreate: mixed|true, vectorizeOnUpdate: false|mixed,
+     *     vectorizeAllViews: mixed|true, enabledViews: array<never, never>|mixed,
+     *     includeMetadata: mixed|true, includeRelations: mixed|true,
+     *     maxNestingDepth: 10|mixed, batchSize: 25|mixed, autoRetry: mixed|true}
      */
     public function updateObjectSettingsOnly(array $objectData): array
     {
@@ -152,7 +160,13 @@ class ObjectRetentionHandler
      *
      * @throws \RuntimeException If Retention settings retrieval fails
      *
-     * @psalm-return array{objectArchiveRetention: 31536000000|mixed, objectDeleteRetention: 63072000000|mixed, searchTrailRetention: 2592000000|mixed, createLogRetention: 2592000000|mixed, readLogRetention: 86400000|mixed, updateLogRetention: 604800000|mixed, deleteLogRetention: 2592000000|mixed, auditTrailsEnabled: bool, searchTrailsEnabled: bool}
+     * @psalm-return array{objectArchiveRetention: 31536000000|mixed,
+     *     objectDeleteRetention: 63072000000|mixed,
+     *     searchTrailRetention: 2592000000|mixed,
+     *     createLogRetention: 2592000000|mixed, readLogRetention: 86400000|mixed,
+     *     updateLogRetention: 604800000|mixed,
+     *     deleteLogRetention: 2592000000|mixed, auditTrailsEnabled: bool,
+     *     searchTrailsEnabled: bool}
      */
     public function getRetentionSettingsOnly(): array
     {
@@ -208,7 +222,13 @@ class ObjectRetentionHandler
      *
      * @throws \RuntimeException If Retention settings update fails
      *
-     * @psalm-return array{objectArchiveRetention: 31536000000|mixed, objectDeleteRetention: 63072000000|mixed, searchTrailRetention: 2592000000|mixed, createLogRetention: 2592000000|mixed, readLogRetention: 86400000|mixed, updateLogRetention: 604800000|mixed, deleteLogRetention: 2592000000|mixed, auditTrailsEnabled: mixed|true, searchTrailsEnabled: mixed|true}
+     * @psalm-return array{objectArchiveRetention: 31536000000|mixed,
+     *     objectDeleteRetention: 63072000000|mixed,
+     *     searchTrailRetention: 2592000000|mixed,
+     *     createLogRetention: 2592000000|mixed, readLogRetention: 86400000|mixed,
+     *     updateLogRetention: 604800000|mixed,
+     *     deleteLogRetention: 2592000000|mixed, auditTrailsEnabled: mixed|true,
+     *     searchTrailsEnabled: mixed|true}
      */
     public function updateRetentionSettingsOnly(array $retentionData): array
     {

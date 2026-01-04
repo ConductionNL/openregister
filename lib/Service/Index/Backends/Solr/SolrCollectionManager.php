@@ -318,7 +318,10 @@ class SolrCollectionManager
      *
      * @return (bool|mixed|string)[] Result with success status
      *
-     * @psalm-return array{success: bool, message: 'ConfigSet created successfully'|'Exception during ConfigSet creation'|'Failed to create ConfigSet'|mixed, exception?: string, name?: string}
+     * @psalm-return array{success: bool,
+     *     message: 'ConfigSet created successfully'|
+     *     'Exception during ConfigSet creation'|
+     *     'Failed to create ConfigSet'|mixed, exception?: string, name?: string}
      */
     public function createConfigSet(string $name, string $baseConfigSet='_default'): array
     {
@@ -369,7 +372,10 @@ class SolrCollectionManager
      *
      * @return (bool|mixed|string)[] Result with success status
      *
-     * @psalm-return array{success: bool, message: 'ConfigSet deleted successfully'|'Exception during ConfigSet deletion'|'Failed to delete ConfigSet'|mixed, exception?: string, name?: string}
+     * @psalm-return array{success: bool,
+     *     message: 'ConfigSet deleted successfully'|
+     *     'Exception during ConfigSet deletion'|
+     *     'Failed to delete ConfigSet'|mixed, exception?: string, name?: string}
      */
     public function deleteConfigSet(string $name): array
     {

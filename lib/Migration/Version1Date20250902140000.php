@@ -107,9 +107,9 @@ class Version1Date20250902140000 extends SimpleMigrationStep
         // by Nextcloud's database abstraction layer. Queries on this column will use sequential scans
         // or can be optimized using PostgreSQL-specific indexes created manually if needed.
         // if ($table->hasIndex('objects_deleted_idx') === false) {
-        //     $table->addIndex(['deleted'], 'objects_deleted_idx');
-        //     $output->info(message: 'Added index objects_deleted_idx for soft delete filtering');
-        // }
+        // $table->addIndex(['deleted'], 'objects_deleted_idx');
+        // $output->info(message: 'Added index objects_deleted_idx for soft delete filtering');
+        // }.
         $output->info(message: 'Skipped objects_deleted_idx - JSON columns cannot have btree indexes in PostgreSQL');
 
         // Skip super-performance index creation for now to avoid MySQL key length issues.

@@ -408,12 +408,18 @@ class QueryHandler
 
         // **PERFORMANCE OPTIMIZATION**: For complex requests, use async version for better performance.
         if ($isComplexRequest === true) {
+            if ($hasFacets === true) {
+                $facetCount = count($query['_facets'] ?? []);
+            } else {
+                $facetCount = 0;
+            }
+
             $this->logger->debug(
                 message: 'Complex request detected, using async processing',
                 context: [
                     'hasFacets'    => $hasFacets,
                     'hasFacetable' => $hasFacetable,
-                    'facetCount'   => $hasFacets === true ? count($query['_facets'] ?? []) : 0,
+                    'facetCount'   => $facetCount,
                 ]
             );
 
@@ -425,7 +431,7 @@ class QueryHandler
                 published: $published,
                 deleted: $deleted
             );
-        }
+        }//end if
 
         // **PERFORMANCE OPTIMIZATION**: Simple requests - minimal operations for sub-500ms performance.
         $this->logger->debug(
@@ -572,7 +578,11 @@ class QueryHandler
      *
      * @phpstan-param array<string, mixed> $query
      *
-     * @psalm-return   PromiseInterface<array{results: mixed, total: mixed, page: float|int<1, max>|mixed, pages: 1|float, limit: int<1, max>, offset: 0|mixed, facets: mixed, facetable?: mixed}>
+     * @return PromiseInterface
+     *
+     * @psalm-return   PromiseInterface<array{results: mixed, total: mixed,
+     *     page: float|int<1, max>|mixed, pages: 1|float, limit: int<1, max>,
+     *     offset: 0|mixed, facets: mixed, facetable?: mixed}>
      * @phpstan-return PromiseInterface
      */
     public function searchObjectsPaginatedAsync(
@@ -634,6 +644,7 @@ class QueryHandler
                 function ($resolve, $reject) use ($baseQuery, $sampleSize) {
                     try {
                         $result = $this->facetHandler->getFacetableFields(baseQuery: $baseQuery, sampleSize: $sampleSize);
+
                         /*
                          * @var callable(mixed): void $resolve
                          */
@@ -674,6 +685,7 @@ class QueryHandler
                             'limit'       => $paginatedQuery['_limit'] ?? 20,
                         ]
                     );
+
                     /*
                      * @var callable(mixed): void $resolve
                      */
@@ -690,6 +702,7 @@ class QueryHandler
             function ($resolve, $reject) use ($countQuery) {
                 try {
                     $result = $this->facetHandler->getFacetsForObjects($countQuery);
+
                     /*
                      * @var callable(mixed): void $resolve
                      */
@@ -710,6 +723,7 @@ class QueryHandler
                         _rbac: $_rbac,
                         _multitenancy: $_multitenancy
                     );
+
                     /*
                      * @var callable(mixed): void $resolve
                      */

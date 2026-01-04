@@ -300,7 +300,7 @@ class DashboardController extends Controller
             return new JSONResponse(data: $data);
         } catch (\Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
-        }
+        }//end try
     }//end getAuditTrailActionChart()
 
     /**

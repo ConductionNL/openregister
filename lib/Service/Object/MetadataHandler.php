@@ -110,6 +110,8 @@ class MetadataHandler
      *
      * @phpstan-param string $text
      *
+     * @return string
+     *
      * @psalm-return   string
      * @phpstan-return string
      */

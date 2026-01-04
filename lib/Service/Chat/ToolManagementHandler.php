@@ -216,8 +216,17 @@ class ToolManagementHandler
                     }
 
                     // Create parameter using constructor.
-                    // Constructor: __construct(string $name, string $type, string $description, array $enum=[], ?string $format=null, array|string|null $itemsOrProperties=null).
-                    $parameters[] = new Parameter($paramName, $type, $description, $enum, $format, $itemsOrProperties);
+                    // Constructor: __construct(string $name, string $type,
+                    // string $description, array $enum=[], ?string $format=null,
+                    // array|string|null $itemsOrProperties=null).
+                    $parameters[] = new Parameter(
+                        $paramName,
+                            $type,
+                            $description,
+                            $enum,
+                            $format,
+                        $itemsOrProperties
+                    );
                 }//end foreach
             }//end if
 

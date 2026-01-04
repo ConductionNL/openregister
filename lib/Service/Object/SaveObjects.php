@@ -234,7 +234,19 @@ class SaveObjects
      *
      * @phpstan-return array<string, mixed>
      *
-     * @psalm-return array{saved: list<array<string, mixed>>, updated: list<array<string, mixed>>, unchanged: array<never, never>, invalid: list<array<string, mixed>|mixed>, errors: list<array<string, mixed>>, statistics: array{totalProcessed: int<0, max>, saved: int, updated: int, unchanged: 0, invalid: int, errors: int, processingTimeMs: 0}, chunkStatistics?: list<array{chunkIndex: int<0, max>, count: int<0, max>, invalid: int, saved: int, updated: int}>, performance?: array{totalTime: float, totalTimeMs: float, objectsPerSecond: float, totalProcessed: int<0, max>, totalRequested: int<0, max>, efficiency: 0|float, deduplicationEfficiency?: string}}
+     * @psalm-return array{saved: list<array<string, mixed>>,
+     *     updated: list<array<string, mixed>>, unchanged: array<never, never>,
+     *     invalid: list<array<string, mixed>|mixed>,
+     *     errors: list<array<string, mixed>>,
+     *     statistics: array{totalProcessed: int<0, max>, saved: int,
+     *     updated: int, unchanged: 0, invalid: int, errors: int,
+     *     processingTimeMs: 0},
+     *     chunkStatistics?: list<array{chunkIndex: int<0, max>,
+     *     count: int<0, max>, invalid: int, saved: int, updated: int}>,
+     *     performance?: array{totalTime: float, totalTimeMs: float,
+     *     objectsPerSecond: float, totalProcessed: int<0, max>,
+     *     totalRequested: int<0, max>, efficiency: 0|float,
+     *     deduplicationEfficiency?: string}>
      */
     public function saveObjects(
         array $objects,
@@ -346,14 +358,23 @@ class SaveObjects
     private function logBulkOperationStart(int $totalObjects, bool $isMixedSchema): void
     {
         // Determine log threshold based on operation type.
-        $logThreshold = $isMixedSchema === true ? 1000 : 10000;
+        if ($isMixedSchema === true) {
+            $logThreshold = 1000;
+        } else {
+            $logThreshold = 10000;
+        }
 
         if ($totalObjects <= $logThreshold) {
             return;
         }
 
-        $operationType = $isMixedSchema === true ? 'mixed-schema' : 'single-schema';
-        $logMessage    = "Starting {$operationType} bulk save operation";
+        if ($isMixedSchema === true) {
+            $operationType = 'mixed-schema';
+        } else {
+            $operationType = 'single-schema';
+        }
+
+        $logMessage = "Starting {$operationType} bulk save operation";
 
         $this->logger->info(
             $logMessage,
@@ -527,7 +548,11 @@ class SaveObjects
         $overallSpeed = $processedCount / max($totalTime, 0.001);
 
         // Calculate efficiency percentage.
-        $efficiency = $processedCount > 0 ? round(($processedCount / $totalRequested) * 100, 1) : 0;
+        if ($processedCount > 0) {
+            $efficiency = round(($processedCount / $totalRequested) * 100, 1);
+        } else {
+            $efficiency = 0;
+        }
 
         $performance = [
             'totalTime'        => round($totalTime, 3),
@@ -701,6 +726,7 @@ class SaveObjects
              *
              * @psalm-suppress TypeDoesNotContainNull - find() throws DoesNotExistException, never returns null
              */
+
             if ($referencedObject === null) {
                 return null;
             }
@@ -736,6 +762,8 @@ class SaveObjects
      * @param string $uuid           The UUID that couldn't be resolved
      * @param string $metadataType   The type of metadata
      * @param array  $propertyConfig The property configuration
+     *
+     * @return string
      *
      * @psalm-return   string
      * @phpstan-return string
@@ -1052,8 +1080,12 @@ class SaveObjects
         $schemaAnalysis = [$schemaId => $this->getSchemaAnalysisWithCache($schemaObj)];
 
         // PERFORMANCE OPTIMIZATION: Pre-calculate metadata once.
-        $currentUser  = $this->userSession->getUser();
-        $defaultOwner = ($currentUser !== null) ? $currentUser->getUID() : null;
+        $currentUser = $this->userSession->getUser();
+        if ($currentUser !== null) {
+            $defaultOwner = $currentUser->getUID();
+        } else {
+            $defaultOwner = null;
+        }
 
         // NO ERROR SUPPRESSION: Let organisation service errors bubble up immediately!
         $defaultOrganisation = null;
@@ -1076,11 +1108,15 @@ class SaveObjects
                 $selfData['schema']   = $selfData['schema'] ?? $schemaId;
 
                 // PERFORMANCE: Accept any non-empty string as ID, prioritize CSV 'id' column.
-                $providedId       = $object['id'] ?? $selfData['id'] ?? null;
-                $selfData['uuid'] = (($providedId !== null) === true && empty(trim($providedId)) === false) ? $providedId
-            // Also set in @self for consistency.
-                    : Uuid::v4()->toRfc4122();
-            // Set @self.id to generated UUID.
+                $providedId = $object['id'] ?? $selfData['id'] ?? null;
+            if (($providedId !== null) === true && empty(trim($providedId)) === false) {
+                // Also set in @self for consistency.
+                $selfData['uuid'] = $providedId;
+            } else {
+                $selfData['uuid'] = Uuid::v4()->toRfc4122();
+            }
+
+                // Set @self.id to generated UUID.
                 // PERFORMANCE: Use pre-calculated metadata values.
                 $selfData['owner']        = $selfData['owner'] ?? $defaultOwner;
                 $selfData['organisation'] = $selfData['organisation'] ?? $defaultOrganisation;
@@ -1195,7 +1231,11 @@ class SaveObjects
             }
 
                 // Determine @self keys for debugging.
-                $selfKeys = ((($object['@self'] ?? null) !== null) === true) ? array_keys($object['@self']) : 'none';
+            if ((($object['@self'] ?? null) !== null) === true) {
+                $selfKeys = array_keys($object['@self']);
+            } else {
+                $selfKeys = 'none';
+            }
 
                 // DEBUG: Log actual data structure to understand what we're receiving.
                 $this->logger->info(
@@ -1312,14 +1352,22 @@ class SaveObjects
      * @param bool  $_validation   Apply schema validation (unused).
      * @param bool  $_events       Dispatch events (unused).
      *
-     * @psalm-return array{saved: list<array{'@self': array{name: mixed|null|string, ...}, ...}|mixed>, updated: list<mixed>, invalid: list<array<string, mixed>>, errors: array<never, never>, statistics: array{saved: int, updated: int, invalid: int<0, max>, errors?: mixed, unchanged?: int, processingTimeMs?: float}, unchanged?: array<int<0, max>, mixed>}
+     * @psalm-return array{saved: list<array{'@self':
+     *     array{name: mixed|null|string, ...}, ...}|mixed>,
+     *     updated: list<mixed>, invalid: list<array<string, mixed>>,
+     *     errors: array<never, never>,
+     *     statistics: array{saved: int, updated: int, invalid: int<0, max>,
+     *     errors?: mixed, unchanged?: int, processingTimeMs?: float},
+     *     unchanged?: array<int<0, max>, mixed>}
      *
      * @return array[]
      *
      * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      */
-    private function processObjectsChunk(array $objects, array $schemaCache, bool $_rbac, bool $_multitenancy, bool $_validation, bool $_events): array
-    {
+    private function processObjectsChunk(
+        array $objects, array $schemaCache, bool $_rbac,
+        bool $_multitenancy, bool $_validation, bool $_events
+    ): array {
         $startTime = microtime(true);
 
         $result = [
@@ -1341,9 +1389,9 @@ class SaveObjects
         $transformationResult = $this->transformationHandler->transformObjectsToDatabaseFormatInPlace(objects: $objects, schemaCache: $schemaCache);
         $transformedObjects   = $transformationResult['valid'];
 
-        // CRITICAL FIX: The metadata hydration should already be done in prepareSingleSchemaObjectsOptimized.
-        // This redundant hydration might be causing issues - let's skip it for now.
         /*
+         * CRITICAL FIX: The metadata hydration should already be done in prepareSingleSchemaObjectsOptimized.
+         * This redundant hydration might be causing issues - let's skip it for now.
             foreach ($transformedObjects ?? [] as &$objData) {
             // Ensure metadata fields from object hydration are preserved.
             if (isset($objData['schema']) && (($schemaCache[$objData['schema']] ?? null) !== null)) {
@@ -1390,7 +1438,7 @@ class SaveObjects
                 }
             }
             }
-        */
+         */
 
         // PERFORMANCE OPTIMIZATION: Batch error processing.
         if (empty($transformationResult['invalid']) === false) {
@@ -1405,10 +1453,10 @@ class SaveObjects
             $result['statistics']['errors'] += $invalidCount;
         }
 
-        // STEP 2: OPTIMIZED VALIDATION - TEMPORARILY DISABLED FOR TESTING.
-        // The validation step may be forcing objects to JSON format instead of keeping them as objects.
-        // Disabling to test if this resolves object structure issues.
         /*
+         * STEP 2: OPTIMIZED VALIDATION - TEMPORARILY DISABLED FOR TESTING.
+         * The validation step may be forcing objects to JSON format instead of keeping them as objects.
+         * Disabling to test if this resolves object structure issues.
             if ($validation === true) {
             $validatedObjects = $this->validateObjectsAgainstSchemaOptimized($transformedObjects, $schemaCache);
             // Move invalid objects to result and remove from processing.
@@ -1418,7 +1466,7 @@ class SaveObjects
             }
             $transformedObjects = $validatedObjects['valid'];
             }
-        */
+         */
 
         if (empty($transformedObjects) === true) {
             return $result;
@@ -1444,7 +1492,11 @@ class SaveObjects
         $result['statistics']['unchanged'] = count($unchangedObjects);
         $result['unchanged'] = array_map(
             function ($obj) {
-                return (is_array($obj) === true) ? $obj : $obj->jsonSerialize();
+                if (is_array($obj) === true) {
+                    return $obj;
+                } else {
+                    return $obj->jsonSerialize();
+                }
             },
             $unchangedObjects
         );
@@ -1580,7 +1632,12 @@ class SaveObjects
         if (empty($reconstructedObjects) === true) {
             // FALLBACK: Use traditional object reconstruction.
             $updateObjects = [];
-            $savedObjects  = $this->reconstructSavedObjects(insertObjects: $transformedObjects, updateObjects: $updateObjects, _savedObjectIds: $savedObjectIds, _existingObjects: []);
+            $savedObjects  = $this->reconstructSavedObjects(
+                insertObjects: $transformedObjects,
+                updateObjects: $updateObjects,
+                _savedObjectIds: $savedObjectIds,
+                _existingObjects: []
+            );
 
             // Fallback classification (less precise).
             foreach ($savedObjects as $obj) {
@@ -1612,7 +1669,10 @@ class SaveObjects
      *
      * @return (((bool|mixed)[]|mixed)[]|bool|null)[]
      *
-     * @psalm-return   array{metadataFields: array<string, mixed>, inverseProperties: array<array{inversedBy: mixed, writeBack: bool, isArray: bool}>, validationRequired: bool, properties: array|null, configuration: array|null}
+     * @psalm-return   array{metadataFields: array<string, mixed>,
+     *     inverseProperties: array<array{inversedBy: mixed, writeBack: bool,
+     *     isArray: bool}>, validationRequired: bool, properties: array|null,
+     *     configuration: array|null}
      * @phpstan-return array<string, mixed>
      */
     private function performComprehensiveSchemaAnalysis(Schema $schema): array
@@ -1685,7 +1745,10 @@ class SaveObjects
                 $inversedBy = $propertyInfo['inversedBy'];
 
                 // Handle single object relations.
-                if (($propertyInfo['isArray'] === false) === true && is_string($value) === true && \Symfony\Component\Uid\Uuid::isValid($value) === true) {
+                if (($propertyInfo['isArray'] === false) === true
+                    && is_string($value) === true
+                    && \Symfony\Component\Uid\Uuid::isValid($value) === true
+                ) {
                     if (isset($objectsByUuid[$value]) === true) {
                         // @psalm-suppress EmptyArrayAccess - Already checked isset above.
                         $targetObject = &$objectsByUuid[$value];
@@ -1744,7 +1807,7 @@ class SaveObjects
      *
      * @param array       $object The object data to process
      * @param Schema      $schema The schema containing property definitions
-     * @param string|null $uuid   The UUID of the parent object (will be generated if null)
+     * @param string|null $uuid   The UUID of the parent object
      *
      * @return (array|string)[] Array containing [processedObject, parentUuid]
      *
@@ -1769,7 +1832,11 @@ class SaveObjects
      *
      * @return (((int|string)|mixed)[]|mixed)[][]
      *
-     * @psalm-return array{valid: list<mixed>, invalid: list<array{error: non-empty-string, index: array-key, object: mixed, type: 'InvalidSchemaException'|'MissingRegisterException'|'MissingSchemaException'}>}
+     * @psalm-return array{valid: list<mixed>,
+     *     invalid: list<array{error: non-empty-string, index: array-key,
+     *     object: mixed,
+     *     type: 'InvalidSchemaException'|'MissingRegisterException'|
+     *     'MissingSchemaException'}>}
      */
     private function transformObjectsToDatabaseFormatInPlace(array &$objects, array $schemaCache): array
     {
@@ -1780,9 +1847,13 @@ class SaveObjects
             // CRITICAL FIX: Objects from prepareSingleSchemaObjectsOptimized are already flat $selfData arrays.
             // They don't have an '@self' key because they ARE the self data.
             // Only extract @self if it exists (mixed schema or other paths).
-            $selfData = (($object['@self'] ?? null) !== null) ? $object['@self']
-            // Extract @self
-                : $object;
+            if (($object['@self'] ?? null) !== null) {
+                // Extract @self.
+                $selfData = $object['@self'];
+            } else {
+                $selfData = $object;
+            }
+
             // Object is already a flat $selfData array from prepareSingleSchemaObjectsOptimized.
             // Auto-wire @self metadata with proper UUID validation and generation.
             new DateTime();
@@ -1804,11 +1875,19 @@ class SaveObjects
             // CRITICAL FIX: Use register and schema from object data if available.
             // Register and schema should be provided in object data for this method.
             if (($selfData['register'] ?? null) === null && ($object['register'] ?? null) !== null) {
-                $selfData['register'] = (is_object($object['register']) === true) ? $object['register']->getId() : $object['register'];
+                if (is_object($object['register']) === true) {
+                    $selfData['register'] = $object['register']->getId();
+                } else {
+                    $selfData['register'] = $object['register'];
+                }
             }
 
             if (($selfData['schema'] ?? null) === null && ($object['schema'] ?? null) !== null) {
-                $selfData['schema'] = (is_object($object['schema']) === true) ? $object['schema']->getId() : $object['schema'];
+                if (is_object($object['schema']) === true) {
+                    $selfData['schema'] = $object['schema']->getId();
+                } else {
+                    $selfData['schema'] = $object['schema'];
+                }
             }
 
             // Note: Register and schema should be set in object data before calling this method.
@@ -1846,8 +1925,12 @@ class SaveObjects
 
             // Set owner to current user if not provided (with null check).
             if (($selfData['owner'] ?? null) === null || empty($selfData['owner']) === true) {
-                $currentUser       = $this->userSession->getUser();
-                $selfData['owner'] = (($currentUser !== null) === true) ? $currentUser->getUID() : null;
+                $currentUser = $this->userSession->getUser();
+                if ($currentUser !== null) {
+                    $selfData['owner'] = $currentUser->getUID();
+                } else {
+                    $selfData['owner'] = null;
+                }
             }
 
             // Set organization using optimized OrganisationService method if not provided.
@@ -2092,7 +2175,11 @@ class SaveObjects
                     continue;
                 }
 
-                $relatedObjectIds = (is_array($objectData[$propertyName]) === true) ? $objectData[$propertyName] : [$objectData[$propertyName]];
+                if (is_array($objectData[$propertyName]) === true) {
+                    $relatedObjectIds = $objectData[$propertyName];
+                } else {
+                    $relatedObjectIds = [$objectData[$propertyName]];
+                }
 
                 foreach ($relatedObjectIds ?? [] as $relatedId) {
                     if (empty($relatedId) === false && empty($inverseConfig['writeBack']) === false) {

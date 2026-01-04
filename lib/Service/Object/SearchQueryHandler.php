@@ -115,8 +115,8 @@ class SearchQueryHandler
                     }
 
                     if (isset($current[$part]) === true) {
-                        // Ensure it's an array, reset if not.
                         /*
+                         * Ensure it's an array, reset if not.
                          * @psalm-suppress TypeDoesNotContainType - $current[$part] may have been set to non-array earlier
                          */
 

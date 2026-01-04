@@ -8,7 +8,7 @@
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0
+ * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link     https://github.com/ConductionNL/openregister
  */
 
@@ -39,7 +39,7 @@ use Psr\Log\LoggerInterface;
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0
+ * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
  */
@@ -103,12 +103,20 @@ class FileFormattingHandler
         $shares = $this->fileService->findShares($file);
 
         // Get base metadata array.
+        if (count($shares) > 0) {
+            $accessUrl   = $this->fileService->getShareLink($shares[0]);
+            $downloadUrl = $accessUrl.'/download';
+        } else {
+            $accessUrl   = null;
+            $downloadUrl = null;
+        }
+
         $metadata = [
             'id'          => $file->getId(),
             'path'        => $file->getPath(),
             'title'       => $file->getName(),
-            'accessUrl'   => count($shares) > 0 ? $this->fileService->getShareLink($shares[0]) : null,
-            'downloadUrl' => count($shares) > 0 ? $this->fileService->getShareLink($shares[0]).'/download' : null,
+            'accessUrl'   => $accessUrl,
+            'downloadUrl' => $downloadUrl,
             'type'        => $file->getMimetype(),
             'extension'   => $file->getExtension(),
             'size'        => $file->getSize(),
@@ -171,7 +179,9 @@ class FileFormattingHandler
      *
      * @return (array[]|int)[]
      *
-     * @psalm-return   array{results: list<array<string, mixed>>, total: int<0, max>, page: int<1, max>, pages: int, limit: int<1, 100>, offset: int<0, max>}
+     * @psalm-return   array{results: list<array<string, mixed>>,
+     *     total: int<0, max>, page: int<1, max>, pages: int,
+     *     limit: int<1, 100>, offset: int<0, max>}
      * @phpstan-return array{results: array<int, array<string, mixed>>, total: int, page: int, pages: int, limit: int, offset: int}
      *
      * @throws InvalidPathException If any file path is invalid.

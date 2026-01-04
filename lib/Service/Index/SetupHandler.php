@@ -410,7 +410,8 @@ class SetupHandler
                             'template'               => '_default',
                             'error_type'             => $errorDetails['error_type'] ?? 'configset_creation_failure',
                             'url_attempted'          => $errorDetails['url_attempted'] ?? 'unknown',
-                            'actual_error'           => $errorDetails['error_message'] ?? 'Failed to create tenant configSet "'.$tenantConfigSetName.'"',
+                            'actual_error'           => $errorDetails['error_message'] ?? // phpcs:ignore Generic.Files.LineLength.TooLong -- Error message
+                                'Failed to create tenant configSet "'.$tenantConfigSetName.'"',
                             'guzzle_response_status' => $errorDetails['guzzle_response_status'] ?? null,
                             'guzzle_response_body'   => $errorDetails['guzzle_response_body'] ?? null,
                             'solr_error_code'        => $errorDetails['solr_error_code'] ?? null,
@@ -773,7 +774,8 @@ class SetupHandler
                     'total_steps'               => $this->setupProgress['total_steps'],
                     'solr_host'                 => $this->solrConfig['host'] ?? 'localhost',
                     'solr_port'                 => $this->solrConfig['port'] ?? '8983',
-                    'admin_ui_url'              => 'http://'.($this->solrConfig['host'] ?? 'localhost').':'.($this->solrConfig['port'] ?? '8983').'/solr/',
+                    'admin_ui_url'              => 'http://'.($this->solrConfig['host'] ?? 'localhost').':'. // phpcs:ignore Generic.Files.LineLength.TooLong -- URL
+                        ($this->solrConfig['port'] ?? '8983').'/solr/',
                 ]
             );
 
@@ -1513,7 +1515,7 @@ class SetupHandler
             // Simplified to just use $solrResponse directly.
             // If ($retryDetails === true) {
             // $solrResponseValue = $retryDetails;
-            // }
+            // }.
             $this->lastErrorDetails = [
                 'primary_error'      => 'Failed to create tenant collection "'.$tenantCollectionName.'"',
                 'error_type'         => 'collection_creation_failure',
@@ -1547,10 +1549,12 @@ class SetupHandler
      * This addresses the ZooKeeper propagation delay issue by directly attempting
      * collection creation with exponential backoff retry logic instead of polling.
      *
-     * @param  string $collectionName Collection name to create
-     * @param  string $configSetName  ConfigSet name to use
-     * @param  int    $maxAttempts    Maximum number of retry attempts (default: 6 - up to ~120 seconds)
+     * @param string $collectionName Collection name to create
+     * @param string $configSetName  ConfigSet name to use
+     * @param int    $maxAttempts    Maximum number of retry attempts (default: 6 - up to ~120 seconds)
+     *
      * @return bool True if collection created successfully
+     *
      * @throws \Exception If all retry attempts fail
      */
     private function createCollectionWithRetry(string $collectionName, string $configSetName, int $maxAttempts=6): bool
@@ -1657,11 +1661,10 @@ class SetupHandler
                     $totalElapsed = time() - $startTime;
                     $retryDetails['total_elapsed_seconds'] = $totalElapsed;
 
-                    throw new Exception(
-                        "SOLR ConfigSet propagation timeout: The configSet was created successfully "."but is still propagating across the SOLR cluster. "."This is normal in distributed SOLR environments. "."Attempted {$attempt} times over {$totalElapsed} seconds. "."Please wait 2-5 minutes and try the setup again.",
-                        500,
-                        new Exception(json_encode($retryDetails))
-                    );
+                    $message = "SOLR ConfigSet propagation timeout: The configSet was created successfully but is still propagating across the SOLR cluster. ".
+                        "This is normal in distributed SOLR environments. Attempted {$attempt} times over {$totalElapsed} seconds. ".
+                        "Please wait 2-5 minutes and try the setup again.";
+                    throw new Exception($message, 500, new Exception(json_encode($retryDetails)));
                 }
 
                 // If not a configSet propagation error, throw immediately.
@@ -1695,7 +1698,8 @@ class SetupHandler
     /**
      * Check if error message indicates configSet propagation delay
      *
-     * @param  string $errorMessage Error message from SOLR
+     * @param string $errorMessage Error message from SOLR
+     *
      * @return bool True if this appears to be a configSet propagation issue
      */
     private function isConfigSetPropagationError(string $errorMessage): bool
@@ -1917,8 +1921,9 @@ class SetupHandler
     /**
      * Create a new SOLR collection using a configSet (SolrCloud)
      *
-     * @param  string $collectionName Name for the new collection
-     * @param  string $configSetName  Name of the configSet to use
+     * @param string $collectionName Name for the new collection
+     * @param string $configSetName  Name of the configSet to use
+     *
      * @return bool True if collection was created successfully
      */
     private function createCollection(string $collectionName, string $configSetName): bool
@@ -2090,7 +2095,8 @@ class SetupHandler
      * This method uploads a pre-packaged configSet ZIP file to SOLR, which bypasses
      * the authentication requirements for creating configSets from trusted templates.
      *
-     * @param  string $configSetName Name for the new configSet
+     * @param string $configSetName Name for the new configSet
+     *
      * @return bool True if configSet was uploaded successfully
      */
     private function uploadConfigSet(string $configSetName): bool
@@ -2401,7 +2407,10 @@ class SetupHandler
      *
      * @return ((mixed|string|true)[]|bool|mixed|string)[]
      *
-     * @psalm-return array{success: bool, action: string, error?: 'Unknown error'|mixed, details?: array{success?: mixed|true, reason?: 'Field exists with compatible configuration'|mixed,...}}
+     * @psalm-return array{success: bool, action: string,
+     *     error?: 'Unknown error'|mixed,
+     *     details?: array{success?: mixed|true,
+     *     reason?: 'Field exists with compatible configuration'|mixed,...}}
      */
     private function addOrUpdateSchemaFieldWithTracking(string $fieldName, array $fieldConfig): array
     {
@@ -2460,7 +2469,9 @@ class SetupHandler
      *
      * @return (bool|mixed|string)[]
      *
-     * @psalm-return array{success: bool, error?: mixed|string, exception_type?: get-class-of<$e, Exception>, response_body?: string, solr_response?: mixed}
+     * @psalm-return array{success: bool, error?: mixed|string,
+     *     exception_type?: get-class-of<$e, Exception>,
+     *     response_body?: string, solr_response?: mixed}
      */
     private function addSchemaFieldWithResult(string $fieldName, array $fieldConfig): array
     {
@@ -2521,7 +2532,9 @@ class SetupHandler
      *
      * @return (bool|mixed|string)[]
      *
-     * @psalm-return array{success: bool, error?: mixed|string, exception_type?: get-class-of<$e, Exception>, response_body?: string, solr_response?: mixed}
+     * @psalm-return array{success: bool, error?: mixed|string,
+     *     exception_type?: get-class-of<$e, Exception>,
+     *     response_body?: string, solr_response?: mixed}
      */
     private function replaceSchemaFieldWithResult(string $fieldName, array $fieldConfig): array
     {
@@ -2817,8 +2830,9 @@ class SetupHandler
     /**
      * Add a new field to the SOLR schema
      *
-     * @param  string $fieldName   Name of the field to add
-     * @param  array  $fieldConfig Field configuration
+     * @param string $fieldName   Name of the field to add
+     * @param array  $fieldConfig Field configuration
+     *
      * @return bool True if field was added successfully
      */
     private function addSchemaField(string $fieldName, array $fieldConfig): bool
@@ -2884,8 +2898,9 @@ class SetupHandler
     /**
      * Replace an existing field in the SOLR schema
      *
-     * @param  string $fieldName   Name of the field to replace
-     * @param  array  $fieldConfig Field configuration
+     * @param string $fieldName   Name of the field to replace
+     * @param array  $fieldConfig Field configuration
+     *
      * @return bool True if field was replaced successfully
      */
     private function replaceSchemaField(string $fieldName, array $fieldConfig): bool
@@ -3003,7 +3018,8 @@ class SetupHandler
     /**
      * Test that a collection responds to queries correctly (SolrCloud)
      *
-     * @param  string $collectionName Name of the collection to test
+     * @param string $collectionName Name of the collection to test
+     *
      * @return bool True if collection responds to queries properly
      */
     private function testCollectionQuery(string $collectionName): bool

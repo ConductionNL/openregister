@@ -141,15 +141,16 @@ class FacetsHandler
                     $interval = $config['interval'] ?? 'month';
                     $facets['@self'][$field] = $this->metaDataFacetHandler
                         ->getDateHistogramFacet(
-                            field: $field, interval: $interval,
+                            field: $field,
+                                interval: $interval,
                             baseQuery: $baseQuery
                         );
                 } else if ($type === 'range') {
                     $ranges = $config['ranges'] ?? [];
                     $facets['@self'][$field] = $this->metaDataFacetHandler->getRangeFacet(field: $field, ranges: $ranges, baseQuery: $baseQuery);
                 }
-            }
-        }
+            }//end foreach
+        }//end if
 
         // Process object field facets.
         $objectFacetConfig = array_filter(

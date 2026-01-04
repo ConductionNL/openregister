@@ -330,7 +330,11 @@ class ObjectServiceFacetExample
      *
      * @return ((array|float|int)[]|float)[]
      *
-     * @psalm-return array{new_approach: array{execution_time: float, facet_count: int<0, max>, results: array}, legacy_approach: array{execution_time: float, facet_count: int<0, max>, results: array}, performance_improvement: float}
+     * @psalm-return array{new_approach: array{execution_time: float,
+     *     facet_count: int<0, max>, results: array},
+     *     legacy_approach: array{execution_time: float,
+     *     facet_count: int<0, max>, results: array},
+     *     performance_improvement: float}
      */
     public function performanceComparison(): array
     {
@@ -392,7 +396,15 @@ class ObjectServiceFacetExample
      *
      * @return (((mixed|null)[][]|bool|mixed|null|string)[]|mixed)[][]
      *
-     * @psalm-return array{search: array{results: mixed, pagination: array{current_page: mixed, total_pages: mixed, total_items: mixed, items_per_page: mixed, has_next: bool, has_prev: bool, next_url: mixed|null, prev_url: mixed|null}}, facets: array<string, array{field: mixed|string, type: mixed, label: string, options: array<array{value: mixed, label: mixed, count: mixed, from: mixed|null, to: mixed|null}>}>, applied_filters: array<string, array{field: mixed|string, value: mixed, type: 'metadata'|'object_field'}>}
+     * @psalm-return array{search: array{results: mixed,
+     *     pagination: array{current_page: mixed, total_pages: mixed,
+     *     total_items: mixed, items_per_page: mixed, has_next: bool,
+     *     has_prev: bool, next_url: mixed|null, prev_url: mixed|null}},
+     *     facets: array<string, array{field: mixed|string, type: mixed,
+     *     label: string, options: array<array{value: mixed, label: mixed,
+     *     count: mixed, from: mixed|null, to: mixed|null}>}>,
+     *     applied_filters: array<string, array{field: mixed|string, value: mixed,
+     *     type: 'metadata'|'object_field'}>}
      */
     public function frontendIntegrationExample(): array
     {
@@ -448,7 +460,9 @@ class ObjectServiceFacetExample
      *
      * @return ((mixed|null)[][]|mixed|string)[][]
      *
-     * @psalm-return array<string, array{field: mixed|string, type: mixed, label: string, options: array<array{value: mixed, label: mixed, count: mixed, from: mixed|null, to: mixed|null}>}>
+     * @psalm-return array<string, array{field: mixed|string, type: mixed,
+     *     label: string, options: array<array{value: mixed, label: mixed,
+     *     count: mixed, from: mixed|null, to: mixed|null}>}>
      */
     private function transformFacetsForFrontend(array $facets): array
     {

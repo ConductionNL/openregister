@@ -77,6 +77,7 @@ class CascadingHandler
             // Get the URL generator from the SaveObject handler.
             $urlGenerator         = new ReflectionClass($this->saveHandler);
             $urlGeneratorProperty = $urlGenerator->getProperty('urlGenerator');
+
             /*
              * @psalm-suppress UnusedMethodCall
              */
@@ -136,7 +137,12 @@ class CascadingHandler
                     foreach ($propertyValue as $item) {
                         if (is_array($item) === true && $this->utilityHandler->isUuid($item) === false) {
                             // This is a nested object, create it first.
-                            $createdUuid = $this->createRelatedObject(objectData: $item, definition: $definition['items'], parentUuid: $uuid, currentRegister: $currentRegister);
+                            $createdUuid = $this->createRelatedObject(
+                                objectData: $item,
+                                    definition: $definition['items'],
+                                parentUuid: $uuid,
+                                    currentRegister: $currentRegister
+                            );
 
                             // If creation failed, keep original item to avoid empty array.
                             $createdUuids[] = $createdUuid ?? $item;
@@ -147,12 +153,17 @@ class CascadingHandler
                     }
 
                     $object[$propertyName] = $createdUuids;
-                }
+                }//end if
             } else if (isset($definition['inversedBy']) === true && $definition['type'] !== 'array') {
                 // Handle single object properties.
                 if (is_array($propertyValue) === true && $this->utilityHandler->isUuid($propertyValue) === false) {
                     // This is a nested object, create it first.
-                    $createdUuid = $this->createRelatedObject(objectData: $propertyValue, definition: $definition, parentUuid: $uuid, currentRegister: $currentRegister);
+                    $createdUuid = $this->createRelatedObject(
+                        objectData: $propertyValue,
+                            definition: $definition,
+                        parentUuid: $uuid,
+                            currentRegister: $currentRegister
+                    );
 
                     // Only overwrite if creation succeeded.
                     $object[$propertyName] = $createdUuid ?? $propertyValue;

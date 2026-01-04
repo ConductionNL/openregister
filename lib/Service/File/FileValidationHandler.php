@@ -157,9 +157,10 @@ class FileValidationHandler
                 ]
             );
 
-            throw new Exception(
-                "File '$fileName' is an executable file (.$extension). "."Executable files are blocked for security reasons. "."Allowed formats: documents, images, archives, data files."
-            );
+            $part1 = "File '$fileName' is an executable file (.$extension). ";
+            $part2 = "Executable files are blocked for security reasons. ";
+            $part3 = "Allowed formats: documents, images, archives, data files.";
+            throw new Exception($part1.$part2.$part3);
         }
 
         // Check magic bytes (file signatures) in content.
@@ -209,7 +210,7 @@ class FileValidationHandler
                 );
 
                 throw new Exception(
-                    "File '$fileName' contains executable code ($description). "."Executable files are blocked for security reasons."
+                    "File '$fileName' contains executable code ($description). Executable files are blocked for security reasons."
                 );
             }
         }
@@ -218,14 +219,14 @@ class FileValidationHandler
         $firstLines = substr($content, 0, 1024);
         if (preg_match('/^#!.*\/(sh|bash|zsh|ksh|csh|python|perl|ruby|php|node)/m', $firstLines) === 1) {
             throw new Exception(
-                "File '$fileName' contains script shebang. "."Script files are blocked for security reasons."
+                "File '$fileName' contains script shebang. Script files are blocked for security reasons."
             );
         }
 
         // Check for embedded PHP tags.
         if (preg_match('/<\?php|<\?=|<script\s+language\s*=\s*["\']php/i', $firstLines) === 1) {
             throw new Exception(
-                "File '$fileName' contains PHP code. "."PHP files are blocked for security reasons."
+                "File '$fileName' contains PHP code. PHP files are blocked for security reasons."
             );
         }
     }//end detectExecutableMagicBytes()
@@ -317,9 +318,9 @@ class FileValidationHandler
                     message: "checkOwnership: Fixed ownership for file {$file->getName()} (ID: {$file->getId()}) after permission error"
                 );
             } catch (Exception $ownershipException) {
-                $this->logger->error(
-                    message: "checkOwnership: Failed to fix ownership after permission error for file {$file->getName()}: ".$ownershipException->getMessage()
-                );
+                $fileName = $file->getName();
+                $errorMsg = "checkOwnership: Failed to fix ownership after permission error for file {$fileName}: ".$ownershipException->getMessage();
+                $this->logger->error(message: $errorMsg);
                 throw new Exception("Ownership fix failed after permission error for file: ".$file->getName());
             }
         }//end try

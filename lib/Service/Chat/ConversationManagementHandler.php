@@ -479,7 +479,7 @@ class ConversationManagementHandler
             if ($chatProvider === 'openai') {
                 $openaiConfig = $llmConfig['openaiConfig'] ?? [];
                 if (empty($openaiConfig['apiKey']) === true) {
-                    throw new Exception('OpenAI API key not configured');
+                    throw new Exception('OpenAI API key not configured', 503);
                 }
 
                 $config->apiKey = $openaiConfig['apiKey'];
@@ -487,7 +487,7 @@ class ConversationManagementHandler
             } else if ($chatProvider === 'fireworks') {
                 $fireworksConfig = $llmConfig['fireworksConfig'] ?? [];
                 if (empty($fireworksConfig['apiKey']) === true) {
-                    throw new Exception('Fireworks AI API key not configured');
+                    throw new Exception('Fireworks AI API key not configured', 503);
                 }
 
                 $config->apiKey = $fireworksConfig['apiKey'];

@@ -148,7 +148,14 @@ class GitHubHandler
      *
      * @since 0.2.10
      *
-     * @psalm-return array{total_count: 0|mixed, results: list<array{branch: string, config: array, description: ''|mixed, name: string, organization: array{avatar_url: ''|mixed, name: string, type: 'User'|mixed, url: ''|mixed}, owner: string, path: string, raw_url: non-empty-string, repo: string, repository: mixed, sha: null|string, stars: 0|mixed, url: mixed}>, page: int, per_page: int}
+     * @psalm-return array{total_count: 0|mixed,
+     *     results: list<array{branch: string, config: array,
+     *     description: ''|mixed, name: string,
+     *     organization: array{avatar_url: ''|mixed, name: string,
+     *     type: 'User'|mixed, url: ''|mixed}, owner: string, path: string,
+     *     raw_url: non-empty-string, repo: string, repository: mixed,
+     *     sha: null|string, stars: 0|mixed, url: mixed}>,
+     *     page: int, per_page: int}
      */
     public function searchConfigurations(string $search='', int $page=1, int $perPage=30): array
     {
@@ -311,15 +318,15 @@ class GitHubHandler
                 if (stripos($rawError, 'rate limit') !== false) {
                     $token = $this->config->getAppValue('openregister', 'github_api_token', '');
                     if (empty($token) === true) {
-                        return 'GitHub API rate limit exceeded (60 requests/hour for unauthenticated). '.'Please configure a GitHub API token in Settings to increase to 5,000 requests/hour '.'(30/minute for Code Search).';
+                        return 'GitHub API rate limit exceeded (60 requests/hour for unauthenticated). Please configure a GitHub API token in Settings to increase to 5,000 requests/hour (30/minute for Code Search).';
                     } else {
-                        return 'GitHub Code Search API rate limit exceeded (30 requests per minute). '.'Please wait a few minutes before trying again. '.'The discovery search makes multiple API calls to find configurations.';
+                        return 'GitHub Code Search API rate limit exceeded (30 requests per minute). Please wait a few minutes before trying again. The discovery search makes multiple API calls to find configurations.';
                     }
                 }
                 return 'Access forbidden. Please check your GitHub API token permissions in Settings.';
 
             case 401:
-                return 'GitHub API authentication failed. '.'Please check your API token in Settings or remove it to use unauthenticated access '.'(60 requests/hour limit).';
+                return 'GitHub API authentication failed. Please check your API token in Settings or remove it to use unauthenticated access (60 requests/hour limit).';
 
             case 404:
                 return 'Repository or resource not found on GitHub. Please check the repository exists and is public.';
@@ -522,6 +529,7 @@ class GitHubHandler
                  *
                  * @psalm-return array{name: mixed, commit: mixed|null, protected: false|mixed}
                  */
+
                 function (array $branch): array {
                     return [
                         'name'      => $branch['name'],
@@ -628,7 +636,10 @@ class GitHubHandler
      *
      * @since 0.2.10
      *
-     * @psalm-return list<array{config: array{app: mixed|null, description: ''|mixed, title: mixed|string, type: 'manual'|mixed, version: '1.0.0'|mixed}, path: mixed, sha: mixed|null, url: mixed|null}>
+     * @psalm-return list<array{config: array{app: mixed|null,
+     *     description: ''|mixed, title: mixed|string, type: 'manual'|mixed,
+     *     version: '1.0.0'|mixed}, path: mixed, sha: mixed|null,
+     *     url: mixed|null}>
      */
     public function listConfigurationFiles(string $owner, string $repo, string $branch='main', string $path=''): array
     {
@@ -803,8 +814,12 @@ class GitHubHandler
                 /*
                  * @return (mixed|string)[]
                  *
-                 * @psalm-return array{id: mixed, name: mixed, full_name: mixed, owner: mixed, owner_type: mixed, private: mixed, description: ''|mixed, default_branch: 'main'|mixed, url: mixed, api_url: mixed}
+                 * @psalm-return array{id: mixed, name: mixed, full_name: mixed,
+                 *     owner: mixed, owner_type: mixed, private: mixed,
+                 *     description: ''|mixed, default_branch: 'main'|mixed,
+                 *     url: mixed, api_url: mixed}
                  */
+
                 function (array $repo): array {
                     return [
                         'id'             => $repo['id'],
@@ -1024,11 +1039,11 @@ class GitHubHandler
 
                     // Provide more context for common errors.
                     if ($statusCode === 404) {
-                        $errorMessage = "Not Found - Repository '{$owner}/{$repo}', branch '{$branch}', "."or path '{$path}' may not exist or you may not have access";
+                        $errorMessage = "Not Found - Repository '{$owner}/{$repo}', branch '{$branch}', or path '{$path}' may not exist or you may not have access";
                     } else if ($statusCode === 403) {
-                        $errorMessage = "Forbidden - You may not have write access to repository '{$owner}/{$repo}' "."or the branch '{$branch}' is protected";
+                        $errorMessage = "Forbidden - You may not have write access to repository '{$owner}/{$repo}' or the branch '{$branch}' is protected";
                     } else if ($statusCode === 422) {
-                        $errorMessage = "Validation Error - {$errorMessage}. "."Check that the branch '{$branch}' exists and the path '{$path}' is valid";
+                        $errorMessage = "Validation Error - {$errorMessage}. Check that the branch '{$branch}' exists and the path '{$path}' is valid";
                     }
                 }
             }//end if

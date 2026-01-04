@@ -368,7 +368,9 @@ class MetricsService
      *                                                      - avg_vectors_per_day: Average vectors added per day
      *                                                      - period_days: Number of days analyzed
      *
-     * @psalm-return array{daily_vectors_added: array<string, int>, current_storage_bytes: int, current_storage_mb: float, avg_vectors_per_day: float, period_days: int}
+     * @psalm-return array{daily_vectors_added: array<string, int>,
+     *     current_storage_bytes: int, current_storage_mb: float,
+     *     avg_vectors_per_day: float, period_days: int}
      */
     public function getStorageGrowth(int $days=30): array
     {
@@ -430,7 +432,14 @@ class MetricsService
      *
      * @return ((float|int)[]|float|int)[][]
      *
-     * @psalm-return array{files_processed: array<int>, embedding_stats: array{total: int, successful: int, failed: int, success_rate: float, estimated_cost_usd: float, period_days: int}, search_latency: array<string, array{count: int, avg_ms: float, min_ms: int, max_ms: int}>, storage_growth: array{daily_vectors_added: array<string, int>, current_storage_bytes: int, current_storage_mb: float, avg_vectors_per_day: float, period_days: int}}
+     * @psalm-return array{files_processed: array<int>,
+     *     embedding_stats: array{total: int, successful: int, failed: int,
+     *     success_rate: float, estimated_cost_usd: float, period_days: int},
+     *     search_latency: array<string, array{count: int, avg_ms: float,
+     *     min_ms: int, max_ms: int}>,
+     *     storage_growth: array{daily_vectors_added: array<string, int>,
+     *     current_storage_bytes: int, current_storage_mb: float,
+     *     avg_vectors_per_day: float, period_days: int}}
      */
     public function getDashboardMetrics(): array
     {
@@ -589,9 +598,9 @@ class MetricsService
             $totalVectors += $dayData['count'] ?? 0;
         }
 
-        // Safety check: prevent division by zero.
-        // This should never happen due to empty() check above, but included for safety.
         /*
+         * Safety check: prevent division by zero.
+         * This should never happen due to empty() check above, but included for safety.
          * @psalm-suppress TypeDoesNotContainType
          */
 
@@ -599,9 +608,9 @@ class MetricsService
             return 0.0;
         }
 
-        // Calculate average: total vectors / number of days.
-        // Round to 2 decimal places for readability.
         /*
+         * Calculate average: total vectors / number of days.
+         * Round to 2 decimal places for readability.
          * @psalm-suppress TypeDoesNotContainType
          */
 

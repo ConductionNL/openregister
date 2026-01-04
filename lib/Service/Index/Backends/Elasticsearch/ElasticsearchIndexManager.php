@@ -203,6 +203,8 @@ class ElasticsearchIndexManager
     /**
      * Get index stats.
      *
+     * @param string $indexName Index name
+     *
      * @return array Index statistics
      */
     public function getIndexStats(string $indexName): array
@@ -224,6 +226,8 @@ class ElasticsearchIndexManager
 
     /**
      * Refresh index to make documents searchable.
+     *
+     * @param string $indexName Index name
      *
      * @return bool True on success
      */

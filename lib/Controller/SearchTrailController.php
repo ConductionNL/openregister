@@ -918,8 +918,8 @@ class SearchTrailController extends Controller
     public function clearAll(): JSONResponse
     {
         try {
-            // Get the search trail mapper from the container.
             /*
+             * Get the search trail mapper from the container.
              * @var \OCA\OpenRegister\Db\SearchTrailMapper $searchTrailMapper
              */
 

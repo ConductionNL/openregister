@@ -565,6 +565,7 @@ class FileService
         /*
          * @psalm-suppress TypeDoesNotContainType - Function accepts ObjectEntity|string, but callers may always pass ObjectEntity
          */
+
         if (is_string($objectEntity) === true) {
             /*
              * @psalm-suppress NoValue - guaranteed to return string
@@ -1278,7 +1279,7 @@ class FileService
      * @phpstan-param array<int, string> $tags
      * @psalm-param   array<int, string> $tags
      */
-    private function attachTagsToFile(string $fileId, array $tags=[]): void
+    public function attachTagsToFile(string $fileId, array $tags=[]): void
     {
         $this->taggingHandler->attachTagsToFile(
             fileId: $fileId,
@@ -1325,8 +1326,13 @@ class FileService
      * @phpstan-param array<int, string> $tags
      * @psalm-param   array<int, string> $tags
      */
-    public function addFile(ObjectEntity | string $objectEntity, string $fileName, string $content, bool $share=false, array $tags=[], int | string | Schema | null $_schema=null, int | string | Register | null $_register=null, int|string|null $registerId=null): File
-    {
+    public function addFile(
+        ObjectEntity | string $objectEntity, string $fileName,
+        string $content, bool $share=false, array $tags=[],
+        int | string | Schema | null $_schema=null,
+        int | string | Register | null $_register=null,
+        int|string|null $registerId=null
+    ): File {
         return $this->createFileHandler->addFile(
             objectEntity: $objectEntity,
             fileName: $fileName,
@@ -1675,7 +1681,9 @@ class FileService
                 $fileList[] = $fileInfo;
             }
 
-            $this->logger->info(message: "debugListObjectFiles: Object ".$object->getId()." folder contains ".count($fileList)." files: ".json_encode($fileList));
+            $this->logger->info(
+                message: "debugListObjectFiles: Object ".$object->getId()." folder contains ".count($fileList)." files: ".json_encode($fileList)
+            );
             return $fileList;
         } catch (Exception $e) {
             $this->logger->error(message: "debugListObjectFiles: Error listing files for object ".$object->getId().": ".$e->getMessage());
@@ -1750,14 +1758,14 @@ class FileService
         $firstLines = substr($content, 0, 1024);
         if (preg_match('/^#!.*\/(sh|bash|zsh|ksh|csh|python|perl|ruby|php|node)/m', $firstLines) === 1) {
             throw new Exception(
-                "File '$fileName' contains script shebang. "."Script files are blocked for security reasons."
+                "File '$fileName' contains script shebang. Script files are blocked for security reasons."
             );
         }
 
         // Check for embedded PHP tags.
         if (preg_match('/<\?php|<\?=|<script\s+language\s*=\s*["\']php/i', $firstLines) === 1) {
             throw new Exception(
-                "File '$fileName' contains PHP code. "."PHP files are blocked for security reasons."
+                "File '$fileName' contains PHP code. PHP files are blocked for security reasons."
             );
         }
     }//end detectExecutableMagicBytes()
@@ -1775,6 +1783,8 @@ class FileService
      * @throws Exception If folder creation fails or entities not found
      * @throws NotPermittedException If folder creation is not permitted
      * @throws NotFoundException If parent folders do not exist
+     *
+     * @return int|null
      *
      * @psalm-return   int|null
      * @phpstan-return int|null

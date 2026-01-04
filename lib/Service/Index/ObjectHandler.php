@@ -56,7 +56,7 @@ class ObjectHandler
      * @param SchemaMapper           $schemaMapper    Schema mapper
      * @param RegisterMapper         $registerMapper  Register mapper
      * @param LoggerInterface        $logger          Logger
-     * @param SearchBackendInterface $searchBackend   Search backend (Solr/Elastic/etc)
+     * @param SearchBackendInterface $searchBackend   Search backend
      */
     public function __construct(
         private readonly SchemaMapper $schemaMapper,

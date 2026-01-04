@@ -82,7 +82,19 @@ class BulkOperationsHandler
      *
      * @return array[]
      *
-     * @psalm-return   array{saved: array, updated: array, unchanged: array<never, never>, invalid: array, errors: array, statistics: array{totalProcessed: int<0, max>, saved: 0|mixed, updated: 0|mixed, unchanged: 0, invalid: 0|1|2|mixed, errors: 0|1|2|mixed, processingTimeMs: 0, objectsCreated?: mixed, objectsUpdated?: mixed}, chunkStatistics?: list{0?: array{chunkIndex: int<0, max>, count: int<0, max>, saved: 0|mixed, updated: 0|mixed, invalid: 0|mixed},...}, performance?: array{totalTime: float, totalTimeMs: float, objectsPerSecond: float, totalProcessed: int<0, max>, totalRequested: int<0, max>, efficiency: 0|float, deduplicationEfficiency?: string}}
+     * @psalm-return   array{saved: array, updated: array,
+     *     unchanged: array<never, never>, invalid: array, errors: array,
+     *     statistics: array{totalProcessed: int<0, max>, saved: 0|mixed,
+     *     updated: 0|mixed, unchanged: 0, invalid: 0|1|2|mixed,
+     *     errors: 0|1|2|mixed, processingTimeMs: 0,
+     *     objectsCreated?: mixed, objectsUpdated?: mixed},
+     *     chunkStatistics?: list{0?: array{chunkIndex: int<0, max>,
+     *     count: int<0, max>, saved: 0|mixed, updated: 0|mixed,
+     *     invalid: 0|mixed},...},
+     *     performance?: array{totalTime: float, totalTimeMs: float,
+     *     objectsPerSecond: float, totalProcessed: int<0, max>,
+     *     totalRequested: int<0, max>, efficiency: 0|float,
+     *     deduplicationEfficiency?: string}>
      * @phpstan-return array<string, mixed>
      */
     public function saveObjects(
@@ -173,8 +185,13 @@ class BulkOperationsHandler
      * @psalm-return   array<int, int>
      * @phpstan-return array<int, int>
      */
-    public function deleteObjects(array $uuids=[], bool $_rbac=true, bool $_multitenancy=true): array
-    {
+    public function deleteObjects(
+        array $uuids=[],
+        bool $_rbac=true,
+        bool $_multitenancy=true,
+        ?Register $register=null,
+        ?Schema $schema=null
+    ): array {
         if (empty($uuids) === true) {
             return [];
         }
@@ -190,8 +207,13 @@ class BulkOperationsHandler
             $filteredUuids = $uuids;
         }
 
-        // Use the mapper's bulk delete operation.
-        $deletedObjectIds = $this->objectEntityMapper->deleteObjects($filteredUuids);
+        // Use the mapper's bulk delete operation (now with register/schema for magic mapper).
+        $deletedObjectIds = $this->objectEntityMapper->deleteObjects(
+            uuids: $filteredUuids,
+            hardDelete: false,
+            register: $register,
+            schema: $schema
+        );
 
         // **BULK CACHE INVALIDATION**: Clear collection caches after bulk delete operations.
         if (empty($deletedObjectIds) === false) {
@@ -250,8 +272,14 @@ class BulkOperationsHandler
      * @psalm-return   array<int, string>
      * @phpstan-return array<int, string>
      */
-    public function publishObjects(array $uuids=[], DateTime|bool $datetime=true, bool $_rbac=true, bool $_multitenancy=true): array
-    {
+    public function publishObjects(
+        array $uuids=[],
+        DateTime|bool $datetime=true,
+        bool $_rbac=true,
+        bool $_multitenancy=true,
+        ?Register $register=null,
+        ?Schema $schema=null
+    ): array {
         if (empty($uuids) === true) {
             return [];
         }
@@ -267,8 +295,13 @@ class BulkOperationsHandler
             $filteredUuids = $uuids;
         }
 
-        // Use the mapper's bulk publish operation.
-        $publishedObjectIds = $this->objectEntityMapper->publishObjects(uuids: $filteredUuids, datetime: $datetime);
+        // Use the mapper's bulk publish operation (now with register/schema for magic mapper).
+        $publishedObjectIds = $this->objectEntityMapper->publishObjects(
+            uuids: $filteredUuids,
+            datetime: $datetime,
+            register: $register,
+            schema: $schema
+        );
 
         // **BULK CACHE INVALIDATION**: Clear collection caches after bulk publish operations.
         if (empty($publishedObjectIds) === false) {
@@ -327,8 +360,14 @@ class BulkOperationsHandler
      * @psalm-return   array<int, string>
      * @phpstan-return array<int, string>
      */
-    public function depublishObjects(array $uuids=[], DateTime|bool $datetime=true, bool $_rbac=true, bool $_multitenancy=true): array
-    {
+    public function depublishObjects(
+        array $uuids=[],
+        DateTime|bool $datetime=true,
+        bool $_rbac=true,
+        bool $_multitenancy=true,
+        ?Register $register=null,
+        ?Schema $schema=null
+    ): array {
         if (empty($uuids) === true) {
             return [];
         }
@@ -344,8 +383,13 @@ class BulkOperationsHandler
             $filteredUuids = $uuids;
         }
 
-        // Use the mapper's bulk depublish operation.
-        $depublishedObjectIds = $this->objectEntityMapper->depublishObjects(uuids: $filteredUuids, datetime: $datetime);
+        // Use the mapper's bulk depublish operation (now with register/schema for magic mapper).
+        $depublishedObjectIds = $this->objectEntityMapper->depublishObjects(
+            uuids: $filteredUuids,
+            datetime: $datetime,
+            register: $register,
+            schema: $schema
+        );
 
         // **BULK CACHE INVALIDATION**: Clear collection caches after bulk depublish operations.
         if (empty($depublishedObjectIds) === false) {

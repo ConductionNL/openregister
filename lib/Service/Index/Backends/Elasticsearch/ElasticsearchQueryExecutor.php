@@ -117,7 +117,9 @@ class ElasticsearchQueryExecutor
      *
      * @return (((mixed|string[])[]|stdClass)[]|int)[] Elasticsearch query DSL
      *
-     * @psalm-return array{query: array{match_all?: stdClass, multi_match?: array{query: mixed, fields: list{'*'}, type: 'best_fields'}}, from: int, size: int}
+     * @psalm-return array{query: array{match_all?: stdClass,
+     *     multi_match?: array{query: mixed, fields: list{'*'},
+     *     type: 'best_fields'}}, from: int, size: int}
      */
     private function buildElasticsearchQuery(array $params): array
     {

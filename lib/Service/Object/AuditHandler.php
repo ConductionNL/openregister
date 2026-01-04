@@ -171,7 +171,9 @@ class AuditHandler
      *
      * @return (mixed|string)[] Prepared filters
      *
-     * @psalm-return array{object_uuid: string, action?: mixed, user?: mixed, date_from?: mixed, date_to?: mixed, order_by: 'created_at'|mixed, order: 'DESC'|mixed}
+     * @psalm-return array{object_uuid: string, action?: mixed, user?: mixed,
+     *     date_from?: mixed, date_to?: mixed, order_by: 'created_at'|mixed,
+     *     order: 'DESC'|mixed}
      */
     private function prepareFilters(string $uuid, array $filters): array
     {

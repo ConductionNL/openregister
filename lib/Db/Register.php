@@ -399,6 +399,7 @@ class Register extends Entity implements JsonSerializable
      *     organisation: null|string,
      *     authorization: array|null,
      *     groups: array<string, list<string>>,
+     *     configuration: array|null,
      *     quota: array{
      *         storage: null,
      *         bandwidth: null,
@@ -473,6 +474,7 @@ class Register extends Entity implements JsonSerializable
             'organisation'  => $this->organisation,
             'authorization' => $this->authorization,
             'groups'        => $groups,
+            'configuration' => $this->configuration,
             'published'     => $published,
             'depublished'   => $depublished,
             'quota'         => [

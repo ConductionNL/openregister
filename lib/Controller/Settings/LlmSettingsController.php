@@ -104,27 +104,39 @@ class LlmSettingsController extends Controller
             $data = $this->request->getParams();
 
             // Extract the model IDs from the objects sent by frontend.
-            if (($data['fireworksConfig']['embeddingModel'] ?? null) !== null && is_array($data['fireworksConfig']['embeddingModel']) === true) {
+            if (($data['fireworksConfig']['embeddingModel'] ?? null) !== null
+                && is_array($data['fireworksConfig']['embeddingModel']) === true
+            ) {
                 $data['fireworksConfig']['embeddingModel'] = $data['fireworksConfig']['embeddingModel']['id'] ?? null;
             }
 
-            if (($data['fireworksConfig']['chatModel'] ?? null) !== null && is_array($data['fireworksConfig']['chatModel']) === true) {
+            if (($data['fireworksConfig']['chatModel'] ?? null) !== null
+                && is_array($data['fireworksConfig']['chatModel']) === true
+            ) {
                 $data['fireworksConfig']['chatModel'] = $data['fireworksConfig']['chatModel']['id'] ?? null;
             }
 
-            if (($data['openaiConfig']['model'] ?? null) !== null && is_array($data['openaiConfig']['model']) === true) {
+            if (($data['openaiConfig']['model'] ?? null) !== null
+                && is_array($data['openaiConfig']['model']) === true
+            ) {
                 $data['openaiConfig']['model'] = $data['openaiConfig']['model']['id'] ?? null;
             }
 
-            if (($data['openaiConfig']['chatModel'] ?? null) !== null && is_array($data['openaiConfig']['chatModel']) === true) {
+            if (($data['openaiConfig']['chatModel'] ?? null) !== null
+                && is_array($data['openaiConfig']['chatModel']) === true
+            ) {
                 $data['openaiConfig']['chatModel'] = $data['openaiConfig']['chatModel']['id'] ?? null;
             }
 
-            if (($data['ollamaConfig']['model'] ?? null) !== null && is_array($data['ollamaConfig']['model']) === true) {
+            if (($data['ollamaConfig']['model'] ?? null) !== null
+                && is_array($data['ollamaConfig']['model']) === true
+            ) {
                 $data['ollamaConfig']['model'] = $data['ollamaConfig']['model']['id'] ?? null;
             }
 
-            if (($data['ollamaConfig']['chatModel'] ?? null) !== null && is_array($data['ollamaConfig']['chatModel']) === true) {
+            if (($data['ollamaConfig']['chatModel'] ?? null) !== null
+                && is_array($data['ollamaConfig']['chatModel']) === true
+            ) {
                 $data['ollamaConfig']['chatModel'] = $data['ollamaConfig']['chatModel']['id'] ?? null;
             }
 
@@ -389,11 +401,21 @@ class LlmSettingsController extends Controller
 
             // Format models for frontend dropdown.
             $models = array_map(
-                    /*
+                // phpcs:ignore Squiz.Commenting.BlockComment.NoEmptyLineBefore -- Empty line conflicts with "first argument must be on line after opening parenthesis" rule
+                /*
+                 * Format model for frontend dropdown.
+                     *
                      * @return (int|mixed|null|string)[]
                      *
-                     * @psalm-return array{id: 'unknown'|mixed, name: 'unknown'|mixed, description: mixed|string, size: 0|mixed, modified: mixed|null}
-                     */
+                     * @psalm-return array{
+                     *     id: 'unknown'|mixed,
+                     *     name: 'unknown'|mixed,
+                     *     description: mixed|string,
+                     *     size: 0|mixed,
+                     *     modified: mixed|null
+                     * }
+                 */
+
                 function (array $model): array {
                     $name = $model['name'] ?? 'unknown';
                     // Format size if available.

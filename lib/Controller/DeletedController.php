@@ -123,12 +123,13 @@ class DeletedController extends Controller
         // Extract sort parameters.
         $sort = [];
         if (($params['sort'] ?? null) !== null || (($params['_sort'] ?? null) !== null) === true) {
-            $sortField        = $params['sort'] ?? $params['_sort'] ?? 'deleted';
+            $sortField        = $params['sort'] ?? $params['_sort'] ?? 'updated';
             $sortOrder        = $params['order'] ?? $params['_order'] ?? 'DESC';
             $sort[$sortField] = $sortOrder;
         } else {
-            $sort['deleted'] = 'DESC';
-            // Default sort by deletion date.
+            // Default sort by updated (last modified) which includes soft delete time.
+            // Note: Cannot sort by 'deleted' directly as it's a JSON column in PostgreSQL.
+            $sort['updated'] = 'DESC';
         }
 
         // Filter out special parameters and system fields.

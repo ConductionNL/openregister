@@ -119,7 +119,21 @@ class CacheSettingsHandler
      *
      * @throws \RuntimeException If cache statistics retrieval fails
      *
-     * @psalm-return array{overview: array{totalCacheSize: 0|mixed, totalCacheEntries: 0|mixed, overallHitRate: float, averageResponseTime: float, cacheEfficiency: float}, services: array{object: array{entries: 0|mixed, hits: 0|mixed, requests: 0|mixed, memoryUsage: 0|mixed}, schema: array{entries: 0, hits: 0, requests: 0, memoryUsage: 0}, facet: array{entries: 0, hits: 0, requests: 0, memoryUsage: 0}}, names: array{cache_size: 0|mixed, hit_rate: float|mixed, hits: 0|mixed, misses: 0|mixed, warmups: 0|mixed, enabled: bool}, distributed: array{type: 'distributed'|'none', backend: string, available: bool, error?: string, keyCount?: 'Unknown', size?: 'Unknown'}, performance: array{averageHitTime: 0|float, averageMissTime: 0|float, performanceGain: 0|float, optimalHitRate: float, currentTrend?: 'improving'}, lastUpdated: string, error?: string}
+     * @psalm-return array{overview: array{totalCacheSize: 0|mixed,
+     *     totalCacheEntries: 0|mixed, overallHitRate: float,
+     *     averageResponseTime: float, cacheEfficiency: float},
+     *     services: array{object: array{entries: 0|mixed, hits: 0|mixed,
+     *     requests: 0|mixed, memoryUsage: 0|mixed},
+     *     schema: array{entries: 0, hits: 0, requests: 0, memoryUsage: 0},
+     *     facet: array{entries: 0, hits: 0, requests: 0, memoryUsage: 0}},
+     *     names: array{cache_size: 0|mixed, hit_rate: float|mixed,
+     *     hits: 0|mixed, misses: 0|mixed, warmups: 0|mixed, enabled: bool},
+     *     distributed: array{type: 'distributed'|'none', backend: string,
+     *     available: bool, error?: string, keyCount?: 'Unknown',
+     *     size?: 'Unknown'}, performance: array{averageHitTime: 0|float,
+     *     averageMissTime: 0|float, performanceGain: 0|float,
+     *     optimalHitRate: float, currentTrend?: 'improving'},
+     *     lastUpdated: string, error?: string}
      */
     public function getCacheStats(): array
     {
@@ -259,7 +273,8 @@ class CacheSettingsHandler
      /**
       * Calculate hit rate from cache statistics
       *
-      * @param  array $stats Cache statistics array
+      * @param array $stats Cache statistics array
+      *
       * @return float Hit rate percentage
       */
     private function calculateHitRate(array $stats): float
@@ -339,7 +354,42 @@ class CacheSettingsHandler
       *
       * @throws \RuntimeException If cache clearing fails
       *
-      * @psalm-return     array{type: string, userId: null|string, timestamp: string, results: array{names?: array{service: 'names', cleared: 0|mixed, success: bool, error?: string, before?: array{name_cache_size: int|mixed, name_hits: int|mixed, name_misses: int|mixed}, after?: array{name_cache_size: int|mixed, name_hits: int|mixed, name_misses: int|mixed}}, distributed?: array{service: 'distributed', cleared: 'all'|0, success: bool, error?: string}, facet?: array{service: 'facet', cleared: int, success: bool, error?: string, before?: array{total_entries: int, by_type: array<int>, memory_cache_size: int<0, max>, cache_table: 'openregister_schema_facet_cache', query_time: string, timestamp: int<1, max>}, after?: array{total_entries: int, by_type: array<int>, memory_cache_size: int<0, max>, cache_table: 'openregister_schema_facet_cache', query_time: string, timestamp: int<1, max>}}, schema?: array{service: 'schema', cleared: 0|mixed, success: bool, error?: string, before?: array{total_entries: int, entries_with_ttl: int, memory_cache_size: int<0, max>, cache_table: 'openregister_schema_cache', query_time: string, timestamp: int<1, max>, entries?: mixed}, after?: array{total_entries: int, entries_with_ttl: int, memory_cache_size: int<0, max>, cache_table: 'openregister_schema_cache', query_time: string, timestamp: int<1, max>, entries?: mixed}}, object?: array{service: 'object', cleared: 0|mixed, success: bool, error?: string, before?: array{hits: int, misses: int, preloads: int, query_hits: int, query_misses: int, name_hits: int, name_misses: int, name_warmups: int, hit_rate: float, query_hit_rate: float, name_hit_rate: float, cache_size: int, query_cache_size: int, name_cache_size: int}|mixed, after?: array{hits: int, misses: int, preloads: int, query_hits: int, query_misses: int, name_hits: int, name_misses: int, name_warmups: int, hit_rate: float, query_hit_rate: float, name_hit_rate: float, cache_size: int, query_cache_size: int, name_cache_size: int}|mixed}}, errors: array<never, never>, totalCleared: 0|mixed}
+      * @psalm-return     array{type: string, userId: null|string,
+      *     timestamp: string, results: array{names?: array{service: 'names',
+      *     cleared: 0|mixed, success: bool, error?: string,
+      *     before?: array{name_cache_size: int|mixed, name_hits: int|mixed,
+      *     name_misses: int|mixed}, after?: array{name_cache_size: int|mixed,
+      *     name_hits: int|mixed, name_misses: int|mixed}},
+      *     distributed?: array{service: 'distributed', cleared: 'all'|0,
+      *     success: bool, error?: string},
+      *     facet?: array{service: 'facet', cleared: int, success: bool,
+      *     error?: string, before?: array{total_entries: int, by_type: array<int>,
+      *     memory_cache_size: int<0, max>,
+      *     cache_table: 'openregister_schema_facet_cache', query_time: string,
+      *     timestamp: int<1, max>}, after?: array{total_entries: int,
+      *     by_type: array<int>, memory_cache_size: int<0, max>,
+      *     cache_table: 'openregister_schema_facet_cache', query_time: string,
+      *     timestamp: int<1, max>}},
+      *     schema?: array{service: 'schema', cleared: 0|mixed, success: bool,
+      *     error?: string, before?: array{total_entries: int,
+      *     entries_with_ttl: int, memory_cache_size: int<0, max>,
+      *     cache_table: 'openregister_schema_cache', query_time: string,
+      *     timestamp: int<1, max>, entries?: mixed},
+      *     after?: array{total_entries: int, entries_with_ttl: int,
+      *     memory_cache_size: int<0, max>,
+      *     cache_table: 'openregister_schema_cache', query_time: string,
+      *     timestamp: int<1, max>, entries?: mixed}},
+      *     object?: array{service: 'object', cleared: 0|mixed, success: bool,
+      *     error?: string, before?: array{hits: int, misses: int, preloads: int,
+      *     query_hits: int, query_misses: int, name_hits: int, name_misses: int,
+      *     name_warmups: int, hit_rate: float, query_hit_rate: float,
+      *     name_hit_rate: float, cache_size: int, query_cache_size: int,
+      *     name_cache_size: int}|mixed, after?: array{hits: int, misses: int,
+      *     preloads: int, query_hits: int, query_misses: int, name_hits: int,
+      *     name_misses: int, name_warmups: int, hit_rate: float,
+      *     query_hit_rate: float, name_hit_rate: float, cache_size: int,
+      *     query_cache_size: int, name_cache_size: int}|mixed}},
+      *     errors: array<never, never>, totalCleared: 0|mixed}
       * @SuppressWarnings (PHPMD.UnusedFormalParameter)
       */
     public function clearCache(string $type='all', ?string $userId=null, array $_options=[]): array
@@ -405,7 +455,16 @@ class CacheSettingsHandler
       *
       * @return ((float|int)[]|bool|int|mixed|string)[] Clear operation results
       *
-      * @psalm-return array{service: 'object', cleared: 0|mixed, success: bool, error?: string, before?: array{hits: int, misses: int, preloads: int, query_hits: int, query_misses: int, name_hits: int, name_misses: int, name_warmups: int, hit_rate: float, query_hit_rate: float, name_hit_rate: float, cache_size: int, query_cache_size: int, name_cache_size: int}|mixed, after?: array{hits: int, misses: int, preloads: int, query_hits: int, query_misses: int, name_hits: int, name_misses: int, name_warmups: int, hit_rate: float, query_hit_rate: float, name_hit_rate: float, cache_size: int, query_cache_size: int, name_cache_size: int}|mixed}
+      * @psalm-return array{service: 'object', cleared: 0|mixed, success: bool,
+      *     error?: string, before?: array{hits: int, misses: int, preloads: int,
+      *     query_hits: int, query_misses: int, name_hits: int, name_misses: int,
+      *     name_warmups: int, hit_rate: float, query_hit_rate: float,
+      *     name_hit_rate: float, cache_size: int, query_cache_size: int,
+      *     name_cache_size: int}|mixed, after?: array{hits: int, misses: int,
+      *     preloads: int, query_hits: int, query_misses: int, name_hits: int,
+      *     name_misses: int, name_warmups: int, hit_rate: float,
+      *     query_hit_rate: float, name_hit_rate: float, cache_size: int,
+      *     query_cache_size: int, name_cache_size: int}|mixed}
       *
       * @SuppressWarnings(PHPMD.UnusedFormalParameter)
       */
@@ -451,7 +510,11 @@ class CacheSettingsHandler
       *
       * @return ((int|mixed)[]|bool|int|mixed|string)[] Clear operation results
       *
-      * @psalm-return array{service: 'names', cleared: 0|mixed, success: bool, error?: string, before?: array{name_cache_size: int|mixed, name_hits: int|mixed, name_misses: int|mixed}, after?: array{name_cache_size: int|mixed, name_hits: int|mixed, name_misses: int|mixed}}
+      * @psalm-return array{service: 'names', cleared: 0|mixed, success: bool,
+      *     error?: string, before?: array{name_cache_size: int|mixed,
+      *     name_hits: int|mixed, name_misses: int|mixed},
+      *     after?: array{name_cache_size: int|mixed, name_hits: int|mixed,
+      *     name_misses: int|mixed}}
       */
     private function clearNamesCache(): array
     {
@@ -507,7 +570,11 @@ class CacheSettingsHandler
       *
       * @return ((int|mixed)[]|bool|int|mixed|string)[]
       *
-      * @psalm-return array{success: bool, error?: string, loaded_names: int<0, max>|mixed, execution_time?: string, before?: array{name_cache_size: int<0, max>|mixed, name_warmups: int|mixed}, after?: array{name_cache_size: int<0, max>|mixed, name_warmups: int|mixed}}
+      * @psalm-return array{success: bool, error?: string,
+      *     loaded_names: int<0, max>|mixed, execution_time?: string,
+      *     before?: array{name_cache_size: int<0, max>|mixed,
+      *     name_warmups: int|mixed}, after?: array{name_cache_size: int<0, max>|mixed,
+      *     name_warmups: int|mixed}
       */
     public function warmupNamesCache(): array
     {
@@ -562,7 +629,15 @@ class CacheSettingsHandler
       *
       * @return ((int|mixed|string)[]|bool|int|mixed|string)[] Clear operation results
       *
-      * @psalm-return array{service: 'schema', cleared: 0|mixed, success: bool, error?: string, before?: array{total_entries: int, entries_with_ttl: int, memory_cache_size: int<0, max>, cache_table: 'openregister_schema_cache', query_time: string, timestamp: int<1, max>, entries?: mixed}, after?: array{total_entries: int, entries_with_ttl: int, memory_cache_size: int<0, max>, cache_table: 'openregister_schema_cache', query_time: string, timestamp: int<1, max>, entries?: mixed}}
+      * @psalm-return array{service: 'schema', cleared: 0|mixed, success: bool,
+      *     error?: string, before?: array{total_entries: int,
+      *     entries_with_ttl: int, memory_cache_size: int<0, max>,
+      *     cache_table: 'openregister_schema_cache', query_time: string,
+      *     timestamp: int<1, max>, entries?: mixed},
+      *     after?: array{total_entries: int, entries_with_ttl: int,
+      *     memory_cache_size: int<0, max>,
+      *     cache_table: 'openregister_schema_cache', query_time: string,
+      *     timestamp: int<1, max>, entries?: mixed}
       *
       * @SuppressWarnings(PHPMD.UnusedFormalParameter)
       */
@@ -610,7 +685,14 @@ class CacheSettingsHandler
       *
       * @return ((int|int[]|string)[]|bool|int|string)[] Clear operation results
       *
-      * @psalm-return array{service: 'facet', cleared: int, success: bool, error?: string, before?: array{total_entries: int, by_type: array<int>, memory_cache_size: int<0, max>, cache_table: 'openregister_schema_facet_cache', query_time: string, timestamp: int<1, max>}, after?: array{total_entries: int, by_type: array<int>, memory_cache_size: int<0, max>, cache_table: 'openregister_schema_facet_cache', query_time: string, timestamp: int<1, max>}}
+      * @psalm-return array{service: 'facet', cleared: int, success: bool,
+      *     error?: string, before?: array{total_entries: int, by_type: array<int>,
+      *     memory_cache_size: int<0, max>,
+      *     cache_table: 'openregister_schema_facet_cache', query_time: string,
+      *     timestamp: int<1, max>}, after?: array{total_entries: int,
+      *     by_type: array<int>, memory_cache_size: int<0, max>,
+      *     cache_table: 'openregister_schema_facet_cache', query_time: string,
+      *     timestamp: int<1, max>}
       *
       * @SuppressWarnings(PHPMD.UnusedFormalParameter)
       */

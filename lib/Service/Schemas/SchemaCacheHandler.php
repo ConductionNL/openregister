@@ -427,6 +427,8 @@ class SchemaCacheHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
+     * @return int
+     *
      * @psalm-return int<min, max>
      */
     public function cleanExpiredEntries(): int
@@ -462,7 +464,10 @@ class SchemaCacheHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @psalm-return array{total_entries: int, entries_with_ttl: int, memory_cache_size: int<0, max>, cache_table: 'openregister_schema_cache', query_time: string, timestamp: int<1, max>}
+     * @psalm-return array{total_entries: int, entries_with_ttl: int,
+     *     memory_cache_size: int<0, max>,
+     *     cache_table: 'openregister_schema_cache',
+     *     query_time: string, timestamp: int<1, max>}
      */
     public function getCacheStatistics(): array
     {

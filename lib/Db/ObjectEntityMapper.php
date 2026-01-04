@@ -212,7 +212,12 @@ class ObjectEntityMapper extends QBMapper
         $this->statisticsHandler        = new StatisticsHandler(db: $db, logger: $logger, tableName: 'openregister_objects');
         $this->facetsHandler            = new FacetsHandler(logger: $logger, schemaMapper: $schemaMapper);
         $this->queryOptimizationHandler = new QueryOptimizationHandler(db: $db, logger: $logger, tableName: 'openregister_objects');
-        $this->bulkOperationsHandler    = new BulkOperationsHandler(db: $db, logger: $logger, queryBuilderHandler: $this->queryBuilderHandler, tableName: 'openregister_objects');
+        $this->bulkOperationsHandler    = new BulkOperationsHandler(
+            db: $db,
+                logger: $logger,
+            queryBuilderHandler: $this->queryBuilderHandler,
+            tableName: 'openregister_objects'
+        );
     }//end __construct()
 
     // ==================================================================================
@@ -344,10 +349,49 @@ class ObjectEntityMapper extends QBMapper
      *
      * @throws Exception If insertion fails.
      */
+
+    /**
+     * Insert a new object entity with event dispatching and optional magic mapper routing.
+     *
+     * This method checks if magic mapping is enabled for the register+schema combination.
+     * If enabled and auto-create is configured, it delegates to MagicMapper for storage
+     * in a dedicated table. Otherwise, it uses standard blob storage.
+     *
+     * @param ObjectEntity $entity Entity to insert.
+     *
+     * @return ObjectEntity Inserted entity.
+     *
+     * @throws Exception If insertion fails.
+     */
     public function insert(\OCP\AppFramework\Db\Entity $entity): \OCP\AppFramework\Db\Entity
     {
         // Dispatch creating event.
         $this->eventDispatcher->dispatch(ObjectCreatingEvent::class, new ObjectCreatingEvent($entity));
+
+        // Check if this entity should use magic mapping.
+        if ($entity instanceof ObjectEntity && $this->shouldUseMagicMapper($entity) === true) {
+            try {
+                // Get UnifiedObjectMapper and delegate insertion.
+                $unifiedMapper = \OC::$server->get(UnifiedObjectMapper::class);
+                $result        = $unifiedMapper->insert(entity: $entity);
+
+                // Dispatch created event.
+                $this->eventDispatcher->dispatch(ObjectCreatedEvent::class, new ObjectCreatedEvent($result));
+
+                return $result;
+            } catch (\Exception $e) {
+                // Log error and fallback to blob storage.
+                $this->logger->warning(
+                    '[ObjectEntityMapper] Magic mapper insert failed, falling back to blob storage',
+                    [
+                        'error'    => $e->getMessage(),
+                        'register' => $entity->getRegister(),
+                        'schema'   => $entity->getSchema(),
+                    ]
+                );
+                // Continue with normal blob storage below.
+            }//end try
+        }//end if
 
         // Call parent QBMapper insert directly (CrudHandler has circular dependency).
         $result = parent::insert($entity);
@@ -359,7 +403,118 @@ class ObjectEntityMapper extends QBMapper
     }//end insert()
 
     /**
-     * Update an existing object entity with event dispatching.
+     * Insert entity directly to blob storage (skip magic mapper check).
+     *
+     * This method is used by UnifiedObjectMapper to avoid circular calls.
+     * It performs the same blob storage insert as insert() but skips the magic mapper routing.
+     *
+     * @param \OCP\AppFramework\Db\Entity $entity Entity to insert.
+     *
+     * @return \OCP\AppFramework\Db\Entity Inserted entity.
+     */
+    public function insertDirectBlobStorage(\OCP\AppFramework\Db\Entity $entity): \OCP\AppFramework\Db\Entity
+    {
+        // Dispatch creating event.
+        $this->eventDispatcher->dispatch(ObjectCreatingEvent::class, new ObjectCreatingEvent($entity));
+
+        // Call parent QBMapper insert directly (blob storage).
+        $result = parent::insert($entity);
+
+        // Dispatch created event.
+        $this->eventDispatcher->dispatch(ObjectCreatedEvent::class, new ObjectCreatedEvent($result));
+
+        return $result;
+    }//end insertDirectBlobStorage()
+
+    /**
+     * Check if magic mapping should be used for this entity.
+     *
+     * Determines whether an ObjectEntity should be stored in a magic mapper table
+     * based on the register configuration.
+     *
+     * @param ObjectEntity $entity The entity to check.
+     *
+     * @return bool True if magic mapping should be used, false otherwise.
+     */
+    /**
+     * Check if magic mapper should be used for an entity.
+     *
+     * @param ObjectEntity $entity The entity to check
+     *
+     * @return bool True if magic mapper should be used
+     */
+    private function shouldUseMagicMapper(ObjectEntity $entity): bool
+    {
+        try {
+            // Entity must have register and schema set.
+            $registerId = $entity->getRegister();
+            $schemaId   = $entity->getSchema();
+
+            if (empty($registerId) === true || empty($schemaId) === true) {
+                return false;
+            }
+
+            // Get RegisterMapper and fetch the register.
+            $registerMapper = \OC::$server->get(RegisterMapper::class);
+            // Pass $_multitenancy=false to bypass multitenancy filter for internal lookup.
+            $register       = $registerMapper->find(id: $registerId, _multitenancy: false);
+
+            // Check configuration for magic mapping.
+            $config       = $register->getConfiguration() ?? [];
+            $schemas      = $config['schemas'] ?? [];
+            // Cast schemaId to string because JSON keys are always strings.
+            $schemaConfig = $schemas[(string) $schemaId] ?? [];
+            $magicMapping = ($schemaConfig['magicMapping'] ?? false) === true;
+            $autoCreate   = ($schemaConfig['autoCreateTable'] ?? false) === true;
+
+            // Return true if both magic mapping and auto-create are enabled.
+            return ($magicMapping === true && $autoCreate === true);
+        } catch (\Exception $e) {
+            // If anything goes wrong, fallback to blob storage.
+            $this->logger->debug(
+                '[ObjectEntityMapper] Failed to determine magic mapping status, using blob storage',
+                ['error' => $e->getMessage()]
+            );
+            return false;
+        }//end try
+    }//end shouldUseMagicMapper()
+
+    /**
+     * Check if magic mapper should be used for given register and schema.
+     *
+     * @param Register $register The register
+     * @param Schema   $schema   The schema
+     *
+     * @return bool True if magic mapper should be used
+     */
+    private function shouldUseMagicMapperForRegisterSchema(Register $register, Schema $schema): bool
+    {
+        try {
+            // Check configuration for magic mapping.
+            $config       = $register->getConfiguration() ?? [];
+            $schemas      = $config['schemas'] ?? [];
+            // Cast schemaId to string because JSON keys are always strings.
+            $schemaConfig = $schemas[(string) $schema->getId()] ?? [];
+            $magicMapping = ($schemaConfig['magicMapping'] ?? false) === true;
+            $autoCreate   = ($schemaConfig['autoCreateTable'] ?? false) === true;
+
+            // Return true if both magic mapping and auto-create are enabled.
+            return ($magicMapping === true && $autoCreate === true);
+        } catch (\Exception $e) {
+            // If anything goes wrong, fallback to blob storage.
+            $this->logger->debug(
+                '[ObjectEntityMapper] Failed to determine magic mapping status, using blob storage',
+                ['error' => $e->getMessage()]
+            );
+            return false;
+        }//end try
+    }//end shouldUseMagicMapperForRegisterSchema()
+
+    /**
+     * Update an existing object entity with event dispatching and optional magic mapper routing.
+     *
+     * This method checks if magic mapping is enabled for the register+schema combination.
+     * If enabled, it delegates to MagicMapper. Otherwise, it uses standard blob storage.
      *
      * @param ObjectEntity $entity Entity to update.
      *
@@ -371,7 +526,38 @@ class ObjectEntityMapper extends QBMapper
     {
         // Dispatch updating event.
         // Pass includeDeleted=true to allow fetching the old state even if the object is being restored from deleted.
-        $this->eventDispatcher->dispatch(ObjectUpdatingEvent::class, new ObjectUpdatingEvent(newObject: $entity, oldObject: $this->find($entity->getId(), null, null, true)));
+        $this->eventDispatcher->dispatch(
+            ObjectUpdatingEvent::class,
+            new ObjectUpdatingEvent(
+                newObject: $entity,
+                oldObject: $this->find($entity->getId(), null, null, true)
+            )
+        );
+
+        // Check if this entity should use magic mapping.
+        if ($entity instanceof ObjectEntity && $this->shouldUseMagicMapper($entity) === true) {
+            try {
+                // Get UnifiedObjectMapper and delegate update.
+                $unifiedMapper = \OC::$server->get(UnifiedObjectMapper::class);
+                $result        = $unifiedMapper->update(entity: $entity);
+
+                // Dispatch updated event.
+                $this->eventDispatcher->dispatch(ObjectUpdatedEvent::class, new ObjectUpdatedEvent($result, $entity));
+
+                return $result;
+            } catch (\Exception $e) {
+                // Log error and fallback to blob storage.
+                $this->logger->warning(
+                    '[ObjectEntityMapper] Magic mapper update failed, falling back to blob storage',
+                    [
+                        'error'    => $e->getMessage(),
+                        'register' => $entity->getRegister(),
+                        'schema'   => $entity->getSchema(),
+                    ]
+                );
+                // Continue with normal blob storage below.
+            }//end try
+        }//end if
 
         // Call parent QBMapper update directly (CrudHandler has circular dependency).
         $result = parent::update($entity);
@@ -381,6 +567,35 @@ class ObjectEntityMapper extends QBMapper
 
         return $result;
     }//end update()
+
+    /**
+     * Update entity directly to blob storage (skip magic mapper check).
+     *
+     * This method is used by UnifiedObjectMapper to avoid circular calls.
+     *
+     * @param \OCP\AppFramework\Db\Entity $entity Entity to update.
+     *
+     * @return \OCP\AppFramework\Db\Entity Updated entity.
+     */
+    public function updateDirectBlobStorage(\OCP\AppFramework\Db\Entity $entity): \OCP\AppFramework\Db\Entity
+    {
+        // Dispatch updating event.
+        $this->eventDispatcher->dispatch(
+            ObjectUpdatingEvent::class,
+            new ObjectUpdatingEvent(
+                newObject: $entity,
+                oldObject: $this->find($entity->getId(), null, null, true)
+            )
+        );
+
+        // Call parent QBMapper update directly (blob storage).
+        $result = parent::update($entity);
+
+        // Dispatch updated event.
+        $this->eventDispatcher->dispatch(ObjectUpdatedEvent::class, new ObjectUpdatedEvent($result, $entity));
+
+        return $result;
+    }//end updateDirectBlobStorage()
 
     /**
      * Delete an object entity with event dispatching.
@@ -573,8 +788,63 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return array Array of UUIDs of deleted objects.
      */
-    public function deleteObjects(array $uuids=[], bool $hardDelete=false): array
-    {
+    /**
+     * Perform bulk delete operations on objects by UUID.
+     *
+     * @param array        $uuids      Array of object UUIDs to delete.
+     * @param bool         $hardDelete Whether to perform hard delete.
+     * @param Register|null $register  Optional register context for magic mapper routing.
+     * @param Schema|null   $schema    Optional schema context for magic mapper routing.
+     *
+     * @return array Array of UUIDs of deleted objects.
+     */
+    public function deleteObjects(
+        array $uuids=[],
+        bool $hardDelete=false,
+        ?Register $register=null,
+        ?Schema $schema=null
+    ): array {
+        // Check if magic mapping should be used.
+        if ($register !== null && $schema !== null && $this->shouldUseMagicMapperForRegisterSchema(register: $register, schema: $schema) === true) {
+            try {
+                $this->logger->debug('[ObjectEntityMapper] Routing deleteObjects() to MagicMapper');
+                $deletedUuids = [];
+                foreach ($uuids as $uuid) {
+                    try {
+                        $unifiedObjectMapper = \OC::$server->get(UnifiedObjectMapper::class);
+                        $object = $unifiedObjectMapper->find(
+                            identifier: $uuid,
+                            register: $register,
+                            schema: $schema
+                        );
+                        
+                        if ($hardDelete === true) {
+                            // Hard delete: remove from database.
+                            $unifiedObjectMapper->delete($object);
+                        } else {
+                            // Soft delete: set deleted timestamp.
+                            $object->setDeleted(new \DateTime());
+                            $unifiedObjectMapper->update($object);
+                        }
+                        
+                        $deletedUuids[] = $uuid;
+                    } catch (\Exception $e) {
+                        $this->logger->warning(
+                            '[ObjectEntityMapper] Failed to delete object via magic mapper',
+                            ['uuid' => $uuid, 'error' => $e->getMessage()]
+                        );
+                    }
+                }
+                
+                return $deletedUuids;
+            } catch (\Exception $e) {
+                $this->logger->error(
+                    '[ObjectEntityMapper] Magic mapper deleteObjects failed, falling back to blob storage',
+                    ['error' => $e->getMessage()]
+                );
+            }
+        }
+        
         return $this->bulkOperationsHandler->deleteObjects(uuids: $uuids, hardDelete: $hardDelete);
     }//end deleteObjects()
 
@@ -583,11 +853,64 @@ class ObjectEntityMapper extends QBMapper
      *
      * @param array          $uuids    Array of object UUIDs to publish.
      * @param \DateTime|bool $datetime Optional datetime for publishing.
+     * @param Register|null  $register Optional register context for magic mapper routing.
+     * @param Schema|null    $schema   Optional schema context for magic mapper routing.
      *
      * @return array Array of UUIDs of published objects.
      */
-    public function publishObjects(array $uuids=[], \DateTime|bool $datetime=true): array
-    {
+    public function publishObjects(
+        array $uuids=[],
+        \DateTime|bool $datetime=true,
+        ?Register $register=null,
+        ?Schema $schema=null
+    ): array {
+        // Check if magic mapping should be used.
+        if ($register !== null && $schema !== null && $this->shouldUseMagicMapperForRegisterSchema(register: $register, schema: $schema) === true) {
+            try {
+                $this->logger->debug('[ObjectEntityMapper] Routing publishObjects() to MagicMapper');
+                // For each UUID, update the published timestamp in the magic mapper table.
+                $publishedUuids = [];
+                foreach ($uuids as $uuid) {
+                    try {
+                        // Find the object via magic mapper.
+                        $unifiedObjectMapper = \OC::$server->get(UnifiedObjectMapper::class);
+                        $object = $unifiedObjectMapper->find(
+                            identifier: $uuid,
+                            register: $register,
+                            schema: $schema
+                        );
+                        
+                        // Update published timestamp.
+                        if ($datetime === true) {
+                            $object->setPublished(new \DateTime());
+                        } else if ($datetime instanceof \DateTime) {
+                            $object->setPublished($datetime);
+                        } else if ($datetime === false) {
+                            $object->setPublished(null);
+                        }
+                        
+                        // Save the updated object.
+                        $unifiedObjectMapper->update($object);
+                        $publishedUuids[] = $uuid;
+                    } catch (\Exception $e) {
+                        $this->logger->warning(
+                            '[ObjectEntityMapper] Failed to publish object via magic mapper',
+                            ['uuid' => $uuid, 'error' => $e->getMessage()]
+                        );
+                    }
+                }
+                
+                return $publishedUuids;
+            } catch (\Exception $e) {
+                $this->logger->error(
+                    '[ObjectEntityMapper] Magic mapper publishObjects failed, falling back to blob storage',
+                    ['error' => $e->getMessage()]
+                );
+                // Fallback to blob storage.
+            }
+        }
+        
+        // Original blob storage publish logic.
         return $this->bulkOperationsHandler->publishObjects(uuids: $uuids, datetime: $datetime);
     }//end publishObjects()
 
@@ -596,11 +919,58 @@ class ObjectEntityMapper extends QBMapper
      *
      * @param array          $uuids    Array of object UUIDs to depublish.
      * @param \DateTime|bool $datetime Optional datetime for depublishing.
+     * @param Register|null  $register Optional register context for magic mapper routing.
+     * @param Schema|null    $schema   Optional schema context for magic mapper routing.
      *
      * @return array Array of UUIDs of depublished objects.
      */
-    public function depublishObjects(array $uuids=[], \DateTime|bool $datetime=true): array
-    {
+    public function depublishObjects(
+        array $uuids=[],
+        \DateTime|bool $datetime=true,
+        ?Register $register=null,
+        ?Schema $schema=null
+    ): array {
+        // Check if magic mapping should be used.
+        if ($register !== null && $schema !== null && $this->shouldUseMagicMapperForRegisterSchema(register: $register, schema: $schema) === true) {
+            try {
+                $this->logger->debug('[ObjectEntityMapper] Routing depublishObjects() to MagicMapper');
+                $depublishedUuids = [];
+                foreach ($uuids as $uuid) {
+                    try {
+                        $unifiedObjectMapper = \OC::$server->get(UnifiedObjectMapper::class);
+                        $object = $unifiedObjectMapper->find(
+                            identifier: $uuid,
+                            register: $register,
+                            schema: $schema
+                        );
+                        
+                        if ($datetime === true) {
+                            $object->setDepublished(new \DateTime());
+                        } else if ($datetime instanceof \DateTime) {
+                            $object->setDepublished($datetime);
+                        } else if ($datetime === false) {
+                            $object->setDepublished(null);
+                        }
+                        
+                        $unifiedObjectMapper->update($object);
+                        $depublishedUuids[] = $uuid;
+                    } catch (\Exception $e) {
+                        $this->logger->warning(
+                            '[ObjectEntityMapper] Failed to depublish object via magic mapper',
+                            ['uuid' => $uuid, 'error' => $e->getMessage()]
+                        );
+                    }
+                }
+                
+                return $depublishedUuids;
+            } catch (\Exception $e) {
+                $this->logger->error(
+                    '[ObjectEntityMapper] Magic mapper depublishObjects failed, falling back to blob storage',
+                    ['error' => $e->getMessage()]
+                );
+            }
+        }
+        
         return $this->bulkOperationsHandler->depublishObjects(uuids: $uuids, datetime: $datetime);
     }//end depublishObjects()
 
@@ -731,7 +1101,11 @@ class ObjectEntityMapper extends QBMapper
      */
     public function bulkOwnerDeclaration(?string $defaultOwner=null, ?string $defaultOrganisation=null, int $batchSize=1000): array
     {
-        return $this->queryOptimizationHandler->bulkOwnerDeclaration(defaultOwner: $defaultOwner, defaultOrganisation: $defaultOrganisation, batchSize: $batchSize);
+        return $this->queryOptimizationHandler->bulkOwnerDeclaration(
+            defaultOwner: $defaultOwner,
+            defaultOrganisation: $defaultOrganisation,
+            batchSize: $batchSize
+        );
     }//end bulkOwnerDeclaration()
 
     /**
@@ -818,8 +1192,38 @@ class ObjectEntityMapper extends QBMapper
      * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found.
      * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple objects found.
      */
-    public function find(string|int $identifier, ?Register $register=null, ?Schema $schema=null, bool $includeDeleted=false, bool $_rbac=true, bool $_multitenancy=true): ObjectEntity
-    {
+    public function find(
+        string|int $identifier, ?Register $register=null,
+        ?Schema $schema=null, bool $includeDeleted=false,
+        bool $_rbac=true, bool $_multitenancy=true
+    ): ObjectEntity {
+        // Check if magic mapping should be used.
+        if ($register !== null && $schema !== null && $this->shouldUseMagicMapperForRegisterSchema(register: $register, schema: $schema) === true) {
+            try {
+                $this->logger->debug('[ObjectEntityMapper] Routing find() to UnifiedObjectMapper (MagicMapper)');
+                // Use the UnifiedObjectMapper to handle the find, which will route to MagicMapper.
+                $unifiedObjectMapper = \OC::$server->get(UnifiedObjectMapper::class);
+                return $unifiedObjectMapper->find(
+                    identifier: $identifier,
+                    register: $register,
+                    schema: $schema,
+                    includeDeleted: $includeDeleted,
+                    rbac: $_rbac,
+                    multitenancy: $_multitenancy
+                );
+            } catch (\Exception $e) {
+                $this->logger->error(
+                    '[ObjectEntityMapper] Magic mapper find failed, falling back to blob storage',
+                    [
+                        'error'     => $e->getMessage(),
+                        'exception' => get_class($e),
+                        'trace'     => $e->getTraceAsString(),
+                    ]
+                );
+                // Fallback to default blob storage if magic mapper fails.
+            }
+        }
+        
         $qb = $this->db->getQueryBuilder();
 
         // Build the base query.
@@ -828,16 +1232,24 @@ class ObjectEntityMapper extends QBMapper
 
         // Build OR conditions for matching against id, uuid, slug, or uri.
         // Note: Only include id comparison if identifier is actually numeric (PostgreSQL strict typing).
-        $orConditions = [];
         if (is_numeric($identifier) === true) {
-            $orConditions[] = $qb->expr()->eq('id', $qb->createNamedParameter((int) $identifier, IQueryBuilder::PARAM_INT));
+            $qb->where(
+                $qb->expr()->orX(
+                    $qb->expr()->eq('id', $qb->createNamedParameter((int) $identifier, IQueryBuilder::PARAM_INT)),
+                    $qb->expr()->eq('uuid', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
+                    $qb->expr()->eq('slug', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
+                    $qb->expr()->eq('uri', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR))
+                )
+            );
+        } else {
+            $qb->where(
+                $qb->expr()->orX(
+                    $qb->expr()->eq('uuid', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
+                    $qb->expr()->eq('slug', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
+                    $qb->expr()->eq('uri', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR))
+                )
+            );
         }
-
-        $orConditions[] = $qb->expr()->eq('uuid', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR));
-        $orConditions[] = $qb->expr()->eq('slug', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR));
-        $orConditions[] = $qb->expr()->eq('uri', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR));
-
-        $qb->where($qb->expr()->orX(...$orConditions));
 
         // By default, only include objects where 'deleted' is NULL unless $includeDeleted is true.
         if ($includeDeleted === false) {
@@ -860,6 +1272,86 @@ class ObjectEntityMapper extends QBMapper
 
         return $this->findEntity($qb);
     }//end find()
+
+    /**
+     * Find entity directly from blob storage (skip magic mapper check).
+     *
+     * This method is used by UnifiedObjectMapper to avoid circular calls.
+     *
+     * @param string|int    $identifier     Object identifier (ID, UUID, slug, or URI).
+     * @param Register|null $register       Optional register to filter by.
+     * @param Schema|null   $schema         Optional schema to filter by.
+     * @param bool          $includeDeleted Whether to include deleted objects.
+     * @param bool          $_rbac          Whether to apply RBAC checks.
+     * @param bool          $_multitenancy  Whether to apply multitenancy filtering.
+     *
+     * @return ObjectEntity The found object.
+     *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found.
+     * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple objects found.
+     */
+    public function findDirectBlobStorage(
+        string|int $identifier, ?Register $register=null,
+        ?Schema $schema=null, bool $includeDeleted=false,
+        bool $_rbac=true, bool $_multitenancy=true
+    ): ObjectEntity {
+        $qb = $this->db->getQueryBuilder();
+
+        // Build the base query (same logic as find() but without magic mapper routing).
+        $qb->select('*')
+            ->from('openregister_objects');
+
+        // Build OR conditions for matching against id, uuid, slug, or uri.
+        if (is_numeric($identifier) === true) {
+            $qb->where(
+                $qb->expr()->orX(
+                    $qb->expr()->eq('id', $qb->createNamedParameter((int) $identifier, IQueryBuilder::PARAM_INT)),
+                    $qb->expr()->eq('uuid', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
+                    $qb->expr()->eq('slug', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
+                    $qb->expr()->eq('uri', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR))
+                )
+            );
+        } else {
+            $qb->where(
+                $qb->expr()->orX(
+                    $qb->expr()->eq('uuid', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
+                    $qb->expr()->eq('slug', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
+                    $qb->expr()->eq('uri', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR))
+                )
+            );
+        }
+
+        // By default, only include objects where 'deleted' is NULL unless $includeDeleted is true.
+        if ($includeDeleted === false) {
+            $qb->andWhere($qb->expr()->isNull('deleted'));
+        }
+
+        // Add optional register filter if provided.
+        if ($register !== null) {
+            $qb->andWhere(
+                $qb->expr()->eq('register', $qb->createNamedParameter($register->getId(), IQueryBuilder::PARAM_INT))
+            );
+        }
+
+        // Add optional schema filter if provided.
+        if ($schema !== null) {
+            $qb->andWhere(
+                $qb->expr()->eq('schema', $qb->createNamedParameter($schema->getId(), IQueryBuilder::PARAM_INT))
+            );
+        }
+
+        // Apply RBAC filter if enabled.
+        if ($_rbac === true) {
+            $this->applyRBACFilter($qb);
+        }
+
+        // Apply multitenancy filter if enabled.
+        if ($_multitenancy === true) {
+            $this->applyOrganisationFilter($qb, allowNullOrg: true);
+        }
+
+        return $this->findEntity($qb);
+    }//end findDirectBlobStorage()
 
     /**
      * Find multiple objects by their IDs or UUIDs.
@@ -985,6 +1477,39 @@ class ObjectEntityMapper extends QBMapper
         ?Schema $schema=null,
         ?bool $published=null
     ): array {
+        // Check if magic mapping should be used.
+        if ($register !== null && $schema !== null && $this->shouldUseMagicMapperForRegisterSchema(register: $register, schema: $schema) === true) {
+            try {
+                $this->logger->debug('[ObjectEntityMapper] Routing findAll() to UnifiedObjectMapper (MagicMapper)');
+                $unifiedObjectMapper = \OC::$server->get(UnifiedObjectMapper::class);
+                return $unifiedObjectMapper->findAll(
+                    limit: $limit,
+                    offset: $offset,
+                    filters: $filters,
+                    searchConditions: $searchConditions,
+                    searchParams: $searchParams,
+                    sort: $sort,
+                    search: $search,
+                    ids: $ids,
+                    uses: $uses,
+                    includeDeleted: $includeDeleted,
+                    register: $register,
+                    schema: $schema,
+                    published: $published
+                );
+            } catch (\Exception $e) {
+                $this->logger->error(
+                    '[ObjectEntityMapper] Magic mapper findAll failed, falling back to blob storage',
+                    [
+                        'error'     => $e->getMessage(),
+                        'exception' => get_class($e),
+                    ]
+                );
+                // Fallback to default blob storage if magic mapper fails.
+            }
+        }
+
+        // Original blob storage findAll logic.
             $qb = $this->db->getQueryBuilder();
         $qb->select('*')->from('openregister_objects');
 
@@ -999,7 +1524,7 @@ class ObjectEntityMapper extends QBMapper
                 $qb->andWhere($qb->expr()->isNull('deleted'));
             }
 
-            // Additional @self.deleted.* filters can be added here for nested properties
+            // Additional @self.deleted.* filters can be added here for nested properties.
             $hasDeletedFilter = true;
         }
 
@@ -1057,7 +1582,13 @@ class ObjectEntityMapper extends QBMapper
         // Apply sorting.
         if (empty($sort) === false) {
             foreach ($sort as $field => $direction) {
-                $qb->addOrderBy($field, $direction === 'desc' ? 'DESC' : 'ASC');
+                if ($direction === 'desc') {
+                    $orderDirection = 'DESC';
+                } else {
+                    $orderDirection = 'ASC';
+                }
+
+                $qb->addOrderBy($field, $orderDirection);
             }
         } else {
             $qb->addOrderBy('id', 'ASC');
@@ -1076,6 +1607,139 @@ class ObjectEntityMapper extends QBMapper
     }//end findAll()
 
     /**
+     * Find all entities directly from blob storage (skip magic mapper check).
+     *
+     * This method is used by UnifiedObjectMapper to avoid circular calls.
+     * It contains the same blob storage logic as findAll() but without magic mapper routing.
+     *
+     * @param int|null      $limit            The number of objects to return.
+     * @param int|null      $offset           The offset of the objects to return.
+     * @param array|null    $filters          The filters to apply to the objects.
+     * @param array|null    $searchConditions The search conditions to apply to the objects.
+     * @param array|null    $searchParams     The search parameters to apply to the objects.
+     * @param array         $sort             The sort order to apply.
+     * @param string|null   $search           The search string to apply.
+     * @param array|null    $ids              Array of IDs or UUIDs to filter by.
+     * @param string|null   $uses             Value that must be present in relations.
+     * @param bool          $includeDeleted   Whether to include deleted objects.
+     * @param Register|null $register         Optional register to filter objects.
+     * @param Schema|null   $schema           Optional schema to filter objects.
+     * @param bool|null     $published        If true, only return currently published objects.
+     *
+     * @return ObjectEntity[]
+     *
+     * @psalm-return list<ObjectEntity>
+     */
+    public function findAllDirectBlobStorage(
+        ?int $limit=null,
+        ?int $offset=null,
+        ?array $filters=null,
+        ?array $searchConditions=null,
+        ?array $searchParams=null,
+        array $sort=[],
+        ?string $search=null,
+        ?array $ids=null,
+        ?string $uses=null,
+        bool $includeDeleted=false,
+        ?Register $register=null,
+        ?Schema $schema=null,
+        ?bool $published=null
+    ): array {
+        // Original blob storage findAll logic (same as lines 1513-1606).
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')->from('openregister_objects');
+
+        // Process @self.deleted filter if present in filters array.
+        $hasDeletedFilter = false;
+        if ($filters !== null && isset($filters['@self.deleted'])) {
+            $deletedFilter = $filters['@self.deleted'];
+            if ($deletedFilter === 'IS NOT NULL') {
+                $qb->andWhere($qb->expr()->isNotNull('deleted'));
+            } else if ($deletedFilter === 'IS NULL') {
+                $qb->andWhere($qb->expr()->isNull('deleted'));
+            }
+
+            $hasDeletedFilter = true;
+        }
+
+        // Apply basic deleted filter ONLY if no @self.deleted filter was specified.
+        if ($hasDeletedFilter === false && $includeDeleted === false) {
+            $qb->andWhere($qb->expr()->isNull('deleted'));
+        }
+
+        // Note: register and schema columns are VARCHAR(255), not BIGINT.
+        if ($register !== null) {
+            $qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter((string) $register->getId(), IQueryBuilder::PARAM_STR)));
+        }
+
+        if ($schema !== null) {
+            $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter((string) $schema->getId(), IQueryBuilder::PARAM_STR)));
+        }
+
+        // Apply ID filters.
+        if ($ids !== null && empty($ids) === false) {
+            $numericIds = array_filter($ids, 'is_numeric');
+            $stringIds  = array_filter($ids, fn ($id) => is_string($id) === true);
+
+            $idConditions = [];
+            if (empty($numericIds) === false) {
+                $idConditions[] = $qb->expr()->in('id', $qb->createNamedParameter($numericIds, IQueryBuilder::PARAM_INT_ARRAY));
+            }
+
+            if (empty($stringIds) === false) {
+                $idConditions[] = $qb->expr()->in('uuid', $qb->createNamedParameter($stringIds, IQueryBuilder::PARAM_STR_ARRAY));
+            }
+
+            if (empty($idConditions) === false) {
+                $qb->andWhere($qb->expr()->orX(...$idConditions));
+            }
+        }
+
+        // Apply published filter.
+        if ($published !== null) {
+            $now = (new DateTime())->format('Y-m-d H:i:s');
+            if ($published === true) {
+                $qb->andWhere($qb->expr()->isNotNull('published'));
+                $qb->andWhere($qb->expr()->lte('published', $qb->createNamedParameter($now)));
+                $qb->andWhere(
+                    $qb->expr()->orX(
+                        $qb->expr()->isNull('depublished'),
+                        $qb->expr()->gt('depublished', $qb->createNamedParameter($now))
+                    )
+                );
+            } else {
+                $qb->andWhere($qb->expr()->isNull('published'));
+            }
+        }
+
+        // Apply sorting.
+        if (empty($sort) === false) {
+            foreach ($sort as $field => $direction) {
+                if ($direction === 'desc') {
+                    $orderDirection = 'DESC';
+                } else {
+                    $orderDirection = 'ASC';
+                }
+
+                $qb->addOrderBy($field, $orderDirection);
+            }
+        } else {
+            $qb->addOrderBy('id', 'ASC');
+        }
+
+        // Apply pagination.
+        if ($limit !== null) {
+            $qb->setMaxResults($limit);
+        }
+
+        if ($offset !== null) {
+            $qb->setFirstResult($offset);
+        }
+
+        return $this->findEntities($qb);
+    }//end findAllDirectBlobStorage()
+
+    /**
      * Search for objects with complex filtering.
      *
      * This method is restored from pre-refactor version for compatibility.
@@ -1092,8 +1756,11 @@ class ObjectEntityMapper extends QBMapper
      *
      * @psalm-return list<OCA\OpenRegister\Db\ObjectEntity>
      */
-    public function searchObjects(array $query=[], ?string $_activeOrganisationUuid=null, bool $_rbac=true, bool $_multitenancy=true, ?array $ids=null, ?string $uses=null): array|int
-    {
+    public function searchObjects(
+        array $query=[], ?string $_activeOrganisationUuid=null,
+        bool $_rbac=true, bool $_multitenancy=true,
+        ?array $ids=null, ?string $uses=null
+    ): array|int {
         // Extract common query parameters.
         $limit  = $query['_limit'] ?? 30;
         $offset = $query['_offset'] ?? 0;
@@ -1109,7 +1776,7 @@ class ObjectEntityMapper extends QBMapper
             limit: $limit,
             offset: $offset,
             filters: $query,
-            // Pass full query so filters like @self.deleted are available
+            // Pass full query so filters like @self.deleted are available.
             sort: $sort,
             ids: $ids,
             uses: $uses,
@@ -1131,8 +1798,11 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return int Count of objects.
      */
-    public function countSearchObjects(array $query=[], ?string $_activeOrganisationUuid=null, bool $_rbac=true, bool $_multitenancy=true, ?array $ids=null, ?string $uses=null): int
-    {
+    public function countSearchObjects(
+        array $query=[], ?string $_activeOrganisationUuid=null,
+        bool $_rbac=true, bool $_multitenancy=true,
+        ?array $ids=null, ?string $uses=null
+    ): int {
         $qb = $this->db->getQueryBuilder();
         $qb->select($qb->func()->count('id'))
             ->from('openregister_objects');
@@ -1293,6 +1963,7 @@ class ObjectEntityMapper extends QBMapper
             /*
              * @psalm-suppress UndefinedInterfaceMethod - escapeLikeParameter exists on QueryBuilder implementation
              */
+
             $qb->andWhere(
                 $qb->expr()->like('object', $qb->createNamedParameter('%'.$qb->escapeLikeParameter($search).'%'))
             );
@@ -1300,6 +1971,7 @@ class ObjectEntityMapper extends QBMapper
             /*
              * @psalm-suppress UndefinedInterfaceMethod - escapeLikeParameter exists on QueryBuilder implementation
              */
+
             $qb->andWhere(
                 $qb->expr()->like('object', $qb->createNamedParameter('%"'.$qb->escapeLikeParameter($search).'"%'))
             );

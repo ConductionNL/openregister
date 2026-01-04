@@ -113,8 +113,8 @@ class OrganisationMapper extends QBMapper
      */
     public function update(Entity $entity): Entity
     {
-        // Get old state before update.
         /*
+         * Get old state before update.
          * @var Organisation $oldEntity
          */
 
@@ -776,6 +776,8 @@ class OrganisationMapper extends QBMapper
      *
      * @param array  $childrenUuids Array of child organisation UUIDs
      * @param string $rootUuid      The root organisation UUID
+     *
+     * @return int
      *
      * @psalm-return int<0, 20>
      */

@@ -126,7 +126,14 @@ class RelationHandler
             $foundIds = array_map(
                 function (ObjectEntity $object) use ($property, $key) {
                     $serialized = $object->jsonSerialize();
-                    $idRaw      = is_array($property) === true && is_array($serialized) === true && isset($property['inversedBy']) === true ? $serialized[$property['inversedBy']] : null;
+                    if (is_array($property) === true
+                        && is_array($serialized) === true
+                        && isset($property['inversedBy']) === true
+                    ) {
+                        $idRaw = $serialized[$property['inversedBy']];
+                    } else {
+                        $idRaw = null;
+                    }
 
                     if (Uuid::isValid($idRaw) === true) {
                         return $idRaw;
@@ -445,7 +452,11 @@ class RelationHandler
             // Apply pagination.
             $limit  = $filters['_limit'] ?? 30;
             $offset = $filters['_offset'] ?? 0;
-            $total  = is_array($contracts) === true ? count($contracts) : 0;
+            if (is_array($contracts) === true) {
+                $total = count($contracts);
+            } else {
+                $total = 0;
+            }
 
             if (is_array($contracts) === true) {
                 $contracts = array_slice($contracts, $offset, $limit);
@@ -552,7 +563,9 @@ class RelationHandler
      *
      * @return (array|int|mixed|string)[] Paginated results with referencing objects.
      *
-     * @psalm-return array{results: array<never, never>, total: 0, limit: 30|mixed, offset: 0|mixed, message?: 'Reverse relationship lookup not yet implemented'}
+     * @psalm-return array{results: array<never, never>, total: 0,
+     *     limit: 30|mixed, offset: 0|mixed,
+     *     message?: 'Reverse relationship lookup not yet implemented'}
      */
     public function getUsedBy(string $objectId, array $query=[], bool $rbac=true, bool $_multitenancy=true): array
     {

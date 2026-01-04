@@ -83,6 +83,7 @@ class ConfigurationHandler
             $this->solrConfig = $this->settingsService->getSolrSettings();
         } catch (Exception $e) {
             $this->logger->warning(message: 'Failed to load SOLR settings', context: ['error' => $e->getMessage()]);
+
             /*
              * @psalm-suppress InvalidPropertyAssignmentValue - ['enabled' => false] is compatible with solrConfig type
              */

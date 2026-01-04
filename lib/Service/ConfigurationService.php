@@ -846,11 +846,7 @@ class ConfigurationService
             }
 
             $this->logger->info(
-                "Successfully fetched remote configuration with ".
-                count($remoteData['components']['schemas'] ?? []).
-                " schemas and ".
-                count($remoteData['components']['registers'] ?? []).
-                " registers"
+                "Successfully fetched remote configuration with ".count($remoteData['components']['schemas'] ?? [])." schemas and ".count($remoteData['components']['registers'] ?? [])." registers"
             );
 
             return $remoteData;
@@ -951,6 +947,7 @@ class ConfigurationService
             slug: $slug,
             registerData: $registerData
         );
+
         /*
          * Preview changes for a single schema
          *

@@ -83,7 +83,14 @@ class MigrationHandler
      * @throws OcpDoesNotExistException If register or schema not found.
      * @throws InvalidArgumentException If invalid parameters provided.
      *
-     * @psalm-return array{success: bool, statistics: array{objectsMigrated: 0|1|2, objectsFailed: int, propertiesMapped: int<0, max>, propertiesDiscarded: int<min, max>}, details: list<array{error: null|string, newObjectId?: null|string, objectId: mixed|null|string, objectTitle: null|string, success: bool}>, warnings: list<'Some objects failed to migrate. Check details for specific errors.'>, errors: list<non-empty-string>}
+     * @psalm-return array{success: bool,
+     *     statistics: array{objectsMigrated: 0|1|2, objectsFailed: int,
+     *     propertiesMapped: int<0, max>, propertiesDiscarded: int<min, max>},
+     *     details: list<array{error: null|string, newObjectId?: null|string,
+     *     objectId: mixed|null|string, objectTitle: null|string, success: bool}>,
+     *     warnings: list<'Some objects failed to migrate. '.
+     *     'Check details for specific errors.'>,
+     *     errors: list<non-empty-string>}
      */
     public function migrateObjects(
         string|int $sourceRegister,
@@ -152,9 +159,15 @@ class MigrationHandler
                     ) {
                         $actualRegister = $sourceObject->getRegister();
                         $actualSchema   = $sourceObject->getSchema();
-                        throw new InvalidArgumentException(
-                            "Object {$objectId} does not belong to the specified source register/schema. "."Expected: register='{$sourceRegister}', schema='{$sourceSchema}'. "."Actual: register='{$actualRegister}', schema='{$actualSchema}'"
+                        $expected       = "register='{$sourceRegister}', schema='{$sourceSchema}'";
+                        $actual         = "register='{$actualRegister}', schema='{$actualSchema}'";
+                        $message        = sprintf(
+                            "Object %s does not belong to the specified source register/schema. Expected: %s. Actual: %s",
+                            $objectId,
+                            $expected,
+                            $actual
                         );
+                        throw new InvalidArgumentException($message);
                     }
 
                     // Get source object data (the JSON object property).

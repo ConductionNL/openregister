@@ -195,7 +195,7 @@ class ChatController extends Controller
      *
      * @return array Normalized request parameters
      *
-     * @psalm-return array{conversationUuid: string, agentUuid: string,
+     * @psalm-return   array{conversationUuid: string, agentUuid: string,
      *     message: string, selectedViews: array, selectedTools: array,
      *     ragSettings: array{includeObjects: bool|mixed, includeFiles: bool|mixed,
      *     numSourcesFiles: int|mixed, numSourcesObjects: int|mixed}}
@@ -212,12 +212,20 @@ class ChatController extends Controller
         $message          = (string) $this->request->getParam('message');
 
         // Extract selectedViews array.
-        $viewsParam    = $this->request->getParam('views');
-        $selectedViews = ($viewsParam !== null && is_array($viewsParam) === true) ? $viewsParam : [];
+        $viewsParam = $this->request->getParam('views');
+        if ($viewsParam !== null && is_array($viewsParam) === true) {
+            $selectedViews = $viewsParam;
+        } else {
+            $selectedViews = [];
+        }
 
         // Extract selectedTools array.
-        $toolsParam    = $this->request->getParam('tools');
-        $selectedTools = ($toolsParam !== null && is_array($toolsParam) === true) ? $toolsParam : [];
+        $toolsParam = $this->request->getParam('tools');
+        if ($toolsParam !== null && is_array($toolsParam) === true) {
+            $selectedTools = $toolsParam;
+        } else {
+            $selectedTools = [];
+        }
 
         // Extract RAG configuration settings.
         $ragSettings = [
@@ -454,6 +462,7 @@ class ChatController extends Controller
                 400     => 'Missing conversation or agentUuid',
                 403     => 'Access denied',
                 404     => 'Conversation not found',
+                503     => 'AI service not configured',
                 default => 'Failed to process message',
             };
 

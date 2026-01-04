@@ -313,7 +313,8 @@ class ImportHandler
         try {
             $response = $this->client->request('GET', $url);
         } catch (GuzzleException $e) {
-            return new JSONResponse(data: ['error' => 'Failed to do a GET api-call on url: '.$url.' '.$e->getMessage()], statusCode: 400);
+            $errorMessage = 'Failed to do a GET api-call on url: '.$url.' '.$e->getMessage();
+            return new JSONResponse(data: ['error' => $errorMessage], statusCode: 400);
         }
 
         $responseBody = $response->getBody()->getContents();
@@ -439,7 +440,7 @@ class ImportHandler
         $duplicateInfo = $this->getDuplicateRegisterInfo($slug);
 
         $errorMessage = sprintf(
-            "Duplicate register detected during import from app '%s' (version %s). "."Register with slug '%s' has multiple entries in the database: %s. "."Please resolve this by removing duplicate entries or updating the register slugs to be unique. "."You can identify duplicates by checking registers with the same slug, uuid, or id.",
+            "Duplicate register detected during import from app '%s' (version %s). Register with slug '%s' has multiple entries in the database: %s. Please resolve this by removing duplicate entries or updating the register slugs to be unique. You can identify duplicates by checking registers with the same slug, uuid, or id.",
             $appId,
             $version,
             $slug,
@@ -513,7 +514,7 @@ class ImportHandler
         $duplicateInfo = $this->getDuplicateSchemaInfo($slug);
 
         $errorMessage = sprintf(
-            "Duplicate schema detected during import from app '%s' (version %s). "."Schema with slug '%s' has multiple entries in the database: %s. "."Please resolve this by removing duplicate entries or updating the schema slugs to be unique. "."You can identify duplicates by checking schemas with the same slug, uuid, or id.",
+            "Duplicate schema detected during import from app '%s' (version %s). Schema with slug '%s' has multiple entries in the database: %s. Please resolve this by removing duplicate entries or updating the schema slugs to be unique. You can identify duplicates by checking schemas with the same slug, uuid, or id.",
             $appId,
             $version,
             $slug,
@@ -699,13 +700,13 @@ class ImportHandler
                             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                                 $this->logger->info(
                                     sprintf(
-                                        'Register with slug %s not found in current organisation context '.'during schema property import (will be resolved after registers are imported).',
+                                        'Register with slug %s not found in current organisation context during schema property import (will be resolved after registers are imported).',
                                         $registerSlug
                                     )
                                 );
                                 unset($property['objectConfiguration']['register']);
                             }
-                        }
+                        }//end if
                     }//end if
 
                     // Handle schema slug/ID in objectConfiguration (new structure).
@@ -727,7 +728,7 @@ class ImportHandler
                                 } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                                     $this->logger->info(
                                         sprintf(
-                                            'Schema with slug %s not found in current organisation context '.'during schema property import (will be resolved after schemas are imported).',
+                                            'Schema with slug %s not found in current organisation context during schema property import (will be resolved after schemas are imported).',
                                             $schemaSlug
                                         )
                                     );
@@ -768,13 +769,13 @@ class ImportHandler
                             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                                 $this->logger->info(
                                     sprintf(
-                                        'Register with slug %s not found in current organisation context '.'during array items schema property import '.'(will be resolved after registers are imported).',
+                                        'Register with slug %s not found in current organisation context during array items schema property import (will be resolved after registers are imported).',
                                         $registerSlug
                                     )
                                 );
                                 unset($property['items']['objectConfiguration']['register']);
                             }
-                        }
+                        }//end if
                     }//end if
 
                     // Handle schema slug/ID in array items objectConfiguration (new structure).
@@ -796,10 +797,10 @@ class ImportHandler
                                     $this->schemasMap[$schemaSlug] = $existingSchema;
                                 } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                                     $this->logger->info(
-                                        sprintf(
-                                            'Schema with slug %s not found in current organisation context '.'during array items schema property import '.'(will be resolved after schemas are imported).',
-                                            $schemaSlug
-                                        )
+                                            sprintf(
+                                                'Schema with slug %s not found in current organisation context during array items schema property import (will be resolved after schemas are imported).',
+                                                $schemaSlug
+                                            )
                                     );
                                     unset($property['items']['objectConfiguration']['schema']);
                                 }
@@ -909,7 +910,7 @@ class ImportHandler
         // ⚠️ CRITICAL: Configuration entity is required for proper tracking.
         if ($configuration === null) {
             throw new Exception(
-                'importFromJson must be called with a Configuration entity. '.'Direct imports without a Configuration are not allowed to ensure proper entity tracking. '.'Please create a Configuration entity first before importing.'
+                'importFromJson must be called with a Configuration entity. Direct imports without a Configuration are not allowed to ensure proper entity tracking. Please create a Configuration entity first before importing.'
             );
         }
 
@@ -932,7 +933,7 @@ class ImportHandler
             // If we have a stored version, compare it with the current version.
             if ($storedVersion !== '' && version_compare($version, $storedVersion, '<=') === true) {
                 $this->logger->info(
-                    message: "Skipping import for app {$appId} - current version {$version} "."is not newer than stored version {$storedVersion}"
+                    message: "Skipping import for app {$appId} - current version {$version} is not newer than stored version {$storedVersion}"
                 );
 
                 // Return empty result to indicate no import was performed.
@@ -1074,7 +1075,7 @@ class ImportHandler
                             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                                 $this->logger->info(
                                     sprintf(
-                                        'Schema with slug %s not found in current organisation context '.'during register import (will be created if defined in import).',
+                                        'Schema with slug %s not found in current organisation context during register import (will be created if defined in import).',
                                         $schemaSlug
                                     )
                                 );

@@ -150,7 +150,7 @@ class ResponseGenerationHandler
         $chatProvider = $llmConfig['chatProvider'] ?? null;
 
         if (empty($chatProvider) === true) {
-            throw new Exception('Chat provider is not configured. Please configure OpenAI, Fireworks AI, or Ollama in settings.');
+            throw new Exception('Chat provider is not configured. Please configure OpenAI, Fireworks AI, or Ollama in settings.', 503);
         }
 
         $this->logger->info(
@@ -194,7 +194,7 @@ class ResponseGenerationHandler
                 if ($chatProvider === 'openai') {
                     $openaiConfig = $llmConfig['openaiConfig'] ?? [];
                     if (empty($openaiConfig['apiKey']) === true) {
-                        throw new Exception('OpenAI API key is not configured');
+                        throw new Exception('OpenAI API key is not configured', 503);
                     }
 
                     $config->apiKey = $openaiConfig['apiKey'];
@@ -215,7 +215,7 @@ class ResponseGenerationHandler
                 } else if ($chatProvider === 'fireworks') {
                     $fireworksConfig = $llmConfig['fireworksConfig'] ?? [];
                     if (empty($fireworksConfig['apiKey']) === true) {
-                        throw new Exception('Fireworks AI API key is not configured');
+                        throw new Exception('Fireworks AI API key is not configured', 503);
                     }
 
                     $config->apiKey = $fireworksConfig['apiKey'];
@@ -273,8 +273,8 @@ class ResponseGenerationHandler
 
             // Create chat instance based on provider.
             if ($chatProvider === 'fireworks') {
-                // For Fireworks, use direct HTTP to avoid OpenAI library error handling bugs.
                 /*
+                 * For Fireworks, use direct HTTP to avoid OpenAI library error handling bugs.
                  * @psalm-suppress UndefinedPropertyFetch - LLPhant\OllamaConfig has dynamic properties
                  */
 
@@ -346,7 +346,7 @@ class ResponseGenerationHandler
                     'error'    => $e->getMessage(),
                 ]
             );
-            throw new Exception('Failed to generate response: '.$e->getMessage());
+            throw new Exception('Failed to generate response: '.$e->getMessage(), $e->getCode(), $e);
         }//end try
     }//end generateResponse()
 
@@ -412,8 +412,19 @@ class ResponseGenerationHandler
 
         if ($httpCode !== 200) {
             // Parse error response.
-            $errorData    = is_string($response) === true ? json_decode($response, true) : [];
-            $errorMessage = $errorData['error']['message'] ?? $errorData['error'] ?? (is_string($response) === true ? $response : 'Unknown error');
+            if (is_string($response) === true) {
+                $errorData = json_decode($response, true);
+            } else {
+                $errorData = [];
+            }
+
+            if (is_string($response) === true) {
+                $fallbackError = $response;
+            } else {
+                $fallbackError = 'Unknown error';
+            }
+
+            $errorMessage = $errorData['error']['message'] ?? $errorData['error'] ?? $fallbackError;
 
             // Make error messages user-friendly.
             if ($httpCode === 401 || $httpCode === 403) {
@@ -429,7 +440,7 @@ class ResponseGenerationHandler
             }
 
             throw new Exception("Fireworks API error (HTTP {$httpCode}): {$errorMessage}");
-        }
+        }//end if
 
         $data = [];
         if (is_string($response) === true) {
@@ -464,8 +475,10 @@ class ResponseGenerationHandler
      *
      * @throws \Exception If API call fails
      */
-    private function callFireworksChatAPIWithHistory(string $apiKey, string $model, string $baseUrl, array $messageHistory, array $functions=[]): string
-    {
+    private function callFireworksChatAPIWithHistory(
+        string $apiKey, string $model, string $baseUrl,
+        array $messageHistory, array $functions=[]
+    ): string {
         $url = rtrim($baseUrl, '/').'/chat/completions';
 
             // Note: Function calling with Fireworks AI is not yet implemented.
@@ -540,8 +553,19 @@ class ResponseGenerationHandler
 
         if ($httpCode !== 200) {
             // Parse error response.
-            $errorData    = is_string($response) === true ? json_decode($response, true) : [];
-            $errorMessage = $errorData['error']['message'] ?? $errorData['error'] ?? (is_string($response) === true ? $response : 'Unknown error');
+            if (is_string($response) === true) {
+                $errorData = json_decode($response, true);
+            } else {
+                $errorData = [];
+            }
+
+            if (is_string($response) === true) {
+                $fallbackError = $response;
+            } else {
+                $fallbackError = 'Unknown error';
+            }
+
+            $errorMessage = $errorData['error']['message'] ?? $errorData['error'] ?? $fallbackError;
 
             // Make error messages user-friendly.
             if ($httpCode === 401 || $httpCode === 403) {
@@ -557,7 +581,7 @@ class ResponseGenerationHandler
             }
 
             throw new Exception("Fireworks API error (HTTP {$httpCode}): {$errorMessage}");
-        }
+        }//end if
 
         $data = [];
         if (is_string($response) === true) {

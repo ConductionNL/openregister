@@ -97,6 +97,11 @@ class StatisticsHandler
         try {
             $qb  = $this->db->getQueryBuilder();
             $now = (new DateTime())->format('Y-m-d H:i:s');
+            // Build the published condition first (cannot assign inside select()).
+            $part1 = "COUNT(CASE WHEN published IS NOT NULL AND published <= '".$now."'";
+            $part2 = " AND (depublished IS NULL OR depublished > '".$now."') THEN 1 END) as published";
+            $publishedCondition = $part1.$part2;
+
             $qb->select(
                 $qb->createFunction('COUNT(id) as total'),
                 $qb->createFunction('COALESCE(SUM(size), 0) as size'),
@@ -105,9 +110,7 @@ class StatisticsHandler
                 // Note: locked is a JSON column - if it's NOT NULL, the object is locked.
                 $qb->createFunction('COUNT(CASE WHEN locked IS NOT NULL THEN 1 END) as locked'),
                 // Only count as published if published <= now and (depublished is null or depublished > now).
-                $qb->createFunction(
-                    "COUNT(CASE WHEN published IS NOT NULL AND published <= '".$now."' AND (depublished IS NULL OR depublished > '".$now."') THEN 1 END) as published"
-                )
+                $qb->createFunction($publishedCondition)
             )
                 ->from($this->tableName);
 
@@ -143,7 +146,15 @@ class StatisticsHandler
                     // Handle register exclusion.
                     if (($combination['register'] ?? null) !== null) {
                         $orConditions->add($qb->expr()->isNull('register'));
-                        $orConditions->add($qb->expr()->neq('register', $qb->createNamedParameter($combination['register'], IQueryBuilder::PARAM_INT)));
+                        $orConditions->add(
+                            $qb->expr()->neq(
+                                'register',
+                                $qb->createNamedParameter(
+                                    $combination['register'],
+                                    IQueryBuilder::PARAM_INT
+                                )
+                            )
+                        );
                     }
 
                     // Handle schema exclusion.
@@ -156,7 +167,7 @@ class StatisticsHandler
                     if ($orConditions->count() > 0) {
                         $qb->andWhere($orConditions);
                     }
-                }
+                }//end foreach
             }//end if
 
             $result = $qb->executeQuery()->fetch();

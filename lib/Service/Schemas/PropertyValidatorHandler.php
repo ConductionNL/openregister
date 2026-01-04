@@ -157,7 +157,10 @@ class PropertyValidatorHandler
                 throw new Exception("'maximum' at '$path' must be numeric");
             }
 
-            if (($property['minimum'] ?? null) !== null && ($property['maximum'] ?? null) !== null && ($property['minimum'] > $property['maximum']) === true) {
+            if (($property['minimum'] ?? null) !== null
+                && ($property['maximum'] ?? null) !== null
+                && ($property['minimum'] > $property['maximum']) === true
+            ) {
                 throw new Exception("'minimum' cannot be greater than 'maximum' at '$path'");
             }
         }

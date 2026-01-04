@@ -135,7 +135,21 @@ class PreviewHandler
      *     rules: array
      * }|JSONResponse
      *
-     * @psalm-return JSONResponse<int, \JsonSerializable|\stdClass|array|null|scalar, array<string, mixed>>|array{registers: list<array{action: string, changes: array, current: array|null, proposed: array, slug: string, title: string, type: string}>, schemas: list<array{action: string, changes: array, current: array|null, proposed: array, slug: string, title: string, type: string}>, objects: list<array>, endpoints: array<never, never>, sources: array<never, never>, mappings: array<never, never>, jobs: array<never, never>, synchronizations: array<never, never>, rules: array<never, never>, metadata: array{configurationId: int, configurationTitle: null|string, sourceUrl: null|string, remoteVersion: mixed|null, localVersion: null|string, previewedAt: string, totalChanges: int<0, max>}}
+     * @psalm-return JSONResponse<int,
+     *     \JsonSerializable|\stdClass|array|null|scalar,
+     *     array<string, mixed>>|array{registers: list<array{action: string,
+     *     changes: array, current: array|null, proposed: array,
+     *     slug: string, title: string, type: string}>,
+     *     schemas: list<array{action: string, changes: array,
+     *     current: array|null, proposed: array, slug: string,
+     *     title: string, type: string}>, objects: list<array>,
+     *     endpoints: array<never, never>, sources: array<never, never>,
+     *     mappings: array<never, never>, jobs: array<never, never>,
+     *     synchronizations: array<never, never>, rules: array<never, never>,
+     *     metadata: array{configurationId: int,
+     *     configurationTitle: null|string, sourceUrl: null|string,
+     *     remoteVersion: mixed|null, localVersion: null|string,
+     *     previewedAt: string, totalChanges: int<0, max>}}
      */
     public function previewConfigurationChanges(Configuration $configuration): array|JSONResponse
     {

@@ -130,14 +130,14 @@ class FileSettingsController extends Controller
     /**
      * Test Dolphin API connection
      *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
      * @param string $apiEndpoint Dolphin API endpoint URL
      * @param string $apiKey      Dolphin API key
      *
      * @return JSONResponse
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|400|500, array{success: bool, error?: string, message?: 'Dolphin connection successful'}, array<never, never>>
      */
@@ -427,13 +427,13 @@ class FileSettingsController extends Controller
     /**
      * Index a specific file in SOLR
      *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
      * @param int $fileId File ID to index
      *
      * @return JSONResponse Indexing result
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|422|500, array{success: bool, message: mixed|string, file_id?: int}, array<never, never>>
      */

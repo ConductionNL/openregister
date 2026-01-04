@@ -93,26 +93,26 @@ class Version1Date20250828120000 extends SimpleMigrationStep
             // Note: Removed 'deleted' column from all composite indexes because it's JSON type
             // and cannot be part of btree indexes in PostgreSQL.
             // 'objects_deleted_published_idx'       => ['deleted', 'published'],
-            // 'objects_lifecycle_idx'               => ['deleted', 'published', 'depublished'],
-            'objects_published_depublished_idx'   => ['published', 'depublished'],
+            // 'objects_lifecycle_idx'               => ['deleted', 'published', 'depublished'],.
+            'objects_published_depublished_idx'     => ['published', 'depublished'],
 
             // For register/schema filtering with lifecycle (with length prefixes for text columns).
             // 'objects_register_schema_deleted_idx' => ['register(20)', 'schema(20)', 'deleted'],
             // 'objects_register_lifecycle_idx'      => ['register(20)', 'deleted', 'published'],
-            // 'objects_schema_lifecycle_idx'        => ['schema(20)', 'deleted', 'published'],
+            // 'objects_schema_lifecycle_idx'        => ['schema(20)', 'deleted', 'published'],.
             'objects_register_schema_published_idx' => ['register(20)', 'schema(20)', 'published'],
-            'objects_register_published_idx'      => ['register(20)', 'published'],
-            'objects_schema_published_idx'        => ['schema(20)', 'published'],
+            'objects_register_published_idx'        => ['register(20)', 'published'],
+            'objects_schema_published_idx'          => ['schema(20)', 'published'],
 
             // For organisation-based filtering (with length prefix for text column).
-            // 'objects_org_lifecycle_idx'           => ['organisation(20)', 'deleted', 'published'],
-            'objects_org_published_idx'           => ['organisation(20)', 'published'],
+            // 'objects_org_lifecycle_idx'           => ['organisation(20)', 'deleted', 'published'],.
+            'objects_org_published_idx'             => ['organisation(20)', 'published'],
 
             // For date range queries on faceting.
             // 'objects_created_deleted_idx'         => ['created', 'deleted'],
-            // 'objects_updated_deleted_idx'         => ['updated', 'deleted'],
-            'objects_created_published_idx'       => ['created', 'published'],
-            'objects_updated_published_idx'       => ['updated', 'published'],
+            // 'objects_updated_deleted_idx'         => ['updated', 'deleted'],.
+            'objects_created_published_idx'         => ['created', 'published'],
+            'objects_updated_published_idx'         => ['updated', 'published'],
         ];
 
         foreach ($compositeIndexes as $indexName => $columns) {

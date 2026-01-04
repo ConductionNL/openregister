@@ -184,10 +184,18 @@ class VectorStorageHandler
             $embeddingBlob = serialize($embedding);
 
             // Serialize metadata to JSON.
-            $metadataJson = empty($metadata) === false ? json_encode($metadata) : null;
+            if (empty($metadata) === false) {
+                $metadataJson = json_encode($metadata);
+            } else {
+                $metadataJson = null;
+            }
 
             // Sanitize chunk_text to prevent encoding errors.
-            $sanitizedChunkText = $chunkText !== null ? $this->sanitizeText($chunkText) : null;
+            if ($chunkText !== null) {
+                $sanitizedChunkText = $this->sanitizeText($chunkText);
+            } else {
+                $sanitizedChunkText = null;
+            }
 
             $qb = $this->db->getQueryBuilder();
             $qb->insert('openregister_vectors')
@@ -315,14 +323,17 @@ class VectorStorageHandler
                 ]
             );
 
-            // Perform atomic update in Solr.
             /*
+             * Perform atomic update in Solr.
              * @psalm-suppress UndefinedInterfaceMethod - buildSolrBaseUrl and getHttpClient exist on Solr backend implementation
              */
+
             $solrUrl = $solrBackend->buildSolrBaseUrl()."/{$collection}/update?commit=true";
+
             /*
              * @psalm-suppress UndefinedInterfaceMethod
              */
+
             $response = $solrBackend->getHttpClient()->post(
                 $solrUrl,
                 [
@@ -414,10 +425,12 @@ class VectorStorageHandler
     {
         try {
             $settings = $this->settingsService->getSettings();
-            // Get vector field from LLM configuration, default to '_embedding_'.
+
             /*
+             * Get vector field from LLM configuration, default to '_embedding_'.
              * @psalm-suppress InvalidArrayOffset
              */
+
             return $settings['llm']['vectorConfig']['solrField'] ?? '_embedding_';
         } catch (Exception $e) {
             $this->logger->warning(

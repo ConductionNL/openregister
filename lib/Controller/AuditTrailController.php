@@ -309,8 +309,13 @@ class AuditTrailController extends Controller
             $exportResult = $this->logService->exportLogs(format: $format, config: $exportConfig);
 
             // Return export data.
-            $content     = $exportResult['content'];
-            $contentSize = is_string($content) ? strlen($content) : 0;
+            $content = $exportResult['content'];
+            if (is_string($content) === true) {
+                $contentSize = strlen($content);
+            } else {
+                $contentSize = 0;
+            }
+
             return new JSONResponse(
                 data: [
                     'success' => true,

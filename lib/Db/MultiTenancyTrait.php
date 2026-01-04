@@ -86,6 +86,7 @@ trait MultiTenancyTrait
             /*
              * @var \OCA\OpenRegister\Db\OrganisationMapper $organisationMapper
              */
+
             $organisationMapper = $this->organisationMapper;
             if (isset($this->logger) === true) {
                 $this->logger->info('🔹 MultiTenancyTrait: Calling getActiveOrganisationWithFallback for user: '.$user->getUID());
@@ -113,6 +114,7 @@ trait MultiTenancyTrait
             /*
              * @var \OCA\OpenRegister\Db\OrganisationMapper $organisationMapper
              */
+
             $organisationMapper = $this->organisationMapper;
             return $organisationMapper->getDefaultOrganisationFromConfig();
         }
@@ -165,6 +167,7 @@ trait MultiTenancyTrait
                 /*
                  * @var \OCA\OpenRegister\Db\OrganisationMapper $organisationMapper
                  */
+
                 $organisationMapper = $this->organisationMapper;
                 $uuids = $organisationMapper->getOrganisationHierarchy($activeOrgUuid);
                 if (empty($uuids) === false) {
@@ -179,7 +182,7 @@ trait MultiTenancyTrait
                     );
                 }
             }
-        }
+        }//end if
 
         // Fall back to just the active organisation.
         return [$activeOrgUuid];
@@ -544,8 +547,10 @@ trait MultiTenancyTrait
             );
         }
 
-        // Include NULL organisation entities for admins (legacy data).
-        if ($isAdmin === true && $allowNullOrg === true) {
+        // Include NULL organisation entities if allowNullOrg is enabled.
+        // NULL organisation = global/shared resource available to all organizations.
+        // This applies to schemas, registers, and other structural entities that should be accessible across organizations.
+        if ($allowNullOrg === true) {
             $orgConditions->add($qb->expr()->isNull($organisationColumn));
         }
 

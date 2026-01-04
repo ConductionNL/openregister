@@ -75,6 +75,8 @@ class FileSharingHandler
      *
      * @param IShare $share The share to get the link for.
      *
+     * @return string
+     *
      * @psalm-return   string
      * @phpstan-return string
      */
@@ -106,7 +108,13 @@ class FileSharingHandler
     /**
      * Create a share with the given share data.
      *
-     * @param array{
+     * @param array<string, mixed> $shareData The data to create a share with
+     *
+     * @throws Exception If creating the share fails
+     *
+     * @return IShare The created share object
+     *
+     * @psalm-param array{
      *     path: string,
      *     file?: File,
      *     nodeId?: int,
@@ -114,11 +122,7 @@ class FileSharingHandler
      *     shareType: int,
      *     permissions?: int,
      *     sharedWith?: string
-     * } $shareData The data to create a share with.
-     *
-     * @throws Exception If creating the share fails.
-     *
-     * @return IShare The created share object.
+     * } $shareData
      *
      * @psalm-return   IShare
      * @phpstan-return IShare
@@ -156,7 +160,9 @@ class FileSharingHandler
         // Actually create the share.
         try {
             $this->shareManager->createShare($share);
-            $this->logger->info(message: "Successfully created share for {$shareData['path']}");
+            $this->logger->info(
+                message: "Successfully created share for {$shareData['path']}"
+            );
             return $share;
         } catch (Exception $e) {
             $this->logger->error(message: "Failed to create share for {$shareData['path']}: ".$e->getMessage());

@@ -64,11 +64,11 @@ class PreparationHandler
      * Constructor for PreparationHandler.
      *
      * @param SaveObject            $saveHandler           Handler for save operations.
-     * @param SchemaMapper          $schemaMapper          Mapper for schema operations.
-     * @param BulkValidationHandler $bulkValidationHandler Handler for schema analysis.
-     * @param OrganisationService   $organisationService   Service for organisation operations.
-     * @param IUserSession          $userSession           User session for owner assignment.
-     * @param LoggerInterface       $logger                Logger for logging operations.
+     * @param SchemaMapper          $schemaMapper          Mapper for schema operations
+     * @param BulkValidationHandler $bulkValidationHandler Handler for schema analysis
+     * @param OrganisationService   $organisationService   Service for organisation operations
+     * @param IUserSession          $userSession           User session for owner assignment
+     * @param LoggerInterface       $logger                Logger for logging operations
      */
     public function __construct(
         private readonly SaveObject $saveHandler,

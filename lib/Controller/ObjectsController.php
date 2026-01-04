@@ -577,8 +577,8 @@ class ObjectsController extends Controller
                 id: $id,
                 _extend: $extend,
                 files: false,
-                register: null,
-                schema: null,
+                register: $register,
+                schema: $schema,
                 _rbac: $rbac,
                 _multitenancy: $multi
             );
@@ -677,9 +677,9 @@ class ObjectsController extends Controller
         // Extract uploaded files from multipart/form-data.
         $uploadedFiles = [];
         foreach ($_FILES as $fieldName => $fileData) {
-            // Check if this is an array upload (multiple files with same field name).
-            // PHP converts field names like "images[]" to "images" and structures data as arrays.
             /*
+             * Check if this is an array upload (multiple files with same field name).
+             * PHP converts field names like "images[]" to "images" and structures data as arrays.
              * @var array{
              *     name: array<int, string>|string,
              *     type: array<int, string>|string,
@@ -694,49 +694,84 @@ class ObjectsController extends Controller
              */
 
             $nameValue = $fileData['name'];
+
             /*
              * @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types
              */
+
             if (is_array($nameValue) === true) {
                 // Handle array uploads: images[] becomes images with array values.
                 // We need to preserve all files, so use indexed keys: images[0], images[1], etc.
                 // In PHP $_FILES, when name is an array, all other fields are also arrays.
                 $nameArray = $nameValue;
-                // Extract values - in $_FILES structure, when name is array, others are arrays too.
-                // Use mixed type and then check to help Psalm understand.
+
                 /*
+                 * Extract values - in $_FILES structure, when name is array, others are arrays too.
+                 * Use mixed type and then check to help Psalm understand.
                  * @var mixed $typeRaw
                  */
+
                 $typeRaw = $fileData['type'];
+
                 /*
                  * @var mixed $tmpNameRaw
                  */
+
                 $tmpNameRaw = $fileData['tmp_name'];
+
                 /*
                  * @var mixed $errorRaw
                  */
+
                 $errorRaw = $fileData['error'];
+
                 /*
                  * @var mixed $sizeRaw
                  */
+
                 $sizeRaw = $fileData['size'];
-                // Convert to arrays, handling both array and scalar cases for safety.
+
+                /*
+                 * Convert to arrays, handling both array and scalar cases for safety.
+                 * @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types
+                 */
+
+                if (is_array($typeRaw) === true) {
+                    $typeArray = $typeRaw;
+                } else {
+                    $typeArray = [];
+                }
+
                 /*
                  * @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types
                  */
-                $typeArray = is_array($typeRaw) === true ? $typeRaw : [];
+
+                if (is_array($tmpNameRaw) === true) {
+                    $tmpNameArray = $tmpNameRaw;
+                } else {
+                    $tmpNameArray = [];
+                }
+
                 /*
                  * @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types
                  */
-                $tmpNameArray = is_array($tmpNameRaw) === true ? $tmpNameRaw : [];
+
+                if (is_array($errorRaw) === true) {
+                    $errorArray = $errorRaw;
+                } else {
+                    $errorArray = [];
+                }
+
                 /*
                  * @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types
                  */
-                $errorArray = is_array($errorRaw) === true ? $errorRaw : [];
-                /*
-                 * @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types
-                 */
-                $sizeArray = is_array($sizeRaw) === true ? $sizeRaw : [];
+
+                if (is_array($sizeRaw) === true) {
+                    $sizeArray = $sizeRaw;
+                } else {
+                    $sizeArray = [];
+                }
+
                 $fileCount = count($nameArray);
                 for ($i = 0; $i < $fileCount; $i++) {
                     // Use indexed key to preserve all files: images[0], images[1], images[2].
@@ -848,9 +883,9 @@ class ObjectsController extends Controller
         // Extract uploaded files from multipart/form-data.
         $uploadedFiles = [];
         foreach ($_FILES as $fieldName => $fileData) {
-            // Check if this is an array upload (multiple files with same field name).
-            // PHP converts field names like "images[]" to "images" and structures data as arrays.
             /*
+             * Check if this is an array upload (multiple files with same field name).
+             * PHP converts field names like "images[]" to "images" and structures data as arrays.
              * @var array{
              *     name: array<int, string>|string,
              *     type: array<int, string>|string,
@@ -865,49 +900,84 @@ class ObjectsController extends Controller
              */
 
             $nameValue = $fileData['name'];
+
             /*
              * @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types
              */
+
             if (is_array($nameValue) === true) {
                 // Handle array uploads: images[] becomes images with array values.
                 // We need to preserve all files, so use indexed keys: images[0], images[1], etc.
                 // In PHP $_FILES, when name is an array, all other fields are also arrays.
                 $nameArray = $nameValue;
-                // Extract values - in $_FILES structure, when name is array, others are arrays too.
-                // Use mixed type and then check to help Psalm understand.
+
                 /*
+                 * Extract values - in $_FILES structure, when name is array, others are arrays too.
+                 * Use mixed type and then check to help Psalm understand.
                  * @var mixed $typeRaw
                  */
+
                 $typeRaw = $fileData['type'];
+
                 /*
                  * @var mixed $tmpNameRaw
                  */
+
                 $tmpNameRaw = $fileData['tmp_name'];
+
                 /*
                  * @var mixed $errorRaw
                  */
+
                 $errorRaw = $fileData['error'];
+
                 /*
                  * @var mixed $sizeRaw
                  */
+
                 $sizeRaw = $fileData['size'];
-                // Convert to arrays, handling both array and scalar cases for safety.
+
+                /*
+                 * Convert to arrays, handling both array and scalar cases for safety.
+                 * @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types
+                 */
+
+                if (is_array($typeRaw) === true) {
+                    $typeArray = $typeRaw;
+                } else {
+                    $typeArray = [];
+                }
+
                 /*
                  * @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types
                  */
-                $typeArray = is_array($typeRaw) === true ? $typeRaw : [];
+
+                if (is_array($tmpNameRaw) === true) {
+                    $tmpNameArray = $tmpNameRaw;
+                } else {
+                    $tmpNameArray = [];
+                }
+
                 /*
                  * @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types
                  */
-                $tmpNameArray = is_array($tmpNameRaw) === true ? $tmpNameRaw : [];
+
+                if (is_array($errorRaw) === true) {
+                    $errorArray = $errorRaw;
+                } else {
+                    $errorArray = [];
+                }
+
                 /*
                  * @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types
                  */
-                $errorArray = is_array($errorRaw) === true ? $errorRaw : [];
-                /*
-                 * @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types
-                 */
-                $sizeArray = is_array($sizeRaw) === true ? $sizeRaw : [];
+
+                if (is_array($sizeRaw) === true) {
+                    $sizeArray = $sizeRaw;
+                } else {
+                    $sizeArray = [];
+                }
+
                 $fileCount = count($nameArray);
                 for ($i = 0; $i < $fileCount; $i++) {
                     // Use indexed key to preserve all files: images[0], images[1], images[2].
@@ -1611,7 +1681,11 @@ class ObjectsController extends Controller
 
             // Get optional schema for CSV (can be null, handler will auto-resolve).
             $schemaId = $this->request->getParam(key: 'schema');
-            $schema   = ($schemaId !== null && $schemaId !== '') ? $this->schemaMapper->find($schemaId) : null;
+            if ($schemaId !== null && $schemaId !== '') {
+                $schema = $this->schemaMapper->find($schemaId);
+            } else {
+                $schema = null;
+            }
 
             // Get optional parameters with sensible defaults.
             $validation = filter_var($this->request->getParam(key: 'validation', default: false), FILTER_VALIDATE_BOOLEAN);
@@ -1971,8 +2045,8 @@ class ObjectsController extends Controller
             // Get the object to ensure it exists and we have access.
             $object = $objectService->find(id: $id);
 
-            // Get the FileService from the container.
             /*
+             * Get the FileService from the container.
              * @var FileService $fileService
              */
 

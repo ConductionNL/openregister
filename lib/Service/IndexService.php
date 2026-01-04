@@ -100,7 +100,9 @@ class IndexService
      *
      * @return ((array|float|int)[]|bool)[] Processing result
      *
-     * @psalm-return array{success: bool, stats: array{processed: int, indexed: int, failed: int, total_chunks: int, errors: array, execution_time_ms: float}}
+     * @psalm-return array{success: bool,
+     *     stats: array{processed: int, indexed: int, failed: int,
+     *     total_chunks: int, errors: array, execution_time_ms: float}}
      */
     public function processUnindexedChunks(?int $limit=null): array
     {
@@ -401,7 +403,11 @@ class IndexService
      *
      * @return (array|bool|string)[] Dashboard statistics
      *
-     * @psalm-return array{available: bool, error?: string, backend?: array, files?: array{available: bool, collection?: string, document_count?: int, error?: string}, chunks?: array{total_chunks: int, indexed_chunks: int, unindexed_chunks: int, vectorized_chunks: int}}
+     * @psalm-return array{available: bool, error?: string, backend?: array,
+     *     files?: array{available: bool, collection?: string,
+     *     document_count?: int, error?: string},
+     *     chunks?: array{total_chunks: int, indexed_chunks: int,
+     *     unindexed_chunks: int, vectorized_chunks: int}}
      */
     public function getDashboardStats(): array
     {

@@ -170,7 +170,13 @@ class FileHandler implements TextExtractionHandlerInterface
      *
      * @throws DoesNotExistException If file not found.
      *
-     * @psalm-return array{fileid: int, storage: int, path: string, path_hash: string, parent: int, name: string, mimetype: string, mimepart: string, size: int, mtime: int, storage_mtime: int, encrypted: int, unencrypted_size: int, etag: string, permissions: int, checksum: string, share_token: null|string, share_stime: int|null, storage_id: null|string, owner: null|string, accessUrl: null|string, downloadUrl: null|string, published: null|string}
+     * @psalm-return array{fileid: int, storage: int, path: string,
+     *     path_hash: string, parent: int, name: string, mimetype: string,
+     *     mimepart: string, size: int, mtime: int, storage_mtime: int,
+     *     encrypted: int, unencrypted_size: int, etag: string,
+     *     permissions: int, checksum: string, share_token: null|string,
+     *     share_stime: int|null, storage_id: null|string, owner: null|string,
+     *     accessUrl: null|string, downloadUrl: null|string, published: null|string}
      */
     public function getSourceMetadata(int $sourceId): array
     {

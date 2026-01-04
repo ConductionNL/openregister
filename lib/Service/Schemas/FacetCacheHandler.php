@@ -195,7 +195,14 @@ class FacetCacheHandler
      */
     public function cacheFacetableFields(int $schemaId, array $facetableFields, int $ttl=7200): void
     {
-        $this->setCachedFacetData(schemaId: $schemaId, cacheKey: 'facetable_fields', facetType: 'config', facetConfig: [], data: $facetableFields, ttl: $ttl);
+        $this->setCachedFacetData(
+            schemaId: $schemaId,
+                cacheKey: 'facetable_fields',
+            facetType: 'config',
+                facetConfig: [],
+                data: $facetableFields,
+                ttl: $ttl
+        );
 
         // Store in memory cache.
         $cacheKey = "facetable_fields_{$schemaId}";
@@ -348,7 +355,10 @@ class FacetCacheHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @psalm-return array{total_entries: int, by_type: array<int>, memory_cache_size: int<0, max>, cache_table: 'openregister_schema_facet_cache', query_time: string, timestamp: int<1, max>}
+     * @psalm-return array{total_entries: int, by_type: array<int>,
+     *     memory_cache_size: int<0, max>,
+     *     cache_table: 'openregister_schema_facet_cache',
+     *     query_time: string, timestamp: int<1, max>}
      */
     public function getCacheStatistics(): array
     {
@@ -391,7 +401,30 @@ class FacetCacheHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @psalm-return array{'@self'?: array{register: array{type: 'integer', facet_types: list{'terms'}, description: 'Register ID'}, schema: array{type: 'integer', facet_types: list{'terms'}, description: 'Schema ID'}, organisation: array{type: 'string', facet_types: list{'terms'}, description: 'Organisation UUID'}, owner: array{type: 'string', facet_types: list{'terms'}, description: 'Owner user ID'}, created: array{type: 'datetime', facet_types: list{'date_histogram', 'range'}, description: 'Creation date'}, updated: array{type: 'datetime', facet_types: list{'date_histogram', 'range'}, description: 'Last update date'}, published: array{type: 'datetime', facet_types: list{'date_histogram', 'range'}, description: 'Publication date'}, depublished: array{type: 'datetime', facet_types: list{'date_histogram', 'range'}, description: 'Depublication date'}}, object_fields?: array<array{type: 'string'|mixed, facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'}, description: mixed|string, enum_values?: array, minimum?: mixed, maximum?: mixed}>}
+     * @psalm-return array{'@self'?: array{register: array{type: 'integer',
+     *     facet_types: list{'terms'}, description: 'Register ID'>,
+     *     schema: array{type: 'integer', facet_types: list{'terms'>,
+     *     description: 'Schema ID'>,
+     *     organisation: array{type: 'string', facet_types: list{'terms'>,
+     *     description: 'Organisation UUID'>,
+     *     owner: array{type: 'string', facet_types: list{'terms'>,
+     *     description: 'Owner user ID'>,
+     *     created: array{type: 'datetime',
+     *     facet_types: list{'date_histogram', 'range'>,
+     *     description: 'Creation date'>,
+     *     updated: array{type: 'datetime',
+     *     facet_types: list{'date_histogram', 'range'>,
+     *     description: 'Last update date'>,
+     *     published: array{type: 'datetime',
+     *     facet_types: list{'date_histogram', 'range'>,
+     *     description: 'Publication date'>,
+     *     depublished: array{type: 'datetime',
+     *     facet_types: list{'date_histogram', 'range'>,
+     *     description: 'Depublication date'>},
+     *     object_fields?: array<array{type: 'string'|mixed,
+     *     facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'>,
+     *     description: mixed|string, enum_values?: array,
+     *     minimum?: mixed, maximum?: mixed}>}
      */
     private function generateFacetableFieldsFromSchema(int $schemaId): array
     {
@@ -571,7 +604,10 @@ class FacetCacheHandler
      *
      * @return (array|mixed|string)[]
      *
-     * @psalm-return array{type: 'string'|mixed, facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'}, description: mixed|string, enum_values?: array, minimum?: mixed, maximum?: mixed}
+     * @psalm-return array{type: 'string'|mixed,
+     *     facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'},
+     *     description: mixed|string, enum_values?: array, minimum?: mixed,
+     *     maximum?: mixed}
      */
     private function generateFieldConfigFromProperty(string $propertyKey, array $property): array
     {

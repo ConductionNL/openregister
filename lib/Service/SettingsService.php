@@ -234,7 +234,7 @@ class SettingsService
      *
      * @var ObjectEntityMapper|null
      */
-    // Private ?ObjectEntityMapper $objectEntityMapper;
+    // Private ?ObjectEntityMapper $objectEntityMapper;.
 
     /**
      * Organisation mapper
@@ -484,7 +484,11 @@ class SettingsService
      *
      * @return (array|bool|int|mixed)[] Object settings
      *
-     * @psalm-return array{vectorizationEnabled: false|mixed, vectorizeOnCreate: mixed|true, vectorizeOnUpdate: false|mixed, vectorizeAllViews: mixed|true, enabledViews: array<never, never>|mixed, includeMetadata: mixed|true, includeRelations: mixed|true, maxNestingDepth: 10|mixed, batchSize: 25|mixed, autoRetry: mixed|true}
+     * @psalm-return array{vectorizationEnabled: false|mixed,
+     *     vectorizeOnCreate: mixed|true, vectorizeOnUpdate: false|mixed,
+     *     vectorizeAllViews: mixed|true, enabledViews: array<never, never>|mixed,
+     *     includeMetadata: mixed|true, includeRelations: mixed|true,
+     *     maxNestingDepth: 10|mixed, batchSize: 25|mixed, autoRetry: mixed|true}
      */
     public function getObjectSettingsOnly(): array
     {
@@ -498,7 +502,11 @@ class SettingsService
      *
      * @return (array|bool|int|mixed)[] Updated object settings
      *
-     * @psalm-return array{vectorizationEnabled: false|mixed, vectorizeOnCreate: mixed|true, vectorizeOnUpdate: false|mixed, vectorizeAllViews: mixed|true, enabledViews: array<never, never>|mixed, includeMetadata: mixed|true, includeRelations: mixed|true, maxNestingDepth: 10|mixed, batchSize: 25|mixed, autoRetry: mixed|true}
+     * @psalm-return array{vectorizationEnabled: false|mixed,
+     *     vectorizeOnCreate: mixed|true, vectorizeOnUpdate: false|mixed,
+     *     vectorizeAllViews: mixed|true, enabledViews: array<never, never>|mixed,
+     *     includeMetadata: mixed|true, includeRelations: mixed|true,
+     *     maxNestingDepth: 10|mixed, batchSize: 25|mixed, autoRetry: mixed|true}
      */
     public function updateObjectSettingsOnly(array $data): array
     {
@@ -510,7 +518,13 @@ class SettingsService
      *
      * @return (bool|int|mixed)[] Retention settings
      *
-     * @psalm-return array{objectArchiveRetention: 31536000000|mixed, objectDeleteRetention: 63072000000|mixed, searchTrailRetention: 2592000000|mixed, createLogRetention: 2592000000|mixed, readLogRetention: 86400000|mixed, updateLogRetention: 604800000|mixed, deleteLogRetention: 2592000000|mixed, auditTrailsEnabled: bool, searchTrailsEnabled: bool}
+     * @psalm-return array{objectArchiveRetention: 31536000000|mixed,
+     *     objectDeleteRetention: 63072000000|mixed,
+     *     searchTrailRetention: 2592000000|mixed,
+     *     createLogRetention: 2592000000|mixed, readLogRetention: 86400000|mixed,
+     *     updateLogRetention: 604800000|mixed,
+     *     deleteLogRetention: 2592000000|mixed, auditTrailsEnabled: bool,
+     *     searchTrailsEnabled: bool}
      */
     public function getRetentionSettingsOnly(): array
     {
@@ -524,7 +538,13 @@ class SettingsService
      *
      * @return (int|mixed|true)[] Updated retention settings
      *
-     * @psalm-return array{objectArchiveRetention: 31536000000|mixed, objectDeleteRetention: 63072000000|mixed, searchTrailRetention: 2592000000|mixed, createLogRetention: 2592000000|mixed, readLogRetention: 86400000|mixed, updateLogRetention: 604800000|mixed, deleteLogRetention: 2592000000|mixed, auditTrailsEnabled: mixed|true, searchTrailsEnabled: mixed|true}
+     * @psalm-return array{objectArchiveRetention: 31536000000|mixed,
+     *     objectDeleteRetention: 63072000000|mixed,
+     *     searchTrailRetention: 2592000000|mixed,
+     *     createLogRetention: 2592000000|mixed, readLogRetention: 86400000|mixed,
+     *     updateLogRetention: 604800000|mixed,
+     *     deleteLogRetention: 2592000000|mixed, auditTrailsEnabled: mixed|true,
+     *     searchTrailsEnabled: mixed|true}
      */
     public function updateRetentionSettingsOnly(array $data): array
     {
@@ -550,7 +570,10 @@ class SettingsService
      *
      * @return (array[]|int|mixed|null|string)[] Operation result
      *
-     * @psalm-return array{type: string, userId: null|string, timestamp: string, results: array{names?: array, distributed?: array, facet?: array, schema?: array, object?: array}, errors: array<never, never>, totalCleared: 0|mixed}
+     * @psalm-return array{type: string, userId: null|string, timestamp: string,
+     *     results: array{names?: array, distributed?: array, facet?: array,
+     *     schema?: array, object?: array}, errors: array<never, never>,
+     *     totalCleared: 0|mixed}
      */
     public function clearCache(?string $cacheType=null): array
     {
@@ -562,7 +585,10 @@ class SettingsService
      *
      * @return ((int|mixed)[]|bool|int|mixed|string)[] Warmup result
      *
-     * @psalm-return array{success: bool, error?: string, loaded_names: int|mixed, execution_time?: string, before?: array{name_cache_size: int|mixed, name_warmups: int|mixed}, after?: array{name_cache_size: int|mixed, name_warmups: int|mixed}}
+     * @psalm-return array{success: bool, error?: string, loaded_names: int|mixed,
+     *     execution_time?: string, before?: array{name_cache_size: int|mixed,
+     *     name_warmups: int|mixed}, after?: array{name_cache_size: int|mixed,
+     *     name_warmups: int|mixed}
      */
     public function warmupNamesCache(): array
     {
@@ -586,7 +612,15 @@ class SettingsService
      *
      * @return (bool|int|mixed|null|string)[] SOLR settings
      *
-     * @psalm-return array{enabled: false|mixed, host: 'solr'|mixed, port: 8983|mixed, path: '/solr'|mixed, core: 'openregister'|mixed, configSet: '_default'|mixed, scheme: 'http'|mixed, username: 'solr'|mixed, password: 'SolrRocks'|mixed, timeout: 30|mixed, autoCommit: mixed|true, commitWithin: 1000|mixed, enableLogging: mixed|true, zookeeperHosts: 'zookeeper:2181'|mixed, zookeeperUsername: ''|mixed, zookeeperPassword: ''|mixed, collection: 'openregister'|mixed, useCloud: mixed|true, objectCollection: mixed|null, fileCollection: mixed|null}
+     * @psalm-return array{enabled: false|mixed, host: 'solr'|mixed, port: 8983|mixed,
+     *     path: '/solr'|mixed, core: 'openregister'|mixed,
+     *     configSet: '_default'|mixed, scheme: 'http'|mixed, username: 'solr'|mixed,
+     *     password: 'SolrRocks'|mixed, timeout: 30|mixed, autoCommit: mixed|true,
+     *     commitWithin: 1000|mixed, enableLogging: mixed|true,
+     *     zookeeperHosts: 'zookeeper:2181'|mixed, zookeeperUsername: ''|mixed,
+     *     zookeeperPassword: ''|mixed, collection: 'openregister'|mixed,
+     *     useCloud: mixed|true, objectCollection: mixed|null,
+     *     fileCollection: mixed|null}
      */
     public function getSolrSettingsOnly(): array
     {
@@ -600,7 +634,15 @@ class SettingsService
      *
      * @return (bool|int|mixed|null|string)[] Updated SOLR settings
      *
-     * @psalm-return array{enabled: false|mixed, host: 'solr'|mixed, port: int, path: '/solr'|mixed, core: 'openregister'|mixed, configSet: '_default'|mixed, scheme: 'http'|mixed, username: 'solr'|mixed, password: 'SolrRocks'|mixed, timeout: int, autoCommit: mixed|true, commitWithin: int, enableLogging: mixed|true, zookeeperHosts: 'zookeeper:2181'|mixed, zookeeperUsername: ''|mixed, zookeeperPassword: ''|mixed, collection: 'openregister'|mixed, useCloud: mixed|true, objectCollection: mixed|null, fileCollection: mixed|null}
+     * @psalm-return array{enabled: false|mixed, host: 'solr'|mixed, port: int,
+     *     path: '/solr'|mixed, core: 'openregister'|mixed,
+     *     configSet: '_default'|mixed, scheme: 'http'|mixed, username: 'solr'|mixed,
+     *     password: 'SolrRocks'|mixed, timeout: int, autoCommit: mixed|true,
+     *     commitWithin: int, enableLogging: mixed|true,
+     *     zookeeperHosts: 'zookeeper:2181'|mixed, zookeeperUsername: ''|mixed,
+     *     zookeeperPassword: ''|mixed, collection: 'openregister'|mixed,
+     *     useCloud: mixed|true, objectCollection: mixed|null,
+     *     fileCollection: mixed|null}
      */
     public function updateSolrSettingsOnly(array $data): array
     {
@@ -659,9 +701,9 @@ class SettingsService
         int $batchSize=1000,
         array $schemaIds=[]
     ) {
-        // NOTE: This method calls a deprecated method that always throws.
-        // TODO: Refactor to use IndexService->warmupIndex() directly.
         /*
+         * NOTE: This method calls a deprecated method that always throws.
+         * TODO: Refactor to use IndexService->warmupIndex() directly.
          * @psalm-suppress NoValue - Method always throws, return is unreachable
          */
 
@@ -682,7 +724,30 @@ class SettingsService
      *
      * @return array[] Application settings
      *
-     * @psalm-return array{version: array{appName: 'Open Register', appVersion: '0.2.3'}, rbac: array{enabled: false|mixed, anonymousGroup: 'public'|mixed, defaultNewUserGroup: 'viewer'|mixed, defaultObjectOwner: ''|mixed, adminOverride: mixed|true}, multitenancy: array{enabled: false|mixed, defaultUserTenant: ''|mixed, defaultObjectTenant: ''|mixed, publishedObjectsBypassMultiTenancy: false|mixed, adminOverride: mixed|true}, availableGroups: array, availableTenants: array, availableUsers: array, retention: array{objectArchiveRetention: 31536000000|mixed, objectDeleteRetention: 63072000000|mixed, searchTrailRetention: 2592000000|mixed, createLogRetention: 2592000000|mixed, readLogRetention: 86400000|mixed, updateLogRetention: 604800000|mixed, deleteLogRetention: 2592000000|mixed, auditTrailsEnabled: mixed|true, searchTrailsEnabled: mixed|true}, solr: array{enabled: false|mixed, host: 'solr'|mixed, port: 8983|mixed, path: '/solr'|mixed, core: 'openregister'|mixed, configSet: '_default'|mixed, scheme: 'http'|mixed, username: 'solr'|mixed, password: 'SolrRocks'|mixed, timeout: 30|mixed, autoCommit: mixed|true, commitWithin: 1000|mixed, enableLogging: mixed|true, zookeeperHosts: 'zookeeper:2181'|mixed, zookeeperUsername: ''|mixed, zookeeperPassword: ''|mixed, collection: 'openregister'|mixed, useCloud: mixed|true, objectCollection: mixed|null, fileCollection: mixed|null}}
+     * @psalm-return array{version: array{appName: 'Open Register',
+     *     appVersion: '0.2.3'}, rbac: array{enabled: false|mixed,
+     *     anonymousGroup: 'public'|mixed, defaultNewUserGroup: 'viewer'|mixed,
+     *     defaultObjectOwner: ''|mixed, adminOverride: mixed|true},
+     *     multitenancy: array{enabled: false|mixed, defaultUserTenant: ''|mixed,
+     *     defaultObjectTenant: ''|mixed,
+     *     publishedObjectsBypassMultiTenancy: false|mixed,
+     *     adminOverride: mixed|true}, availableGroups: array,
+     *     availableTenants: array, availableUsers: array,
+     *     retention: array{objectArchiveRetention: 31536000000|mixed,
+     *     objectDeleteRetention: 63072000000|mixed,
+     *     searchTrailRetention: 2592000000|mixed,
+     *     createLogRetention: 2592000000|mixed, readLogRetention: 86400000|mixed,
+     *     updateLogRetention: 604800000|mixed,
+     *     deleteLogRetention: 2592000000|mixed, auditTrailsEnabled: mixed|true,
+     *     searchTrailsEnabled: mixed|true}, solr: array{enabled: false|mixed,
+     *     host: 'solr'|mixed, port: 8983|mixed, path: '/solr'|mixed,
+     *     core: 'openregister'|mixed, configSet: '_default'|mixed,
+     *     scheme: 'http'|mixed, username: 'solr'|mixed, password: 'SolrRocks'|mixed,
+     *     timeout: 30|mixed, autoCommit: mixed|true, commitWithin: 1000|mixed,
+     *     enableLogging: mixed|true, zookeeperHosts: 'zookeeper:2181'|mixed,
+     *     zookeeperUsername: ''|mixed, zookeeperPassword: ''|mixed,
+     *     collection: 'openregister'|mixed, useCloud: mixed|true,
+     *     objectCollection: mixed|null, fileCollection: mixed|null}}
      */
     public function getSettings(): array
     {
@@ -692,7 +757,8 @@ class SettingsService
     /**
      * Update settings
      *
-     * @param  array $data Settings data
+     * @param array $data Settings data
+     *
      * @return array Updated settings
      */
     public function updateSettings(array $data): array
@@ -729,7 +795,10 @@ class SettingsService
      *
      * @return array[] RBAC settings
      *
-     * @psalm-return array{rbac: array{enabled: false|mixed, anonymousGroup: 'public'|mixed, defaultNewUserGroup: 'viewer'|mixed, defaultObjectOwner: ''|mixed, adminOverride: mixed|true}, availableGroups: array, availableUsers: array}
+     * @psalm-return array{rbac: array{enabled: false|mixed,
+     *     anonymousGroup: 'public'|mixed, defaultNewUserGroup: 'viewer'|mixed,
+     *     defaultObjectOwner: ''|mixed, adminOverride: mixed|true},
+     *     availableGroups: array, availableUsers: array}
      */
     public function getRbacSettingsOnly(): array
     {
@@ -743,7 +812,10 @@ class SettingsService
      *
      * @return array[] Updated RBAC settings
      *
-     * @psalm-return array{rbac: array{enabled: false|mixed, anonymousGroup: 'public'|mixed, defaultNewUserGroup: 'viewer'|mixed, defaultObjectOwner: ''|mixed, adminOverride: mixed|true}, availableGroups: array, availableUsers: array}
+     * @psalm-return array{rbac: array{enabled: false|mixed,
+     *     anonymousGroup: 'public'|mixed, defaultNewUserGroup: 'viewer'|mixed,
+     *     defaultObjectOwner: ''|mixed, adminOverride: mixed|true},
+     *     availableGroups: array, availableUsers: array}
      */
     public function updateRbacSettingsOnly(array $data): array
     {
@@ -789,7 +861,8 @@ class SettingsService
     /**
      * Set default organisation UUID
      *
-     * @param  string|null $uuid Organisation UUID
+     * @param string|null $uuid Organisation UUID
+     *
      * @return void
      */
     public function setDefaultOrganisationUuid(?string $uuid): void
@@ -822,7 +895,10 @@ class SettingsService
      *
      * @return array[] Multitenancy settings
      *
-     * @psalm-return array{multitenancy: array{enabled: false|mixed, defaultUserTenant: ''|mixed, defaultObjectTenant: ''|mixed, publishedObjectsBypassMultiTenancy: false|mixed, adminOverride: mixed|true}, availableTenants: array}
+     * @psalm-return array{multitenancy: array{enabled: false|mixed,
+     *     defaultUserTenant: ''|mixed, defaultObjectTenant: ''|mixed,
+     *     publishedObjectsBypassMultiTenancy: false|mixed,
+     *     adminOverride: mixed|true}, availableTenants: array}
      */
     public function getMultitenancySettingsOnly(): array
     {
@@ -836,7 +912,10 @@ class SettingsService
      *
      * @return array[] Updated multitenancy settings
      *
-     * @psalm-return array{multitenancy: array{enabled: false|mixed, defaultUserTenant: ''|mixed, defaultObjectTenant: ''|mixed, publishedObjectsBypassMultiTenancy: false|mixed, adminOverride: mixed|true}, availableTenants: array}
+     * @psalm-return array{multitenancy: array{enabled: false|mixed,
+     *     defaultUserTenant: ''|mixed, defaultObjectTenant: ''|mixed,
+     *     publishedObjectsBypassMultiTenancy: false|mixed,
+     *     adminOverride: mixed|true}, availableTenants: array}
      */
     public function updateMultitenancySettingsOnly(array $data): array
     {
@@ -883,7 +962,14 @@ class SettingsService
      *
      * @throws Exception If mass validation operation fails.
      *
-     * @psalm-return array{stats: array{total_objects: int<1, max>|mixed, processed_objects: 0, successful_saves: 0, failed_saves: 0, duration_seconds: float, batches_processed: int<0, max>, objects_per_second: 0|float}, memory_usage: array{start_memory: int, end_memory: int, peak_memory: int, memory_used: int, peak_percentage: float, formatted: array{actual_used: string, peak_usage: string, peak_percentage: string}}, success?: bool|mixed, message?: mixed|string,...}
+     * @psalm-return array{stats: array{total_objects: int<1, max>|mixed,
+     *     processed_objects: 0, successful_saves: 0, failed_saves: 0,
+     *     duration_seconds: float, batches_processed: int<0, max>,
+     *     objects_per_second: 0|float}, memory_usage: array{start_memory: int,
+     *     end_memory: int, peak_memory: int, memory_used: int,
+     *     peak_percentage: float, formatted: array{actual_used: string,
+     *     peak_usage: string, peak_percentage: string}}, success?: bool|mixed,
+     *     message?: mixed|string,...}
      */
     public function massValidateObjects(
         int $maxObjects=0,
@@ -1021,10 +1107,11 @@ class SettingsService
             ],
         ];
 
-        // Determine overall success.
         /*
+         * Determine overall success.
          * @psalm-suppress TypeDoesNotContainType - failed_saves can be incremented in processJobsParallel/processJobsSerial
          */
+
         if ($results['stats']['failed_saves'] > 0) {
             if ($collectErrors === true) {
                 $results['success'] = $results['stats']['successful_saves'] > 0;
@@ -1126,7 +1213,10 @@ class SettingsService
                     $results['stats']['processed_objects']++;
 
                     // Re-save the object to trigger all business logic.
-                    // ObjectService::saveObject signature: (array|ObjectEntity $object, ?array $extend, Register|string|int|null $register, Schema|string|int|null $schema, ?string $uuid, ...).
+                    // ObjectService::saveObject signature:
+                    // (array|ObjectEntity $object, ?array $extend,
+                    // Register|string|int|null $register,
+                    // Schema|string|int|null $schema, ?string $uuid, ...).
                     $objectData = $object->getObject();
                     // Get the object business data.
                     $savedObject = $objectService->saveObject(
@@ -1300,7 +1390,10 @@ class SettingsService
      *
      * @return ((null|string)[][]|float|int)[] Batch processing results.
      *
-     * @psalm-return array{processed: int<0, max>, successful: int<0, max>, failed: int<0, max>, errors: list<array{batch_mode: 'parallel_optimized', error: string, object_id: null|string, object_name: null|string, register: null|string, schema: null|string}>, duration: float}
+     * @psalm-return array{processed: int<0, max>, successful: int<0, max>,
+     *     failed: int<0, max>, errors: list<array{batch_mode: 'parallel_optimized',
+     *     error: string, object_id: null|string, object_name: null|string,
+     *     register: null|string, schema: null|string}>, duration: float}
      */
     private function processBatchDirectly(
         \OCA\OpenRegister\Db\ObjectEntityMapper $objectMapper,
@@ -1325,7 +1418,10 @@ class SettingsService
                 $batchProcessed++;
 
                 // Re-save the object to trigger all business logic.
-                // ObjectService::saveObject signature: (array|ObjectEntity $object, ?array $extend, Register|string|int|null $register, Schema|string|int|null $schema, ?string $uuid, ...).
+                // ObjectService::saveObject signature:
+                // (array|ObjectEntity $object, ?array $extend,
+                // Register|string|int|null $register,
+                // Schema|string|int|null $schema, ?string $uuid, ...).
                 $objectData = $object->getObject();
                 // Get the object business data.
                 $savedObject = $objectService->saveObject(
@@ -1516,7 +1612,17 @@ class SettingsService
      *
      * @return (((int|string)|false|mixed|string[])[]|int)[][] Comparison results with missing, extra, and mismatched fields.
      *
-     * @psalm-return array{missing: list<array{expected_config: mixed, expected_type: 'unknown'|mixed, field: array-key}>, extra: list<array{actual_config: mixed, actual_type: 'unknown'|mixed, field: array-key}>, mismatched: list<array{actual_config: mixed, actual_docValues: false|mixed, actual_multiValued: false|mixed, actual_type: ''|mixed, differences: list<'docValues'|'multiValued'|'type'>, expected_config: mixed, expected_docValues: false|mixed, expected_multiValued: false|mixed, expected_type: ''|mixed, field: array-key}>, summary: array{missing_count: int<0, max>, extra_count: int<0, max>, mismatched_count: int<0, max>, total_differences: int<0, max>}}
+     * @psalm-return array{missing: list<array{expected_config: mixed,
+     *     expected_type: 'unknown'|mixed, field: array-key}>,
+     *     extra: list<array{actual_config: mixed, actual_type: 'unknown'|mixed,
+     *     field: array-key}>, mismatched: list<array{actual_config: mixed,
+     *     actual_docValues: false|mixed, actual_multiValued: false|mixed,
+     *     actual_type: ''|mixed, differences: list<'docValues'|'multiValued'|'type'>,
+     *     expected_config: mixed, expected_docValues: false|mixed,
+     *     expected_multiValued: false|mixed, expected_type: ''|mixed,
+     *     field: array-key}>, summary: array{missing_count: int<0, max>,
+     *     extra_count: int<0, max>, mismatched_count: int<0, max>,
+     *     total_differences: int<0, max>}
      */
     public function compareFields(array $actualFields, array $expectedFields): array
     {
@@ -1612,7 +1718,10 @@ class SettingsService
      *
      * @return (array|int|string)[] Statistics data
      *
-     * @psalm-return array{error?: 'Failed to retrieve stats', message?: string, timestamp?: int<1, max>, date?: string, solr?: array, cache?: array, system?: array{php_version: string, memory_limit: false|string, max_execution_time: false|string}}
+     * @psalm-return array{error?: 'Failed to retrieve stats', message?: string,
+     *     timestamp?: int<1, max>, date?: string, solr?: array, cache?: array,
+     *     system?: array{php_version: string, memory_limit: false|string,
+     *     max_execution_time: false|string}
      */
     public function getStats(): array
     {
@@ -1662,7 +1771,11 @@ class SettingsService
      *
      * @return ((string|true)[][]|bool|int|string)[] Rebase result
      *
-     * @psalm-return array{success: bool, error?: 'Rebase failed', message: string, rebased?: array{solr?: array{success: true, message: 'Solr configuration rebased'}, cache?: array{success: true, message: 'Cache cleared and ready for rebuild'}}, timestamp?: int<1, max>}
+     * @psalm-return array{success: bool, error?: 'Rebase failed', message: string,
+     *     rebased?: array{solr?: array{success: true,
+     *     message: 'Solr configuration rebased'}, cache?: array{success: true,
+     *     message: 'Cache cleared and ready for rebuild'}},
+     *     timestamp?: int<1, max>}
      */
     public function rebase(array $options=[]): array
     {

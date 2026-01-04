@@ -57,8 +57,8 @@ class BulkRelationHandler
      * PERFORMANCE OPTIMIZATION: This method uses pre-analyzed inverse relation properties
      * to process relations without re-analyzing schema properties for each object.
      *
-     * @param array &$preparedObjects Prepared objects to process
-     * @param array $schemaAnalysis   Pre-analyzed schema information indexed by schema ID
+     * @param array<int, mixed>    $preparedObjects Prepared objects to process
+     * @param array<string, mixed> $schemaAnalysis  Pre-analyzed schema information indexed by schema ID
      *
      * @psalm-param   array<int, mixed> &$preparedObjects
      * @psalm-param   array<string, mixed> $schemaAnalysis
@@ -108,7 +108,10 @@ class BulkRelationHandler
                 $inversedBy = $propertyInfo['inversedBy'];
 
                 // Handle single object relations.
-                if (($propertyInfo['isArray'] === false) === true && is_string($value) === true && \Symfony\Component\Uid\Uuid::isValid($value) === true) {
+                if (($propertyInfo['isArray'] === false) === true
+                    && is_string($value) === true
+                    && \Symfony\Component\Uid\Uuid::isValid($value) === true
+                ) {
                     if (isset($objectsByUuid[$value]) === true) {
                         // @psalm-suppress EmptyArrayAccess - Already checked isset above.
                         $targetObject = &$objectsByUuid[$value];
@@ -295,8 +298,12 @@ class BulkRelationHandler
      *
      * @param array $writeBackOperations Array of writeBack operations with context
      *
-     * @psalm-param   array<int, array{targetObject: \OCA\OpenRegister\Db\ObjectEntity, sourceUuid: string, inverseProperty: string}> $writeBackOperations
-     * @phpstan-param array<int, array{targetObject: \OCA\OpenRegister\Db\ObjectEntity, sourceUuid: string, inverseProperty: string}> $writeBackOperations
+     * @psalm-param   array<int,
+     *     array{targetObject: \OCA\OpenRegister\Db\ObjectEntity,
+     *     sourceUuid: string, inverseProperty: string}> $writeBackOperations
+     * @phpstan-param array<int,
+     *     array{targetObject: \OCA\OpenRegister\Db\ObjectEntity,
+     *     sourceUuid: string, inverseProperty: string}> $writeBackOperations
      *
      * @return void
      *
@@ -394,7 +401,11 @@ class BulkRelationHandler
         }
 
         foreach ($data as $key => $value) {
-            $currentPath = $prefix !== '' ? "$prefix.$key" : $key;
+            if ($prefix !== '') {
+                $currentPath = "$prefix.$key";
+            } else {
+                $currentPath = $key;
+            }
 
             // Check if this property is defined in the schema.
             $propertyConfig = $schemaProperties[$key] ?? null;

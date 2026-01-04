@@ -309,19 +309,29 @@ class OrganisationService
                         ]
                     );
                     // UUID in settings doesn't exist, create new default.
-                    $defaultOrg = $this->createOrganisation(name: 'Default Organisation', description: 'Auto-generated default organisation', addCurrentUser: false);
+                    $defaultOrg = $this->createOrganisation(
+                        name: 'Default Organisation',
+                        description: 'Auto-generated default organisation',
+                        addCurrentUser: false
+                    );
 
                     // Update settings with new UUID.
                     if ($this->settingsService !== null) {
                         $this->settingsService->setDefaultOrganisationUuid($defaultOrg->getUuid());
                     }
 
-                    $this->setDefaultOrganisationId($defaultOrg->getUuid());
+                    $this->setDefaultOrganisationId(
+                        $defaultOrg->getUuid()
+                    );
                 }//end try
             } else {
                 // No UUID in settings, create a new default organisation.
                 $this->logger->info(message: 'No default organisation found in settings, creating new one');
-                $defaultOrg = $this->createOrganisation(name: 'Default Organisation', description: 'Auto-generated default organisation', addCurrentUser: false);
+                $defaultOrg = $this->createOrganisation(
+                    name: 'Default Organisation',
+                    description: 'Auto-generated default organisation',
+                    addCurrentUser: false
+                );
 
                 // Store in settings.
                 if ($this->settingsService !== null) {

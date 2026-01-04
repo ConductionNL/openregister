@@ -296,7 +296,18 @@ class ExportHandler
      *
      * @return array The OpenAPI register specification.
      *
-     * @psalm-return array{slug: null|string, title: null|string, version: null|string, description: null|string, schemas: array<int|string>, source: null|string, tablePrefix: null|string, folder: null|string, updated: null|string, created: null|string, owner: null|string, application: null|string, authorization: array|null, groups: array<string, list<string>>, quota: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: 0, groups: int<0, max>}, deleted: null|string, published: null|string, depublished: null|string}
+     * @psalm-return array{slug: null|string, title: null|string,
+     *     version: null|string, description: null|string,
+     *     schemas: array<int|string>, source: null|string,
+     *     tablePrefix: null|string, folder: null|string,
+     *     updated: null|string, created: null|string, owner: null|string,
+     *     application: null|string, authorization: array|null,
+     *     groups: array<string, list<string>>,
+     *     quota: array{storage: null, bandwidth: null, requests: null,
+     *     users: null, groups: null},
+     *     usage: array{storage: 0, bandwidth: 0, requests: 0, users: 0,
+     *     groups: int<0, max>}, deleted: null|string,
+     *     published: null|string, depublished: null|string}
      */
     private function exportRegister(Register $register): array
     {
@@ -323,7 +334,18 @@ class ExportHandler
      *
      * @return ((mixed|string[])[]|bool|int|null|string)[]
      *
-     * @psalm-return array{uri: null|string, slug: null|string, title: null|string, description: null|string, version: null|string, summary: null|string, icon: null|string, required: array, properties: array, archive: array|null, source: null|string, hardValidation: bool, immutable: bool, searchable: bool, updated: null|string, created: null|string, maxDepth: int, owner: null|string, application: null|string, groups: array<string, list<string>>|null, authorization: array|null, deleted: null|string, published: null|string, depublished: null|string, configuration: array|null|string, allOf: array|null, oneOf: array|null, anyOf: array|null}
+     * @psalm-return array{uri: null|string, slug: null|string,
+     *     title: null|string, description: null|string, version: null|string,
+     *     summary: null|string, icon: null|string, required: array,
+     *     properties: array, archive: array|null, source: null|string,
+     *     hardValidation: bool, immutable: bool, searchable: bool,
+     *     updated: null|string, created: null|string, maxDepth: int,
+     *     owner: null|string, application: null|string,
+     *     groups: array<string, list<string>>|null,
+     *     authorization: array|null, deleted: null|string,
+     *     published: null|string, depublished: null|string,
+     *     configuration: array|null|string, allOf: array|null,
+     *     oneOf: array|null, anyOf: array|null}
      */
     private function exportSchema(Schema $schema, array $schemaIdsAndSlugsMap, array $registerIdsAndSlugsMap): array
     {

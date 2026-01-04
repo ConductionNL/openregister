@@ -98,7 +98,16 @@ class CacheHandler
      *
      * @var array{hits: int, misses: int, preloads: int, query_hits: int, query_misses: int, name_hits: int, name_misses: int, name_warmups: int}
      */
-    private array $stats = ['hits' => 0, 'misses' => 0, 'preloads' => 0, 'query_hits' => 0, 'query_misses' => 0, 'name_hits' => 0, 'name_misses' => 0, 'name_warmups' => 0];
+    private array $stats = [
+        'hits'         => 0,
+        'misses'       => 0,
+        'preloads'     => 0,
+        'query_hits'   => 0,
+        'query_misses' => 0,
+        'name_hits'    => 0,
+        'name_misses'  => 0,
+        'name_warmups' => 0,
+    ];
 
     /**
      * Distributed cache for query results
@@ -605,9 +614,18 @@ class CacheHandler
      *
      * @return (float|int)[]
      *
-     * @phpstan-return array{hits: int, misses: int, preloads: int, query_hits: int, query_misses: int, name_hits: int, name_misses: int, name_warmups: int, hit_rate: float, query_hit_rate: float, name_hit_rate: float, cache_size: int, query_cache_size: int, name_cache_size: int}
+     * @phpstan-return array{hits: int, misses: int, preloads: int,
+     *     query_hits: int, query_misses: int, name_hits: int, name_misses: int,
+     *     name_warmups: int, hit_rate: float, query_hit_rate: float,
+     *     name_hit_rate: float, cache_size: int, query_cache_size: int,
+     *     name_cache_size: int}
      *
-     * @psalm-return array{hits: int, misses: int, preloads: int, query_hits: int, query_misses: int, name_hits: int, name_misses: int, name_warmups: int, hit_rate: float, query_hit_rate: float, name_hit_rate: float, cache_size: int<0, max>, query_cache_size: int<0, max>, name_cache_size: int<0, max>}
+     * @psalm-return array{hits: int, misses: int, preloads: int,
+     *     query_hits: int, query_misses: int, name_hits: int,
+     *     name_misses: int, name_warmups: int, hit_rate: float,
+     *     query_hit_rate: float, name_hit_rate: float,
+     *     cache_size: int<0, max>, query_cache_size: int<0, max>,
+     *     name_cache_size: int<0, max>}
      */
     public function getStats(): array
     {
@@ -947,6 +965,7 @@ class CacheHandler
         $startTime = microtime(true);
 
         $this->objectCache = [];
+
         /*
          * @psalm-suppress UndefinedThisPropertyAssignment - relationshipCache property doesn't exist, not used)
          */
@@ -954,7 +973,16 @@ class CacheHandler
         $this->relationshipCache  = [];
         $this->inMemoryQueryCache = [];
         $this->nameCache          = [];
-        $this->stats = ['hits' => 0, 'misses' => 0, 'preloads' => 0, 'query_hits' => 0, 'query_misses' => 0, 'name_hits' => 0, 'name_misses' => 0, 'name_warmups' => 0];
+        $this->stats = [
+            'hits'         => 0,
+            'misses'       => 0,
+            'preloads'     => 0,
+            'query_hits'   => 0,
+            'query_misses' => 0,
+            'name_hits'    => 0,
+            'name_misses'  => 0,
+            'name_warmups' => 0,
+        ];
 
         // Clear distributed query cache.
         if ($this->queryCache !== null) {
@@ -1501,7 +1529,9 @@ class CacheHandler
      *
      * @return (false|mixed|null|string)[] Clear operation results
      *
-     * @psalm-return array{success: false|mixed, error: mixed|null|string, timestamp?: string, error_details?: mixed|null, message?: 'Index clear failed'|'Index cleared successfully'}
+     * @psalm-return array{success: false|mixed, error: mixed|null|string,
+     *     timestamp?: string, error_details?: mixed|null,
+     *     message?: 'Index clear failed'|'Index cleared successfully'}
      */
     public function clearSolrIndexForDashboard(): array
     {

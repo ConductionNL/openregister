@@ -14,7 +14,11 @@ volumes:
   elasticsearch:
 
 services:
+  # PostgreSQL Database (default)
+  # Start with: docker-compose up (default) OR docker-compose --profile postgres up
+  # Recommended for production use with vector search capabilities
   db:
+    # Empty profiles means it starts by default unless another profile overrides it
     image: pgvector/pgvector:pg16
     restart: always
     container_name: openregister-postgres
@@ -47,6 +51,40 @@ services:
       -c work_mem=4MB
       -c min_wal_size=1GB
       -c max_wal_size=4GB
+
+  # MariaDB Database (optional - for compatibility testing)
+  # Start with: docker-compose --profile mariadb up
+  # Note: Vector search features will not be available with MariaDB
+  db-mariadb:
+    profiles:
+      - mariadb
+    image: mariadb:11.2
+    restart: always
+    container_name: openregister-mariadb
+    volumes:
+      - db:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=!ChangeMe!
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+      - MYSQL_PASSWORD=!ChangeMe!
+    ports:
+      - "3306:3306"
+    command: >
+      --transaction-isolation=READ-COMMITTED
+      --log-bin=binlog
+      --binlog-format=ROW
+      --innodb-file-per-table=1
+      --max-connections=200
+      --innodb-buffer-pool-size=256M
+      --innodb-log-file-size=64M
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # ZooKeeper for SolrCloud coordination (Optional - use --profile solr)
   zookeeper:
@@ -385,6 +423,10 @@ services:
   #     - ./docker:/home/ubuntu/docker
   #     - .:/home/ubuntu/app
 
+  # Nextcloud Application Server (PostgreSQL - Default)
+  # Start with: docker-compose up  OR  docker-compose --profile postgres up
+  # Connects to PostgreSQL database
+  # NOTE: When using --profile mariadb, this service will NOT start (nextcloud-mariadb starts instead)
   nextcloud:
     user: root
     container_name: nextcloud
@@ -403,6 +445,7 @@ services:
       - .:/var/www/html/custom_apps/openregister
       - ../opencatalogi:/var/www/html/custom_apps/opencatalogi
     environment:
+      # Database configuration (PostgreSQL)
       - POSTGRES_DB=nextcloud
       - POSTGRES_USER=nextcloud
       - POSTGRES_PASSWORD=!ChangeMe!
@@ -414,6 +457,42 @@ services:
       - PHP_MEMORY_LIMIT=4G
       - PHP_UPLOAD_LIMIT=2G
       - PHP_POST_MAX_SIZE=2G
+
+  # Nextcloud Application Server (MariaDB - For Testing)
+  # Start with: docker-compose --profile mariadb up
+  # Note: Do NOT use docker-compose up when using this profile
+  # Always specify: docker-compose --profile mariadb up
+  nextcloud-mariadb:
+    profiles:
+      - mariadb
+    user: root
+    container_name: nextcloud-mariadb
+    image: nextcloud
+    restart: always
+    ports:
+      - 8080:80
+    links:
+      - db-mariadb
+      - ollama
+      - presidio-analyzer
+    volumes:
+      - nextcloud:/var/www/html:rw
+      - ./custom_apps:/var/www/html/custom_apps
+      - .:/var/www/html/custom_apps/openregister
+      - ../opencatalogi:/var/www/html/custom_apps/opencatalogi
+    environment:
+      # Database configuration (MariaDB)
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+      - MYSQL_PASSWORD=!ChangeMe!
+      - MYSQL_HOST=db-mariadb
+      - TZ=Europe/Amsterdam
+      - NEXTCLOUD_ADMIN_USER=admin
+      - NEXTCLOUD_ADMIN_PASSWORD=admin
+      # PHP Configuration - Match production settings
+      - PHP_MEMORY_LIMIT=4G
+      - PHP_UPLOAD_LIMIT=2G
+      - PHP_POST_MAX_SIZE=2G
     depends_on:
-      db:
+      db-mariadb:
         condition: service_healthy

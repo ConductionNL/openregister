@@ -258,7 +258,11 @@ class SolrSchemaManager
 
             if (($result['responseHeader']['status'] ?? -1) === 0) {
                 $this->logger->info('[SolrSchemaManager] Field created', ['field' => $fieldName]);
-                return isset($existingFields[$fieldName]) === true ? 'updated' : 'created';
+                if (isset($existingFields[$fieldName]) === true) {
+                    return 'updated';
+                } else {
+                    return 'created';
+                }
             }
 
             $this->logger->warning(

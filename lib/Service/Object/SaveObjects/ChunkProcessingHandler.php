@@ -77,8 +77,19 @@ class ChunkProcessingHandler
      *
      * @return array Array containing saved, updated, invalid objects and statistics.
      *
-     * @psalm-return   array{saved: list<array<string, mixed>>, updated: list<array<string, mixed>>, unchanged: list<array<string, mixed>>, invalid: list<array<string, mixed>>, errors: list<array<string, mixed>>, statistics: array{saved: int, updated: int, unchanged: int, invalid: int, errors: int, processingTimeMs: float}}
-     * @phpstan-return array{saved: list<array<string, mixed>>, updated: list<array<string, mixed>>, unchanged: list<array<string, mixed>>, invalid: list<array<string, mixed>>, errors: list<array<string, mixed>>, statistics: array<string, int|float>}
+     * @psalm-return   array{saved: list<array<string, mixed>>,
+     *     updated: list<array<string, mixed>>,
+     *     unchanged: list<array<string, mixed>>,
+     *     invalid: list<array<string, mixed>>,
+     *     errors: list<array<string, mixed>>,
+     *     statistics: array{saved: int, updated: int, unchanged: int,
+     *     invalid: int, errors: int, processingTimeMs: float}}
+     * @phpstan-return array{saved: list<array<string, mixed>>,
+     *     updated: list<array<string, mixed>>,
+     *     unchanged: list<array<string, mixed>>,
+     *     invalid: list<array<string, mixed>>,
+     *     errors: list<array<string, mixed>>,
+     *     statistics: array<string, int|float>}
      */
     public function processObjectsChunk(
         array $objects,

@@ -51,6 +51,14 @@ class ValidationOperationsHandler
      */
     private IAppContainer $container;
 
+    /**
+     * Constructor for ValidationOperationsHandler.
+     *
+     * @param ValidateObject  $validateHandler Handler for validation operations
+     * @param SchemaMapper    $schemaMapper    Mapper for schema entities
+     * @param LoggerInterface $logger          Logger for logging operations
+     * @param IAppContainer   $container       Application container
+     */
     public function __construct(
         private readonly ValidateObject $validateHandler,
         private readonly SchemaMapper $schemaMapper,
@@ -81,7 +89,13 @@ class ValidationOperationsHandler
      *
      * @throws Exception If validation operation fails.
      *
-     * @psalm-return array{total_objects: int<0, max>, valid_objects: 0|1|2, invalid_objects: int, validation_errors: list<array{errors: Opis\JsonSchema\Errors\ValidationError|list{non-falsy-string}|null, object_id: mixed, object_name: mixed, register: mixed, schema: mixed}>, summary: array{validation_success_rate: 100|float, has_errors: bool, error_count: int<0, max>}}
+     * @psalm-return array{total_objects: int<0, max>, valid_objects: 0|1|2,
+     *     invalid_objects: int,
+     *     validation_errors: list<array{errors:
+     *     Opis\JsonSchema\Errors\ValidationError|list{non-falsy-string}|null,
+     *     object_id: mixed, object_name: mixed, register: mixed, schema: mixed}>,
+     *     summary: array{validation_success_rate: 100|float, has_errors: bool,
+     *     error_count: int<0, max>}}
      */
     public function validateAllObjects(): array
     {

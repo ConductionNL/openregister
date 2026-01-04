@@ -957,9 +957,9 @@ class ValidateObject
                 // Handle int schema ID.
                 $schemaObject = $this->schemaMapper->find($schema)->getSchemaObject($this->urlGenerator);
             } else if ($schema !== null) {
-                // At this point, $schema is string (not int, not Schema, already checked !== null).
-                // Use type annotation to help Psalm understand.
                 /*
+                 * At this point, $schema is string (not int, not Schema, already checked !== null).
+                 * Use type annotation to help Psalm understand.
                  * @var string $schemaString
                  */
 
@@ -1061,14 +1061,15 @@ class ValidateObject
             ARRAY_FILTER_USE_BOTH
         );
 
-        // Modify schema to allow null values for non-required fields.
-        // This ensures that null values are valid for optional fields.
         /*
+         * Modify schema to allow null values for non-required fields.
+         * This ensures that null values are valid for optional fields.
          * @psalm-suppress NoValue
          */
 
         if (property_exists($schemaObject, 'properties') === true) {
             $properties = $schemaObject->properties;
+
             /*
              * @psalm-suppress TypeDoesNotContainType
              */
@@ -1296,7 +1297,7 @@ class ValidateObject
 
             case 'format':
                 $format = $args['format'] ?? 'unknown';
-                return "Property '{$propertyPath}' should match the format '{$format}' but the value '{$value}' does not. "."Please provide a value in the correct format.";
+                return "Property '{$propertyPath}' should match the format '{$format}' but the value '{$value}' does not. Please provide a value in the correct format.";
 
             case 'minLength':
                 $minLength    = $args['min'] ?? 0;
@@ -1306,9 +1307,9 @@ class ValidateObject
                 }
 
                 if ($actualLength === 0) {
-                    return "Property '{$propertyPath}' should have at least {$minLength} characters, but is empty. "."Please provide a non-empty string value.";
+                    return "Property '{$propertyPath}' should have at least {$minLength} characters, but is empty. Please provide a non-empty string value.";
                 }
-                return "Property '{$propertyPath}' should have at least {$minLength} characters, but has {$actualLength}. "."Please provide a longer string value.";
+                return "Property '{$propertyPath}' should have at least {$minLength} characters, but has {$actualLength}. Please provide a longer string value.";
 
             case 'maxLength':
                 $maxLength    = $args['max'] ?? 0;
@@ -1316,15 +1317,15 @@ class ValidateObject
                 if (is_string($value) === true) {
                     $actualLength = strlen($value);
                 }
-                return "Property '{$propertyPath}' should have at most {$maxLength} characters, but has {$actualLength}. "."Please provide a shorter string value.";
+                return "Property '{$propertyPath}' should have at most {$maxLength} characters, but has {$actualLength}. Please provide a shorter string value.";
 
             case 'minimum':
                 $minimum = $args['min'] ?? 0;
-                return "Property '{$propertyPath}' should be at least {$minimum}, but is {$value}. "."Please provide a larger number.";
+                return "Property '{$propertyPath}' should be at least {$minimum}, but is {$value}. Please provide a larger number.";
 
             case 'maximum':
                 $maximum = $args['max'] ?? 0;
-                return "Property '{$propertyPath}' should be at most {$maximum}, but is {$value}. "."Please provide a smaller number.";
+                return "Property '{$propertyPath}' should be at most {$maximum}, but is {$value}. Please provide a smaller number.";
 
             case 'enum':
                 $allowedValues = $args['values'] ?? [];
@@ -1338,13 +1339,13 @@ class ValidateObject
                             $allowedValues
                         )
                     );
-                    return "Property '{$propertyPath}' should be one of: {$valuesList}, but is '{$value}'. "."Please choose one of the allowed values.";
+                    return "Property '{$propertyPath}' should be one of: {$valuesList}, but is '{$value}'. Please choose one of the allowed values.";
                 }
-                return "Property '{$propertyPath}' has an invalid value '{$value}'. "."Please provide one of the allowed values.";
+                return "Property '{$propertyPath}' has an invalid value '{$value}'. Please provide one of the allowed values.";
 
             case 'pattern':
                 $pattern = $args['pattern'] ?? 'unknown';
-                return "Property '{$propertyPath}' should match the pattern '{$pattern}' but the value '{$value}' does not. "."Please provide a value that matches the required pattern.";
+                return "Property '{$propertyPath}' should match the pattern '{$pattern}' but the value '{$value}' does not. Please provide a value that matches the required pattern.";
 
             default:
                 // Check for sub-errors to provide more specific messages.
@@ -1352,7 +1353,7 @@ class ValidateObject
                 if (empty($subErrors) === false) {
                     return $this->formatValidationError($subErrors[0]);
                 }
-                return "Property '{$propertyPath}' failed validation for rule '{$keyword}'. "."Please check the property value and schema requirements.";
+                return "Property '{$propertyPath}' failed validation for rule '{$keyword}'. Please check the property value and schema requirements.";
         }//end switch
     }//end formatValidationError()
 
@@ -1401,7 +1402,12 @@ class ValidateObject
      *
      * @param ValidationException|CustomValidationException $exception The validation exception.
      *
-     * @psalm-return JSONResponse<400, array{status: 'error', message: 'Validation failed', errors: list{0?: array<array|mixed|null|string>|string,...}}, array<never, never>>
+     * @return JSONResponse
+     *
+     * @psalm-return JSONResponse<400,
+     *     array{status: 'error', message: 'Validation failed',
+     *     errors: list{0?: array<array|mixed|null|string>|string,...}>,
+     *     array<never, never>>
      */
     public function handleValidationException(ValidationException | CustomValidationException $exception): JSONResponse
     {
@@ -1446,8 +1452,9 @@ class ValidateObject
     /**
      * Check of the value of a parameter, or a combination of parameters, is unique
      *
-     * @param  array  $object The object to check
-     * @param  Schema $schema The schema of the object
+     * @param array  $object The object to check
+     * @param Schema $schema The schema of the object
+     *
      * @return void
      * @throws CustomValidationException
      */
