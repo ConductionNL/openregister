@@ -96,38 +96,9 @@ class SchemaService
      *
      * @param int $schemaId The ID of the schema to explore
      *
+     * @return array Exploration results with discovered properties
+     *
      * @throws \Exception If schema not found or analysis fails
-     *
-     * @return ((((int|string)|array|float|mixed|null|true)[]|int|mixed)[]|int|null|string)[]
-     *
-     * @psalm-return array{schema_id: int, schema_title: null|string,
-     *     total_objects: int<0, max>,
-     *     discovered_properties: array<array{name: mixed,
-     *     types: array<never, never>, examples: array<never, never>,
-     *     nullable: true, enum_values: array<never, never>, max_length: 0,
-     *     min_length: int<1, max>, object_structure: null,
-     *     array_structure: null, detected_format: null,
-     *     string_patterns: array<never, never>, numeric_range: null,
-     *     usage_count: int, usage_percentage?: float}>,
-     *     existing_properties: array|null,
-     *     property_usage_stats?: array{counts?: array<int>,
-     *     percentages?: array<float>},
-     *     suggestions: array<array{confidence: 'high'|'low'|'medium',
-     *     description: 'Enum-like property with predefined values'|
-     *     'Property discovered through object analysis',
-     *     detected_format: mixed|null, enum?: array, examples: array,
-     *     items?: array, maxLength?: 1000|mixed, max_length: mixed|null,
-     *     min_length: mixed|null, nullable: true, numeric_range: mixed|null,
-     *     properties?: array, property_name: array-key,
-     *     recommended_type: string,
-     *     string_patterns: array<never, never>|mixed,
-     *     type?: 'array'|'object'|'string', type_variations: mixed|null,
-     *     usage_count: mixed, usage_percentage: 0|mixed}|mixed>,
-     *     analysis_date: string, data_types?: array<never, never>,
-     *     analysis_summary?: array{new_properties_count: int<0, max>,
-     *     existing_properties_improvements: int<0, max>,
-     *     total_recommendations: int<0, max>},
-     *     message?: 'No objects found for analysis'}
      */
     public function exploreSchemaProperties(int $schemaId): array
     {
@@ -288,21 +259,7 @@ class SchemaService
      *
      * @param mixed $value The property value to analyze
      *
-     * @return (((int|string)[]|float|int|mixed|null|string)[]|int|null|string)[]
-     *
-     * @psalm-return array{types: non-empty-list<string>, examples: list{mixed>,
-     *     max_length: int<0, max>, min_length: int<0, max>,
-     *     object_structure: array{type: 'object'|'scalar',
-     *     keys?: list<array-key>, key_count?: int<0, max>, value?: mixed}|null,
-     *     array_structure: array{type: 'associative'|'empty'|'list',
-     *     keys?: non-empty-list<array-key>, length?: int<1, max>,
-     *     item_types?: array<string, 0|1|2>, sample_item?: mixed|null}|null,
-     *     detected_format: null|string,
-     *     numeric_range: array{min: float|int, max: float|int,
-     *     type: 'integer'|'number'}|null,
-     *     string_patterns: list<list{0?: string, 1?: string, 2?: string,
-     *     3?: string, 4?: string, 5?: 'SCREAMING_SNAKE_CASE'|'filename'|'path',
-     *     6?: 'filename'|'path', 7?: 'path'}>}
+     * @return array Analysis results with type and structure info
      */
     private function analyzePropertyValue($value): array
     {
@@ -924,42 +881,7 @@ class SchemaService
      * @param array $discoveredProperties Properties found in object analysis
      * @param array $_usageStats          Usage statistics for all properties
      *
-     * @return ((int|string)|array|mixed|null)[][]
-     *
-     * @psalm-return list<array{confidence: 'high'|'low'|'medium',
-     *     current_type: 'undefined'|mixed, detected_format: mixed|null,
-     *     examples: array, improvement_status: 'existing',
-     *     issues: list{0: string, 1?: string, 2?: string, 3?: string,
-     *     4?: string, 5?: string,
-     *     6?: 'inconsistent_required'|'missing_enum',
-     *     7?: 'missing_enum'}, max_length: mixed|null,
-     *     min_length: mixed|null, numeric_range: mixed|null,
-     *     property_name: array-key, recommended_type: string,
-     *     string_patterns: array<never, never>|mixed,
-     *     suggestions: list{0?: array{current: 'none'|'true'|'unlimited'|
-     *     mixed|null, description: string, field: string,
-     *     recommended: 1000|mixed|string, type: string},
-     *     1?: array{current: 'none'|'true'|'unlimited'|mixed|null,
-     *     description: string, field: string,
-     *     recommended: 1000|mixed|string, type: string},
-     *     2?: array{current: 'none'|'true'|'unlimited'|mixed|null,
-     *     description: string, field: string, recommended: mixed|string,
-     *     type: string}, 3?: array{current: 'none'|'true'|'unlimited'|
-     *     mixed|null, description: string, field: string,
-     *     recommended: mixed|string, type: string},
-     *     4?: array{current: 'true'|'unlimited'|mixed|null,
-     *     description: string, field: string, recommended: mixed|string,
-     *     type: 'behavior'|'constraint'|'enum'},
-     *     5?: array{current: 'true'|'unlimited'|mixed|null,
-     *     description: string, field: 'enum'|'maximum'|'required',
-     *     recommended: mixed|string, type: 'behavior'|'constraint'|'enum'},
-     *     6?: array{current: 'true'|'unlimited', description: string,
-     *     field: 'enum'|'required', recommended: string,
-     *     type: 'behavior'|'enum'},
-     *     7?: array{current: 'unlimited', description: string,
-     *     field: 'enum', recommended: string, type: 'enum'}>,
-     *     type_variations: mixed|null, usage_count: mixed,
-     *     usage_percentage: 0|mixed}>
+     * @return array List of property improvements
      */
     private function analyzeExistingProperties(
         array $existingProperties,
@@ -1054,36 +976,7 @@ class SchemaService
      * @param array $currentConfig Current property configuration
      * @param array $analysis      Analysis data from objects
      *
-     * @return (((int|mixed|null|string)[]|string)[]|string)[]
-     *
-     * @psalm-return array{issues: list{0?: string, 1?: string, 2?: string,
-     *     3?: string, 4?: string, 5?: string,
-     *     6?: 'inconsistent_required'|'missing_enum',
-     *     7?: 'missing_enum'}, suggestions: list{0?: array{type: string,
-     *     field: string, current: 'none'|'true'|'unlimited'|mixed|null,
-     *     recommended: 1000|mixed|string, description: string},
-     *     1?: array{type: string, field: string,
-     *     current: 'none'|'true'|'unlimited'|mixed|null,
-     *     recommended: 1000|mixed|string, description: string},
-     *     2?: array{type: string, field: string,
-     *     current: 'none'|'true'|'unlimited'|mixed|null,
-     *     recommended: mixed|string, description: string},
-     *     3?: array{type: string, field: string,
-     *     current: 'none'|'true'|'unlimited'|mixed|null,
-     *     recommended: mixed|string, description: string},
-     *     4?: array{type: 'behavior'|'constraint'|'enum', field: string,
-     *     current: 'true'|'unlimited'|mixed|null,
-     *     recommended: mixed|string, description: string},
-     *     5?: array{type: 'behavior'|'constraint'|'enum',
-     *     field: 'enum'|'maximum'|'required',
-     *     current: 'true'|'unlimited'|mixed|null,
-     *     recommended: mixed|string, description: string},
-     *     6?: array{type: 'behavior'|'enum', field: 'enum'|'required',
-     *     current: 'true'|'unlimited', recommended: string,
-     *     description: string},
-     *     7?: array{type: 'enum', field: 'enum', current: 'unlimited',
-     *     recommended: string, description: string}>,
-     *     recommended_type: string}
+     * @return array Comparison results with issues and suggestions
      */
     private function comparePropertyWithAnalysis(array $currentConfig, array $analysis): array
     {
@@ -1142,7 +1035,7 @@ class SchemaService
      * @param array  $currentConfig   Current property configuration
      * @param string $recommendedType Recommended type from analysis
      *
-     * @return array{issues: string[], suggestions: array[]} Comparison results
+     * @return array Type comparison results
      */
     private function compareType(array $currentConfig, string $recommendedType): array
     {
@@ -1184,7 +1077,7 @@ class SchemaService
      * @param array  $analysis        Property analysis data
      * @param string $recommendedType Recommended type
      *
-     * @return array{issues: string[], suggestions: array[]} Comparison results
+     * @return array String constraint comparison results
      */
     private function compareStringConstraints(array $currentConfig, array $analysis, string $recommendedType): array
     {
@@ -1272,7 +1165,7 @@ class SchemaService
      * @param array  $analysis        Property analysis data
      * @param string $recommendedType Recommended type
      *
-     * @return array{issues: string[], suggestions: array[]} Comparison results
+     * @return array Numeric constraint comparison results
      */
     private function compareNumericConstraints(array $currentConfig, array $analysis, string $recommendedType): array
     {
@@ -1346,7 +1239,7 @@ class SchemaService
      * @param array $currentConfig Current property configuration
      * @param array $analysis      Property analysis data
      *
-     * @return array{issues: string[], suggestions: array[]} Comparison results
+     * @return array Nullable constraint comparison results
      */
     private function compareNullableConstraint(array $currentConfig, array $analysis): array
     {
@@ -1395,7 +1288,7 @@ class SchemaService
      * @param array $currentConfig Current property configuration
      * @param array $analysis      Property analysis data
      *
-     * @return array{issues: string[], suggestions: array[]} Comparison results
+     * @return array Enum constraint comparison results
      */
     private function compareEnumConstraint(array $currentConfig, array $analysis): array
     {
@@ -1513,9 +1406,11 @@ class SchemaService
      *
      * @param string|null $format Detected format
      *
-     * @return string|null JSON Schema type or null if format doesn't determine type
+     * @return null|string JSON Schema type or null if format doesn't determine type
+     *
+     * @psalm-return 'string'|null
      */
-    private function getTypeFromFormat(?string $format): ?string
+    private function getTypeFromFormat(?string $format): string|null
     {
         if ($format === null || $format === '') {
             return null;
@@ -1548,9 +1443,11 @@ class SchemaService
      *
      * @param array $patterns String patterns detected in analysis
      *
-     * @return string|null JSON Schema type or null if patterns don't determine type
+     * @return null|string JSON Schema type or null if patterns don't determine type
+     *
+     * @psalm-return 'boolean'|'integer'|'number'|null
      */
-    private function getTypeFromPatterns(array $patterns): ?string
+    private function getTypeFromPatterns(array $patterns): string|null
     {
         // Boolean-like strings: "true", "false", "yes", "no".
         if (in_array('boolean_string', $patterns, true) === true) {
@@ -1757,8 +1654,12 @@ class SchemaService
                 return ['type' => 'string'];
             }
 
-            // Cast to string for type safety - array_key_first returns string|int|null.
-            /** @psalm-suppress InvalidCast - $primaryType is array key which can be cast to string */
+            /*
+             * Cast to string for type safety - array_key_first returns string|int|null.
+             *
+             * @psalm-suppress InvalidCast $primaryType is array key which can be cast to string.
+             */
+
             $typeString = (string) $primaryType;
 
             switch ($typeString) {

@@ -244,7 +244,7 @@ class EndpointsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response with created endpoint
+     * @return JSONResponse JSON response with created endpoint or error
      *
      * @psalm-return JSONResponse<201, \OCA\OpenRegister\Db\Endpoint,
      *     array<never, never>>|JSONResponse<400|500, array{error: string},
@@ -316,7 +316,7 @@ class EndpointsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response with updated endpoint
+     * @return JSONResponse JSON response with updated endpoint or error
      *
      * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Endpoint,
      *     array<never, never>>|JSONResponse<404|500, array{error: string},
@@ -459,10 +459,15 @@ class EndpointsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response with test results
-     *
      * @psalm-suppress InvalidReturnType
      * @psalm-suppress InvalidReturnStatement
+     *
+     * @return JSONResponse JSON response with test result or error
+     *
+     * @psalm-return JSONResponse<int,
+     *     array{error?: string, success?: bool, message?: string,
+     *     statusCode?: int, response?: mixed},
+     *     array<never, never>>
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -672,11 +677,11 @@ class EndpointsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response with all endpoint logs
+     * @return JSONResponse JSON response with logs or error
      *
      * @psalm-return JSONResponse<200|500,
-     *     array{error?: string,
-     *     results?: array<\OCA\OpenRegister\Db\EndpointLog>, total?: int<0, max>},
+     *     array{error?: string, results?: array<\OCA\OpenRegister\Db\EndpointLog>,
+     *     total?: int<0, max>},
      *     array<never, never>>
      */
     #[NoAdminRequired]

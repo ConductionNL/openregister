@@ -171,11 +171,13 @@ class RelationHandler
      * @param bool  $includeRelated      Whether to include related objects.
      * @param bool  $includeRelatedNames Whether to include related names.
      *
-     * @return array The processed results.
+     * @return string[][]
      *
-     * @psalm-param    array<string, mixed> $results
-     * @phpstan-param  array<string, mixed> $results
-     * @psalm-return   array<string, mixed>
+     * @psalm-param array<string, mixed> $results
+     *
+     * @phpstan-param array<string, mixed> $results
+     *
+     * @psalm-return   array{related?: list<string>, relatedNames?: array<string, string>}
      * @phpstan-return array<string, mixed>
      */
     public function extractRelatedData(array $results, bool $includeRelated, bool $includeRelatedNames): array
@@ -302,7 +304,7 @@ class RelationHandler
      *
      * @phpstan-param array<string> $relationshipIds
      *
-     * @psalm-return array<int|string, ObjectEntity>
+     * @psalm-return   array<int|string, ObjectEntity>
      * @phpstan-return array<string, ObjectEntity>
      */
     public function bulkLoadRelationshipsBatched(array $relationshipIds): array
@@ -402,7 +404,7 @@ class RelationHandler
      *
      * @phpstan-param array<string> $relationshipIds
      *
-     * @psalm-return list<ObjectEntity>
+     * @psalm-return   list<ObjectEntity>
      * @phpstan-return array<int, ObjectEntity>
      */
     public function loadRelationshipChunkOptimized(array $relationshipIds): array

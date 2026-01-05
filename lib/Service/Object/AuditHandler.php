@@ -169,11 +169,7 @@ class AuditHandler
      * @param string $uuid    Object UUID
      * @param array  $filters Raw filters
      *
-     * @return (mixed|string)[] Prepared filters
-     *
-     * @psalm-return array{object_uuid: string, action?: mixed, user?: mixed,
-     *     date_from?: mixed, date_to?: mixed, order_by: 'created_at'|mixed,
-     *     order: 'DESC'|mixed}
+     * @return array Prepared filters for audit trail query.
      */
     private function prepareFilters(string $uuid, array $filters): array
     {

@@ -209,15 +209,11 @@ class WebhooksController extends Controller
     /**
      * Create a new webhook
      *
-     * @return JSONResponse
+     * @return JSONResponse JSON response with created webhook
      *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
-     *
-     * @psalm-return JSONResponse<201, \OCA\OpenRegister\Db\Webhook,
-     *     array<never, never>>|JSONResponse<400|500, array{error: string},
-     *     array<never, never>>
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -271,15 +267,11 @@ class WebhooksController extends Controller
      *
      * @param int $id Webhook ID
      *
-     * @return JSONResponse
+     * @return JSONResponse JSON response with updated webhook
      *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
-     *
-     * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Webhook,
-     *     array<never, never>>|JSONResponse<404|500, array{error: string},
-     *     array<never, never>>
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -396,16 +388,11 @@ class WebhooksController extends Controller
      *
      * @param int $id Webhook ID
      *
-     * @return JSONResponse
+     * @return JSONResponse JSON response with test result
      *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
-     *
-     * @psalm-return JSONResponse<200|404|500,
-     *     array{error?: string, success?: bool, message?: null|string,
-     *     error_details?: array{status_code: int|null,
-     *     response_body: null|string}}, array<never, never>>
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -512,181 +499,11 @@ class WebhooksController extends Controller
     /**
      * List available events with metadata
      *
-     * @return JSONResponse
+     * @return JSONResponse JSON response with available events
      *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
-     *
-     * @psalm-return JSONResponse<200,
-     *     array{events: list<
-     *     array{class: 'OCA\OpenRegister\Event\ObjectCreatingEvent',
-     *     name: 'Object Creating',
-     *     description: 'Triggered before an object is created',
-     *     category: 'Object', type: 'before', properties: list{'object'}>,
-     *     array{class: 'OCA\OpenRegister\Event\ObjectUpdatingEvent',
-     *     name: 'Object Updating',
-     *     description: 'Triggered before an object is updated',
-     *     category: 'Object', type: 'before',
-     *     properties: list{'newObject', 'oldObject'}>,
-     *     array{class: 'OCA\OpenRegister\Event\ObjectDeletingEvent',
-     *     name: 'Object Deleting',
-     *     description: 'Triggered before an object is deleted',
-     *     category: 'Object', type: 'before', properties: list{'object'}>,
-     *     array{class: 'OCA\OpenRegister\Event\ObjectCreatedEvent',
-     *     name: 'Object Created',
-     *     description: 'Triggered after an object is created',
-     *     category: 'Object', type: 'after', properties: list{'object'}>,
-     *     array{class: 'OCA\OpenRegister\Event\ObjectUpdatedEvent',
-     *     name: 'Object Updated',
-     *     description: 'Triggered after an object is updated',
-     *     category: 'Object', type: 'after',
-     *     properties: list{'newObject', 'oldObject'}>,
-     *     array{class: 'OCA\OpenRegister\Event\ObjectDeletedEvent',
-     *     name: 'Object Deleted',
-     *     description: 'Triggered after an object is deleted',
-     *     category: 'Object', type: 'after', properties: list{'object'}>,
-     *     array{class: 'OCA\OpenRegister\Event\ObjectLockedEvent',
-     *     name: 'Object Locked',
-     *     description: 'Triggered when an object is locked',
-     *     category: 'Object', type: 'after', properties: list{'object'}>,
-     *     array{class: 'OCA\OpenRegister\Event\ObjectUnlockedEvent',
-     *     name: 'Object Unlocked',
-     *     description: 'Triggered when an object is unlocked',
-     *     category: 'Object', type: 'after', properties: list{'object'}>,
-     *     array{class: 'OCA\OpenRegister\Event\ObjectRevertedEvent',
-     *     name: 'Object Reverted',
-     *     description: 'Triggered when an object is reverted',
-     *     category: 'Object', type: 'after',
-     *     properties: list{'object', 'revertPoint'}>,
-     *     array{class: 'OCA\OpenRegister\Event\RegisterCreatedEvent',
-     *     name: 'Register Created',
-     *     description: 'Triggered after a register is created',
-     *     category: 'Register', type: 'after',
-     *     properties: list{'register'}>,
-     *     array{class: 'OCA\OpenRegister\Event\RegisterUpdatedEvent',
-     *     name: 'Register Updated',
-     *     description: 'Triggered after a register is updated',
-     *     category: 'Register', type: 'after',
-     *     properties: list{'newRegister', 'oldRegister'}>,
-     *     array{class: 'OCA\OpenRegister\Event\RegisterDeletedEvent',
-     *     name: 'Register Deleted',
-     *     description: 'Triggered after a register is deleted',
-     *     category: 'Register', type: 'after',
-     *     properties: list{'register'}>,
-     *     array{class: 'OCA\OpenRegister\Event\SchemaCreatedEvent',
-     *     name: 'Schema Created',
-     *     description: 'Triggered after a schema is created',
-     *     category: 'Schema', type: 'after', properties: list{'schema'}>,
-     *     array{class: 'OCA\OpenRegister\Event\SchemaUpdatedEvent',
-     *     name: 'Schema Updated',
-     *     description: 'Triggered after a schema is updated',
-     *     category: 'Schema', type: 'after',
-     *     properties: list{'newSchema', 'oldSchema'}>,
-     *     array{class: 'OCA\OpenRegister\Event\SchemaDeletedEvent',
-     *     name: 'Schema Deleted',
-     *     description: 'Triggered after a schema is deleted',
-     *     category: 'Schema', type: 'after', properties: list{'schema'}>,
-     *     array{class: 'OCA\OpenRegister\Event\ApplicationCreatedEvent',
-     *     name: 'Application Created',
-     *     description: 'Triggered after an application is created',
-     *     category: 'Application', type: 'after',
-     *     properties: list{'application'}>,
-     *     array{class: 'OCA\OpenRegister\Event\ApplicationUpdatedEvent',
-     *     name: 'Application Updated',
-     *     description: 'Triggered after an application is updated',
-     *     category: 'Application', type: 'after',
-     *     properties: list{'newApplication', 'oldApplication'}>,
-     *     array{class: 'OCA\OpenRegister\Event\ApplicationDeletedEvent',
-     *     name: 'Application Deleted',
-     *     description: 'Triggered after an application is deleted',
-     *     category: 'Application', type: 'after',
-     *     properties: list{'application'}>,
-     *     array{class: 'OCA\OpenRegister\Event\AgentCreatedEvent',
-     *     name: 'Agent Created',
-     *     description: 'Triggered after an agent is created',
-     *     category: 'Agent', type: 'after', properties: list{'agent'}>,
-     *     array{class: 'OCA\OpenRegister\Event\AgentUpdatedEvent',
-     *     name: 'Agent Updated',
-     *     description: 'Triggered after an agent is updated',
-     *     category: 'Agent', type: 'after',
-     *     properties: list{'newAgent', 'oldAgent'}>,
-     *     array{class: 'OCA\OpenRegister\Event\AgentDeletedEvent',
-     *     name: 'Agent Deleted',
-     *     description: 'Triggered after an agent is deleted',
-     *     category: 'Agent', type: 'after', properties: list{'agent'}>,
-     *     array{class: 'OCA\OpenRegister\Event\SourceCreatedEvent',
-     *     name: 'Source Created',
-     *     description: 'Triggered after a source is created',
-     *     category: 'Source', type: 'after', properties: list{'source'}>,
-     *     array{class: 'OCA\OpenRegister\Event\SourceUpdatedEvent',
-     *     name: 'Source Updated',
-     *     description: 'Triggered after a source is updated',
-     *     category: 'Source', type: 'after',
-     *     properties: list{'newSource', 'oldSource'}>,
-     *     array{class: 'OCA\OpenRegister\Event\SourceDeletedEvent',
-     *     name: 'Source Deleted',
-     *     description: 'Triggered after a source is deleted',
-     *     category: 'Source', type: 'after', properties: list{'source'}>,
-     *     array{class: 'OCA\OpenRegister\Event\ConfigurationCreatedEvent',
-     *     name: 'Configuration Created',
-     *     description: 'Triggered after a configuration is created',
-     *     category: 'Configuration', type: 'after',
-     *     properties: list{'configuration'}>,
-     *     array{class: 'OCA\OpenRegister\Event\ConfigurationUpdatedEvent',
-     *     name: 'Configuration Updated',
-     *     description: 'Triggered after a configuration is updated',
-     *     category: 'Configuration', type: 'after',
-     *     properties: list{'newConfiguration', 'oldConfiguration'}>,
-     *     array{class: 'OCA\OpenRegister\Event\ConfigurationDeletedEvent',
-     *     name: 'Configuration Deleted',
-     *     description: 'Triggered after a configuration is deleted',
-     *     category: 'Configuration', type: 'after',
-     *     properties: list{'configuration'}>,
-     *     array{class: 'OCA\OpenRegister\Event\ViewCreatedEvent',
-     *     name: 'View Created',
-     *     description: 'Triggered after a view is created',
-     *     category: 'View', type: 'after', properties: list{'view'}>,
-     *     array{class: 'OCA\OpenRegister\Event\ViewUpdatedEvent',
-     *     name: 'View Updated',
-     *     description: 'Triggered after a view is updated',
-     *     category: 'View', type: 'after',
-     *     properties: list{'newView', 'oldView'}>,
-     *     array{class: 'OCA\OpenRegister\Event\ViewDeletedEvent',
-     *     name: 'View Deleted',
-     *     description: 'Triggered after a view is deleted',
-     *     category: 'View', type: 'after', properties: list{'view'}>,
-     *     array{class: 'OCA\OpenRegister\Event\ConversationCreatedEvent',
-     *     name: 'Conversation Created',
-     *     description: 'Triggered after a conversation is created',
-     *     category: 'Conversation', type: 'after',
-     *     properties: list{'conversation'}>,
-     *     array{class: 'OCA\OpenRegister\Event\ConversationUpdatedEvent',
-     *     name: 'Conversation Updated',
-     *     description: 'Triggered after a conversation is updated',
-     *     category: 'Conversation', type: 'after',
-     *     properties: list{'newConversation', 'oldConversation'}>,
-     *     array{class: 'OCA\OpenRegister\Event\ConversationDeletedEvent',
-     *     name: 'Conversation Deleted',
-     *     description: 'Triggered after a conversation is deleted',
-     *     category: 'Conversation', type: 'after',
-     *     properties: list{'conversation'}>,
-     *     array{class: 'OCA\OpenRegister\Event\OrganisationCreatedEvent',
-     *     name: 'Organisation Created',
-     *     description: 'Triggered after an organisation is created',
-     *     category: 'Organisation', type: 'after',
-     *     properties: list{'organisation'}>,
-     *     array{class: 'OCA\OpenRegister\Event\OrganisationUpdatedEvent',
-     *     name: 'Organisation Updated',
-     *     description: 'Triggered after an organisation is updated',
-     *     category: 'Organisation', type: 'after',
-     *     properties: list{'newOrganisation', 'oldOrganisation'}>,
-     *     array{class: 'OCA\OpenRegister\Event\OrganisationDeletedEvent',
-     *     name: 'Organisation Deleted',
-     *     description: 'Triggered after an organisation is deleted',
-     *     category: 'Organisation', type: 'after',
-     *     properties: list{'organisation'}}>, total: 36},
-     *     array<never, never>>
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -1137,16 +954,11 @@ class WebhooksController extends Controller
     /**
      * Get all webhook logs with optional filtering
      *
-     * @return JSONResponse
+     * @return JSONResponse JSON response with webhook logs
      *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
-     *
-     * @psalm-return JSONResponse<200|500,
-     *     array{error?: string,
-     *     results?: array<\OCA\OpenRegister\Db\WebhookLog>,
-     *     total?: int<0, max>}, array<never, never>>
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -1252,13 +1064,11 @@ class WebhooksController extends Controller
      *
      * @param int $logId Log entry ID
      *
-     * @return JSONResponse
+     * @return JSONResponse JSON response with retry result
      *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response with retry result
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]

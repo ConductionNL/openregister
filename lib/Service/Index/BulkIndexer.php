@@ -151,14 +151,9 @@ class BulkIndexer
      * @param array $solrFieldTypes Field types for validation
      * @param array $schemaIds      Schema IDs to filter (empty = all searchable)
      *
-     * @return (bool|int|string)[] Results with statistics
+     * @return array Result with success status, indexed count, and batch information.
      *
-     * @throws \RuntimeException If indexing fails
-     *
-     * @psalm-return array{success: bool, indexed: int<0, max>,
-     *     batches: int<0, max>, batch_size?: int,
-     *     skipped_non_searchable?: int,
-     *     error?: 'Search backend is not available'}
+     * @throws \RuntimeException If indexing fails.
      */
     public function bulkIndexFromDatabase(
         int $batchSize=1000,

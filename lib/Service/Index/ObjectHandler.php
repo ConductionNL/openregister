@@ -74,9 +74,11 @@ class ObjectHandler
      * @param bool  $published    Filter published objects
      * @param bool  $deleted      Include deleted objects
      *
-     * @return array Search results in OpenRegister format
+     * @return (array|int|mixed)[] Search results in OpenRegister format
      *
      * @throws Exception If objectCollection is not configured
+     *
+     * @psalm-return array{results: array<never, never>|mixed, total: 0|mixed, start: 0|mixed}
      */
     public function searchObjects(
         array $query=[],

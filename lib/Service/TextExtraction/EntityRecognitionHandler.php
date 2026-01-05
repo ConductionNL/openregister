@@ -116,7 +116,7 @@ class EntityRecognitionHandler
      *
      * @throws Exception When processing fails.
      *
-     * @psalm-return array{chunks_processed: int<0, max>, entities_found: int, relations_created: int}
+     * @psalm-return array{chunks_processed: int<0, max>, entities_found: int<0, max>, relations_created: int<0, max>}
      */
     public function processSourceChunks(string $sourceType, int $sourceId, array $options=[]): array
     {
@@ -188,13 +188,9 @@ class EntityRecognitionHandler
      *                       - confidence_threshold: minimum confidence (default: 0.5).
      *                       - context_window: characters around entity (default: 50).
      *
-     * @return ((float|string)[][]|int)[]
+     * @return array Extraction results with entities_found, relations_created, and entities list.
      *
      * @throws Exception When extraction fails.
-     *
-     * @psalm-return array{entities_found: int<0, max>,
-     *     relations_created: int<0, max>,
-     *     entities: list<array{confidence: float, type: string, value: string}>}
      */
     public function extractFromChunk(Chunk $chunk, array $options=[]): array
     {
@@ -313,14 +309,7 @@ class EntityRecognitionHandler
      * @param array|null $entityTypes         Entity types to detect (null = all).
      * @param float      $confidenceThreshold Minimum confidence.
      *
-     * @return array<int, array{
-     *     type: string,
-     *     value: string,
-     *     category: string,
-     *     position_start: int,
-     *     position_end: int,
-     *     confidence: float
-     * }>
+     * @return array Detected entities with type, value, category, position, and confidence.
      */
     private function detectEntities(string $text, string $method, ?array $entityTypes, float $confidenceThreshold): array
     {
@@ -356,12 +345,7 @@ class EntityRecognitionHandler
      * @param array|null $entityTypes         Entity types to detect.
      * @param float      $confidenceThreshold Minimum confidence.
      *
-     * @return (float|int|string)[][]
-     *
-     * @psalm-return array<int<0, max>,
-     *     array{type: 'EMAIL'|'IBAN'|'PHONE', value: string,
-     *     category: 'personal_data'|'sensitive_pii', position_start: int,
-     *     position_end: int<min, max>, confidence: float}>
+     * @return array Detected entities with type, value, category, position, and confidence.
      */
     private function detectWithRegex(string $text, ?array $entityTypes, float $confidenceThreshold): array
     {
@@ -432,14 +416,7 @@ class EntityRecognitionHandler
      * @param array|null $entityTypes         Entity types to detect.
      * @param float      $confidenceThreshold Minimum confidence.
      *
-     * @return array<int, array{
-     *     type: string,
-     *     value: string,
-     *     category: string,
-     *     position_start: int,
-     *     position_end: int,
-     *     confidence: float
-     * }>
+     * @return array Detected entities with type, value, category, position, and confidence.
      */
     private function detectWithPresidio(string $text, ?array $entityTypes, float $confidenceThreshold): array
     {
@@ -457,14 +434,7 @@ class EntityRecognitionHandler
      * @param array|null $entityTypes         Entity types to detect.
      * @param float      $confidenceThreshold Minimum confidence.
      *
-     * @return array<int, array{
-     *     type: string,
-     *     value: string,
-     *     category: string,
-     *     position_start: int,
-     *     position_end: int,
-     *     confidence: float
-     * }>
+     * @return array Detected entities with type, value, category, position, and confidence.
      */
     private function detectWithLLM(string $text, ?array $entityTypes, float $confidenceThreshold): array
     {
@@ -482,14 +452,7 @@ class EntityRecognitionHandler
      * @param array|null $entityTypes         Entity types to detect.
      * @param float      $confidenceThreshold Minimum confidence.
      *
-     * @return array<int, array{
-     *     type: string,
-     *     value: string,
-     *     category: string,
-     *     position_start: int,
-     *     position_end: int,
-     *     confidence: float
-     * }>
+     * @return array Detected entities with type, value, category, position, and confidence.
      */
     private function detectWithHybrid(string $text, ?array $entityTypes, float $confidenceThreshold): array
     {

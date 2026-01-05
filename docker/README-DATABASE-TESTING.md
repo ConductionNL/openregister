@@ -131,7 +131,9 @@ SELECT VERSION();                               # MariaDB version
 ### PostgreSQL (Port 5432)
 
 - **Image:** pgvector/pgvector:pg16
-- **Extensions:** pg_trgm, vector
+- **Extensions:** pg_trgm, vector, btree_gin, btree_gist, uuid-ossp
+- **Auto-Install:** Extensions are automatically installed via `init-extensions.sql`
+- **Preload Libraries:** `shared_preload_libraries='pg_trgm,vector'`
 - **Features:** Vector search, full-text search, JSON operations
 - **Optimizations:** Configured for high concurrency and performance
 
@@ -139,6 +141,13 @@ SELECT VERSION();                               # MariaDB version
 ```
 postgresql://nextcloud:!ChangeMe!@localhost:5432/nextcloud
 ```
+
+**Automatic Extension Setup:**
+The PostgreSQL container automatically installs and enables all required extensions on first startup:
+1. Extensions are created via `/docker-entrypoint-initdb.d/01-init-extensions.sql`
+2. Helper functions are created (`vector_cosine_distance`, `text_similarity_score`)
+3. Database parameters are optimized (similarity threshold, work_mem)
+4. Preload libraries are configured in docker-compose command section
 
 ### MariaDB (Port 3306)
 

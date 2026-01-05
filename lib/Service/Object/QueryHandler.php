@@ -137,7 +137,7 @@ class QueryHandler
      *
      * @return ObjectEntity[]|int
      *
-     * @psalm-return int<0, max>|list<ObjectEntity>
+     * @psalm-return   int<0, max>|list<ObjectEntity>
      * @phpstan-return array<int, ObjectEntity>|int
      *
      * @throws \OCP\DB\Exception If a database error occurs.
@@ -556,16 +556,15 @@ class QueryHandler
 
         // Note: React\Async\await requires react/async package which is optional.
         // For now, we fall back to synchronous resolution of the promise.
-        // If react/async is installed, uncomment: return Async\await($promise);
-        $result = null;
-        $promise->then(
-            function ($value) use (&$result) {
-                $result = $value;
-            },
-            function ($error) {
-                throw $error;
-            }
-        );
+        // If react/async is installed, uncomment: return Async\await($promise).
+        $result      = null;
+        $onFulfilled = function ($value) use (&$result) {
+            $result = $value;
+        };
+        $onRejected  = function ($error) {
+            throw $error;
+        };
+        $promise->then(onFulfilled: $onFulfilled, onRejected: $onRejected);
 
         // Return result (synchronous fallback).
         return $result;
@@ -651,10 +650,7 @@ class QueryHandler
             $sampleSize = (int) ($query['_sample_size'] ?? 100);
 
             $promises['facetable'] = new Promise(
-                /**
-                 * @param callable(mixed): void $resolve
-                 * @param callable(\Throwable): void $reject
-                 */
+                // Resolver function for facetable promise.
                 function (callable $resolve, callable $reject) use ($baseQuery, $sampleSize) {
                     try {
                         $result = $this->facetHandler->getFacetableFields(baseQuery: $baseQuery, sampleSize: $sampleSize);
@@ -675,10 +671,7 @@ class QueryHandler
 
         // 2. Search results (~10ms).
         $promises['search'] = new Promise(
-            /**
-             * @param callable(mixed): void $resolve
-             * @param callable(\Throwable): void $reject
-             */
+            // Resolver function for search promise.
             function (callable $resolve, callable $reject) use ($paginatedQuery, $_rbac, $_multitenancy) {
                 try {
                     $searchStart = microtime(true);
@@ -707,10 +700,7 @@ class QueryHandler
 
         // 3. Facets (~10ms).
         $promises['facets'] = new Promise(
-            /**
-             * @param callable(mixed): void $resolve
-             * @param callable(\Throwable): void $reject
-             */
+            // Resolver function for facets promise.
             function (callable $resolve, callable $reject) use ($countQuery) {
                 try {
                     $result = $this->facetHandler->getFacetsForObjects($countQuery);
@@ -723,10 +713,7 @@ class QueryHandler
 
         // 4. Count (~5ms).
         $promises['count'] = new Promise(
-            /**
-             * @param callable(mixed): void $resolve
-             * @param callable(\Throwable): void $reject
-             */
+            // Resolver function for count promise.
             function (callable $resolve, callable $reject) use ($countQuery, $_rbac, $_multitenancy) {
                 try {
                     $result = $this->countSearchObjects(

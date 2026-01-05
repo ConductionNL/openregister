@@ -98,14 +98,7 @@ class FacetsHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs.
      *
-     * @return array Simple facet data using the new handlers.
-     *
-     * @psalm-return array<array<array{type?: 'date_histogram'|'range'|'terms',
-     *     buckets?: list{0?: array{key: mixed|string, results: int,
-     *     from?: mixed, to?: mixed, label?: string}|mixed,...},
-     *     interval?: string,
-     *     0?: array{key: mixed|string, results: int, from?: mixed,
-     *     to?: mixed}|mixed,...}|mixed|string>>
+     * @return ((((int|mixed|string)[]|int|mixed|string)[]|string)[]|string)[][] Facet results.
      */
     public function getSimpleFacets(array $query=[]): array
     {
@@ -311,12 +304,7 @@ class FacetsHandler
      * @param string $propertyKey The property key.
      * @param array  $property    The property definition.
      *
-     * @return (array|mixed|string)[]|null Field configuration or null if not suitable for faceting.
-     *
-     * @psalm-return array{type: string, format: string, title: mixed|string,
-     *     description: mixed|string, facet_types: array, source: 'schema',
-     *     example?: mixed, cardinality?: string, minimum?: mixed,
-     *     maximum?: mixed, intervals?: list{'day', 'week', 'month', 'year'}}|null
+     * @return (mixed|string[])[]|null Field configuration or null if not facetable.
      */
     private function generateFieldConfigFromProperty(string $propertyKey, array $property): array|null
     {
@@ -331,10 +319,6 @@ class FacetsHandler
             type: $type,
             format: $format
         );
-
-        if (empty($facetTypes) === true) {
-            return null;
-        }
 
         $config = [
             'type'        => $type,

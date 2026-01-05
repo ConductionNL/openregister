@@ -799,18 +799,7 @@ class OrganisationService
     /**
      * Get user organisation statistics
      *
-     * @return (array|int|null)[]
-     *
-     * @psalm-return array{total: int<0, max>,
-     *     active: array{id: int, uuid: null|string, slug: null|string,
-     *     name: null|string, description: null|string, users: array,
-     *     groups: array|null, owner: null|string, active: bool|null,
-     *     parent: null|string, children: array,
-     *     quota: array{storage: int|null, bandwidth: int|null,
-     *     requests: int|null, users: null, groups: null},
-     *     usage: array{storage: 0, bandwidth: 0, requests: 0,
-     *     users: int<0, max>, groups: int<0, max>}, authorization: array,
-     *     created: null|string, updated: null|string}|null, results: array}
+     * @return array Statistics with total count, active organisation, and results list.
      */
     public function getUserOrganisationStats(): array
     {

@@ -87,12 +87,7 @@ class FileSettingsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse Updated file settings
-     *
-     * @psalm-return JSONResponse<200|500,
-     *     array{success: bool, error?: string,
-     *     message?: 'File settings updated successfully', data?: array},
-     *     array<never, never>>
+     * @return JSONResponse JSON response with updated file settings
      */
     public function updateFileSettings(): JSONResponse
     {
@@ -219,9 +214,6 @@ class FileSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with file collection fields
-     *
-     * @psalm-return JSONResponse<200|500, array{success: bool, message?: string, collection?: 'files', status?: mixed},
-     *     array<never, never>>
      */
     public function getFileCollectionFields(): JSONResponse
     {
@@ -254,10 +246,7 @@ class FileSettingsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response with field creation results
-     *
-     * @psalm-return JSONResponse<200|400|500, array{success: false|mixed, message: string, collection?: 'files'},
-     *     array<never, never>>
+     * @return JSONResponse JSON response with creation result
      */
     public function createMissingFileFields(): JSONResponse
     {
@@ -321,13 +310,7 @@ class FileSettingsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response with file warmup results
-     *
-     * @psalm-return JSONResponse<200|500,
-     *     array{success: bool, message: string,
-     *     files_processed?: int<0, max>, indexed?: 0|mixed,
-     *     failed?: 0|mixed, errors?: array, mode?: mixed},
-     *     array<never, never>>
+     * @return JSONResponse JSON response with warmup result
      */
     public function warmupFiles(): JSONResponse
     {
@@ -492,12 +475,7 @@ class FileSettingsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response with file reindexing results
-     *
-     * @psalm-return JSONResponse<200|500,
-     *     array{success: bool, message: string, indexed?: 0|mixed,
-     *     files_processed?: int<0, max>, failed?: mixed, errors?: array},
-     *     array<never, never>>
+     * @return JSONResponse JSON response with reindex result
      */
     public function reindexFiles(): JSONResponse
     {

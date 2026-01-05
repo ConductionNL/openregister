@@ -1460,12 +1460,7 @@ class ValidateObject
      *
      * @param ValidationException|CustomValidationException $exception The validation exception.
      *
-     * @return JSONResponse
-     *
-     * @psalm-return JSONResponse<400,
-     *     array{status: 'error', message: 'Validation failed',
-     *     errors: list{0?: array<array|mixed|null|string>|string,...}>,
-     *     array<never, never>>
+     * @return JSONResponse JSON error response with validation errors and 400 status code.
      */
     public function handleValidationException(ValidationException | CustomValidationException $exception): JSONResponse
     {

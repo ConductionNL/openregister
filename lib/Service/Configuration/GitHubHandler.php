@@ -106,11 +106,7 @@ class GitHubHandler
      *
      * @return string[]
      *
-     * @psalm-return array{
-     *     Accept: 'application/vnd.github+json',
-     *     'X-GitHub-Api-Version': '2022-11-28',
-     *     Authorization?: string
-     * }
+     * @psalm-return array{Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', Authorization?: string}
      */
     private function getHeaders(): array
     {
@@ -552,6 +548,7 @@ class GitHubHandler
 
             // Format branch data for return.
             return array_map(
+                // Map branch data to standardized format.
                 function (array $branch): array {
                     return [
                         'name'      => $branch['name'],
@@ -841,6 +838,7 @@ class GitHubHandler
 
             // Format repository data for return.
             return array_map(
+                // Map repository data to standardized format.
                 function (array $repo): array {
                     return [
                         'id'             => $repo['id'],

@@ -235,6 +235,7 @@ class SolrManagementCommand extends Command
                     $output->writeln('<error>❌ Failed to create tenant collection: '.$e->getMessage().'</error>');
                     return self::FAILURE;
                 }
+
                 $docCount = $this->solrService->getDocumentCount();
                 $output->writeln('   Document count: <comment>'.$docCount.'</comment>');
             }//end if

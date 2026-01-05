@@ -853,7 +853,7 @@ class ObjectEntity extends Entity implements JsonSerializable
             $lockedAt   = new DateTime($this->locked['lockedAt']);
             $duration   = (int) $this->locked['duration'];
             $expiration = clone $lockedAt;
-            $expiration->add(new \DateInterval('PT'.$duration.'S'));
+            $expiration->add(new DateInterval('PT'.$duration.'S'));
             return $now < $expiration;
         }
 

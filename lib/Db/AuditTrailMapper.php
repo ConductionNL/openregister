@@ -107,7 +107,7 @@ class AuditTrailMapper extends QBMapper
      *
      * @return AuditTrail[]
      *
-     * @psalm-return list<AuditTrail>
+     * @psalm-return list<OCA\OpenRegister\Db\AuditTrail>
      */
     public function findAll(
         ?int $limit=null,
@@ -482,7 +482,7 @@ class AuditTrailMapper extends QBMapper
                 $reflection = new ReflectionClass($object);
                 $property   = $reflection->getProperty($field);
 
-                // Note: setAccessible() is no longer needed in PHP 8.1+ for same-class properties
+                // Note: setAccessible() is no longer needed in PHP 8.1+ for same-class properties.
                 $property->setValue($object, $change['old']);
             }
         }

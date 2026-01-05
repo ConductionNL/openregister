@@ -69,7 +69,7 @@ class RevertController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response with reverted object
+     * @return JSONResponse JSON response with reverted object or error
      */
     public function revert(string $register, string $schema, string $id): JSONResponse
     {

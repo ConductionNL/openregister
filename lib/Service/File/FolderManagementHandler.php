@@ -153,6 +153,8 @@ class FolderManagementHandler
      * @throws Exception             If folder creation fails.
      * @throws NotPermittedException If folder creation is not permitted.
      *
+     * @return Node The created or existing register folder node
+     *
      * @phpstan-return Node
      *
      * @psalm-return Node
@@ -204,15 +206,13 @@ class FolderManagementHandler
      * @throws Exception             If folder creation fails.
      * @throws NotPermittedException If folder creation is not permitted.
      *
-     * @phpstan-return Node
-     * @psalm-return   Node
-     * @return         Node The created object folder.
+     * @return Folder The created or existing folder for the object.
      */
     public function createObjectFolderById(
         ObjectEntity|string $objectEntity,
         ?IUser $currentUser=null,
         int|string|null $registerId=null
-    ): Node {
+    ): Folder {
         $folderProperty = null;
         if ($objectEntity instanceof ObjectEntity === true) {
             $folderProperty = $objectEntity->getFolder();

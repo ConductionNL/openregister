@@ -163,8 +163,8 @@ class NamedParametersSniff implements Sniff
             'register', 'registerprotocol', 'validate', 'format', 'getproperty', 'geterrors',
             // GuzzleHttp Psr7 Uri static methods.
             'fromparts',
-            // ReactPHP Promise constructor.
-            'promise',
+            // ReactPHP Promise methods.
+            'promise', 'then', 'catch', 'finally', 'otherwise', 'always',
             // ZipArchive methods.
             'open', 'addfromstring',
             // Doctrine Schema Builder methods (used in migrations).

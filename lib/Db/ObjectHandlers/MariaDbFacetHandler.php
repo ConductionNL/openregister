@@ -59,10 +59,9 @@ class MariaDbFacetHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @return (((int|mixed|string)[]|mixed)[]|string)[] Terms facet data with buckets containing key and results
+     * @return ((int|mixed|string)[][]|string)[]
      *
-     * @psalm-return array{type: 'terms',
-     *     buckets: list{0?: array{key: mixed|string, results: int},...}>
+     * @psalm-return array{type: 'terms', buckets: list<array{key: mixed|non-empty-string, results: int}>}
      */
     public function getTermsFacet(string $field, array $baseQuery=[]): array
     {
@@ -1451,13 +1450,7 @@ class MariaDbFacetHandler
      * @psalm-param string $fieldPath
      * @psalm-param array<string, mixed> $analysis
      *
-     * @return (array|false|mixed|string)[]|null
-     *
-     * @psalm-return array{type: string, description: string,
-     *     sample_values: array, appearance_rate: mixed, is_array: false|mixed,
-     *     facet_types: list{0: 'date_histogram'|'range'|'terms',
-     *     1?: 'range'|'terms'}, cardinality?: 'binary'|'low'|'numeric',
-     *     intervals?: list{'day', 'week', 'month', 'year'}}|null
+     * @return (array|false|mixed|string)[]|null Field configuration or null if not facetable.
      */
     private function determineFieldConfiguration(string $fieldPath, array $analysis): array|null
     {

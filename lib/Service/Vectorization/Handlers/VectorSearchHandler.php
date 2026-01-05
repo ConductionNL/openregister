@@ -190,14 +190,9 @@ class VectorSearchHandler
      * @param int   $limit          Maximum number of results
      * @param array $filters        Additional filters (entity_type, etc.)
      *
-     * @return (array|float|int|mixed|null|string)[][]
+     * @return array Vector search results with entity info, similarity scores, and metadata.
      *
-     * @throws \Exception If search fails or Solr is not configured
-     *
-     * @psalm-return list<array{chunk_index: 0|mixed, chunk_text: mixed|null,
-     *     dimensions: 0|mixed, entity_id: string, entity_type: string,
-     *     metadata: array, model: ''|mixed, similarity: float(0)|mixed,
-     *     total_chunks: 1|mixed, vector_id: mixed}>
+     * @throws \Exception If search fails or Solr is not configured.
      */
     private function searchVectorsInSolr(
         array $queryEmbedding,
@@ -221,8 +216,7 @@ class VectorSearchHandler
 
             $settings = $this->settingsService->getSettings();
 
-            // Get vector field from LLM configuration, default to '_embedding_'.
-            /** @var array{llm?: array{vectorConfig?: array{solrField?: string}}} $settings */
+            // Get vector field from LLM configuration, default to '_embedding_' field.
             $vectorField = $settings['llm']['vectorConfig']['solrField'] ?? '_embedding_';
             $allResults  = [];
 

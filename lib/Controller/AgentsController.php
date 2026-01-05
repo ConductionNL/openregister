@@ -300,9 +300,7 @@ class AgentsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse |JSONResponse<400, array{error: string}, array<never, never>>
-     *
-     * @psalm-return JSONResponse<201, Agent, array<never, never>>|JSONResponse<400, array{error: string}, array<never, never>>
+     * @return JSONResponse JSON response with created agent
      */
     public function create(): JSONResponse
     {
@@ -384,9 +382,7 @@ class AgentsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse |JSONResponse<400|403, array{error: string}, array<never, never>>
-     *
-     * @psalm-return JSONResponse<200, Agent, array<never, never>>|JSONResponse<400|403, array{error: string}, array<never, never>>
+     * @return JSONResponse JSON response with updated agent
      */
     public function update(int $id): JSONResponse
     {

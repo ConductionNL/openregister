@@ -593,7 +593,7 @@ class MetricsService
         // Sum all vector counts from growth data.
         // Note: $growthData is [date => count], where dayData is the count int value.
         foreach ($growthData as $dayData) {
-            // dayData is already an int representing the count.
+            // DayData is already an int representing the count.
             $totalVectors += (int) $dayData;
         }
 

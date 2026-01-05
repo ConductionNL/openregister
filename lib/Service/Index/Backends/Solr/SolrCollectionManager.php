@@ -195,7 +195,7 @@ class SolrCollectionManager
      *
      * @param string|null $collectionName Collection name (null = active collection)
      *
-     * @return (bool|string)[] Result with success status
+     * @return (bool|string)[]
      *
      * @psalm-return array{success: bool, message: string, exception?: string, collection?: string}
      */

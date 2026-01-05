@@ -80,22 +80,7 @@ class BulkOperationsHandler
      * @phpstan-param Register|null $currentRegister
      * @phpstan-param Schema|null $currentSchema
      *
-     * @return array[]
-     *
-     * @psalm-return   array{saved: array, updated: array,
-     *     unchanged: array<never, never>, invalid: array, errors: array,
-     *     statistics: array{totalProcessed: int<0, max>, saved: 0|mixed,
-     *     updated: 0|mixed, unchanged: 0, invalid: 0|1|2|mixed,
-     *     errors: 0|1|2|mixed, processingTimeMs: 0,
-     *     objectsCreated?: mixed, objectsUpdated?: mixed},
-     *     chunkStatistics?: list{0?: array{chunkIndex: int<0, max>,
-     *     count: int<0, max>, saved: 0|mixed, updated: 0|mixed,
-     *     invalid: 0|mixed},...},
-     *     performance?: array{totalTime: float, totalTimeMs: float,
-     *     objectsPerSecond: float, totalProcessed: int<0, max>,
-     *     totalRequested: int<0, max>, efficiency: 0|float,
-     *     deduplicationEfficiency?: string}>
-     * @phpstan-return array<string, mixed>
+     * @return array Bulk save results with performance, statistics, and categorized objects.
      */
     public function saveObjects(
         array $objects,

@@ -183,9 +183,11 @@ class UploadService
      *
      * @param string $url URL to fetch data from.
      *
-     * @return array<string, mixed>|JSONResponse Processed data or error response.
+     * @return (mixed|string)[]|JSONResponse
+     *
+     * @psalm-return JSONResponse<int, \JsonSerializable|array|null|scalar|stdClass, array<string, mixed>>|array{source: string,...}
      */
-    private function processUrlUpload(string $url): array | JSONResponse
+    private function processUrlUpload(string $url): array|JSONResponse
     {
         $result = $this->getJSONfromURL($url);
 

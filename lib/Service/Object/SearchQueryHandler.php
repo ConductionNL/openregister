@@ -72,7 +72,9 @@ class SearchQueryHandler
      * @param int|string|array|null $schema        Optional schema ID(s) to filter by.
      * @param array|null            $ids           Optional array of object IDs to filter by.
      *
-     * @return array<string, mixed> Structured query array
+     * @return ((int[]|mixed)[]|mixed)[]
+     *
+     * @psalm-return array{'@self': array<string, array<int>|int|mixed>|mixed, _ids?: array|mixed,...}
      */
     public function buildSearchQuery(
         array $requestParams,

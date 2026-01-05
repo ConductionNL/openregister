@@ -208,13 +208,11 @@ class SettingsController extends Controller
     /**
      * Retrieve the current settings.
      *
-     * @return JSONResponse JSON response containing the current settings.
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|500, array, array<never, never>>
+     * @return JSONResponse JSON response with settings data
      */
     public function index(): JSONResponse
     {
@@ -229,13 +227,11 @@ class SettingsController extends Controller
     /**
      * Handle the PUT request to update settings.
      *
-     * @return JSONResponse JSON response containing the updated settings.
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|500, array, array<never, never>>
+     * @return JSONResponse JSON response with updated settings
      */
     public function update(): JSONResponse
     {
@@ -251,11 +247,9 @@ class SettingsController extends Controller
     /**
      * Load the settings from the publication_register.json file.
      *
-     * @return JSONResponse JSON response containing the settings.
-     *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|500, array, array<never, never>>
+     * @return JSONResponse JSON response with loaded settings
      */
     public function load(): JSONResponse
     {
@@ -270,11 +264,9 @@ class SettingsController extends Controller
     /**
      * Update the publishing options.
      *
-     * @return JSONResponse JSON response containing the updated publishing options.
-     *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|500, array, array<never, never>>
+     * @return JSONResponse JSON response with updated publishing options
      */
     public function updatePublishingOptions(): JSONResponse
     {
@@ -293,13 +285,11 @@ class SettingsController extends Controller
      * This method recalculates deletion times for all objects and logs based on current retention settings.
      * It also assigns default owners and organizations to objects that don't have them assigned.
      *
-     * @return JSONResponse JSON response containing the rebase operation result.
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|500, array, array<never, never>>
+     * @return JSONResponse JSON response with rebase result
      */
     public function rebase(): JSONResponse
     {
@@ -317,13 +307,11 @@ class SettingsController extends Controller
      * This method provides warning counts for objects and logs that need attention,
      * as well as total counts for all objects, audit trails, and search trails.
      *
-     * @return JSONResponse JSON response containing statistics data.
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|422, array, array<never, never>>
+     * @return JSONResponse JSON response with statistics
      */
     public function stats(): JSONResponse
     {
@@ -341,13 +329,11 @@ class SettingsController extends Controller
      * This method provides warning counts for objects and logs that need attention,
      * as well as total counts for all objects, audit trails, and search trails.
      *
-     * @return JSONResponse JSON response containing statistics data.
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|422, array, array<never, never>>
+     * @return JSONResponse JSON response with statistics
      */
     public function getStatistics(): JSONResponse
     {
@@ -531,12 +517,7 @@ class SettingsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse Updated backend configuration
-     *
-     * @psalm-return JSONResponse<200|400|500,
-     *     array{error?: mixed|string,
-     *     message?: 'Backend updated successfully. Please reload the application.',
-     *     reload_required?: true,...}, array<never, never>>
+     * @return JSONResponse JSON response with updated backend config
      */
     public function updateSearchBackend(): JSONResponse
     {
@@ -577,13 +558,7 @@ class SettingsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response with database information
-     *
-     * @psalm-return JSONResponse<200|500,
-     *     array{success: bool, error?: string,
-     *     database?: array{type: string, version: string, platform: string,
-     *     vectorSupport: bool, recommendedPlugin: null|string,
-     *     performanceNote: null|string}}, array<never, never>>
+     * @return JSONResponse JSON response with database info
      */
     public function getDatabaseInfo(): JSONResponse
     {
@@ -711,9 +686,7 @@ class SettingsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse Version information
-     *
-     * @psalm-return JSONResponse<200|500, array, array<never, never>>
+     * @return JSONResponse JSON response with version info
      */
     public function getVersionInfo(): JSONResponse
     {
@@ -901,7 +874,7 @@ class SettingsController extends Controller
 
             // Test 5: Direct database query to check type field.
             $connection = $this->container->get(\OCP\IDBConnection::class);
-            $qb = $connection->getQueryBuilder();
+            $qb         = $connection->getQueryBuilder();
             $qb->select('o.id', 'o.name', 'o.object')
                 ->from('openregister_objects', 'o')
                 ->where($qb->expr()->like('o.name', $qb->createNamedParameter('%Samenwerking%')))
@@ -1009,14 +982,11 @@ class SettingsController extends Controller
      * @param array       $weights     Search type weights ['solr' => 0.5, 'vector' => 0.5]
      * @param string|null $provider    Embedding provider override
      *
-     * @return JSONResponse Combined search results
-     *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400|500,
-     *     array{success: bool|mixed, error?: mixed|string, trace?: mixed|string,
-     *     query?: mixed|string, timestamp?: string,...}, array<never, never>>
+     * @return JSONResponse JSON response with hybrid search results
      */
     public function hybridSearch(
         string $query,

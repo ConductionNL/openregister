@@ -106,17 +106,17 @@ class TextExtractionService
     /**
      * Constructor
      *
-     * @param FileMapper               $fileMapper               Mapper for Nextcloud files
-     * @param ChunkMapper              $chunkMapper              Mapper for chunks
-     * @param IRootFolder              $rootFolder               Nextcloud root folder
-     * @param IDBConnection            $db                       Database connection
-     * @param LoggerInterface          $logger                   Logger
-     * @param ObjectEntityMapper       $objectEntityMapper       Mapper for object entities
-     * @param SchemaMapper             $schemaMapper             Mapper for schemas
-     * @param RegisterMapper           $registerMapper           Mapper for registers
-     * @param EntityRecognitionHandler $entityRecognitionHandler Handler for entity recognition
-     * @param GdprEntityMapper         $entityMapper             Mapper for GDPR entities
-     * @param EntityRelationMapper     $entityRelationMapper     Mapper for entity relations
+     * @param FileMapper               $fileMapper           Mapper for Nextcloud files
+     * @param ChunkMapper              $chunkMapper          Mapper for chunks
+     * @param IRootFolder              $rootFolder           Nextcloud root folder
+     * @param IDBConnection            $db                   Database connection
+     * @param LoggerInterface          $logger               Logger
+     * @param ObjectEntityMapper       $objectEntityMapper   Mapper for object entities
+     * @param SchemaMapper             $schemaMapper         Mapper for schemas
+     * @param RegisterMapper           $registerMapper       Mapper for registers
+     * @param EntityRecognitionHandler $entityHandler        Handler for entity recognition
+     * @param GdprEntityMapper         $entityMapper         Mapper for GDPR entities
+     * @param EntityRelationMapper     $entityRelationMapper Mapper for entity relations
      */
     public function __construct(
         private readonly FileMapper $fileMapper,
@@ -127,7 +127,7 @@ class TextExtractionService
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly RegisterMapper $registerMapper,
-        private readonly EntityRecognitionHandler $entityRecognitionHandler,
+        private readonly EntityRecognitionHandler $entityHandler,
         private readonly GdprEntityMapper $entityMapper,
         private readonly EntityRelationMapper $entityRelationMapper
     ) {
@@ -197,7 +197,7 @@ class TextExtractionService
 
         // Extract entities from chunks.
         try {
-            $entityResult = $this->entityRecognitionHandler->processSourceChunks(
+            $entityResult = $this->entityHandler->processSourceChunks(
                 sourceType: 'file',
                 sourceId: $fileId,
                 options: [
@@ -333,7 +333,7 @@ class TextExtractionService
 
         // Extract entities from chunks.
         try {
-            $entityResult = $this->entityRecognitionHandler->processSourceChunks(
+            $entityResult = $this->entityHandler->processSourceChunks(
                 sourceType: 'object',
                 sourceId: $objectId,
                 options: [
@@ -474,10 +474,7 @@ class TextExtractionService
      *
      * @return (float|null|string)[]
      *
-     * @psalm-return array{
-     *     language: 'en'|'nl'|null, language_level: null, language_confidence: float|null,
-     *     detection_method: 'heuristic'|'none'
-     * }
+     * @psalm-return array{language: 'en'|'nl'|null, language_level: null, language_confidence: float|null, detection_method: 'heuristic'|'none'}
      */
     private function detectLanguageSignals(string $text): array
     {
@@ -1483,7 +1480,9 @@ class TextExtractionService
      * @param string $text    The text to chunk
      * @param array  $options Chunking options (chunk_size, chunk_overlap, strategy)
      *
-     * @return array Array of text chunks
+     * @return (int|mixed|string)[][] Array of text chunks
+     *
+     * @psalm-return array<int<0, max>, array{text: mixed|string, start_offset: int|mixed, end_offset: int|mixed}>
      */
     public function chunkDocument(string $text, array $options=[]): array
     {

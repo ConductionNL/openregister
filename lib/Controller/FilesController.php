@@ -103,16 +103,11 @@ class FilesController extends Controller
      * @param string $schema   The schema slug or identifier
      * @param string $id       The ID of the object to retrieve files for
      *
-     * @return JSONResponse
+     * @return JSONResponse JSON response with files list
      *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
-     *
-     * @psalm-return JSONResponse<200|404|500,
-     *     array{error?: string, results?: array<int, array<string, mixed>>,
-     *     total?: int, page?: int, pages?: int, limit?: int, offset?: int},
-     *     array<never, never>>
      */
     public function index(
         string $register,
@@ -285,7 +280,9 @@ class FilesController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400|404, array{error?: mixed|string, labels?: list<string>,...}, array<never, never>>
+     * @psalm-return JSONResponse<200|400|404,
+     *     array{error?: mixed|string, labels?: list<string>,...},
+     *     array<never, never>>
      */
     public function save(
         string $register,
@@ -381,7 +378,7 @@ class FilesController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400|404, array<'error'|int, array<string, mixed>|string>, array<never, never>>
+     * @psalm-return JSONResponse<200|400|404, array{error?: string, 0?: array<string, mixed>,...}, array<never, never>>
      */
     public function createMultipart(
         string $register,
@@ -620,9 +617,11 @@ class FilesController extends Controller
      * @param ObjectEntity $object        Object entity to attach files to
      * @param array        $uploadedFiles Normalized uploaded files array
      *
-     * @return array<int, mixed> Array of created file entities
+     * @return \OCP\Files\File[]
      *
      * @throws Exception If file validation or processing fails
+     *
+     * @psalm-return list<OCP\Files\File>
      */
     private function processUploadedFiles(ObjectEntity $object, array $uploadedFiles): array
     {
@@ -750,7 +749,9 @@ class FilesController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400|404, array{error?: string, success?: bool}, array<never, never>>
+     * @psalm-return JSONResponse<200|400|404,
+     *     array{error?: string, success?: bool},
+     *     array<never, never>>
      */
     public function delete(
         string $register,
@@ -795,7 +796,9 @@ class FilesController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400|404, array{error?: mixed|string, labels?: list<string>,...}, array<never, never>>
+     * @psalm-return JSONResponse<200|400|404,
+     *     array{error?: mixed|string, labels?: list<string>,...},
+     *     array<never, never>>
      */
     public function publish(
         string $register,
@@ -845,7 +848,9 @@ class FilesController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400|404, array{error?: mixed|string, labels?: list<string>,...}, array<never, never>>
+     * @psalm-return JSONResponse<200|400|404,
+     *     array{error?: mixed|string, labels?: list<string>,...},
+     *     array<never, never>>
      */
     public function depublish(
         string $register,

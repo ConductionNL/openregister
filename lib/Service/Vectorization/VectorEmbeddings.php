@@ -210,11 +210,7 @@ class VectorEmbeddings
      * @param array  $config   Provider-specific configuration
      * @param string $testText Optional test text to embed
      *
-     * @return ((float[]|int|mixed|string)[]|bool|string)[]
-     *
-     * @psalm-return array{success: bool, error?: string, message: string,
-     *     data?: array{provider: string, model: 'unknown'|mixed,
-     *     vectorLength: int<0, max>, sampleValues: array<float>, testText: string}>
+     * @return array
      */
     public function testEmbedding(string $provider, array $config, string $testText='Test.'): array
     {
@@ -446,19 +442,9 @@ class VectorEmbeddings
      * @param array       $weights     Weights for each search type ['solr' => 0.5, 'vector' => 0.5]
      * @param string|null $provider    Embedding provider
      *
-     * @return (((array|bool|float|int|mixed|null)[]|float|int)[]|float|int)[] Hybrid search results
+     * @return array
      *
      * @throws \Exception If hybrid search fails
-     *
-     * @psalm-return array{results: list<array{chunk_index: 0|mixed,
-     *     chunk_text: mixed|null, combined_score: 0|float, entity_id: mixed,
-     *     entity_type: mixed, in_solr: bool, in_vector: bool,
-     *     metadata: array<never, never>|mixed, solr_rank: float|int|null,
-     *     solr_score: mixed|null, vector_rank: float|int|null,
-     *     vector_similarity: mixed|null}>, total: int<0, max>,
-     *     search_time_ms: float, source_breakdown: array{vector_only: int<0, max>,
-     *     solr_only: int<0, max>, both: int<0, max>},
-     *     weights: array{solr: float, vector: float}>
      */
     public function hybridSearch(
         string $query,
@@ -513,12 +499,7 @@ class VectorEmbeddings
     /**
      * Check if embedding model has changed since vectors were created
      *
-     * @return (array|bool|int|mixed|string)[]
-     *
-     * @psalm-return array{has_vectors: bool, mismatch: bool, error?: string,
-     *     message?: string, current_model?: mixed, existing_models?: list<mixed>,
-     *     total_vectors?: int, null_model_count?: int,
-     *     mismatched_models?: list<mixed>}
+     * @return array
      */
     public function checkEmbeddingModelMismatch(): array
     {

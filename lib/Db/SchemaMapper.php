@@ -363,7 +363,7 @@ class SchemaMapper extends QBMapper
      *
      * @throws \Exception If user doesn't have read permission
      *
-     * @psalm-return     list<Schema>
+     * @psalm-return     list<OCA\OpenRegister\Db\Schema>
      * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      */
     public function findAll(

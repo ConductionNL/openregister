@@ -262,10 +262,7 @@ class ApplicationsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return       JSONResponse The created application or an error
-     * @psalm-return JSONResponse<201, \OCA\OpenRegister\Db\Application,
-     *     array<never, never>>|JSONResponse<400, array{error: string},
-     *     array<never, never>>
+     * @return JSONResponse JSON response with created application
      */
     public function create(): JSONResponse
     {
@@ -312,10 +309,7 @@ class ApplicationsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return       JSONResponse The updated application or an error
-     * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Application,
-     *     array<never, never>>|JSONResponse<400, array{error: string},
-     *     array<never, never>>
+     * @return JSONResponse JSON response with updated application
      */
     public function update(int $id): JSONResponse
     {

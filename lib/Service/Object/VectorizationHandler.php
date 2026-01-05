@@ -67,15 +67,9 @@ class VectorizationHandler
      * @param array|null $views     Optional view filters
      * @param int        $batchSize Number of objects to process per batch
      *
-     * @return (((int|string)[]|mixed)[]|int|mixed|string|true)[] Vectorization results
+     * @return array Vectorization result with success, stats, and optional errors.
      *
-     * @throws \Exception If vectorization fails
-     *
-     * @psalm-return array{success: true, message: string, entity_type: string,
-     *     total_entities: int<0, max>, total_items: int<0, max>,
-     *     vectorized: int<0, max>, failed: int<0, max>,
-     *     errors?: list{0?: array{entity_id: int|string, error: string,
-     *     item_index?: array-key},...}, processed?: mixed}
+     * @throws \Exception If vectorization fails.
      */
     public function vectorizeBatch(?array $views=null, int $batchSize=25): array
     {

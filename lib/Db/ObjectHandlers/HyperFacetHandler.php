@@ -277,7 +277,7 @@ class HyperFacetHandler
 
             case 'hyperloglog_estimation':
             default:
-                // Use HyperLogLog estimation for large datasets or as default fallback
+                // Use HyperLogLog estimation for large datasets or as default fallback.
                 $results = $this->calculateApproximateFacetsHyperLogLog(
                     facetConfig: $facetConfig,
                         baseQuery: $baseQuery,
@@ -477,11 +477,7 @@ class HyperFacetHandler
             );
         }
 
-        /*
-         * Execute all facet calculations in parallel.
-         * Suppress undefined function check - React\Async\await is from external library
-         */
-        /** @psalm-suppress UndefinedFunction - React\Async\await is from external library */
+        // Execute all facet calculations in parallel. @psalm-suppress UndefinedFunction.
         $results = \React\Async\await(\React\Promise\all($promises));
 
         // Combine results from different facet types.
@@ -686,12 +682,7 @@ class HyperFacetHandler
                         ]
                     );
 
-                    /*
-                     * Type annotation for resolve callback
-                         *
-                         * @var callable(mixed): void $resolve
-                     */
-                    /** @psalm-suppress InvalidArgument - Promise expects mixed */
+                    // @psalm-suppress InvalidArgument - Promise resolve accepts mixed.
                     $resolve($results);
                 } catch (\Throwable $e) {
                     $reject($e);
@@ -1178,20 +1169,15 @@ class HyperFacetHandler
      *
      * @return Promise
      *
-     * @psalm-return     Promise<array>
-     * @SuppressWarnings (PHPMD.UnusedFormalParameter)
+     * @psalm-return Promise<array>
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) Parameters reserved for future use.
      */
     private function processJsonFacetsParallel(array $_jsonFacets, array $_baseQuery): Promise
     {
         return new Promise(
             function ($resolve) {
-                /*
-                 * Simplified for now.
-                 * Type annotation for resolve callback
-                     *
-                     * @var callable(mixed): void $resolve
-                 */
-                /** @psalm-suppress InvalidArgument - Promise expects mixed */
+                // @psalm-suppress InvalidArgument - Promise resolve accepts mixed.
                 $resolve([]);
             }
         );

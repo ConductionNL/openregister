@@ -329,20 +329,7 @@ class ImportService
      * @param bool          $publish       Whether to publish objects immediately (default: false).
      * @param IUser|null    $currentUser   Current user for RBAC checks (default: null).
      *
-     * @return ((int|null|string)[]|mixed)[][]
-     *
-     * @phpstan-return array<string, array{
-     *     created: array<mixed>,
-     *     updated: array<mixed>,
-     *     unchanged: array<mixed>,
-     *     errors: array<mixed>,
-     *     found?: int,
-     *     schema?: array{id: int, slug: null|string, title: null|string},
-     *     deduplication_efficiency?: string,
-     *     performance?: array
-     * }>
-     *
-     * @psalm-return array<string, array{schema: array{id: int, title: null|string, slug: null|string},...}>
+     * @return array Import results by schema
      */
     public function importFromCsv(
         string $filePath,
@@ -548,25 +535,7 @@ class ImportService
      * @param bool          $publish       Whether to publish objects after import
      * @param IUser|null    $currentUser   The current user performing the import
      *
-     * @return (((array|int|mixed|string)[]|mixed|null)[]|int|string)[]
-     *
-     * @phpstan-return array{
-     *     found: int,
-     *     created: array<mixed>,
-     *     updated: array<mixed>,
-     *     unchanged: array<mixed>,
-     *     errors: array<mixed>,
-     *     deduplication_efficiency?: string
-     * }
-     *
-     * @psalm-return array{found: int<0, max>, created: array<never, mixed|null>,
-     *     updated: array<never, mixed|null>,
-     *     unchanged: array<never, mixed|null>,
-     *     errors: list<array{error: 'No data rows found in sheet'|
-     *     'No valid headers found in sheet'|'Validation failed'|mixed,
-     *     object: array<never, never>|mixed, row?: 1, sheet: string,
-     *     type?: 'ValidationException'|mixed}>,
-     *     deduplication_efficiency?: string}
+     * @return array Batch processing results
      */
     private function processSpreadsheetBatch(
         Spreadsheet $spreadsheet,
@@ -727,36 +696,7 @@ class ImportService
      * @param bool                                          $publish       Whether to publish objects after import
      * @param IUser|null                                    $currentUser   The current user performing the import
      *
-     * @return (((array|int|mixed|string)[]|float|int|mixed|null)[]|int|string)[]
-     *
-     * @phpstan-return array{
-     *     found: int,
-     *     created: array<mixed>,
-     *     updated: array<mixed>,
-     *     unchanged: array<mixed>,
-     *     errors: array<mixed>,
-     *     performance?: array{
-     *         efficiency: float,
-     *         objectsPerSecond: float,
-     *         totalFound: int,
-     *         totalProcessed: int,
-     *         totalTime: float,
-     *         totalTimeMs: float
-     *     },
-     *     deduplication_efficiency?: string
-     * }
-     *
-     * @psalm-return array{found: int<0, max>, created: array<never, mixed|null>,
-     *     updated: array<never, mixed|null>,
-     *     unchanged: array<never, mixed|null>,
-     *     errors: list<array{error: 'No data rows found in CSV file'|
-     *     'No valid headers found in CSV file'|'Validation failed'|mixed,
-     *     object: array<never, never>|mixed, row?: 1,
-     *     type?: 'ValidationException'|mixed}>,
-     *     deduplication_efficiency?: string,
-     *     performance?: array{totalTime: float, totalTimeMs: float,
-     *     objectsPerSecond: float, totalProcessed: int<0, max>,
-     *     totalFound: int<0, max>, efficiency: 0|float}>
+     * @return array CSV sheet processing results
      */
     private function processCsvSheet(
         \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet,
@@ -1334,8 +1274,11 @@ class ImportService
             $promises = [];
 
             foreach ($processedRows as $index => $rowData) {
+                /*
+                 * @psalm-suppress InvalidArgument - Promise resolve accepts mixed
+                 */
+
                 $promises[] = new Promise(
-                    /** @psalm-suppress InvalidArgument - Promise resolve accepts mixed */
                     function (callable $resolve, callable $_reject) use (
                         $rowData,
                         $index,
@@ -1363,7 +1306,10 @@ class ImportService
             for ($i = 0; $i < $promiseCount; $i += $batchSize) {
                 $batch = array_slice($promises, $i, $batchSize);
 
-                /** @psalm-suppress UndefinedFunction - React\Async\await is from external library */
+                /*
+                 * @psalm-suppress UndefinedFunction - React\Async\await is from external library
+                 */
+
                 $results = \React\Async\await(\React\Promise\all($batch));
 
                 foreach ($results as $result) {

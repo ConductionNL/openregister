@@ -81,7 +81,9 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      *
      * @param array $options Options: views, batch_size
      *
-     * @return array Array of entities (ObjectEntity instances or arrays)
+     * @return \OCA\OpenRegister\Db\ObjectEntity[]
+     *
+     * @psalm-return list<\OCA\OpenRegister\Db\ObjectEntity>
      */
     public function fetchEntities(array $options): array
     {
@@ -109,8 +111,7 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
             views: $views
         );
 
-        // SearchObjects can return array|int, but we need array for vectorization.
-        /** @var array $objects */
+        // SearchObjects can return array|int, but we need array for vectorization (@var array $objects).
         $objects = [];
         if (is_array($result) === true) {
             $objects = $result;

@@ -141,16 +141,15 @@ class DocumentProcessingHandler
      * @param Node  $node     The file node to anonymize.
      * @param array $entities Array of detected entities with 'text', 'entityType', and 'key' fields.
      *
-     * @return Node The anonymized file node.
-     *
      * @throws Exception If anonymization fails.
      *
-     * @phpstan-param  array<int, array{text?: string, entityType?: string, key?: string}> $entities
-     * @psalm-param    array<int, array{text?: string, entityType?: string, key?: string}> $entities
-     * @phpstan-return Node
-     * @psalm-return   Node
+     * @phpstan-param array<int, array{text?: string, entityType?: string, key?: string}> $entities
+     *
+     * @psalm-param array<int, array{text?: string, entityType?: string, key?: string}> $entities
+     *
+     * @return File The anonymized document file.
      */
-    public function anonymizeDocument(Node $node, array $entities): Node
+    public function anonymizeDocument(Node $node, array $entities): File
     {
         // Build replacements array from entities.
         $replacements = [];
@@ -202,9 +201,7 @@ class DocumentProcessingHandler
         array $replacements,
         string $outputName
     ): File {
-        // Get the file content as a stream and save to a temp file.
-        // Cast to File since we verified it's a file type at method entry.
-        /** @var File $fileNode */
+        // Get the file content as a stream and save to a temp file (@var File $fileNode).
         $fileNode = $node;
         $stream   = $fileNode->fopen('r');
         $tempFile = tempnam(sys_get_temp_dir(), 'openregister_word_');
@@ -349,11 +346,9 @@ class DocumentProcessingHandler
         array $replacements,
         string $outputName
     ): File {
-        // Get file content.
-        // Cast to File since we verified it's a file type at method entry.
-        /** @var File $fileNode */
+        // Get file content (@var File $fileNode).
         $fileNode = $node;
-        $content = $fileNode->getContent();
+        $content  = $fileNode->getContent();
         if ($content === false) {
             throw new Exception('Failed to get content from file: '.$node->getPath());
         }

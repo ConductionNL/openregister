@@ -209,9 +209,10 @@ class ResponseGenerationHandler
                     }
 
                     if (empty($openaiConfig['organizationId']) === false) {
-                        /**
-                         * @psalm-suppress UndefinedPropertyAssignment LLPhant\OpenAIConfig has dynamic properties
+                        /*
+                         * @psalm-suppress UndefinedPropertyAssignment LLPhant dynamic properties
                          */
+
                         $config->organizationId = $openaiConfig['organizationId'];
                     }
                 } else if ($chatProvider === 'fireworks') {
@@ -243,9 +244,10 @@ class ResponseGenerationHandler
 
                 // Set temperature from agent or default (OpenAI/Fireworks).
                 if ($agent?->getTemperature() !== null) {
-                    /**
-                     * @psalm-suppress UndefinedPropertyAssignment LLPhant\OpenAIConfig has dynamic properties
+                    /*
+                     * @psalm-suppress UndefinedPropertyAssignment LLPhant dynamic properties
                      */
+
                     $config->temperature = $agent->getTemperature();
                 }
             }//end if
@@ -277,7 +279,8 @@ class ResponseGenerationHandler
             if ($chatProvider === 'fireworks') {
                 /*
                  * For Fireworks, use direct HTTP to avoid OpenAI library error handling bugs.
-                 * @psalm-suppress UndefinedPropertyFetch - LLPhant\OllamaConfig has dynamic properties
+                 *
+                 * @psalm-suppress UndefinedPropertyFetch LLPhant config has dynamic properties
                  */
 
                 $response = $this->callFireworksChatAPIWithHistory(

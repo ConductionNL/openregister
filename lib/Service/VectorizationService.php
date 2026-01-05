@@ -111,15 +111,9 @@ class VectorizationService
      * @param string $entityType Entity type ('object', 'file', etc)
      * @param array  $options    Strategy-specific options
      *
-     * @return ((int|string)[][]|int|string|true)[]
+     * @return array Vectorization result with success, stats, and optional errors.
      *
-     * @throws \Exception If strategy not found or vectorization fails
-     *
-     * @psalm-return array{success: true, message: string, entity_type: string,
-     *     total_entities: int<0, max>, total_items: int<0, max>,
-     *     vectorized: int<0, max>, failed: int<0, max>,
-     *     errors?: list<array{entity_id: int|string, error: string,
-     *     item_index?: array-key}>}
+     * @throws \Exception If strategy not found or vectorization fails.
      */
     public function vectorizeBatch(string $entityType, array $options=[]): array
     {
@@ -455,9 +449,9 @@ class VectorizationService
      * @param array       $weights     Weights for each search type ['solr' => 0.5, 'vector' => 0.5]
      * @param string|null $provider    Embedding provider
      *
-     * @return array Hybrid search results
+     * @return array Hybrid search results with combined scores and source breakdown.
      *
-     * @throws \Exception If hybrid search fails
+     * @throws \Exception If hybrid search fails.
      */
     public function hybridSearch(
         string $query,
@@ -480,7 +474,7 @@ class VectorizationService
      *
      * Delegates to VectorEmbeddings.
      *
-     * @return array Statistics about stored vectors
+     * @return array Vector statistics with totals and breakdowns by type and model.
      */
     public function getVectorStats(): array
     {

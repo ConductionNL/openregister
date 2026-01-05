@@ -205,7 +205,51 @@ class RegistersController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200, array{results: array<array{id: int, uuid: null|string, slug: null|string, title: null|string, version: null|string, description: null|string, schemas: array<int|string>, source: null|string, tablePrefix: null|string, folder: null|string, updated: null|string, created: null|string, owner: null|string, application: null|string, organisation: null|string, authorization: array|null, groups: array<string, list<string>>, configuration: array|null, quota: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: 0, groups: int<0, max>}, deleted: null|string, published: null|string, depublished: null|string}>}, array<never, never>>
+     * @return JSONResponse The JSON response containing the list of registers
+     *
+     * @psalm-return JSONResponse<
+     *     200,
+     *     array{
+     *         results: array<array{
+     *             id: int,
+     *             uuid: null|string,
+     *             slug: null|string,
+     *             title: null|string,
+     *             version: null|string,
+     *             description: null|string,
+     *             schemas: array<int|string>,
+     *             source: null|string,
+     *             tablePrefix: null|string,
+     *             folder: null|string,
+     *             updated: null|string,
+     *             created: null|string,
+     *             owner: null|string,
+     *             application: null|string,
+     *             organisation: null|string,
+     *             authorization: array|null,
+     *             groups: array<string, list<string>>,
+     *             configuration: array|null,
+     *             quota: array{
+     *                 storage: null,
+     *                 bandwidth: null,
+     *                 requests: null,
+     *                 users: null,
+     *                 groups: null
+     *             },
+     *             usage: array{
+     *                 storage: 0,
+     *                 bandwidth: 0,
+     *                 requests: 0,
+     *                 users: 0,
+     *                 groups: int<0, max>
+     *             },
+     *             deleted: null|string,
+     *             published: null|string,
+     *             depublished: null|string
+     *         }>
+     *     },
+     *     array<never, never>
+     * >
      */
     public function index(): JSONResponse
     {
@@ -294,41 +338,11 @@ class RegistersController extends Controller
      *
      * @param int|string $id The ID of the register
      *
-     * @return JSONResponse
+     * @return JSONResponse JSON response with register details
      *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
-     *
-     * @psalm-return JSONResponse<
-     *     200,
-     *     array{
-     *         id: int,
-     *         uuid: null|string,
-     *         slug: null|string,
-     *         title: null|string,
-     *         version: null|string,
-     *         description: null|string,
-     *         schemas: array<int|string>,
-     *         source: null|string,
-     *         tablePrefix: null|string,
-     *         folder: null|string,
-     *         updated: null|string,
-     *         created: null|string,
-     *         owner: null|string,
-     *         application: null|string,
-     *         organisation: null|string,
-     *         authorization: array|null,
-     *         groups: array<string, list<string>>,
-     *         quota: array{storage: null, bandwidth: null, requests: null, users: null, groups: null},
-     *         usage: array{storage: 0, bandwidth: 0, requests: 0, users: 0, groups: int<0, max>},
-     *         deleted: null|string,
-     *         published: null|string,
-     *         depublished: null|string,
-     *         stats?: array{objects: array<string, int>, logs: array, files: array{total: 0, size: 0}}
-     *     },
-     *     array<never, never>
-     * >
      */
     public function show($id): JSONResponse
     {
@@ -360,7 +374,11 @@ class RegistersController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response with created register
+     * @return JSONResponse JSON response with created register or error
+     *
+     * @psalm-return JSONResponse<201, Register,
+     *     array<never, never>>|JSONResponse<int, array{error: string},
+     *     array<never, never>>
      */
     public function create(): JSONResponse
     {
@@ -412,7 +430,11 @@ class RegistersController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response with updated register
+     * @return JSONResponse JSON response with updated register or error
+     *
+     * @psalm-return JSONResponse<200, Register,
+     *     array<never, never>>|JSONResponse<int, array{error: string},
+     *     array<never, never>>
      */
     public function update(int $id): JSONResponse
     {
@@ -463,13 +485,15 @@ class RegistersController extends Controller
      *
      * @param int $id The ID of the register to patch
      *
-     * @return JSONResponse The updated register data
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response with patched register
+     * @return JSONResponse JSON response with patched register or error
+     *
+     * @psalm-return JSONResponse<200, Register,
+     *     array<never, never>>|JSONResponse<int, array{error: string},
+     *     array<never, never>>
      */
     public function patch(int $id): JSONResponse
     {
@@ -491,7 +515,10 @@ class RegistersController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response confirming deletion or error
+     * @return JSONResponse JSON response on success or error
+     *
+     * @psalm-return JSONResponse<int, array{error?: string},
+     *     array<never, never>>
      */
     public function destroy(int $id): JSONResponse
     {
@@ -525,23 +552,7 @@ class RegistersController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response with register schemas
-     *
-     * @psalm-return JSONResponse<200|404|500,
-     *     array{error?: string,
-     *     results?: list<array{allOf: array|null, anyOf: array|null,
-     *     application: null|string, archive: array|null,
-     *     authorization: array|null, configuration: array|null|string,
-     *     created: null|string, deleted: null|string,
-     *     depublished: null|string, description: null|string,
-     *     groups: array<string, list<string>>|null, hardValidation: bool,
-     *     icon: null|string, id: int, immutable: bool, maxDepth: int,
-     *     oneOf: array|null, organisation: null|string, owner: null|string,
-     *     properties: array, published: null|string, required: array,
-     *     searchable: bool, slug: null|string, source: null|string,
-     *     summary: null|string, title: null|string, updated: null|string,
-     *     uri: null|string, uuid: null|string, version: null|string}>,
-     *     total?: int<0, max>}, array<never, never>>
+     * @return JSONResponse JSON response with schemas or error
      */
     public function schemas(int|string $id): JSONResponse
     {
@@ -583,7 +594,7 @@ class RegistersController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response with objects list
+     * @return JSONResponse JSON response with objects
      */
     public function objects(int $register, int $schema): JSONResponse
     {
@@ -612,12 +623,6 @@ class RegistersController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
-     *
-     * @psalm-return DataDownloadResponse<200,
-     *     'application/json'|
-     *     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'|
-     *     'text/csv', array<never, never>>|JSONResponse<400,
-     *     array{error: string}, array<never, never>>
      */
     public function export(int $id): JSONResponse|DataDownloadResponse
     {
@@ -701,7 +706,7 @@ class RegistersController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response with GitHub publish results
+     * @return JSONResponse JSON response with publish result or error
      */
     public function publishToGitHub(int $id): JSONResponse
     {
@@ -842,11 +847,10 @@ class RegistersController extends Controller
      * @param int  $id    The ID of the register to import into
      * @param bool $force Force import even if the same or newer version already exists
      *
-     * @return         JSONResponse The result of the import operation with summary
-     * @phpstan-return JSONResponse
-     * @psalm-return   JSONResponse
+     * @return JSONResponse JSON response with import result or error
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      */
     public function import(int $id, bool $force=false): JSONResponse
@@ -1038,7 +1042,53 @@ class RegistersController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|404|500, array{error?: string, register?: array{id: int, uuid: null|string, slug: null|string, title: null|string, version: null|string, description: null|string, schemas: array<int|string>, source: null|string, tablePrefix: null|string, folder: null|string, updated: null|string, created: null|string, owner: null|string, application: null|string, organisation: null|string, authorization: array|null, groups: array<string, list<string>>, configuration: array|null, quota: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: 0, groups: int<0, max>}, deleted: null|string, published: null|string, depublished: null|string}, message?: 'Stats calculation not yet implemented'}, array<never, never>>
+     * @return JSONResponse The JSON response containing register statistics
+     *
+     * @psalm-return JSONResponse<
+     *     200|404|500,
+     *     array{
+     *         error?: string,
+     *         register?: array{
+     *             id: int,
+     *             uuid: null|string,
+     *             slug: null|string,
+     *             title: null|string,
+     *             version: null|string,
+     *             description: null|string,
+     *             schemas: array<int|string>,
+     *             source: null|string,
+     *             tablePrefix: null|string,
+     *             folder: null|string,
+     *             updated: null|string,
+     *             created: null|string,
+     *             owner: null|string,
+     *             application: null|string,
+     *             organisation: null|string,
+     *             authorization: array|null,
+     *             groups: array<string, list<string>>,
+     *             configuration: array|null,
+     *             quota: array{
+     *                 storage: null,
+     *                 bandwidth: null,
+     *                 requests: null,
+     *                 users: null,
+     *                 groups: null
+     *             },
+     *             usage: array{
+     *                 storage: 0,
+     *                 bandwidth: 0,
+     *                 requests: 0,
+     *                 users: 0,
+     *                 groups: int<0, max>
+     *             },
+     *             deleted: null|string,
+     *             published: null|string,
+     *             depublished: null|string
+     *         },
+     *         message?: 'Stats calculation not yet implemented'
+     *     },
+     *     array<never, never>
+     * >
      */
     public function stats(int $id): JSONResponse
     {
@@ -1110,7 +1160,50 @@ class RegistersController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400|404, array{error?: string, id?: int, uuid?: null|string, slug?: null|string, title?: null|string, version?: null|string, description?: null|string, schemas?: array<int|string>, source?: null|string, tablePrefix?: null|string, folder?: null|string, updated?: null|string, created?: null|string, owner?: null|string, application?: null|string, organisation?: null|string, authorization?: array|null, groups?: array<string, list<string>>, configuration?: array|null, quota?: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage?: array{storage: 0, bandwidth: 0, requests: 0, users: 0, groups: int<0, max>}, deleted?: null|string, published?: null|string, depublished?: null|string}, array<never, never>>
+     * @return JSONResponse The JSON response containing the published register
+     *
+     * @psalm-return JSONResponse<
+     *     200|400|404,
+     *     array{
+     *         error?: string,
+     *         id?: int,
+     *         uuid?: null|string,
+     *         slug?: null|string,
+     *         title?: null|string,
+     *         version?: null|string,
+     *         description?: null|string,
+     *         schemas?: array<int|string>,
+     *         source?: null|string,
+     *         tablePrefix?: null|string,
+     *         folder?: null|string,
+     *         updated?: null|string,
+     *         created?: null|string,
+     *         owner?: null|string,
+     *         application?: null|string,
+     *         organisation?: null|string,
+     *         authorization?: array|null,
+     *         groups?: array<string, list<string>>,
+     *         configuration?: array|null,
+     *         quota?: array{
+     *             storage: null,
+     *             bandwidth: null,
+     *             requests: null,
+     *             users: null,
+     *             groups: null
+     *         },
+     *         usage?: array{
+     *             storage: 0,
+     *             bandwidth: 0,
+     *             requests: 0,
+     *             users: 0,
+     *             groups: int<0, max>
+     *         },
+     *         deleted?: null|string,
+     *         published?: null|string,
+     *         depublished?: null|string
+     *     },
+     *     array<never, never>
+     * >
      */
     public function publish(int $id): JSONResponse
     {
@@ -1167,7 +1260,50 @@ class RegistersController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400|404, array{error?: string, id?: int, uuid?: null|string, slug?: null|string, title?: null|string, version?: null|string, description?: null|string, schemas?: array<int|string>, source?: null|string, tablePrefix?: null|string, folder?: null|string, updated?: null|string, created?: null|string, owner?: null|string, application?: null|string, organisation?: null|string, authorization?: array|null, groups?: array<string, list<string>>, configuration?: array|null, quota?: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage?: array{storage: 0, bandwidth: 0, requests: 0, users: 0, groups: int<0, max>}, deleted?: null|string, published?: null|string, depublished?: null|string}, array<never, never>>
+     * @return JSONResponse The JSON response containing the depublished register
+     *
+     * @psalm-return JSONResponse<
+     *     200|400|404,
+     *     array{
+     *         error?: string,
+     *         id?: int,
+     *         uuid?: null|string,
+     *         slug?: null|string,
+     *         title?: null|string,
+     *         version?: null|string,
+     *         description?: null|string,
+     *         schemas?: array<int|string>,
+     *         source?: null|string,
+     *         tablePrefix?: null|string,
+     *         folder?: null|string,
+     *         updated?: null|string,
+     *         created?: null|string,
+     *         owner?: null|string,
+     *         application?: null|string,
+     *         organisation?: null|string,
+     *         authorization?: array|null,
+     *         groups?: array<string, list<string>>,
+     *         configuration?: array|null,
+     *         quota?: array{
+     *             storage: null,
+     *             bandwidth: null,
+     *             requests: null,
+     *             users: null,
+     *             groups: null
+     *         },
+     *         usage?: array{
+     *             storage: 0,
+     *             bandwidth: 0,
+     *             requests: 0,
+     *             users: 0,
+     *             groups: int<0, max>
+     *         },
+     *         deleted?: null|string,
+     *         published?: null|string,
+     *         depublished?: null|string
+     *     },
+     *     array<never, never>
+     * >
      */
     public function depublish(int $id): JSONResponse
     {

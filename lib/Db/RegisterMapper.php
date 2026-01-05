@@ -426,7 +426,7 @@ class RegisterMapper extends QBMapper
      *
      * @return Register[]
      *
-     * @psalm-return     list<Register>
+     * @psalm-return     list<OCA\OpenRegister\Db\Register>
      * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      */
     public function findAll(

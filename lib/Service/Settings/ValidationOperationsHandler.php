@@ -71,9 +71,9 @@ class ValidationOperationsHandler
     /**
      * Get ObjectService via lazy loading to break circular dependency.
      *
-     * @return \OCA\OpenRegister\Service\ObjectService|null
+     * @return null
      */
-    private function getObjectService(): ?\OCA\OpenRegister\Service\ObjectService
+    private function getObjectService()
     {
         // CIRCULAR FIX - ObjectService causes circular dependency, return null to break it.
         // This method is a placeholder for when circular dependency is resolved.
@@ -86,11 +86,9 @@ class ValidationOperationsHandler
      * Iterates through all objects, validates each against its schema,
      * and generates a comprehensive validation report with statistics.
      *
-     * @return array{total_objects: int, valid_objects: int, invalid_objects: int, validation_errors: array, summary: array}
-     *
      * @throws Exception If validation operation fails.
      *
-     * @psalm-return array{total_objects: int<0, max>, valid_objects: int<0, max>, invalid_objects: int, validation_errors: list<array{errors: \Opis\JsonSchema\Errors\ValidationError|list{non-falsy-string}|null, object_id: mixed, object_name: mixed, register: mixed, schema: mixed}>, summary: array{validation_success_rate: float|int, has_errors: bool, error_count: int<0, max>}}
+     * @return array Validation report with total_objects, valid/invalid counts, errors, and summary.
      */
     public function validateAllObjects(): array
     {

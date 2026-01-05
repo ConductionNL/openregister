@@ -112,8 +112,8 @@ class BulkOperationsHandler
         string $tableName='openregister_objects',
         IEventDispatcher $eventDispatcher=null
     ) {
-        $this->db                  = $db;
-        $this->logger              = $logger;
+        $this->db     = $db;
+        $this->logger = $logger;
         $this->queryBuilderHandler = $queryBuilderHandler;
         $this->tableName           = $tableName;
         $this->eventDispatcher     = $eventDispatcher;
@@ -164,6 +164,8 @@ class BulkOperationsHandler
      * @param bool  $hardDelete Whether to force hard delete (default: false).
      *
      * @return array Array of UUIDs of deleted objects.
+     *
+     * @psalm-return list<mixed>
      */
     public function deleteObjects(array $uuids=[], bool $hardDelete=false): array
     {
@@ -211,6 +213,8 @@ class BulkOperationsHandler
      * @param \DateTime|bool $datetime Optional datetime for publishing (false to unset).
      *
      * @return array Array of UUIDs of published objects.
+     *
+     * @psalm-return list<mixed>
      */
     public function publishObjects(array $uuids=[], \DateTime|bool $datetime=true): array
     {
@@ -254,6 +258,8 @@ class BulkOperationsHandler
      * @param \DateTime|bool $datetime Optional datetime for depublishing (false to unset).
      *
      * @return array Array of UUIDs of depublished objects.
+     *
+     * @psalm-return list<mixed>
      */
     public function depublishObjects(array $uuids=[], \DateTime|bool $datetime=true): array
     {
@@ -345,12 +351,11 @@ class BulkOperationsHandler
      * @param int  $schemaId   The ID of the schema whose objects should be deleted.
      * @param bool $hardDelete Whether to force hard delete (default: false).
      *
-     * @return (array|int)[] Array containing statistics about the deletion operation.
+     * @return (array|int)[]
      *
      * @throws \Exception If the deletion operation fails.
      *
-     * @psalm-return array{deleted_count: int<0, max>, deleted_uuids: array,
-     *     schema_id: int}
+     * @psalm-return array{deleted_count: int<0, max>, deleted_uuids: list<mixed>, schema_id: int}
      */
     public function deleteObjectsBySchema(int $schemaId, bool $hardDelete=false): array
     {
@@ -399,12 +404,11 @@ class BulkOperationsHandler
      *
      * @param int $registerId The ID of the register whose objects should be deleted.
      *
-     * @return (array|int)[] Array containing statistics about the deletion operation.
+     * @return (array|int)[]
      *
      * @throws \Exception If the deletion operation fails.
      *
-     * @psalm-return array{deleted_count: int<0, max>, deleted_uuids: array,
-     *     register_id: int}
+     * @psalm-return array{deleted_count: int<0, max>, deleted_uuids: list<mixed>, register_id: int}
      */
     public function deleteObjectsByRegister(int $registerId): array
     {
@@ -449,6 +453,8 @@ class BulkOperationsHandler
      * @return array Array of inserted object UUIDs.
      *
      * @throws \OCP\DB\Exception If a database error occurs.
+     *
+     * @psalm-return list<mixed>
      */
     public function processInsertChunk(array $insertChunk): array
     {
@@ -489,9 +495,11 @@ class BulkOperationsHandler
      *
      * @param array $updateChunk Array of ObjectEntity instances to update.
      *
-     * @return array Array of updated object UUIDs.
+     * @return string[] Array of updated object UUIDs.
      *
      * @throws \OCP\DB\Exception If a database error occurs.
+     *
+     * @psalm-return list<string>
      */
     public function processUpdateChunk(array $updateChunk): array
     {
@@ -624,7 +632,7 @@ class BulkOperationsHandler
             $size       = 0;
             $reflection = new ReflectionClass($object);
             foreach ($reflection->getProperties() as $property) {
-                // Note: setAccessible() is no longer needed in PHP 8.1+
+                // Note: setAccessible() is no longer needed in PHP 8.1+.
                 $value = $property->getValue($object);
 
                 if (is_string($value) === true) {
@@ -646,11 +654,13 @@ class BulkOperationsHandler
      * Calculate optimal batch size for bulk insert operations based on actual data size.
      *
      * @param array $insertObjects Array of objects to insert.
-     * @param array $_columns      Array of column names.
+     * @param array $_columns      Array of column names (reserved for future optimization).
      *
      * @return int Optimal batch size in number of objects.
      *
      * @psalm-return int<5, 100>
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) Parameter reserved for future use.
      */
     private function calculateOptimalBatchSize(array $insertObjects, array $_columns): int
     {
@@ -725,7 +735,8 @@ class BulkOperationsHandler
 
         // Get the first object to determine column structure.
         $firstObject = $insertObjects[0];
-        $columns     = array_keys($firstObject);
+        // @var list<string> $columns
+        $columns = array_keys($firstObject);
 
         // Calculate optimal batch size based on actual data size.
         $batchSize   = $this->calculateOptimalBatchSize(
@@ -752,18 +763,14 @@ class BulkOperationsHandler
 
             foreach ($batch as $objectData) {
                 $rowValues = [];
-                foreach ($columns as $column) {
-                    /*
-                     * @var string $column
-                     */
-
-                    $paramName   = 'param_'.$paramIndex.'_'.$column;
+                foreach ($columns as $columnName) {
+                    $paramName   = 'param_'.$paramIndex.'_'.$columnName;
                     $rowValues[] = ':'.$paramName;
 
-                    $value = $objectData[$column] ?? null;
+                    $value = $objectData[$columnName] ?? null;
 
                     // JSON encode the object field if it's an array.
-                    if (($column === 'object' || $column === 'data') === true && is_array($value) === true) {
+                    if (($columnName === 'object' || $columnName === 'data') && is_array($value) === true) {
                         $value = json_encode($value);
                     }
 
@@ -784,12 +791,8 @@ class BulkOperationsHandler
 
             while ($batchRetryCount <= $maxBatchRetries && $batchSuccess === false) {
                 try {
-                    $stmt   = $this->db->prepare($batchSql);
-                    $result = $stmt->execute($parameters);
-
-                    if ($result === false) {
-                        throw new Exception('Statement execution returned false');
-                    }
+                    $stmt = $this->db->prepare($batchSql);
+                    $stmt->execute($parameters);
 
                     $batchSuccess = true;
                 } catch (Exception $e) {
@@ -1204,7 +1207,7 @@ class BulkOperationsHandler
 
         try {
             $property = $reflection->getProperty($column);
-            // Note: setAccessible() is no longer needed in PHP 8.1+
+            // Note: setAccessible() is no longer needed in PHP 8.1+.
             $value = $property->getValue($entity);
         } catch (\ReflectionException $e) {
             // Try getter method.

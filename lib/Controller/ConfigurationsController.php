@@ -135,9 +135,13 @@ class ConfigurationsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4() is a standard utility pattern
+     * @SuppressWarnings (PHPMD.StaticAccess) Uuid::v4() is a standard utility pattern
      *
-     * @psalm-return JSONResponse<201, \OCA\OpenRegister\Db\Configuration, array<never, never>>|JSONResponse<400, array{error: string}, array<never, never>>
+     * @return JSONResponse JSON response with created configuration or error
+     *
+     * @psalm-return JSONResponse<201, \OCA\OpenRegister\Db\Configuration,
+     *     array<never, never>>|JSONResponse<400, array{error: string},
+     *     array<never, never>>
      */
     public function create(): JSONResponse
     {
@@ -192,7 +196,7 @@ class ConfigurationsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response with updated configuration
+     * @return JSONResponse JSON response with updated configuration or error
      *
      * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Configuration,
      *     array<never, never>>|JSONResponse<400, array{error: string},
@@ -262,9 +266,11 @@ class ConfigurationsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse |JSONResponse<400, array{error: string}, array<never, never>>
+     * @return JSONResponse JSON response on success (204) or error
      *
-     * @psalm-return JSONResponse<204, null, array<never, never>>|JSONResponse<400, array{error: string}, array<never, never>>
+     * @psalm-return JSONResponse<204, null,
+     *     array<never, never>>|JSONResponse<400, array{error: string},
+     *     array<never, never>>
      */
     public function destroy(int $id): JSONResponse
     {
@@ -291,7 +297,9 @@ class ConfigurationsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return DataDownloadResponse<200, 'application/json', array<never, never>>|JSONResponse<400, array{error: string}, array<never, never>>
+     * @psalm-return DataDownloadResponse<200, 'application/json',
+     *     array<never, never>>|JSONResponse<400, array{error: string},
+     *     array<never, never>>
      */
     public function export(int $id, bool $includeObjects=false): JSONResponse|DataDownloadResponse
     {
@@ -332,6 +340,7 @@ class ConfigurationsController extends Controller
      * @return JSONResponse The import result.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      */
     public function import(): JSONResponse

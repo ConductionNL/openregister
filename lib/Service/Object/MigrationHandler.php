@@ -78,21 +78,10 @@ class MigrationHandler
      * @param array      $objectIds      Array of object IDs to migrate.
      * @param array      $mapping        Simple mapping where keys are target properties, values are source properties.
      *
-     * @return (((bool|mixed|null|string)[]|int|string)[]|bool)[] Migration report with success
-     *                                                            status, statistics, details,
-     *                                                            warnings, and errors.
+     * @return array Migration report with success status, statistics, details, warnings, and errors.
      *
      * @throws OcpDoesNotExistException If register or schema not found.
      * @throws InvalidArgumentException If invalid parameters provided.
-     *
-     * @psalm-return array{success: bool,
-     *     statistics: array{objectsMigrated: 0|1|2, objectsFailed: int,
-     *     propertiesMapped: int<0, max>, propertiesDiscarded: int<min, max>},
-     *     details: list<array{error: null|string, newObjectId?: null|string,
-     *     objectId: mixed|null|string, objectTitle: null|string, success: bool}>,
-     *     warnings: list<'Some objects failed to migrate. '.
-     *     'Check details for specific errors.'>,
-     *     errors: list<non-empty-string>}
      */
     public function migrateObjects(
         string|int $sourceRegister,

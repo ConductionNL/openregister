@@ -110,7 +110,9 @@ class ElasticsearchBackend implements SearchBackendInterface
      * @param array $objects The objects to index
      * @param bool  $commit  Whether to commit immediately
      *
-     * @return array Results of bulk indexing operation
+     * @return (bool|int|string)[] Results of bulk indexing operation
+     *
+     * @psalm-return array{success: bool, indexed: int<0, max>, failed: int, error?: string}
      */
     public function bulkIndexObjects(array $objects, bool $commit=false): array
     {
@@ -155,11 +157,11 @@ class ElasticsearchBackend implements SearchBackendInterface
     /**
      * Search with pagination.
      *
-     * @param array $query        The search query
-     * @param bool  $rbac         Whether to apply RBAC
-     * @param bool  $multitenancy Whether to apply multitenancy
-     * @param bool  $published    Whether to filter by published status
-     * @param bool  $deleted      Whether to include deleted objects
+     * @param array $query         The search query
+     * @param bool  $_rbac         Whether to apply RBAC
+     * @param bool  $_multitenancy Whether to apply multitenancy
+     * @param bool  $published     Whether to filter by published status
+     * @param bool  $deleted       Whether to include deleted objects
      *
      * @return ((array|mixed)[]|int|mixed)[] Search results with pagination metadata
      *
@@ -343,6 +345,8 @@ class ElasticsearchBackend implements SearchBackendInterface
      * Get backend configuration.
      *
      * @return array Backend configuration
+     *
+     * @psalm-return array<string, mixed>
      */
     public function getConfig(): array
     {

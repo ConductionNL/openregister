@@ -353,7 +353,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      * @param ?Register $register Optional register for magic mapper routing.
      * @param ?Schema   $schema   Optional schema for magic mapper routing.
      *
-     * @return Entity Inserted entity.
+     * @return ObjectEntity Inserted entity.
      *
      * @throws Exception If insertion fails.
      */
@@ -389,7 +389,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      * @param ?Register $register Optional register for magic mapper routing.
      * @param ?Schema   $schema   Optional schema for magic mapper routing.
      *
-     * @return Entity Updated entity.
+     * @return ObjectEntity Updated entity.
      *
      * @throws Exception If update fails.
      */
@@ -420,7 +420,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      *
      * @param Entity $entity Entity to delete.
      *
-     * @return Entity Deleted entity.
+     * @return ObjectEntity Deleted entity.
      *
      * @throws Exception If deletion fails.
      */
@@ -452,7 +452,9 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      * @param string   $uuid         The object UUID
      * @param int|null $lockDuration Lock duration in seconds
      *
-     * @return array{locked: mixed, uuid: string} Lock result
+     * @return array Lock result.
+     *
+     * @psalm-return array{locked: mixed, uuid: string}
      */
     public function lockObject(string $uuid, ?int $lockDuration=null): array
     {
@@ -594,6 +596,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      * @param bool  $hardDelete Whether to hard delete
      *
      * @return array Delete results
+     *
+     * @psalm-return list<mixed>
      */
     public function deleteObjects(array $uuids=[], bool $hardDelete=false): array
     {
@@ -607,6 +611,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      * @param DateTime|bool $datetime Publish datetime or true for now
      *
      * @return array Publish results
+     *
+     * @psalm-return list<mixed>
      */
     public function publishObjects(array $uuids=[], DateTime|bool $datetime=true): array
     {
@@ -620,6 +626,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      * @param DateTime|bool $datetime Depublish datetime or true for now
      *
      * @return array Depublish results
+     *
+     * @psalm-return list<mixed>
      */
     public function depublishObjects(array $uuids=[], DateTime|bool $datetime=true): array
     {
@@ -633,7 +641,9 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      * @param int|array|null $schemaId   Schema ID filter
      * @param array          $exclude    Exclusions
      *
-     * @return array Statistics data
+     * @return int[] Statistics data
+     *
+     * @psalm-return array{total: int, size: int, invalid: int, deleted: int, locked: int, published: int}
      */
     public function getStatistics(
         int|array|null $registerId=null,
@@ -653,7 +663,9 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      * @param int|null $registerId Register ID filter
      * @param int|null $schemaId   Schema ID filter
      *
-     * @return array Chart data
+     * @return (int|mixed|string)[][] Chart data
+     *
+     * @psalm-return array{labels: array<'Unknown'|mixed>, series: array<int>}
      */
     public function getRegisterChartData(?int $registerId=null, ?int $schemaId=null): array
     {
@@ -666,7 +678,9 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      * @param int|null $registerId Register ID filter
      * @param int|null $schemaId   Schema ID filter
      *
-     * @return array Chart data
+     * @return (int|mixed|string)[][] Chart data
+     *
+     * @psalm-return array{labels: array<'Unknown'|mixed>, series: array<int>}
      */
     public function getSchemaChartData(?int $registerId=null, ?int $schemaId=null): array
     {
@@ -678,7 +692,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      *
      * @param array $query Search query
      *
-     * @return array Facets data
+     * @return ((((int|mixed|string)[]|int|mixed|string)[]|mixed|string)[]|mixed|string)[][] Facets data.
      */
     public function getSimpleFacets(array $query=[]): array
     {
@@ -690,7 +704,9 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      *
      * @param array $baseQuery Base query
      *
-     * @return array Facetable fields
+     * @return array[] Facetable fields
+     *
+     * @psalm-return array<string, array>
      */
     public function getFacetableFieldsFromSchemas(array $baseQuery=[]): array
     {
@@ -707,7 +723,9 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      * @param array|null  $ids                    Specific IDs
      * @param string|null $uses                   Uses filter
      *
-     * @return int|list<ObjectEntity> Search results
+     * @return ObjectEntity[]
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\ObjectEntity>
      */
     public function searchObjects(
         array $query=[],

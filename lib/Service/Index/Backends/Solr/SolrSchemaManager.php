@@ -291,6 +291,8 @@ class SolrSchemaManager
      * @param string $collection Collection name
      * @param string $fieldName  Field name
      *
+     * @psalm-suppress UnusedReturnValue
+     *
      * @return bool True if successful
      */
     private function deleteField(string $collection, string $fieldName): bool

@@ -613,11 +613,7 @@ class SaveObject
                     $entity->setImage($firstElement['accessUrl']);
                 }//end if
             } else if (is_numeric($imageValue) === true) {
-                // Single file ID - load file and get its download URL.
-                // TODO: Implement file loading when fileService methods are available.
-                // fileNode = fileService->getFile(object: $entity, file: (int) $imageValue)
-                // fileData = fileService->formatFile($fileNode)
-                // entity->setImage($fileData['downloadUrl'])
+                // Single file ID - load file and get its download URL (not yet implemented).
                 $this->logger->debug(
                     'File ID detected for objectImageField - file loading not yet implemented',
                     [
@@ -1852,6 +1848,7 @@ class SaveObject
      *
      * @throws Exception If object is locked by another user
      */
+
     /**
      * Find and validate existing object by UUID.
      *

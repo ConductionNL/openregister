@@ -111,7 +111,8 @@ class SetupHandler
 
         // Get authenticated HTTP client and configuration from IndexService.
         $this->httpClient = $solrService->getHttpClient();
-        /** @psalm-var array<string, mixed> */
+
+        // @psalm-var array<string, mixed>
         $this->solrConfig = $solrService->getSolrConfig();
 
         $this->logger->info(
@@ -193,7 +194,9 @@ class SetupHandler
      *
      * @param array $propagationResult The propagation result array.
      *
-     * @return array The API calls array with configset_list_refresh and cluster_status_sync.
+     * @return (mixed|string)[] The API calls array with configset_list_refresh and cluster_status_sync.
+     *
+     * @psalm-return array{configset_list_refresh: 'unknown'|mixed, cluster_status_sync: 'unknown'|mixed}
      */
     private function getApiCallsFromResult(array $propagationResult): array
     {
@@ -2457,12 +2460,7 @@ class SetupHandler
      * @param string $fieldName   Name of the field
      * @param array  $fieldConfig Field configuration
      *
-     * @return ((mixed|string|true)[]|bool|mixed|string)[]
-     *
-     * @psalm-return array{success: bool, action: string,
-     *     error?: 'Unknown error'|mixed,
-     *     details?: array{success?: mixed|true,
-     *     reason?: 'Field exists with compatible configuration'|mixed,...}}
+     * @return array Result with success status, action taken, and optional error or details.
      */
     private function addOrUpdateSchemaFieldWithTracking(string $fieldName, array $fieldConfig): array
     {
@@ -2519,11 +2517,7 @@ class SetupHandler
      * @param string $fieldName   Name of the field
      * @param array  $fieldConfig Field configuration
      *
-     * @return (bool|mixed|string)[]
-     *
-     * @psalm-return array{success: bool, error?: mixed|string,
-     *     exception_type?: get-class-of<$e, Exception>,
-     *     response_body?: string, solr_response?: mixed}
+     * @return array Result with success status and optional error, exception_type, or solr_response.
      */
     private function addSchemaFieldWithResult(string $fieldName, array $fieldConfig): array
     {
@@ -2582,11 +2576,7 @@ class SetupHandler
      * @param string $fieldName   Name of the field
      * @param array  $fieldConfig Field configuration
      *
-     * @return (bool|mixed|string)[]
-     *
-     * @psalm-return array{success: bool, error?: mixed|string,
-     *     exception_type?: get-class-of<$e, Exception>,
-     *     response_body?: string, solr_response?: mixed}
+     * @return array Result with success status and optional error, exception_type, or solr_response.
      */
     private function replaceSchemaFieldWithResult(string $fieldName, array $fieldConfig): array
     {

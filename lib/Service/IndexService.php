@@ -82,9 +82,9 @@ class IndexService
      * @param array $chunks   Array of chunk entities from database
      * @param array $metadata File metadata
      *
-     * @return (bool|int|string)[] Indexing result
+     * @return (bool|int|string)[]
      *
-     * @psalm-return array{success: bool, indexed: int, collection: string}
+     * @psalm-return array{success: bool, indexed: int<0, max>, collection: 'files'}
      */
     public function indexFileChunks(int $fileId, array $chunks, array $metadata): array
     {
@@ -98,11 +98,7 @@ class IndexService
      *
      * @param int|null $limit Maximum number of files to process
      *
-     * @return ((array|float|int)[]|bool)[] Processing result
-     *
-     * @psalm-return array{success: bool,
-     *     stats: array{processed: int, indexed: int, failed: int,
-     *     total_chunks: int, errors: array, execution_time_ms: float}}
+     * @return array Result with success status and processing stats.
      */
     public function processUnindexedChunks(?int $limit=null): array
     {
@@ -152,7 +148,9 @@ class IndexService
      * @param bool  $published    Filter published objects
      * @param bool  $deleted      Include deleted objects
      *
-     * @return array Search results
+     * @return (array|int|mixed)[] Search results
+     *
+     * @psalm-return array{results: array<never, never>|mixed, total: 0|mixed, start: 0|mixed}
      */
     public function searchObjects(
         array $query=[],
@@ -246,10 +244,7 @@ class IndexService
      *
      * @param bool $force Force recreation of existing fields
      *
-     * @return (array|bool|float|mixed|string)[] Result with statistics
-     *
-     * @psalm-return array{success: bool, error?: string,
-     *     stats: array, execution_time_ms?: float, resolved_conflicts?: mixed}
+     * @return array Result with success status, stats, and optional errors.
      */
     public function mirrorSchemas(bool $force=false): array
     {
@@ -263,7 +258,7 @@ class IndexService
      *
      * @param string $collection Collection name
      *
-     * @return array Field status information
+     * @return array Field status with collection, existing and missing fields, and counts.
      */
     public function getCollectionFieldStatus(string $collection): array
     {
@@ -275,7 +270,7 @@ class IndexService
      *
      * Delegates to SchemaHandler.
      *
-     * @return array Field status information
+     * @return array Field status with collection, existing and missing fields, and counts.
      */
     public function getObjectCollectionFieldStatus(): array
     {
@@ -310,7 +305,9 @@ class IndexService
      * @param array  $missingFields Missing field definitions
      * @param bool   $dryRun        Preview without making changes
      *
-     * @return array Result
+     * @return ((int|string)[]|int|true)[]
+     *
+     * @psalm-return array{success: true, created?: int<0, max>, failed?: int, dry_run?: true, fields_to_add?: list<array-key>}
      */
     public function createMissingFields(string $collection, array $missingFields, bool $dryRun=false): array
     {

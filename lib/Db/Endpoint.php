@@ -313,11 +313,9 @@ class Endpoint extends Entity implements JsonSerializable
      * Get the slug for the endpoint.
      * If the slug is not set, generate one from the name.
      *
-     * @return non-empty-string
+     * @return string The endpoint slug.
      *
      * @phpstan-return non-empty-string
-     *
-     * @psalm-return non-empty-string
      */
     public function getSlug(): string
     {
@@ -372,16 +370,6 @@ class Endpoint extends Entity implements JsonSerializable
      * @return ((mixed|string[])[]|int|null|string)[]
      *
      * @phpstan-return array<string,mixed>
-     *
-     * @psalm-return array{id: int, uuid: null|string, name: null|string,
-     *     description: null|string, reference: null|string,
-     *     version: null|string, endpoint: null|string, endpointArray: array,
-     *     endpointRegex: null|string, method: null|string,
-     *     targetType: null|string, targetId: null|string, conditions: array,
-     *     inputMapping: null|string, outputMapping: null|string, rules: array,
-     *     configurations: array, slug: string,
-     *     groups: array<string, list<string>>, organisation: null|string,
-     *     created: null|string, updated: null|string}
      */
     public function jsonSerialize(): array
     {

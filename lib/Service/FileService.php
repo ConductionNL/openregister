@@ -618,14 +618,12 @@ class FileService
      * @param Register   $register    The register to create the folder for
      * @param IUser|null $currentUser The current user to share the folder with
      *
-     * @return Node|null The created folder Node or null if creation fails
-     *
      * @throws Exception If folder creation fails
      * @throws NotPermittedException If folder creation is not permitted
      *
-     * @phpstan-return Node|null
+     * @return Node The created folder node
      */
-    private function createRegisterFolderById(Register $register, ?IUser $currentUser=null): ?Node
+    private function createRegisterFolderById(Register $register, ?IUser $currentUser=null): Node
     {
         return $this->folderManagementHandler->createRegisterFolderById(
             register: $register,
@@ -891,13 +889,10 @@ class FileService
      * @param Node[] $files         Array of Node files to format.
      * @param array  $requestParams Optional request parameters including filters.
      *
-     * @return array Array of formatted file metadata arrays with pagination information.
-     *
      * @throws InvalidPathException If file paths are invalid.
      * @throws NotFoundException If files are not found.
      *
-     * @phpstan-return array{results: array<int, array<string, mixed>>, total: int,
-     *                 page: int, pages: int, limit: int, offset: int}
+     * @return array Formatted file data with pagination
      */
     public function formatFiles(array $files, ?array $requestParams=[]): array
     {
@@ -1934,16 +1929,11 @@ class FileService
      * @param array  $replacements Array of replacement mappings ['original' => 'replacement']
      * @param string $outputName   Optional name for the output file (default: adds '_replaced' suffix)
      *
-     * @return Node The new file node with replaced content
+     * @return File The processed file
      *
      * @throws Exception If replacement fails
-     *
-     * @phpstan-param  array<string, string> $replacements
-     * @psalm-param    array<string, string> $replacements
-     * @phpstan-return Node
-     * @psalm-return   Node
      */
-    public function replaceWords(Node $node, array $replacements, ?string $outputName=null): Node
+    public function replaceWords(Node $node, array $replacements, ?string $outputName=null): File
     {
         return $this->documentProcessingHandler->replaceWords(
             node: $node,
@@ -1961,14 +1951,9 @@ class FileService
      * @param Node  $node     The file node to anonymize.
      * @param array $entities Array of detected entities with 'text' and 'key' fields.
      *
-     * @return Node The anonymized file node.
-     *
      * @throws Exception If anonymization fails.
      *
-     * @phpstan-param  array<int, array{text?: string, entityType?: string, key?: string}> $entities
-     * @psalm-param    array<int, array{text?: string, entityType?: string, key?: string}> $entities
-     * @phpstan-return Node
-     * @psalm-return   Node
+     * @return Node The anonymized file node.
      */
     public function anonymizeDocument(Node $node, array $entities): Node
     {

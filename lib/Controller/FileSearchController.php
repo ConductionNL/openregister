@@ -195,11 +195,13 @@ class FileSearchController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return       JSONResponse A JSON response with semantic search results
+     * @return JSONResponse JSON response with search results or error
+     *
      * @psalm-return JSONResponse<200|400|500,
      *     array{success: bool, message?: string, query?: string,
      *     total?: int<0, max>, results?: array<int, array<string, mixed>>,
-     *     search_type?: 'semantic'}, array<never, never>>
+     *     search_type?: 'semantic'},
+     *     array<never, never>>
      */
     public function semanticSearch(): JSONResponse
     {
@@ -258,7 +260,7 @@ class FileSearchController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response containing hybrid search results
+     * @return JSONResponse JSON response with hybrid search results or error
      */
     public function hybridSearch(): JSONResponse
     {

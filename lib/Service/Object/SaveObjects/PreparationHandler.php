@@ -303,7 +303,7 @@ class PreparationHandler
      *
      * @param Schema $schema The schema to analyze.
      *
-     * @return array The schema analysis.
+     * @return array The schema analysis with metadataFields, inverseProperties, and configuration.
      */
     private function getSchemaAnalysisWithCache(Schema $schema): array
     {

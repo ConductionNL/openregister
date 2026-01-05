@@ -302,7 +302,7 @@ class ImportHandler
      *
      * @param string $url The URL to fetch.
      *
-     * @return JSONResponse|array The decoded array or error response.
+     * @return JSONResponse|array
      *
      * @throws GuzzleException
      *
@@ -1178,8 +1178,8 @@ class ImportHandler
 
                 if ($existingObject !== null) {
                     // Handle both ObjectEntity instances and array results from searchObjects.
-                    // searchObjects can return either ObjectEntity objects or arrays depending on configuration.
-                    /** @var ObjectEntity|array $existingObject */
+                    // searchObjects returns ObjectEntity or arrays depending on configuration.
+                    // @var ObjectEntity|array $existingObject.
                     if (is_array($existingObject) === true) {
                         $existingObjectData = $existingObject;
                     } else {

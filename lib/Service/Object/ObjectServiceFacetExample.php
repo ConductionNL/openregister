@@ -47,6 +47,8 @@ class ObjectServiceFacetExample
      * Demonstrates the new _facets configuration approach.
      *
      * @return array The facet results using new system
+     *
+     * @psalm-return array<string, mixed>
      */
     public function newFacetingApproach(): array
     {
@@ -73,6 +75,8 @@ class ObjectServiceFacetExample
      * Demonstrates that the old approach still works without _facets config.
      *
      * @return array The facet results using legacy system
+     *
+     * @psalm-return array<string, mixed>
      */
     public function legacyFacetingApproach(): array
     {
@@ -289,6 +293,8 @@ class ObjectServiceFacetExample
      * Shows how facets remain available even when filters are applied.
      *
      * @return array Results demonstrating disjunctive faceting
+     *
+     * @psalm-return array<string, mixed>
      */
     public function disjunctiveFacetingDemo(): array
     {
@@ -328,13 +334,7 @@ class ObjectServiceFacetExample
      *
      * Compares performance between new and legacy faceting approaches.
      *
-     * @return ((array|float|int)[]|float)[]
-     *
-     * @psalm-return array{new_approach: array{execution_time: float,
-     *     facet_count: int<0, max>, results: array},
-     *     legacy_approach: array{execution_time: float,
-     *     facet_count: int<0, max>, results: array},
-     *     performance_improvement: float}
+     * @return array Performance comparison with new_approach, legacy_approach, and improvement.
      */
     public function performanceComparison(): array
     {
@@ -394,17 +394,7 @@ class ObjectServiceFacetExample
      *
      * Shows how to structure data for frontend consumption.
      *
-     * @return (((mixed|null)[][]|bool|mixed|null|string)[]|mixed)[][]
-     *
-     * @psalm-return array{search: array{results: mixed,
-     *     pagination: array{current_page: mixed, total_pages: mixed,
-     *     total_items: mixed, items_per_page: mixed, has_next: bool,
-     *     has_prev: bool, next_url: mixed|null, prev_url: mixed|null}},
-     *     facets: array<string, array{field: mixed|string, type: mixed,
-     *     label: string, options: array<array{value: mixed, label: mixed,
-     *     count: mixed, from: mixed|null, to: mixed|null}>}>,
-     *     applied_filters: array<string, array{field: mixed|string, value: mixed,
-     *     type: 'metadata'|'object_field'}>}
+     * @return array Frontend-ready data with search results, pagination, facets, and applied filters.
      */
     public function frontendIntegrationExample(): array
     {
@@ -458,11 +448,7 @@ class ObjectServiceFacetExample
      *
      * @psalm-param array<string, mixed> $facets
      *
-     * @return ((mixed|null)[][]|mixed|string)[][]
-     *
-     * @psalm-return array<string, array{field: mixed|string, type: mixed,
-     *     label: string, options: array<array{value: mixed, label: mixed,
-     *     count: mixed, from: mixed|null, to: mixed|null}>}>
+     * @return array Transformed facets for frontend with field, type, label, and options.
      */
     private function transformFacetsForFrontend(array $facets): array
     {
@@ -502,9 +488,7 @@ class ObjectServiceFacetExample
      *
      * @psalm-param array<array<string, mixed>> $buckets
      *
-     * @return (mixed|null)[][] Frontend-friendly bucket structure
-     *
-     * @psalm-return array<array{value: mixed, label: mixed, count: mixed, from: mixed|null, to: mixed|null}>
+     * @return array Frontend-friendly bucket structure with value, label, count, from, and to.
      */
     private function transformBuckets(array $buckets): array
     {
@@ -531,9 +515,7 @@ class ObjectServiceFacetExample
      *
      * @psalm-param array<string, mixed> $query
      *
-     * @return (mixed|string)[][] Applied filters structure
-     *
-     * @psalm-return array<string, array{field: mixed|string, value: mixed, type: 'metadata'|'object_field'}>
+     * @return array Applied filters with field, value, and type for each filter.
      */
     private function extractAppliedFilters(array $query): array
     {

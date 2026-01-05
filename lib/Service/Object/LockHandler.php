@@ -68,10 +68,10 @@ class LockHandler
      * @param string|null $process    Process ID (for tracking who locked it)
      * @param int|null    $duration   Lock duration in seconds
      *
-     * @return array The locked object data
+     * @return array Lock result with locked details and uuid.
      *
-     * @throws LockedException If object is already locked
-     * @throws \Exception      If lock operation fails
+     * @throws LockedException If object is already locked.
+     * @throws \Exception      If lock operation fails.
      */
     public function lock(string $identifier, ?string $process=null, ?int $duration=null): array
     {
@@ -226,10 +226,9 @@ class LockHandler
      *
      * @param string $identifier Object ID or UUID
      *
-     * @return (bool|mixed|null|string)[]|null Lock information or null if not locked
+     * @return (bool|mixed|null|string)[]|null
      *
-     * @psalm-return array{locked_at: mixed, process: mixed|null, duration: mixed|null,
-     *               expires_at?: string, is_expired?: bool}|null
+     * @psalm-return array{locked_at: mixed, process: mixed|null, duration: mixed|null, expires_at?: string, is_expired?: bool}|null
      */
     public function getLockInfo(string $identifier): array|null
     {

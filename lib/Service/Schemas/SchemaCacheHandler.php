@@ -465,14 +465,9 @@ class SchemaCacheHandler
     /**
      * Get comprehensive cache statistics
      *
-     * @return (int|string)[]
+     * @return array Cache statistics with total entries, TTL info, memory size, and timing.
      *
-     * @throws \OCP\DB\Exception If a database error occurs
-     *
-     * @psalm-return array{total_entries: int, entries_with_ttl: int,
-     *     memory_cache_size: int<0, max>,
-     *     cache_table: 'openregister_schema_cache',
-     *     query_time: string, timestamp: int<1, max>}
+     * @throws \OCP\DB\Exception If a database error occurs.
      */
     public function getCacheStatistics(): array
     {

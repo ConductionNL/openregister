@@ -90,7 +90,7 @@ trait MultiTenancyTrait
                 );
             }
 
-            /** @psalm-suppress UndefinedMethod - method exists on OrganisationMapper */
+            // @psalm-suppress UndefinedMethod
             return $organisationMapper->getActiveOrganisationWithFallback($user->getUID());
         }
 
@@ -111,7 +111,7 @@ trait MultiTenancyTrait
         // Prefer using OrganisationMapper if available.
         if (isset($this->organisationMapper) === true) {
             $organisationMapper = $this->organisationMapper;
-            /** @psalm-suppress UndefinedMethod - method exists on OrganisationMapper */
+            // @psalm-suppress UndefinedMethod
             return $organisationMapper->getDefaultOrganisationFromConfig();
         }
 
@@ -161,7 +161,7 @@ trait MultiTenancyTrait
         if (isset($this->organisationMapper) === true) {
             try {
                 $organisationMapper = $this->organisationMapper;
-                /** @psalm-suppress UndefinedMethod - method exists on OrganisationMapper */
+                // @psalm-suppress UndefinedMethod
                 $uuids = $organisationMapper->getOrganisationHierarchy($activeOrgUuid);
                 if (empty($uuids) === false) {
                     return $uuids;

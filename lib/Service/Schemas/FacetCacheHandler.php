@@ -318,9 +318,7 @@ class FacetCacheHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @return int Number of entries deleted
-     *
-     * @psalm-return int<min, max>
+     * @return int The number of deleted cache entries.
      */
     public function cleanExpiredEntries(): int
     {
@@ -351,14 +349,9 @@ class FacetCacheHandler
     /**
      * Get comprehensive facet cache statistics
      *
-     * @return (int|int[]|string)[]
-     *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @psalm-return array{total_entries: int, by_type: array<int>,
-     *     memory_cache_size: int<0, max>,
-     *     cache_table: 'openregister_schema_facet_cache',
-     *     query_time: string, timestamp: int<1, max>}
+     * @return array Statistics with total entries, by type, memory cache size, cache table, query time, timestamp.
      */
     public function getCacheStatistics(): array
     {
@@ -397,34 +390,9 @@ class FacetCacheHandler
      *
      * @param int $schemaId The schema ID
      *
-     * @return (array|mixed|string)[][][]
-     *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @psalm-return array{'@self'?: array{register: array{type: 'integer',
-     *     facet_types: list{'terms'}, description: 'Register ID'>,
-     *     schema: array{type: 'integer', facet_types: list{'terms'>,
-     *     description: 'Schema ID'>,
-     *     organisation: array{type: 'string', facet_types: list{'terms'>,
-     *     description: 'Organisation UUID'>,
-     *     owner: array{type: 'string', facet_types: list{'terms'>,
-     *     description: 'Owner user ID'>,
-     *     created: array{type: 'datetime',
-     *     facet_types: list{'date_histogram', 'range'>,
-     *     description: 'Creation date'>,
-     *     updated: array{type: 'datetime',
-     *     facet_types: list{'date_histogram', 'range'>,
-     *     description: 'Last update date'>,
-     *     published: array{type: 'datetime',
-     *     facet_types: list{'date_histogram', 'range'>,
-     *     description: 'Publication date'>,
-     *     depublished: array{type: 'datetime',
-     *     facet_types: list{'date_histogram', 'range'>,
-     *     description: 'Depublication date'>},
-     *     object_fields?: array<array{type: 'string'|mixed,
-     *     facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'>,
-     *     description: mixed|string, enum_values?: array,
-     *     minimum?: mixed, maximum?: mixed}>}
+     * @return array Facetable fields with @self metadata fields and object_fields from schema properties.
      */
     private function generateFacetableFieldsFromSchema(int $schemaId): array
     {
@@ -472,7 +440,7 @@ class FacetCacheHandler
     /**
      * Get metadata facetable fields (always available)
      *
-     * @return (string|string[])[][] Metadata facetable fields
+     * @return (string[])[][] Metadata facetable fields
      *
      * @psalm-return array{
      *     register: array{

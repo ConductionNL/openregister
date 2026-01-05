@@ -385,10 +385,10 @@ class ChatController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse A JSON response with the chat response or error
-     *
      * @psalm-suppress InvalidReturnStatement
      * @psalm-suppress InvalidReturnType
+     *
+     * @return JSONResponse JSON response with AI response or error
      */
     public function sendMessage(): JSONResponse
     {
@@ -465,7 +465,10 @@ class ChatController extends Controller
                 default => 'Failed to process message',
             };
 
-            /** @psalm-suppress InvalidArgument */
+            /*
+             * @psalm-suppress InvalidArgument
+             */
+
             return new JSONResponse(
                 data: [
                     'error'   => $errorType,
@@ -658,12 +661,7 @@ class ChatController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return       JSONResponse A JSON response with the conversation list or error
-     * @psalm-return JSONResponse<200|400|403|404|500,
-     *     array{error?: string, message?: string, id?: int, uuid?: string,
-     *     messageId?: int, conversationId?: int, agentId?: int, userId?: string,
-     *     organisation?: null|string, type?: string, comment?: null|string,
-     *     created?: null|string, updated?: null|string}, array<never, never>>
+     * @return JSONResponse JSON response with feedback confirmation or error
      */
     public function sendFeedback(string $conversationUuid, int $messageId): JSONResponse
     {

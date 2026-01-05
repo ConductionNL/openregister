@@ -555,8 +555,7 @@ class ObjectService
             _multitenancy: $_multitenancy
         );
 
-        // If the object is not found, return null.
-        /** @psalm-suppress TypeDoesNotContainNull - GetObject::find() may return null */
+        // If the object is not found, return null (@psalm-suppress TypeDoesNotContainNull).
         if ($object === null) {
             return null;
         }
@@ -760,7 +759,9 @@ class ObjectService
      * @param array $config  Configuration array
      * @param array $objects Retrieved objects
      *
-     * @return array{0: array|null, 1: array|null} [registers, schemas]
+     * @return ((Register|Schema|mixed)[]|null)[] [registers, schemas]
+     *
+     * @psalm-return list{array<Register|mixed>|null, array<Schema|mixed>|null}
      */
     private function resolveRegisterAndSchema(array $config, array $objects): array
     {
@@ -840,8 +841,8 @@ class ObjectService
         // Render each object through the render handler.
         $promises = [];
         foreach ($objects as $key => $object) {
+            // @psalm-suppress InvalidArgument Promise resolve accepts mixed.
             $promises[$key] = new Promise(
-                /** @psalm-suppress InvalidArgument - Promise resolve accepts mixed */
                 function ($resolve, $reject) use ($object, $config, $registers, $schemas, $_rbac, $_multitenancy) {
                     try {
                         $renderedObject = $this->renderHandler->renderEntity(
@@ -863,7 +864,7 @@ class ObjectService
             );
         }//end foreach
 
-        /** @psalm-suppress UndefinedFunction - React\Async\await is from external library */
+        // @psalm-suppress UndefinedFunction React\Async\await is from external library.
         return Async\await(all($promises));
     }//end renderObjectsAsync()
 
@@ -1187,7 +1188,9 @@ class ObjectService
      * @param array       $object Object data
      * @param string|null $uuid   Object UUID
      *
-     * @return array{0: array, 1: string|null} [processed object, updated UUID]
+     * @return ((array|mixed|string)[]|null|string)[] [processed object, updated UUID]
+     *
+     * @psalm-return list{array<array|mixed|string>, null|string}
      */
     private function handleCascadingWithContextPreservation(array $object, ?string $uuid): array
     {
@@ -1542,12 +1545,15 @@ class ObjectService
      *                     - _search: Full-text search term
      *                     - _facets: Facet configuration (required)
      *
-     * @psalm-param   array<string, mixed> $query
+     * @psalm-param array<string, mixed> $query
+     *
      * @phpstan-param array<string, mixed> $query
      *
      * @return array The facets for objects matching the criteria
      *
      * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @psalm-return array<string, mixed>
      */
     public function getFacetsForObjects(array $query=[]): array
     {
@@ -1559,7 +1565,7 @@ class ObjectService
     /**
      * Get facetable fields for discovery (ULTRA-OPTIMIZED)
      *
-     * **CRITICAL PERFORMANCE OPTIMIZATION**: This method now uses pre-computed facet
+     * CRITICAL PERFORMANCE OPTIMIZATION**: This method now uses pre-computed facet
      * configurations stored directly in schema entities instead of runtime analysis.
      * This eliminates the ~15ms overhead for _facetable=true requests.
      *
@@ -1572,14 +1578,17 @@ class ObjectService
      * @param array $baseQuery  Base query filters to apply for context
      * @param int   $sampleSize Unused parameter, kept for backward compatibility
      *
-     * @psalm-param   array<string, mixed> $baseQuery
-     * @psalm-param   int $sampleSize
+     * @psalm-param array<string, mixed> $baseQuery
+     * @psalm-param int $sampleSize
+     *
      * @phpstan-param array<string, mixed> $baseQuery
      * @phpstan-param int $sampleSize
      *
-     * @return array Comprehensive facetable field information from schemas
+     * @return array[] Comprehensive facetable field information from schemas
      *
      * @throws \Exception If facetable field discovery fails
+     *
+     * @psalm-return array{'@self': array, object_fields: array}
      */
     public function getFacetableFields(array $baseQuery=[], int $sampleSize=100): array
     {
@@ -1826,30 +1835,15 @@ class ObjectService
      * @param bool                 $_published    Whether to filter by published status (default: false).
      * @param bool                 $_deleted      Whether to include deleted objects (default: false).
      *
-     * @psalm-param   array<string, mixed> $query
+     * @psalm-param array<string, mixed> $query
+     *
      * @phpstan-param array<string, mixed> $query
      *
-     * @return \React\Promise\PromiseInterface Promise that resolves to search results array
+     * @return PromiseInterface Promise resolving to paginated results with results, total, pagination info.
      *
-     * @psalm-return   PromiseInterface<
-     *     array{
-     *         results: mixed,
-     *         total: mixed,
-     *         page: float|int<1, max>|mixed,
-     *         pages: 1|float,
-     *         limit: int<1, max>,
-     *         offset: 0|mixed,
-     *         facets: mixed,
-     *         facetable?: mixed,
-     *         next?: null|string,
-     *         prev?: null|string
-     *     }
-     * >
-     * @phpstan-return PromiseInterface<array<string, mixed>>
+     * @throws \OCP\DB\Exception If a database error occurs.
      *
-     * @throws \OCP\DB\Exception If a database error occurs
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      */
     public function searchObjectsPaginatedAsync(
         array $query=[],
@@ -1910,7 +1904,7 @@ class ObjectService
          * Note: The async version already logs the search trail, so we don't need to log again.
          */
 
-        /** @psalm-suppress UndefinedFunction - React\Async\await is from external library */
+        // @psalm-suppress UndefinedFunction React\Async\await is from external library.
         return \React\Async\await($promise);
     }//end searchObjectsPaginatedSync()
 
@@ -1961,11 +1955,9 @@ class ObjectService
      * @param bool         $_rbac         Whether to apply RBAC checks (default: true)
      * @param bool         $_multitenancy Whether to apply multitenancy filtering (default: true)
      *
-     * @return ((mixed|null|string)[]|mixed)[] The rendered entity
+     * @return array Rendered entity data
      *
      * @SuppressWarnings (PHPMD.UnusedFormalParameter)
-     *
-     * @psalm-return array{'@self': array{name: mixed|null|string,...},...}
      */
     public function renderEntity(
         ObjectEntity $entity,
@@ -1994,14 +1986,9 @@ class ObjectService
      *
      * @param ValidationException|CustomValidationException $exception The exception to handle
      *
-     * @return \OCP\AppFramework\Http\JSONResponse The resulting response
+     * @return \OCP\AppFramework\Http\JSONResponse JSON error response
      *
      * @deprecated
-     *
-     * @psalm-return \OCP\AppFramework\Http\JSONResponse<400,
-     *     array{status: 'error', message: 'Validation failed',
-     *     errors: list{0?: array<array|mixed|null|string>|string,...}>,
-     *     array<never, never>>
      */
     public function handleValidationException(
         ValidationException|CustomValidationException $exception
@@ -2077,7 +2064,7 @@ class ObjectService
      * @param string|null $process    Process ID (for tracking who locked it)
      * @param int|null    $duration   Lock duration in seconds
      *
-     * @return array The locked object data
+     * @return array Lock information
      *
      * @throws \Exception If lock operation fails
      */
@@ -2093,7 +2080,7 @@ class ObjectService
      *
      * @param string|int $identifier The object to unlock
      *
-     * @return bool True if unlocked successfully
+     * @return true True if unlocked successfully
      *
      * @throws \Exception If unlock operation fails
      */
@@ -2220,48 +2207,10 @@ class ObjectService
      * @param array      $objectIds      Array of object IDs to migrate
      * @param array      $mapping        Mapping where keys are target properties, values are source properties
      *
-     * @return array Migration results with statistics and details
+     * @return array Migration report with success status, statistics, details, warnings, and errors.
      *
-     * @throws \OCP\AppFramework\Db\DoesNotExistException If register or schema not found
-     * @throws \InvalidArgumentException If invalid parameters provided
-     *
-     * @psalm-param string|int $sourceRegister
-     * @psalm-param string|int $sourceSchema
-     * @psalm-param string|int $targetRegister
-     * @psalm-param string|int $targetSchema
-     * @psalm-param array $objectIds
-     * @psalm-param array $mapping
-     *
-     * @psalm-return array{
-     *     success: bool,
-     *     statistics: array{
-     *         objectsMigrated: 0|1|2,
-     *         objectsFailed: int,
-     *         propertiesMapped: int<0, max>,
-     *         propertiesDiscarded: int<min, max>
-     *     },
-     *     details: list{
-     *         0?: array{
-     *             objectId: mixed,
-     *             objectTitle: mixed|null,
-     *             success: bool,
-     *             error: null|string,
-     *             newObjectId?: mixed
-     *         },
-     *         ...
-     *     },
-     *     warnings: list<'Some objects failed to migrate. Check details for specific errors.'>,
-     *     errors: list{0?: string,...}
-     * }
-     *
-     * @phpstan-param string|int $sourceRegister
-     * @phpstan-param string|int $sourceSchema
-     * @phpstan-param string|int $targetRegister
-     * @phpstan-param string|int $targetSchema
-     * @phpstan-param array $objectIds
-     * @phpstan-param array $mapping
-     *
-     * @phpstan-return array<string, mixed>
+     * @throws \OCP\AppFramework\Db\DoesNotExistException If register or schema not found.
+     * @throws \InvalidArgumentException If invalid parameters provided.
      */
     public function migrateObjects(
         string|int $sourceRegister,
@@ -2476,7 +2425,9 @@ class ObjectService
      * @param string $objectId Object ID or UUID
      * @param array  $filters  Filters for pagination
      *
-     * @return array Contracts data
+     * @return (array|int|mixed)[] Contracts data
+     *
+     * @psalm-return array{results: array|mixed, total: int<0, max>, limit: 30|mixed, offset: 0|mixed}
      */
     public function getObjectContracts(string $objectId, array $filters=[]): array
     {
@@ -2491,9 +2442,11 @@ class ObjectService
      * @param bool   $rbac          Apply RBAC filters
      * @param bool   $_multitenancy Apply multitenancy filters
      *
-     * @return array Paginated results with related objects
+     * @return (ObjectEntity[]|int|mixed)[]
      *
      * @throws \Exception If retrieval fails
+     *
+     * @psalm-return array{results: list<OCA\OpenRegister\Db\ObjectEntity>, total: int<0, max>, limit: 30|mixed, offset: 0|mixed}
      */
     public function getObjectUses(
         string $objectId,
@@ -2697,6 +2650,8 @@ class ObjectService
      * @param array $params Request parameters
      *
      * @return array Normalized search query
+     *
+     * @psalm-return array<string, mixed>
      */
     public function buildObjectSearchQuery(array $params): array
     {
@@ -2793,9 +2748,7 @@ class ObjectService
      * @param string $sourceObjectId Source object ID
      * @param array  $mergeData      Merge data
      *
-     * @return array Merge result
-     *
-     * @psalm-return array<string, mixed>
+     * @return array Merge result with details
      */
     public function mergeObjects(string $sourceObjectId, array $mergeData): array
     {
@@ -2807,7 +2760,7 @@ class ObjectService
      *
      * @param int $schemaId Schema ID
      *
-     * @return array Validation result
+     * @return array Validation result with valid and invalid objects
      */
     public function validateObjectsBySchema(int $schemaId): array
     {

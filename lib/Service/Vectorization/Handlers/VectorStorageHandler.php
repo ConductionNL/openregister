@@ -247,15 +247,15 @@ class VectorStorageHandler
      *
      * Stores a vector embedding in the configured Solr collection using dense vector fields.
      *
-     * @param string      $entityType   Entity type ('object' or 'file')
-     * @param string      $entityId     Entity UUID
-     * @param array       $embedding    Vector embedding (array of floats)
-     * @param string      $model        Model used to generate embedding
-     * @param int         $dimensions   Number of dimensions
-     * @param int         $chunkIndex   Chunk index (0 for objects, N for file chunks)
-     * @param int         $totalChunks  Total number of chunks (reserved for future use)
-     * @param string|null $chunkText    The text that was embedded (reserved for future use)
-     * @param array       $metadata     Additional metadata (reserved for future use)
+     * @param string      $entityType  Entity type ('object' or 'file')
+     * @param string      $entityId    Entity UUID
+     * @param array       $embedding   Vector embedding (array of floats)
+     * @param string      $model       Model used to generate embedding
+     * @param int         $dimensions  Number of dimensions
+     * @param int         $chunkIndex  Chunk index (0 for objects, N for file chunks)
+     * @param int         $totalChunks Total number of chunks (reserved for future use)
+     * @param string|null $chunkText   The text that was embedded (reserved for future use)
+     * @param array       $metadata    Additional metadata (reserved for future use)
      *
      * @return string The Solr document ID
      *
@@ -428,8 +428,7 @@ class VectorStorageHandler
         try {
             $settings = $this->settingsService->getSettings();
 
-            // Get vector field from LLM configuration, default to '_embedding_'.
-            /** @var array{llm?: array{vectorConfig?: array{solrField?: string}}} $settings */
+            // Get vector field from LLM configuration, default to '_embedding_' field name.
             return $settings['llm']['vectorConfig']['solrField'] ?? '_embedding_';
         } catch (Exception $e) {
             $this->logger->warning(

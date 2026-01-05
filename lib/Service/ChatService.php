@@ -347,11 +347,7 @@ class ChatService
      * @param array  $config      Provider-specific configuration.
      * @param string $testMessage Optional test message to send.
      *
-     * @return (bool|string)[] Test results with success status
-     *
-     * @psalm-return array{success: bool, error?: string, message: string,
-     *     note?: 'Full testChat implementation preserved in '.
-     *     'ChatService_ORIGINAL_2156.php backup.'}
+     * @return array Test result with success status, message, and optional error.
      */
     public function testChat(
         string $provider,

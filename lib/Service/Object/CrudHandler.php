@@ -103,7 +103,7 @@ class CrudHandler
         );
 
         try {
-            // TODO: Implement proper search logic.
+            // TODO: Implement proper search logic (placeholder).
             $result = ['results' => [], 'total' => 0];
             // $this->objectEntityMapper->searchObjectsPaginated(
             // Query: $query,
@@ -159,12 +159,7 @@ class CrudHandler
         );
 
         try {
-            // TODO: Implement proper find logic.
-            // $object = $this->objectEntityMapper->find(
-            // Id: $objectId,
-            // _rbac: $rbac,
-            // _multitenancy: $multi
-            // );
+            // TODO: Implement proper find logic (placeholder).
             $this->logger->warning(
                 message: '[CrudHandler] Object not found (TODO: implement find logic)',
                 context: ['object_id' => $objectId]
@@ -205,18 +200,10 @@ class CrudHandler
         );
 
         try {
-            // TODO: Implement proper save logic.
-            // $object = $this->objectEntityMapper->saveObject(
-            // ObjectId: null,
-            // Object: $data,
-            // _rbac: $rbac,
-            // _multitenancy: $multi
-            // );
+            // TODO: Implement proper save logic (placeholder).
             $this->logger->info(
                 message: '[CrudHandler] Object creation not implemented (TODO)',
-                context: [
-                    'data_keys' => array_keys($data),
-                ]
+                context: ['data_keys' => array_keys($data)]
             );
 
             return null;
@@ -261,13 +248,7 @@ class CrudHandler
         );
 
         try {
-            // TODO: Implement proper save logic.
-            // $object = $this->objectEntityMapper->saveObject(
-            // ObjectId: $objectId,
-            // Object: $data,
-            // _rbac: $rbac,
-            // _multitenancy: $multi
-            // );
+            // TODO: Implement proper save logic (placeholder).
             $this->logger->info(
                 message: '[CrudHandler] Object update not implemented (TODO)',
                 context: [

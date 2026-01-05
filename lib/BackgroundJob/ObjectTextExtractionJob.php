@@ -70,8 +70,8 @@ class ObjectTextExtractionJob extends QueuedJob
      *
      * Initializes the background job with required services via dependency injection.
      *
-     * @param IAppConfig            $config                Configuration service
-     * @param LoggerInterface       $logger                Logger service
+     * @param IAppConfig            $config        Configuration service
+     * @param LoggerInterface       $logger        Logger service
      * @param TextExtractionService $textExtractor Text extraction service
      *
      * @return void
@@ -81,8 +81,8 @@ class ObjectTextExtractionJob extends QueuedJob
         LoggerInterface $logger,
         TextExtractionService $textExtractor
     ) {
-        $this->config = $config;
-        $this->logger = $logger;
+        $this->config        = $config;
+        $this->logger        = $logger;
         $this->textExtractor = $textExtractor;
     }//end __construct()
 
@@ -99,12 +99,12 @@ class ObjectTextExtractionJob extends QueuedJob
     protected function run($argument): void
     {
         // Check if object extraction is enabled.
-        $objMgmtValue = $this->config->getValueString(
+        $objMgmtValue   = $this->config->getValueString(
             app: 'openregister',
             key: 'objectManagement',
             default: '{}'
         );
-        $objectSettings        = json_decode($objMgmtValue, true);
+        $objectSettings = json_decode($objMgmtValue, true);
         if (($objectSettings['objectExtractionMode'] ?? 'background') === 'none') {
             $message = '[ObjectTextExtractionJob] Object extraction is disabled. Not extracting text from objects.';
             $this->logger->info($message);

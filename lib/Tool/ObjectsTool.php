@@ -82,6 +82,8 @@ class ObjectsTool extends AbstractTool
     /**
      * Get tool description
      *
+     * @return string The tool description
+     *
      * @psalm-return 'Manage objects: search, view, create, update, or delete objects. Objects are data records conforming to schemas.'
      */
     public function getDescription(): string
@@ -94,35 +96,7 @@ class ObjectsTool extends AbstractTool
     /**
      * Get function definitions for LLphant
      *
-     * @return (((string|string[])[]|string)[]|string)[][]
-     *
-     * @psalm-return list{array{name: 'search_objects',
-     *     description: 'Search for objects with optional filters',
-     *     parameters: array{type: 'object', properties: array{query: array{type: 'string',
-     *     description: 'Search query text (optional)'}, register: array{type: 'string',
-     *     description: 'Filter by register ID (optional)'}, schema: array{type: 'string',
-     *     description: 'Filter by schema ID (optional)'}, limit: array{type: 'integer',
-     *     description: 'Maximum number of results (default: 20)'}, offset: array{type: 'integer',
-     *     description: 'Number of results to skip (default: 0)'}}, required: array<never, never>}},
-     *     array{name: 'get_object',
-     *     description: 'Get details about a specific object by ID or UUID',
-     *     parameters: array{type: 'object', properties: array{id: array{type: 'string',
-     *     description: 'The object ID or UUID to retrieve'}}, required: list{'id'}}},
-     *     array{name: 'create_object', description: 'Create a new object with data',
-     *     parameters: array{type: 'object', properties: array{register: array{type: 'string',
-     *     description: 'The register ID where the object should be created'},
-     *     schema: array{type: 'string',
-     *     description: 'The schema ID that defines the object structure'},
-     *     data: array{type: 'object', description: 'The object data conforming to the schema'}},
-     *     required: list{'register', 'schema', 'data'}}}, array{name: 'update_object',
-     *     description: 'Update an existing object',
-     *     parameters: array{type: 'object', properties: array{id: array{type: 'string',
-     *     description: 'The object ID to update'}, data: array{type: 'object',
-     *     description: 'The updated object data (partial updates supported)'}},
-     *     required: list{'id', 'data'}}}, array{name: 'delete_object',
-     *     description: 'Delete an object by ID',
-     *     parameters: array{type: 'object', properties: array{id: array{type: 'string',
-     *     description: 'The object ID to delete'}}, required: list{'id'}}}>
+     * @return array<int, array<string, mixed>> Array of function definitions
      */
     public function getFunctions(): array
     {

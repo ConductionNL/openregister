@@ -134,14 +134,16 @@ class EmbeddingGeneratorHandler
      * @param string $model  Model name
      * @param array  $config Configuration array with api_key and base_url
      *
-     * @return OpenAI3LargeEmbeddingGenerator|OpenAI3SmallEmbeddingGenerator|OpenAIADA002EmbeddingGenerator |OpenAIADA002EmbeddingGenerator Generator instance
+     * @return OpenAIADA002EmbeddingGenerator
+     *     |OpenAI3SmallEmbeddingGenerator
+     *     |OpenAI3LargeEmbeddingGenerator Generator instance
      *
      * @throws \Exception If model is not supported
      */
     private function createOpenAIGenerator(
         string $model,
         array $config
-    ): OpenAIADA002EmbeddingGenerator|OpenAI3SmallEmbeddingGenerator|OpenAI3LargeEmbeddingGenerator|OpenAI3SmallEmbeddingGenerator|OpenAI3LargeEmbeddingGenerator {
+    ): OpenAIADA002EmbeddingGenerator|OpenAI3SmallEmbeddingGenerator|OpenAI3LargeEmbeddingGenerator {
         $llphantConfig = new OpenAIConfig();
 
         if (empty($config['api_key']) === false) {

@@ -69,11 +69,11 @@ class FileHandler
      * @param array $chunks   Array of chunk entities from ChunkMapper (from database)
      * @param array $metadata File metadata
      *
-     * @return array Indexing result
+     * @return (bool|int|string)[]
      *
      * @throws Exception If fileCollection is not configured
      *
-     * @psalm-return array{success: bool, indexed: int, collection: string}
+     * @psalm-return array{success: bool, indexed: int<0, max>, collection: 'files'}
      */
     public function indexFileChunks(int $fileId, array $chunks, array $metadata): array
     {
@@ -171,12 +171,7 @@ class FileHandler
      *
      * @param int|null $limit Maximum number of files to process
      *
-     * @return ((float|int|string[])[]|true)[]
-     *
-     * @psalm-return array{success: true,
-     *     stats: array{processed: 0|1|2, indexed: 0|1|2, failed: int,
-     *     total_chunks: int, errors: list<non-empty-string>,
-     *     execution_time_ms: float}}
+     * @return array Result with success status and stats including processed, indexed, failed counts.
      */
     public function processUnindexedChunks(?int $limit=null): array
     {
@@ -311,11 +306,12 @@ class FileHandler
         );
 
         try {
-            /**
+            /*
              * Delegate to search backend.
              *
              * @psalm-suppress UndefinedInterfaceMethod - indexFiles may exist on specific backend implementations
              */
+
             return $this->searchBackend->indexFiles($fileIds, $collectionName);
         } catch (Exception $e) {
             $this->logger->error(
@@ -341,11 +337,12 @@ class FileHandler
     public function getFileIndexStats(): array
     {
         try {
-            /**
+            /*
              * Delegate to search backend.
              *
              * @psalm-suppress UndefinedInterfaceMethod - getFileIndexStats may exist on specific backend implementations
              */
+
             return $this->searchBackend->getFileIndexStats();
         } catch (Exception $e) {
             $this->logger->error(

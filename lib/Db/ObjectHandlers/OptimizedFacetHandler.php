@@ -149,12 +149,9 @@ class OptimizedFacetHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @return (((int|mixed|string)[]|mixed)[]|string)[][]
+     * @return ((int|mixed|string)[][]|string)[][]
      *
-     * @psalm-return array<string,
-     *     array{type: 'terms',
-     *     buckets: list{0?: array{key: mixed, results: int,
-     *     label: string}|mixed,...}}>
+     * @psalm-return array<string, array{type: 'terms', buckets: list<array{key: mixed, label: string, results: int}>}>
      */
     private function getBatchedMetadataFacets(array $metadataConfig, array $baseQuery): array
     {

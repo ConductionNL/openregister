@@ -23,14 +23,20 @@
 /quality-reports/
 quality-baseline.json
 /phpmetrics/
+/phpmetrics-deps/
+
+# PHPCS/Psalm output files (not config files)
+phpcs-*.json
+phpcs-*.txt
+psalm-errors.json
+psalm-output.json
+psalm-full-output.json
+phpqa_output.log
 
 # Data files
 *.csv
 *.xls
 *.xlsx
-
-
-*.
 
 # Files with unusual extensions or no extensions that could be mistakes
 **/PR *

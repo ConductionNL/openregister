@@ -1033,49 +1033,7 @@ class MetaDataFacetHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @return (((int|mixed|string)[]|mixed|string)[]|bool|string)[][]
-     *
-     * @psalm-return array{register?: array{type: 'categorical'|'date',
-     *     description: string, facet_types: list{0: 'date_histogram'|'terms',
-     *     1?: 'range'}, intervals?: list{'day', 'week', 'month', 'year'},
-     *     has_labels: bool,
-     *     sample_values?: list{0?: array{value: mixed, label: string,
-     *     count: int}|mixed,...}, date_range?: array{min: mixed, max: mixed}},
-     *     schema?: array{type: 'categorical'|'date', description: string,
-     *     facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'},
-     *     intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool,
-     *     sample_values?: list{0?: array{value: mixed, label: string,
-     *     count: int}|mixed,...}, date_range?: array{min: mixed, max: mixed}},
-     *     organisation?: array{type: 'categorical'|'date', description: string,
-     *     facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'},
-     *     intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool,
-     *     sample_values?: list{0?: array{value: mixed, label: string,
-     *     count: int}|mixed,...}, date_range?: array{min: mixed, max: mixed}},
-     *     application?: array{type: 'categorical'|'date', description: string,
-     *     facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'},
-     *     intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool,
-     *     sample_values?: list{0?: array{value: mixed, label: string,
-     *     count: int}|mixed,...}, date_range?: array{min: mixed, max: mixed}},
-     *     created?: array{type: 'categorical'|'date', description: string,
-     *     facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'},
-     *     intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool,
-     *     sample_values?: list{0?: array{value: mixed, label: string,
-     *     count: int}|mixed,...}, date_range?: array{min: mixed, max: mixed}},
-     *     updated?: array{type: 'categorical'|'date', description: string,
-     *     facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'},
-     *     intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool,
-     *     sample_values?: list{0?: array{value: mixed, label: string,
-     *     count: int}|mixed,...}, date_range?: array{min: mixed, max: mixed}},
-     *     published?: array{type: 'categorical'|'date', description: string,
-     *     facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'},
-     *     intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool,
-     *     sample_values?: list{0?: array{value: mixed, label: string,
-     *     count: int}|mixed,...}, date_range?: array{min: mixed, max: mixed}},
-     *     depublished?: array{type: 'categorical'|'date', description: string,
-     *     facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'},
-     *     intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool,
-     *     sample_values?: list{0?: array{value: mixed, label: string,
-     *     count: int}|mixed,...}, date_range?: array{min: mixed, max: mixed}}}
+     * @return (((int|mixed|string)[]|mixed|string)[]|bool|string)[][] Facetable field definitions.
      */
     public function getFacetableFields(array $baseQuery=[]): array
     {

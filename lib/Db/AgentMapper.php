@@ -319,7 +319,7 @@ class AgentMapper extends QBMapper
      *
      * @throws \Exception If user doesn't have read permission
      *
-     * @psalm-return list<Agent>
+     * @psalm-return list<OCA\OpenRegister\Db\Agent>
      */
     public function findAll(?int $limit=null, ?int $offset=null, ?array $filters=[], ?array $order=[]): array
     {

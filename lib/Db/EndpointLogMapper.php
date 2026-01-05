@@ -86,7 +86,7 @@ class EndpointLogMapper extends QBMapper
      *
      * @return EndpointLog[]
      *
-     * @psalm-return list<EndpointLog>
+     * @psalm-return list<OCA\OpenRegister\Db\EndpointLog>
      */
     public function findAll(?int $limit=null, ?int $offset=null): array
     {

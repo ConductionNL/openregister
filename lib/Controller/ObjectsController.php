@@ -357,6 +357,164 @@ class ObjectsController extends Controller
      * @psalm-return   array{register: int, schema: int, registerEntity: mixed, schemaEntity: mixed}
      * @phpstan-return array{register: int, schema: int, registerEntity: mixed, schemaEntity: mixed}
      */
+
+    /**
+     * Parse multi-value parameter (array or comma-separated).
+     *
+     * Supports both formats:
+     * - Array: schemas[]=1&schemas[]=2
+     * - Comma-separated: schemas=1,2,3
+     *
+     * @param mixed  $param        The parameter value (string, array, or null).
+     * @param string $defaultValue Default value to use if param is null.
+     *
+     * @return array Array of values.
+     */
+    private function parseMultiValue($param, string $defaultValue): array
+    {
+        // If no parameter provided, use default.
+        if ($param === null || $param === '') {
+            return [$defaultValue];
+        }
+
+        // If already an array, return as-is.
+        if (is_array($param) === true) {
+            return array_values(array_unique(array_filter($param)));
+            // Remove empty values and duplicates.
+        }
+
+        // If string contains comma, split on comma.
+        if (is_string($param) === true && str_contains($param, ',') === true) {
+            return array_values(array_unique(array_filter(array_map('trim', explode(',', $param)))));
+        }
+
+        // Single value.
+        return [$param];
+    }//end parseMultiValue()
+
+    /**
+     * Perform cross-table search across multiple register+schema combinations.
+     *
+     * @param array         $registers     Array of register IDs/slugs.
+     * @param array         $schemas       Array of schema IDs/slugs.
+     * @param ObjectService $objectService Object service for resolution.
+     *
+     * @return JSONResponse Search results from multiple tables.
+     *
+     * @psalm-suppress UnusedParam Params are used in foreach loops and method calls.
+     */
+    private function crossTableSearch(array $registers, array $schemas, ObjectService $objectService): JSONResponse
+    {
+        $magicMapper    = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
+        $registerMapper = \OC::$server->get(\OCA\OpenRegister\Db\RegisterMapper::class);
+        $schemaMapper   = \OC::$server->get(\OCA\OpenRegister\Db\SchemaMapper::class);
+
+        // Build register+schema pairs.
+        $pairs = [];
+        foreach ($registers as $registerId) {
+            foreach ($schemas as $schemaId) {
+                try {
+                    // Resolve register and schema entities.
+                    $registerEntity = $registerMapper->find(id: $registerId, _multitenancy: false, _rbac: false);
+                    $schemaEntity   = $schemaMapper->find(id: $schemaId, _multitenancy: false, _rbac: false);
+
+                    // Check if magic mapping is enabled for this combination.
+                    $registerConfig      = $registerEntity->getConfiguration() ?? [];
+                    $enableMagicMapping  = ($registerConfig['enableMagicMapping'] ?? false) === true;
+                    $magicMappingSchemas = $registerConfig['magicMappingSchemas'] ?? [];
+
+                    if ($enableMagicMapping === true
+                        && (in_array((string) $schemaEntity->getId(), $magicMappingSchemas, true) === true
+                        || in_array($schemaEntity->getSlug(), $magicMappingSchemas, true) === true)
+                    ) {
+                        $pairs[] = [
+                            'register' => $registerEntity,
+                            'schema'   => $schemaEntity,
+                        ];
+                    }
+                } catch (\Exception $e) {
+                    // Skip invalid register/schema combinations.
+                    $this->logger->warning(
+                        'Invalid register/schema in cross-table search',
+                        [
+                            'register' => $registerId,
+                            'schema'   => $schemaId,
+                            'error'    => $e->getMessage(),
+                        ]
+                    );
+                    continue;
+                }//end try
+            }//end foreach
+        }//end foreach
+
+        if (empty($pairs) === true) {
+            return new JSONResponse(
+                data: [
+                    'message' => 'No valid magic-mapped register+schema combinations found',
+                    'results' => [],
+                    'total'   => 0,
+                ],
+                statusCode: 404
+            );
+        }
+
+        // Build search query.
+        $query = $objectService->buildSearchQuery(
+            requestParams: $this->request->getParams(),
+            register: (int) $pairs[0]['register']->getId(),
+            schema: (int) $pairs[0]['schema']->getId()
+        );
+
+        // Perform cross-table search.
+        $results = $magicMapper->searchAcrossMultipleTables(query: $query, registerSchemaPairs: $pairs);
+
+        // Serialize results.
+        $serializedResults = [];
+        foreach ($results as $entity) {
+            $serializedResults[] = $entity->jsonSerialize();
+        }
+
+        // Calculate pagination.
+        $limit  = $query['_limit'] ?? 20;
+        $offset = $query['_offset'] ?? 0;
+        $total  = count($serializedResults);
+        if ($limit > 0) {
+            $pages = (int) ceil($total / $limit);
+            $page  = (int) floor($offset / $limit) + 1;
+        } else {
+            $pages = 1;
+            $page  = 1;
+        }
+
+        return new JSONResponse(
+            data: [
+                'results' => $serializedResults,
+                'total'   => $total,
+                'pages'   => $pages,
+                'page'    => $page,
+                'limit'   => $limit,
+                '@self'   => [
+                    'source'         => 'cross_table_magic_mapper',
+                    'table_count'    => count($pairs),
+                    'register_count' => count($registers),
+                    'schema_count'   => count($schemas),
+                ],
+            ]
+        );
+    }//end crossTableSearch()
+
+    /**
+     * Resolve register and schema IDs from slugs or IDs.
+     *
+     * @param string        $register      Register ID or slug.
+     * @param string        $schema        Schema ID or slug.
+     * @param ObjectService $objectService Object service for resolution.
+     *
+     * @return array Resolved register and schema information.
+     *
+     * @throws RegisterNotFoundException When register is not found.
+     * @throws SchemaNotFoundException   When schema is not found.
+     */
     private function resolveRegisterSchemaIds(string $register, string $schema, ObjectService $objectService): array
     {
         try {
@@ -436,6 +594,47 @@ class ObjectsController extends Controller
      */
     public function index(string $register, string $schema, ObjectService $objectService): JSONResponse
     {
+        // Check if multiple schemas are requested via query parameters.
+        $params         = $this->request->getParams();
+        $schemasParam   = $params['schemas'] ?? null;
+        $registersParam = $params['registers'] ?? null;
+
+        // Parse schemas: support both array format (schemas[]=1&schemas[]=2) and comma-separated (schemas=1,2,3).
+        // Only parse if explicitly set; don't use URL path schema as default for multi-value.
+        $schemasList = [];
+        if ($schemasParam !== null) {
+            $schemasList = $this->parseMultiValue(param: $schemasParam, defaultValue: $schema);
+        }
+
+        // Parse registers: same logic.
+        $registersList = [];
+        if ($registersParam !== null) {
+            $registersList = $this->parseMultiValue(param: $registersParam, defaultValue: $register);
+        }
+
+        // If multiple schemas or registers are specified via parameters, use cross-table search.
+        if ((count($schemasList) > 1) || (count($registersList) > 1)) {
+            // Use schema list if specified, otherwise use URL path schema.
+            if (empty($schemasList) === false) {
+                $finalSchemas = $schemasList;
+            } else {
+                $finalSchemas = [$schema];
+            }
+
+            if (empty($registersList) === false) {
+                $finalRegisters = $registersList;
+            } else {
+                $finalRegisters = [$register];
+            }
+
+            return $this->crossTableSearch(
+                registers: $finalRegisters,
+                schemas: $finalSchemas,
+                objectService: $objectService
+            );
+        }
+
+        // Single schema/register: use existing logic.
         try {
             // Resolve slugs to numeric IDs consistently (validation only).
             $resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
@@ -617,13 +816,11 @@ class ObjectsController extends Controller
      * @param string        $schema        The schema slug or identifier
      * @param ObjectService $objectService The object service
      *
-     * @return JSONResponse A JSON response containing the object
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|404, array, array<never, never>>
+     * @return JSONResponse JSON response with the object or error
      */
     public function show(
         string $id,
@@ -1469,13 +1666,16 @@ class ObjectsController extends Controller
      * @param string        $schema        The schema slug or identifier
      * @param ObjectService $objectService The object service
      *
-     * @return JSONResponse A JSON response containing the related objects
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200, array{relations: list<mixed>,...}, array<never, never>>
+     * @return JSONResponse JSON response with related objects
+     *
+     * @psalm-return JSONResponse<200,
+     *     array{results: list<ObjectEntity>, total: int<0, max>,
+     *     limit: 30|mixed, offset: 0|mixed},
+     *     array<never, never>>
      */
     public function uses(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -1513,13 +1713,16 @@ class ObjectsController extends Controller
      * @param string        $schema        The schema slug or identifier
      * @param ObjectService $objectService The object service
      *
-     * @return JSONResponse A JSON response containing the referenced objects
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200, array{uses: string,...}, array<never, never>>
+     * @return JSONResponse JSON response with objects that use this object
+     *
+     * @psalm-return JSONResponse<200,
+     *     array{results: array<never, never>, total: 0, limit: 30|mixed,
+     *     offset: 0|mixed, message?: string},
+     *     array<never, never>>
      */
     public function used(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -1665,13 +1868,11 @@ class ObjectsController extends Controller
      * @param string        $schema        The schema ID
      * @param ObjectService $objectService The object service
      *
-     * @return JSONResponse A JSON response containing the locked object
+     * @return JSONResponse JSON response with lock result
      *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
-     *
-     * @psalm-return JSONResponse<200, array{locked: true, ...<array-key, mixed>}, array<never, never>>
      */
     public function lock(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -1793,6 +1994,8 @@ class ObjectsController extends Controller
      * @NoCSRFRequired
      *
      * @psalm-suppress NoValue
+     *
+     * @psalm-return JSONResponse<200|400|500, array{error?: string, message?: 'Import successful', summary?: mixed}, array<never, never>>
      */
     public function import(int $register): JSONResponse
     {
@@ -1855,16 +2058,11 @@ class ObjectsController extends Controller
      * @param string        $schema        The schema slug or identifier
      * @param ObjectService $objectService The object service
      *
-     * @return JSONResponse JSON response with published object
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400,
-     *     array{error?: mixed|string, name?: mixed|null|string,
-     *     '@self'?: array{name: mixed|null|string,...}|mixed,...},
-     *     array<never, never>>
+     * @return JSONResponse JSON response with published object or error
      */
     public function publish(
         string $id,
@@ -1910,16 +2108,11 @@ class ObjectsController extends Controller
      * @param string        $schema        The schema slug or identifier
      * @param ObjectService $objectService The object service
      *
-     * @return JSONResponse JSON response with depublished object
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400,
-     *     array{error?: mixed|string, name?: mixed|null|string,
-     *     '@self'?: array{name: mixed|null|string,...}|mixed,...},
-     *     array<never, never>>
+     * @return JSONResponse JSON response with depublished object or error
      */
     public function depublish(
         string $id,
@@ -1966,39 +2159,11 @@ class ObjectsController extends Controller
      * @param string        $schema        The schema slug or identifier
      * @param ObjectService $objectService The object service
      *
-     * @return JSONResponse JSON response containing merge operation result
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<
-     *     200|400|401|403|404|500,
-     *     array{
-     *         error?: string,
-     *         success?: true,
-     *         sourceObject?: array,
-     *         targetObject?: array,
-     *         mergedObject?: mixed,
-     *         actions?: array{
-     *             properties: list{0?: array{property: mixed, oldValue: mixed|null, newValue: mixed},...},
-     *             files: array<never, never>|mixed,
-     *             relations: array{action: 'dropped'|'transferred', relations: array|null},
-     *             references: list{0?: array{objectId: mixed, title: mixed},...}
-     *         },
-     *         statistics?: array{
-     *             propertiesChanged: 0|1|2,
-     *             filesTransferred: 0|mixed,
-     *             filesDeleted: 0|mixed,
-     *             relationsTransferred: 0|1|2,
-     *             relationsDropped: int<0, max>,
-     *             referencesUpdated: int
-     *         },
-     *         warnings?: array,
-     *         errors?: array<never, never>
-     *     },
-     *     array<never, never>
-     * >
+     * @return JSONResponse JSON response with merge result or error
      */
     public function merge(
         string $id,
@@ -2048,38 +2213,11 @@ class ObjectsController extends Controller
      *
      * @param ObjectService $objectService The object service
      *
-     * @return JSONResponse JSON response containing migration operation result
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<
-     *     200|400|401|403|404|500,
-     *     array{
-     *         error?: string,
-     *         success?: bool,
-     *         statistics?: array{
-     *             objectsMigrated: 0|1|2,
-     *             objectsFailed: int,
-     *             propertiesMapped: int<0, max>,
-     *             propertiesDiscarded: int
-     *         },
-     *         details?: list{
-     *             0?: array{
-     *                 objectId: mixed,
-     *                 objectTitle: mixed|null,
-     *                 success: bool,
-     *                 error: null|string,
-     *                 newObjectId?: mixed
-     *             },
-     *             ...
-     *         },
-     *         warnings?: list<'Some objects failed to migrate. Check details for specific errors.'>,
-     *         errors?: list{0?: string,...}
-     *     },
-     *     array<never, never>
-     * >
+     * @return JSONResponse JSON response with migration result or error
      */
     public function migrate(ObjectService $objectService): JSONResponse
     {
@@ -2229,6 +2367,8 @@ class ObjectsController extends Controller
      * @NoCSRFRequired
      *
      * @psalm-suppress NoValue
+     *
+     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, data?: mixed}, array<never, never>>
      */
     public function vectorizeBatch(): JSONResponse
     {
@@ -2270,6 +2410,8 @@ class ObjectsController extends Controller
      * @NoCSRFRequired
      *
      * @psalm-suppress NoValue
+     *
+     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, stats?: mixed}, array<never, never>>
      */
     public function getObjectVectorizationStats(): JSONResponse
     {
@@ -2310,6 +2452,8 @@ class ObjectsController extends Controller
      * @NoCSRFRequired
      *
      * @psalm-suppress NoValue
+     *
+     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, count?: mixed}, array<never, never>>
      */
     public function getObjectVectorizationCount(): JSONResponse
     {

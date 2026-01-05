@@ -66,7 +66,9 @@ class FacetBuilder
     /**
      * Get facetable fields for configuration
      *
-     * @return array Facetable fields
+     * @return (mixed|string)[][] Facetable fields
+     *
+     * @psalm-return list<array{name: non-empty-string, type: 'unknown'|mixed}>
      */
     public function getRawSolrFieldsForFacetConfiguration(): array
     {

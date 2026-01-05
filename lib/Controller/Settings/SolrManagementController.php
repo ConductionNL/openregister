@@ -72,21 +72,7 @@ class SolrManagementController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response with Solr fields comparison
-     *
-     * @psalm-return JSONResponse<200|422,
-     *     array{success: bool, message?: string, details?: array{error: string},
-     *     comparison?: array{total_differences: int<0, max>,
-     *     missing_count: int<0, max>, extra_count: int<0, max>,
-     *     missing: list<array{collection: 'files'|'objects',
-     *     collectionLabel: 'File Collection'|'Object Collection', config: mixed,
-     *     name: mixed, type: mixed}>,
-     *     extra: list<array{collection: 'files'|'objects',
-     *     collectionLabel: 'File Collection'|'Object Collection', name: mixed}>,
-     *     object_collection: array{missing: int<0, max>, extra: int<0, max>},
-     *     file_collection: array{missing: int<0, max>, extra: int<0, max>}},
-     *     object_collection_status?: mixed, file_collection_status?: mixed},
-     *     array<never, never>>
+     * @return JSONResponse JSON response with SOLR field configuration
      */
     public function getSolrFields(): JSONResponse
     {
@@ -197,14 +183,7 @@ class SolrManagementController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response with field creation results
-     *
-     * @psalm-return JSONResponse<200|422,
-     *     array{success: bool, message: string, details?: array{error: string},
-     *     total_created?: 0|mixed, total_errors?: 0|mixed,
-     *     results?: array{objects: array{success: false, message: string}|mixed|null,
-     *     files: array{success: false, message: string}|mixed|null},
-     *     execution_time_ms?: float, dry_run?: bool}, array<never, never>>
+     * @return JSONResponse JSON response with field creation result
      */
     public function createMissingSolrFields(): JSONResponse
     {
@@ -370,7 +349,7 @@ class SolrManagementController extends Controller
             $fieldsInfo     = $guzzleSolrService->getFieldsConfiguration();
 
             if (($fieldsInfo['success'] === false)) {
-                /** @psalm-suppress InvalidArrayOffset - message key may exist on error responses */
+                // @psalm-suppress InvalidArrayOffset - message key may exist on error responses
                 $errorMessage = $fieldsInfo['message'] ?? 'Unknown error';
                 return new JSONResponse(
                     data: [

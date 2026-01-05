@@ -19,6 +19,7 @@
 
 namespace OCA\OpenRegister\Db;
 
+use DateInterval;
 use DateTime;
 use BadMethodCallException;
 use Exception;
@@ -260,11 +261,9 @@ class ObjectEntityMapper extends QBMapper
      * @param string   $uuid         Object UUID to lock.
      * @param int|null $lockDuration Lock duration in seconds (null for default).
      *
-     * @return (mixed|string)[] Lock information including expiry time.
+     * @return ((int|null|string)[]|string)[] Lock result.
      *
      * @throws Exception If locking fails.
-     *
-     * @psalm-return array{locked: mixed, uuid: string}
      */
     public function lockObject(string $uuid, ?int $lockDuration=null): array
     {
@@ -289,10 +288,10 @@ class ObjectEntityMapper extends QBMapper
             $now        = new DateTime();
             $expiration = clone $now;
             if ($lockDuration !== null && $lockDuration > 0) {
-                $expiration->add(new \DateInterval('PT'.$lockDuration.'S'));
+                $expiration->add(new DateInterval('PT'.$lockDuration.'S'));
             } else {
                 // Default 1 hour if no duration specified.
-                $expiration->add(new \DateInterval('PT3600S'));
+                $expiration->add(new DateInterval('PT3600S'));
             }
 
             $lockData = [
@@ -307,14 +306,14 @@ class ObjectEntityMapper extends QBMapper
             // This ensures Entity's change tracking and JSON serialization work correctly.
             $entity = $this->find($uuid);
             $entity->setLocked($lockData);
-            $updatedEntity = $this->update($entity);
+            $this->update($entity);
 
             // Return lock information.
             return [
                 'locked' => $lockData,
                 'uuid'   => $uuid,
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             throw new Exception("Failed to lock object: ".$e->getMessage());
         }//end try
     }//end lockObject()
@@ -337,7 +336,7 @@ class ObjectEntityMapper extends QBMapper
                 ->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid)));
             $qb->executeStatement();
             return true;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return false;
         }
     }//end unlockObject()
@@ -377,7 +376,7 @@ class ObjectEntityMapper extends QBMapper
                 $this->eventDispatcher->dispatch(ObjectCreatedEvent::class, new ObjectCreatedEvent($result));
 
                 return $result;
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 // Log error and fallback to blob storage.
                 $this->logger->warning(
                     '[ObjectEntityMapper] Magic mapper insert failed, falling back to blob storage',
@@ -408,9 +407,9 @@ class ObjectEntityMapper extends QBMapper
      *
      * @param \OCP\AppFramework\Db\Entity $entity Entity to insert.
      *
-     * @return \OCP\AppFramework\Db\Entity Inserted entity.
+     * @return ObjectEntity Inserted entity.
      */
-    public function insertDirectBlobStorage(\OCP\AppFramework\Db\Entity $entity): \OCP\AppFramework\Db\Entity
+    public function insertDirectBlobStorage(\OCP\AppFramework\Db\Entity $entity): ObjectEntity
     {
         // Dispatch creating event.
         $this->eventDispatcher->dispatch(ObjectCreatingEvent::class, new ObjectCreatingEvent($entity));
@@ -473,7 +472,7 @@ class ObjectEntityMapper extends QBMapper
 
             // Return true if magic mapping is enabled and this schema is in the list.
             return ($magicMappingEnabled === true && $isInMagicList === true);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // If anything goes wrong, fallback to blob storage.
             $this->logger->debug(
                 '[ObjectEntityMapper] Failed to determine magic mapping status, using blob storage',
@@ -507,7 +506,7 @@ class ObjectEntityMapper extends QBMapper
 
             // Return true if magic mapping is enabled and this schema is in the list.
             return ($magicMappingEnabled === true && $isInMagicList === true);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // If anything goes wrong, fallback to blob storage.
             $this->logger->debug(
                 '[ObjectEntityMapper] Failed to determine magic mapping status, using blob storage',
@@ -538,8 +537,13 @@ class ObjectEntityMapper extends QBMapper
         // CRITICAL: Pass register/schema for magic mapper routing.
         $oldObject = null;
         try {
-            $oldObject = $this->find(identifier: $entity->getId(), register: $register, schema: $schema, includeDeleted: true);
-        } catch (\Exception $e) {
+            $oldObject = $this->find(
+                identifier: $entity->getId(),
+                register: $register,
+                schema: $schema,
+                includeDeleted: true
+            );
+        } catch (Exception $e) {
             // Ignore errors when fetching old object - it's just for event/audit trail.
             $this->logger->debug('[ObjectEntityMapper] Could not fetch old object for event', ['error' => $e->getMessage()]);
         }
@@ -556,11 +560,15 @@ class ObjectEntityMapper extends QBMapper
         // Use register+schema parameters if provided, otherwise try to resolve from entity.
         $useMagic = false;
         if ($register !== null && $schema !== null) {
-            error_log('[ObjectEntityMapper::update] Has register+schema params - checking magic mapper');
+            $this->logger->debug('[ObjectEntityMapper::update] Has register+schema params - checking magic mapper');
             $useMagic = $this->shouldUseMagicMapperForRegisterSchema(register: $register, schema: $schema);
-            error_log('[ObjectEntityMapper::update] shouldUseMagicMapper result: '.($useMagic ? 'TRUE' : 'FALSE'));
+            if ($useMagic === true) {
+                $this->logger->debug('[ObjectEntityMapper::update] shouldUseMagicMapper result: TRUE');
+            } else {
+                $this->logger->debug('[ObjectEntityMapper::update] shouldUseMagicMapper result: FALSE');
+            }
         } else if ($entity instanceof ObjectEntity) {
-            error_log('[ObjectEntityMapper::update] No register/schema params - checking entity');
+            $this->logger->debug('[ObjectEntityMapper::update] No register/schema params - checking entity');
             $useMagic = $this->shouldUseMagicMapper($entity);
         }
 
@@ -574,7 +582,7 @@ class ObjectEntityMapper extends QBMapper
                 $this->eventDispatcher->dispatch(ObjectUpdatedEvent::class, new ObjectUpdatedEvent($result, $entity));
 
                 return $result;
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 // Log error and fallback to blob storage.
                 $this->logger->warning(
                     '[ObjectEntityMapper] Magic mapper update failed, falling back to blob storage',
@@ -604,9 +612,9 @@ class ObjectEntityMapper extends QBMapper
      *
      * @param \OCP\AppFramework\Db\Entity $entity Entity to update.
      *
-     * @return \OCP\AppFramework\Db\Entity Updated entity.
+     * @return ObjectEntity Updated entity.
      */
-    public function updateDirectBlobStorage(\OCP\AppFramework\Db\Entity $entity): \OCP\AppFramework\Db\Entity
+    public function updateDirectBlobStorage(\OCP\AppFramework\Db\Entity $entity): ObjectEntity
     {
         // Dispatch updating event.
         $this->eventDispatcher->dispatch(
@@ -714,7 +722,9 @@ class ObjectEntityMapper extends QBMapper
      * @param int|array|null $schemaId   Filter by schema ID(s).
      * @param array          $exclude    Combinations to exclude.
      *
-     * @return array Statistics including total, size, invalid, deleted, locked, published counts.
+     * @return int[] Statistics including total, size, invalid, deleted, locked, published counts.
+     *
+     * @psalm-return array{total: int, size: int, invalid: int, deleted: int, locked: int, published: int}
      */
     public function getStatistics(int|array|null $registerId=null, int|array|null $schemaId=null, array $exclude=[]): array
     {
@@ -727,7 +737,9 @@ class ObjectEntityMapper extends QBMapper
      * @param int|null $registerId Filter by register ID.
      * @param int|null $schemaId   Filter by schema ID.
      *
-     * @return array Chart data with 'labels' and 'series' keys.
+     * @return (int|mixed|string)[][] Chart data with 'labels' and 'series' keys.
+     *
+     * @psalm-return array{labels: array<'Unknown'|mixed>, series: array<int>}
      */
     public function getRegisterChartData(?int $registerId=null, ?int $schemaId=null): array
     {
@@ -740,7 +752,9 @@ class ObjectEntityMapper extends QBMapper
      * @param int|null $registerId Filter by register ID.
      * @param int|null $schemaId   Filter by schema ID.
      *
-     * @return array Chart data with 'labels' and 'series' keys.
+     * @return (int|mixed|string)[][] Chart data with 'labels' and 'series' keys.
+     *
+     * @psalm-return array{labels: array<'Unknown'|mixed>, series: array<int>}
      */
     public function getSchemaChartData(?int $registerId=null, ?int $schemaId=null): array
     {
@@ -753,7 +767,9 @@ class ObjectEntityMapper extends QBMapper
      * @param int|null $registerId Filter by register ID.
      * @param int|null $schemaId   Filter by schema ID.
      *
-     * @return array Chart data with 'labels' and 'series' keys.
+     * @return (int|string)[][] Chart data with 'labels' and 'series' keys.
+     *
+     * @psalm-return array{labels: list<'0-1 KB'|'1-10 KB'|'10-100 KB'|'100 KB-1 MB'|'> 1 MB'>, series: list<int>}
      */
     public function getSizeDistributionChartData(?int $registerId=null, ?int $schemaId=null): array
     {
@@ -769,7 +785,7 @@ class ObjectEntityMapper extends QBMapper
      *
      * @param array $query Search query array containing filters and facet configuration.
      *
-     * @return array Simple facet data.
+     * @return ((((int|mixed|string)[]|int|mixed|string)[]|mixed|string)[]|string)[][] Facet results.
      *
      * @throws \OCP\DB\Exception If a database error occurs.
      */
@@ -783,9 +799,11 @@ class ObjectEntityMapper extends QBMapper
      *
      * @param array $baseQuery Base query filters for context.
      *
-     * @return array Facetable fields with their configuration.
+     * @return array[] Facetable fields with their configuration.
      *
      * @throws \OCP\DB\Exception If a database error occurs.
+     *
+     * @psalm-return array<string, array>
      */
     public function getFacetableFieldsFromSchemas(array $baseQuery=[]): array
     {
@@ -827,6 +845,8 @@ class ObjectEntityMapper extends QBMapper
      * @param Schema|null   $schema     Optional schema context for magic mapper routing.
      *
      * @return array Array of UUIDs of deleted objects.
+     *
+     * @psalm-return list<mixed>
      */
     public function deleteObjects(
         array $uuids=[],
@@ -855,12 +875,12 @@ class ObjectEntityMapper extends QBMapper
                             $unifiedObjectMapper->delete($object);
                         } else {
                             // Soft delete: set deleted timestamp.
-                            $object->setDeleted(new \DateTime());
+                            $object->setDeleted(new DateTime());
                             $unifiedObjectMapper->update($object);
                         }
 
                         $deletedUuids[] = $uuid;
-                    } catch (\Exception $e) {
+                    } catch (Exception $e) {
                         $this->logger->warning(
                             '[ObjectEntityMapper] Failed to delete object via magic mapper',
                             ['uuid' => $uuid, 'error' => $e->getMessage()]
@@ -869,7 +889,7 @@ class ObjectEntityMapper extends QBMapper
                 }//end foreach
 
                 return $deletedUuids;
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->logger->error(
                     '[ObjectEntityMapper] Magic mapper deleteObjects failed, falling back to blob storage',
                     ['error' => $e->getMessage()]
@@ -883,16 +903,18 @@ class ObjectEntityMapper extends QBMapper
     /**
      * Perform bulk publish operations on objects by UUID.
      *
-     * @param array          $uuids    Array of object UUIDs to publish.
-     * @param \DateTime|bool $datetime Optional datetime for publishing.
-     * @param Register|null  $register Optional register context for magic mapper routing.
-     * @param Schema|null    $schema   Optional schema context for magic mapper routing.
+     * @param array         $uuids    Array of object UUIDs to publish.
+     * @param DateTime|bool $datetime Optional datetime for publishing.
+     * @param Register|null $register Optional register context for magic mapper routing.
+     * @param Schema|null   $schema   Optional schema context for magic mapper routing.
      *
      * @return array Array of UUIDs of published objects.
+     *
+     * @psalm-return list<mixed>
      */
     public function publishObjects(
         array $uuids=[],
-        \DateTime|bool $datetime=true,
+        DateTime|bool $datetime=true,
         ?Register $register=null,
         ?Schema $schema=null
     ): array {
@@ -916,8 +938,8 @@ class ObjectEntityMapper extends QBMapper
 
                         // Update published timestamp.
                         if ($datetime === true) {
-                            $object->setPublished(new \DateTime());
-                        } else if ($datetime instanceof \DateTime) {
+                            $object->setPublished(new DateTime());
+                        } else if ($datetime instanceof DateTime) {
                             $object->setPublished($datetime);
                         } else if ($datetime === false) {
                             $object->setPublished(null);
@@ -926,7 +948,7 @@ class ObjectEntityMapper extends QBMapper
                         // Save the updated object.
                         $unifiedObjectMapper->update($object);
                         $publishedUuids[] = $uuid;
-                    } catch (\Exception $e) {
+                    } catch (Exception $e) {
                         $this->logger->warning(
                             '[ObjectEntityMapper] Failed to publish object via magic mapper',
                             ['uuid' => $uuid, 'error' => $e->getMessage()]
@@ -935,7 +957,7 @@ class ObjectEntityMapper extends QBMapper
                 }//end foreach
 
                 return $publishedUuids;
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->logger->error(
                     '[ObjectEntityMapper] Magic mapper publishObjects failed, falling back to blob storage',
                     ['error' => $e->getMessage()]
@@ -951,16 +973,18 @@ class ObjectEntityMapper extends QBMapper
     /**
      * Perform bulk depublish operations on objects by UUID.
      *
-     * @param array          $uuids    Array of object UUIDs to depublish.
-     * @param \DateTime|bool $datetime Optional datetime for depublishing.
-     * @param Register|null  $register Optional register context for magic mapper routing.
-     * @param Schema|null    $schema   Optional schema context for magic mapper routing.
+     * @param array         $uuids    Array of object UUIDs to depublish.
+     * @param DateTime|bool $datetime Optional datetime for depublishing.
+     * @param Register|null $register Optional register context for magic mapper routing.
+     * @param Schema|null   $schema   Optional schema context for magic mapper routing.
      *
      * @return array Array of UUIDs of depublished objects.
+     *
+     * @psalm-return list<mixed>
      */
     public function depublishObjects(
         array $uuids=[],
-        \DateTime|bool $datetime=true,
+        DateTime|bool $datetime=true,
         ?Register $register=null,
         ?Schema $schema=null
     ): array {
@@ -981,8 +1005,8 @@ class ObjectEntityMapper extends QBMapper
                         );
 
                         if ($datetime === true) {
-                            $object->setDepublished(new \DateTime());
-                        } else if ($datetime instanceof \DateTime) {
+                            $object->setDepublished(new DateTime());
+                        } else if ($datetime instanceof DateTime) {
                             $object->setDepublished($datetime);
                         } else if ($datetime === false) {
                             $object->setDepublished(null);
@@ -990,7 +1014,7 @@ class ObjectEntityMapper extends QBMapper
 
                         $unifiedObjectMapper->update($object);
                         $depublishedUuids[] = $uuid;
-                    } catch (\Exception $e) {
+                    } catch (Exception $e) {
                         $this->logger->warning(
                             '[ObjectEntityMapper] Failed to depublish object via magic mapper',
                             ['uuid' => $uuid, 'error' => $e->getMessage()]
@@ -999,7 +1023,7 @@ class ObjectEntityMapper extends QBMapper
                 }//end foreach
 
                 return $depublishedUuids;
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->logger->error(
                     '[ObjectEntityMapper] Magic mapper depublishObjects failed, falling back to blob storage',
                     ['error' => $e->getMessage()]
@@ -1016,9 +1040,11 @@ class ObjectEntityMapper extends QBMapper
      * @param int  $schemaId   Schema ID.
      * @param bool $publishAll Whether to publish all objects.
      *
-     * @return array Statistics about the publishing operation.
+     * @return (array|int)[] Statistics about the publishing operation.
      *
      * @throws \Exception If the publishing operation fails.
+     *
+     * @psalm-return array{published_count: int<0, max>, published_uuids: list<mixed>, schema_id: int}
      */
     public function publishObjectsBySchema(int $schemaId, bool $publishAll=false): array
     {
@@ -1031,9 +1057,11 @@ class ObjectEntityMapper extends QBMapper
      * @param int  $schemaId   Schema ID.
      * @param bool $hardDelete Whether to force hard delete.
      *
-     * @return array Statistics about the deletion operation.
+     * @return (array|int)[]
      *
      * @throws \Exception If the deletion operation fails.
+     *
+     * @psalm-return array{deleted_count: int<0, max>, deleted_uuids: list<mixed>, schema_id: int}
      */
     public function deleteObjectsBySchema(int $schemaId, bool $hardDelete=false): array
     {
@@ -1045,9 +1073,11 @@ class ObjectEntityMapper extends QBMapper
      *
      * @param int $registerId Register ID.
      *
-     * @return array Statistics about the deletion operation.
+     * @return (array|int)[]
      *
      * @throws \Exception If the deletion operation fails.
+     *
+     * @psalm-return array{deleted_count: int<0, max>, deleted_uuids: list<mixed>, register_id: int}
      */
     public function deleteObjectsByRegister(int $registerId): array
     {
@@ -1062,6 +1092,8 @@ class ObjectEntityMapper extends QBMapper
      * @return array Array of inserted object UUIDs.
      *
      * @throws \OCP\DB\Exception If a database error occurs.
+     *
+     * @psalm-return list<mixed>
      */
     public function processInsertChunk(array $insertChunk): array
     {
@@ -1073,9 +1105,11 @@ class ObjectEntityMapper extends QBMapper
      *
      * @param array $updateChunk Array of ObjectEntity instances to update.
      *
-     * @return array Array of updated object UUIDs.
+     * @return string[] Array of updated object UUIDs.
      *
      * @throws \OCP\DB\Exception If a database error occurs.
+     *
+     * @psalm-return list<string>
      */
     public function processUpdateChunk(array $updateChunk): array
     {
@@ -1089,6 +1123,8 @@ class ObjectEntityMapper extends QBMapper
      * @param array $updateObjects Array of objects to update.
      *
      * @return int Optimal chunk size in number of objects.
+     *
+     * @psalm-return int<5, 100>
      */
     public function calculateOptimalChunkSize(array $insertObjects, array $updateObjects): int
     {
@@ -1108,7 +1144,9 @@ class ObjectEntityMapper extends QBMapper
      * @param array $objects     Array of objects to check.
      * @param int   $maxSafeSize Maximum safe size in bytes.
      *
-     * @return array Array with 'large' and 'normal' keys.
+     * @return array[] Array with 'large' and 'normal' keys.
+     *
+     * @psalm-return array{large: list<mixed>, normal: list<mixed>}
      */
     public function separateLargeObjects(array $objects, int $maxSafeSize=1000000): array
     {
@@ -1121,6 +1159,8 @@ class ObjectEntityMapper extends QBMapper
      * @param array $largeObjects Array of large objects to process.
      *
      * @return array Array of processed object UUIDs.
+     *
+     * @psalm-return list<mixed>
      */
     public function processLargeObjectsIndividually(array $largeObjects): array
     {
@@ -1134,9 +1174,11 @@ class ObjectEntityMapper extends QBMapper
      * @param string|null $defaultOrganisation Default organization UUID.
      * @param int         $batchSize           Number of objects per batch.
      *
-     * @return array Statistics about the bulk operation.
+     * @return (DateTime|mixed|string)[] Statistics about the bulk operation.
      *
      * @throws \Exception If the bulk operation fails.
+     *
+     * @psalm-return array{endTime: DateTime, duration: string,...}
      */
     public function bulkOwnerDeclaration(
         ?string $defaultOwner=null,
@@ -1280,7 +1322,7 @@ class ObjectEntityMapper extends QBMapper
                     rbac: $_rbac,
                     multitenancy: $_multitenancy
                 );
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->logger->error(
                     '[ObjectEntityMapper] Magic mapper find failed, falling back to blob storage',
                     [
@@ -1358,6 +1400,8 @@ class ObjectEntityMapper extends QBMapper
      *
      * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found.
      * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple objects found.
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) $_rbac reserved for interface compatibility.
      */
     public function findDirectBlobStorage(
         string|int $identifier, ?Register $register=null,
@@ -1563,7 +1607,7 @@ class ObjectEntityMapper extends QBMapper
                     schema: $schema,
                     published: $published
                 );
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->logger->error(
                     '[ObjectEntityMapper] Magic mapper findAll failed, falling back to blob storage',
                     [
@@ -1703,6 +1747,8 @@ class ObjectEntityMapper extends QBMapper
      * @return ObjectEntity[]
      *
      * @psalm-return list<ObjectEntity>
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) Parameters reserved for interface compatibility.
      */
     public function findAllDirectBlobStorage(
         ?int $limit=null,
@@ -1837,6 +1883,8 @@ class ObjectEntityMapper extends QBMapper
      * @return ObjectEntity[]
      *
      * @psalm-return list<ObjectEntity>
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) Parameters reserved for interface compatibility.
      */
     public function searchObjects(
         array $query=[], ?string $_activeOrganisationUuid=null,
@@ -1879,6 +1927,8 @@ class ObjectEntityMapper extends QBMapper
      * @param string|null $uses                    Value that must be present in relations.
      *
      * @return int Count of objects.
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) Parameters reserved for interface compatibility.
      */
     public function countSearchObjects(
         array $query=[], ?string $_activeOrganisationUuid=null,
@@ -2050,12 +2100,12 @@ class ObjectEntityMapper extends QBMapper
 
         // Search in the object JSON field for the search term.
         if ($partialMatch === true) {
-            /** @psalm-suppress UndefinedInterfaceMethod - escapeLikeParameter exists on QueryBuilder implementation */
+            // @psalm-suppress UndefinedInterfaceMethod
             $qb->andWhere(
                 $qb->expr()->like('object', $qb->createNamedParameter('%'.$qb->escapeLikeParameter($search).'%'))
             );
         } else {
-            /** @psalm-suppress UndefinedInterfaceMethod - escapeLikeParameter exists on QueryBuilder implementation */
+            // @psalm-suppress UndefinedInterfaceMethod
             $qb->andWhere(
                 $qb->expr()->like('object', $qb->createNamedParameter('%"'.$qb->escapeLikeParameter($search).'"%'))
             );

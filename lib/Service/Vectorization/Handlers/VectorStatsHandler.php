@@ -90,7 +90,7 @@ class VectorStatsHandler
     /**
      * Get vector statistics from database
      *
-     * @return (int|int[])[] Statistics from database
+     * @return (int[])[] Statistics from database
      *
      * @psalm-return array{total_vectors: int, by_type: array<int>,
      *     by_model: array<int>, object_vectors: int, file_vectors: int}
@@ -173,8 +173,7 @@ class VectorStatsHandler
 
             $settings = $this->settingsService->getSettings();
 
-            // Get vector field from LLM configuration, default to '_embedding_'.
-            /** @var array{llm?: array{vectorConfig?: array{solrField?: string}}, solr?: array{objectCollection?: string, collection?: string, fileCollection?: string}} $settings */
+            // Get vector field from LLM configuration, default to '_embedding_' field.
             $vectorField      = $settings['llm']['vectorConfig']['solrField'] ?? '_embedding_';
             $objectCollection = $settings['solr']['objectCollection'] ?? $settings['solr']['collection'] ?? null;
             $fileCollection   = $settings['solr']['fileCollection'] ?? null;

@@ -71,7 +71,7 @@ class MergeHandler
      *                               - fileAction: 'transfer' or 'delete'
      *                               - relationAction: 'transfer' or 'drop'
      *
-     * @return (((array|mixed|null|string)[]|int|mixed|string)[]|true)[]
+     * @return array Merge report with source, target, merged objects, actions, statistics, warnings, errors.
      *
      * @throws OcpDoesNotExistException If source or target object not found.
      * @throws InvalidArgumentException If objects are in different register/schema.
@@ -79,22 +79,6 @@ class MergeHandler
      * @psalm-param array<string, mixed> $mergeData
      *
      * @phpstan-param array<string, mixed> $mergeData
-     *
-     * @psalm-return   array{success: true,
-     *     sourceObject: array{'@self': array{name: mixed|null|string,...},...},
-     *     targetObject: array{'@self': array{name: mixed|null|string,...},...},
-     *     mergedObject: array{'@self': array{name: mixed|null|string,...},...},
-     *     actions: array{properties: list<array{newValue: mixed,
-     *     oldValue: mixed|null, property: mixed}>,
-     *     files: list<array<string, mixed>>,
-     *     relations: array{action: 'dropped'|'transferred', relations: array|null},
-     *     references: list<array{objectId: null|string,
-     *     title: mixed|null|string}>},
-     *     statistics: array{propertiesChanged: 0|1|2, filesTransferred: int,
-     *     filesDeleted: int, relationsTransferred: 0|1|2,
-     *     relationsDropped: int<0, max>, referencesUpdated: int},
-     *     warnings: list<string>, errors: array<never, never>}
-     * @phpstan-return array<string, mixed>
      */
     public function mergeObjects(string $sourceObjectId, array $mergeData): array
     {

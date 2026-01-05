@@ -189,27 +189,11 @@ class SaveObjects
      * @throws \InvalidArgumentException If required fields are missing from any object
      * @throws \OCP\DB\Exception If a database error occurs during bulk operations
      *
-     * @return (array|float|int|mixed|string)[][]
-     *
      * @phpstan-param array<int, array<string, mixed>> $objects
      *
      * @psalm-param array<int, array<string, mixed>> $objects
      *
-     * @phpstan-return array<string, mixed>
-     *
-     * @psalm-return array{saved: list<array<string, mixed>>,
-     *     updated: list<array<string, mixed>>, unchanged: array<never, never>,
-     *     invalid: list<array<string, mixed>|mixed>,
-     *     errors: list<array<string, mixed>>,
-     *     statistics: array{totalProcessed: int<0, max>, saved: int,
-     *     updated: int, unchanged: 0, invalid: int, errors: int,
-     *     processingTimeMs: 0},
-     *     chunkStatistics?: list<array{chunkIndex: int<0, max>,
-     *     count: int<0, max>, invalid: int, saved: int, updated: int}>,
-     *     performance?: array{totalTime: float, totalTimeMs: float,
-     *     objectsPerSecond: float, totalProcessed: int<0, max>,
-     *     totalRequested: int<0, max>, efficiency: 0|float,
-     *     deduplicationEfficiency?: string}>
+     * @return array Bulk save results with performance, statistics, and object categorizations.
      */
     public function saveObjects(
         array $objects,
@@ -290,7 +274,7 @@ class SaveObjects
      *
      * @param int $totalObjects Total number of objects
      *
-     * @return array Empty result array
+     * @return array Empty result structure with saved, updated, unchanged, invalid, errors, and statistics.
      */
     private function createEmptyResult(int $totalObjects): array
     {
@@ -358,7 +342,9 @@ class SaveObjects
      * @param Schema|string|int|null   $schema        Schema parameter
      * @param bool                     $isMixedSchema Whether mixed-schema operation
      *
-     * @return array{0: array, 1: array, 2: array} [processedObjects, schemaCache, invalidObjects]
+     * @return (Schema|array|mixed)[][] [processedObjects, schemaCache, invalidObjects]
+     *
+     * @psalm-return array{0: array<array<string, mixed>|mixed>, 1: array<int|string, Schema>, 2: array<int, array<string, mixed>>}
      */
     private function prepareObjectsForSave(
         array $objects,
@@ -385,7 +371,7 @@ class SaveObjects
      * @param int   $totalObjects   Total objects requested
      * @param array $invalidObjects Objects that failed preparation
      *
-     * @return array Initialized result array
+     * @return array Initialized result with invalid objects added and statistics updated.
      */
     private function initializeResult(int $totalObjects, array $invalidObjects): array
     {
@@ -463,7 +449,7 @@ class SaveObjects
      * @param int   $chunkIndex  Chunk index
      * @param int   $chunkCount  Number of objects in chunk
      *
-     * @return array Updated result array
+     * @return array Updated result with merged chunk data and statistics.
      */
     private function mergeChunkResult(
         array $result,
@@ -507,7 +493,7 @@ class SaveObjects
      * @param int   $totalRequested Total objects requested
      * @param int   $unchangedCount Number of unchanged objects
      *
-     * @return array Performance metrics
+     * @return array Performance metrics with time, speed, and efficiency stats.
      */
     private function calculatePerformanceMetrics(
         float $startTime,
@@ -697,7 +683,6 @@ class SaveObjects
             $referencedObject = $this->objectEntityMapper->find($uuid);
 
             // Note: find() throws DoesNotExistException if not found, never returns null.
-
             // Try to get the name from the object's data.
             $objectData = $referencedObject->getObject();
 
@@ -1333,15 +1318,7 @@ class SaveObjects
      * @param bool  $_validation   Apply schema validation (unused).
      * @param bool  $_events       Dispatch events (unused).
      *
-     * @psalm-return array{saved: list<array{'@self':
-     *     array{name: mixed|null|string, ...}, ...}|mixed>,
-     *     updated: list<mixed>, invalid: list<array<string, mixed>>,
-     *     errors: array<never, never>,
-     *     statistics: array{saved: int, updated: int, invalid: int<0, max>,
-     *     errors?: mixed, unchanged?: int, processingTimeMs?: float},
-     *     unchanged?: array<int<0, max>, mixed>}
-     *
-     * @return array[]
+     * @return array Chunk processing results with saved, updated, invalid, errors, and statistics.
      *
      * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      */
@@ -1475,10 +1452,7 @@ class SaveObjects
         // Update statistics for unchanged objects (skipped because content was unchanged).
         $result['statistics']['unchanged'] = count($unchangedObjects);
         $result['unchanged'] = array_map(
-            /**
-             * @param ObjectEntity|array<string, mixed> $obj
-             * @return array<string, mixed>
-             */
+            // Map unchanged objects to arrays.
             function ($obj): array {
                 if (is_array($obj) === true) {
                     return $obj;
@@ -1571,9 +1545,8 @@ class SaveObjects
             }//end if
 
             if (empty($bulkResult['created']) === true) {
-                // FALLBACK: UUID array returned (legacy behavior).
+                // FALLBACK: UUID array returned (legacy behavior @var array<int, string> $bulkResult).
                 $this->logger->info("[SaveObjects] Processing UUID array (legacy mode)");
-                /** @var array<int, string> $bulkResult */
                 $savedObjectIds = $bulkResult;
 
                 // Fallback counting (less precise).

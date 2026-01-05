@@ -118,7 +118,7 @@ class PreviewHandler
      *
      * @param Configuration $configuration The configuration to preview.
      *
-     * @return (array|int|mixed|null|string)[][]|JSONResponse
+     * @return ((array|null|string)[]|int|mixed|null|string)[][]|JSONResponse
      *
      * @throws Exception If configuration service not set.
      *

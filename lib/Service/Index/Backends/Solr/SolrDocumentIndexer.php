@@ -440,7 +440,7 @@ class SolrDocumentIndexer
      *
      * @param string|null $collectionName Collection to clear (null = active collection)
      *
-     * @return (bool|string)[] Result with statistics
+     * @return (bool|string)[]
      *
      * @psalm-return array{success: bool, message: string, collection?: string}
      */

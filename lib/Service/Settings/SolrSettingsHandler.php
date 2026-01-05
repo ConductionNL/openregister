@@ -189,28 +189,9 @@ class SolrSettingsHandler
      * Provides detailed metrics for the SOLR Search Management dashboard
      * including core statistics, performance metrics, and health indicators.
      *
-     * @return array SOLR dashboard metrics and statistics
+     * @return array Dashboard stats with overview, cores, performance, health, and operations.
      *
-     * @throws \RuntimeException If SOLR statistics retrieval fails
-     *
-     * @psalm-return array{overview: array{available: bool,
-     *     connection_status: 'unavailable'|'unknown'|mixed, response_time_ms: 0,
-     *     total_documents: 0|mixed, index_size: string, last_commit: mixed|null},
-     *     cores: array{active_core: 'unknown'|mixed, core_status: 'active'|'inactive',
-     *     endpoint_url: 'N/A'}, performance: array{total_searches: 0|mixed,
-     *     total_indexes: 0|mixed, total_deletes: 0|mixed, avg_search_time_ms: 0|float,
-     *     avg_index_time_ms: 0|float, total_search_time: 0|mixed,
-     *     total_index_time: 0|mixed, operations_per_sec: 0|float,
-     *     error_rate: 0|float}, health: array{status: 'unavailable'|'unknown'|mixed,
-     *     uptime: 'N/A', memory_usage: array{used: 'N/A', max: 'N/A',
-     *     percentage: 0}, disk_usage: array{used: 'N/A', available: 'N/A',
-     *     percentage: 0}, warnings: list{0?: 'SOLR service is not available or '.
-     *     'not configured'|mixed}, last_optimization: null},
-     *     operations: array{recent_activity: array<never, never>,
-     *     queue_status: array{pending_operations: 0, processing: false,
-     *     last_processed: null}, commit_frequency: array{auto_commit: bool,
-     *     commit_within: 0|1000, last_commit: mixed|null},
-     *     optimization_needed: false}, generated_at: string, error?: mixed|string}
+     * @throws \RuntimeException If SOLR statistics retrieval fails.
      */
     public function getSolrDashboardStats(): array
     {
@@ -284,27 +265,7 @@ class SolrSettingsHandler
      *
      * @param array $rawStats Raw statistics from SOLR service
      *
-     * @return array Transformed dashboard statistics
-     *
-     * @psalm-return array{overview: array{available: bool,
-     *     connection_status: 'unavailable'|'unknown'|mixed, response_time_ms: 0,
-     *     total_documents: 0|mixed, index_size: string, last_commit: mixed|null},
-     *     cores: array{active_core: 'unknown'|mixed, core_status: 'active'|'inactive',
-     *     endpoint_url: 'N/A'}, performance: array{total_searches: 0|mixed,
-     *     total_indexes: 0|mixed, total_deletes: 0|mixed, avg_search_time_ms: 0|float,
-     *     avg_index_time_ms: 0|float, total_search_time: 0|mixed,
-     *     total_index_time: 0|mixed, operations_per_sec: 0|float,
-     *     error_rate: 0|float}, health: array{status: 'unavailable'|'unknown'|mixed,
-     *     uptime: 'N/A', memory_usage: array{used: 'N/A', max: 'N/A',
-     *     percentage: 0}, disk_usage: array{used: 'N/A', available: 'N/A',
-     *     percentage: 0}, warnings: list{0?: 'SOLR service is not available or '.
-     *     'not configured'|mixed}, last_optimization: null},
-     *     operations: array{recent_activity: array<never, never>,
-     *     queue_status: array{pending_operations: 0, processing: false,
-     *     last_processed: null}, commit_frequency: array{auto_commit: bool,
-     *     commit_within: 0|1000, last_commit: mixed|null},
-     *     optimization_needed: false}, generated_at: string,
-     *     error?: 'SOLR service unavailable'|mixed}
+     * @return array Dashboard structure with overview, cores, performance, health, and operations.
      */
     private function transformSolrStatsToDashboard(array $rawStats): array
     {
@@ -727,15 +688,9 @@ class SolrSettingsHandler
      *
      * @param array $facetConfig Facet configuration data
      *
-     * @return ((bool|int|mixed|string)[]|bool|int|string)[][] Updated facet configuration
+     * @return array Updated facet configuration with facets, global_order, and default_settings.
      *
-     * @throws \RuntimeException If facet configuration update fails
-     *
-     * @psalm-return array{facets: array<string, array{title: mixed|string,
-     *     description: ''|mixed, order: int, enabled: bool, show_count: bool,
-     *     max_items: int}>, global_order: array<string>,
-     *     default_settings: array{show_count: bool, show_empty: bool,
-     *     max_items: int}}
+     * @throws \RuntimeException If facet configuration update fails.
      */
     public function updateSolrFacetConfiguration(array $facetConfig): array
     {
@@ -755,15 +710,9 @@ class SolrSettingsHandler
      *
      * @param array $config Configuration to validate
      *
-     * @return ((bool|int|mixed|string)[]|bool|int|string)[][]
+     * @return array Validated configuration with facets, global_order, and default_settings.
      *
-     * @throws \InvalidArgumentException If configuration is invalid
-     *
-     * @psalm-return array{facets: array<string, array{title: mixed|string,
-     *     description: ''|mixed, order: int, enabled: bool, show_count: bool,
-     *     max_items: int}>, global_order: array<string>,
-     *     default_settings: array{show_count: bool, show_empty: bool,
-     *     max_items: int}}
+     * @throws \InvalidArgumentException If configuration is invalid.
      */
     private function validateFacetConfiguration(array $config): array
     {

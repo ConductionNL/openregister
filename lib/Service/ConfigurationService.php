@@ -364,11 +364,12 @@ class ConfigurationService
      * @param array      $data          All request params
      * @param array|null $uploadedFiles The uploaded files array
      *
-     * @return array|JSONResponse A PHP array with the uploaded json data or a JSONResponse in case of an error
+     * @return JSONResponse|array A PHP array with the uploaded json data or a JSONResponse in case of an error
+     *
      * @throws Exception
      * @throws GuzzleException
      */
-    public function getUploadedJson(array $data, ?array $uploadedFiles): array | JSONResponse
+    public function getUploadedJson(array $data, ?array $uploadedFiles): array|JSONResponse
     {
         // Delegate to UploadHandler for processing uploaded JSON data.
         return $this->uploadHandler->getUploadedJson(
@@ -415,6 +416,8 @@ class ConfigurationService
      * @return JSONResponse|array A PHP array with the uploaded json data or a JSONResponse in case of an error.
      *
      * @SuppressWarnings (PHPMD.UnusedFormalParameter)
+     *
+     * @psalm-return JSONResponse<400, array{error: string, 'MIME-type'?: string}, array<never, never>>|array
      */
     private function getJSONfromFile(array $uploadedFile, ?string $_type=null): array|JSONResponse
     {
@@ -432,6 +435,8 @@ class ConfigurationService
      * @throws GuzzleException
      *
      * @return JSONResponse|array
+     *
+     * @psalm-return JSONResponse<400, array{error: string, 'Content-Type'?: string}, array<never, never>>|array
      */
     private function getJSONfromURL(string $url): array|JSONResponse
     {
@@ -444,6 +449,8 @@ class ConfigurationService
      * @param array|string $phpArray The PHP array or string to process.
      *
      * @return JSONResponse|array A PHP array with the uploaded json data or a JSONResponse in case of an error.
+     *
+     * @psalm-return JSONResponse<400, array{error: 'Failed to decode JSON input'}, array<never, never>>|array
      */
     private function getJSONfromBody(array | string $phpArray): array|JSONResponse
     {
@@ -766,9 +773,7 @@ class ConfigurationService
      *     message: string
      * }
      *
-     * @psalm-return array{hasUpdate: bool, localVersion: null|string,
-     *     remoteVersion: null|string, lastChecked: null|string,
-     *     message: string}
+     * @psalm-return array{hasUpdate: bool, localVersion: null|string, remoteVersion: null|string, lastChecked: null|string, message: string}
      */
     public function compareVersions(Configuration $configuration): array
     {
@@ -829,6 +834,8 @@ class ConfigurationService
      * @return JSONResponse|array
      *
      * @throws GuzzleException If HTTP request fails
+     *
+     * @psalm-return JSONResponse<400|500, array{error: string, 'Content-Type'?: string}, array<never, never>>|array
      */
     public function fetchRemoteConfiguration(Configuration $configuration): array|JSONResponse
     {
@@ -884,9 +891,9 @@ class ConfigurationService
      *
      * @param Configuration $configuration The configuration to preview
      *
-     * @return array|JSONResponse
-     *
      * @throws GuzzleException If fetching remote configuration fails
+     *
+     * @return array|JSONResponse Preview data with registers, schemas, objects, endpoints, and metadata.
      */
     public function previewConfigurationChanges(Configuration $configuration): array|JSONResponse
     {
@@ -953,6 +960,8 @@ class ConfigurationService
      * @param string $prefix   Field name prefix for nested comparison
      *
      * @return array List of differences
+     *
+     * @psalm-return array<never, never>
      */
     private function compareArrays(array $current, array $proposed, string $prefix=''): array
     {
@@ -1078,18 +1087,9 @@ class ConfigurationService
      * @param int    $page    Page number
      * @param int    $perPage Results per page
      *
-     * @return (((array|int|mixed|null|string)[]|mixed)[]|int|mixed)[] Search results
-     *
      * @throws Exception If search fails
      *
-     * @psalm-return array{total_count: 0|mixed,
-     *     results: list{0?: array{repository: mixed, owner: string,
-     *     repo: string, path: string, url: mixed, stars: 0|mixed,
-     *     description: ''|mixed, name: string, branch: string,
-     *     raw_url: string, sha: null|string,
-     *     organization: array{name: string, avatar_url: ''|mixed,
-     *     type: 'User'|mixed, url: ''|mixed}, config: array},...},
-     *     page: int, per_page: int}
+     * @return array Search results with total count, results array, page, and per_page.
      */
     public function searchGitHub(string $search='', int $page=1, int $perPage=30): array
     {
@@ -1109,16 +1109,9 @@ class ConfigurationService
      * @param int    $page    Page number
      * @param int    $perPage Results per page
      *
-     * @return ((((null|string)[]|mixed|string)[]|mixed)[]|int)[] Search results
-     *
      * @throws Exception If search fails
      *
-     * @psalm-return array{total_count: int<0, max>,
-     *     results: list{0?: array{project_id: mixed, path: mixed,
-     *     ref: 'main'|mixed, url: ''|mixed, name: string,
-     *     config: array{title: string, description: '',
-     *     version: 'unknown', app: null, type: 'unknown'}},...},
-     *     page: int, per_page: int}
+     * @return array Search results with total count, results array, page, and per_page.
      */
     public function searchGitLab(string $search='', int $page=1, int $perPage=30): array
     {
@@ -1168,6 +1161,8 @@ class ConfigurationService
      * @param array         $selection     Selection of items to import
      *
      * @return array Import results
+     *
+     * @psalm-return array<never, never>
      */
     public function importConfigurationWithSelection(Configuration $configuration, array $selection): array
     {

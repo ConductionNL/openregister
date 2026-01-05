@@ -137,7 +137,9 @@ class SolrQueryExecutor
      * @param bool  $published    Filter for published only
      * @param bool  $deleted      Include deleted items
      *
-     * @return array Paginated search results
+     * @return (array|int|mixed)[] Paginated search results
+     *
+     * @psalm-return array{results: array<never, never>|mixed, total: 0|mixed, limit: int, offset: 0|mixed, page: int, pages: int}
      */
     public function searchPaginated(
         array $query=[],
@@ -180,7 +182,9 @@ class SolrQueryExecutor
      *
      * @param array $query OpenRegister query
      *
-     * @return array<string, mixed> Solr query parameters
+     * @return (int|mixed|string)[] Solr query parameters
+     *
+     * @psalm-return array{q: '*:*'|mixed, start: int, rows: int, sort?: string, fl?: mixed|string}
      */
     private function buildSolrQuery(array $query): array
     {
@@ -240,10 +244,9 @@ class SolrQueryExecutor
      * @param array $solrResult Solr search result
      * @param array $query      Original query
      *
-     * @return (array|int|mixed)[] Paginated result
+     * @return (array|int|mixed)[]
      *
-     * @psalm-return array{results: array<never, never>|mixed, total: 0|mixed,
-     *     limit: int, offset: 0|mixed, page: int, pages: int}
+     * @psalm-return array{results: array<never, never>|mixed, total: 0|mixed, limit: int<min, max>, offset: 0|mixed, page: int, pages: int}
      */
     private function convertToPaginatedFormat(array $solrResult, array $query): array
     {

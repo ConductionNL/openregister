@@ -250,6 +250,7 @@ class GitLabHandler
 
             // Format branch data for frontend.
             return array_map(
+                // Map branch data to standardized format.
                 function (array $branch): array {
                     return [
                         'name'      => $branch['name'],

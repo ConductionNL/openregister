@@ -166,7 +166,7 @@ class SourceMapper extends QBMapper
      *
      * @throws \Exception If user doesn't have read permission
      *
-     * @psalm-return list<Source>
+     * @psalm-return list<OCA\OpenRegister\Db\Source>
      */
     public function findAll(
         ?int $limit=null,

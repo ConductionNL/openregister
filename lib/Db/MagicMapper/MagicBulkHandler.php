@@ -77,9 +77,9 @@ class MagicBulkHandler
     /**
      * Constructor for MagicBulkHandler
      *
-     * @param IDBConnection     $db              Database connection for operations
-     * @param LoggerInterface   $logger          Logger for debugging and error reporting
-     * @param IEventDispatcher  $eventDispatcher Event dispatcher for business logic hooks
+     * @param IDBConnection    $db              Database connection for operations
+     * @param LoggerInterface  $logger          Logger for debugging and error reporting
+     * @param IEventDispatcher $eventDispatcher Event dispatcher for business logic hooks
      */
     public function __construct(
         private readonly IDBConnection $db,
@@ -103,9 +103,8 @@ class MagicBulkHandler
      */
     private function prepareObjectsForDynamicTable(array $objects, Register $register, Schema $schema): array
     {
-        $prepared   = [];
-        $properties = $schema->getProperties();
-        $now        = new DateTime();
+        $prepared = [];
+        $now      = new DateTime();
 
         foreach ($objects as $object) {
             $preparedObject = [];
@@ -740,6 +739,8 @@ class MagicBulkHandler
      * @param string $tableName The table name
      *
      * @return array List of column names
+     *
+     * @psalm-return list<mixed>
      */
     private function getTableColumns(string $tableName): array
     {

@@ -201,7 +201,7 @@ class ViewMapper extends QBMapper
      *
      * @throws \Exception If user doesn't have read permission
      *
-     * @psalm-return list<View>
+     * @psalm-return list<OCA\OpenRegister\Db\View>
      */
     public function findAll(?string $owner=null): array
     {

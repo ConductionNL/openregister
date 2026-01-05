@@ -62,13 +62,11 @@ class CacheSettingsController extends Controller
      * This method provides detailed insights into cache usage, performance, memory consumption,
      * hit/miss rates, and object name cache statistics for admin monitoring.
      *
-     * @return JSONResponse JSON response containing cache statistics data.
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|500, array, array<never, never>>
+     * @return JSONResponse JSON response with cache statistics or error
      */
     public function getCacheStats(): JSONResponse
     {
@@ -86,13 +84,11 @@ class CacheSettingsController extends Controller
      * This method supports clearing different types of caches: 'all', 'object', 'schema', 'facet', 'distributed', 'names'.
      * It accepts a JSON body with 'type' parameter to specify which cache to clear.
      *
-     * @return JSONResponse JSON response containing cache clearing results.
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|500, array, array<never, never>>
+     * @return JSONResponse JSON response with clear cache result
      */
     public function clearCache(): JSONResponse
     {
@@ -113,13 +109,11 @@ class CacheSettingsController extends Controller
      * This method triggers manual cache warmup for object names to improve performance
      * after system maintenance or during off-peak hours.
      *
-     * @return JSONResponse JSON response containing warmup operation results.
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|422, array, array<never, never>>
+     * @return JSONResponse JSON response with warmup result or error
      */
     public function warmupNamesCache(): JSONResponse
     {

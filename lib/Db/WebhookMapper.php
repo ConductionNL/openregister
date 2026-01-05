@@ -129,7 +129,7 @@ class WebhookMapper extends QBMapper
      *
      * @return Webhook[]
      *
-     * @psalm-return list<Webhook>
+     * @psalm-return list<OCA\OpenRegister\Db\Webhook>
      */
     public function findAll(): array
     {

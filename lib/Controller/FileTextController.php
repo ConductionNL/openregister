@@ -47,12 +47,12 @@ class FileTextController extends Controller
     /**
      * Constructor
      *
-     * @param string                $appName               App name
-     * @param IRequest              $request               Request object
+     * @param string                $appName       App name
+     * @param IRequest              $request       Request object
      * @param TextExtractionService $textExtractor Text extraction service
-     * @param IndexService          $indexService          Index service for file operations
-     * @param LoggerInterface       $logger                Logger
-     * @param IAppConfig            $config                Application configuration
+     * @param IndexService          $indexService  Index service for file operations
+     * @param LoggerInterface       $logger        Logger
+     * @param IAppConfig            $config        Application configuration
      */
     public function __construct(
         string $appName,
@@ -74,9 +74,7 @@ class FileTextController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response with file text content
-     *
-     * @psalm-return JSONResponse<404|500, array{success: false, message: string, file_id?: int}, array<never, never>>
+     * @return JSONResponse JSON response with file text or error
      */
     public function getFileText(int $fileId): JSONResponse
     {
@@ -121,8 +119,6 @@ class FileTextController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with extraction result
-     *
-     * @psalm-return JSONResponse<200|500|501, array{success: bool, message: string}, array<never, never>>
      */
     public function extractFileText(int $fileId): JSONResponse
     {
@@ -177,11 +173,7 @@ class FileTextController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response with bulk extraction results
-     *
-     * @psalm-return JSONResponse<200|500,
-     *     array{success: bool, message?: string, processed?: int<0, max>,
-     *     failed?: int<0, max>, total?: int<0, max>}, array<never, never>>
+     * @return JSONResponse JSON response with bulk extraction result
      */
     public function bulkExtract(): JSONResponse
     {
@@ -224,12 +216,7 @@ class FileTextController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response with file text statistics
-     *
-     * @psalm-return JSONResponse<200|500,
-     *     array{success: bool, message?: string,
-     *     stats?: array{totalFiles: int, untrackedFiles: int, totalChunks: int,
-     *     totalObjects: int, totalEntities: int}}, array<never, never>>
+     * @return JSONResponse JSON response with extraction stats
      */
     public function getStats(): JSONResponse
     {
@@ -269,9 +256,7 @@ class FileTextController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response confirming deletion
-     *
-     * @psalm-return JSONResponse<500|501, array{success: false, message: string}, array<never, never>>
+     * @return JSONResponse JSON response with deletion result
      */
     public function deleteFileText(int $fileId): JSONResponse
     {
@@ -316,13 +301,7 @@ class FileTextController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse Processing result with statistics
-     *
-     * @psalm-return JSONResponse<200|500,
-     *     array{success: bool, message?: string,
-     *     stats?: array{processed: 0|1|2, indexed: 0|1|2, failed: int,
-     *     total_chunks: 0|mixed, errors: array<int, mixed|string>,
-     *     execution_time_ms: float}}, array<never, never>>
+     * @return JSONResponse JSON response with indexing stats
      */
     public function processAndIndexExtracted(?int $limit=null, ?int $chunkSize=null, ?int $chunkOverlap=null): JSONResponse
     {
@@ -368,11 +347,9 @@ class FileTextController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter) $chunkOverlap reserved for future implementation
+     * @SuppressWarnings (PHPMD.UnusedFormalParameter) $chunkOverlap reserved for future implementation
      *
-     * @return JSONResponse Processing result
-     *
-     * @psalm-return JSONResponse<200|500, array, array<never, never>>
+     * @return JSONResponse JSON response with indexing result
      */
     public function processAndIndexFile(int $fileId, ?int $chunkSize=null, ?int $chunkOverlap=null): JSONResponse
     {
@@ -413,13 +390,7 @@ class FileTextController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response with chunking statistics
-     *
-     * @psalm-return JSONResponse<200|500,
-     *     array{success: bool, message?: string,
-     *     stats?: array{total_chunks: int, indexed_chunks: int,
-     *     unindexed_chunks: int, vectorized_chunks: int}},
-     *     array<never, never>>
+     * @return JSONResponse JSON response with chunking stats
      */
     public function getChunkingStats(): JSONResponse
     {

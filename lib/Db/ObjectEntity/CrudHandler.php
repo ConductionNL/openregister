@@ -123,16 +123,7 @@ class CrudHandler
     public function update(Entity $entity, bool $includeDeleted=false): ObjectEntity
     {
         // Find old object for event.
-        $qb = $this->db->getQueryBuilder();
-        $qb->select('*')
-            ->from('openregister_objects')
-            ->where($qb->expr()->eq('id', $qb->createNamedParameter($entity->getId())));
-
-        if ($includeDeleted === false) {
-            $qb->andWhere($qb->expr()->isNull('deleted'));
-        }
-
-        $oldObject = $this->mapper->findEntity($qb);
+        $oldObject = $this->mapper->find(identifier: $entity->getId(), includeDeleted: $includeDeleted);
 
         // Clean @self and id.
         $object = $entity->getObject();

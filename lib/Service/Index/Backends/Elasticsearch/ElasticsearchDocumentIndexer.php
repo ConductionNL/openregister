@@ -136,7 +136,7 @@ class ElasticsearchDocumentIndexer
      * @param array $objects Objects to index
      * @param bool  $refresh Whether to refresh after bulk
      *
-     * @return (bool|int|string)[] Results with success/failure counts
+     * @return (bool|int|string)[]
      *
      * @psalm-return array{success: bool, indexed: int<0, max>, failed: int<min, max>, error?: string}
      */

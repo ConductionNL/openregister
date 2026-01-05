@@ -86,13 +86,9 @@ class ExportHandler
      * @param string     $type        Export type ('csv' or 'excel')
      * @param IUser|null $currentUser Current user (for RBAC)
      *
-     * @return (false|string)[] Export data ['content' => string, 'filename' => string, 'mimetype' => string]
+     * @return array Export result with content, filename, and mimetype.
      *
-     * @throws \Exception If export fails
-     *
-     * @psalm-return array{content: false|string, filename: string,
-     *     mimetype: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'|
-     *     'text/csv'}
+     * @throws \Exception If export fails.
      */
     public function export(
         Register $register,
@@ -194,11 +190,9 @@ class ExportHandler
      * @param bool        $publish      Publish imported objects (Excel only)
      * @param IUser|null  $currentUser  Current user
      *
-     * @return (array|int|mixed|null|string)[][]
+     * @return array Import result with created, updated, errors, and performance stats.
      *
-     * @throws \Exception If import fails
-     *
-     * @psalm-return array<string, array{created?: array|mixed, errors?: array|mixed, found?: int|mixed, unchanged?: array|mixed, updated?: array|mixed, deduplication_efficiency?: mixed|string, schema?: array{id: int, title: null|string, slug: null|string}|mixed|null, debug?: array{headers: array<never, never>, processableHeaders: array<never, never>, schemaProperties: list<array-key>}|mixed,...}>
+     * @throws \Exception If import fails.
      */
     public function import(
         Register $register,
@@ -308,13 +302,11 @@ class ExportHandler
      *
      * @param string $objectId Object ID or UUID
      *
-     * @return (false|string)[] Download data ['content' => string, 'filename' => string, 'mimetype' => string]
+     * @return array Download result with content, filename, and mimetype.
      *
-     * @throws \Exception If download fails
-     *
-     * @psalm-return array{content: false|string, filename: string, mimetype: 'application/zip'}
+     * @throws \Exception If download fails.
      */
-    public function downloadObjectFiles(string $objectId): array
+    public function downloadObjectFiles(string $objectId)
     {
         $this->logger->info(
             message: '[ExportHandler] Starting file download',
@@ -325,21 +317,18 @@ class ExportHandler
             // Find object.
             $object = $this->objectEntityMapper->find((int) $objectId);
             // Find() throws DoesNotExistException, never returns null.
-
             // TODO: Implement file download when FileService methods are available.
             // getObjectDirectory() and createZipFromDirectory() are not yet implemented.
-            throw new \RuntimeException(
-                'File download not yet implemented - FileService::getObjectDirectory() and ' .
-                'FileService::createZipFromDirectory() not available. Object ID: ' . $objectId
-            );
+            $message  = 'File download not yet implemented - FileService::getObjectDirectory() and ';
+            $message .= 'FileService::createZipFromDirectory() not available. Object ID: '.$objectId;
+            throw new \RuntimeException($message);
 
             // Original implementation (commented out until FileService methods exist):
             // $objectDir = $this->fileService->getObjectDirectory(object: $object);
             // if (is_dir($objectDir) === false) {
-            //     throw new Exception('Object has no files');
+            // throw new Exception('Object has no files');
             // }
             // $zipPath = $this->fileService->createZipFromDirectory(directory: $objectDir);
-
             // Suppress unused variable warning - $object needed when FileService is implemented.
             unset($object);
             $objectDir = '';

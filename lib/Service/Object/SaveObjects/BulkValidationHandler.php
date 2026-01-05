@@ -68,17 +68,7 @@ class BulkValidationHandler
      *
      * @param Schema $schema The schema to analyze.
      *
-     * @return (((bool|mixed)[]|mixed)[]|bool|null)[] Analysis results with:
-     *     - metadataFields: Metadata field mappings.
-     *     - inverseProperties: Inverse relation configurations.
-     *     - validationRequired: Whether hard validation is enabled.
-     *     - properties: Schema properties array.
-     *     - configuration: Schema configuration array.
-     *
-     * @psalm-return array{metadataFields: array<string, mixed>,
-     *     inverseProperties: array<array{inversedBy: mixed, writeBack: bool,
-     *     isArray: bool}>, validationRequired: bool, properties: array|null,
-     *     configuration: array|null}
+     * @return array Schema analysis with metadataFields, inverseProperties, validationRequired, etc.
      */
     public function performComprehensiveSchemaAnalysis(Schema $schema): array
     {

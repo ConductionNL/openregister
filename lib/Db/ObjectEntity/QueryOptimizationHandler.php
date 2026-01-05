@@ -175,7 +175,7 @@ class QueryOptimizationHandler
             } catch (Exception $e) {
                 $this->logger->error(
                     'Error processing large object',
-                    ['index' => $index + 1, 'exception' => $e->getMessage()]
+                    ['index' => (int) $index + 1, 'exception' => $e->getMessage()]
                 );
 
                 // If it's not a packet size error, re-throw.
@@ -197,11 +197,11 @@ class QueryOptimizationHandler
      * @param string|null $defaultOrganisation Default organization UUID to assign.
      * @param int         $batchSize           Number of objects to process in each batch.
      *
-     * @return (DateTime|array|int|mixed|string)[] Array containing statistics about the bulk operation.
+     * @return (DateTime|int|string[])[]
      *
      * @throws \Exception If the bulk operation fails.
      *
-     * @psalm-return array{endTime: DateTime, duration: string, ...}
+     * @psalm-return array{endTime: DateTime, duration: string,...}
      */
     public function bulkOwnerDeclaration(
         ?string $defaultOwner=null,
@@ -341,6 +341,8 @@ class QueryOptimizationHandler
      * @param array         $filters Applied filters.
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) Parameter reserved for future optimization.
      */
     public function applyCompositeIndexOptimizations(IQueryBuilder $_qb, array $filters): void
     {
@@ -544,7 +546,7 @@ class QueryOptimizationHandler
             $size       = 0;
             $reflection = new ReflectionClass($object);
             foreach ($reflection->getProperties() as $property) {
-                // Note: setAccessible() is no longer needed in PHP 8.1+
+                // Note: setAccessible() is no longer needed in PHP 8.1+.
                 $value = $property->getValue($object);
 
                 if (is_string($value) === true) {

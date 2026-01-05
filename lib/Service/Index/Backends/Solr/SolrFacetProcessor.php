@@ -140,7 +140,7 @@ class SolrFacetProcessor
      *
      * @param array $facetFields Fields to facet on
      *
-     * @return (array|int|string)[] Facet query parameters
+     * @return (array|int|string)[]
      *
      * @psalm-return array{facet?: 'true', 'facet.field'?: array, 'facet.limit'?: 100}
      */

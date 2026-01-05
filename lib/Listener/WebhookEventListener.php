@@ -136,7 +136,7 @@ class WebhookEventListener implements IEventListener
      *
      * @param Event $event The event
      *
-     * @return array<string, mixed>|null
+     * @return array<string, mixed>|null The event payload or null if not extractable
      */
     private function extractPayload(Event $event): array|null
     {

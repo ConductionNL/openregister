@@ -554,7 +554,10 @@ class LogService
             foreach ($logData as $key => $value) {
                 // Handle special characters and ensure valid XML.
                 $cleanKey = preg_replace('/[^a-zA-Z0-9_]/', '_', $key);
-                $logElement->addChild($cleanKey, htmlspecialchars($value ?? ''));
+                $logElement->addChild(
+                    qualifiedName: $cleanKey,
+                    value: htmlspecialchars($value ?? '')
+                );
             }
         }
 

@@ -127,13 +127,7 @@ class SchemaHandler
      *
      * @param bool $force Force recreation of existing fields
      *
-     * @return ((int|mixed)[]|bool|float|mixed|string)[]
-     *
-     * @psalm-return array{success: bool, error?: string,
-     *     stats: array{schemas_processed: 0|1|2, fields_created: 0|mixed,
-     *     fields_updated: 0|mixed, conflicts_resolved: 0, errors: 0|1|2,
-     *     core_fields_created?: 52}, execution_time_ms?: float,
-     *     resolved_conflicts?: mixed}
+     * @return array Result with success status, stats, execution time, and resolved conflicts.
      */
     public function mirrorSchemas(bool $force=false): array
     {
@@ -240,11 +234,7 @@ class SchemaHandler
      *
      * @param array $schemas Array of Schema entities
      *
-     * @return (((mixed|string)[]|string)[]|string)[][] Analysis result with fields, conflicts, and resolutions
-     *
-     * @psalm-return array{fields: array<non-empty-list<array{schema_id: mixed,
-     *     type: string}>>, conflicts: array<array<int<0, max>, string>>,
-     *     resolved: array<string>}
+     * @return array Analysis with fields, conflicts, and resolved field types.
      */
     private function analyzeAndResolveFieldConflicts(array $schemas): array
     {
@@ -566,11 +556,7 @@ class SchemaHandler
      *
      * @param string $collection Collection name
      *
-     * @return (array|int|string)[] Field status information
-     *
-     * @psalm-return array{collection: string, error?: string,
-     *     existing_fields?: array, missing_fields?: array,
-     *     total_fields?: int<0, max>, expected_fields?: int<0, max>}
+     * @return array Field status with collection, existing fields, missing fields, and counts.
      */
     public function getCollectionFieldStatus(string $collection): array
     {
@@ -619,9 +605,9 @@ class SchemaHandler
      * @param array  $missingFields Missing field definitions
      * @param bool   $dryRun        Preview without making changes
      *
-     * @return ((int|string)[]|mixed|true)[] Result with success status and statistics
+     * @return ((int|string)[]|int|true)[]
      *
-     * @psalm-return array{success: true, created?: mixed, failed?: mixed, dry_run?: true, fields_to_add?: list<array-key>}
+     * @psalm-return array{success: true, created?: int<0, max>, failed?: int<min, max>, dry_run?: true, fields_to_add?: list<array-key>}
      */
     public function createMissingFields(string $collection, array $missingFields, bool $dryRun=false): array
     {
@@ -672,11 +658,12 @@ class SchemaHandler
         );
 
         try {
-            /**
+            /*
              * Delegate to search backend.
              *
              * @psalm-suppress UndefinedInterfaceMethod - fixMismatchedFields may exist on specific backend implementations
              */
+
             return $this->searchBackend->fixMismatchedFields($mismatchedFields, $dryRun);
         } catch (Exception $e) {
             $this->logger->error(

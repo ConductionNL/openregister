@@ -320,9 +320,7 @@ class ValidationHandler
      *
      * @param array $filters Query filters to process (passed by reference).
      *
-     * @return array Array of matching IDs, empty array if no matches, or null if filtered to zero results.
-     *
-     * @psalm-return array<never, never>
+     * @return array|null Matching object IDs or null.
      */
     public function applyInversedByFilter(array &$filters): array|null
     {

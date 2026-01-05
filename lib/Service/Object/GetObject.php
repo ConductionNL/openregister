@@ -183,7 +183,7 @@ class GetObject
      *
      * @return ObjectEntity[]
      *
-     * @psalm-return list<ObjectEntity>
+     * @psalm-return     list<ObjectEntity>
      * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      */
     public function findAll(

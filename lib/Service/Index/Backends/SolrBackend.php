@@ -188,7 +188,9 @@ class SolrBackend implements SearchBackendInterface
      * @param array $objects Array of ObjectEntity
      * @param bool  $commit  Commit immediately
      *
-     * @return array Result with statistics
+     * @return (bool|int|string)[] Result with statistics
+     *
+     * @psalm-return array{success: bool, indexed: int<0, max>, failed: int<0, max>, error?: string}
      */
     public function bulkIndexObjects(array $objects, bool $commit=true): array
     {
@@ -221,7 +223,9 @@ class SolrBackend implements SearchBackendInterface
      * @param bool   $commit        Commit immediately
      * @param bool   $returnDetails Return detailed results
      *
-     * @return array|bool Results
+     * @return (array|bool|string)[]|bool Results
+     *
+     * @psalm-return array{success: bool, error?: string, query?: string, result?: array}|bool
      */
     public function deleteByQuery(string $query, bool $commit=false, bool $returnDetails=false): array|bool
     {
@@ -235,13 +239,15 @@ class SolrBackend implements SearchBackendInterface
     /**
      * Search with pagination.
      *
-     * @param array $query        Query parameters
-     * @param bool  $rbac         Apply RBAC
-     * @param bool  $multitenancy Apply multitenancy
-     * @param bool  $published    Filter published
-     * @param bool  $deleted      Include deleted
+     * @param array $query         Query parameters
+     * @param bool  $_rbac         Apply RBAC
+     * @param bool  $_multitenancy Apply multitenancy
+     * @param bool  $published     Filter published
+     * @param bool  $deleted       Include deleted
      *
-     * @return array Search results
+     * @return (array|int|mixed)[] Search results
+     *
+     * @psalm-return array{results: array<never, never>|mixed, total: 0|mixed, limit: int, offset: 0|mixed, page: int, pages: int}
      */
     public function searchObjectsPaginated(
         array $query=[],
@@ -294,7 +300,9 @@ class SolrBackend implements SearchBackendInterface
      *
      * @param string|null $collectionName Collection to clear
      *
-     * @return array Results
+     * @return (bool|string)[] Results
+     *
+     * @psalm-return array{success: bool, message: string, collection?: string}
      */
     public function clearIndex(?string $collectionName=null): array
     {
@@ -356,7 +364,9 @@ class SolrBackend implements SearchBackendInterface
     /**
      * Get backend statistics.
      *
-     * @return array Statistics
+     * @return (bool|int|mixed|null|string)[] Statistics
+     *
+     * @psalm-return array{available: bool, collection: null|string, error?: string, documents?: 0|mixed, status?: 'OK'}
      */
     public function getStats(): array
     {
@@ -369,7 +379,9 @@ class SolrBackend implements SearchBackendInterface
      * @param string $name   Collection name
      * @param array  $config Configuration
      *
-     * @return array Results
+     * @return (mixed|string|true)[] Results
+     *
+     * @psalm-return array{success: true, message: 'Collection created successfully', collection: string, configSet: 'openregister_configset'|mixed}
      */
     public function createCollection(string $name, array $config=[]): array
     {
@@ -384,7 +396,9 @@ class SolrBackend implements SearchBackendInterface
      *
      * @param string|null $collectionName Collection name
      *
-     * @return array Results
+     * @return (bool|string)[] Results
+     *
+     * @psalm-return array{success: bool, message: string, exception?: string, collection?: string}
      */
     public function deleteCollection(?string $collectionName=null): array
     {
@@ -503,9 +517,9 @@ class SolrBackend implements SearchBackendInterface
      * @param int         $batchSize      Batch size
      * @param string|null $collectionName Collection name
      *
-     * @return (false|int|mixed|string)[] Results
+     * @return (bool|int|string)[]
      *
-     * @psalm-return array{success: false|mixed, message: 'Index cleared (simplified reindex)', indexed: 0}
+     * @psalm-return array{success: bool, message: 'Index cleared (simplified reindex)', indexed: 0}
      */
     public function reindexAll(int $maxObjects=0, int $batchSize=1000, ?string $collectionName=null): array
     {
@@ -534,7 +548,9 @@ class SolrBackend implements SearchBackendInterface
      * Retrieves available fields from Solr for faceting.
      * Delegates to facet processor.
      *
-     * @return array Facetable fields from Solr
+     * @return (mixed|string)[][] Facetable fields from Solr
+     *
+     * @psalm-return list<array{name: non-empty-string, type: 'unknown'|mixed}>
      */
     public function getRawSolrFieldsForFacetConfiguration(): array
     {

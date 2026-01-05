@@ -65,9 +65,7 @@ class ConfigurationSettingsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse RBAC configuration
-     *
-     * @psalm-return JSONResponse<200|500, array, array<never, never>>
+     * @return JSONResponse JSON response with RBAC settings
      */
     public function getRbacSettings(): JSONResponse
     {
@@ -86,9 +84,7 @@ class ConfigurationSettingsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse Updated RBAC configuration
-     *
-     * @psalm-return JSONResponse<200|500, array, array<never, never>>
+     * @return JSONResponse JSON response with updated RBAC settings
      */
     public function updateRbacSettings(): JSONResponse
     {
@@ -108,9 +104,7 @@ class ConfigurationSettingsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse Organisation configuration
-     *
-     * @psalm-return JSONResponse<200|500, array, array<never, never>>
+     * @return JSONResponse JSON response with organisation settings
      */
     public function getOrganisationSettings(): JSONResponse
     {
@@ -129,9 +123,7 @@ class ConfigurationSettingsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse Updated Organisation configuration
-     *
-     * @psalm-return JSONResponse<200|500, array, array<never, never>>
+     * @return JSONResponse JSON response with updated organisation settings
      */
     public function updateOrganisationSettings(): JSONResponse
     {
@@ -151,9 +143,7 @@ class ConfigurationSettingsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse Multitenancy configuration
-     *
-     * @psalm-return JSONResponse<200|500, array, array<never, never>>
+     * @return JSONResponse JSON response with multitenancy settings
      */
     public function getMultitenancySettings(): JSONResponse
     {
@@ -172,9 +162,7 @@ class ConfigurationSettingsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse Updated Multitenancy configuration
-     *
-     * @psalm-return JSONResponse<200|500, array, array<never, never>>
+     * @return JSONResponse JSON response with updated multitenancy settings
      */
     public function updateMultitenancySettings(): JSONResponse
     {
@@ -194,11 +182,7 @@ class ConfigurationSettingsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse Object configuration
-     *
-     * @psalm-return JSONResponse<200|500,
-     *     array{success: bool, error?: string, data?: array},
-     *     array<never, never>>
+     * @return JSONResponse JSON response with object settings
      */
     public function getObjectSettings(): JSONResponse
     {
@@ -228,12 +212,7 @@ class ConfigurationSettingsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse Updated object settings
-     *
-     * @psalm-return JSONResponse<200|500,
-     *     array{success: bool, error?: string,
-     *     message?: 'Object settings updated successfully', data?: array},
-     *     array<never, never>>
+     * @return JSONResponse JSON response with updated object settings
      */
     public function updateObjectSettings(): JSONResponse
     {
@@ -271,12 +250,7 @@ class ConfigurationSettingsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse Updated settings
-     *
-     * @psalm-return JSONResponse<200|500,
-     *     array{success: bool, error?: string,
-     *     message?: 'Object settings updated successfully', data?: array},
-     *     array<never, never>>
+     * @return JSONResponse JSON response with patched object settings
      */
     public function patchObjectSettings(): JSONResponse
     {
@@ -290,9 +264,7 @@ class ConfigurationSettingsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse Retention configuration
-     *
-     * @psalm-return JSONResponse<200|500, array, array<never, never>>
+     * @return JSONResponse JSON response with retention settings
      */
     public function getRetentionSettings(): JSONResponse
     {
@@ -311,9 +283,7 @@ class ConfigurationSettingsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse Updated Retention configuration
-     *
-     * @psalm-return JSONResponse<200|500, array, array<never, never>>
+     * @return JSONResponse JSON response with updated retention settings
      */
     public function updateRetentionSettings(): JSONResponse
     {
@@ -334,9 +304,6 @@ class ConfigurationSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with object collection fields
-     *
-     * @psalm-return JSONResponse<200|500, array{success: bool, message?: string, collection?: 'objects', status?: array},
-     *     array<never, never>>
      */
     public function getObjectCollectionFields(): JSONResponse
     {
@@ -369,10 +336,7 @@ class ConfigurationSettingsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response with object field creation results
-     *
-     * @psalm-return JSONResponse<200|400|500, array{success: bool, message: string, collection?: 'objects',
-     *     result?: array}, array<never, never>>
+     * @return JSONResponse JSON response with creation result
      */
     public function createMissingObjectFields(): JSONResponse
     {

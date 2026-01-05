@@ -468,6 +468,86 @@ GET /api/pets?_search=budget annual 2025
 
 Searches for objects containing all specified terms.
 
+### Cross-Table Search (Magic Mapper)
+
+When using Magic Mapper (objects stored in dedicated tables), you can search across multiple schemas and registers simultaneously:
+
+**Single Schema Search:**
+```bash
+# Default behavior - single schema
+GET /api/objects/3/1?_search=test
+```
+
+**Multiple Schemas - Comma-Separated:**
+```bash
+# Search across schema 1 and 2 in register 3
+GET /api/objects/3/1?_search=test&schemas=1,2
+```
+
+**Multiple Schemas - Array Format:**
+```bash
+# Same result using array notation
+GET /api/objects/3/1?_search=test&schemas[]=1&schemas[]=2
+```
+
+**Cross-Register and Cross-Schema:**
+```bash
+# Search across multiple registers and schemas
+GET /api/objects/3/1?_search=test&registers=1,2&schemas=1,2
+```
+
+**Response Format:**
+```json
+{
+  'results': [...],
+  'total': 42,
+  'pages': 3,
+  '@self': {
+    'source': 'cross_table_magic_mapper',
+    'table_count': 4,
+    'register_count': 2,
+    'schema_count': 2
+  }
+}
+```
+
+#### Cross-Table Search Features
+
+- **Global Relevance Scoring**: Results from all tables are sorted by search relevance
+- **Automatic Deduplication**: Duplicate schema/register IDs are filtered out
+- **Graceful Error Handling**: If one table fails, search continues with remaining tables
+- **Schema Context**: Each result includes its source register and schema
+- **Performance**: Scales linearly - ~275ms for single table + ~2ms per additional table
+
+#### Hybrid Storage Search
+
+OpenRegister supports searching across both storage strategies simultaneously:
+
+**Storage Types:**
+1. **Blob Storage**: Traditional storage (all objects in 'oc_openregister_objects' table)
+2. **Magic Mapper**: Dynamic tables (each register+schema combination has its own table)
+
+**How It Works:**
+- Objects are automatically routed to the correct storage based on register configuration
+- Search queries transparently work across both storage types
+- Results are merged and sorted by relevance
+- No client-side changes needed - the API handles storage routing automatically
+
+**Example Scenario:**
+```bash
+# Register 3 uses Magic Mapper, Register 4 uses Blob Storage
+GET /api/objects/3/1?_search=budget&registers=3,4
+
+# Results include objects from both storage types, sorted by relevance
+{
+  'results': [
+    {'@self': {'register': '3', 'schema': '1', ...}},  # From magic table
+    {'@self': {'register': '4', 'schema': '2', ...}}   # From blob storage
+  ],
+  'total': 2
+}
+```
+
 ### Wildcard Search
 You can use wildcards in the search term:
 
@@ -1400,6 +1480,177 @@ LIMIT 20;
 ## Technical Implementation
 
 This section provides detailed technical information about how search is implemented in OpenRegister.
+
+### Cross-Storage Search Architecture
+
+OpenRegister supports two storage strategies and can search across both simultaneously:
+
+```mermaid
+graph TB
+    A[API Request] --> B[ObjectService]
+    B --> C{Check _source param}
+    C -->|database| D[Storage Router]
+    C -->|index| E[GuzzleSolrService]
+    
+    D --> F{Magic Mapper Enabled?}
+    F -->|Yes| G[MagicMapper]
+    F -->|No| H[ObjectEntityMapper]
+    
+    G --> I[(Magic Tables)]
+    H --> J[(Blob Storage)]
+    I --> K[Cross-Table Search]
+    J --> K
+    K --> L[Merge Results]
+    L --> M[Sort by Relevance]
+    
+    E --> N{SOLR Available?}
+    N -->|No| O[Return Empty Results]
+    N -->|Yes| P[Build SOLR Query]
+    P --> Q[Apply Filters]
+    Q --> R[Add Facets]
+    R --> S[Execute Search]
+    S --> T[(Apache Solr)]
+    T --> U[Process Results]
+    U --> V[Reconstruct Objects]
+    
+    M --> W[ObjectEntity Array]
+    V --> W
+    W --> X[Apply Extensions]
+    X --> Y[Return Results]
+    
+    style G fill:#4A90E2
+    style K fill:#50E3C2
+    style E fill:#e1f5ff
+    style T fill:#e1ffe1
+    style J fill:#fff4e1
+```
+
+**Key Components:**
+- **ObjectService**: High-level orchestration, determines search mode
+- **Storage Router**: Routes queries to appropriate storage backend (UnifiedObjectMapper)
+- **MagicMapper**: Handles dynamic table search and cross-table operations
+- **ObjectEntityMapper**: Database access for blob storage searches
+- **GuzzleSolrService**: Main service for Solr integration
+- **Query Builder**: Translates OpenRegister queries to Solr/SQL queries
+- **Filter Processor**: Handles metadata and property filters
+- **Facet Engine**: Generates facet aggregations
+
+### Cross-Storage Search Flow
+
+When searching across multiple registers or schemas, OpenRegister can query both Magic Mapper tables and Blob Storage simultaneously:
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant API
+    participant ObjectService
+    participant UnifiedMapper
+    participant MagicMapper
+    participant BlobMapper
+    participant Database
+    
+    Client->>API: GET /api/objects?_search=term&registers=1,2
+    API->>ObjectService: findObjects(query)
+    
+    Note over ObjectService: Detect multi-table search request
+    ObjectService->>UnifiedMapper: Route query
+    
+    Note over UnifiedMapper: Check register configurations
+    UnifiedMapper->>UnifiedMapper: Register 1: Magic Mapper
+    UnifiedMapper->>UnifiedMapper: Register 2: Blob Storage
+    
+    par Search Magic Tables
+        UnifiedMapper->>MagicMapper: searchAcrossMultipleTables()
+        MagicMapper->>Database: Query oc_openregister_table_1_*
+        Database-->>MagicMapper: Results from magic tables
+    and Search Blob Storage
+        UnifiedMapper->>BlobMapper: findAll(filters)
+        BlobMapper->>Database: Query oc_openregister_objects
+        Database-->>BlobMapper: Results from blob storage
+    end
+    
+    Note over UnifiedMapper: Merge results from both sources
+    UnifiedMapper->>UnifiedMapper: Combine result sets
+    UnifiedMapper->>UnifiedMapper: Sort by _search_score
+    UnifiedMapper->>UnifiedMapper: Apply pagination
+    
+    UnifiedMapper-->>ObjectService: Combined results
+    ObjectService-->>API: JSON response
+    API-->>Client: Search results
+    
+    style MagicMapper fill:#4A90E2
+    style BlobMapper fill:#FFB74D
+    style UnifiedMapper fill:#50E3C2
+```
+
+**Cross-Storage Search Steps:**
+
+1. **Request Analysis**: Parse query parameters to identify registers and schemas
+2. **Configuration Check**: Determine which registers use Magic Mapper vs Blob Storage
+3. **Parallel Execution**: Search both storage types simultaneously
+4. **Result Merging**: Combine results from all sources
+5. **Global Sorting**: Sort all results by search relevance score
+6. **Pagination**: Apply limit/offset to merged results
+7. **Context Addition**: Add source metadata to each result
+
+### Magic Mapper Search Implementation
+
+The Magic Mapper uses database-specific optimizations for fuzzy search:
+
+```mermaid
+graph TD
+    A[Search Request] --> B[Parse Parameters]
+    B --> C{Multiple Schemas?}
+    C -->|Yes| D[searchAcrossMultipleTables]
+    C -->|No| E[searchObjectsInRegisterSchemaTable]
+    
+    D --> F[Build Register+Schema Pairs]
+    F --> G[For Each Pair]
+    G --> H{Table Exists?}
+    H -->|No| I[Skip & Log]
+    H -->|Yes| J[Build Query]
+    
+    J --> K[Apply Fuzzy Search]
+    K --> L{Database Type?}
+    L -->|PostgreSQL| M[pg_trgm Similarity]
+    L -->|MariaDB| N[ILIKE Pattern Match]
+    
+    M --> O[Execute Query]
+    N --> O
+    O --> P[Add _search_score]
+    P --> Q[Add Schema Context]
+    Q --> R[Merge to Results Array]
+    
+    R --> S{More Tables?}
+    S -->|Yes| G
+    S -->|No| T[Sort by _search_score DESC]
+    T --> U[Return Merged Results]
+    
+    E --> J
+    
+    style D fill:#4A90E2
+    style K fill:#50E3C2
+    style T fill:#FFB74D
+```
+
+**Magic Mapper Search Features:**
+
+**PostgreSQL Optimizations:**
+- **pg_trgm Extension**: Trigram-based fuzzy matching
+- **Similarity Scoring**: 'similarity()' function for relevance ranking
+- **GIN Indexes**: Fast trigram lookups for text fields
+- **Case-Insensitive**: 'LOWER()' normalization
+
+**MariaDB/MySQL Optimizations:**
+- **ILIKE Pattern**: 'LOWER() LIKE LOWER()' for case-insensitive matching
+- **Wildcard Search**: Automatic '%term%' wrapping
+- **Literal Scoring**: Fixed score of 1 for all matches
+- **Full-Text Indexes**: Optional FULLTEXT indexes on text columns
+
+**Column Name Translation:**
+- **camelCase → snake_case**: Automatic conversion for PostgreSQL compatibility
+- **Property Mapping**: Schema properties mapped to database columns
+- **Type-Aware**: Only searches string-type properties
 
 ### Architecture Overview
 

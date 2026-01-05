@@ -195,9 +195,7 @@ class ConversationManagementHandler
                     return $this->generateFallbackTitle($firstMessage);
                 }//end if
 
-                /**
-                 * @psalm-suppress UndefinedPropertyAssignment LLPhant\OpenAIConfig has dynamic properties
-                 */
+                // @psalm-suppress UndefinedPropertyAssignment LLPhant dynamic properties.
                 $config->temperature = 0.7;
             }//end if
 
@@ -213,9 +211,10 @@ class ConversationManagementHandler
                 $reflectionClass = new ReflectionClass($this->responseHandler);
                 $method          = $reflectionClass->getMethod('callFireworksChatAPI');
 
-                /**
+                /*
                  * @psalm-suppress UndefinedPropertyFetch LLPhant\OpenAIConfig has dynamic properties
                  */
+
                 $title = $method->invoke(
                     $this->responseHandler,
                     $config->apiKey,
@@ -515,9 +514,10 @@ class ConversationManagementHandler
             $reflectionClass = new ReflectionClass($this->responseHandler);
             $method          = $reflectionClass->getMethod('callFireworksChatAPI');
 
-            /**
+            /*
              * @psalm-suppress UndefinedPropertyFetch LLPhant\OpenAIConfig has dynamic properties
              */
+
             return $method->invoke(
                 $this->responseHandler,
                 $config->apiKey,

@@ -143,7 +143,12 @@ class UserSettingsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response confirming GitHub token save
+     * @return JSONResponse JSON response containing result of token save operation
+     *
+     * @psalm-return JSONResponse<int,
+     *     array{error?: string, success?: true,
+     *     message?: 'GitHub token saved successfully'},
+     *     array<never, never>>
      */
     public function setGitHubToken(): JSONResponse
     {

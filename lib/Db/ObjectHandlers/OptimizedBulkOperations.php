@@ -95,14 +95,14 @@ class OptimizedBulkOperations
     /**
      * Constructor
      *
-     * @param IDBConnection     $db              Database connection
-     * @param LoggerInterface   $logger          Logger instance
-     * @param IEventDispatcher  $eventDispatcher Event dispatcher for business logic hooks
+     * @param IDBConnection    $db              Database connection
+     * @param LoggerInterface  $logger          Logger instance
+     * @param IEventDispatcher $eventDispatcher Event dispatcher for business logic hooks
      */
     public function __construct(IDBConnection $db, LoggerInterface $logger, IEventDispatcher $eventDispatcher)
     {
-        $this->db              = $db;
-        $this->logger          = $logger;
+        $this->db     = $db;
+        $this->logger = $logger;
         $this->eventDispatcher = $eventDispatcher;
     }//end __construct()
 
@@ -201,7 +201,7 @@ class OptimizedBulkOperations
         $this->dispatchBulkEvents(
             insertObjects: $insertObjects,
             updateObjects: $updateObjects,
-            processedUUIDs: $processedUUIDs
+            _processedUUIDs: $processedUUIDs
         );
 
         return $processedUUIDs;
@@ -777,6 +777,8 @@ class OptimizedBulkOperations
      * Get list of JSON columns for comparison operations
      *
      * @return string[] List of JSON column names
+     *
+     * @psalm-return list{'files', 'relations', 'authorization', 'validation', 'geo', 'retention', 'groups'}
      */
     private function getJsonColumns(): array
     {
@@ -799,8 +801,8 @@ class OptimizedBulkOperations
      * This is CRITICAL for software catalog and other apps that depend on
      * object lifecycle events.
      *
-     * @param array $insertObjects  Array of objects that were inserted
-     * @param array $updateObjects  Array of objects that were updated
+     * @param array $insertObjects   Array of objects that were inserted
+     * @param array $updateObjects   Array of objects that were updated
      * @param array $_processedUUIDs Array of processed UUIDs (reserved for future use)
      *
      * @return void
@@ -843,6 +845,7 @@ class OptimizedBulkOperations
                 if ($entity instanceof ObjectEntity) {
                     // For bulk updates, we don't have the old object.
                     // Pass the entity as both old and new (best approximation for bulk context).
+                    // @psalm-suppress NullArgument Entity is validated by instanceof check above.
                     $this->eventDispatcher->dispatch(
                         ObjectUpdatedEvent::class,
                         new ObjectUpdatedEvent(newObject: $entity, oldObject: $entity)

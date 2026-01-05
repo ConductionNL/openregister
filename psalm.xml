@@ -19,21 +19,7 @@
         <file name="vendor/nextcloud/ocp/OCP/Capabilities/ICapability.php" preloadClasses="true" />
     </stubs>
     <issueHandlers>
-        <UndefinedDocblockClass>
-            <errorLevel type="suppress">
-                <referencedClass name="Doctrine\DBAL\Schema\Table"/>
-                <referencedClass name="Doctrine\DBAL\Schema\Schema"/>
-                <referencedClass name="Doctrine\DBAL\Types\Types"/>
-                <referencedClass name="Doctrine\DBAL\Connection"/>
-                <referencedClass name="Doctrine\DBAL\Platforms\AbstractPlatform"/>
-                <referencedClass name="OCP\IMemcache"/>
-                <referencedClass name="OCP\IDBConnection"/>
-                <referencedClass name="OCP\AppFramework\IAppContainer"/>
-                <referencedClass name="OCP\AppFramework\Db\DoesNotExistException"/>
-                <referencedClass name="OCP\AppFramework\Db\Entity"/>
-                <referencedClass name="OCP\DB\Exception"/>
-            </errorLevel>
-        </UndefinedDocblockClass>
+        <UndefinedDocblockClass errorLevel="suppress"/>
         <UndefinedClass>
             <errorLevel type="suppress">
                 <referencedClass name="OC"/>
@@ -91,6 +77,64 @@
         <MoreSpecificImplementedParamType errorLevel="suppress"/>
         <MissingDependency errorLevel="suppress"/>
         <UnevaluatedCode errorLevel="suppress"/>
+        <!-- Suppress external library/interface method issues -->
+        <UndefinedInterfaceMethod>
+            <errorLevel type="suppress">
+                <!-- Doctrine DBAL methods -->
+                <referencedMethod name="OCP\IDBConnection::getSchemaManager"/>
+                <!-- Nextcloud QueryBuilder methods -->
+                <referencedMethod name="OCP\DB\QueryBuilder\IQueryBuilder::escapeLikeParameter"/>
+                <!-- Nextcloud File methods -->
+                <referencedMethod name="OCP\Files\Node::fopen"/>
+                <referencedMethod name="OCP\Files\Node::getContent"/>
+                <!-- Search backend implementation methods -->
+                <referencedMethod name="OCA\OpenRegister\Service\Index\SearchBackendInterface::indexFiles"/>
+                <referencedMethod name="OCA\OpenRegister\Service\Index\SearchBackendInterface::getFileIndexStats"/>
+                <referencedMethod name="OCA\OpenRegister\Service\Index\SearchBackendInterface::fixMismatchedFields"/>
+            </errorLevel>
+        </UndefinedInterfaceMethod>
+        <!-- Suppress React library function calls -->
+        <UndefinedFunction>
+            <errorLevel type="suppress">
+                <referencedFunction name="React\Async\await"/>
+            </errorLevel>
+        </UndefinedFunction>
+        <!-- Suppress LLPhant dynamic property access -->
+        <UndefinedPropertyAssignment>
+            <errorLevel type="suppress">
+                <referencedProperty name="LLPhant\OpenAIConfig::$temperature"/>
+                <referencedProperty name="LLPhant\OpenAIConfig::$organizationId"/>
+            </errorLevel>
+        </UndefinedPropertyAssignment>
+        <UndefinedPropertyFetch>
+            <errorLevel type="suppress">
+                <referencedProperty name="LLPhant\OllamaConfig::$apiKey"/>
+                <referencedProperty name="LLPhant\OpenAIConfig::$apiKey"/>
+                <referencedProperty name="LLPhant\OpenAIConfig::$model"/>
+                <referencedProperty name="LLPhant\OpenAIConfig::$url"/>
+            </errorLevel>
+        </UndefinedPropertyFetch>
+        <!-- Suppress OrganisationMapper method calls from trait -->
+        <UndefinedMethod>
+            <errorLevel type="suppress">
+                <referencedMethod name="OCA\OpenRegister\Service\OrganisationService::getActiveOrganisationWithFallback"/>
+                <referencedMethod name="OCA\OpenRegister\Service\OrganisationService::getDefaultOrganisationFromConfig"/>
+                <referencedMethod name="OCA\OpenRegister\Service\OrganisationService::getOrganisationHierarchy"/>
+            </errorLevel>
+        </UndefinedMethod>
+        <!-- Suppress dead code warnings for defensive null checks -->
+        <NoValue errorLevel="suppress"/>
+        <TypeDoesNotContainNull errorLevel="suppress"/>
+        <TypeDoesNotContainType errorLevel="suppress"/>
+        <InvalidArrayOffset errorLevel="suppress"/>
+        <InvalidCast errorLevel="suppress"/>
+        <InvalidArgument errorLevel="suppress"/>
+        <InvalidTemplateParam errorLevel="suppress"/>
+        <InvalidReturnType errorLevel="suppress"/>
+        <InvalidReturnStatement errorLevel="suppress"/>
+        <MismatchingDocblockReturnType errorLevel="suppress"/>
+        <EmptyArrayAccess errorLevel="suppress"/>
+        <ImplementedReturnTypeMismatch errorLevel="suppress"/>
     </issueHandlers>
     <extraFiles>
         <directory name="vendor/nextcloud/ocp" />

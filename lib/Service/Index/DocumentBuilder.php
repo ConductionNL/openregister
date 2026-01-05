@@ -84,7 +84,7 @@ class DocumentBuilder
      * @param ObjectEntity $object         The object to convert
      * @param array        $solrFieldTypes Available Solr field types (unused for now)
      *
-     * @return (false|int|mixed|null|string)[] The Solr document
+     * @return (false|int|mixed|null|string)[]
      *
      * @psalm-return array{_text: false|string,...}
      */

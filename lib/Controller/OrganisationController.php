@@ -95,20 +95,7 @@ class OrganisationController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response with list of organisations
-     *
-     * @psalm-return JSONResponse<200|500,
-     *     array{error?: 'Failed to retrieve organisations', total?: int<0, max>,
-     *     active?: array{id: int, uuid: null|string, slug: null|string,
-     *     name: null|string, description: null|string, users: array,
-     *     groups: array|null, owner: null|string, active: bool|null,
-     *     parent: null|string, children: array,
-     *     quota: array{storage: int|null, bandwidth: int|null,
-     *     requests: int|null, users: null, groups: null},
-     *     usage: array{storage: 0, bandwidth: 0, requests: 0,
-     *     users: int<0, max>, groups: int<0, max>}, authorization: array,
-     *     created: null|string, updated: null|string}|null, results?: array},
-     *     array<never, never>>
+     * @return JSONResponse JSON response with organisations or error
      */
     public function index(): JSONResponse
     {
@@ -910,8 +897,10 @@ class OrganisationController extends Controller
      * @param string               $uuid         Current organisation UUID.
      *
      * @return JSONResponse|null Error response if validation fails, null if successful.
+     *
+     * @psalm-return JSONResponse<400, array{error: string}, array<never, never>>|null
      */
-    private function handleParentUpdate(object $organisation, array $data, string $uuid): ?JSONResponse
+    private function handleParentUpdate(object $organisation, array $data, string $uuid): JSONResponse|null
     {
         // Only process if parent key exists in request data.
         if (array_key_exists('parent', $data) === false) {
@@ -972,7 +961,7 @@ class OrganisationController extends Controller
      * @param string    $uuid      Organisation UUID.
      * @param Exception $exception The exception that occurred.
      *
-     * @return JSONResponse Error response.
+     * @return JSONResponse Error response with error message
      */
     private function handleUpdateError(string $uuid, Exception $exception): JSONResponse
     {

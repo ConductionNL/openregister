@@ -46,6 +46,8 @@ class NewFacetingExample
      * Shows how to create basic categorical facets.
      *
      * @return array Basic facet results
+     *
+     * @psalm-return array<string, mixed>
      */
     public function basicTermsFaceting(): array
     {
@@ -71,6 +73,8 @@ class NewFacetingExample
      * Shows how to create time-based facets with different intervals.
      *
      * @return array Date histogram facet results
+     *
+     * @psalm-return array<string, mixed>
      */
     public function dateHistogramFaceting(): array
     {
@@ -103,6 +107,8 @@ class NewFacetingExample
      * Shows how to create numeric range facets.
      *
      * @return array Range facet results
+     *
+     * @psalm-return array<string, mixed>
      */
     public function rangeFaceting(): array
     {
@@ -138,6 +144,8 @@ class NewFacetingExample
      * Real-world example combining all facet types for an e-commerce site.
      *
      * @return array Complete e-commerce facet results
+     *
+     * @psalm-return array<string, mixed>
      */
     public function ecommerceFaceting(): array
     {
@@ -246,22 +254,7 @@ class NewFacetingExample
      *
      * Shows how to migrate from the old getFacets approach to the new system.
      *
-     * @return array[] Comparison of old vs new approach
-     *
-     * @psalm-return array{
-     *     migration_notes: array{
-     *         old_method: 'getFacets() with simple filters',
-     *         new_method: 'getFacetsForObjects() with _facets configuration',
-     *         benefits: list{
-     *             'More flexible facet types (terms, date_histogram, range)',
-     *             'Better performance with disjunctive faceting',
-     *             'Consistent query structure with searchObjects',
-     *             'Enhanced metadata support',
-     *             'Future-proof architecture'
-     *         }
-     *     },
-     *     new_facets: array
-     * }
+     * @return array Migration notes and new facets configuration.
      */
     public function migrationExample(): array
     {
@@ -308,6 +301,8 @@ class NewFacetingExample
      * Shows complex filtering scenarios with the new faceting system.
      *
      * @return array Advanced faceting results
+     *
+     * @psalm-return array<string, mixed>
      */
     public function advancedFilteringWithFacets(): array
     {
@@ -371,6 +366,8 @@ class NewFacetingExample
      * Shows how to optimize faceting for performance.
      *
      * @return array Performance optimized facet results
+     *
+     * @psalm-return array<string, mixed>
      */
     public function performanceOptimizedFaceting(): array
     {

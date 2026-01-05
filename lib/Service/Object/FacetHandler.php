@@ -281,19 +281,14 @@ class FacetHandler
     /**
      * Calculate Facets with Intelligent Fallback Strategy.
      *
-     * **CORE BREAKTHROUGH**: Implements the smart fallback logic that ensures users
+     * CORE BREAKTHROUGH**: Implements the smart fallback logic that ensures users
      * always see meaningful facet options, even when their current search/filters
      * return zero results.
      *
      * @param array $facetQuery  Query for facet calculation (without pagination).
      * @param array $facetConfig Facet configuration.
      *
-     * @return array[] Facet results with fallback metadata.
-     *
-     * @psalm-return array{facets: array,
-     *     performance_metadata: array{strategy: 'collection_fallback'|'filtered',
-     *     fallback_used: bool, total_facet_results: int,
-     *     has_restrictive_filters: bool}}
+     * @return array Facets with performance metadata including strategy and fallback status.
      */
     private function calculateFacetsWithFallback(array $facetQuery, array $facetConfig): array
     {

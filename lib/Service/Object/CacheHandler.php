@@ -966,7 +966,7 @@ class CacheHandler
     {
         $startTime = microtime(true);
 
-        $this->objectCache = [];
+        $this->objectCache        = [];
         $this->inMemoryQueryCache = [];
         $this->nameCache          = [];
         $this->stats = [

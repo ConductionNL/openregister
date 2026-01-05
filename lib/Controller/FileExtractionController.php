@@ -48,11 +48,11 @@ class FileExtractionController extends Controller
     /**
      * Constructor
      *
-     * @param string                $appName               Application name
-     * @param IRequest              $request               HTTP request
-     * @param TextExtractionService $textExtractor Text extraction service
-     * @param VectorizationService  $vectorizationService  Unified vectorization service
-     * @param ChunkMapper           $chunkMapper           Chunk mapper for text chunks
+     * @param string                $appName              Application name
+     * @param IRequest              $request              HTTP request
+     * @param TextExtractionService $textExtractor        Text extraction service
+     * @param VectorizationService  $vectorizationService Unified vectorization service
+     * @param ChunkMapper           $chunkMapper          Chunk mapper for text chunks
      */
     public function __construct(
         string $appName,
@@ -527,15 +527,7 @@ class FileExtractionController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response with batch vectorization results
-     *
-     * @psalm-return JSONResponse<200|500,
-     *     array{success: bool, error?: 'Vectorization failed', message?: string,
-     *     data?: array{success: true, message: string, entity_type: string,
-     *     total_entities: int<0, max>, total_items: int<0, max>,
-     *     vectorized: int<0, max>, failed: int<0, max>,
-     *     errors?: list{0?: array{entity_id: int|string, error: string,
-     *     item_index?: array-key},...}}}, array<never, never>>
+     * @return JSONResponse JSON response with vectorization result
      */
     public function vectorizeBatch(): JSONResponse
     {

@@ -67,9 +67,7 @@ class SolrSettingsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse SOLR configuration
-     *
-     * @psalm-return JSONResponse<200|500, array, array<never, never>>
+     * @return JSONResponse JSON response with SOLR settings
      */
     public function getSolrSettings(): JSONResponse
     {
@@ -88,9 +86,7 @@ class SolrSettingsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse Updated SOLR configuration
-     *
-     * @psalm-return JSONResponse<200|500, array, array<never, never>>
+     * @return JSONResponse JSON response with updated SOLR settings
      */
     public function updateSolrSettings(): JSONResponse
     {
@@ -112,15 +108,7 @@ class SolrSettingsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response with Solr information
-     *
-     * @psalm-return JSONResponse<200|500,
-     *     array{success: bool, error?: string,
-     *     solr?: array{available: false|mixed,
-     *     version: '9.x (detection pending)'|'Unknown', vectorSupport: false,
-     *     collections: array<array{id: mixed, name: mixed,
-     *     documentCount: 0|mixed, shards: 0|mixed, health: 'unknown'|mixed}>,
-     *     error: null|string}}, array<never, never>>
+     * @return JSONResponse JSON response with SOLR info
      */
     public function getSolrInfo(): JSONResponse
     {
@@ -260,9 +248,7 @@ class SolrSettingsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse Updated SOLR facet configuration
-     *
-     * @psalm-return JSONResponse<200|500, array, array<never, never>>
+     * @return JSONResponse JSON response with updated facet configuration
      */
     public function updateSolrFacetConfiguration(): JSONResponse
     {
@@ -282,11 +268,7 @@ class SolrSettingsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response with discovered Solr facets
-     *
-     * @psalm-return JSONResponse<200|422,
-     *     array{success: bool, message: string,
-     *     facets: array<never, never>|mixed}, array<never, never>>
+     * @return JSONResponse JSON response with discovered facets
      */
     public function discoverSolrFacets(): JSONResponse
     {
@@ -335,13 +317,7 @@ class SolrSettingsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response with Solr facet configuration and discovery
-     *
-     * @psalm-return JSONResponse<200|422|500,
-     *     array{success: bool, message: string, error?: string,
-     *     facets?: array{'@self'?: array<array>, object_fields?: array<array>},
-     *     global_settings?: array{show_count: true, show_empty: false,
-     *     max_items: 10}|mixed}, array<never, never>>
+     * @return JSONResponse JSON response with facet config and discovery
      */
     public function getSolrFacetConfigWithDiscovery(): JSONResponse
     {
@@ -485,11 +461,7 @@ class SolrSettingsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response with updated Solr facet configuration
-     *
-     * @psalm-return JSONResponse<200|500,
-     *     array{success: bool, message: string, error?: string,
-     *     config?: array}, array<never, never>>
+     * @return JSONResponse JSON response with updated facet config
      */
     public function updateSolrFacetConfigWithDiscovery(): JSONResponse
     {

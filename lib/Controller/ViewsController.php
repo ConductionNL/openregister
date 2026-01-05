@@ -93,20 +93,7 @@ class ViewsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse A JSON response with views list or error
-     *
-     * @psalm-return JSONResponse<200|401|500,
-     *     array{error?: 'Failed to fetch views'|'User not authenticated',
-     *     message?: string,
-     *     results?: array<array{id: int, uuid: null|string, name: null|string,
-     *     description: null|string, owner: null|string, organisation: null|string,
-     *     isPublic: bool, isDefault: bool, query: array|null, favoredBy: array,
-     *     quota: array{storage: null, bandwidth: null, requests: null,
-     *     users: null, groups: null},
-     *     usage: array{storage: 0, bandwidth: 0, requests: 0, users: int<0, max>,
-     *     groups: 0}, created: null|string, updated: null|string,
-     *     managedByConfiguration: array<string, mixed>|null}>,
-     *     total?: int<0, max>}, array<never, never>>
+     * @return JSONResponse JSON response with views or error
      */
     public function index(): JSONResponse
     {
@@ -193,7 +180,7 @@ class ViewsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse A JSON response with view data or error
+     * @return JSONResponse JSON response with view or error
      */
     public function show(string $id): JSONResponse
     {
@@ -252,7 +239,7 @@ class ViewsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse A JSON response with created view or error
+     * @return JSONResponse JSON response with created view or error
      */
     public function create(): JSONResponse
     {
@@ -349,7 +336,7 @@ class ViewsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse A JSON response with updated view or error
+     * @return JSONResponse JSON response with updated view or error
      */
     public function update(string $id): JSONResponse
     {
@@ -457,7 +444,7 @@ class ViewsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response with patched view
+     * @return JSONResponse JSON response with patched view or error
      */
     public function patch(string $id): JSONResponse
     {
@@ -564,7 +551,7 @@ class ViewsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse A JSON response confirming deletion or error
+     * @return JSONResponse JSON response with delete confirmation or error
      */
     public function destroy(string $id): JSONResponse
     {

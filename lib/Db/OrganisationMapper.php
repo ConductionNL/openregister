@@ -440,7 +440,7 @@ class OrganisationMapper extends QBMapper
      *
      * @return Organisation[]
      *
-     * @psalm-return list<Organisation>
+     * @psalm-return list<OCA\OpenRegister\Db\Organisation>
      */
     public function findAll(int $limit=50, int $offset=0): array
     {

@@ -93,17 +93,14 @@ class ContextRetrievalHandler
      * @param array      $selectedViews View filters for multitenancy (optional).
      * @param array      $ragSettings   RAG configuration overrides (optional).
      *
-     * @return ((float|mixed|null|string)[][]|string)[]
-     *
-     * @psalm-return array{text: string,
-     *     sources: list<array{file_id?: mixed|null, file_path?: mixed|null,
-     *     id: mixed|null, mime_type?: mixed|null, name: string,
-     *     register?: mixed|null, schema?: mixed|null,
-     *     similarity: float(1)|mixed, text: ''|mixed,
-     *     type: 'unknown'|mixed, uri?: mixed|null, uuid?: mixed|null}>}
+     * @return array Retrieved context with semantic results, chunks, and metadata.
      */
-    public function retrieveContext(string $query, ?Agent $agent, array $selectedViews=[], array $ragSettings=[]): array
-    {
+    public function retrieveContext(
+        string $query,
+        ?Agent $agent,
+        array $selectedViews=[],
+        array $ragSettings=[]
+    ): array {
         $this->logger->info(
             message: '[ChatService] Retrieving context',
             context: [

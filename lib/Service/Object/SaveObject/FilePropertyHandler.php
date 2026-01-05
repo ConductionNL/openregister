@@ -536,18 +536,19 @@ class FilePropertyHandler
      * @param array        $fileConfig   The file property configuration from schema.
      * @param int|null     $index        Optional index for array properties.
      *
-     * @psalm-param   ObjectEntity $objectEntity
-     * @psalm-param   string $fileInput
-     * @psalm-param   string $propertyName
-     * @psalm-param   array<string, mixed> $fileConfig
-     * @psalm-param   int|null $index
+     * @psalm-param ObjectEntity $objectEntity
+     * @psalm-param string $fileInput
+     * @psalm-param string $propertyName
+     * @psalm-param array<string, mixed> $fileConfig
+     * @psalm-param int|null $index
+     *
      * @phpstan-param ObjectEntity $objectEntity
      * @phpstan-param string $fileInput
      * @phpstan-param string $propertyName
      * @phpstan-param array<string, mixed> $fileConfig
      * @phpstan-param int|null $index
      *
-     * @return int The ID of the created file.
+     * @return never
      *
      * @psalm-return   int
      * @phpstan-return int
@@ -560,7 +561,7 @@ class FilePropertyHandler
         string $propertyName,
         array $fileConfig,
         ?int $index=null
-    ): int {
+    ) {
         // Check if it's a URL.
         if (filter_var($fileInput, FILTER_VALIDATE_URL) !== false
             && (strpos($fileInput, 'http://') === 0 || strpos($fileInput, 'https://') === 0)
@@ -588,19 +589,18 @@ class FilePropertyHandler
 
         // TODO: Implement file creation when fileService is available.
         // $filename = $this->generateFileName(
-        //     propertyName: $propertyName, extension: $fileData['extension'], index: $index
+        // propertyName: $propertyName, extension: $fileData['extension'], index: $index
         // );
         // $autoTags = $this->prepareAutoTags(fileConfig: $fileConfig, propertyName: $propertyName, index: $index);
         // $autoPublish = $fileConfig['autoPublish'] ?? false;
         // $file = $this->fileService->addFile(
-        //     ObjectEntity: $objectEntity,
-        //     FileName: $filename,
-        //     Content: $fileData['content'],
-        //     Share: $autoPublish,
-        //     Tags: $autoTags
+        // ObjectEntity: $objectEntity,
+        // FileName: $filename,
+        // Content: $fileData['content'],
+        // Share: $autoPublish,
+        // Tags: $autoTags
         // );
         // return $file->getId();
-
         // Placeholder return until file service is implemented.
         // Suppress unused variable warning for $objectEntity - needed for future file service.
         unset($objectEntity);

@@ -91,12 +91,7 @@ class LlmSettingsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse Updated LLM settings
-     *
-     * @psalm-return JSONResponse<200|500,
-     *     array{success: bool, error?: string,
-     *     message?: 'LLM settings updated successfully', data?: array},
-     *     array<never, never>>
+     * @return JSONResponse JSON response with updated LLM settings
      */
     public function updateLLMSettings(): JSONResponse
     {
@@ -194,12 +189,7 @@ class LlmSettingsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse Test result with embedding info
-     *
-     * @psalm-return JSONResponse<200|400, array<array-key, mixed>,
-     *     array<never, never>>|JSONResponse<400,
-     *     array{success: false, error: string, message: string},
-     *     array<never, never>>
+     * @return JSONResponse JSON response with embedding test result
      */
     public function testEmbedding(): JSONResponse
     {
@@ -403,20 +393,7 @@ class LlmSettingsController extends Controller
             // Format models for frontend dropdown.
             $models = array_map(
                 // phpcs:ignore Squiz.Commenting.BlockComment.NoEmptyLineBefore -- Empty line conflicts with "first argument must be on line after opening parenthesis" rule
-                /*
-                 * Format model for frontend dropdown.
-                     *
-                     * @return (int|mixed|null|string)[]
-                     *
-                     * @psalm-return array{
-                     *     id: 'unknown'|mixed,
-                     *     name: 'unknown'|mixed,
-                     *     description: mixed|string,
-                     *     size: 0|mixed,
-                     *     modified: mixed|null
-                     * }
-                 */
-
+                // Format model for frontend dropdown.
                 function (array $model): array {
                     $name = $model['name'] ?? 'unknown';
                     // Format size if available.
@@ -483,14 +460,7 @@ class LlmSettingsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse Mismatch status
-     *
-     * @psalm-return JSONResponse<200|500,
-     *     array{has_vectors: bool, mismatch: bool, error?: string,
-     *     message?: 'No embedding model configured'|'No vectors exist yet'|mixed,
-     *     current_model?: mixed, existing_models?: list<mixed>,
-     *     total_vectors?: int, null_model_count?: int,
-     *     mismatched_models?: list<mixed>}, array<never, never>>
+     * @return JSONResponse JSON response with mismatch check result
      */
     public function checkEmbeddingModelMismatch(): JSONResponse
     {
@@ -552,10 +522,6 @@ class LlmSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with vector statistics
-     *
-     * @psalm-return JSONResponse<200|500,
-     *     array{success: bool, error?: string, trace?: string, stats?: array,
-     *     timestamp?: string}, array<never, never>>
      */
     public function getVectorStats(): JSONResponse
     {

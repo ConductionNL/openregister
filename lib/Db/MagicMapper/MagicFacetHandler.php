@@ -496,7 +496,7 @@ class MagicFacetHandler
     /**
      * Get facetable metadata fields
      *
-     * @return (string|string[])[][] Array of metadata fields that can be faceted
+     * @return (string[])[][] Array of metadata fields that can be faceted
      *
      * @psalm-return array{
      *     register: array{
