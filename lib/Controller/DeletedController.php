@@ -86,6 +86,8 @@ class DeletedController extends Controller
      * Helper method to extract request parameters for deleted objects
      *
      * @return array Request parameters including pagination and filters
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function extractRequestParameters(): array
     {
@@ -258,13 +260,13 @@ class DeletedController extends Controller
         try {
             // Get total deleted count.
             $totalDeleted = $this->objectEntityMapper->countAll(
-                filters: ['@self.deleted' => 'IS NOT NULL'],
+                _filters: ['@self.deleted' => 'IS NOT NULL'],
             );
 
             // Get deleted today count.
             $today        = (new DateTime())->format('Y-m-d');
             $deletedToday = $this->objectEntityMapper->countAll(
-                filters: [
+                _filters: [
                     '@self.deleted'         => 'IS NOT NULL',
                     '@self.deleted.deleted' => '>='.$today,
                 ],
@@ -273,7 +275,7 @@ class DeletedController extends Controller
             // Get deleted this week count.
             $weekAgo         = (new DateTime())->modify('-7 days')->format('Y-m-d');
             $deletedThisWeek = $this->objectEntityMapper->countAll(
-                filters: [
+                _filters: [
                     '@self.deleted'         => 'IS NOT NULL',
                     '@self.deleted.deleted' => '>='.$weekAgo,
                 ],

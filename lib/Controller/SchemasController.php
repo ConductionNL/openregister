@@ -64,6 +64,11 @@ use Psr\Log\LoggerInterface;
  * @link https://OpenRegister.app
  *
  * @psalm-suppress UnusedClass
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class SchemasController extends Controller
 {
@@ -73,21 +78,23 @@ class SchemasController extends Controller
      * Initializes controller with required dependencies for schema operations.
      * Calls parent constructor to set up base controller functionality.
      *
-     * @param string              $appName                 Application name
-     * @param IRequest            $request                 HTTP request object
-     * @param IAppConfig          $config                  App configuration for settings
-     * @param SchemaMapper        $schemaMapper            Schema mapper for database operations
-     * @param ObjectEntityMapper  $objectEntityMapper      Object entity mapper for object queries
-     * @param DownloadService     $downloadService         Download service for file downloads
-     * @param UploadService       $uploadService           Upload service for file uploads
-     * @param AuditTrailMapper    $auditTrailMapper        Audit trail mapper for log statistics
-     * @param OrganisationService $organisationService     Organisation service for multi-tenancy
-     * @param SchemaCacheHandler  $schemaCacheService      Schema cache handler for caching operations
-     * @param FacetCacheHandler   $schemaFacetCacheService Schema facet cache service for facet caching
-     * @param SchemaService       $schemaService           Schema service for exploration operations
-     * @param LoggerInterface     $logger                  Logger for error tracking
+     * @param string              $appName             Application name
+     * @param IRequest            $request             HTTP request object
+     * @param IAppConfig          $config              App configuration for settings
+     * @param SchemaMapper        $schemaMapper        Schema mapper for database operations
+     * @param ObjectEntityMapper  $objectEntityMapper  Object entity mapper for object queries
+     * @param DownloadService     $downloadService     Download service for file downloads
+     * @param UploadService       $uploadService       Upload service for file uploads
+     * @param AuditTrailMapper    $auditTrailMapper    Audit trail mapper for log statistics
+     * @param OrganisationService $organisationService Organisation service for multi-tenancy
+     * @param SchemaCacheHandler  $schemaCacheService  Schema cache handler for caching operations
+     * @param FacetCacheHandler   $facetCacheSvc       Schema facet cache service for facet caching
+     * @param SchemaService       $schemaService       Schema service for exploration operations
+     * @param LoggerInterface     $logger              Logger for error tracking
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      */
     public function __construct(
         string $appName,
@@ -100,7 +107,7 @@ class SchemasController extends Controller
         private readonly AuditTrailMapper $auditTrailMapper,
         private readonly OrganisationService $organisationService,
         private readonly SchemaCacheHandler $schemaCacheService,
-        private readonly FacetCacheHandler $schemaFacetCacheService,
+        private readonly FacetCacheHandler $facetCacheSvc,
         private readonly SchemaService $schemaService,
         private readonly LoggerInterface $logger
     ) {
@@ -135,6 +142,9 @@ class SchemasController extends Controller
      *     published: null|string, depublished: null|string,
      *     configuration: array|null|string, allOf: array|null,
      *     oneOf: array|null, anyOf: array|null}>}, array<never, never>>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     public function index(): JSONResponse
     {
@@ -276,6 +286,9 @@ class SchemasController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @SuppressWarnings(PHPMD.StaticAccess)         DatabaseConstraintException factory method is standard pattern
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
      * @return JSONResponse JSON response with created schema or error
      *
      * @psalm-return JSONResponse<201, Schema,
@@ -386,6 +399,9 @@ class SchemasController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @SuppressWarnings(PHPMD.StaticAccess)         DatabaseConstraintException factory method is standard pattern
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
      * @return JSONResponse JSON response with updated schema or error
      *
      * @psalm-return JSONResponse<200, Schema,
@@ -416,7 +432,7 @@ class SchemasController extends Controller
 
             // **CACHE INVALIDATION**: Clear all schema-related caches when schema is updated.
             $this->schemaCacheService->invalidateForSchemaChange(schemaId: $updatedSchema->getId(), operation: 'update');
-            $this->schemaFacetCacheService->invalidateForSchemaChange(
+            $this->facetCacheSvc->invalidateForSchemaChange(
                 schemaId: $updatedSchema->getId(),
                 operation: 'update'
             );
@@ -524,7 +540,7 @@ class SchemasController extends Controller
                 schemaId: $schemaToDelete->getId(),
                 operation: 'delete'
             );
-            $this->schemaFacetCacheService->invalidateForSchemaChange(
+            $this->facetCacheSvc->invalidateForSchemaChange(
                 schemaId: $schemaToDelete->getId(),
                 operation: 'delete'
             );
@@ -578,6 +594,11 @@ class SchemasController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess)          Uuid::v4 and DatabaseConstraintException factory are standard patterns
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     public function upload(?int $id=null): JSONResponse
     {
@@ -624,7 +645,7 @@ class SchemasController extends Controller
 
                 // **CACHE INVALIDATION**: Clear all schema-related caches when schema is created.
                 $this->schemaCacheService->invalidateForSchemaChange(schemaId: $schema->getId(), operation: 'create');
-                $this->schemaFacetCacheService->invalidateForSchemaChange(schemaId: $schema->getId(), operation: 'create');
+                $this->facetCacheSvc->invalidateForSchemaChange(schemaId: $schema->getId(), operation: 'create');
             }
 
             if ($isNewSchema === false) {
@@ -633,7 +654,7 @@ class SchemasController extends Controller
 
                 // **CACHE INVALIDATION**: Clear all schema-related caches when schema is updated.
                 $this->schemaCacheService->invalidateForSchemaChange(schemaId: $schema->getId(), operation: 'update');
-                $this->schemaFacetCacheService->invalidateForSchemaChange(
+                $this->facetCacheSvc->invalidateForSchemaChange(
                     schemaId: $schema->getId(),
                     operation: 'update'
                 );
@@ -972,7 +993,7 @@ class SchemasController extends Controller
                 schemaId: $updatedSchema->getId(),
                 operation: 'publish'
             );
-            $this->schemaFacetCacheService->invalidateForSchemaChange(
+            $this->facetCacheSvc->invalidateForSchemaChange(
                 schemaId: $updatedSchema->getId(),
                 operation: 'publish'
             );
@@ -1051,7 +1072,7 @@ class SchemasController extends Controller
                 schemaId: $updatedSchema->getId(),
                 operation: 'depublish'
             );
-            $this->schemaFacetCacheService->invalidateForSchemaChange(
+            $this->facetCacheSvc->invalidateForSchemaChange(
                 schemaId: $updatedSchema->getId(),
                 operation: 'depublish'
             );

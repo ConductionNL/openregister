@@ -45,6 +45,10 @@ use Psr\Log\LoggerInterface;
  * @link     https://github.com/ConductionNL/openregister
  *
  * @psalm-suppress UnusedClass
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  */
 class WebhooksController extends Controller
 {
@@ -504,6 +508,8 @@ class WebhooksController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -959,6 +965,8 @@ class WebhooksController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -970,7 +978,13 @@ class WebhooksController extends Controller
             $offset    = (int) ($this->request->getParam('offset') ?? 0);
             $success   = $this->request->getParam('success');
 
-            // If webhook_id is provided and valid, use findByWebhook method.
+            // Get all logs by default.
+            $logs = $this->webhookLogMapper->findAll(limit: $limit, offset: $offset);
+            // Get total count for all logs.
+            $allLogs = $this->webhookLogMapper->findAll(limit: null, offset: null);
+            $total   = count($allLogs);
+
+            // If webhook_id is provided and valid, use findByWebhook method instead.
             if ($webhookId !== null && $webhookId !== '' && $webhookId !== '0') {
                 $webhookIdInt = (int) $webhookId;
                 $logs         = $this->webhookLogMapper->findByWebhook(
@@ -985,13 +999,7 @@ class WebhooksController extends Controller
                     offset: null
                 );
                 $total = count($allLogsForWebhook);
-            } else {
-                // Get all logs.
-                $logs = $this->webhookLogMapper->findAll(limit: $limit, offset: $offset);
-                // Get total count for all logs.
-                $allLogs = $this->webhookLogMapper->findAll(limit: null, offset: null);
-                $total   = count($allLogs);
-            }//end if
+            }
 
             // Filter by success status if provided.
             if ($success !== null && $success !== ''
@@ -1007,6 +1015,16 @@ class WebhooksController extends Controller
                 $logs         = array_values($filteredLogs);
                 // Re-index array.
                 // Recalculate total if filtering by success.
+                $allLogs = $this->webhookLogMapper->findAll(limit: null, offset: null);
+                $total   = count(
+                    array_filter(
+                        $allLogs,
+                        function ($log) use ($successBool) {
+                            return $log->getSuccess() === $successBool;
+                        }
+                    )
+                );
+
                 if ($webhookId !== null && $webhookId !== '' && $webhookId !== '0') {
                     $webhookIdInt      = (int) $webhookId;
                     $allLogsForWebhook = $this->webhookLogMapper->findByWebhook(
@@ -1022,17 +1040,7 @@ class WebhooksController extends Controller
                             }
                         )
                     );
-                } else {
-                    $allLogs = $this->webhookLogMapper->findAll(limit: null, offset: null);
-                    $total   = count(
-                        array_filter(
-                            $allLogs,
-                            function ($log) use ($successBool) {
-                                return $log->getSuccess() === $successBool;
-                            }
-                        )
-                    );
-                }//end if
+                }
             }//end if
 
             return new JSONResponse(
@@ -1069,6 +1077,10 @@ class WebhooksController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -1131,40 +1143,40 @@ class WebhooksController extends Controller
                         'message' => 'Webhook retry delivered successfully',
                     ]
                 );
-            } else {
-                // Get the latest log entry to retrieve error details.
-                $latestLogs   = $this->webhookLogMapper->findByWebhook(webhookId: $webhook->getId(), limit: 1, offset: 0);
-                $errorMessage = 'Webhook retry delivery failed';
-                $errorDetails = null;
+            }
 
-                if (empty($latestLogs) === false) {
-                    $latestLog = $latestLogs[0];
-                    if ($latestLog->getErrorMessage() !== null) {
-                        $errorMessage = $latestLog->getErrorMessage();
-                    }
+            // Get the latest log entry to retrieve error details.
+            $latestLogs   = $this->webhookLogMapper->findByWebhook(webhookId: $webhook->getId(), limit: 1, offset: 0);
+            $errorMessage = 'Webhook retry delivery failed';
+            $errorDetails = null;
 
-                    if ($latestLog->getStatusCode() !== null) {
-                        $errorDetails = [
-                            'status_code'   => $latestLog->getStatusCode(),
-                            'response_body' => $latestLog->getResponseBody(),
-                        ];
-                    }
+            if (empty($latestLogs) === false) {
+                $latestLog = $latestLogs[0];
+                if ($latestLog->getErrorMessage() !== null) {
+                    $errorMessage = $latestLog->getErrorMessage();
                 }
 
-                $responseData = [
-                    'success' => false,
-                    'message' => $errorMessage,
-                ];
-
-                if ($errorDetails !== null) {
-                    $responseData['error_details'] = $errorDetails;
+                if ($latestLog->getStatusCode() !== null) {
+                    $errorDetails = [
+                        'status_code'   => $latestLog->getStatusCode(),
+                        'response_body' => $latestLog->getResponseBody(),
+                    ];
                 }
+            }
 
-                return new JSONResponse(
-                    data: $responseData,
-                    statusCode: 500
-                );
-            }//end if
+            $responseData = [
+                'success' => false,
+                'message' => $errorMessage,
+            ];
+
+            if ($errorDetails !== null) {
+                $responseData['error_details'] = $errorDetails;
+            }
+
+            return new JSONResponse(
+                data: $responseData,
+                statusCode: 500
+            );
         } catch (DoesNotExistException $e) {
             $this->logger->error(
                 message: 'Webhook log not found for retry: '.$e->getMessage(),

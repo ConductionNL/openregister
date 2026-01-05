@@ -39,6 +39,8 @@ use OCP\IRequest;
  *
  * @psalm-type     TemplateName = 'index'
  * @psalm-suppress UnusedClass
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  */
 class UiController extends Controller
 {

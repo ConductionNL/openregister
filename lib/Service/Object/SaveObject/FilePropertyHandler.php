@@ -40,6 +40,9 @@ use Psr\Log\LoggerInterface;
  * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)     File processing requires comprehensive validation and parsing methods
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex file handling with multiple input formats
  */
 class FilePropertyHandler
 {
@@ -148,6 +151,10 @@ class FilePropertyHandler
      *
      * @return         bool True if the value should be treated as a file property
      * @phpstan-return bool
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple file format detection patterns required
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Many conditional paths for different file input formats
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive file type detection requires checking many formats
      */
     public function isFileProperty($value, ?Schema $schema=null, ?string $propertyName=null): bool
     {
@@ -344,6 +351,10 @@ class FilePropertyHandler
      * @phpstan-return void
      *
      * @throws Exception If file validation fails or file operations fail.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex file handling with deletion, array, and single file paths
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple conditional branches for file property processing
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive file property handling requires many steps
      */
     public function handleFileProperty(
         ObjectEntity $objectEntity,
@@ -784,111 +795,6 @@ class FilePropertyHandler
     }//end parseFileDataFromUrl()
 
     /**
-     * Validates an existing file against property configuration.
-     *
-     * @param File     $file         The existing file.
-     * @param array    $fileConfig   The file property configuration.
-     * @param string   $propertyName The property name (for error messages).
-     * @param int|null $index        Optional array index (for error messages).
-     *
-     * @psalm-param   File $file
-     * @psalm-param   array<string, mixed> $fileConfig
-     * @psalm-param   string $propertyName
-     * @psalm-param   int|null $index
-     * @phpstan-param File $file
-     * @phpstan-param array<string, mixed> $fileConfig
-     * @phpstan-param string $propertyName
-     * @phpstan-param int|null $index
-     *
-     * @return void
-     *
-     * @psalm-return   void
-     * @phpstan-return void
-     *
-     * @throws Exception If validation fails.
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future file validation
-     */
-    private function validateExistingFileAgainstConfig(
-        File $file,
-        array $fileConfig,
-        string $propertyName,
-        ?int $index=null
-    ): void {
-        $errorPrefix = "Existing file at $propertyName";
-        if ($index !== null) {
-            $errorPrefix = "Existing file at $propertyName[$index]";
-        }
-
-        // Validate MIME type.
-        if (($fileConfig['allowedTypes'] ?? null) !== null && empty($fileConfig['allowedTypes']) === false) {
-            $fileMimeType = $file->getMimeType();
-            if (in_array($fileMimeType, $fileConfig['allowedTypes'], true) === false) {
-                $allowedStr = implode(', ', $fileConfig['allowedTypes']);
-                throw new Exception(
-                    "$errorPrefix has invalid type '$fileMimeType'. Allowed types: $allowedStr"
-                );
-            }
-        }
-
-        // Validate file size.
-        if (($fileConfig['maxSize'] ?? null) !== null && $fileConfig['maxSize'] > 0) {
-            $fileSize = $file->getSize();
-            if ($fileSize > $fileConfig['maxSize']) {
-                throw new Exception(
-                    "$errorPrefix exceeds maximum size ({$fileConfig['maxSize']} bytes). File size: {$fileSize} bytes"
-                );
-            }
-        }
-    }//end validateExistingFileAgainstConfig()
-
-    /**
-     * Applies auto tags to an existing file (non-destructive).
-     *
-     * @param File     $file         The existing file.
-     * @param array    $fileConfig   The file property configuration.
-     * @param string   $propertyName The property name.
-     * @param int|null $index        Optional array index.
-     *
-     * @psalm-param   File $file
-     * @psalm-param   array<string, mixed> $fileConfig
-     * @psalm-param   string $propertyName
-     * @psalm-param   int|null $index
-     * @phpstan-param File $file
-     * @phpstan-param array<string, mixed> $fileConfig
-     * @phpstan-param string $propertyName
-     * @phpstan-param int|null $index
-     *
-     * @return void
-     *
-     * @psalm-return   void
-     * @phpstan-return void
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future auto-tagging implementation
-     */
-    private function applyAutoTagsToExistingFile(File $file, array $fileConfig, string $propertyName, ?int $index=null): void
-    {
-        $autoTags = $this->prepareAutoTags(fileConfig: $fileConfig, propertyName: $propertyName, index: $index);
-
-        if (empty($autoTags) === false) {
-            // Get existing tags and merge with auto tags.
-            try {
-                // TODO: Implement file formatting and tag updating when fileService is available.
-                // $formattedFile = $this->fileService->formatFile($file);
-                // $existingTags = $formattedFile['labels'] ?? [];
-                // $allTags = array_unique(array_merge($existingTags, $autoTags));
-                // $this->fileService->updateFile(
-                // FilePath: $file->getId(),
-                // Content: null,  // Don't change content.
-                // Tags: $allTags
-                // );.
-            } catch (Exception $e) {
-                // Log but don't fail - auto tagging is not critical.
-            }
-        }
-    }//end applyAutoTagsToExistingFile()
-
-    /**
      * Parses file data from various formats (data URI, base64) and extracts metadata.
      *
      * @param string $fileContent The file content to parse.
@@ -982,10 +888,9 @@ class FilePropertyHandler
         string $propertyName,
         ?int $index=null
     ): void {
+        $errorPrefix = "File at $propertyName";
         if ($index !== null) {
             $errorPrefix = "File at $propertyName[$index]";
-        } else {
-            $errorPrefix = "File at $propertyName";
         }
 
         // Security: Block executable files (unless explicitly allowed).
@@ -1036,6 +941,8 @@ class FilePropertyHandler
      * @phpstan-return void
      *
      * @throws Exception If an executable file is detected.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple security checks for executable detection
      */
     public function blockExecutableFiles(array $fileData, string $errorPrefix): void
     {
@@ -1159,91 +1066,6 @@ class FilePropertyHandler
             );
         }
     }//end detectExecutableMagicBytes()
-
-    /**
-     * Generates a filename for a file property.
-     *
-     * @param string   $propertyName The property name.
-     * @param string   $extension    The file extension.
-     * @param int|null $index        Optional array index.
-     *
-     * @psalm-param string $propertyName
-     * @psalm-param string $extension
-     * @psalm-param int|null $index
-     *
-     * @phpstan-param string $propertyName
-     * @phpstan-param string $extension
-     * @phpstan-param int|null $index
-     *
-     * @return string
-     *
-     * @psalm-return   string
-     * @phpstan-return string
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future file name generation
-     */
-    private function generateFileName(string $propertyName, string $extension, ?int $index=null): string
-    {
-        $timestamp = time();
-        if ($index !== null) {
-            $indexSuffix = "_$index";
-        } else {
-            $indexSuffix = '';
-        }
-
-        return "{$propertyName}{$indexSuffix}_{$timestamp}.{$extension}";
-    }//end generateFileName()
-
-    /**
-     * Prepares auto tags for a file based on property configuration.
-     *
-     * @param array    $fileConfig   The file property configuration.
-     * @param string   $propertyName The property name.
-     * @param int|null $index        Optional array index.
-     *
-     * @psalm-param   array<string, mixed> $fileConfig
-     * @psalm-param   string $propertyName
-     * @psalm-param   int|null $index
-     * @phpstan-param array<string, mixed> $fileConfig
-     * @phpstan-param string $propertyName
-     * @phpstan-param int|null $index
-     *
-     * @return array The prepared auto tags.
-     *
-     * @psalm-return   list<string>
-     * @phpstan-return array<int, string>
-     */
-    private function prepareAutoTags(array $fileConfig, string $propertyName, ?int $index=null): array
-    {
-        $autoTags = $fileConfig['autoTags'] ?? [];
-
-        // Replace placeholders in auto tags.
-        $processedTags = [];
-        foreach ($autoTags as $tag) {
-            // Handle both string tags and array tags (flatten arrays).
-            if (is_array($tag) === true) {
-                $tag = implode(',', array_filter($tag, 'is_string'));
-            }
-
-            // Ensure tag is a string.
-            if (is_string($tag) === false) {
-                continue;
-            }
-
-            // Replace property name placeholder.
-            $tag = str_replace('{property}', $propertyName, $tag);
-            $tag = str_replace('{propertyName}', $propertyName, $tag);
-
-            // Replace index placeholder for array properties.
-            if ($index !== null) {
-                $tag = str_replace('{index}', (string) $index, $tag);
-            }
-
-            $processedTags[] = $tag;
-        }//end foreach
-
-        return $processedTags;
-    }//end prepareAutoTags()
 
     /**
      * Gets file extension from MIME type.

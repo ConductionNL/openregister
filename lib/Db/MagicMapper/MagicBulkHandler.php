@@ -55,6 +55,9 @@ use Symfony\Component\Uid\Uuid;
  * This class provides high-performance bulk operations specifically optimized
  * for schema-specific dynamic tables, offering better performance than generic
  * table operations due to schema-aware optimizations.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class MagicBulkHandler
 {
@@ -153,217 +156,6 @@ class MagicBulkHandler
 
         return $prepared;
     }//end prepareObjectsForDynamicTable()
-
-    /**
-     * Categorize objects into insert vs update operations
-     *
-     * @param array  $objects   Prepared object data
-     * @param string $tableName Target table name
-     *
-     * @return array[] Array containing [insertObjects, updateObjects]
-     *
-     * @psalm-return list{list<mixed>, list<mixed>}
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future bulk save optimization
-     */
-    private function categorizeObjectsForSave(array $objects, string $tableName): array
-    {
-        if ($objects === []) {
-            return [[], []];
-        }
-
-        // Get UUIDs to check for existing objects.
-        $uuids = array_column($objects, '_uuid');
-
-        // Find existing objects.
-        $qb = $this->db->getQueryBuilder();
-        $qb->select('_uuid')
-            ->from($tableName, 't')
-            ->where(
-                    $qb->expr()->in(
-                't._uuid',
-                $qb->createNamedParameter($uuids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)
-            )
-                    );
-
-        $result        = $qb->executeQuery();
-        $existingUuids = array_column($result->fetchAll(), '_uuid');
-
-        // Categorize objects.
-        $insertObjects = [];
-        $updateObjects = [];
-
-        foreach ($objects as $object) {
-            if (in_array($object['_uuid'], $existingUuids, true) === true) {
-                $updateObjects[] = $object;
-                continue;
-            }
-
-            $insertObjects[] = $object;
-        }
-
-        return [$insertObjects, $updateObjects];
-    }//end categorizeObjectsForSave()
-
-    /**
-     * Perform bulk insert into dynamic table
-     *
-     * @param array  $objects   Array of prepared object data
-     * @param string $tableName Target table name
-     *
-     * @return array Array of inserted UUIDs
-     *
-     * @throws \OCP\DB\Exception If a database error occurs
-     *
-     * @psalm-return list<mixed>
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future bulk save optimization
-     */
-    private function bulkInsertToDynamicTable(array $objects, string $tableName): array
-    {
-        if ($objects === []) {
-            return [];
-        }
-
-        $insertedUuids = [];
-        $chunkSize     = $this->calculateOptimalChunkSize($objects);
-
-        // Process in chunks to prevent packet size issues.
-        $chunks = array_chunk($objects, $chunkSize);
-
-        foreach ($chunks as $chunk) {
-            $chunkUuids    = $this->executeBulkInsertChunk(chunk: $chunk, tableName: $tableName);
-            $insertedUuids = array_merge($insertedUuids, $chunkUuids);
-        }
-
-        return $insertedUuids;
-    }//end bulkInsertToDynamicTable()
-
-    /**
-     * Execute bulk insert for a single chunk
-     *
-     * @param array  $chunk     Chunk of objects to insert
-     * @param string $tableName Target table name
-     *
-     * @return array Array of inserted UUIDs
-     *
-     * @psalm-return list<mixed>
-     */
-    private function executeBulkInsertChunk(array $chunk, string $tableName): array
-    {
-        if ($chunk === []) {
-            return [];
-        }
-
-        // Get columns from first object.
-        $columns       = array_keys($chunk[0]);
-        $columnList    = '`'.implode('`, `', $columns).'`';
-        $insertedUuids = [];
-
-        // Build VALUES clause.
-        $valuesClause = [];
-        $parameters   = [];
-        $paramIndex   = 0;
-
-        foreach ($chunk as $objectData) {
-            $rowValues = [];
-            foreach ($columns as $column) {
-                $paramName   = 'p'.$paramIndex;
-                $rowValues[] = ':'.$paramName;
-                $parameters[$paramName] = $objectData[$column] ?? null;
-                $paramIndex++;
-            }
-
-            $valuesClause[] = '('.implode(',', $rowValues).')';
-
-            // Collect UUID for return.
-            if (($objectData['_uuid'] ?? null) !== null) {
-                $insertedUuids[] = $objectData['_uuid'];
-            }
-        }
-
-        // Execute bulk insert.
-        $sql = "INSERT INTO `{$tableName}` ({$columnList}) VALUES ".implode(',', $valuesClause);
-
-        try {
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute($parameters);
-        } catch (\Exception $e) {
-            $this->logger->error(
-                'Bulk insert to dynamic table failed',
-                [
-                    'tableName' => $tableName,
-                    'chunkSize' => count($chunk),
-                    'error'     => $e->getMessage(),
-                ]
-            );
-            throw $e;
-        }
-
-        return $insertedUuids;
-    }//end executeBulkInsertChunk()
-
-    /**
-     * Perform bulk update on dynamic table
-     *
-     * @param array  $objects   Array of prepared object data
-     * @param string $tableName Target table name
-     *
-     * @return array Array of updated UUIDs
-     *
-     * @throws \OCP\DB\Exception If a database error occurs
-     *
-     * @psalm-return list<mixed>
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future bulk save optimization
-     */
-    private function bulkUpdateDynamicTable(array $objects, string $tableName): array
-    {
-        if ($objects === []) {
-            return [];
-        }
-
-        $updatedUuids = [];
-
-        // Process updates individually for now (can be optimized later with CASE statements).
-        foreach ($objects as $objectData) {
-            $uuid = $objectData['_uuid'] ?? null;
-            if ($uuid === null || $uuid === '') {
-                continue;
-            }
-
-            $qb = $this->db->getQueryBuilder();
-            $qb->update($tableName, 't');
-
-            // Set all columns except UUID.
-            foreach ($objectData as $column => $value) {
-                if ($column !== '_uuid') {
-                    $qb->set("t.{$column}", $qb->createNamedParameter($value));
-                }
-            }
-
-            $qb->where($qb->expr()->eq('t._uuid', $qb->createNamedParameter($uuid)));
-
-            try {
-                $affectedRows = $qb->executeStatement();
-                if ($affectedRows > 0) {
-                    $updatedUuids[] = $uuid;
-                }
-            } catch (\Exception $e) {
-                $this->logger->error(
-                    'Failed to update object in dynamic table',
-                    [
-                        'tableName' => $tableName,
-                        'uuid'      => $uuid,
-                        'error'     => $e->getMessage(),
-                    ]
-                );
-                // Continue with other objects.
-            }
-        }//end foreach
-
-        return $updatedUuids;
-    }//end bulkUpdateDynamicTable()
 
     /**
      * Calculate optimal chunk size for bulk operations
@@ -554,6 +346,10 @@ class MagicBulkHandler
      * @throws \OCP\DB\Exception If a database error occurs
      *
      * @psalm-return list<array<string, mixed>>
+     *
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Bulk upsert requires complex data transformation logic
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */
     private function executeUpsertChunk(array $chunk, string $tableName, int $chunkNumber): array
     {
@@ -799,22 +595,24 @@ class MagicBulkHandler
             }
 
             $stmt = $this->db->prepare($sql);
+            // MySQL/MariaDB: SHOW COLUMNS doesn't need parameters.
+            $stmtParams = [];
             if ($isPostgres === true) {
                 // PostgreSQL information_schema expects table name WITH prefix.
-                $stmt->execute([$fullTableName]);
-            } else {
-                // MySQL/MariaDB: SHOW COLUMNS doesn't need parameters.
-                $stmt->execute();
+                $stmtParams = [$fullTableName];
             }
+
+            $stmt->execute($stmtParams);
 
             $columns = [];
             $row     = $stmt->fetch();
             while ($row !== false) {
+                $columnKey = 'Field';
                 if ($isPostgres === true) {
-                    $columns[] = $row['column_name'];
-                } else {
-                    $columns[] = $row['Field'];
+                    $columnKey = 'column_name';
                 }
+
+                $columns[] = $row[$columnKey];
 
                 $row = $stmt->fetch();
             }
@@ -837,86 +635,4 @@ class MagicBulkHandler
             return [];
         }//end try
     }//end getTableColumns()
-
-    /**
-     * Dispatch events for bulk operation results.
-     *
-     * This method ensures that business logic hooks (listeners) are triggered
-     * for each object that was created or updated during a bulk operation.
-     * This is CRITICAL for software catalog and other apps that depend on
-     * object lifecycle events.
-     *
-     * @param array    $results  Array of objects with 'object_status' field
-     * @param Register $register The register context
-     * @param Schema   $schema   The schema context
-     *
-     * @return void
-     *
-     * @psalm-suppress                              UnusedParam - params are used in named arguments.
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future bulk event dispatching.
-     */
-    private function dispatchBulkEvents(array $results, Register $register, Schema $schema): void
-    {
-        $createdCount = 0;
-        $updatedCount = 0;
-
-        // Convert MagicMapper to use proper ObjectEntityMapper for event conversion.
-        $magicMapper = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
-
-        foreach ($results as $row) {
-            $status = $row['object_status'] ?? 'unchanged';
-
-            // Only dispatch events for created/updated objects.
-            if ($status === 'created' || $status === 'updated') {
-                try {
-                    // Convert row to ObjectEntity for event dispatching.
-                    $entity = $magicMapper->convertRowToObjectEntity(
-                        row: $row,
-                        _register: $register,
-                        _schema: $schema
-                    );
-
-                    if ($entity === null) {
-                        continue;
-                    }
-
-                    // Dispatch appropriate event.
-                    if ($status === 'created') {
-                        $this->eventDispatcher->dispatch(
-                            ObjectCreatedEvent::class,
-                            new ObjectCreatedEvent(object: $entity)
-                        );
-                        $createdCount++;
-                    } else if ($status === 'updated') {
-                        // For bulk updates, we don't have the old object.
-                        // Pass the entity as both old and new (best approximation for bulk context).
-                        $this->eventDispatcher->dispatch(
-                            ObjectUpdatedEvent::class,
-                            new ObjectUpdatedEvent(newObject: $entity, oldObject: $entity)
-                        );
-                        $updatedCount++;
-                    }
-                } catch (\Exception $e) {
-                    // Log but don't fail the entire bulk operation if one event fails.
-                    $this->logger->warning(
-                        '[MagicBulkHandler] Failed to dispatch event for object',
-                        [
-                            'uuid'   => $row['_uuid'] ?? 'unknown',
-                            'status' => $status,
-                            'error'  => $e->getMessage(),
-                        ]
-                    );
-                }//end try
-            }//end if
-        }//end foreach
-
-        $this->logger->info(
-            '[MagicBulkHandler] Dispatched bulk events',
-            [
-                'created' => $createdCount,
-                'updated' => $updatedCount,
-                'total'   => count($results),
-            ]
-        );
-    }//end dispatchBulkEvents()
 }//end class

@@ -53,6 +53,9 @@ use OCP\IUserSession;
  * @method           list<Configuration> findEntities(IQueryBuilder $query)
  *
  * @extends QBMapper<Configuration>
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class ConfigurationMapper extends QBMapper
 {

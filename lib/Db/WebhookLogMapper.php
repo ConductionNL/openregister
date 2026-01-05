@@ -196,12 +196,11 @@ class WebhookLogMapper extends QBMapper
 
         // Build conditional expressions for success/failure counts.
         // PostgreSQL uses TRUE/FALSE for booleans, MySQL/MariaDB use 1/0.
+        $successCase = 'SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) as successful';
+        $failedCase  = 'SUM(CASE WHEN success = 0 THEN 1 ELSE 0 END) as failed';
         if ($platform === 'postgresql') {
             $successCase = 'SUM(CASE WHEN success = TRUE THEN 1 ELSE 0 END) as successful';
             $failedCase  = 'SUM(CASE WHEN success = FALSE THEN 1 ELSE 0 END) as failed';
-        } else {
-            $successCase = 'SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) as successful';
-            $failedCase  = 'SUM(CASE WHEN success = 0 THEN 1 ELSE 0 END) as failed';
         }
 
         $qb->select($qb->createFunction('COUNT(*) as total'))

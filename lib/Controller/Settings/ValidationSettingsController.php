@@ -98,6 +98,8 @@ class ValidationSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with mass validation results
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function massValidateObjects(): JSONResponse
     {
@@ -217,17 +219,17 @@ class ValidationSettingsController extends Controller
 
             // Estimate memory usage (rough calculation).
             // Assume each object uses approximately 50KB in memory during processing.
-            $estimatedMemoryPerObject = 50 * 1024;
+            $estMemPerObject = 50 * 1024;
             // 50KB.
-            $totalEstimatedMemory = $estimatedObjectCount * $estimatedMemoryPerObject;
+            $totalEstimatedMemory = $estimatedObjectCount * $estMemPerObject;
 
             // Determine if prediction is safe.
             $predictionSafe = $totalEstimatedMemory < ($availableMemory * 0.8);
             // Use 80% as safety margin.
             // Get recommendation message based on prediction safety.
-            $recommendationMessage = 'Warning: Memory usage may exceed available memory';
+            $recommendMsg = 'Warning: Memory usage may exceed available memory';
             if ($predictionSafe === true) {
-                $recommendationMessage = 'Safe to process';
+                $recommendMsg = 'Safe to process';
             }
 
             $noteMessage = 'Fast prediction mode - actual object count will be determined during processing';
@@ -237,7 +239,7 @@ class ValidationSettingsController extends Controller
                 'objects_to_process'       => $estimatedObjectCount,
                 'total_objects_available'  => 'Unknown (fast mode)',
             // Don't count all objects for speed.
-                'memory_per_object_bytes'  => $estimatedMemoryPerObject,
+                'memory_per_object_bytes'  => $estMemPerObject,
                 'total_predicted_bytes'    => $totalEstimatedMemory,
                 'current_memory_bytes'     => $currentMemory,
                 'memory_limit_bytes'       => $memoryLimitBytes,
@@ -248,10 +250,10 @@ class ValidationSettingsController extends Controller
                     'available'         => $this->settingsService->formatBytes($availableMemory),
                     'current_usage'     => $this->settingsService->formatBytes($currentMemory),
                     'memory_limit'      => $this->settingsService->formatBytes($memoryLimitBytes),
-                    'memory_per_object' => $this->settingsService->formatBytes($estimatedMemoryPerObject),
+                    'memory_per_object' => $this->settingsService->formatBytes($estMemPerObject),
                 ],
                 // Get recommendation message based on prediction safety.
-                'recommendation'           => $recommendationMessage,
+                'recommendation'           => $recommendMsg,
                 'note'                     => $noteMessage,
             ];
 

@@ -188,6 +188,9 @@ class ToolManagementHandler
      * @return array Array of FunctionInfo objects
      *
      * @psalm-return list<FunctionInfo>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Function conversion requires handling multiple parameter types
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Function conversion requires handling multiple parameter types
      */
     public function convertFunctionsToFunctionInfo(array $functions, array $tools): array
     {

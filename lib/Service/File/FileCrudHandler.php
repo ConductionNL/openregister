@@ -52,17 +52,17 @@ class FileCrudHandler
     /**
      * Constructor for FileCrudHandler.
      *
-     * @param IRootFolder             $rootFolder              Root folder for file operations.
-     * @param FolderManagementHandler $folderManagementHandler Folder management handler.
-     * @param FileValidationHandler   $fileValidationHandler   File validation handler.
-     * @param FileOwnershipHandler    $fileOwnershipHandler    File ownership handler.
-     * @param FileSharingHandler      $fileSharingHandler      File sharing handler.
-     * @param LoggerInterface         $logger                  Logger for logging operations.
+     * @param IRootFolder             $rootFolder           Root folder for file operations.
+     * @param FolderManagementHandler $folderMgmtHandler    Folder management handler.
+     * @param FileValidationHandler   $fileValidHandler     File validation handler.
+     * @param FileOwnershipHandler    $fileOwnershipHandler File ownership handler.
+     * @param FileSharingHandler      $fileSharingHandler   File sharing handler.
+     * @param LoggerInterface         $logger               Logger for logging operations.
      */
     public function __construct(
         private readonly IRootFolder $rootFolder,
-        private readonly FolderManagementHandler $folderManagementHandler,
-        private readonly FileValidationHandler $fileValidationHandler,
+        private readonly FolderManagementHandler $folderMgmtHandler,
+        private readonly FileValidationHandler $fileValidHandler,
         private readonly FileOwnershipHandler $fileOwnershipHandler,
         private readonly FileSharingHandler $fileSharingHandler,
         private readonly LoggerInterface $logger
@@ -75,7 +75,7 @@ class FileCrudHandler
      * NOTE: Phase 1B - This method structure is prepared for full extraction.
      * Currently documents the interface; full implementation to be extracted from FileService.
      *
-     * @param string $folderPath The path where to create the folder.
+     * @param string $_folderPath The path where to create the folder.
      *
      * @throws Exception If folder creation fails.
      *
@@ -86,7 +86,7 @@ class FileCrudHandler
      *
      * @todo Extract full implementation from FileService::createFolder()
      */
-    public function createFolder(string $folderPath)
+    public function createFolder(string $_folderPath)
     {
         // TODO: Extract full implementation from FileService
         // This involves:
@@ -104,31 +104,33 @@ class FileCrudHandler
      * NOTE: Phase 1B - This method structure is prepared for full extraction.
      * Currently documents the interface; full implementation to be extracted from FileService.
      *
-     * @param ObjectEntity|string $objectEntity The object entity to add the file to.
-     * @param string              $fileName     The name of the file to create.
-     * @param string              $content      The content to write to the file.
-     * @param bool                $share        Whether to create a share link.
-     * @param array               $tags         Array of tags to attach.
+     * @param ObjectEntity|string $_objectEntity The object entity to add the file to.
+     * @param string              $_fileName     The name of the file to create.
+     * @param string              $_content      The content to write to the file.
+     * @param bool                $_share        Whether to create a share link.
+     * @param array               $_tags         Array of tags to attach.
      *
      * @throws Exception If file creation fails.
      *
      * @return never
      *
-     * @psalm-param array<int, string> $tags
+     * @psalm-param array<int, string> $_tags
      *
-     * @phpstan-param array<int, string> $tags
+     * @phpstan-param array<int, string> $_tags
      *
      * @psalm-return   File
      * @phpstan-return File
      *
      * @todo Extract full implementation from FileService::addFile()
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag is intentional for simple share toggle.
      */
     public function addFile(
-        ObjectEntity|string $objectEntity,
-        string $fileName,
-        string $content,
-        bool $share=false,
-        array $tags=[]
+        ObjectEntity|string $_objectEntity,
+        string $_fileName,
+        string $_content,
+        bool $_share=false,
+        array $_tags=[]
     ) {
         // TODO: Extract full implementation from FileService
         // This involves:
@@ -147,25 +149,25 @@ class FileCrudHandler
      * NOTE: Phase 1B - This method structure is prepared for full extraction.
      * Currently documents the interface; full implementation to be extracted from FileService.
      *
-     * @param string|int        $filePath The file path or ID to update.
-     * @param mixed             $content  The new content (null to skip content update).
-     * @param array             $tags     Array of tags to attach.
-     * @param ObjectEntity|null $object   Optional object entity context.
+     * @param string|int        $_filePath The file path or ID to update.
+     * @param mixed             $_content  The new content (null to skip content update).
+     * @param array             $_tags     Array of tags to attach.
+     * @param ObjectEntity|null $_object   Optional object entity context.
      *
      * @throws Exception If file update fails.
      *
      * @return never
      *
-     * @psalm-param array<int, string> $tags
+     * @psalm-param array<int, string> $_tags
      *
-     * @phpstan-param array<int, string> $tags
+     * @phpstan-param array<int, string> $_tags
      *
      * @psalm-return   File
      * @phpstan-return File
      *
      * @todo Extract full implementation from FileService::updateFile()
      */
-    public function updateFile(string|int $filePath, mixed $content=null, array $tags=[], ?ObjectEntity $object=null)
+    public function updateFile(string|int $_filePath, mixed $_content=null, array $_tags=[], ?ObjectEntity $_object=null)
     {
         // TODO: Extract full implementation from FileService
         // This is one of the most complex methods involving:
@@ -184,8 +186,8 @@ class FileCrudHandler
      * NOTE: Phase 1B - This method structure is prepared for full extraction.
      * Currently documents the interface; full implementation to be extracted from FileService.
      *
-     * @param Node|string|int   $file   The file node, path, or ID to delete.
-     * @param ObjectEntity|null $object Optional object entity context.
+     * @param Node|string|int   $_file   The file node, path, or ID to delete.
+     * @param ObjectEntity|null $_object Optional object entity context.
      *
      * @throws Exception If file deletion fails.
      *
@@ -196,7 +198,7 @@ class FileCrudHandler
      *
      * @todo Extract full implementation from FileService::deleteFile()
      */
-    public function deleteFile(Node|string|int $file, ?ObjectEntity $object=null)
+    public function deleteFile(Node|string|int $_file, ?ObjectEntity $_object=null)
     {
         // TODO: Extract full implementation from FileService
         // This involves:
@@ -212,8 +214,8 @@ class FileCrudHandler
      * NOTE: Phase 1B - This method structure is prepared for full extraction.
      * Currently documents the interface; full implementation to be extracted from FileService.
      *
-     * @param ObjectEntity|string|null $object The object or object ID context.
-     * @param string|int               $file   The file name/path or ID.
+     * @param ObjectEntity|string|null $_object The object or object ID context.
+     * @param string|int               $_file   The file name/path or ID.
      *
      * @return never
      *
@@ -222,7 +224,7 @@ class FileCrudHandler
      *
      * @todo Extract full implementation from FileService::getFile()
      */
-    public function getFile(ObjectEntity|string|null $object=null, string|int $file='')
+    public function getFile(ObjectEntity|string|null $_object=null, string|int $_file='')
     {
         // TODO: Extract full implementation from FileService
         // This involves:
@@ -238,7 +240,7 @@ class FileCrudHandler
      * NOTE: Phase 1B - This method structure is prepared for full extraction.
      * Currently documents the interface; full implementation to be extracted from FileService.
      *
-     * @param int $fileId The Nextcloud file ID.
+     * @param int $_fileId The Nextcloud file ID.
      *
      * @return never
      *
@@ -247,7 +249,7 @@ class FileCrudHandler
      *
      * @todo Extract full implementation from FileService::getFileById()
      */
-    public function getFileById(int $fileId)
+    public function getFileById(int $_fileId)
     {
         // TODO: Extract full implementation from FileService
         // This involves:
@@ -262,8 +264,8 @@ class FileCrudHandler
      * NOTE: Phase 1B - This method structure is prepared for full extraction.
      * Currently documents the interface; full implementation to be extracted from FileService.
      *
-     * @param ObjectEntity|string $object          The object or object ID.
-     * @param bool|null           $sharedFilesOnly Whether to return only shared files.
+     * @param ObjectEntity|string $_object          The object or object ID.
+     * @param bool|null           $_sharedFilesOnly Whether to return only shared files.
      *
      * @return never
      *
@@ -271,8 +273,10 @@ class FileCrudHandler
      * @phpstan-return array<int, Node>
      *
      * @todo Extract full implementation from FileService::getFiles()
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag is intentional for simple share toggle.
      */
-    public function getFiles(ObjectEntity|string $object, ?bool $sharedFilesOnly=false)
+    public function getFiles(ObjectEntity|string $_object, ?bool $_sharedFilesOnly=false)
     {
         // TODO: Extract full implementation from FileService
         // This involves:
@@ -288,31 +292,33 @@ class FileCrudHandler
      * NOTE: Phase 1B - This method structure is prepared for full extraction.
      * Currently documents the interface; full implementation to be extracted from FileService.
      *
-     * @param ObjectEntity $objectEntity The object entity to save the file to.
-     * @param string       $fileName     The name of the file.
-     * @param string       $content      The content to write.
-     * @param bool         $share        Whether to create a share link.
-     * @param array        $tags         Array of tags to attach.
+     * @param ObjectEntity $_objectEntity The object entity to save the file to.
+     * @param string       $_fileName     The name of the file.
+     * @param string       $_content      The content to write.
+     * @param bool         $_share        Whether to create a share link.
+     * @param array        $_tags         Array of tags to attach.
      *
      * @throws Exception If file save fails.
      *
      * @return never
      *
-     * @psalm-param array<int, string> $tags
+     * @psalm-param array<int, string> $_tags
      *
-     * @phpstan-param array<int, string> $tags
+     * @phpstan-param array<int, string> $_tags
      *
      * @psalm-return   File
      * @phpstan-return File
      *
      * @todo Extract full implementation from FileService::saveFile()
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag is intentional for simple share toggle.
      */
     public function saveFile(
-        ObjectEntity $objectEntity,
-        string $fileName,
-        string $content,
-        bool $share=false,
-        array $tags=[]
+        ObjectEntity $_objectEntity,
+        string $_fileName,
+        string $_content,
+        bool $_share=false,
+        array $_tags=[]
     ) {
         // TODO: Extract full implementation from FileService
         // This is an upsert operation that:

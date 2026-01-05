@@ -260,9 +260,9 @@ class SolrSchemaManager
                 $this->logger->info('[SolrSchemaManager] Field created', ['field' => $fieldName]);
                 if (isset($existingFields[$fieldName]) === true) {
                     return 'updated';
-                } else {
-                    return 'created';
                 }
+
+                return 'created';
             }
 
             $this->logger->warning(

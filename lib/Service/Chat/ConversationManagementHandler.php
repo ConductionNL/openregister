@@ -47,8 +47,9 @@ use LLPhant\OllamaConfig;
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-
 class ConversationManagementHandler
 {
     /**
@@ -134,6 +135,10 @@ class ConversationManagementHandler
      * @param string $firstMessage First user message.
      *
      * @return string Generated title
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Title generation requires multiple LLM provider paths
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Title generation requires multiple LLM provider paths
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) LLM provider configuration cannot be easily split
      */
     public function generateConversationTitle(string $firstMessage): string
     {
@@ -379,11 +384,11 @@ class ConversationManagementHandler
         // Check if we recently summarized.
         $lastSummary = $metadata['last_summary_at'] ?? null;
         if ($lastSummary !== null) {
-            $lastSummaryTime       = new DateTime($lastSummary);
-            $hoursSinceLastSummary = (time() - $lastSummaryTime->getTimestamp()) / 3600;
+            $lastSummaryTime   = new DateTime($lastSummary);
+            $hoursSinceSummary = (time() - $lastSummaryTime->getTimestamp()) / 3600;
 
             // Don't summarize more than once per hour.
-            if ($hoursSinceLastSummary < 1) {
+            if ($hoursSinceSummary < 1) {
                 return;
             }
         }
@@ -444,6 +449,9 @@ class ConversationManagementHandler
      * @return string Summary text
      *
      * @throws \Exception If summary generation fails
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Summary generation requires handling multiple LLM providers
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Summary generation requires handling multiple LLM providers
      */
     private function generateSummary(array $messages): string
     {

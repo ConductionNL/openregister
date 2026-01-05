@@ -51,13 +51,13 @@ class FileChangeListener implements IEventListener
     /**
      * Constructor
      *
-     * @param TextExtractionService $textExtractionService Text extraction service
-     * @param SettingsService       $settingsService       Settings service
-     * @param IJobList              $jobList               Job list for queuing background jobs
-     * @param LoggerInterface       $logger                Logger
+     * @param TextExtractionService $textExtractSvc  Text extraction service
+     * @param SettingsService       $settingsService Settings service
+     * @param IJobList              $jobList         Job list for queuing background jobs
+     * @param LoggerInterface       $logger          Logger
      */
     public function __construct(
-        private readonly TextExtractionService $textExtractionService,
+        private readonly TextExtractionService $textExtractSvc,
         private readonly SettingsService $settingsService,
         private readonly IJobList $jobList,
         private readonly LoggerInterface $logger
@@ -70,6 +70,10 @@ class FileChangeListener implements IEventListener
      * @param Event $event File event
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  File event handling requires many conditional checks
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) File event handling requires comprehensive case coverage
+     * @SuppressWarnings(PHPMD.NPathComplexity)       File event handling requires many conditional checks
      */
     public function handle(Event $event): void
     {
@@ -143,7 +147,7 @@ class FileChangeListener implements IEventListener
                         ]
                     );
                     try {
-                        $this->textExtractionService->extractFile(fileId: $fileId, forceReExtract: false);
+                        $this->textExtractSvc->extractFile(fileId: $fileId, forceReExtract: false);
                         $this->logger->info(
                             '[FileChangeListener] Immediate extraction completed',
                             ['file_id' => $fileId]

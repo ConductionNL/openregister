@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "openregister-crud-v2",
     "name": "OpenRegister CRUD Integration Test",
-    "description": "# OpenRegister CRUD Integration Tests\n\nComplete CRUD testing for OpenRegister entities with RBAC, multitenancy, and dual storage mode support.\n\n---\n\n## \ud83d\udd2e Dual Storage Testing\n\nThis collection automatically supports testing **both storage modes**:\n\n### Storage Modes\n\n1. **\ud83d\udce6 Normal Storage (Default)**\n   - Objects stored as JSON blobs in `oc_openregister_objects` table\n   - Fast for small datasets\n   - Flexible schema\n\n2. **\ud83d\udd2e Magic Mapper**\n   - Objects stored in dedicated `oc_openregister_table_<register>_<schema>` tables\n   - Properties mapped to SQL columns\n   - Optimized for large datasets and complex queries\n   - Better indexing and search performance\n\n### Running Tests in Both Modes\n\n**Option 1: Use the test runner script (Recommended)**\n```bash\ncd tests/integration\n./run-dual-storage-tests.sh\n```\n\nThis automatically runs tests twice and compares results.\n\n**Option 2: Manual execution**\n```bash\n# Normal storage mode (default)\ndocker exec -u 33 nextcloud newman run /var/www/html/custom_apps/openregister/tests/integration/openregister-crud.postman_collection.json --reporters cli\n\n# Magic mapper mode\ndocker exec -u 33 -e ENABLE_MAGIC_MAPPER=true nextcloud newman run /var/www/html/custom_apps/openregister/tests/integration/openregister-crud.postman_collection.json --reporters cli\n```\n\n---\n\n## \u270d\ufe0f Adding New Tests\n\n### Golden Rules\n\n\u2705 **DO:**\n- Test behavior via API endpoints\n- Validate data integrity (create \u2192 retrieve \u2192 verify)\n- Use standard HTTP methods (GET, POST, PATCH, DELETE)\n- Check response status codes and data structure\n\n\u274c **DON'T:**\n- Test storage internals (table structure, column names)\n- Make assumptions about specific database tables\n- Check for storage-specific fields (e.g., `_data` field)\n- Use hardcoded performance timings\n\n### Example: Adding a New Feature Test\n\n```javascript\n{\n  \"name\": \"My New Feature Test\",\n  \"request\": {\n    \"method\": \"POST\",\n    \"url\": \"{{base_url}}/api/my-endpoint\",\n    \"body\": {\n      \"mode\": \"raw\",\n      \"raw\": \"{\\\"property\\\": \\\"value\\\"}\"\n    }\n  },\n  \"event\": [{\n    \"listen\": \"test\",\n    \"script\": {\n      \"exec\": [\n        \"pm.test('Feature works correctly', function() {\",\n        \"  pm.expect(pm.response.code).to.equal(200);\",\n        \"  const json = pm.response.json();\",\n        \"  pm.expect(json.property).to.equal('value');\",\n        \"});\"\n      ]\n    }\n  }]\n}\n```\n\n**That's it!** Your test will automatically run in both storage modes.\n\n### When Creating New Register/Schema\n\nIf your test creates a **new** register/schema combination, add magic mapper activation:\n\n```javascript\n// In \"Create Schema\" test script, after schema is created:\nconst enableMagicMapper = pm.collectionVariables.get('magic_mapper_enabled');\n\nif (enableMagicMapper === true && jsonData.id) {\n  const registerId = pm.collectionVariables.get('my_register_id');\n  const schemaId = jsonData.id;\n  \n  pm.sendRequest({\n    url: `{{base_url}}/api/registers/${registerId}`,\n    method: 'PATCH',\n    header: {'Content-Type': 'application/json'},\n    body: {\n      mode: 'raw',\n      raw: JSON.stringify({\n        configuration: {\n          schemas: {\n            [schemaId]: {\n              magicMapping: true,\n              autoCreateTable: true,\n              comment: 'Enabled for dual-storage testing'\n            }\n          }\n        }\n      })\n    }\n  }, function(err, res) {\n    if (!err && res.code === 200) {\n      console.log('\u2705 Magic Mapper enabled for schema ' + schemaId);\n    }\n  });\n}\n```\n\n---\n\n## \u2705 Checklist for New Tests\n\n- [ ] Test uses API endpoints only (no storage internals)\n- [ ] Test validates behavior, not implementation\n- [ ] Test doesn't assume specific table structure\n- [ ] Test doesn't check storage-specific fields\n- [ ] If new register/schema: magic mapper activation added\n- [ ] Test runs successfully: `./run-dual-storage-tests.sh`\n- [ ] Both storage modes show identical results\n\n---\n\n## \ud83d\udcca Expected Results\n\nBoth storage modes should produce **identical results**:\n\n```\n\u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2566\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2566\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2557\n\u2551 Storage Mode            \u2551 Tests    \u2551 Failures \u2551\n\u2560\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u256c\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u256c\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2563\n\u2551 \ud83d\udce6 Normal (JSON blob)   \u2551 199      \u2551 0        \u2551\n\u2551 \ud83d\udd2e Magic Mapper (SQL)   \u2551 199      \u2551 0        \u2551\n\u255a\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2569\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2569\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255d\n```\n\nIf one mode fails while the other passes \u2192 Storage compatibility bug!\n\n---\n\n## \ud83d\udd27 Common Pitfalls\n\n### \u274c Pitfall 1: Testing Internal Structure\n```javascript\n// BAD: This assumes JSON blob storage\npm.test('Has _data field', function() {\n  pm.expect(json._data).to.exist; // Fails in magic mapper!\n});\n\n// GOOD: Test API response\npm.test('Has expected properties', function() {\n  pm.expect(json.name).to.exist;\n  pm.expect(json.email).to.exist;\n});\n```\n\n### \u274c Pitfall 2: Hardcoded Timing\n```javascript\n// BAD: Performance varies between modes\npm.test('Fast response', function() {\n  pm.expect(pm.response.responseTime).to.be.below(100); // Might fail!\n});\n\n// GOOD: Reasonable performance expectation\npm.test('Acceptable performance', function() {\n  pm.expect(pm.response.responseTime).to.be.below(5000); // 5 seconds\n});\n```\n\n### \u274c Pitfall 3: Table-Specific Queries\n```javascript\n// BAD: Assumes specific table\npm.test('In correct table', function() {\n  // Direct DB query - will fail in magic mapper!\n});\n\n// GOOD: Use API\npm.test('Object is retrievable', function() {\n  pm.sendRequest(`{{base_url}}/api/objects/...`, ...);\n});\n```\n\n---\n\n## \ud83c\udfaf Summary\n\n**Write storage-agnostic API tests and they'll work everywhere!** \ud83d\ude80\n\nThe collection automatically detects `ENABLE_MAGIC_MAPPER` environment variable and enables magic mapping for test schemas. You just write good API tests!",
+    "description": "# OpenRegister CRUD Integration Tests\n\nComplete CRUD testing for OpenRegister entities with RBAC, multitenancy, and dual storage mode support.\n\n---\n\n## 🔮 Dual Storage Testing\n\nThis collection automatically supports testing **both storage modes**:\n\n### Storage Modes\n\n1. **📦 Normal Storage (Default)**\n   - Objects stored as JSON blobs in `oc_openregister_objects` table\n   - Fast for small datasets\n   - Flexible schema\n\n2. **🔮 Magic Mapper**\n   - Objects stored in dedicated `oc_openregister_table_<register>_<schema>` tables\n   - Properties mapped to SQL columns\n   - Optimized for large datasets and complex queries\n   - Better indexing and search performance\n\n### Running Tests in Both Modes\n\n**Option 1: Use the test runner script (Recommended)**\n```bash\ncd tests/integration\n./run-dual-storage-tests.sh\n```\n\nThis automatically runs tests twice and compares results.\n\n**Option 2: Manual execution**\n```bash\n# Normal storage mode (default)\ndocker exec -u 33 nextcloud newman run /var/www/html/custom_apps/openregister/tests/integration/openregister-crud.postman_collection.json --reporters cli\n\n# Magic mapper mode\ndocker exec -u 33 -e ENABLE_MAGIC_MAPPER=true nextcloud newman run /var/www/html/custom_apps/openregister/tests/integration/openregister-crud.postman_collection.json --reporters cli\n```\n\n---\n\n## ✍️ Adding New Tests\n\n### Golden Rules\n\n✅ **DO:**\n- Test behavior via API endpoints\n- Validate data integrity (create → retrieve → verify)\n- Use standard HTTP methods (GET, POST, PATCH, DELETE)\n- Check response status codes and data structure\n\n❌ **DON'T:**\n- Test storage internals (table structure, column names)\n- Make assumptions about specific database tables\n- Check for storage-specific fields (e.g., `_data` field)\n- Use hardcoded performance timings\n\n### Example: Adding a New Feature Test\n\n```javascript\n{\n  \"name\": \"My New Feature Test\",\n  \"request\": {\n    \"method\": \"POST\",\n    \"url\": \"{{base_url}}/api/my-endpoint\",\n    \"body\": {\n      \"mode\": \"raw\",\n      \"raw\": \"{\\\"property\\\": \\\"value\\\"}\"\n    }\n  },\n  \"event\": [{\n    \"listen\": \"test\",\n    \"script\": {\n      \"exec\": [\n        \"pm.test('Feature works correctly', function() {\",\n        \"  pm.expect(pm.response.code).to.equal(200);\",\n        \"  const json = pm.response.json();\",\n        \"  pm.expect(json.property).to.equal('value');\",\n        \"});\"\n      ]\n    }\n  }]\n}\n```\n\n**That's it!** Your test will automatically run in both storage modes.\n\n### When Creating New Register/Schema\n\nIf your test creates a **new** register/schema combination, add magic mapper activation:\n\n```javascript\n// In \"Create Schema\" test script, after schema is created:\nconst enableMagicMapper = pm.collectionVariables.get('magic_mapper_enabled');\n\nif (enableMagicMapper === true && jsonData.id) {\n  const registerId = pm.collectionVariables.get('my_register_id');\n  const schemaId = jsonData.id;\n  \n  pm.sendRequest({\n    url: `{{base_url}}/api/registers/${registerId}`,\n    method: 'PATCH',\n    header: {'Content-Type': 'application/json'},\n    body: {\n      mode: 'raw',\n      raw: JSON.stringify({\n        configuration: {\n          schemas: {\n            [schemaId]: {\n              magicMapping: true,\n              autoCreateTable: true,\n              comment: 'Enabled for dual-storage testing'\n            }\n          }\n        }\n      })\n    }\n  }, function(err, res) {\n    if (!err && res.code === 200) {\n      console.log('✅ Magic Mapper enabled for schema ' + schemaId);\n    }\n  });\n}\n```\n\n---\n\n## ✅ Checklist for New Tests\n\n- [ ] Test uses API endpoints only (no storage internals)\n- [ ] Test validates behavior, not implementation\n- [ ] Test doesn't assume specific table structure\n- [ ] Test doesn't check storage-specific fields\n- [ ] If new register/schema: magic mapper activation added\n- [ ] Test runs successfully: `./run-dual-storage-tests.sh`\n- [ ] Both storage modes show identical results\n\n---\n\n## 📊 Expected Results\n\nBoth storage modes should produce **identical results**:\n\n```\n╔═════════════════════════╦══════════╦══════════╗\n║ Storage Mode            ║ Tests    ║ Failures ║\n╠═════════════════════════╬══════════╬══════════╣\n║ 📦 Normal (JSON blob)   ║ 199      ║ 0        ║\n║ 🔮 Magic Mapper (SQL)   ║ 199      ║ 0        ║\n╚═════════════════════════╩══════════╩══════════╝\n```\n\nIf one mode fails while the other passes → Storage compatibility bug!\n\n---\n\n## 🔧 Common Pitfalls\n\n### ❌ Pitfall 1: Testing Internal Structure\n```javascript\n// BAD: This assumes JSON blob storage\npm.test('Has _data field', function() {\n  pm.expect(json._data).to.exist; // Fails in magic mapper!\n});\n\n// GOOD: Test API response\npm.test('Has expected properties', function() {\n  pm.expect(json.name).to.exist;\n  pm.expect(json.email).to.exist;\n});\n```\n\n### ❌ Pitfall 2: Hardcoded Timing\n```javascript\n// BAD: Performance varies between modes\npm.test('Fast response', function() {\n  pm.expect(pm.response.responseTime).to.be.below(100); // Might fail!\n});\n\n// GOOD: Reasonable performance expectation\npm.test('Acceptable performance', function() {\n  pm.expect(pm.response.responseTime).to.be.below(5000); // 5 seconds\n});\n```\n\n### ❌ Pitfall 3: Table-Specific Queries\n```javascript\n// BAD: Assumes specific table\npm.test('In correct table', function() {\n  // Direct DB query - will fail in magic mapper!\n});\n\n// GOOD: Use API\npm.test('Object is retrievable', function() {\n  pm.sendRequest(`{{base_url}}/api/objects/...`, ...);\n});\n```\n\n---\n\n## 🎯 Summary\n\n**Write storage-agnostic API tests and they'll work everywhere!** 🚀\n\nThe collection automatically detects `ENABLE_MAGIC_MAPPER` environment variable and enables magic mapping for test schemas. You just write good API tests!",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -33,7 +33,7 @@
           "const isInitialized = pm.collectionVariables.get('_test_run_initialized');",
           "",
           "if (!isInitialized || isInitialized === '') {",
-          "    console.log('\ud83d\udd04 Clearing collection variables for fresh test run...');",
+          "    console.log('🔄 Clearing collection variables for fresh test run...');",
           "    ",
           "    // List of variables to clear (exclude base_url, admin credentials).",
           "    const variablesToClear = [",
@@ -64,16 +64,16 @@
           "    pm.collectionVariables.set('magic_mapper_enabled', enableMagicMapper === 'true' || enableMagicMapper === true);",
           "    ",
           "    if (enableMagicMapper === 'true' || enableMagicMapper === true) {",
-          "        console.log('\ud83d\udd2e Magic Mapper mode ENABLED - objects will use dedicated tables');",
+          "        console.log('🔮 Magic Mapper mode ENABLED - objects will use dedicated tables');",
           "    } else {",
-          "        console.log('\ud83d\udce6 Normal storage mode - objects will use JSON blob storage');",
+          "        console.log('📦 Normal storage mode - objects will use JSON blob storage');",
           "    }",
           "    ",
           "    // Set flag to prevent re-clearing during this test run.",
           "    pm.collectionVariables.set('_test_run_initialized', 'true');",
           "    ",
-          "    console.log('\u2705 Variables cleared - ready for fresh test run');",
-          "    console.log('\ud83d\udcc5 Test timestamp set to: ' + timestamp);",
+          "    console.log('✅ Variables cleared - ready for fresh test run');",
+          "    console.log('📅 Test timestamp set to: ' + timestamp);",
           "}"
         ]
       }
@@ -299,7 +299,7 @@
               "    pm.test('Anonymous group is set to public', function () {",
               "        pm.expect(jsonData.rbac.anonymousGroup).to.eql('public');",
               "    });",
-              "    console.log('\u2713 RBAC Setup Complete - Enabled:', jsonData.rbac.enabled);",
+              "    console.log('✓ RBAC Setup Complete - Enabled:', jsonData.rbac.enabled);",
               "}"
             ],
             "type": "text/javascript"
@@ -345,9 +345,9 @@
               "    ",
               "    // Store org UUID for use in all tests.",
               "    pm.collectionVariables.set('test_org_uuid', jsonData.organisation.uuid);",
-              "    console.log('\u2705 Test Organization Created:', jsonData.organisation.uuid);",
+              "    console.log('✅ Test Organization Created:', jsonData.organisation.uuid);",
               "} else if (pm.response.code === 400) {",
-              "    console.log('\u26a0\ufe0f Organization already exists (acceptable in multi-run scenarios)');",
+              "    console.log('⚠️ Organization already exists (acceptable in multi-run scenarios)');",
               "}"
             ],
             "type": "text/javascript"
@@ -392,7 +392,7 @@
               "// Skip if no org UUID (org creation failed).",
               "const orgUuid = pm.collectionVariables.get('test_org_uuid');",
               "if (!orgUuid || orgUuid === '') {",
-              "    console.log('\u26a0\ufe0f Skipping set-active: no test_org_uuid available');",
+              "    console.log('⚠️ Skipping set-active: no test_org_uuid available');",
               "}"
             ],
             "type": "text/javascript"
@@ -408,7 +408,7 @@
               "    pm.test('Skipped (no org UUID)', function () {",
               "        pm.expect(pm.response.code).to.be.oneOf([200, 405]);",
               "    });",
-              "    console.log('\u26a0\ufe0f Set-active skipped: org was not created');",
+              "    console.log('⚠️ Set-active skipped: org was not created');",
               "    return;",
               "}",
               "",
@@ -422,8 +422,8 @@
               "        pm.expect(jsonData).to.have.property('message');",
               "        pm.expect(jsonData.message).to.include('Active organisation set');",
               "    });",
-              "    console.log('\u2705 Test Organization is now ACTIVE');",
-              "    console.log('\ud83c\udfaf All subsequent tests will run in this organization context');",
+              "    console.log('✅ Test Organization is now ACTIVE');",
+              "    console.log('🎯 All subsequent tests will run in this organization context');",
               "}"
             ],
             "type": "text/javascript"
@@ -467,8 +467,8 @@
               "    pm.test('Multitenancy configuration is accessible', function () {",
               "        pm.expect(jsonData).to.have.property('multitenancy');",
               "    });",
-              "    console.log('\u2713 Multitenancy enabled:', jsonData.multitenancy.enabled);",
-              "    console.log('\u2713 Admin override:', jsonData.multitenancy.adminOverride);",
+              "    console.log('✓ Multitenancy enabled:', jsonData.multitenancy.enabled);",
+              "    console.log('✓ Admin override:', jsonData.multitenancy.adminOverride);",
               "}"
             ],
             "type": "text/javascript"
@@ -524,7 +524,7 @@
               "        pm.expect(jsonData.multitenancy).to.have.property('adminOverride');",
               "        pm.expect(jsonData.multitenancy.adminOverride).to.be.true;",
               "    });",
-              "    console.log('\u2713 Multitenancy Setup Complete');",
+              "    console.log('✓ Multitenancy Setup Complete');",
               "    console.log('  - Enabled:', jsonData.multitenancy.enabled);",
               "    console.log('  - Admin Override:', jsonData.multitenancy.adminOverride);",
               "}"
@@ -642,7 +642,7 @@
               "            const baseUrl = pm.variables.get('base_url');",
               "            const getRegisterUrl = baseUrl + '/index.php/apps/openregister/api/registers/' + registerId;",
               "            ",
-              "            console.log('\ud83d\udd2e Enabling Magic Mapper for schema ' + schemaId + '...');",
+              "            console.log('🔮 Enabling Magic Mapper for schema ' + schemaId + '...');",
               "            ",
               "            // Step 1: Get current register configuration",
               "            pm.sendRequest({",
@@ -651,7 +651,7 @@
               "                header: {'Accept': 'application/json'}",
               "            }, function(getErr, getRes) {",
               "                if (getErr || getRes.code !== 200) {",
-              "                    console.error('\u274c Failed to get register config:', getErr ? getErr.message : getRes.code);",
+              "                    console.error('❌ Failed to get register config:', getErr ? getErr.message : getRes.code);",
               "                    return;",
               "                }",
               "                ",
@@ -681,19 +681,19 @@
               "                    }",
               "                }, function(patchErr, patchRes) {",
               "                    if (patchErr) {",
-              "                        console.error('\u274c Failed to enable magic mapper:', patchErr.message);",
+              "                        console.error('❌ Failed to enable magic mapper:', patchErr.message);",
               "                    } else if (patchRes.code === 200) {",
-              "                        console.log('\u2705 Magic Mapper ENABLED for schema ' + schemaId);",
+              "                        console.log('✅ Magic Mapper ENABLED for schema ' + schemaId);",
               "                        console.log('   Objects will be stored in dedicated table: oc_openregister_table_' + registerId + '_' + schemaId);",
               "                        console.log('   Total schemas with magic mapping:', Object.keys(existingSchemas).length);",
               "                    } else {",
-              "                        console.warn('\u26a0\ufe0f  Unexpected response enabling magic mapper: ' + patchRes.code);",
+              "                        console.warn('⚠️  Unexpected response enabling magic mapper: ' + patchRes.code);",
               "                        console.warn('   Response:', JSON.stringify(patchRes.json()));",
               "                    }",
               "                });",
               "            });",
               "        } else {",
-              "            console.log('\ud83d\udce6 Normal storage mode - using oc_openregister_objects table');",
+              "            console.log('📦 Normal storage mode - using oc_openregister_objects table');",
               "        }",
               "    }",
               "}"
@@ -2803,7 +2803,7 @@
               "        pm.expect(jsonData).to.have.property('locked');",
               "        pm.expect(jsonData.locked).to.be.true;",
               "    });",
-              "    console.log('\u2713 Object locked');",
+              "    console.log('✓ Object locked');",
               "}"
             ],
             "type": "text/javascript"
@@ -2848,7 +2848,7 @@
               "    pm.expect(pm.response.code).to.be.at.least(400);",
               "});",
               "",
-              "console.log('\u2713 Locked object cannot be updated (as expected)');"
+              "console.log('✓ Locked object cannot be updated (as expected)');"
             ],
             "type": "text/javascript"
           }
@@ -2901,7 +2901,7 @@
               "        pm.expect(jsonData).to.have.property('locked');",
               "        pm.expect(jsonData.locked).to.be.false;",
               "    });",
-              "    console.log('\u2713 Object unlocked');",
+              "    console.log('✓ Object unlocked');",
               "}"
             ],
             "type": "text/javascript"
@@ -2947,7 +2947,7 @@
               "        pm.expect(jsonData).to.have.property('published');",
               "        pm.expect(jsonData.published).to.not.be.null;",
               "    });",
-              "    console.log('\u2713 Object published');",
+              "    console.log('✓ Object published');",
               "}"
             ],
             "type": "text/javascript"
@@ -2993,7 +2993,7 @@
               "        pm.expect(jsonData).to.have.property('depublished');",
               "        pm.expect(jsonData.depublished).to.not.be.null;",
               "    });",
-              "    console.log('\u2713 Object depublished');",
+              "    console.log('✓ Object depublished');",
               "}"
             ],
             "type": "text/javascript"
@@ -3038,7 +3038,7 @@
               "    pm.expect(pm.response.code).to.be.at.most(299);",
               "});",
               "",
-              "console.log('\u2713 Object soft-deleted');"
+              "console.log('✓ Object soft-deleted');"
             ],
             "type": "text/javascript"
           }
@@ -3088,9 +3088,9 @@
               "    pm.test('Object appears in deleted list', function () {",
               "        var found = jsonData.results.some(obj => obj.id === deletedObjectUuid || obj.uuid === deletedObjectUuid || obj.object_uuid === deletedObjectUuid);",
               "        if (found) {",
-              "            console.log('\u2713 Object found in deleted list, UUID:', deletedObjectUuid);",
+              "            console.log('✓ Object found in deleted list, UUID:', deletedObjectUuid);",
               "        } else {",
-              "            console.log('\u2717 Object NOT found. Looking for:', deletedObjectUuid);",
+              "            console.log('✗ Object NOT found. Looking for:', deletedObjectUuid);",
               "            console.log('Available objects:', jsonData.results.map(o => o.id));",
               "        }",
               "        pm.expect(found).to.be.true;",
@@ -3144,7 +3144,7 @@
               "        var jsonData = pm.response.json();",
               "        pm.expect(jsonData).to.have.property('message');",
               "    });",
-              "    console.log('\u2713 Object restored from deleted');",
+              "    console.log('✓ Object restored from deleted');",
               "}"
             ],
             "type": "text/javascript"
@@ -3188,7 +3188,7 @@
               "        pm.expect(jsonData).to.have.property('id');",
               "        pm.expect(jsonData.id).to.eql(pm.collectionVariables.get('object2_uuid'));",
               "    });",
-              "    console.log('\u2713 Object successfully restored and accessible');",
+              "    console.log('✓ Object successfully restored and accessible');",
               "}"
             ],
             "type": "text/javascript"
@@ -3256,7 +3256,7 @@
               "        pm.expect(hasPublish).to.be.true;",
               "    });",
               "    ",
-              "    console.log('\u2713 Audit trail verified - Actions:', actions);",
+              "    console.log('✓ Audit trail verified - Actions:', actions);",
               "}"
             ],
             "type": "text/javascript"
@@ -3314,7 +3314,7 @@
               "        }",
               "    });",
               "    ",
-              "    console.log('\u2713 Global audit trail verified -', jsonData.results.length, 'entries');",
+              "    console.log('✓ Global audit trail verified -', jsonData.results.length, 'entries');",
               "}"
             ],
             "type": "text/javascript"
@@ -5597,11 +5597,11 @@
               "});",
               "",
               "if (pm.response.code === 405) {",
-              "    console.log('\u26a0\ufe0f Organization DELETE not supported via API (OK)');",
+              "    console.log('⚠️ Organization DELETE not supported via API (OK)');",
               "} else {",
-              "    console.log('\u2705 Test Organization cleanup complete');",
+              "    console.log('✅ Test Organization cleanup complete');",
               "}",
-              "console.log('\ud83d\udcca All tests finished!');"
+              "console.log('📊 All tests finished!');"
             ],
             "type": "text/javascript"
           }

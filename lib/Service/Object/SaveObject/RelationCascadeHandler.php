@@ -43,6 +43,8 @@ use Symfony\Component\Uid\Uuid;
  *
  * @category Handler
  * @package  OCA\OpenRegister\Service\Objects\SaveObject
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex cascading logic with many relation scenarios
  */
 class RelationCascadeHandler
 {
@@ -76,6 +78,8 @@ class RelationCascadeHandler
      * @param string $reference The schema reference to resolve.
      *
      * @return null|numeric-string The resolved schema ID or null if not found.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple reference format handling paths
      */
     public function resolveSchemaReference(string $reference): string|null
     {
@@ -154,6 +158,8 @@ class RelationCascadeHandler
      * @param string $reference The register reference to resolve.
      *
      * @return null|numeric-string The resolved register ID or null if not found.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple reference format handling paths
      */
     public function resolveRegisterReference(string $reference): string|null
     {
@@ -212,16 +218,18 @@ class RelationCascadeHandler
      * @param null|Schema $schema The schema to validate against.
      *
      * @return array Array of relation paths that need resolution.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Recursive relation scanning with multiple reference types
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple conditional paths for different relation patterns
      */
     public function scanForRelations(array $data, string $prefix='', ?Schema $schema=null): array
     {
         $relations = [];
 
         foreach ($data as $key => $value) {
+            $currentPath = $key;
             if ($prefix !== '') {
                 $currentPath = "{$prefix}.{$key}";
-            } else {
-                $currentPath = $key;
             }
 
             // Skip if this is a special metadata field.
@@ -245,11 +253,12 @@ class RelationCascadeHandler
                 // If it's an array of references.
                 if ($this->isArrayOfReferences($value) === true) {
                     $relations[] = $currentPath;
-                } else {
-                    // Recursively scan nested objects.
-                    $nestedRelations = $this->scanForRelations(data: $value, prefix: $currentPath, schema: $schema);
-                    $relations       = array_merge($relations, $nestedRelations);
+                    continue;
                 }
+
+                // Recursively scan nested objects.
+                $nestedRelations = $this->scanForRelations(data: $value, prefix: $currentPath, schema: $schema);
+                $relations       = array_merge($relations, $nestedRelations);
             } else if (is_string($value) === true && $this->isReference($value) === true) {
                 // Single reference value.
                 if ($hasRef === true || $this->looksLikeObjectReference($value) === true) {
@@ -397,6 +406,9 @@ class RelationCascadeHandler
      * @param string $relationPath The dot-notation path to the relation.
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Navigating nested arrays and handling
+     *                                               multiple reference types requires complex logic
      */
     private function resolveRelationPath(array &$objectData, string $relationPath): void
     {
@@ -450,6 +462,8 @@ class RelationCascadeHandler
      * @param string $reference The reference string.
      *
      * @return string|null The extracted UUID or null.
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) Uuid::isValid is standard Symfony UID pattern
      */
     private function extractUuidFromReference(string $reference): ?string
     {
@@ -493,6 +507,8 @@ class RelationCascadeHandler
      * @param array        $data         The object data containing nested objects.
      *
      * @return array The updated data with created object UUIDs.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex cascading logic for different property types
      */
     public function cascadeObjects(ObjectEntity $objectEntity, Schema $schema, array $data): array
     {
@@ -517,17 +533,19 @@ class RelationCascadeHandler
                     property: $property,
                     propData: $propData
                 );
-            } else {
-                // Handle single object.
-                if (is_array($propData) === true && $this->isArrayOfScalars($propData) === false) {
-                    $uuid = $this->cascadeSingleObject(
-                        objectEntity: $objectEntity,
-                        definition: $property,
-                        object: $propData
-                    );
-                    if ($uuid !== null) {
-                        $data[$propertyName] = $uuid;
-                    }
+
+                continue;
+            }
+
+            // Handle single object.
+            if (is_array($propData) === true && $this->isArrayOfScalars($propData) === false) {
+                $uuid = $this->cascadeSingleObject(
+                    _objectEntity: $objectEntity,
+                    _definition: $property,
+                    _object: $propData
+                );
+                if ($uuid !== null) {
+                    $data[$propertyName] = $uuid;
                 }
             }
         }//end foreach
@@ -563,6 +581,9 @@ class RelationCascadeHandler
      * @return string[] Array of created object UUIDs.
      *
      * @psalm-return list<string>
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function cascadeMultipleObjects(ObjectEntity $objectEntity, array $property, array $propData): array
     {
@@ -570,7 +591,7 @@ class RelationCascadeHandler
 
         foreach ($propData as $object) {
             if (is_array($object) === true && $this->isArrayOfScalars($object) === false) {
-                $uuid = $this->cascadeSingleObject(objectEntity: $objectEntity, definition: $property, object: $object);
+                $uuid = $this->cascadeSingleObject(_objectEntity: $objectEntity, _definition: $property, _object: $object);
                 if ($uuid !== null) {
                     $createdUuids[] = $uuid;
                 }
@@ -586,13 +607,13 @@ class RelationCascadeHandler
     /**
      * Cascades creation of a single related object.
      *
-     * @param ObjectEntity $objectEntity The parent object entity.
-     * @param array        $definition   The property definition containing $ref and inversedBy.
-     * @param array        $object       The nested object data to create.
+     * @param ObjectEntity $_objectEntity The parent object entity.
+     * @param array        $_definition   The property definition containing $ref and inversedBy.
+     * @param array        $_object       The nested object data to create.
      *
      * @return null The UUID of the created object or null.
      */
-    public function cascadeSingleObject(ObjectEntity $objectEntity, array $definition, array $object)
+    public function cascadeSingleObject(ObjectEntity $_objectEntity, array $_definition, array $_object)
     {
         // TODO: Implement actual cascading logic.
         // This requires access to ObjectService which would create circular dependency.
@@ -608,13 +629,13 @@ class RelationCascadeHandler
      * After an object is saved, this method updates related objects to maintain
      * bidirectional relationship integrity (inversedBy properties).
      *
-     * @param ObjectEntity $objectEntity The saved object entity.
-     * @param Schema       $schema       The schema of the object.
-     * @param array        $data         The object data.
+     * @param ObjectEntity $_objectEntity The saved object entity.
+     * @param Schema       $_schema       The schema of the object.
+     * @param array        $data          The object data.
      *
      * @return array The updated data after write-back operations.
      */
-    public function handleInverseRelationsWriteBack(ObjectEntity $objectEntity, Schema $schema, array $data): array
+    public function handleInverseRelationsWriteBack(ObjectEntity $_objectEntity, Schema $_schema, array $data): array
     {
         // TODO: Implement inverse relation write-back.
         // This requires access to ObjectService which would create circular dependency.

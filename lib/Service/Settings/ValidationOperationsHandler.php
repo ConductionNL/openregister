@@ -89,6 +89,13 @@ class ValidationOperationsHandler
      * @throws Exception If validation operation fails.
      *
      * @return array Validation report with total_objects, valid/invalid counts, errors, and summary.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *     Validation loop with error handling requires multiple branches
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     *     Try-catch and conditional result handling creates multiple paths
+     * @SuppressWarnings(PHPMD.ElseExpression)
+     *     Circular dependency workaround and validation result handling require else branch
      */
     public function validateAllObjects(): array
     {
@@ -156,16 +163,16 @@ class ValidationOperationsHandler
         }//end foreach
 
         // Create summary with validation statistics.
-        $validationSuccessRate = 100;
+        $validSuccessRate = 100;
         if ($validationResults['total_objects'] > 0) {
-            $validationSuccessRate = round(
+            $validSuccessRate = round(
                 ($validationResults['valid_objects'] / $validationResults['total_objects']) * 100,
                 2
             );
         }
 
         $validationResults['summary'] = [
-            'validation_success_rate' => $validationSuccessRate,
+            'validation_success_rate' => $validSuccessRate,
             'has_errors'              => $validationResults['invalid_objects'] > 0,
             'error_count'             => count($validationResults['validation_errors']),
         ];

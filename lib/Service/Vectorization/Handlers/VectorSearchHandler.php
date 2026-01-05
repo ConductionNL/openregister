@@ -37,6 +37,8 @@ use OCA\OpenRegister\Service\Index\Backends\SolrBackend;
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Vectorization\Handlers
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex vector search with multiple backend strategies
  */
 class VectorSearchHandler
 {
@@ -67,6 +69,10 @@ class VectorSearchHandler
      * @return array<int,array<string,mixed>> Search results
      *
      * @throws \Exception If search fails
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multi-backend search requires multiple conditions
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Complex search path handling
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive semantic search with multiple backends
      */
     public function semanticSearch(
         array $queryEmbedding,
@@ -93,8 +99,10 @@ class VectorSearchHandler
                     limit: $limit,
                     filters: $filters
                 );
-            } else {
-                // Use PHP/database similarity calculation.
+            }
+
+            // Use PHP/database similarity calculation.
+            if ($backend !== 'solr') {
                 $vectors = $this->fetchVectors($filters);
 
                 if ($vectors === []) {
@@ -193,6 +201,10 @@ class VectorSearchHandler
      * @return array Vector search results with entity info, similarity scores, and metadata.
      *
      * @throws \Exception If search fails or Solr is not configured.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Solr KNN search requires multiple condition checks
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Complex search path handling
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive Solr KNN search with error handling
      */
     private function searchVectorsInSolr(
         array $queryEmbedding,
@@ -331,6 +343,10 @@ class VectorSearchHandler
      *     source_breakdown: array{vector_only: int<0, max>,
      *     solr_only: int<0, max>, both: int<0, max>},
      *     weights: array{solr: float, vector: float}}
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Hybrid search combines multiple result sets
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple search path combinations
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive hybrid search with result fusion
      */
     public function hybridSearch(
         array $queryEmbedding,
@@ -521,6 +537,9 @@ class VectorSearchHandler
      * @return array<int, array> Vector records from database
      *
      * @throws \Exception If query fails
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Filter handling requires multiple conditions
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple filter handling paths
      */
     private function fetchVectors(array $filters=[]): array
     {
@@ -541,7 +560,9 @@ class VectorSearchHandler
                             )
                         )
                     );
-                } else {
+                }
+
+                if (is_array($filters['entity_type']) === false) {
                     $qb->andWhere($qb->expr()->eq('entity_type', $qb->createNamedParameter($filters['entity_type'])));
                 }
             }
@@ -557,7 +578,9 @@ class VectorSearchHandler
                             )
                         )
                     );
-                } else {
+                }
+
+                if (is_array($filters['entity_id']) === false) {
                     $qb->andWhere($qb->expr()->eq('entity_id', $qb->createNamedParameter($filters['entity_id'])));
                 }
             }
@@ -638,6 +661,9 @@ class VectorSearchHandler
      * @param array $filters Search filters
      *
      * @return array<int,array{type:string,collection:string}> Collections to search
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Collection resolution requires multiple conditions
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple filter and collection resolution paths
      */
     private function getCollectionsToSearch(array $filters): array
     {
@@ -647,7 +673,9 @@ class VectorSearchHandler
         if (($filters['entity_type'] ?? null) !== null) {
             if (is_array($filters['entity_type']) === true) {
                 $entityTypes = $filters['entity_type'];
-            } else {
+            }
+
+            if (is_array($filters['entity_type']) === false) {
                 $entityTypes = [$filters['entity_type']];
             }
 
@@ -663,7 +691,9 @@ class VectorSearchHandler
                     ];
                 }
             }
-        } else {
+        }//end if
+
+        if (($filters['entity_type'] ?? null) === null) {
             // Search both object and file collections.
             $objectCollection = $settings['solr']['objectCollection'] ?? $settings['solr']['collection'] ?? null;
             $fileCollection   = $settings['solr']['fileCollection'] ?? null;

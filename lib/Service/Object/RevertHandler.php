@@ -81,6 +81,8 @@ class RevertHandler
      * @throws NotAuthorizedException If user not authorized
      * @throws LockedException If object is locked
      * @throws \Exception If reversion fails
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean needed to control version overwrite behavior
      */
     public function revert(
         string $register,

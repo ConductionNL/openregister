@@ -336,20 +336,20 @@ class FileSettingsController extends Controller
             );
 
             // Get IndexService and TextExtractionService.
-            $guzzleSolrService     = $this->container->get(IndexService::class);
-            $textExtractionService = $this->container->get(\OCA\OpenRegister\Service\TextExtractionService::class);
+            $guzzleSolrService = $this->container->get(IndexService::class);
+            $textExtractSvc    = $this->container->get(\OCA\OpenRegister\Service\TextExtractionService::class);
 
             // Get files that need processing.
             $filesToProcess = [];
             if ($skipIndexed === true) {
-                $notIndexed = $textExtractionService->findNotIndexedInSolr('file', $maxFiles);
+                $notIndexed = $textExtractSvc->findNotIndexedInSolr('file', $maxFiles);
                 foreach ($notIndexed as $fileId) {
                     $filesToProcess[] = $fileId;
                 }
             }
 
             if ($skipIndexed === false) {
-                $completed = $textExtractionService->findByStatus('file', 'completed', $maxFiles, 0);
+                $completed = $textExtractSvc->findByStatus('file', 'completed', $maxFiles, 0);
                 foreach ($completed as $fileId) {
                     $filesToProcess[] = $fileId;
                 }
@@ -482,14 +482,14 @@ class FileSettingsController extends Controller
     {
         try {
             // Get all completed file texts.
-            $textExtractionService = $this->container->get(\OCA\OpenRegister\Service\TextExtractionService::class);
-            $guzzleSolrService     = $this->container->get(IndexService::class);
+            $textExtractSvc    = $this->container->get(\OCA\OpenRegister\Service\TextExtractionService::class);
+            $guzzleSolrService = $this->container->get(IndexService::class);
 
             $maxFiles  = (int) $this->request->getParam('max_files', 1000);
             $batchSize = (int) $this->request->getParam('batch_size', 100);
 
             // Get all completed extractions.
-            $fileIds = $textExtractionService->findByStatus('file', 'completed', $maxFiles, 0);
+            $fileIds = $textExtractSvc->findByStatus('file', 'completed', $maxFiles, 0);
 
             if (empty($fileIds) === true) {
                 return new JSONResponse(
@@ -618,29 +618,29 @@ class FileSettingsController extends Controller
     {
         try {
             // Get total files from Nextcloud filecache (bypasses rights logic).
-            $fileMapper            = $this->container->get(\OCA\OpenRegister\Db\FileMapper::class);
-            $totalFilesInNextcloud = $fileMapper->countAllFiles();
-            $totalFilesSize        = $fileMapper->getTotalFilesSize();
+            $fileMapper     = $this->container->get(\OCA\OpenRegister\Db\FileMapper::class);
+            $totalNcFiles   = $fileMapper->countAllFiles();
+            $totalFilesSize = $fileMapper->getTotalFilesSize();
 
             // Get extraction statistics from our file_texts table.
-            $textExtractionService = $this->container->get(\OCA\OpenRegister\Service\TextExtractionService::class);
-            $dbStats = $textExtractionService->getExtractionStats('file');
+            $textExtractSvc = $this->container->get(\OCA\OpenRegister\Service\TextExtractionService::class);
+            $dbStats        = $textExtractSvc->getExtractionStats('file');
 
             // Get SOLR statistics.
             $guzzleSolrService = $this->container->get(IndexService::class);
             $solrStats         = $guzzleSolrService->getFileIndexStats();
 
             // Calculate storage in MB.
-            $extractedTextStorageMB = round($dbStats['total_text_size'] / 1024 / 1024, 2);
-            $totalFilesStorageMB    = round($totalFilesSize / 1024 / 1024, 2);
+            $extractedTextMB     = round($dbStats['total_text_size'] / 1024 / 1024, 2);
+            $totalFilesStorageMB = round($totalFilesSize / 1024 / 1024, 2);
 
             // Calculate untracked files (files in Nextcloud not yet discovered).
-            $untrackedFiles = $totalFilesInNextcloud - $dbStats['total'];
+            $untrackedFiles = $totalNcFiles - $dbStats['total'];
 
             return new JSONResponse(
                 data: [
                     'success'                => true,
-                    'totalFiles'             => $totalFilesInNextcloud,
+                    'totalFiles'             => $totalNcFiles,
                     'processedFiles'         => $dbStats['completed'],
                 // Files successfully extracted (status='completed').
                     'pendingFiles'           => $dbStats['pending'],
@@ -648,7 +648,7 @@ class FileSettingsController extends Controller
                     'untrackedFiles'         => max(0, $untrackedFiles),
                 // Files not yet discovered.
                     'totalChunks'            => $solrStats['total_chunks'] ?? 0,
-                    'extractedTextStorageMB' => number_format($extractedTextStorageMB, 2),
+                    'extractedTextStorageMB' => number_format($extractedTextMB, 2),
                     'totalFilesStorageMB'    => number_format($totalFilesStorageMB, 2),
                     'completed'              => $dbStats['completed'],
                     'failed'                 => $dbStats['failed'],

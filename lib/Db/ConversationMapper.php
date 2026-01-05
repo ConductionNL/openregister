@@ -57,6 +57,8 @@ use OCP\IDBConnection;
  * @method           Conversation findEntity(IQueryBuilder $query)
  * @method           Conversation[] findAll(int|null $limit=null, int|null $offset=null)
  * @method           list<Conversation> findEntities(IQueryBuilder $query)
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  */
 class ConversationMapper extends QBMapper
 {

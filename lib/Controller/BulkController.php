@@ -37,8 +37,9 @@ use DateTime;
  * Bulk operations controller for OpenRegister
  *
  * @psalm-suppress UnusedClass
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
-
 class BulkController extends Controller
 {
     /**
@@ -202,6 +203,8 @@ class BulkController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with bulk publish result
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function publish(string $register, string $schema): JSONResponse
     {
@@ -274,16 +277,17 @@ class BulkController extends Controller
     /**
      * Perform bulk depublish operations on objects
      *
-     * @param string $register The register identifier (used by routing)
-     * @param string $schema   The schema identifier (used by routing)
+     * @param string $_register The register identifier (used by routing)
+     * @param string $_schema   The schema identifier (used by routing)
      *
      * @NoCSRFRequired
      *
-     * @SuppressWarnings (PHPMD.UnusedFormalParameter) Parameters used by route resolver
+     * @SuppressWarnings                             (PHPMD.UnusedFormalParameter) Parameters used by route resolver
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
      * @return JSONResponse JSON response with bulk depublish result
      */
-    public function depublish(string $register, string $schema): JSONResponse
+    public function depublish(string $_register, string $_schema): JSONResponse
     {
         try {
             // Check if user is admin.
@@ -402,10 +406,9 @@ class BulkController extends Controller
             $isMixedSchema = ($resolved['schema'] === 0);
 
             // Determine schema to use (null for mixed-schema, resolved for single-schema).
+            $schemaToUse = $resolved['schema'];
             if ($isMixedSchema === true) {
                 $schemaToUse = null;
-            } else {
-                $schemaToUse = $resolved['schema'];
             }
 
             $savedObjects = $this->objectService->saveObjects(

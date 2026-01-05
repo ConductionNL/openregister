@@ -71,15 +71,17 @@ class CrudHandler
      * @param bool        $_multitenancy Apply multitenancy filters
      * @param bool        $published     Only return published objects
      * @param bool        $deleted       Include deleted objects
-     * @param array|null  $ids           Optional array of object IDs to filter
-     * @param string|null $uses          Optional object ID that results must use
-     * @param array|null  $views         Optional view filters
+     * @param array|null  $_ids          Optional array of object IDs to filter
+     * @param string|null $_uses         Optional object ID that results must use
+     * @param array|null  $_views        Optional view filters
      *
      * @return (array|int)[] Paginated results with objects
      *
      * @throws \Exception If listing fails
      *
      * @psalm-return array{results: array<never, never>, total: 0}
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) - Boolean flags provide flexible API filtering options
      */
     public function list(
         array $query=[],
@@ -87,9 +89,9 @@ class CrudHandler
         bool $_multitenancy=true,
         bool $published=false,
         bool $deleted=false,
-        ?array $ids=null,
-        ?string $uses=null,
-        ?array $views=null
+        ?array $_ids=null,
+        ?string $_uses=null,
+        ?array $_views=null
     ): array {
         $this->logger->debug(
             message: '[CrudHandler] Listing objects',
@@ -146,6 +148,8 @@ class CrudHandler
      * @return null Object entity or null if not found
      *
      * @throws \Exception If retrieval fails
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) - Boolean flags control RBAC and multitenancy behavior
      */
     public function get(string $objectId, bool $rbac=true, bool $_multitenancy=true)
     {
@@ -187,6 +191,8 @@ class CrudHandler
      * @return null Created object
      *
      * @throws \Exception If creation fails
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) - Boolean flags control RBAC and multitenancy behavior
      */
     public function create(array $data, bool $rbac=true, bool $_multitenancy=true)
     {
@@ -230,6 +236,8 @@ class CrudHandler
      * @return null Updated object
      *
      * @throws \Exception If update fails
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) - Boolean flags control RBAC and multitenancy behavior
      */
     public function update(
         string $objectId,
@@ -281,6 +289,8 @@ class CrudHandler
      * @return ObjectEntity Patched object
      *
      * @throws \Exception If patch fails
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) - Boolean flags control RBAC and multitenancy behavior
      */
     public function patch(
         string $objectId,
@@ -349,6 +359,8 @@ class CrudHandler
      * @return true True if deleted successfully
      *
      * @throws \Exception If deletion fails
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) - Boolean flags control RBAC and multitenancy behavior
      */
     public function delete(string $objectId, bool $rbac=true, bool $_multitenancy=true): bool
     {

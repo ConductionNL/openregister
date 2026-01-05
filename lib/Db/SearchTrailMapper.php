@@ -52,6 +52,8 @@ use Symfony\Component\Uid\Uuid;
  * @method list<SearchTrail> findEntities(IQueryBuilder $query)
  *
  * @template-extends QBMapper<SearchTrail>
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class SearchTrailMapper extends QBMapper
 {
@@ -424,7 +426,7 @@ class SearchTrailMapper extends QBMapper
             };
 
             $qb->addSelect($qb->createFunction("TO_CHAR(created, '{$postgresFormat}') AS date_period"));
-        } else {
+        } else if ($platform->getName() === 'sqlite') {
             // For SQLite - use strftime.
             $sqliteFormat = match ($interval) {
                 'hour' => '%Y-%m-%d %H:00:00',
@@ -787,6 +789,8 @@ class SearchTrailMapper extends QBMapper
      * @param array         $filters The filters to apply
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function applyFilters(IQueryBuilder $qb, array $filters): void
     {
@@ -876,6 +880,9 @@ class SearchTrailMapper extends QBMapper
      * @param array       $query       The search query parameters
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Search parameter extraction requires many conditional checks
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function extractSearchParameters(SearchTrail $searchTrail, array $query): void
     {

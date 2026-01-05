@@ -27,6 +27,7 @@ use Exception;
 use OCA\OpenRegister\Db\ViewMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\SettingsService;
+use OCP\IRequest;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -41,6 +42,8 @@ use Psr\Log\LoggerInterface;
  *
  * @category Handler
  * @package  OCA\OpenRegister\Service\Objects
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex search query building and optimization logic
  */
 class SearchQueryHandler
 {
@@ -51,12 +54,14 @@ class SearchQueryHandler
      * @param SchemaMapper    $schemaMapper    Mapper for schema operations.
      * @param SettingsService $settingsService Service for settings operations.
      * @param LoggerInterface $logger          Logger for performance monitoring.
+     * @param IRequest        $request         Request object.
      */
     public function __construct(
         private readonly ViewMapper $viewMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly SettingsService $settingsService,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly IRequest $request
     ) {
     }//end __construct()
 
@@ -75,6 +80,10 @@ class SearchQueryHandler
      * @return ((int[]|mixed)[]|mixed)[]
      *
      * @psalm-return array{'@self': array<string, array<int>|int|mixed>|mixed, _ids?: array|mixed,...}
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex query building with parameter reconstruction
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Many paths for handling different parameter formats
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Handles extensive parameter processing for query building
      */
     public function buildSearchQuery(
         array $requestParams,
@@ -256,6 +265,9 @@ class SearchQueryHandler
      * @param array<int|string>    $viewIds View IDs to apply (can be int or string IDs).
      *
      * @return array<string, mixed> Query with view filters applied
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex view merging with multiple filter types
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple view filter paths for registers, schemas, and search terms
      */
     public function applyViewsToQuery(array $query, array $viewIds): array
     {
@@ -381,6 +393,8 @@ class SearchQueryHandler
      * @param array<string, mixed> $parameters Query parameters to clean.
      *
      * @return array<string, mixed> Cleaned query parameters
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple conditional paths for parameter normalization
      */
     public function cleanQuery(array $parameters): array
     {
@@ -457,7 +471,7 @@ class SearchQueryHandler
             return;
         }
 
-        $currentUrl = $_SERVER['REQUEST_URI'];
+        $currentUrl = $this->request->getRequestUri();
 
         // Add next page link if there are more pages.
         if ($page < $pages) {
@@ -508,20 +522,20 @@ class SearchQueryHandler
      * Creates a search trail entry if search trails are enabled in settings.
      * Logs query, result counts, and execution time for analytics and debugging.
      *
-     * @param array<string, mixed> $query         Search query array.
-     * @param int                  $resultCount   Number of results returned.
-     * @param int                  $totalResults  Total number of matching results.
-     * @param float                $executionTime Execution time in milliseconds.
-     * @param string               $executionType Type of execution (sync, async, optimized, etc.).
+     * @param array<string, mixed> $_query         Search query array.
+     * @param int                  $_resultCount   Number of results returned.
+     * @param int                  $_totalResults  Total number of matching results.
+     * @param float                $_executionTime Execution time in milliseconds.
+     * @param string               $_executionType Type of execution (sync, async, optimized, etc.).
      *
      * @return void
      */
     public function logSearchTrail(
-        array $query,
-        int $resultCount,
-        int $totalResults,
-        float $executionTime,
-        string $executionType='sync'
+        array $_query,
+        int $_resultCount,
+        int $_totalResults,
+        float $_executionTime,
+        string $_executionType='sync'
     ): void {
         try {
             // Only create search trail if search trails are enabled.

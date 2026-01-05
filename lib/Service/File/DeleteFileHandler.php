@@ -45,16 +45,16 @@ class DeleteFileHandler
     /**
      * Constructor for DeleteFileHandler.
      *
-     * @param IRootFolder           $rootFolder            Root folder for file operations.
-     * @param ReadFileHandler       $readFileHandler       Read file handler.
-     * @param FileValidationHandler $fileValidationHandler File validation handler.
-     * @param FileOwnershipHandler  $fileOwnershipHandler  File ownership handler.
-     * @param LoggerInterface       $logger                Logger for logging operations.
+     * @param IRootFolder           $rootFolder           Root folder for file operations.
+     * @param ReadFileHandler       $readFileHandler      Read file handler.
+     * @param FileValidationHandler $fileValidHandler     File validation handler.
+     * @param FileOwnershipHandler  $fileOwnershipHandler File ownership handler.
+     * @param LoggerInterface       $logger               Logger for logging operations.
      */
     public function __construct(
         private readonly IRootFolder $rootFolder,
         private readonly ReadFileHandler $readFileHandler,
-        private readonly FileValidationHandler $fileValidationHandler,
+        private readonly FileValidationHandler $fileValidHandler,
         private readonly FileOwnershipHandler $fileOwnershipHandler,
         private readonly LoggerInterface $logger
     ) {
@@ -94,7 +94,7 @@ class DeleteFileHandler
         }
 
         // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
-        $this->fileValidationHandler->checkOwnership($file);
+        $this->fileValidHandler->checkOwnership($file);
 
         try {
             $file->delete();

@@ -147,6 +147,14 @@ use function React\Promise\all;
  * @since 1.5.0 Added bulk operations and performance optimizations
  * @since 2.0.0 Added comprehensive schema analysis and memory optimization
  * @since 2.1.0 Refactored to handler architecture, extracted business logic (55% reduction)
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Facade pattern for object operations requires comprehensive coordination
+ * @SuppressWarnings(PHPMD.TooManyMethods)           Many methods required to expose full object management API
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)     Public API facade requires many public entry points
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex object lifecycle management
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Requires coordination with many specialized handlers
+ * @SuppressWarnings(PHPMD.ExcessivePublicCount)     Public API requires many entry points
+ * @SuppressWarnings(PHPMD.BooleanArgumentFlag)      Boolean flags for RBAC and multitenancy
  */
 class ObjectService
 {
@@ -178,49 +186,51 @@ class ObjectService
     /**
      * Constructor for ObjectService.
      *
-     * @param DataManipulationHandler        $dataManipulationHandler        Handler for data manipulation operations.
-     * @param DeleteObject                   $deleteHandler                  Handler for object deletion.
-     * @param GetObject                      $getHandler                     Handler for object retrieval.
-     * @param PerformanceHandler             $performanceHandler             Handler for performance operations.
-     * @param PermissionHandler              $permissionHandler              Handler for permission checks.
-     * @param RenderObject                   $renderHandler                  Handler for object rendering.
-     * @param SaveObject                     $saveHandler                    Handler for individual object saving.
-     * @param SaveObjects                    $saveObjectsHandler             Handler for bulk object saving operations.
-     * @param SearchQueryHandler             $searchQueryHandler             Handler for search query operations.
-     * @param ValidateObject                 $validateHandler                Handler for object validation.
-     * @param LockHandler                    $lockHandler                    Handler for object locking.
-     * @param AuditHandler                   $auditHandler                   Handler for audit trail operations.
-     * @param PublishHandler                 $publishHandler                 Handler for publication workflow.
-     * @param RelationHandler                $relationHandler                Handler for object relationships.
-     * @param MergeHandler                   $mergeHandler                   Handler for merge and migration.
-     * @param BulkOperationsHandler          $bulkOperationsHandler          Handler for bulk operations.
-     * @param FacetHandler                   $facetHandler                   Handler for facet operations.
-     * @param MetadataHandler                $metadataHandler                Handler for metadata operations.
-     * @param PerformanceOptimizationHandler $performanceOptimizationHandler Handler for performance optimization.
-     * @param QueryHandler                   $queryHandler                   Handler for query operations.
-     * @param RevertHandler                  $revertHandler                  Handler for revert operations.
-     * @param UtilityHandler                 $utilityHandler                 Handler for utility operations.
-     * @param ValidationHandler              $validationHandler              Handler for validation operations.
-     * @param CascadingHandler               $cascadingHandler               Handler for cascading operations.
-     * @param MigrationHandler               $migrationHandler               Handler for migration operations.
-     * @param RegisterMapper                 $registerMapper                 Mapper for register operations.
-     * @param SchemaMapper                   $schemaMapper                   Mapper for schema operations.
-     * @param ViewMapper                     $viewMapper                     Mapper for view operations.
-     * @param ObjectEntityMapper             $objectEntityMapper             Mapper for object entity operations.
-     * @param FileService                    $fileService                    Service for file operations.
-     * @param IUserSession                   $userSession                    User session for getting current user.
-     * @param SearchTrailService             $searchTrailService             Service for search trail operations.
-     * @param IGroupManager                  $groupManager                   Group manager for checking user groups.
-     * @param IUserManager                   $userManager                    User manager for getting user objects.
-     * @param OrganisationService            $organisationService            Service for organisation operations.
-     * @param LoggerInterface                $logger                         Logger for performance monitoring.
-     * @param CacheHandler                   $cacheHandler                   Service for entity and query caching.
-     * @param SettingsService                $settingsService                Service for settings operations.
-     * @param IAppContainer                  $container                      Application container.
+     * @param DataManipulationHandler        $dataManipHandler    Handler for data manipulation operations.
+     * @param DeleteObject                   $deleteHandler       Handler for object deletion.
+     * @param GetObject                      $getHandler          Handler for object retrieval.
+     * @param PerformanceHandler             $performanceHandler  Handler for performance operations.
+     * @param PermissionHandler              $permissionHandler   Handler for permission checks.
+     * @param RenderObject                   $renderHandler       Handler for object rendering.
+     * @param SaveObject                     $saveHandler         Handler for individual object saving.
+     * @param SaveObjects                    $saveObjectsHandler  Handler for bulk object saving operations.
+     * @param SearchQueryHandler             $searchQueryHandler  Handler for search query operations.
+     * @param ValidateObject                 $validateHandler     Handler for object validation.
+     * @param LockHandler                    $lockHandler         Handler for object locking.
+     * @param AuditHandler                   $auditHandler        Handler for audit trail operations.
+     * @param PublishHandler                 $publishHandler      Handler for publication workflow.
+     * @param RelationHandler                $relationHandler     Handler for object relationships.
+     * @param MergeHandler                   $mergeHandler        Handler for merge and migration.
+     * @param BulkOperationsHandler          $bulkOpsHandler      Handler for bulk operations.
+     * @param FacetHandler                   $facetHandler        Handler for facet operations.
+     * @param MetadataHandler                $metadataHandler     Handler for metadata operations.
+     * @param PerformanceOptimizationHandler $perfOptHandler      Handler for performance optimization.
+     * @param QueryHandler                   $queryHandler        Handler for query operations.
+     * @param RevertHandler                  $revertHandler       Handler for revert operations.
+     * @param UtilityHandler                 $utilityHandler      Handler for utility operations.
+     * @param ValidationHandler              $validationHandler   Handler for validation operations.
+     * @param CascadingHandler               $cascadingHandler    Handler for cascading operations.
+     * @param MigrationHandler               $migrationHandler    Handler for migration operations.
+     * @param RegisterMapper                 $registerMapper      Mapper for register operations.
+     * @param SchemaMapper                   $schemaMapper        Mapper for schema operations.
+     * @param ViewMapper                     $viewMapper          Mapper for view operations.
+     * @param ObjectEntityMapper             $objectEntityMapper  Mapper for object entity operations.
+     * @param FileService                    $fileService         Service for file operations.
+     * @param IUserSession                   $userSession         User session for getting current user.
+     * @param SearchTrailService             $searchTrailService  Service for search trail operations.
+     * @param IGroupManager                  $groupManager        Group manager for checking user groups.
+     * @param IUserManager                   $userManager         User manager for getting user objects.
+     * @param OrganisationService            $organisationService Service for organisation operations.
+     * @param LoggerInterface                $logger              Logger for performance monitoring.
+     * @param CacheHandler                   $cacheHandler        Service for entity and query caching.
+     * @param SettingsService                $settingsService     Service for settings operations.
+     * @param IAppContainer                  $container           Application container.
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      */
     public function __construct(
         // Legacy handlers - TESTING:..
-        private readonly DataManipulationHandler $dataManipulationHandler,
+        private readonly DataManipulationHandler $dataManipHandler,
         private readonly DeleteObject $deleteHandler,
         private readonly GetObject $getHandler,
         private readonly PerformanceHandler $performanceHandler,
@@ -238,7 +248,7 @@ class ObjectService
         private readonly MergeHandler $mergeHandler,
         // REFACTORED: CrudHandler removed - was unimplemented stub causing circular dependency.
         // REFACTORED: BulkOperationsHandler re-enabled - has no circular dependencies (only uses handlers/mappers).
-        private readonly BulkOperationsHandler $bulkOperationsHandler,
+        private readonly BulkOperationsHandler $bulkOpsHandler,
         // TODO: CIRCULAR DEPENDENCY ISSUE - These handlers still cause timeouts.
         // Temporarily disabled until full architectural refactoring is complete.
         // See DEBUGGING_REGISTER_CREATION_TIMEOUT.md for details.
@@ -248,7 +258,7 @@ class ObjectService
         // REFACTORED: Re-enabled legacy handlers - they have clean dependencies (no circular loops).
         private readonly FacetHandler $facetHandler,
         private readonly MetadataHandler $metadataHandler,
-        private readonly PerformanceOptimizationHandler $performanceOptimizationHandler,
+        private readonly PerformanceOptimizationHandler $perfOptHandler,
         private readonly QueryHandler $queryHandler,
         private readonly RevertHandler $revertHandler,
         private readonly UtilityHandler $utilityHandler,
@@ -327,6 +337,8 @@ class ObjectService
      *
      * @psalm-return   void
      * @phpstan-return void
+     *
+     * @SuppressWarnings(PHPMD.ElseExpression) Else needed for null vs ID folder handling
      */
     public function ensureObjectFolderExists(ObjectEntity $entity): void
     {
@@ -364,6 +376,8 @@ class ObjectService
      * @param Register|string|int $register The register object or its ID/UUID
      *
      * @return static Returns self for method chaining
+     *
+     * @SuppressWarnings(PHPMD.ElseExpression) Else needed for numeric vs slug lookup paths
      */
     public function setRegister(Register | string | int $register): static
     {
@@ -419,6 +433,8 @@ class ObjectService
      * @param Schema|string|int $schema The schema object or its ID/UUID
      *
      * @return static Returns self for method chaining
+     *
+     * @SuppressWarnings(PHPMD.ElseExpression) Else needed for numeric vs slug lookup paths
      */
     public function setSchema(Schema | string | int $schema): static
     {
@@ -524,6 +540,8 @@ class ObjectService
      * @throws Exception If the object is not found.
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex permission and context handling requires multiple branches
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple optional parameters create many execution paths
      */
     public function find(
         int | string $id,
@@ -682,6 +700,8 @@ class ObjectService
      * @return array Array of objects matching the configuration
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex configuration handling requires multiple branches
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Many configuration options create many execution paths
      */
     public function findAll(array $config=[], bool $_rbac=true, bool $_multitenancy=true): array
     {
@@ -762,6 +782,8 @@ class ObjectService
      * @return ((Register|Schema|mixed)[]|null)[] [registers, schemas]
      *
      * @psalm-return list{array<Register|mixed>|null, array<Schema|mixed>|null}
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple conditions for register/schema resolution
      */
     private function resolveRegisterAndSchema(array $config, array $objects): array
     {
@@ -909,7 +931,7 @@ class ObjectService
         unset($config['limit']);
 
         return $this->objectEntityMapper->countAll(
-            filters: $config['filters'] ?? []
+            _filters: $config['filters'] ?? []
         );
     }//end count()
 
@@ -1344,6 +1366,8 @@ class ObjectService
          * to ensure consistency between save and retrieval operations.
          *
          * @return string|null The active organization UUID or null if none found
+         *
+         * @SuppressWarnings(PHPMD.ElseExpression) Else needed for null organization handling
          */
     private function getActiveOrganisationForContext(): ?string
     {
@@ -1515,15 +1539,15 @@ class ObjectService
         ?string $uses=null
     ): int {
         // Get active organization context for multi-tenancy (only if multi is enabled).
-        $activeOrganisationUuid = null;
+        $activeOrgUuid = null;
         if ($_multitenancy === true) {
-            $activeOrganisationUuid = $this->getActiveOrganisationForContext();
+            $activeOrgUuid = $this->getActiveOrganisationForContext();
         }
 
         // Use the new optimized countSearchObjects method from ObjectEntityMapper with organization context.
         return $this->objectEntityMapper->countSearchObjects(
             query: $query,
-            _activeOrganisationUuid: $activeOrganisationUuid,
+            _activeOrgUuid: $activeOrgUuid,
             _rbac: $_rbac,
             _multitenancy: $_multitenancy,
             ids: $ids,
@@ -1593,7 +1617,7 @@ class ObjectService
     public function getFacetableFields(array $baseQuery=[], int $sampleSize=100): array
     {
         // **ARCHITECTURAL IMPROVEMENT**: Delegate to FacetHandler.
-        return $this->facetHandler->getFacetableFields(baseQuery: $baseQuery, sampleSize: $sampleSize);
+        return $this->facetHandler->getFacetableFields(baseQuery: $baseQuery, _sampleSize: $sampleSize);
     }//end getFacetableFields()
 
     /**
@@ -1704,6 +1728,9 @@ class ObjectService
      *
      * @throws \OCP\DB\Exception If a database error occurs
      * @throws \Exception If Solr search fails and cannot be recovered
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex search routing requires multiple branches
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Many search options create many execution paths
      */
     public function searchObjectsPaginated(
         array $query=[],
@@ -1716,12 +1743,12 @@ class ObjectService
         ?array $views=null
     ): array {
         // Add register and schema context to query for magic mapper routing.
-        if ($this->register !== null && isset($query['_register']) === false) {
-            $query['_register'] = $this->register->getId();
+        if ($this->currentRegister !== null && isset($query['_register']) === false) {
+            $query['_register'] = $this->currentRegister->getId();
         }
 
-        if ($this->schema !== null && isset($query['_schema']) === false) {
-            $query['_schema'] = $this->schema->getId();
+        if ($this->currentSchema !== null && isset($query['_schema']) === false) {
+            $query['_schema'] = $this->currentSchema->getId();
         }
 
         // Apply view filters if provided.
@@ -2175,7 +2202,7 @@ class ObjectService
         }
 
         // ARCHITECTURAL DELEGATION: Delegate to BulkOperationsHandler which includes cache invalidation.
-        return $this->bulkOperationsHandler->saveObjects(
+        return $this->bulkOpsHandler->saveObjects(
             objects: $objects,
             currentRegister: $this->currentRegister,
             currentSchema: $this->currentSchema,
@@ -2263,7 +2290,7 @@ class ObjectService
     {
         // ARCHITECTURAL DELEGATION: Delegate to BulkOperationsHandler for all bulk delete logic.
         // Pass register and schema context for magic mapper support.
-        return $this->bulkOperationsHandler->deleteObjects(
+        return $this->bulkOpsHandler->deleteObjects(
             uuids: $uuids,
             _rbac: $_rbac,
             _multitenancy: $_multitenancy,
@@ -2300,7 +2327,7 @@ class ObjectService
     ): array {
         // ARCHITECTURAL DELEGATION: Delegate to BulkOperationsHandler for all bulk publish logic.
         // Pass register and schema context for magic mapper support.
-        return $this->bulkOperationsHandler->publishObjects(
+        return $this->bulkOpsHandler->publishObjects(
             uuids: $uuids,
             datetime: $datetime,
             _rbac: $_rbac,
@@ -2338,7 +2365,7 @@ class ObjectService
     ): array {
         // ARCHITECTURAL DELEGATION: Delegate to BulkOperationsHandler for all bulk depublish logic.
         // Pass register and schema context for magic mapper support.
-        return $this->bulkOperationsHandler->depublishObjects(
+        return $this->bulkOpsHandler->depublishObjects(
             uuids: $uuids,
             datetime: $datetime,
             _rbac: $_rbac,
@@ -2368,7 +2395,7 @@ class ObjectService
     public function publishObjectsBySchema(int $schemaId, bool $publishAll=false): array
     {
         // ARCHITECTURAL DELEGATION: Delegate to BulkOperationsHandler for schema-wide publish.
-        return $this->bulkOperationsHandler->publishObjectsBySchema(
+        return $this->bulkOpsHandler->publishObjectsBySchema(
             schemaId: $schemaId,
             publishAll: $publishAll
         );
@@ -2394,7 +2421,7 @@ class ObjectService
     public function deleteObjectsBySchema(int $schemaId, bool $hardDelete=false): array
     {
         // ARCHITECTURAL DELEGATION: Delegate to BulkOperationsHandler for schema-wide delete.
-        return $this->bulkOperationsHandler->deleteObjectsBySchema(
+        return $this->bulkOpsHandler->deleteObjectsBySchema(
             schemaId: $schemaId,
             hardDelete: $hardDelete
         );
@@ -2419,7 +2446,7 @@ class ObjectService
     public function deleteObjectsByRegister(int $registerId): array
     {
         // ARCHITECTURAL DELEGATION: Delegate to BulkOperationsHandler for register-wide delete.
-        return $this->bulkOperationsHandler->deleteObjectsByRegister($registerId);
+        return $this->bulkOpsHandler->deleteObjectsByRegister($registerId);
     }//end deleteObjectsByRegister()
 
     // **REMOVED**: clearResponseCache method removed since SOLR is now our index.
@@ -2464,7 +2491,7 @@ class ObjectService
         return $this->relationHandler->getUses(
             objectId: $objectId,
             query: $query,
-            rbac: $rbac,
+            _rbac: $rbac,
             _multitenancy: $_multitenancy
         );
     }//end getObjectUses()
@@ -2490,7 +2517,7 @@ class ObjectService
         return $this->relationHandler->getUsedBy(
             objectId: $objectId,
             query: $query,
-            rbac: $rbac,
+            _rbac: $rbac,
             _multitenancy: $_multitenancy
         );
     }//end getObjectUsedBy()
@@ -2498,14 +2525,14 @@ class ObjectService
     /**
      * Vectorize objects in batch
      *
-     * @param array|null $views     Optional view filters
-     * @param int        $batchSize Number of objects to process per batch
+     * @param array|null $_views     Optional view filters
+     * @param int        $_batchSize Number of objects to process per batch
      *
      * @return never Vectorization results
      *
      * @throws \Exception If vectorization fails
      */
-    public function vectorizeBatchObjects(?array $views=null, int $batchSize=25)
+    public function vectorizeBatchObjects(?array $_views=null, int $_batchSize=25)
     {
         // TODO: TEMPORARILY DISABLED due to circular dependency with VectorizationService.
         // Requires architectural refactoring to fix. See DEBUGGING_REGISTER_CREATION_TIMEOUT.md.
@@ -2515,13 +2542,13 @@ class ObjectService
     /**
      * Get vectorization statistics
      *
-     * @param array|null $views Optional view filters
+     * @param array|null $_views Optional view filters
      *
      * @return never Statistics data
      *
      * @throws \Exception If stats retrieval fails
      */
-    public function getVectorizationStatistics(?array $views=null)
+    public function getVectorizationStatistics(?array $_views=null)
     {
         // TODO: TEMPORARILY DISABLED due to circular dependency with VectorizationService.
         throw new Exception('Vectorization temporarily disabled due to circular dependency issues');
@@ -2530,13 +2557,13 @@ class ObjectService
     /**
      * Get count of objects available for vectorization
      *
-     * @param array|null $schemas Optional schema filters
+     * @param array|null $_schemas Optional schema filters
      *
      * @return never Object count
      *
      * @throws \Exception If count fails
      */
-    public function getVectorizationCount(?array $schemas=null)
+    public function getVectorizationCount(?array $_schemas=null)
     {
         // TODO: TEMPORARILY DISABLED due to circular dependency with VectorizationService.
         throw new Exception('Vectorization temporarily disabled due to circular dependency issues');
@@ -2552,11 +2579,11 @@ class ObjectService
      * @param array       $query         Search query parameters
      * @param bool        $rbac          Apply RBAC filters
      * @param bool        $_multitenancy Apply multitenancy filters
-     * @param bool        $published     Only return published objects
-     * @param bool        $deleted       Include deleted objects
-     * @param array|null  $ids           Optional array of object IDs to filter
-     * @param string|null $uses          Optional object ID that results must use
-     * @param array|null  $views         Optional view filters
+     * @param bool        $_published    Only return published objects
+     * @param bool        $_deleted      Include deleted objects
+     * @param array|null  $_ids          Optional array of object IDs to filter
+     * @param string|null $_uses         Optional object ID that results must use
+     * @param array|null  $_views        Optional view filters
      *
      * @return \OCA\OpenRegister\Db\ObjectEntity[]|int
      *
@@ -2568,11 +2595,11 @@ class ObjectService
         array $query=[],
         bool $rbac=true,
         bool $_multitenancy=true,
-        bool $published=false,
-        bool $deleted=false,
-        ?array $ids=null,
-        ?string $uses=null,
-        ?array $views=null
+        bool $_published=false,
+        bool $_deleted=false,
+        ?array $_ids=null,
+        ?string $_uses=null,
+        ?array $_views=null
     ): array|int {
         // REFACTORED: Removed CrudHandler (was unimplemented stub causing circular dependency).
         // Use searchObjects() for actual object listing.
@@ -2587,14 +2614,14 @@ class ObjectService
      * Create new object
      *
      * @param array $data          Object data
-     * @param bool  $rbac          Apply RBAC checks
+     * @param bool  $_rbac         Apply RBAC checks
      * @param bool  $_multitenancy Apply multitenancy filtering
      *
      * @return ObjectEntity Created object entity
      *
      * @throws \Exception If creation fails
      */
-    public function createObject(array $data, bool $rbac=true, bool $_multitenancy=true): ObjectEntity
+    public function createObject(array $data, bool $_rbac=true, bool $_multitenancy=true): ObjectEntity
     {
         // REFACTORED: Removed CrudHandler (was unimplemented stub). Use saveObject() instead.
         return $this->saveObject(object: $data);
@@ -2605,7 +2632,7 @@ class ObjectService
      *
      * @param string $objectId      Object ID or UUID
      * @param array  $data          New object data
-     * @param bool   $rbac          Apply RBAC checks
+     * @param bool   $_rbac         Apply RBAC checks
      * @param bool   $_multitenancy Apply multitenancy filtering
      *
      * @return ObjectEntity Updated object entity
@@ -2615,7 +2642,7 @@ class ObjectService
     public function updateObject(
         string $objectId,
         array $data,
-        bool $rbac=true,
+        bool $_rbac=true,
         bool $_multitenancy=true
     ): ObjectEntity {
         // REFACTORED: Removed CrudHandler (was unimplemented stub). Use saveObject() with ID.
@@ -2630,7 +2657,7 @@ class ObjectService
      *
      * @param string $objectId      Object ID or UUID
      * @param array  $data          Partial object data
-     * @param bool   $rbac          Apply RBAC checks
+     * @param bool   $_rbac         Apply RBAC checks
      * @param bool   $_multitenancy Apply multitenancy filtering
      *
      * @return ObjectEntity Patched object entity
@@ -2640,7 +2667,7 @@ class ObjectService
     public function patchObject(
         string $objectId,
         array $data,
-        bool $rbac=true,
+        bool $_rbac=true,
         bool $_multitenancy=true
     ): ObjectEntity {
         // REFACTORED: Removed CrudHandler (was unimplemented stub). Use saveObject() for patching.
@@ -2674,22 +2701,22 @@ class ObjectService
     /**
      * Export objects to specified format
      *
-     * @param \OCA\OpenRegister\Db\Register $register    Register entity
-     * @param \OCA\OpenRegister\Db\Schema   $schema      Schema entity
-     * @param array                         $filters     Optional filters
-     * @param string                        $type        Export type (csv, excel)
-     * @param \OCP\IUser|null               $currentUser Current user
+     * @param \OCA\OpenRegister\Db\Register $_register    Register entity
+     * @param \OCA\OpenRegister\Db\Schema   $_schema      Schema entity
+     * @param array                         $_filters     Optional filters
+     * @param string                        $_type        Export type (csv, excel)
+     * @param \OCP\IUser|null               $_currentUser Current user
      *
      * @return never Export result with content, filename, and mimetype
      *
      * @throws \Exception If export fails
      */
     public function exportObjects(
-        \OCA\OpenRegister\Db\Register $register,
-        \OCA\OpenRegister\Db\Schema $schema,
-        array $filters=[],
-        string $type='excel',
-        ?\OCP\IUser $currentUser=null
+        \OCA\OpenRegister\Db\Register $_register,
+        \OCA\OpenRegister\Db\Schema $_schema,
+        array $_filters=[],
+        string $_type='excel',
+        ?\OCP\IUser $_currentUser=null
     ) {
         // TODO: TEMPORARILY DISABLED due to circular dependency with ExportService.
         // Requires architectural refactoring to fix. See DEBUGGING_REGISTER_CREATION_TIMEOUT.md.
@@ -2699,30 +2726,30 @@ class ObjectService
     /**
      * Import objects from file
      *
-     * @param \OCA\OpenRegister\Db\Register    $register     Register entity
-     * @param array                            $uploadedFile Uploaded file data
-     * @param \OCA\OpenRegister\Db\Schema|null $schema       Schema entity (optional)
-     * @param bool                             $validation   Enable validation
-     * @param bool                             $events       Enable events
-     * @param bool                             $rbac         Apply RBAC checks
-     * @param bool                             $multitenancy Apply multitenancy filtering
-     * @param bool                             $publish      Publish imported objects
-     * @param \OCP\IUser|null                  $currentUser  Current user
+     * @param \OCA\OpenRegister\Db\Register    $_register     Register entity
+     * @param array                            $_uploadedFile Uploaded file data
+     * @param \OCA\OpenRegister\Db\Schema|null $_schema       Schema entity (optional)
+     * @param bool                             $_validation   Enable validation
+     * @param bool                             $_events       Enable events
+     * @param bool                             $_rbac         Apply RBAC checks
+     * @param bool                             $_multitenancy Apply multitenancy filtering
+     * @param bool                             $_publish      Publish imported objects
+     * @param \OCP\IUser|null                  $_currentUser  Current user
      *
      * @return never Import result with statistics
      *
      * @throws \Exception If import fails
      */
     public function importObjects(
-        \OCA\OpenRegister\Db\Register $register,
-        array $uploadedFile,
-        ?\OCA\OpenRegister\Db\Schema $schema=null,
-        bool $validation=false,
-        bool $events=false,
-        bool $rbac=true,
-        bool $multitenancy=true,
-        bool $publish=false,
-        ?\OCP\IUser $currentUser=null
+        \OCA\OpenRegister\Db\Register $_register,
+        array $_uploadedFile,
+        ?\OCA\OpenRegister\Db\Schema $_schema=null,
+        bool $_validation=false,
+        bool $_events=false,
+        bool $_rbac=true,
+        bool $_multitenancy=true,
+        bool $_publish=false,
+        ?\OCP\IUser $_currentUser=null
     ) {
         // TODO: TEMPORARILY DISABLED due to circular dependency with ImportService.
         // Requires architectural refactoring to fix. See DEBUGGING_REGISTER_CREATION_TIMEOUT.md.
@@ -2756,6 +2783,10 @@ class ObjectService
      * @param array  $mergeData      Merge data
      *
      * @return array Merge result with details
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex merge logic delegated to handler
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Many merge scenarios handled by handler
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Merge operations require comprehensive handling
      */
     public function mergeObjects(string $sourceObjectId, array $mergeData): array
     {

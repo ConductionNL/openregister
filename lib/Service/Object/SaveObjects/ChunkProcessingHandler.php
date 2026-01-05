@@ -44,15 +44,17 @@ class ChunkProcessingHandler
     /**
      * Constructor for ChunkProcessingHandler.
      *
-     * @param TransformationHandler $transformationHandler Handler for object transformation.
-     * @param ObjectEntityMapper    $objectEntityMapper    Mapper for database operations (blob storage).
-     * @param UnifiedObjectMapper   $unifiedObjectMapper   Mapper for routing to magic/blob storage.
-     * @param RegisterMapper        $registerMapper        Mapper for register operations.
-     * @param SchemaMapper          $schemaMapper          Mapper for schema operations.
-     * @param LoggerInterface       $logger                Logger for logging operations.
+     * @param TransformationHandler $transformHandler    Handler for object transformation.
+     * @param ObjectEntityMapper    $objectEntityMapper  Mapper for database operations (blob storage).
+     * @param UnifiedObjectMapper   $unifiedObjectMapper Mapper for routing to magic/blob storage.
+     * @param RegisterMapper        $registerMapper      Mapper for register operations.
+     * @param SchemaMapper          $schemaMapper        Mapper for schema operations.
+     * @param LoggerInterface       $logger              Logger for logging operations.
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Many dependencies required for chunk processing
      */
     public function __construct(
-        private readonly TransformationHandler $transformationHandler,
+        private readonly TransformationHandler $transformHandler,
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly UnifiedObjectMapper $unifiedObjectMapper,
         private readonly RegisterMapper $registerMapper,
@@ -101,6 +103,12 @@ class ChunkProcessingHandler
      *     invalid: list<array<string, mixed>>,
      *     errors: list<array<string, mixed>>,
      *     statistics: array<string, int|float>}
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex bulk processing with multiple classification paths
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Many paths due to database-computed classification handling
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Complete chunk processing pipeline in single method
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Boolean flags for feature toggles in bulk operations
+     * @SuppressWarnings(PHPMD.ElseExpression)        Multiple conditional paths for object classification and reconstruction
      */
     public function processObjectsChunk(
         array $objects,
@@ -151,7 +159,7 @@ class ChunkProcessingHandler
         ];
 
         // STEP 1: Transform objects for database format with metadata hydration.
-        $transformationResult = $this->transformationHandler->transformObjectsToDatabaseFormatInPlace(
+        $transformationResult = $this->transformHandler->transformObjectsToDatabaseFormatInPlace(
             objects: $objects,
             schemaCache: $schemaCache
         );

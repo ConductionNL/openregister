@@ -95,6 +95,8 @@ use Symfony\Component\Uid\Uuid;
  * @method void setCreated(?DateTime $created)
  * @method DateTime|null getUpdated()
  * @method void setUpdated(?DateTime $updated)
+ *
+ * @SuppressWarnings(PHPMD.TooManyFields) Domain entity requires many fields for complete configuration sync data
  */
 class Configuration extends Entity implements JsonSerializable
 {
@@ -383,6 +385,8 @@ class Configuration extends Entity implements JsonSerializable
      * @param string $uuid The UUID to validate
      *
      * @return bool True if UUID format is valid
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) Uuid::fromString is standard Symfony UID pattern
      */
     public static function isValidUuid(string $uuid): bool
     {

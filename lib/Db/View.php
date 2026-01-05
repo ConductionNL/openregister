@@ -97,7 +97,7 @@ class View extends Entity implements JsonSerializable
      *
      * @var Configuration|null
      */
-    private ?Configuration $managedByConfiguration = null;
+    private ?Configuration $managedByConfig = null;
 
     /**
      * Whether the view is public
@@ -292,11 +292,11 @@ class View extends Entity implements JsonSerializable
      */
     private function getManagedByConfigurationFormatted(): array|null
     {
-        if ($this->managedByConfiguration !== null) {
+        if ($this->managedByConfig !== null) {
             return [
-                'id'    => $this->managedByConfiguration->getId(),
-                'uuid'  => $this->managedByConfiguration->getUuid(),
-                'title' => $this->managedByConfiguration->getTitle(),
+                'id'    => $this->managedByConfig->getId(),
+                'uuid'  => $this->managedByConfig->getUuid(),
+                'title' => $this->managedByConfig->getTitle(),
             ];
         }
 
@@ -311,6 +311,8 @@ class View extends Entity implements JsonSerializable
      * @param array $object Array containing entity data
      *
      * @return static Returns the hydrated entity
+     *
+     * @SuppressWarnings(PHPMD.NPathComplexity) Hydration requires handling many optional fields
      */
     public function hydrate(array $object): static
     {
@@ -366,7 +368,7 @@ class View extends Entity implements JsonSerializable
      */
     public function setManagedByConfigurationEntity(?Configuration $configuration): void
     {
-        $this->managedByConfiguration = $configuration;
+        $this->managedByConfig = $configuration;
     }//end setManagedByConfigurationEntity()
 
     /**

@@ -41,6 +41,8 @@ use RuntimeException;
  * @author   Conduction BV <info@conduction.nl>
  * @license  EUPL-1.2 https://opensource.org/licenses/EUPL-1.2
  * @link     https://www.conduction.nl
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class QueryOptimizationHandler
 {
@@ -125,6 +127,8 @@ class QueryOptimizationHandler
      * @return array Array of processed object UUIDs.
      *
      * @psalm-return list<mixed>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function processLargeObjectsIndividually(array $largeObjects): array
     {
@@ -203,6 +207,8 @@ class QueryOptimizationHandler
      * @throws \Exception If the bulk operation fails.
      *
      * @psalm-return array{endTime: DateTime, duration: string,...}
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function bulkOwnerDeclaration(
         ?string $defaultOwner=null,
@@ -446,6 +452,8 @@ class QueryOptimizationHandler
      *
      * @psalm-return array{ownersAssigned: 0|1|2,
      *     organisationsAssigned: 0|1|2, errors: list<non-falsy-string>}
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function processBulkOwnerDeclarationBatch(
         array $objects,
@@ -526,6 +534,8 @@ class QueryOptimizationHandler
      * @return int Estimated size in bytes.
      *
      * @psalm-return int<0, max>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function estimateObjectSize(mixed $object): int
     {

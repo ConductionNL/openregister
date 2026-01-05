@@ -53,6 +53,8 @@ use DateTime;
  * This class provides comprehensive search functionality for dynamically created
  * schema-based tables, supporting all the search patterns available in ObjectEntityMapper
  * but optimized for schema-specific table structures.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class MagicSearchHandler
 {
@@ -88,6 +90,9 @@ class MagicSearchHandler
      * @psalm-param array<string, mixed> $query
      *
      * @psalm-return int|list<ObjectEntity>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     public function searchObjects(array $query, Register $register, Schema $schema, string $tableName): array|int
     {
@@ -121,7 +126,7 @@ class MagicSearchHandler
             ->setMaxResults($limit)
             ->setFirstResult($offset);
         if ($count === true) {
-            $queryBuilder->resetQueryParts(queryParts: ['select', 'maxResults', 'firstResult']);
+            $queryBuilder->resetQueryParts(queryPartNames: ['select', 'maxResults', 'firstResult']);
             $queryBuilder->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'count')
                 ->from($tableName, 't');
         }
@@ -392,6 +397,10 @@ class MagicSearchHandler
      * @param string   $tableName Target dynamic table name
      *
      * @return ObjectEntity|null ObjectEntity object or null if conversion fails
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Row to entity conversion requires many field mappings
      */
     private function convertRowToObjectEntity(
         array $row,

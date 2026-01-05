@@ -48,6 +48,9 @@ use Psr\Log\LoggerInterface;
  *
  * @category Service
  * @package  OCA\OpenRegister\Service
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)     Facade pattern requires many public methods for unified API
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex indexing orchestration across multiple handlers
  */
 class IndexService
 {
@@ -151,6 +154,8 @@ class IndexService
      * @return (array|int|mixed)[] Search results
      *
      * @psalm-return array{results: array<never, never>|mixed, total: 0|mixed, start: 0|mixed}
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flags required for flexible API filtering
      */
     public function searchObjects(
         array $query=[],
@@ -189,6 +194,8 @@ class IndexService
      * @param bool         $commit Whether to commit immediately
      *
      * @return bool Success status
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Commit flag controls transaction behavior
      */
     public function indexObject(ObjectEntity $object, bool $commit=false): bool
     {
@@ -204,6 +211,8 @@ class IndexService
      * @param bool       $commit   Whether to commit immediately
      *
      * @return bool Success status
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Commit flag controls transaction behavior
      */
     public function deleteObject(string|int $objectId, bool $commit=false): bool
     {
@@ -245,6 +254,8 @@ class IndexService
      * @param bool $force Force recreation of existing fields
      *
      * @return array Result with success status, stats, and optional errors.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag controls schema recreation behavior
      */
     public function mirrorSchemas(bool $force=false): array
     {
@@ -306,6 +317,8 @@ class IndexService
      * @param bool   $dryRun        Preview without making changes
      *
      * @return array Result with success status and field creation info.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Dry-run flag enables preview mode
      */
     public function createMissingFields(string $collection, array $missingFields, bool $dryRun=false): array
     {
@@ -326,6 +339,8 @@ class IndexService
      * @param bool $forceRefresh Force fresh check
      *
      * @return bool Availability status
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force-refresh flag bypasses cache
      */
     public function isAvailable(bool $forceRefresh=false): bool
     {
@@ -345,14 +360,16 @@ class IndexService
     /**
      * Test connection to search backend.
      *
-     * @param bool $includeCollectionTests Include collection tests
+     * @param bool $inclCollTests Include collection tests
      *
      * @return array Test results
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flag controls test verbosity
      */
-    public function testConnection(bool $includeCollectionTests=true): array
+    public function testConnection(bool $inclCollTests=true): array
     {
         try {
-            return $this->searchBackend->testConnection(includeCollectionTests: $includeCollectionTests);
+            return $this->searchBackend->testConnection(inclCollTests: $inclCollTests);
         } catch (Exception $e) {
             $this->logger->error(
                 '[IndexService] Connection test failed',
@@ -530,6 +547,8 @@ class IndexService
      * @param bool  $dryRun           Whether to only simulate (not apply).
      *
      * @return array Results with fixed/failed fields.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Dry-run flag enables preview mode
      */
     public function fixMismatchedFields(array $mismatchedFields, bool $dryRun=false): array
     {
@@ -582,6 +601,8 @@ class IndexService
      * @param array  $schemaIds     Schema IDs to filter warmup.
      *
      * @return array Warmup results with statistics and errors.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flag controls error collection verbosity
      */
     public function warmupIndex(
         array $schemas=[],
@@ -630,6 +651,8 @@ class IndexService
      * @param bool        $includeTotal Whether to include total count
      *
      * @return array Search results with pagination info
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flag controls total count inclusion
      */
     public function searchObjectsPaginated(
         array $query=[],
@@ -708,7 +731,7 @@ class IndexService
      */
     public function testConnectivityOnly(): array
     {
-        return $this->testConnection(includeCollectionTests: false);
+        return $this->testConnection(inclCollTests: false);
     }//end testConnectivityOnly()
 
     // ========================================================================

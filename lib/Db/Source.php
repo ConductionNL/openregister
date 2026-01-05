@@ -105,7 +105,7 @@ class Source extends Entity implements JsonSerializable
      *
      * @var Configuration|null
      */
-    private ?Configuration $managedByConfiguration = null;
+    private ?Configuration $managedByConfig = null;
 
     /**
      * Last update timestamp
@@ -295,7 +295,7 @@ class Source extends Entity implements JsonSerializable
      */
     public function getManagedByConfigurationEntity(): ?Configuration
     {
-        return $this->managedByConfiguration;
+        return $this->managedByConfig;
     }//end getManagedByConfigurationEntity()
 
     /**
@@ -307,7 +307,7 @@ class Source extends Entity implements JsonSerializable
      */
     public function setManagedByConfigurationEntity(?Configuration $configuration): void
     {
-        $this->managedByConfiguration = $configuration;
+        $this->managedByConfig = $configuration;
     }//end setManagedByConfigurationEntity()
 
     /**
@@ -377,14 +377,14 @@ class Source extends Entity implements JsonSerializable
      */
     private function getManagedByConfigurationData(): array|null
     {
-        if ($this->managedByConfiguration === null) {
+        if ($this->managedByConfig === null) {
             return null;
         }
 
         return [
-            'id'    => $this->managedByConfiguration->getId(),
-            'uuid'  => $this->managedByConfiguration->getUuid(),
-            'title' => $this->managedByConfiguration->getTitle(),
+            'id'    => $this->managedByConfig->getId(),
+            'uuid'  => $this->managedByConfig->getUuid(),
+            'title' => $this->managedByConfig->getTitle(),
         ];
     }//end getManagedByConfigurationData()
 }//end class

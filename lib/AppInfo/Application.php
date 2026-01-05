@@ -190,6 +190,8 @@ use OCA\OpenRegister\Service\Configuration\UploadHandler as ConfigurationUploadH
  * @license AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  *
  * @link https://github.com/nextcloud/server/blob/master/apps-extra/openregister
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class Application extends App implements IBootstrap
 {
@@ -221,51 +223,35 @@ class Application extends App implements IBootstrap
     {
         include_once __DIR__.'/../../vendor/autoload.php';
 
-        /*
-         * DEPENDENCY INJECTION STRATEGY:
-         *
-         * Nextcloud supports automatic dependency injection (autowiring) for services with
-         * type-hinted constructor parameters. Most services can be autowired automatically.
-         *
-         * We only manually register services that require:
-         * 1. Circular dependency resolution (e.g., SchemaMapper <-> ObjectEntityMapper <-> RegisterMapper)
-         * 2. Special factory/configuration logic (e.g., VectorizationService with strategy registration)
-         * 3. Services with non-type-hinted parameters (e.g., SaveObject with ArrayLoader)
-         * 4. Services with lazy loading to break circular dependencies (e.g., CacheHandler)
-         *
-         * Services with only type-hinted interfaces/classes are automatically resolved by Nextcloud.
-         *
-         * MANUAL REGISTRATION REQUIRED FOR:
-         *
-         * Mappers with circular dependencies (must be registered in correct order):
-         * - SchemaMapper: Used by ObjectEntityMapper, depends on OrganisationService
-         * - ObjectEntityMapper: Used by many services, depends on SchemaMapper
-         * - RegisterMapper: Depends on SchemaMapper and ObjectEntityMapper
-         * - AuditTrailMapper: Depends on ObjectEntityMapper
-         *
-         * Services with special logic:
-         * - CacheHandler: Lazy loading of IndexService to break circular dependency
-         * - VectorizationService: Factory logic for strategy registration
-         * - SaveObject: Requires ArrayLoader instance
-         * - SettingsService: Currently uses ContainerInterface (to be refactored)
-         */
+        // Register all services in phases to resolve circular dependencies.
+        $this->registerMappersWithCircularDependencies($context);
+        $this->registerCacheAndFileHandlers($context);
+        $this->registerConfigurationServices($context);
+        $this->registerSettingsServices($context);
+        $this->registerSearchBackend($context);
+        $this->registerVectorizationService($context);
+        $this->registerEventListeners($context);
+    }//end register()
 
-        // ====================================================================
-        // PHASE 1: MAPPERS WITH CIRCULAR DEPENDENCIES
-        // These must be registered in the correct order to resolve dependencies.
-        // ====================================================================
-        // NOTE: SearchTrailMapper, ChunkMapper, GdprEntityMapper, EntityRelationMapper
-        // Can be autowired (only type-hinted parameters).
-        // Removed manual registration - Nextcloud will autowire them automatically.
-        // ✅ AUTOWIRED: AuditTrailMapper (IDBConnection, ObjectEntityMapper).
-        // NOTE: WebhookLogMapper can be autowired (only type-hinted parameters).
-        // Removed manual registration - Nextcloud will autowire it automatically.
-        // NOTE: WebhookMapper can be autowired (only type-hinted parameters).
-        // Removed manual registration - Nextcloud will autowire it automatically.
-        // Table existence checks are handled in mapper methods to gracefully handle missing tables.
-        // ✅ AUTOWIRED: OrganisationMapper (only type-hinted: IDBConnection, LoggerInterface, IEventDispatcher).
+    /**
+     * Register mappers with circular dependencies.
+     *
+     * These must be registered in the correct order to resolve dependencies:
+     * 1. OrganisationService (breaks circular dependency with SettingsService)
+     * 2. SchemaMapper (depends on OrganisationMapper)
+     * 3. ObjectEntityMapper (depends on SchemaMapper)
+     * 4. RegisterMapper (depends on both SchemaMapper and ObjectEntityMapper)
+     * 5. MagicMapper and UnifiedObjectMapper (depend on the above)
+     *
+     * @param IRegistrationContext $context The registration context
+     *
+     * @return void
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     */
+    private function registerMappersWithCircularDependencies(IRegistrationContext $context): void
+    {
         // Register OrganisationService without SettingsService to break circular dependency.
-        // OrganisationService -> SettingsService -> AuditTrailMapper -> ... (LOOP!).
         $context->registerService(
             OrganisationService::class,
             function ($container) {
@@ -279,16 +265,10 @@ class Application extends App implements IBootstrap
                     userManager: $container->get('OCP\IUserManager'),
                     logger: $container->get('Psr\Log\LoggerInterface'),
                     settingsService: null
-                    // SettingsService - null to break circular dependency.
                 );
             }
         );
-        // ✅ AUTOWIRED: PropertyValidatorHandler (all dependencies autowirable).
-        // MANUALLY REGISTERED: SchemaMapper, ObjectEntityMapper, RegisterMapper to break circular dependency.
-        // These mappers have a circular dependency chain and MUST be registered in this order:
-        // 1. SchemaMapper (depends on OrganisationMapper which is already registered).
-        // 2. ObjectEntityMapper (depends on SchemaMapper).
-        // 3. RegisterMapper (depends on both SchemaMapper and ObjectEntityMapper).
+
         $context->registerService(
             SchemaMapper::class,
             function ($container) {
@@ -337,7 +317,6 @@ class Application extends App implements IBootstrap
             }
         );
 
-        // Register MagicMapper for column-mapped storage (magic mapper tables).
         $context->registerService(
             MagicMapper::class,
             function ($container) {
@@ -358,7 +337,6 @@ class Application extends App implements IBootstrap
             }
         );
 
-        // Register UnifiedObjectMapper for automatic routing between blob and magic storage.
         $context->registerService(
             UnifiedObjectMapper::class,
             function ($container) {
@@ -371,29 +349,18 @@ class Application extends App implements IBootstrap
                 );
             }
         );
+    }//end registerMappersWithCircularDependencies()
 
-        /*
-         * NOTE: SearchTrailService can be autowired (only type-hinted parameters).
-         * Removed manual registration - Nextcloud will autowire it automatically.
-         * Register SolrService for advanced search capabilities (disabled due to performance issues).
-         * Issue: Even with lazy loading, DI registration causes performance problems.
-         *
-         * $context->registerService(
-         *     SolrService::class,
-         *     function ($container) {
-         *         return new SolrService(
-         *             $container->get(SettingsService::class),
-         *             $container->get('Psr\Log\LoggerInterface'),
-         *             $container->get(ObjectEntityMapper::class),
-         *             $container->get('OCP\IConfig')
-         *         );
-         *     }
-         * );
-         */
-
-        // Register CacheHandler for performance optimization with lightweight SOLR.
-        // NOTE: CacheHandler uses IAppContainer for lazy loading IndexService to break circular dependency.
-        // This breaks the circular dependency: CacheHandler <-> IndexService.
+    /**
+     * Register cache and file handling services.
+     *
+     * @param IRegistrationContext $context The registration context
+     *
+     * @return void
+     */
+    private function registerCacheAndFileHandlers(IRegistrationContext $context): void
+    {
+        // CacheHandler uses lazy loading of IndexService to break circular dependency.
         $context->registerService(
             CacheHandler::class,
             function ($container) {
@@ -408,35 +375,7 @@ class Application extends App implements IBootstrap
             }
         );
 
-        // NOTE: ValidationOperationsHandler can be autowired (only type-hinted parameters).
-        // Removed manual registration - Nextcloud will autowire it automatically.
-        // NOTE: MetadataHydrationHandler can be autowired (only type-hinted parameters).
-        // Removed manual registration - Nextcloud will autowire it automatically.
-        // NOTE: BulkValidationHandler can be autowired (only type-hinted parameters).
-        // Removed manual registration - Nextcloud will autowire it automatically.
-        // NOTE: ObjectService handlers can be autowired (only type-hinted parameters).
-        // - ValidationHandler (validateRequiredFields, validateObjectsBySchema, handleValidationException)
-        // - FacetHandler (getFacetsForObjects, getFacetableFields)
-        // - MetadataHandler (getValueFromPath, generateSlugFromValue, createSlugHelper)
-        // - BulkOperationsHandler (saveObjects, deleteObjects, publishObjects, depublishObjects)
-        // - RelationHandler (applyInversedByFilter, extractRelatedData, bulk relationship loading)
-        // - QueryHandler (searchObjects, searchObjectsPaginated, countSearchObjects)
-        // - PerformanceOptimizationHandler (getActiveOrganisationForContext)
-        // - MergeHandler (mergeObjects, transferObjectFiles, deleteObjectFiles)
-        // - UtilityHandler (isUuid, normalizeEntity, normalizeToArray, cleanQuery, calculateEfficiency, getUrlSeparator)
-        // All removed manual registration - Nextcloud will autowire them automatically.
-        // NOTE: New Objects\Handlers (Phase 1 complete - Dec 2024) can be autowired:
-        // - LockHandler (lock, unlock, isLocked, getLockInfo)
-        // - AuditHandler (getLogs, validateObjectOwnership)
-        // - PublishHandler (publish, depublish, isPublished, getPublicationStatus)
-        // - RelationHandler (getContracts, getUses, getUsedBy, resolveReferences)
-        // - MergeHandler (merge, migrate)
-        // - ExportHandler (export, import, downloadObjectFiles)
-        // - VectorizationHandler (vectorizeBatch, getStatistics, getCount)
-        // - CrudHandler (list, get, create, update, patch, delete, buildSearchQuery)
-        // All autowired automatically - no manual registration needed.
-        // Register FolderManagementHandler without FileService to break circular dependency.
-        // FileService will call setFileService() after construction.
+        // FolderManagementHandler without FileService to break circular dependency.
         $context->registerService(
             FolderManagementHandler::class,
             function ($container) {
@@ -448,25 +387,20 @@ class Application extends App implements IBootstrap
                     groupManager: $container->get('OCP\IGroupManager'),
                     logger: $container->get('Psr\Log\LoggerInterface'),
                     fileService: null
-                    // FileService - null to break circular dependency.
                 );
             }
         );
+    }//end registerCacheAndFileHandlers()
 
-        // ✅ AUTOWIRED: FileService (all params now have correct types after removing RegisterMapper from constructor).
-        // ✅ AUTOWIRED: SaveObject (ArrayLoader has default empty array, all other params type-hinted).
-        // NOTE: DeleteObject can be autowired (only type-hinted parameters).
-        // Removed manual registration - Nextcloud will autowire it automatically.
-        // NOTE: GetObject can be autowired (only type-hinted parameters).
-        // Removed manual registration - Nextcloud will autowire it automatically.
-        // NOTE: RenderObject can be autowired (only type-hinted parameters).
-        // Removed manual registration - Nextcloud will autowire it automatically.
-        // NOTE: OrganisationService is registered earlier (before SchemaMapper) to break circular dependency.
-        // NOTE: SaveObjects can be autowired (only type-hinted parameters).
-        // Removed manual registration - Nextcloud will autowire it automatically.
-        // NOTE: ObjectService can be autowired (only type-hinted parameters).
-        // Removed manual registration - Nextcloud will autowire it automatically.
-        // Register UploadHandler with Client dependency.
+    /**
+     * Register configuration-related services.
+     *
+     * @param IRegistrationContext $context The registration context
+     *
+     * @return void
+     */
+    private function registerConfigurationServices(IRegistrationContext $context): void
+    {
         $context->registerService(
             ConfigurationUploadHandler::class,
             function ($container) {
@@ -477,11 +411,9 @@ class Application extends App implements IBootstrap
             }
         );
 
-        // Register ImportHandler with appDataPath and UploadHandler dependencies.
         $context->registerService(
             ConfigurationImportHandler::class,
             function ($container) {
-                // Get the app data directory path.
                 $dataDir     = $container->get('OCP\IConfig')->getSystemValue('datadirectory', '');
                 $appDataPath = $dataDir.'/appdata_openregister';
 
@@ -499,11 +431,9 @@ class Application extends App implements IBootstrap
             }
         );
 
-        // Register ConfigurationService with appDataPath parameter.
         $context->registerService(
             ConfigurationService::class,
             function ($container) {
-                // Get the app data directory path.
                 $dataDir     = $container->get('OCP\IConfig')->getSystemValue('datadirectory', '');
                 $appDataPath = $dataDir.'/appdata_openregister';
 
@@ -530,28 +460,18 @@ class Application extends App implements IBootstrap
             }
         );
 
-        // NOTE: ImportService can be autowired (only type-hinted parameters).
-        // Removed manual registration - Nextcloud will autowire it automatically.
-        // NOTE: ExportService can be autowired (only type-hinted parameters).
-        // Removed manual registration - Nextcloud will autowire it automatically.
-        // NOTE: SolrEventListener can be autowired (only type-hinted parameters).
-        // Removed manual registration - Nextcloud will autowire it automatically.
-        // NOTE: SchemaCacheHandler can be autowired (only type-hinted parameters).
-        // Removed manual registration - Nextcloud will autowire it automatically.
-        // NOTE: FacetCacheHandler can be autowired (only type-hinted parameters).
-        // Removed manual registration - Nextcloud will autowire it automatically.
-        // NOTE: ObjectsProvider can be autowired (only type-hinted parameters).
-        // Removed manual registration - Nextcloud will autowire it automatically.
-        // Register ObjectsProvider as a search provider for Nextcloud search.
         $context->registerSearchProvider(ObjectsProvider::class);
+    }//end registerConfigurationServices()
 
-        // ====================================================================
-        // SETTINGS HANDLERS
-        // Handler-based architecture for SettingsService to break down God Object.
-        // ====================================================================
-        // NOTE: ValidationOperationsHandler requires manual registration because ValidateObject can't be autowired.
-        // Other handlers can be autowired except those requiring the container.
-        // Register ValidationOperationsHandler manually to provide ValidateObject dependency.
+    /**
+     * Register settings-related services including handlers.
+     *
+     * @param IRegistrationContext $context The registration context
+     *
+     * @return void
+     */
+    private function registerSettingsServices(IRegistrationContext $context): void
+    {
         $context->registerService(
             ValidationOperationsHandler::class,
             function ($container) {
@@ -564,67 +484,54 @@ class Application extends App implements IBootstrap
             }
         );
 
-        // Register SettingsService BEFORE IndexService to break circular dependency.
-        // ✅ AUTOWIRED: All 8 Settings handlers can be autowired:
-        // - ValidationOperationsHandler, SearchBackendHandler, LlmSettingsHandler, FileSettingsHandler,
-        // - ObjectRetentionHandler, CacheSettingsHandler, SolrSettingsHandler, ConfigurationSettingsHandler
-        // All have either type-hinted params or default values for string params.
-        // NOTE: SettingsService no longer depends on IndexService (removed to break circular dependency).
-        // IndexService operations are now handled directly in the controller.
-        // SettingsService uses IAppContainer for lazy loading SchemaMapper and CacheHandler.
-        // SettingsService now delegates to 8 specialized handlers following handler-based architecture.
         $context->registerService(
             SettingsService::class,
             function ($container) {
-                // CacheHandler is not available yet (will be lazy-loaded via container if needed).
                 return new SettingsService(
                     config: $container->get('OCP\IConfig'),
                     auditTrailMapper: $container->get(AuditTrailMapper::class),
                     cacheFactory: $container->get('OCP\ICacheFactory'),
                     groupManager: $container->get('OCP\IGroupManager'),
                     logger: $container->get('Psr\Log\LoggerInterface'),
-                    // REMOVED: ObjectEntityMapper (unused, caused circular dependency).
                     organisationMapper: $container->get(OrganisationMapper::class),
                     schemaCacheService: $container->get(SchemaCacheHandler::class),
-                    schemaFacetCacheService: $container->get(FacetCacheHandler::class),
+                    facetCacheSvc: $container->get(FacetCacheHandler::class),
                     searchTrailMapper: $container->get(SearchTrailMapper::class),
                     userManager: $container->get('OCP\IUserManager'),
                     db: $container->get('OCP\IDBConnection'),
                     setupHandler: null,
-                    // SetupHandler: Cannot be injected here due to circular dependency.
-                    // SetupHandler → IndexService → SearchBackendInterface → SettingsService (LOOP!).
-                    // It will be lazy-loaded if needed via container.
                     objectCacheService: null,
-                    // CacheHandler - lazy-loaded via container.
                     container: $container,
                     appName: 'openregister',
-                    // Settings handlers - delegated business logic.
-                    validationOperationsHandler: $container->get(ValidationOperationsHandler::class),
+                    validOpsHandler: $container->get(ValidationOperationsHandler::class),
                     searchBackendHandler: $container->get(SearchBackendHandler::class),
                     llmSettingsHandler: $container->get(LlmSettingsHandler::class),
                     fileSettingsHandler: $container->get(FileSettingsHandler::class),
-                    objectRetentionHandler: $container->get(ObjectRetentionHandler::class),
+                    objRetentionHandler: $container->get(ObjectRetentionHandler::class),
                     cacheSettingsHandler: $container->get(CacheSettingsHandler::class),
                     solrSettingsHandler: $container->get(SolrSettingsHandler::class),
-                    configurationSettingsHandler: $container->get(ConfigurationSettingsHandler::class)
+                    cfgSettingsHandler: $container->get(ConfigurationSettingsHandler::class)
                 );
             }
         );
+    }//end registerSettingsServices()
 
-        // NOTE: SolrHttpClient, SolrCollectionManager, SolrDocumentIndexer,
-        // SolrQueryExecutor, SolrFacetProcessor, SolrSchemaManager, and SolrBackend
-        // Can all be autowired (only type-hinted parameters).
-        // Nextcloud will automatically resolve them via dependency injection.
-        // Register SearchBackendInterface - dynamically select backend from configuration.
+    /**
+     * Register search backend interface with dynamic backend selection.
+     *
+     * @param IRegistrationContext $context The registration context
+     *
+     * @return void
+     */
+    private function registerSearchBackend(IRegistrationContext $context): void
+    {
         $context->registerService(
             \OCA\OpenRegister\Service\Index\SearchBackendInterface::class,
             function ($container) {
-                // Read backend configuration from settings.
                 $settingsService = $container->get(SettingsService::class);
                 $backendConfig   = $settingsService->getSearchBackendConfig();
                 $activeBackend   = $backendConfig['active'] ?? 'solr';
 
-                // Select backend based on configuration.
                 switch ($activeBackend) {
                     case 'elasticsearch':
                         return $container->get(\OCA\OpenRegister\Service\Index\Backends\ElasticsearchBackend::class);
@@ -635,24 +542,17 @@ class Application extends App implements IBootstrap
                 }
             }
         );
+    }//end registerSearchBackend()
 
-        // ====================================================================
-        // PHASE 3: INDEX HANDLERS
-        // All index handlers can be autowired (only type-hinted parameters).
-        // Nextcloud will automatically resolve them via dependency injection.
-        // ====================================================================
-        // ✅ AUTOWIRED: DocumentBuilder, BulkIndexer, WarmupHandler, FacetBuilder, SolrDebugCommand.
-        // NOTE: IndexService and handlers can be autowired.
-        // Removed manual registration - Nextcloud will autowire them automatically.
-        // NOTE: VectorEmbeddings and handlers can be autowired (only type-hinted params).
-        // Removed manual registration - Nextcloud will autowire them automatically.
-        // NOTE: EntityRecognitionHandler can be autowired (only type-hinted parameters).
-        // Removed manual registration - Nextcloud will autowire it automatically.
-        // NOTE: FileVectorizationStrategy can be autowired (only type-hinted parameters).
-        // Removed manual registration - Nextcloud will autowire it automatically.
-        // NOTE: ObjectVectorizationStrategy can be autowired (only type-hinted params).
-        // Removed manual registration - Nextcloud will autowire it automatically.
-        // Register unified VectorizationService with strategies.
+    /**
+     * Register vectorization service with strategies.
+     *
+     * @param IRegistrationContext $context The registration context
+     *
+     * @return void
+     */
+    private function registerVectorizationService(IRegistrationContext $context): void
+    {
         $context->registerService(
             VectorizationService::class,
             function ($container) {
@@ -661,7 +561,6 @@ class Application extends App implements IBootstrap
                     logger: $container->get('Psr\Log\LoggerInterface')
                 );
 
-                // Register strategies.
                 $fileStrategy   = $container->get(FileVectorizationStrategy::class);
                 $objectStrategy = $container->get(ObjectVectorizationStrategy::class);
                 $service->registerStrategy('file', $fileStrategy);
@@ -670,82 +569,41 @@ class Application extends App implements IBootstrap
                 return $service;
             }
         );
+    }//end registerVectorizationService()
 
-        // ✅ AUTOWIRED: ChatService (only type-hinted parameters).
-        // ✅ AUTOWIRED: All Chat handlers (ContextRetrievalHandler, ToolManagementHandler,
-        // ResponseGenerationHandler, MessageHistoryHandler, ConversationManagementHandler).
-        // NOTE: TextExtractionService can be autowired (only type-hinted parameters).
-        // Removed manual registration - Nextcloud will autowire it automatically.
-        // NOTE: FileChangeListener can be autowired (only type-hinted parameters).
-        // Removed manual registration - Nextcloud will autowire it automatically.
-        // NOTE: ObjectChangeListener can be autowired (only type-hinted parameters).
-        // Removed manual registration - Nextcloud will autowire it automatically.
-        // NOTE: SolrManagementCommand can be autowired (only type-hinted parameters).
-        // Removed manual registration - Nextcloud will autowire it automatically.
-        // NOTE: ToolRegistry can be autowired (only type-hinted parameters).
-        // Removed manual registration - Nextcloud will autowire it automatically.
-        // NOTE: WebhookService can be autowired (only type-hinted parameters).
-        // Removed manual registration - Nextcloud will autowire it automatically.
-        // ✅ AUTOWIRED: GitHubHandler (now accepts IClientService, calls newClient() internally).
-        // ✅ AUTOWIRED: GitLabHandler (now accepts IClientService, calls newClient() internally).
-        // NOTE: Configuration\CacheHandler can be autowired (only type-hinted parameters).
-        // Nextcloud will automatically resolve it via dependency injection.
-        // Register Solr event listeners for automatic indexing.
+    /**
+     * Register all event listeners for the application.
+     *
+     * @param IRegistrationContext $context The registration context
+     *
+     * @return void
+     */
+    private function registerEventListeners(IRegistrationContext $context): void
+    {
+        // Solr event listeners for automatic indexing.
         $context->registerEventListener(ObjectCreatedEvent::class, SolrEventListener::class);
         $context->registerEventListener(ObjectUpdatedEvent::class, SolrEventListener::class);
         $context->registerEventListener(ObjectDeletedEvent::class, SolrEventListener::class);
 
-        // Register Solr event listeners for schema lifecycle management.
+        // Solr event listeners for schema lifecycle management.
         $context->registerEventListener(SchemaCreatedEvent::class, SolrEventListener::class);
         $context->registerEventListener(SchemaUpdatedEvent::class, SolrEventListener::class);
         $context->registerEventListener(SchemaDeletedEvent::class, SolrEventListener::class);
 
-        // Register FileChangeListener for automatic file text extraction.
+        // FileChangeListener for automatic file text extraction.
         $context->registerEventListener(NodeCreatedEvent::class, FileChangeListener::class);
         $context->registerEventListener(NodeWrittenEvent::class, FileChangeListener::class);
 
-        // Register ObjectChangeListener for automatic object text extraction.
+        // ObjectChangeListener for automatic object text extraction.
         $context->registerEventListener(ObjectCreatedEvent::class, ObjectChangeListener::class);
         $context->registerEventListener(ObjectUpdatedEvent::class, ObjectChangeListener::class);
 
-        // Register ToolRegistrationListener for agent function tools.
+        // ToolRegistrationListener for agent function tools.
         $context->registerEventListener(ToolRegistrationEvent::class, ToolRegistrationListener::class);
 
-        // Register WebhookEventListener for webhook delivery on all OpenRegister events.
+        // WebhookEventListener for webhook delivery.
         $context->registerEventListener(ObjectCreatedEvent::class, WebhookEventListener::class);
-        // $context->registerEventListener(ObjectUpdatedEvent::class, WebhookEventListener::class);
-        // $context->registerEventListener(ObjectDeletedEvent::class, WebhookEventListener::class);
-        // $context->registerEventListener(ObjectLockedEvent::class, WebhookEventListener::class);
-        // $context->registerEventListener(ObjectUnlockedEvent::class, WebhookEventListener::class);
-        // $context->registerEventListener(ObjectRevertedEvent::class, WebhookEventListener::class);
-        // $context->registerEventListener(RegisterCreatedEvent::class, WebhookEventListener::class);
-        // $context->registerEventListener(RegisterUpdatedEvent::class, WebhookEventListener::class);
-        // $context->registerEventListener(RegisterDeletedEvent::class, WebhookEventListener::class);
-        // $context->registerEventListener(SchemaCreatedEvent::class, WebhookEventListener::class);
-        // $context->registerEventListener(SchemaUpdatedEvent::class, WebhookEventListener::class);
-        // $context->registerEventListener(SchemaDeletedEvent::class, WebhookEventListener::class);
-        // $context->registerEventListener(ApplicationCreatedEvent::class, WebhookEventListener::class);
-        // $context->registerEventListener(ApplicationUpdatedEvent::class, WebhookEventListener::class);
-        // $context->registerEventListener(ApplicationDeletedEvent::class, WebhookEventListener::class);
-        // $context->registerEventListener(AgentCreatedEvent::class, WebhookEventListener::class);
-        // $context->registerEventListener(AgentUpdatedEvent::class, WebhookEventListener::class);
-        // $context->registerEventListener(AgentDeletedEvent::class, WebhookEventListener::class);
-        // $context->registerEventListener(SourceCreatedEvent::class, WebhookEventListener::class);
-        // $context->registerEventListener(SourceUpdatedEvent::class, WebhookEventListener::class);
-        // $context->registerEventListener(SourceDeletedEvent::class, WebhookEventListener::class);
-        // $context->registerEventListener(ConfigurationCreatedEvent::class, WebhookEventListener::class);
-        // $context->registerEventListener(ConfigurationUpdatedEvent::class, WebhookEventListener::class);
-        // $context->registerEventListener(ConfigurationDeletedEvent::class, WebhookEventListener::class);
-        // $context->registerEventListener(ViewCreatedEvent::class, WebhookEventListener::class);
-        // $context->registerEventListener(ViewUpdatedEvent::class, WebhookEventListener::class);
-        // $context->registerEventListener(ViewDeletedEvent::class, WebhookEventListener::class);
-        // $context->registerEventListener(ConversationCreatedEvent::class, WebhookEventListener::class);
-        // $context->registerEventListener(ConversationUpdatedEvent::class, WebhookEventListener::class);
-        // $context->registerEventListener(ConversationDeletedEvent::class, WebhookEventListener::class);
-        // $context->registerEventListener(OrganisationCreatedEvent::class, WebhookEventListener::class);
-        // $context->registerEventListener(OrganisationUpdatedEvent::class, WebhookEventListener::class);
-        // $context->registerEventListener(OrganisationDeletedEvent::class, WebhookEventListener::class);
-    }//end register()
+    }//end registerEventListeners()
 
     /**
      * Boot application components

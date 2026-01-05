@@ -95,6 +95,8 @@ class ObjectsTool extends AbstractTool
      * Get function definitions for LLphant
      *
      * @return array<int, array<string, mixed>> Array of function definitions
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive function definitions for LLM
      */
     public function getFunctions(): array
     {
@@ -243,6 +245,8 @@ class ObjectsTool extends AbstractTool
      * @return (mixed|string|true)[] Result with list of objects
      *
      * @psalm-return array{success: true, message: string, data: mixed}
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Optional nullable filter parameters
      */
     public function searchObjects(
         int $limit=20,

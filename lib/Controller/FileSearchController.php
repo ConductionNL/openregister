@@ -68,6 +68,9 @@ class FileSearchController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse Search results
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function keywordSearch(): JSONResponse
     {

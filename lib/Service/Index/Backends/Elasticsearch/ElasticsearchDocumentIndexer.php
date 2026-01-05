@@ -84,6 +84,9 @@ class ElasticsearchDocumentIndexer
      * @param bool         $refresh Whether to refresh immediately
      *
      * @return bool True if successful
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function indexObject(ObjectEntity $object, bool $refresh=false): bool
     {
@@ -139,6 +142,11 @@ class ElasticsearchDocumentIndexer
      * @return (bool|int|string)[]
      *
      * @psalm-return array{success: bool, indexed: int<0, max>, failed: int<min, max>, error?: string}
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Complex multi-step bulk indexing process
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Bulk indexing requires handling multiple object and error scenarios
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple paths for document building and indexing results
      */
     public function bulkIndexObjects(array $objects, bool $refresh=false): array
     {
@@ -204,9 +212,10 @@ class ElasticsearchDocumentIndexer
                 foreach ($response['items'] as $item) {
                     if (isset($item['index']['status']) === true && $item['index']['status'] < 300) {
                         $successCount++;
-                    } else {
-                        $failureCount++;
+                        continue;
                     }
+
+                    $failureCount++;
                 }
             }
 
@@ -251,6 +260,9 @@ class ElasticsearchDocumentIndexer
      * @param bool       $refresh  Whether to refresh immediately
      *
      * @return bool True if successful
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function deleteObject(string|int $objectId, bool $refresh=false): bool
     {

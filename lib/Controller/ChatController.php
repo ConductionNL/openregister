@@ -54,6 +54,8 @@ use Exception;
  * @link https://www.OpenRegister.nl
  *
  * @psalm-suppress UnusedClass
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class ChatController extends Controller
 {
@@ -158,6 +160,8 @@ class ChatController extends Controller
      * @param string              $userId              Current user ID for chat context
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      */
     public function __construct(
         string $appName,
@@ -662,6 +666,8 @@ class ChatController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with feedback confirmation or error
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */
     public function sendFeedback(string $conversationUuid, int $messageId): JSONResponse
     {

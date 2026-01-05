@@ -47,6 +47,9 @@ use OCP\IRequest;
  * @link https://OpenRegister.app
  *
  * @psalm-suppress UnusedClass
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class FilesController extends Controller
 {
@@ -283,6 +286,8 @@ class FilesController extends Controller
      * @psalm-return JSONResponse<200|400|404,
      *     array{error?: mixed|string, labels?: list<string>,...},
      *     array<never, never>>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function save(
         string $register,
@@ -459,7 +464,7 @@ class FilesController extends Controller
         $data          = $this->request->getParams();
 
         // Check for multipart file uploads.
-        $files = $_FILES['files'] ?? [];
+        $files = $this->request->getUploadedFile('files') ?? [];
 
         if (empty($files) === false) {
             $uploadedFiles = $this->normalizeMultipartFiles(files: $files, data: $data);

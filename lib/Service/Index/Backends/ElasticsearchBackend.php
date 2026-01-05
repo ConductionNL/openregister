@@ -29,6 +29,8 @@ use Psr\Log\LoggerInterface;
  *
  * Thin coordinator that implements SearchBackendInterface by delegating
  * to specialized Elasticsearch service classes.
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) Implements SearchBackendInterface with many required methods
  */
 class ElasticsearchBackend implements SearchBackendInterface
 {
@@ -98,6 +100,8 @@ class ElasticsearchBackend implements SearchBackendInterface
      * @param bool         $commit Whether to commit immediately
      *
      * @return bool True on success, false on failure
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      */
     public function indexObject(ObjectEntity $object, bool $commit=false): bool
     {
@@ -113,6 +117,8 @@ class ElasticsearchBackend implements SearchBackendInterface
      * @return (bool|int|string)[] Results of bulk indexing operation
      *
      * @psalm-return array{success: bool, indexed: int<0, max>, failed: int, error?: string}
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      */
     public function bulkIndexObjects(array $objects, bool $commit=false): array
     {
@@ -126,6 +132,8 @@ class ElasticsearchBackend implements SearchBackendInterface
      * @param bool       $commit   Whether to commit immediately
      *
      * @return bool True on success, false on failure
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      */
     public function deleteObject(string|int $objectId, bool $commit=false): bool
     {
@@ -142,6 +150,8 @@ class ElasticsearchBackend implements SearchBackendInterface
      * @return int[]|true Array with details if $returnDetails is true, otherwise bool
      *
      * @psalm-return array{deleted: 0}|true
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      */
     public function deleteByQuery(string $query, bool $commit=false, bool $returnDetails=false): array|bool
     {
@@ -149,9 +159,9 @@ class ElasticsearchBackend implements SearchBackendInterface
         $this->logger->info('[ElasticsearchBackend] deleteByQuery called (not fully implemented yet)');
         if ($returnDetails === true) {
             return ['deleted' => 0];
-        } else {
-            return true;
         }
+
+        return true;
     }//end deleteByQuery()
 
     /**
@@ -166,6 +176,8 @@ class ElasticsearchBackend implements SearchBackendInterface
      * @return ((array|mixed)[]|int|mixed)[] Search results with pagination metadata
      *
      * @psalm-return array{total: 0|mixed, results: array<never, array<never, never>|mixed>, page: 1, limit: 10|mixed}
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      */
     public function searchObjectsPaginated(
         array $query=[],
@@ -259,6 +271,8 @@ class ElasticsearchBackend implements SearchBackendInterface
      * @return (string|true)[] Warmup results
      *
      * @psalm-return array{success: true, index: string, message: 'Index warmed up'}
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      */
     public function warmupIndex(
         array $schemas=[],
@@ -284,6 +298,8 @@ class ElasticsearchBackend implements SearchBackendInterface
      * @param bool $forceRefresh Whether to force refresh availability check
      *
      * @return bool True if backend is available
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      */
     public function isAvailable(bool $forceRefresh=false): bool
     {
@@ -293,13 +309,15 @@ class ElasticsearchBackend implements SearchBackendInterface
     /**
      * Test connection to backend.
      *
-     * @param bool $includeCollectionTests Whether to include collection tests
+     * @param bool $inclCollTests Whether to include collection tests
      *
      * @return (bool|int|string)[] Connection test results
      *
      * @psalm-return array{success: bool, error?: string, document_count?: int}
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      */
-    public function testConnection(bool $includeCollectionTests=true): array
+    public function testConnection(bool $inclCollTests=true): array
     {
         try {
             $count = $this->getDocumentCount();

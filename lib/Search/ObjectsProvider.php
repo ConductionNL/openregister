@@ -125,10 +125,13 @@ class ObjectsProvider implements IFilteringProvider
      * @return int
      *
      * @psalm-return     10
+     * @psalm-suppress   UnusedParam Parameters required by interface but not used
      * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      */
     public function getOrder(string $route, array $routeParameters): ?int
     {
+        // Parameters $route and $routeParameters required by interface but not used.
+        unset($route, $routeParameters);
         return 10;
     }//end getOrder()
 
@@ -198,6 +201,11 @@ class ObjectsProvider implements IFilteringProvider
      * @throws \Exception If search operation fails
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings(PHPMD.StaticAccess)          SearchResult::complete is standard Nextcloud search pattern
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Search requires handling many filter and sort options
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Search filter building requires many conditional checks
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     * Search requires handling many filters, building queries, and formatting results
      */
     public function search(IUser $user, ISearchQuery $query): SearchResult
     {
@@ -333,6 +341,9 @@ class ObjectsProvider implements IFilteringProvider
      * @param array $object Object data from searchObjectsPaginated
      *
      * @return string Formatted description for search result
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Description building requires multiple optional field checks
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Description building has multiple optional data paths
      */
     private function buildDescription(array $object): string
     {

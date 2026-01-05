@@ -43,12 +43,12 @@ class TransformationHandler
     /**
      * Constructor for TransformationHandler.
      *
-     * @param RelationCascadeHandler $relationCascadeHandler Handler for relation operations.
-     * @param IUserSession           $userSession            User session for owner assignment.
-     * @param LoggerInterface        $logger                 Logger for logging operations.
+     * @param RelationCascadeHandler $relCascadeHandler Handler for relation operations.
+     * @param IUserSession           $userSession       User session for owner assignment.
+     * @param LoggerInterface        $logger            Logger for logging operations.
      */
     public function __construct(
-        private readonly RelationCascadeHandler $relationCascadeHandler,
+        private readonly RelationCascadeHandler $relCascadeHandler,
         // REMOVED: private readonly.
         private readonly IUserSession $userSession,
         private readonly LoggerInterface $logger
@@ -78,6 +78,11 @@ class TransformationHandler
      *
      * @psalm-return   array{valid: list<array<string, mixed>>, invalid: list<array<string, mixed>>}
      * @phpstan-return array{valid: list<array<string, mixed>>, invalid: list<array<string, mixed>>}
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex transformation with multiple field validations
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Many code paths for different object structures and metadata
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Method handles complete transformation workflow
+     * @SuppressWarnings(PHPMD.ElseExpression)        Else branches handle different object structures and fallbacks
      */
     public function transformObjectsToDatabaseFormatInPlace(array &$objects, array $schemaCache): array
     {
@@ -239,7 +244,7 @@ class TransformationHandler
             if (($selfData['relations'] ?? null) === null || empty($selfData['relations']) === true) {
                 if (($schemaCache[$selfData['schema']] ?? null) !== null) {
                     $schema    = $schemaCache[$selfData['schema']];
-                    $relations = $this->relationCascadeHandler->scanForRelations(
+                    $relations = $this->relCascadeHandler->scanForRelations(
                         data: $businessData,
                         prefix: '',
                         schema: $schema

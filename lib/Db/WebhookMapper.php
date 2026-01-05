@@ -59,6 +59,8 @@ use Symfony\Component\Uid\Uuid;
  * @method list<Webhook> findEntities(IQueryBuilder $query)
  *
  * @template-extends QBMapper<Webhook>
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  */
 class WebhookMapper extends QBMapper
 {
@@ -329,11 +331,13 @@ class WebhookMapper extends QBMapper
             if ($incrementOnly === false) {
                 $webhook->setLastSuccessAt(new DateTime());
             }
-        } else {
-            $webhook->setFailedDeliveries($webhook->getFailedDeliveries() + 1);
-            if ($incrementOnly === false) {
-                $webhook->setLastFailureAt(new DateTime());
-            }
+
+            return $this->update($webhook);
+        }
+
+        $webhook->setFailedDeliveries($webhook->getFailedDeliveries() + 1);
+        if ($incrementOnly === false) {
+            $webhook->setLastFailureAt(new DateTime());
         }
 
         return $this->update($webhook);

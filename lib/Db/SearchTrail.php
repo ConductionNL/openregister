@@ -32,6 +32,8 @@ use OCP\AppFramework\Db\Entity;
  *
  * @package OCA\OpenRegister\Db
  *
+ * @SuppressWarnings(PHPMD.TooManyFields)
+ *
  * @method string|null getUuid()
  * @method void setUuid(?string $uuid)
  * @method string|null getSearchTerm()

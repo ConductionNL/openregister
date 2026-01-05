@@ -100,6 +100,8 @@ use Symfony\Component\Uid\Uuid;
  * @method void setUpdated(?DateTime $updated)
  *
  * @package OCA\OpenRegister\Db
+ *
+ * @SuppressWarnings(PHPMD.TooManyFields) Domain entity requires many fields for complete LLM agent configuration
  */
 class Agent extends Entity implements JsonSerializable
 {
@@ -186,7 +188,7 @@ class Agent extends Entity implements JsonSerializable
      *
      * @var Configuration|null
      */
-    protected ?Configuration $managedByConfiguration = null;
+    protected ?Configuration $managedByConfig = null;
 
     /**
      * Owner user ID
@@ -499,11 +501,11 @@ class Agent extends Entity implements JsonSerializable
      */
     private function getManagedByConfigurationData(): array|null
     {
-        if ($this->managedByConfiguration !== null) {
+        if ($this->managedByConfig !== null) {
             return [
-                'id'    => $this->managedByConfiguration->getId(),
-                'uuid'  => $this->managedByConfiguration->getUuid(),
-                'title' => $this->managedByConfiguration->getTitle(),
+                'id'    => $this->managedByConfig->getId(),
+                'uuid'  => $this->managedByConfig->getUuid(),
+                'title' => $this->managedByConfig->getTitle(),
             ];
         }
 

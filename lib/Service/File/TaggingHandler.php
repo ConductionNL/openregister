@@ -74,6 +74,9 @@ class TaggingHandler
      *
      * @phpstan-param array<int, string> $tags
      * @psalm-param   array<int, string> $tags
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Tag management requires handling create/find/attach scenarios
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple paths for tag creation and attachment
      */
     public function attachTagsToFile(string $fileId, array $tags=[]): void
     {
@@ -93,7 +96,9 @@ class TaggingHandler
                 if (empty($tagObj) === false) {
                     // Tag exists (found by ID), just use its ID.
                     $newTagIds[] = $tag;
-                } else {
+                }
+
+                if (empty($tagObj) === true) {
                     // Tag doesn't exist with this ID, search by name and create if needed.
                     $existingTag = $this->findOrCreateTag($tag);
                     $newTagIds[] = $existingTag->getId();
@@ -137,6 +142,8 @@ class TaggingHandler
      * @return ISystemTag The tag object.
      *
      * @throws Exception If tag creation fails.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Tag lookup requires handling multiple search and creation scenarios
      */
     private function findOrCreateTag(string $tagName): ISystemTag
     {

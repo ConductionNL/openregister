@@ -77,6 +77,8 @@ class EmbeddingGeneratorHandler
      * @return EmbeddingGeneratorInterface LLPhant embedding generator instance
      *
      * @throws \Exception If configuration is invalid or generator cannot be created
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple provider configurations require separate conditions
      */
     public function getGenerator(array $config): EmbeddingGeneratorInterface
     {
@@ -174,6 +176,8 @@ class EmbeddingGeneratorHandler
      * @return object Generator instance
      *
      * @throws \Exception If model is not supported
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Anonymous class requires complete implementation
      */
     private function createFireworksGenerator(string $model, array $config): object
     {

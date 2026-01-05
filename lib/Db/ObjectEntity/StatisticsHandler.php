@@ -91,6 +91,10 @@ class StatisticsHandler
      *
      * @psalm-return array{total: int, size: int, invalid: int, deleted: int,
      *     locked: int, published: int}
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */
     public function getStatistics(int|array|null $registerId=null, int|array|null $schemaId=null, array $exclude=[]): array
     {

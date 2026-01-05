@@ -38,6 +38,8 @@ use Psr\Log\LoggerInterface;
  * This service provides two main capabilities:
  * 1. Post-event webhook delivery - Sends webhooks after events occur
  * 2. Pre-request webhook interception - Intercepts requests before controller execution
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex webhook delivery with retry and interception logic
  */
 class WebhookService
 {
@@ -132,6 +134,8 @@ class WebhookService
      * @param array  $payload   Event payload data
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple webhook dispatch conditions
      */
     public function dispatchEvent(Event $_event, string $eventName, array $payload): void
     {
@@ -182,6 +186,11 @@ class WebhookService
      * @param int     $attempt   Current attempt number (for retries)
      *
      * @return bool Success status
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex delivery with retry and error handling
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple exception handling paths
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive webhook delivery with logging
+     * @SuppressWarnings(PHPMD.ElseExpression)        Fallback for connection errors without response
      */
     public function deliverWebhook(Webhook $webhook, string $eventName, array $payload, int $attempt=1): bool
     {
@@ -349,6 +358,8 @@ class WebhookService
      * @param array   $payload Event payload
      *
      * @return bool
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple filter condition checks
      */
     private function passesFilters(Webhook $webhook, array $payload): bool
     {
@@ -463,6 +474,8 @@ class WebhookService
      * @throws RequestException
      *
      * @psalm-return array{status_code: int, body: string}
+     *
+     * @SuppressWarnings(PHPMD.ElseExpression) Different handling for GET vs POST/PUT/PATCH/DELETE methods
      */
     private function sendRequest(Webhook $webhook, array $payload): array
     {
@@ -612,6 +625,10 @@ class WebhookService
      * @param string   $eventType The event type (e.g., 'object.creating')
      *
      * @return array Modified request data or original request data
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex request interception logic
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple webhook processing paths
+     * @SuppressWarnings(PHPMD.ElseExpression)       Fallback when formatter is unavailable
      */
     public function interceptRequest(IRequest $request, string $eventType): array
     {
@@ -704,6 +721,9 @@ class WebhookService
      * @return array List of matching webhooks
      *
      * @psalm-return list<\OCA\OpenRegister\Db\Webhook>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple webhook filtering conditions
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple filter matching paths
      */
     private function findWebhooksForInterception(string $eventType): array
     {

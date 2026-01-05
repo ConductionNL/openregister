@@ -107,10 +107,9 @@ class FileHandler
         // Use search backend to index documents.
         $success = $this->searchBackend->index($documents);
 
+        $indexedCount = 0;
         if ($success === true) {
             $indexedCount = count($documents);
-        } else {
-            $indexedCount = 0;
         }
 
         // Collection name depends on backend configuration.
@@ -229,10 +228,12 @@ class FileHandler
                         $chunk->setIndexed(true);
                         $this->chunkMapper->update($chunk);
                     }
-                } else {
-                    $stats['failed']++;
-                    $stats['errors'][] = "Failed to index file {$fileId}";
+
+                    continue;
                 }
+
+                $stats['failed']++;
+                $stats['errors'][] = "Failed to index file {$fileId}";
             } catch (Exception $e) {
                 $stats['failed']++;
                 $stats['errors'][] = "File {$fileId}: ".$e->getMessage();

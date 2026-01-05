@@ -124,6 +124,8 @@ class UploadHandler
      * @param string|null $type The file MIME type or response Content-Type header.
      *
      * @return array|null The decoded data or null.
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) Yaml::parse is standard Symfony Yaml pattern
      */
     private function decode(string $data, ?string $type): ?array
     {

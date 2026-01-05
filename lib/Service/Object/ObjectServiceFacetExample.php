@@ -465,15 +465,17 @@ class ObjectServiceFacetExample
                         'options' => $this->transformBuckets($metaFacet['buckets'] ?? []),
                     ];
                 }
-            } else {
-                // Handle object field facets.
-                $transformed[$field] = [
-                    'field'   => $field,
-                    'type'    => $facet['type'],
-                    'label'   => ucfirst(str_replace('_', ' ', $field)),
-                    'options' => $this->transformBuckets($facet['buckets'] ?? []),
-                ];
+
+                continue;
             }
+
+            // Handle object field facets.
+            $transformed[$field] = [
+                'field'   => $field,
+                'type'    => $facet['type'],
+                'label'   => ucfirst(str_replace('_', ' ', $field)),
+                'options' => $this->transformBuckets($facet['buckets'] ?? []),
+            ];
         }//end foreach
 
         return $transformed;

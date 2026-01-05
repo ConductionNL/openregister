@@ -194,7 +194,9 @@ class ConfigurationHandler
         // Normalize port - convert string '0' to null, handle empty strings.
         if ($port === '0' || $port === '' || $port === null) {
             $port = null;
-        } else {
+        }
+
+        if ($port !== null) {
             $port = (int) $port;
 
             if ($port === 0) {

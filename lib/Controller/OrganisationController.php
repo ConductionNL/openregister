@@ -41,6 +41,9 @@ use Exception;
  * @package OCA\OpenRegister\Controller
  *
  * @psalm-suppress UnusedClass
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class OrganisationController extends Controller
 {

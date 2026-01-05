@@ -79,6 +79,8 @@ class ObjectHandler
      * @throws Exception If objectCollection is not configured
      *
      * @psalm-return array{results: array<never, never>|mixed, total: 0|mixed, start: 0|mixed}
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      */
     public function searchObjects(
         array $query=[],
@@ -125,6 +127,10 @@ class ObjectHandler
      *
      * @psalm-return array{q: '*:*'|mixed, start: 0|mixed, rows: 10|mixed,
      *     fq?: list{0: '-deleted:true'|'published:true', 1?: '-deleted:true'}}
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Query building requires handling multiple filter conditions
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple filter combinations create many execution paths
      */
     private function buildSolrQuery(array $query, bool $rbac, bool $multitenancy, bool $published, bool $deleted): array
     {

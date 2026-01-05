@@ -55,17 +55,21 @@ interface SearchBackendInterface
      * @param bool $forceRefresh Whether to bypass cache and test fresh connection.
      *
      * @return bool True if backend is available, false otherwise.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      */
     public function isAvailable(bool $forceRefresh=false): bool;
 
     /**
      * Test the connection to the backend with detailed diagnostics.
      *
-     * @param bool $includeCollectionTests Whether to include collection-level tests.
+     * @param bool $inclCollTests Whether to include collection-level tests.
      *
      * @return array Test results with status, timing, and error information.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      */
-    public function testConnection(bool $includeCollectionTests=true): array;
+    public function testConnection(bool $inclCollTests=true): array;
 
     /**
      * Index a single object in the search backend.
@@ -74,6 +78,8 @@ interface SearchBackendInterface
      * @param bool         $commit Whether to commit immediately (may impact performance).
      *
      * @return bool True if indexing succeeded, false otherwise.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      */
     public function indexObject(ObjectEntity $object, bool $commit=false): bool;
 
@@ -84,6 +90,8 @@ interface SearchBackendInterface
      * @param bool  $commit  Whether to commit immediately after bulk index.
      *
      * @return array Result with success count, failure count, and errors.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      */
     public function bulkIndexObjects(array $objects, bool $commit=true): array;
 
@@ -94,6 +102,8 @@ interface SearchBackendInterface
      * @param bool       $commit   Whether to commit immediately.
      *
      * @return bool True if deletion succeeded, false otherwise.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      */
     public function deleteObject(string|int $objectId, bool $commit=false): bool;
 
@@ -105,6 +115,8 @@ interface SearchBackendInterface
      * @param bool   $returnDetails Whether to return detailed results.
      *
      * @return array|bool Results array if returnDetails=true, bool otherwise.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      */
     public function deleteByQuery(string $query, bool $commit=false, bool $returnDetails=false): array|bool;
 
@@ -118,6 +130,8 @@ interface SearchBackendInterface
      * @param bool  $deleted       Whether to include deleted objects.
      *
      * @return array Search results with objects, pagination, and facets.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      */
     public function searchObjectsPaginated(
         array $query=[],
@@ -168,6 +182,8 @@ interface SearchBackendInterface
      * @param array  $schemaIds     Schema IDs to filter warmup.
      *
      * @return array Warmup results with statistics and errors.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      */
     public function warmupIndex(
         array $schemas=[],

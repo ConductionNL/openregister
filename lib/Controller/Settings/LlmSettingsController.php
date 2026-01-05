@@ -92,6 +92,9 @@ class LlmSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with updated LLM settings
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     public function updateLLMSettings(): JSONResponse
     {
@@ -333,6 +336,9 @@ class LlmSettingsController extends Controller
      *     models: list<array{description: mixed|string, id: 'unknown'|mixed,
      *     modified: mixed|null, name: 'unknown'|mixed, size: 0|mixed}>,
      *     count?: int<0, max>}, array<never, never>>
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function getOllamaModels(): JSONResponse
     {

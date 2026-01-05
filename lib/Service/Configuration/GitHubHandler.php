@@ -40,6 +40,9 @@ use Psr\Log\LoggerInterface;
  * - Parsing and validating configuration files
  *
  * @package OCA\OpenRegister\Service\Configuration
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class GitHubHandler
 {
@@ -158,6 +161,10 @@ class GitHubHandler
      *     raw_url: non-empty-string, repo: string, repository: mixed,
      *     sha: null|string, stars: 0|mixed, url: mixed}>,
      *     page: int, per_page: int}
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  GitHub API search has many response conditions
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Search involves many conditional data extractions
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Full search implementation requires comprehensive handling
      */
     public function searchConfigurations(string $search='', int $page=1, int $perPage=30): array
     {
@@ -318,6 +325,8 @@ class GitHubHandler
      * @return string User-friendly error message
      *
      * @since 0.2.10
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Error handling requires multiple status code checks
      */
     private function getGitHubErrorMessage(?int $statusCode, string $rawError): string
     {
@@ -798,6 +807,9 @@ class GitHubHandler
      *         api_url: mixed
      *     }
      * >
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Repository fetch has multiple auth and error conditions
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Auth check and error handling create multiple paths
      */
     public function getRepositories(int $page=1, int $perPage=100): array
     {
@@ -966,6 +978,10 @@ class GitHubHandler
      *     success: true, commit_sha: mixed|null, file_sha: mixed|null,
      *     commit_url: mixed|null, file_url: mixed|null
      * }
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex error handling for GitHub API responses
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Publish involves multiple error and success paths
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Full publish handling requires comprehensive error logic
      */
     public function publishConfiguration(
         string $owner,

@@ -51,6 +51,10 @@ use Symfony\Component\Uid\Uuid;
  * @template-extends QBMapper<AuditTrail>
  *
  * @psalm-suppress PossiblyUnusedMethod
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class AuditTrailMapper extends QBMapper
 {
@@ -108,6 +112,10 @@ class AuditTrailMapper extends QBMapper
      * @return AuditTrail[]
      *
      * @psalm-return list<OCA\OpenRegister\Db\AuditTrail>
+     *
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Complex query building requires many conditional paths
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function findAll(
         ?int $limit=null,
@@ -242,6 +250,10 @@ class AuditTrailMapper extends QBMapper
      * @param string|null       $action The action to create the audit trail for
      *
      * @return AuditTrail The created audit trail
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess)         Uuid::v4 is standard Symfony UID pattern
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Audit trail creation requires handling many optional fields
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function createAuditTrail(?ObjectEntity $old=null, ?ObjectEntity $new=null, ?string $action='update'): AuditTrail
     {

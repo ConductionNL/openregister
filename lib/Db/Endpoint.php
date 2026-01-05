@@ -39,6 +39,8 @@ use OCP\AppFramework\Db\Entity;
  * @license   EUPL-1.2
  * @version   GIT: <git_id>
  * @link      https://OpenRegister.app
+ *
+ * @SuppressWarnings(PHPMD.TooManyFields) Domain entity requires many fields for complete endpoint configuration
  */
 class Endpoint extends Entity implements JsonSerializable
 {

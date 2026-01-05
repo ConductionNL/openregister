@@ -122,7 +122,9 @@ class NamesController extends Controller
                     // Handle comma-separated string or JSON array string.
                     if (str_starts_with($requestedIds, '[') === true) {
                         $requestedIds = json_decode($requestedIds, true) ?? [];
-                    } else {
+                    }
+
+                    if (is_string($requestedIds) === true) {
                         $requestedIds = array_map('trim', explode(',', $requestedIds));
                     }
                 }

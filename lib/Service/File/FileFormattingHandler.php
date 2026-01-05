@@ -42,6 +42,8 @@ use Psr\Log\LoggerInterface;
  * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class FileFormattingHandler
 {
@@ -96,6 +98,9 @@ class FileFormattingHandler
      * @return (float|int|null|string[])[]
      *
      * @throws Exception If formatting fails.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Label processing requires many conditional branches
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple paths for label key-value extraction
      */
     public function formatFile(Node $file): array
     {
@@ -142,13 +147,17 @@ class FileFormattingHandler
                 // If key already exists as array, append value.
                 if (isset($metadata[$key]) === true && is_array($metadata[$key]) === true) {
                     $metadata[$key][] = $value;
-                } else if (isset($metadata[$key]) === true) {
+                    continue;
+                }
+
+                if (isset($metadata[$key]) === true) {
                     // If key exists but not as array, convert to array with both values.
                     $metadata[$key] = [$metadata[$key], $value];
-                } else {
-                    // If key doesn't exist, create new entry.
-                    $metadata[$key] = $value;
+                    continue;
                 }
+
+                // If key doesn't exist, create new entry.
+                $metadata[$key] = $value;
 
                 continue;
             }//end if
@@ -188,6 +197,9 @@ class FileFormattingHandler
      *
      * @throws InvalidPathException If any file path is invalid.
      * @throws NotFoundException    If files are not found.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) File formatting with pagination requires multiple branches
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple filter and pagination paths
      */
     public function formatFiles(array $files, ?array $requestParams=[]): array
     {
@@ -244,6 +256,9 @@ class FileFormattingHandler
      *
      * @psalm-param   array<string, mixed> $requestParams
      * @phpstan-param array<string, mixed> $requestParams
+     *
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Filter extraction requires many conditional parameter checks
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Many filter types require conditional handling
      */
     private function extractFilterParameters(array $requestParams): array
     {
@@ -332,6 +347,10 @@ class FileFormattingHandler
      *
      * @psalm-return   array<int, array<string, mixed>>
      * @phpstan-return array<int, array<string, mixed>>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Many filter types require conditional branches
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple filter combinations create many execution paths
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive filter support requires extensive code
      */
     private function applyFileFilters(array $formattedFiles, array $filters): array
     {

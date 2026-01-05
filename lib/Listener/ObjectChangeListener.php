@@ -50,13 +50,13 @@ class ObjectChangeListener implements IEventListener
     /**
      * Constructor
      *
-     * @param TextExtractionService $textExtractionService Text extraction service
-     * @param SettingsService       $settingsService       Settings service
-     * @param IJobList              $jobList               Job list for queuing background jobs
-     * @param LoggerInterface       $logger                Logger
+     * @param TextExtractionService $textExtractSvc  Text extraction service
+     * @param SettingsService       $settingsService Settings service
+     * @param IJobList              $jobList         Job list for queuing background jobs
+     * @param LoggerInterface       $logger          Logger
      */
     public function __construct(
-        private readonly TextExtractionService $textExtractionService,
+        private readonly TextExtractionService $textExtractSvc,
         private readonly SettingsService $settingsService,
         private readonly IJobList $jobList,
         private readonly LoggerInterface $logger
@@ -168,7 +168,7 @@ class ObjectChangeListener implements IEventListener
         );
 
         try {
-            $this->textExtractionService->extractObject(objectId: $objectId, forceReExtract: false);
+            $this->textExtractSvc->extractObject(objectId: $objectId, forceReExtract: false);
             $this->logger->info(
                 '[ObjectChangeListener] Immediate extraction completed',
                 ['object_id' => $objectId]

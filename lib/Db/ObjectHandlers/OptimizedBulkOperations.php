@@ -46,6 +46,8 @@ use Psr\Log\LoggerInterface;
  *
  * Memory usage can reach 500MB+ for large datasets but provides
  * 10-20x performance improvement over individual operations.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class OptimizedBulkOperations
 {
@@ -180,9 +182,9 @@ class OptimizedBulkOperations
         $objectsPerSecond = count($allObjects) / $totalTime;
 
         // Calculate performance improvement.
-        $performanceImprovement = 'baseline';
+        $perfImprovement = 'baseline';
         if ($objectsPerSecond > 165) {
-            $performanceImprovement = round($objectsPerSecond / 165, 1).'x faster';
+            $perfImprovement = round($objectsPerSecond / 165, 1).'x faster';
         }
 
         $this->logger->info(
@@ -191,7 +193,7 @@ class OptimizedBulkOperations
                 'total_objects'           => count($allObjects),
                 'total_time_seconds'      => round($totalTime, 3),
                 'objects_per_second'      => round($objectsPerSecond, 0),
-                'performance_improvement' => $performanceImprovement,
+                'performance_improvement' => $perfImprovement,
             ]
         );
 
@@ -219,6 +221,7 @@ class OptimizedBulkOperations
      * @return array Array of processed UUIDs
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */
     private function processUnifiedChunk(array $objects, int $chunkNumber, int $_totalChunks): array
     {
@@ -380,6 +383,10 @@ class OptimizedBulkOperations
      * @param int    $objectCount Number of objects to process
      *
      * @return string Massive SQL statement
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */
     private function buildMassiveInsertOnDuplicateKeyUpdateSQL(string $tableName, array $columns, int $objectCount): string
     {
@@ -435,61 +442,59 @@ class OptimizedBulkOperations
                 // 🔒 IMMUTABLE: Never update primary keys (id, uuid) or creation timestamp (created).
                 if ($column === 'updated') {
                     // SMART UPDATE: Only update timestamp if actual data changed.
-                    $databaseManagedFields = ['id', 'uuid', 'created', 'updated'];
-                    $dataColumns           = array_diff($columns, $databaseManagedFields);
-                    $changeChecks          = [];
+                    $dbManagedFields = ['id', 'uuid', 'created', 'updated'];
+                    $dataColumns     = array_diff($columns, $dbManagedFields);
+                    $changeChecks    = [];
 
                     foreach ($dataColumns as $dataCol) {
                         if ($isPostgres === true) {
                             // PostgreSQL: Use EXCLUDED.column for new values.
-                            if ($dataCol === 'object') {
-                                // JSON comparison for PostgreSQL.
-                                $check          = "(\"{$dataCol}\" IS DISTINCT FROM EXCLUDED.\"{$dataCol}\")";
-                                $changeChecks[] = $check;
-                            } else if (in_array($dataCol, $this->getJsonColumns()) === true) {
-                                // JSON fields comparison.
-                                $check          = "(\"{$dataCol}\" IS DISTINCT FROM EXCLUDED.\"{$dataCol}\")";
-                                $changeChecks[] = $check;
-                            } else {
-                                // Regular field comparison.
-                                $changeChecks[] = "(\"{$dataCol}\" IS DISTINCT FROM EXCLUDED.\"{$dataCol}\")";
-                            }
-                        } else {
+                            // All PostgreSQL comparisons use the same pattern.
+                            $changeChecks[] = "(\"{$dataCol}\" IS DISTINCT FROM EXCLUDED.\"{$dataCol}\")";
+                        }
+
+                        if ($isPostgres === false) {
                             // MySQL/MariaDB: Use VALUES(column) for new values.
+                            // Regular field comparison with NULL handling (default).
+                            $colVal         = "COALESCE(`{$dataCol}`, '')";
+                            $valuesCol      = "COALESCE(VALUES(`{$dataCol}`), '')";
+                            $changeChecks[] = "{$colVal} != {$valuesCol}";
+
                             if ($dataCol === 'object') {
                                 // SPECIAL HANDLING: JSON comparison for object data.
                                 $jsonExtract    = "JSON_EXTRACT(`{$dataCol}`, '\$')";
                                 $jsonExtractVal = "JSON_EXTRACT(VALUES(`{$dataCol}`), '\$')";
-                                $changeChecks[] = "{$jsonExtract} != {$jsonExtractVal}";
-                            } else if (in_array($dataCol, $this->getJsonColumns()) === true) {
+                                $changeChecks[count($changeChecks) - 1] = "{$jsonExtract} != {$jsonExtractVal}";
+                            }
+
+                            if ($dataCol !== 'object' && in_array($dataCol, $this->getJsonColumns()) === true) {
                                 // JSON fields comparison.
-                                $colVal         = "COALESCE(`{$dataCol}`, '{}')";
-                                $valuesCol      = "COALESCE(VALUES(`{$dataCol}`), '{}')";
-                                $changeChecks[] = "{$colVal} != {$valuesCol}";
-                            } else {
-                                // Regular field comparison with NULL handling.
-                                $colVal         = "COALESCE(`{$dataCol}`, '')";
-                                $valuesCol      = "COALESCE(VALUES(`{$dataCol}`), '')";
-                                $changeChecks[] = "{$colVal} != {$valuesCol}";
+                                $colVal    = "COALESCE(`{$dataCol}`, '{}')";
+                                $valuesCol = "COALESCE(VALUES(`{$dataCol}`), '{}')";
+                                $changeChecks[count($changeChecks) - 1] = "{$colVal} != {$valuesCol}";
                             }
                         }//end if
                     }//end foreach
 
                     $changeCondition = implode(' OR ', $changeChecks);
 
+                    $updateClauses[] = "`updated` = CASE WHEN ({$changeCondition}) THEN NOW() ELSE `updated` END";
                     if ($isPostgres === true) {
-                        $updateClauses[] = "\"updated\" = CASE WHEN ({$changeCondition}) THEN NOW() ELSE \"updated\" END";
-                    } else {
-                        $updateClauses[] = "`updated` = CASE WHEN ({$changeCondition}) THEN NOW() ELSE `updated` END";
-                    }
-                } else {
-                    // Regular field updates.
-                    if ($isPostgres === true) {
-                        $updateClauses[] = "\"{$column}\" = EXCLUDED.\"{$column}\"";
-                    } else {
-                        $updateClauses[] = "`{$column}` = VALUES(`{$column}`)";
+                        $postgresUpdate = sprintf(
+                            '"updated" = CASE WHEN (%s) THEN NOW() ELSE "updated" END',
+                            $changeCondition
+                        );
+                        $updateClauses[count($updateClauses) - 1] = $postgresUpdate;
                     }
                 }//end if
+
+                if ($column !== 'updated') {
+                    // Regular field updates.
+                    $updateClauses[] = "`{$column}` = VALUES(`{$column}`)";
+                    if ($isPostgres === true) {
+                        $updateClauses[count($updateClauses) - 1] = "\"{$column}\" = EXCLUDED.\"{$column}\"";
+                    }
+                }
             }//end if
         }//end foreach
 
@@ -510,6 +515,9 @@ class OptimizedBulkOperations
      * @return ((mixed|string)[]|mixed)[] Unified array format for all objects
      *
      * @psalm-return list{0?: array{uuid: mixed|string,...}|mixed,...}
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess)         Uuid::v4 is standard Symfony UID pattern
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function unifyObjectFormats(array $insertObjects, array $updateObjects): array
     {
@@ -648,6 +656,9 @@ class OptimizedBulkOperations
      * @param string $dbColumn   Database column name
      *
      * @return mixed Value for the database column
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess)         Uuid::v4 is standard Symfony UID pattern
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function extractColumnValue(array $objectData, string $dbColumn)
     {

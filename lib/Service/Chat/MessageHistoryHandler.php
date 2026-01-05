@@ -98,6 +98,9 @@ class MessageHistoryHandler
      * @return array Array of LLPhantMessage objects
      *
      * @psalm-return list<LLPhantMessage>
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess)         LLPhantMessage factory methods are standard LLPhant pattern
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Message role handling requires multiple conditional branches
      */
     public function buildMessageHistory(int $conversationId): array
     {

@@ -116,6 +116,9 @@ class SolrDebugCommand extends Command
      * @param OutputInterface $output Output interface
      *
      * @return int Command exit code
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
@@ -328,7 +331,9 @@ class SolrDebugCommand extends Command
      * @param OutputInterface $output       Output interface
      * @param array           $solrSettings SOLR configuration
      *
-     * @SuppressWarnings(PHPMD.ElseExpression) Else clauses needed for API availability checks
+     * @SuppressWarnings(PHPMD.ElseExpression)       Else clauses needed for API availability checks
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      *
      * @return void
      */

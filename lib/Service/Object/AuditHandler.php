@@ -130,9 +130,9 @@ class AuditHandler
             }
 
             // Normalize and compare register.
-            $objectRegisterNorm    = strtolower((string) $objectRegister);
-            $requestedRegisterNorm = strtolower($requestedRegister);
-            $registerMatch         = ($objectRegisterNorm === $requestedRegisterNorm);
+            $objectRegisterNorm = strtolower((string) $objectRegister);
+            $reqRegisterNorm    = strtolower($requestedRegister);
+            $registerMatch      = ($objectRegisterNorm === $reqRegisterNorm);
 
             // Normalize schema (handle array/object/string).
             $objectSchemaId   = $this->extractSchemaId($objectSchema);

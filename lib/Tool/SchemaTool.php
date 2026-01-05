@@ -94,6 +94,8 @@ class SchemaTool extends AbstractTool
      * Get function definitions for LLphant
      *
      * @return array<int, array<string, mixed>> Array of function definitions
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive function definitions for LLM
      */
     public function getFunctions(): array
     {
@@ -244,6 +246,8 @@ class SchemaTool extends AbstractTool
      * @return (mixed|string|true)[] Result with list of schemas
      *
      * @psalm-return array{success: true, message: string, data: mixed}
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Optional nullable filter parameter
      */
     public function listSchemas(int $limit=100, int $offset=0, ?string $register=null): array
     {
@@ -362,6 +366,8 @@ class SchemaTool extends AbstractTool
      * @throws \Exception If update fails
      *
      * @psalm-return array{success: true, message: string, data: mixed}
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Optional nullable parameters for partial updates
      */
     public function updateSchema(
         string $id,

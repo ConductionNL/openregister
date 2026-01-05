@@ -37,14 +37,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db\MagicMapper;
 
-use DateTime;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
-use OCP\DB\QueryBuilder\IQueryBuilder;
-use OCP\IDBConnection;
 use OCP\IUserSession;
 use OCP\IGroupManager;
-use OCP\IUserManager;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 
@@ -84,114 +78,4 @@ class MagicOrganizationHandler
         private readonly LoggerInterface $logger
     ) {
     }//end __construct()
-
-    /**
-     * Check if published objects should bypass multi-tenancy restrictions
-     *
-     * @return bool True if published objects should bypass multi-tenancy, false otherwise
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future multi-tenancy implementation
-     */
-    private function shouldPublishedObjectsBypassMultiTenancy(): bool
-    {
-        $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
-        if ($multitenancyConfig === '') {
-            return false;
-            // Default to false for security.
-        }
-
-        $multitenancyData = json_decode($multitenancyConfig, true);
-        return $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false;
-    }//end shouldPublishedObjectsBypassMultiTenancy()
-
-    /**
-     * Apply organization access rules for unauthenticated users
-     *
-     * @param IQueryBuilder $qb         Query builder to modify
-     * @param string        $tableAlias Table alias for the dynamic table
-     *
-     * @return void
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future multi-tenancy implementation
-     */
-    private function applyUnauthenticatedOrganizationAccess(IQueryBuilder $qb, string $tableAlias): void
-    {
-        // For unauthenticated requests, show only published objects.
-        $now = (new DateTime())->format('Y-m-d H:i:s');
-        $qb->andWhere(
-            $qb->expr()->andX(
-                $qb->expr()->isNotNull("{$tableAlias}._published"),
-                $qb->expr()->lte("{$tableAlias}._published", $qb->createNamedParameter($now)),
-                $qb->expr()->orX(
-                    $qb->expr()->isNull("{$tableAlias}._depublished"),
-                    $qb->expr()->gt("{$tableAlias}._depublished", $qb->createNamedParameter($now))
-                )
-            )
-        );
-    }//end applyUnauthenticatedOrganizationAccess()
-
-    /**
-     * Get the system default organization UUID
-     *
-     * @return null|string Default organization UUID or null if not found
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future multi-tenancy implementation
-     */
-    private function getSystemDefaultOrganizationUuid(): string|null
-    {
-        try {
-            // Get default organisation UUID from configuration (not deprecated is_default column).
-            $defaultUuid = $this->appConfig->getValueString('openregister', 'defaultOrganisation', '');
-            if ($defaultUuid !== '') {
-                return $defaultUuid;
-            }
-
-            return null;
-        } catch (\Exception $e) {
-            $this->logger->error(
-                'Failed to get system default organization from configuration',
-                [
-                    'error' => $e->getMessage(),
-                ]
-            );
-            return null;
-        }
-    }//end getSystemDefaultOrganizationUuid()
-
-    /**
-     * Check if multi-tenancy is enabled in app configuration
-     *
-     * @return bool True if multi-tenancy is enabled, false otherwise
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future multi-tenancy implementation
-     */
-    private function isMultiTenancyEnabled(): bool
-    {
-        $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
-        if ($multitenancyConfig === '') {
-            return false;
-        }
-
-        $multitenancyData = json_decode($multitenancyConfig, true);
-        return $multitenancyData['enabled'] ?? false;
-    }//end isMultiTenancyEnabled()
-
-    /**
-     * Check if admin override is enabled in app configuration
-     *
-     * @return bool True if admin override is enabled, false otherwise
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future multi-tenancy implementation
-     */
-    private function isAdminOverrideEnabled(): bool
-    {
-        $rbacConfig = $this->appConfig->getValueString('openregister', 'rbac', '');
-        if ($rbacConfig === '') {
-            return true;
-            // Default to true if no RBAC config exists.
-        }
-
-        $rbacData = json_decode($rbacConfig, true);
-        return $rbacData['adminOverride'] ?? true;
-    }//end isAdminOverrideEnabled()
 }//end class

@@ -35,7 +35,9 @@ class Version1Date20251116000000 extends SimpleMigrationStep
      *
      * @return ISchemaWrapper Updated schema.
      *
-     * @SuppressWarnings (PHPMD.UnusedFormalParameter)
+     * @psalm-suppress UnusedParam $options is required by interface but not used
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
@@ -60,6 +62,8 @@ class Version1Date20251116000000 extends SimpleMigrationStep
      * @param ISchemaWrapper $schema Database schema.
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Database migration requires many column definitions
      */
     private function createObjectTextTable(IOutput $output, ISchemaWrapper $schema): void
     {
@@ -206,6 +210,8 @@ class Version1Date20251116000000 extends SimpleMigrationStep
      * @param ISchemaWrapper $schema Database schema.
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Database migration requires many column definitions
      */
     private function createChunksTable(IOutput $output, ISchemaWrapper $schema): void
     {
@@ -402,6 +408,8 @@ class Version1Date20251116000000 extends SimpleMigrationStep
      * @param ISchemaWrapper $schema Database schema.
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Database migration requires many column definitions
      */
     private function createEntitiesTable(IOutput $output, ISchemaWrapper $schema): void
     {
@@ -514,6 +522,8 @@ class Version1Date20251116000000 extends SimpleMigrationStep
      * @param ISchemaWrapper $schema Database schema.
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Database migration requires many column definitions
      */
     private function createEntityRelationsTable(IOutput $output, ISchemaWrapper $schema): void
     {

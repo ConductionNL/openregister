@@ -63,6 +63,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setUpdated(?DateTime $updated)
  * @method string|null getConfiguration()
  * @method void setConfiguration(?string $configuration)
+ *
+ * @SuppressWarnings(PHPMD.TooManyFields)
  */
 class Webhook extends Entity implements JsonSerializable
 {
@@ -450,6 +452,9 @@ class Webhook extends Entity implements JsonSerializable
      * @param array $object Object data
      *
      * @return static The hydrated entity
+     *
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Hydration requires handling many optional fields
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function hydrate(array $object): static
     {
@@ -476,7 +481,9 @@ class Webhook extends Entity implements JsonSerializable
         if (($object['events'] ?? null) !== null) {
             if (is_array($object['events']) === true) {
                 $this->setEventsArray($object['events']);
-            } else {
+            }
+
+            if (is_array($object['events']) === false) {
                 $this->setEvents($object['events']);
             }
         }
@@ -484,7 +491,9 @@ class Webhook extends Entity implements JsonSerializable
         if (($object['headers'] ?? null) !== null) {
             if (is_array($object['headers']) === true) {
                 $this->setHeadersArray($object['headers']);
-            } else {
+            }
+
+            if (is_array($object['headers']) === false) {
                 $this->setHeaders($object['headers']);
             }
         }
@@ -504,7 +513,9 @@ class Webhook extends Entity implements JsonSerializable
         if (($object['filters'] ?? null) !== null) {
             if (is_array($object['filters']) === true) {
                 $this->setFiltersArray($object['filters']);
-            } else {
+            }
+
+            if (is_array($object['filters']) === false) {
                 $this->setFilters($object['filters']);
             }
         }
@@ -524,7 +535,9 @@ class Webhook extends Entity implements JsonSerializable
         if (($object['configuration'] ?? null) !== null) {
             if (is_array($object['configuration']) === true) {
                 $this->setConfigurationArray($object['configuration']);
-            } else {
+            }
+
+            if (is_array($object['configuration']) === false) {
                 $this->setConfiguration($object['configuration']);
             }
         }

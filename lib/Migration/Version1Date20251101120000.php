@@ -48,6 +48,7 @@ class Version1Date20251101120000 extends SimpleMigrationStep
      * @return ISchemaWrapper|null Updated schema
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Database migration requires many column definitions
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {

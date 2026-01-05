@@ -37,6 +37,8 @@ class Version1Date20251117000000 extends SimpleMigrationStep
      *
      * @return ISchemaWrapper Updated schema.
      *
+     * @psalm-suppress UnusedParam $options is required by interface but not used
+     *
      * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper

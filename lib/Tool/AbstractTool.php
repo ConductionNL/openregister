@@ -317,6 +317,10 @@ abstract class AbstractTool implements ToolInterface
      * @psalm-suppress MixedAssignment
      * @psalm-suppress MixedArgument
      * @psalm-suppress MixedMethodCall
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex type coercion for LLM compatibility
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple type conversion paths
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive type handling
      */
     public function __call(string $name, array $arguments)
     {

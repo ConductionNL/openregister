@@ -57,6 +57,10 @@ use Symfony\Component\Uid\Uuid;
  * @link      https://github.com/OpenCatalogi/OpenRegister
  * @version   GIT: <git_id>
  * @copyright 2024 Conduction b.v.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Rendering requires comprehensive transformation methods
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex rendering logic with multiple output formats
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Rendering requires multiple mapper and service dependencies
  */
 class RenderObject
 {
@@ -374,6 +378,8 @@ class RenderObject
      * @phpstan-return ObjectEntity
      *
      * @throws Exception If schema or file operations fail.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) File property handling requires multiple type checks
      */
     private function renderFileProperties(ObjectEntity $entity): ObjectEntity
     {
@@ -527,6 +533,8 @@ class RenderObject
      * @param ObjectEntity $entity The entity to hydrate metadata for.
      *
      * @return ObjectEntity The entity with hydrated metadata.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Metadata extraction requires multiple conditional checks
      */
     private function hydrateMetadataFromFileProperties(ObjectEntity $entity): ObjectEntity
     {
@@ -553,13 +561,15 @@ class RenderObject
                 if (is_array($value) === false || ($hasNoDownloadUrl === true && $hasNoAccessUrl === true)) {
                     // If the file property is null/empty, set image to null.
                     $entity->setImage(null);
-                } else {
+                }
+
+                if (is_array($value) === true && ($hasNoDownloadUrl === false || $hasNoAccessUrl === false)) {
                     // Set the image URL on the entity itself (not in object data).
                     // This will be serialized to @self.image in jsonSerialize().
                     // Prefer downloadUrl, fallback to accessUrl.
                     $entity->setImage($value['downloadUrl'] ?? $value['accessUrl']);
                 }
-            }
+            }//end if
         } catch (\Exception $e) {
             // Log error but don't break rendering - just return original entity.
         }//end try
@@ -675,6 +685,11 @@ class RenderObject
      * @return ObjectEntity The rendered entity with applied extensions and filters
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Required for flexible rendering options
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)   Complex rendering logic with multiple code paths
+     * @SuppressWarnings(PHPMD.NPathComplexity)        Multiple optional rendering features create many paths
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)  Comprehensive rendering requires extensive logic
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    RBAC and multitenancy flags control security behavior
      */
     public function renderEntity(
         ObjectEntity $entity,
@@ -853,10 +868,11 @@ class RenderObject
 
             if (is_numeric($key) === true) {
                 $extendedRoots[$root][] = $extends;
-            } else {
-                [$root, $path] = explode(separator: '.$.', string: $key, limit: 2);
-                $extendedRoots[$root][$path] = $extends;
+                continue;
             }
+
+            [$root, $path] = explode(separator: '.$.', string: $key, limit: 2);
+            $extendedRoots[$root][$path] = $extends;
         }
 
         foreach ($extendedRoots as $root => $extends) {
@@ -888,6 +904,11 @@ class RenderObject
      * @return array
      *
      * @throws \OCP\DB\Exception
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex extension handling with multiple data types
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Many extension scenarios create multiple code paths
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive dot notation handling requires extensive logic
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   All flag controls extension behavior
      */
     private function handleExtendDot(
         array $data,
@@ -1159,6 +1180,9 @@ class RenderObject
      * @return array The updated object data with inversed properties
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex inversed relationship resolution
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple relationship types create many paths
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive relationship handling requires extensive logic
      */
     private function handleInversedProperties(
         ObjectEntity $entity,
@@ -1213,6 +1237,10 @@ class RenderObject
 
             // Extract inversedBy configuration based on property structure.
             // Check if this is an array property with inversedBy in items.
+            $inversedByProperty = null;
+            $targetSchema       = null;
+            $isArray            = false;
+
             if (($propertyConfig['type'] ?? null) !== null
                 && ($propertyConfig['type'] === 'array') === true
                 && (($propertyConfig['items']['inversedBy'] ?? null) !== null) === true
@@ -1224,14 +1252,15 @@ class RenderObject
                 // Check if this is a direct object property with inversedBy.
                 $inversedByProperty = $propertyConfig['inversedBy'];
                 $targetSchema       = $propertyConfig['$ref'] ?? null;
-                $isArray            = false;
 
                 // Fallback for misconfigured arrays.
                 if ($propertyConfig['type'] === 'array') {
                     $isArray = true;
                 }
-            } else {
-                // Skip if no inversedBy configuration found.
+            }
+
+            // Skip if no inversedBy configuration found.
+            if ($inversedByProperty === null) {
                 continue;
             }
 
@@ -1259,11 +1288,11 @@ class RenderObject
                         if (is_array($referenceValue) === true) {
                             // Check if the current entity's UUID is in the array.
                             return in_array($entity->getUuid(), $referenceValue, true) && $object->getSchema() === $schemaId;
-                        } else {
-                            // Check if the reference value matches the current entity's UUID.
-                            $matchesUuid = str_ends_with(haystack: $referenceValue, needle: $entity->getUuid());
-                            return $matchesUuid && $object->getSchema() === $schemaId;
                         }
+
+                        // Check if the reference value matches the current entity's UUID.
+                        $matchesUuid = str_ends_with(haystack: $referenceValue, needle: $entity->getUuid());
+                        return $matchesUuid && $object->getSchema() === $schemaId;
                     }
                 )
             );
@@ -1278,12 +1307,12 @@ class RenderObject
             // Set the inversed property value based on whether it's an array or single value.
             if ($isArray === true) {
                 $objectData[$propertyName] = $inversedUuids;
-            } else {
-                if (empty($inversedUuids) === false) {
-                    $objectData[$propertyName] = end($inversedUuids);
-                } else {
-                    $objectData[$propertyName] = null;
-                }
+                continue;
+            }
+
+            $objectData[$propertyName] = null;
+            if (empty($inversedUuids) === false) {
+                $objectData[$propertyName] = end($inversedUuids);
             }
         }//end foreach
 
@@ -1382,6 +1411,8 @@ class RenderObject
      * @return ObjectEntity[]
      *
      * @psalm-return list<ObjectEntity>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) RBAC and multitenancy flags control security behavior
      */
     public function renderEntities(
         array $entities,

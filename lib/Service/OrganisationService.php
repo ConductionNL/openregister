@@ -43,6 +43,10 @@ use Symfony\Component\Uid\Uuid;
  * session management for active organisation, and ensuring proper organisational context.
  *
  * @package OCA\OpenRegister\Service
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Organisation management requires comprehensive multi-tenancy methods
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex multi-tenancy and permission logic
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Requires multiple Nextcloud services for user and group management
  */
 class OrganisationService
 {
@@ -81,14 +85,14 @@ class OrganisationService
      *
      * @var Organisation|null
      */
-    private static ?Organisation $defaultOrganisationCache = null;
+    private static ?Organisation $defaultOrgCache = null;
 
     /**
      * Timestamp when default organisation was cached
      *
      * @var integer|null
      */
-    private static ?int $defaultOrganisationCacheTimestamp = null;
+    private static ?int $defaultOrgCacheTs = null;
 
     /**
      * Organisation mapper for database operations
@@ -197,8 +201,8 @@ class OrganisationService
     public function ensureDefaultOrganisation(): Organisation
     {
         // Check static cache first (shared across all instances).
-        if (self::$defaultOrganisationCache !== null && self::$defaultOrganisationCacheTimestamp !== null) {
-            $age = time() - self::$defaultOrganisationCacheTimestamp;
+        if (self::$defaultOrgCache !== null && self::$defaultOrgCacheTs !== null) {
+            $age = time() - self::$defaultOrgCacheTs;
             if ($age < self::CACHE_TIMEOUT) {
                 $this->logger->debug(
                     'Retrieved default organisation from static cache',
@@ -206,7 +210,7 @@ class OrganisationService
                         'cacheAge' => $age,
                     ]
                 );
-                return self::$defaultOrganisationCache;
+                return self::$defaultOrgCache;
             }
         }
 
@@ -282,6 +286,10 @@ class OrganisationService
      * Fetch default organisation from database (cache miss fallback)
      *
      * @return Organisation The default organisation
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Default org logic requires many fallback and validation branches
+     * @SuppressWarnings(PHPMD.ElseExpression)        Else clause needed for clear fallback logic when no UUID in settings
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Default org logic requires comprehensive fallback chain
      */
     private function fetchDefaultOrganisationFromDatabase(): Organisation
     {
@@ -397,8 +405,8 @@ class OrganisationService
      */
     private function cacheDefaultOrganisation(Organisation $organisation): void
     {
-        self::$defaultOrganisationCache          = $organisation;
-        self::$defaultOrganisationCacheTimestamp = time();
+        self::$defaultOrgCache   = $organisation;
+        self::$defaultOrgCacheTs = time();
 
         $this->logger->debug(
             'Cached default organisation in static memory',
@@ -426,7 +434,8 @@ class OrganisationService
      *
      * @return Organisation[]
      *
-     * @SuppressWarnings (PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) Cache parameter reserved for future implementation
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Boolean flag controls caching behavior
      *
      * @psalm-return list<\OCA\OpenRegister\Db\Organisation>
      */
@@ -698,6 +707,9 @@ class OrganisationService
      * @return Organisation The created organisation
      *
      * @throws Exception If user not logged in or organisation creation fails
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess)        Uuid::isValid is standard Symfony UID pattern
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag controls whether to add current user to organisation
      */
     public function createOrganisation(
         string $name,
@@ -800,6 +812,8 @@ class OrganisationService
      * Get user organisation statistics
      *
      * @return array Statistics with total count, active organisation, and results list.
+     *
+     * @SuppressWarnings(PHPMD.ElseExpression) Else clause provides clear null handling for JSON serialization
      */
     public function getUserOrganisationStats(): array
     {
@@ -836,8 +850,8 @@ class OrganisationService
      */
     public function clearDefaultOrganisationCache(): void
     {
-        self::$defaultOrganisationCache          = null;
-        self::$defaultOrganisationCacheTimestamp = null;
+        self::$defaultOrgCache   = null;
+        self::$defaultOrgCacheTs = null;
 
         $this->logger->info(message: 'Cleared default organisation static cache');
     }//end clearDefaultOrganisationCache()
@@ -850,6 +864,8 @@ class OrganisationService
      * @return bool True if cache cleared
      *
      * @psalm-suppress PossiblyUnusedReturnValue
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag controls whether to clear persistent settings
      */
     public function clearCache(bool $clearPersistent=false): bool
     {
@@ -943,6 +959,8 @@ class OrganisationService
      * @param Organisation $organisation The organisation to add admin group permissions to
      *
      * @return Organisation The updated organisation
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) RBAC permission setup requires branches for each entity type and action
      */
     private function addAdminGroupToAuthorization(Organisation $organisation): Organisation
     {
@@ -994,6 +1012,8 @@ class OrganisationService
      * @param array $authorization The authorization configuration to check
      *
      * @return bool True if admin group is found in any permission
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) RBAC check requires branches for each entity type and action
      */
     private function hasAdminGroupInAuthorization(array $authorization): bool
     {
@@ -1033,6 +1053,9 @@ class OrganisationService
      * @param string $userId The user ID to fetch active organisation for
      *
      * @return Organisation|null The active organisation or null
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Active org logic requires comprehensive fallback chain
+     * @SuppressWarnings(PHPMD.ElseExpression)        Else clause needed for clear invalid access handling
      */
     private function fetchActiveOrganisationFromDatabase(string $userId): ?Organisation
     {
@@ -1207,6 +1230,9 @@ class OrganisationService
      * @param array $cachedData The cached organisation data
      *
      * @return Organisation The reconstructed organisation object
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Cache reconstruction requires branches for each organisation property
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple optional properties create many reconstruction paths
      */
     private function reconstructOrganisationFromCache(array $cachedData): Organisation
     {

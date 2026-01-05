@@ -56,6 +56,10 @@ use Symfony\Component\Uid\Uuid;
  * @method list<Organisation> findEntities(IQueryBuilder $query)
  *
  * @template-extends QBMapper<Organisation>
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class OrganisationMapper extends QBMapper
 {
@@ -232,19 +236,18 @@ class OrganisationMapper extends QBMapper
         $qb->select('*')
             ->from($this->getTableName());
 
+        // MySQL/MariaDB can use LIKE directly on JSON columns (default).
+        $whereExpr = $qb->expr()->like('users', $qb->createNamedParameter('%"'.$userId.'"%'));
         // PostgreSQL requires explicit cast to text for LIKE on JSON columns.
         if ($platform === 'postgresql') {
             // Cast JSON column to text for comparison.
-            $qb->where(
-                $qb->expr()->like(
-                    $qb->createFunction('CAST(users AS TEXT)'),
-                    $qb->createNamedParameter('%"'.$userId.'"%')
-                )
+            $whereExpr = $qb->expr()->like(
+                $qb->createFunction('CAST(users AS TEXT)'),
+                $qb->createNamedParameter('%"'.$userId.'"%')
             );
-        } else {
-            // MySQL/MariaDB can use LIKE directly on JSON columns.
-            $qb->where($qb->expr()->like('users', $qb->createNamedParameter('%"'.$userId.'"%')));
         }
+
+        $qb->where($whereExpr);
 
         return $this->findEntities($qb);
     }//end findByUserId()
@@ -350,10 +353,10 @@ class OrganisationMapper extends QBMapper
                 );
                 throw $e;
             }
-        } else {
-            $this->logger->info('[OrganisationMapper] Calling update() method');
-            return $this->update($organisation);
         }//end if
+
+        $this->logger->info('[OrganisationMapper] Calling update() method');
+        return $this->update($organisation);
     }//end save()
 
     /**
@@ -401,6 +404,8 @@ class OrganisationMapper extends QBMapper
      * @throws \Exception If UUID is invalid or already exists
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) Uuid::fromString is standard Symfony UID pattern
      */
     private function validateUuid(Organisation $organisation): void
     {
@@ -989,20 +994,21 @@ class OrganisationMapper extends QBMapper
                 ->andWhere($qb->expr()->eq('appid', $qb->createNamedParameter('openregister')))
                 ->andWhere($qb->expr()->eq('configkey', $qb->createNamedParameter('active_organisation')));
             $qb->executeStatement();
-        } else {
-            // Insert new preference.
-            $qb = $this->db->getQueryBuilder();
-            $qb->insert('preferences')
-                ->values(
-                    [
-                        'userid'      => $qb->createNamedParameter($userId),
-                        'appid'       => $qb->createNamedParameter('openregister'),
-                        'configkey'   => $qb->createNamedParameter('active_organisation'),
-                        'configvalue' => $qb->createNamedParameter($organisationUuid),
-                    ]
-                );
-            $qb->executeStatement();
-        }//end if
+            return;
+        }
+
+        // Insert new preference.
+        $qb = $this->db->getQueryBuilder();
+        $qb->insert('preferences')
+            ->values(
+                [
+                    'userid'      => $qb->createNamedParameter($userId),
+                    'appid'       => $qb->createNamedParameter('openregister'),
+                    'configkey'   => $qb->createNamedParameter('active_organisation'),
+                    'configvalue' => $qb->createNamedParameter($organisationUuid),
+                ]
+            );
+        $qb->executeStatement();
     }//end setActiveOrganisationForUser()
 
     /**

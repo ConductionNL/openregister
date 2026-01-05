@@ -94,6 +94,10 @@ class FilePublishingHandler
      *
      * @phpstan-return File
      * @psalm-return   File
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  File lookup requires handling ID vs path scenarios
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple file resolution paths with fallback logic
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive file lookup and sharing requires extensive code
      */
     public function publishFile(ObjectEntity | string $object, string | int $file): File
     {
@@ -240,6 +244,10 @@ class FilePublishingHandler
      *
      * @phpstan-return File
      * @psalm-return   File
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  File lookup requires handling ID vs path scenarios
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple file resolution paths with fallback logic
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive file lookup and unsharing requires extensive code
      */
     public function unpublishFile(ObjectEntity | string $object, string|int $filePath): File
     {
@@ -385,6 +393,10 @@ class FilePublishingHandler
      * @phpstan-return array{path: string, filename: string, size: int, mimeType: string}
      *
      * @psalm-return array{path: string, filename: string, size: int, mimeType: 'application/zip'}
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  ZIP creation requires handling multiple file and error scenarios
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple paths for file processing and error handling
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) ZIP archive creation with file processing requires extensive code
      */
     public function createObjectFilesZip(ObjectEntity | string $object, ?string $zipName=null): array
     {

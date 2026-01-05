@@ -1,0 +1,143 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "n8n Workflow Automation Configuration",
+        "description": "Configuration for n8n workflow integration with OpenRegister - enables automation, data synchronization, notifications, and event-driven workflows.",
+        "version": "1.0.0"
+    },
+    "x-openregister": {
+        "type": "integration",
+        "app": "n8n",
+        "sourceType": "github",
+        "sourceUrl": "https://github.com/ConductionNL/opencatalogi/blob/master/apps-extra/openregister/lib/Settings/n8n_workflows.openregister.json",
+        "openregister": "^v0.2.10",
+        "github": {
+            "repo": "ConductionNL/opencatalogi",
+            "branch": "master",
+            "path": "apps-extra/openregister/lib/Settings/n8n_workflows.openregister.json"
+        },
+        "description": "n8n workflow automation integration - optional enhancement for OpenRegister apps",
+        "dependencies": []
+    },
+    "components": {
+        "registers": {
+            "n8n-workflows": {
+                "slug": "n8n-workflows",
+                "title": "n8n Workflows",
+                "version": "1.0.0",
+                "description": "Register for n8n workflow definitions and automation triggers",
+                "schemas": ["workflow", "trigger", "webhook", "schedule", "notification"],
+                "source": "internal",
+                "tablePrefix": "",
+                "folder": "700",
+                "updated": "2026-01-05T22:00:00+00:00",
+                "created": "2026-01-05T22:00:00+00:00",
+                "owner": "1",
+                "application": "n8n",
+                "organisation": null,
+                "authorization": null,
+                "groups": null,
+                "deleted": null,
+                "configuration": {
+                    "enableMagicMapping": false,
+                    "comment": "n8n workflows are managed through n8n interface - stored as references only"
+                }
+            }
+        },
+        "schemas": {
+            "workflow": {
+                "title": "Workflow",
+                "description": "An n8n workflow definition that automates processes",
+                "type": "object",
+                "required": ["title", "workflowId"],
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "description": "The title of the workflow",
+                        "minLength": 1,
+                        "maxLength": 255
+                    },
+                    "workflowId": {
+                        "type": "string",
+                        "description": "The n8n workflow ID",
+                        "pattern": "^[a-zA-Z0-9-_]+$"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Description of what the workflow does"
+                    },
+                    "active": {
+                        "type": "boolean",
+                        "description": "Whether the workflow is currently active",
+                        "default": false
+                    },
+                    "tags": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                    }
+                }
+            },
+            "trigger": {
+                "title": "Workflow Trigger",
+                "description": "A trigger that initiates workflow execution",
+                "type": "object",
+                "required": ["workflowId", "type"],
+                "properties": {
+                    "workflowId": {"type": "string", "format": "uuid"},
+                    "type": {
+                        "type": "string",
+                        "enum": ["webhook", "schedule", "event", "manual"]
+                    },
+                    "active": {"type": "boolean", "default": true}
+                }
+            },
+            "webhook": {
+                "title": "Webhook",
+                "description": "A webhook endpoint that triggers workflow execution",
+                "type": "object",
+                "required": ["path", "method", "workflowId"],
+                "properties": {
+                    "path": {"type": "string", "pattern": "^/[a-zA-Z0-9/_-]+$"},
+                    "method": {
+                        "type": "string",
+                        "enum": ["GET", "POST", "PUT", "DELETE", "PATCH"]
+                    },
+                    "workflowId": {"type": "string", "format": "uuid"}
+                }
+            },
+            "schedule": {
+                "title": "Schedule",
+                "description": "A scheduled trigger for workflow execution",
+                "type": "object",
+                "required": ["cronExpression", "workflowId"],
+                "properties": {
+                    "cronExpression": {
+                        "type": "string",
+                        "pattern": "^[0-9*,/-]+ [0-9*,/-]+ [0-9*,/-]+ [0-9*,/-]+ [0-9*,/-]+$"
+                    },
+                    "workflowId": {"type": "string", "format": "uuid"},
+                    "timezone": {"type": "string", "default": "UTC"},
+                    "active": {"type": "boolean", "default": true}
+                }
+            },
+            "notification": {
+                "title": "Notification Configuration",
+                "description": "Configuration for workflow-triggered notifications",
+                "type": "object",
+                "required": ["title", "channel"],
+                "properties": {
+                    "title": {"type": "string"},
+                    "channel": {
+                        "type": "string",
+                        "enum": ["email", "slack", "webhook", "sms", "push"]
+                    },
+                    "template": {"type": "string"},
+                    "recipients": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                    }
+                }
+            }
+        }
+    }
+}

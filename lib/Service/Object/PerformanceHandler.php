@@ -87,10 +87,9 @@ class PerformanceHandler
         // **OPTIMIZATION 2**: Limit destructive extend operations.
         if (empty($query['_extend']) === false) {
             // **BUGFIX**: Handle _extend as both string and array for count.
+            $originalExtendCount = count(array_filter(array_map('trim', explode(',', $query['_extend']))));
             if (is_array($query['_extend']) === true) {
                 $originalExtendCount = count($query['_extend']);
-            } else {
-                $originalExtendCount = count(array_filter(array_map('trim', explode(',', $query['_extend']))));
             }
 
             $query['_extend'] = $this->optimizeExtendQueries($query['_extend']);
@@ -128,6 +127,8 @@ class PerformanceHandler
      * @param array<string, mixed> $query The search query.
      *
      * @return bool True if this is a simple request
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple criteria for determining request simplicity
      */
     public function isSimpleRequest(array $query): bool
     {
@@ -169,6 +170,8 @@ class PerformanceHandler
      * @param array<string>|string $extend Original extend data (array or comma-separated string).
      *
      * @return array<string> Optimized extend array
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function optimizeExtendQueries(array | string $extend): array
     {
@@ -179,9 +182,7 @@ class PerformanceHandler
             }
 
             // Convert comma-separated string to array.
-            $extendArray = array_filter(array_map('trim', explode(',', $extend)));
-        } else {
-            $extendArray = $extend;
+            return array_filter(array_map('trim', explode(',', $extend)));
         }
 
         // For now, just return the array (future optimization: analyze and reduce).
@@ -189,7 +190,7 @@ class PerformanceHandler
         // - Remove circular extends.
         // - Limit extend depth.
         // - Remove duplicate extends.
-        return $extendArray;
+        return $extend;
     }//end optimizeExtendQueries()
 
     /**
@@ -227,6 +228,10 @@ class PerformanceHandler
      * @return string[][] Related data array
      *
      * @psalm-return array{related?: list<string>, relatedNames?: array<string, string>}
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Nested extraction logic with multiple type checks
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  Boolean flags control optional extraction features
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple paths for different data types
      */
     public function extractRelatedData(array $results, bool $includeRelated, bool $includeRelatedNames): array
     {

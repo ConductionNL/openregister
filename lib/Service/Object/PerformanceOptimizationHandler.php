@@ -79,6 +79,10 @@ class PerformanceOptimizationHandler
      * @param array $query       Query parameters for context.
      *
      * @return array List of performance recommendations with type, issue, message, and suggestions.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple recommendation thresholds require branching
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Different timing scenarios generate different recommendations
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive recommendations require detailed analysis
      */
     public function getPerformanceRecommendations(float $totalTime, array $perfTimings, array $query): array
     {
@@ -143,10 +147,9 @@ class PerformanceOptimizationHandler
         $extendCount = 0;
         if (empty($query['_extend']) === false) {
             // Calculate extend count - count array elements or string length.
+            $extendCount = 1;
             if (is_array($query['_extend']) === true) {
                 $extendCount = count($query['_extend']);
-            } else {
-                $extendCount = 1;
             }
         }
 

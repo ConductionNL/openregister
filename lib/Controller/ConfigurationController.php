@@ -45,6 +45,12 @@ use Psr\Log\LoggerInterface;
  * @package OCA\OpenRegister\Controller
  *
  * @psalm-suppress UnusedClass
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.TooManyMethods)
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class ConfigurationController extends Controller
 {
@@ -1049,6 +1055,8 @@ class ConfigurationController extends Controller
      * @psalm-suppress InvalidArgument
      *
      * @return JSONResponse JSON response with import result
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */
     private function importFromSource(callable $fetchConfig, array $params, string $sourceType): JSONResponse
     {

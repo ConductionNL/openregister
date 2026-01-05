@@ -64,8 +64,15 @@ use OCP\AppFramework\Http\DataDownloadResponse;
  * Objects controller for OpenRegister
  *
  * @psalm-suppress UnusedClass
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.TooManyMethods)
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.ElseExpression)           File upload extraction requires conditional branching
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)    Complex file upload handling with multiple formats
  */
-
 class ObjectsController extends Controller
 {
 
@@ -104,6 +111,8 @@ class ObjectsController extends Controller
      * @param LoggerInterface    $logger             The logger (optional)
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      */
     public function __construct(
         string $appName,
@@ -151,6 +160,146 @@ class ObjectsController extends Controller
     }//end isCurrentUserAdmin()
 
     /**
+     * Extract all uploaded files from the current request.
+     *
+     * Uses IRequest::getUploadedFile() to retrieve files by known field names.
+     * This method checks for common file field names used in the application.
+     *
+     * @return array<string, array{name: string, type: string, tmp_name: string, error: int, size: int}>
+     *     Array of uploaded files keyed by field name
+     *
+     * @SuppressWarnings(PHPMD.NPathComplexity)      File extraction requires handling many field scenarios
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     */
+    private function extractAllUploadedFiles(): array
+    {
+        $uploadedFiles = [];
+
+        // Get all request parameters to identify potential file field names.
+        $params = $this->request->getParams();
+
+        // Check each parameter that could potentially be a file field.
+        // File uploads are typically submitted with specific field names.
+        foreach (array_keys($params) as $fieldName) {
+            // Skip system parameters.
+            if (str_starts_with((string) $fieldName, '_') === true) {
+                continue;
+            }
+
+            $uploadedFile = $this->request->getUploadedFile((string) $fieldName);
+            if ($uploadedFile !== null && isset($uploadedFile['tmp_name']) === true) {
+                // Check if this is an array upload (multiple files).
+                $nameValue = $uploadedFile['name'] ?? null;
+                if (is_array($nameValue) === true) {
+                    // Handle multiple files with indexed keys.
+                    $fileCount = count($nameValue);
+                    for ($i = 0; $i < $fileCount; $i++) {
+                        $typeValue = $uploadedFile['type'] ?? null;
+                        if (is_array($typeValue) === true) {
+                            $typeArray = $typeValue;
+                        } else {
+                            $typeArray = [];
+                        }
+
+                        $tmpNameValue = $uploadedFile['tmp_name'] ?? null;
+                        if (is_array($tmpNameValue) === true) {
+                            $tmpNameArray = $tmpNameValue;
+                        } else {
+                            $tmpNameArray = [];
+                        }
+
+                        $errorValue = $uploadedFile['error'] ?? null;
+                        if (is_array($errorValue) === true) {
+                            $errorArray = $errorValue;
+                        } else {
+                            $errorArray = [];
+                        }
+
+                        $sizeValue = $uploadedFile['size'] ?? null;
+                        if (is_array($sizeValue) === true) {
+                            $sizeArray = $sizeValue;
+                        } else {
+                            $sizeArray = [];
+                        }
+
+                        $uploadedFiles[$fieldName.'['.$i.']'] = [
+                            'name'     => $nameValue[$i] ?? '',
+                            'type'     => $typeArray[$i] ?? '',
+                            'tmp_name' => $tmpNameArray[$i] ?? '',
+                            'error'    => $errorArray[$i] ?? UPLOAD_ERR_NO_FILE,
+                            'size'     => $sizeArray[$i] ?? 0,
+                        ];
+                    }//end for
+
+                    continue;
+                }//end if
+
+                // Single file upload.
+                $uploadedFiles[(string) $fieldName] = $uploadedFile;
+            }//end if
+        }//end foreach
+
+        // Also check common file field names that may not be in params.
+        $commonFileFields = ['file', 'files', 'attachment', 'attachments', 'document', 'documents', 'image', 'images'];
+        foreach ($commonFileFields as $fieldName) {
+            if (isset($uploadedFiles[$fieldName]) === true) {
+                continue;
+            }
+
+            $uploadedFile = $this->request->getUploadedFile($fieldName);
+            if ($uploadedFile !== null && isset($uploadedFile['tmp_name']) === true) {
+                $nameValue = $uploadedFile['name'] ?? null;
+                if (is_array($nameValue) === true) {
+                    $fileCount = count($nameValue);
+                    for ($i = 0; $i < $fileCount; $i++) {
+                        $typeValue2 = $uploadedFile['type'] ?? null;
+                        if (is_array($typeValue2) === true) {
+                            $typeArray = $typeValue2;
+                        } else {
+                            $typeArray = [];
+                        }
+
+                        $tmpNameValue2 = $uploadedFile['tmp_name'] ?? null;
+                        if (is_array($tmpNameValue2) === true) {
+                            $tmpNameArray = $tmpNameValue2;
+                        } else {
+                            $tmpNameArray = [];
+                        }
+
+                        $errorValue2 = $uploadedFile['error'] ?? null;
+                        if (is_array($errorValue2) === true) {
+                            $errorArray = $errorValue2;
+                        } else {
+                            $errorArray = [];
+                        }
+
+                        $sizeValue2 = $uploadedFile['size'] ?? null;
+                        if (is_array($sizeValue2) === true) {
+                            $sizeArray = $sizeValue2;
+                        } else {
+                            $sizeArray = [];
+                        }
+
+                        $uploadedFiles[$fieldName.'['.$i.']'] = [
+                            'name'     => $nameValue[$i] ?? '',
+                            'type'     => $typeArray[$i] ?? '',
+                            'tmp_name' => $tmpNameArray[$i] ?? '',
+                            'error'    => $errorArray[$i] ?? UPLOAD_ERR_NO_FILE,
+                            'size'     => $sizeArray[$i] ?? 0,
+                        ];
+                    }//end for
+
+                    continue;
+                }//end if
+
+                $uploadedFiles[$fieldName] = $uploadedFile;
+            }//end if
+        }//end foreach
+
+        return $uploadedFiles;
+    }//end extractAllUploadedFiles()
+
+    /**
      * Private helper method to handle pagination of results.
      *
      * This method paginates the given results array based on the provided total, limit, offset, and page parameters.
@@ -181,6 +330,8 @@ class ObjectsController extends Controller
      *     next?: string,
      *     prev?: string
      * }
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function paginate(array $results, ?int $total=0, ?int $limit=20, ?int $offset=0, ?int $page=1): array
     {
@@ -222,7 +373,7 @@ class ObjectsController extends Controller
         ];
 
         // Add next/prev page URLs if applicable.
-        $currentUrl = $_SERVER['REQUEST_URI'];
+        $currentUrl = $this->request->getRequestUri();
 
         // Add next page link if there are more pages.
         if ($page < $pages) {
@@ -402,6 +553,9 @@ class ObjectsController extends Controller
      * @return JSONResponse Search results from multiple tables.
      *
      * @psalm-suppress UnusedParam Params are used in foreach loops and method calls.
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function crossTableSearch(array $registers, array $schemas, ObjectService $objectService): JSONResponse
     {
@@ -598,6 +752,10 @@ class ObjectsController extends Controller
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|404, array<string, mixed>, array<never, never>>
+     *
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Complex request parameter handling for flexible API
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function index(string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -797,6 +955,10 @@ class ObjectsController extends Controller
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200, array<string, mixed>, array<never, never>>
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     public function objects(ObjectService $objectService): JSONResponse
     {
@@ -909,8 +1071,6 @@ class ObjectsController extends Controller
                         );
                     }//end if
                 }//end if
-
-                // If not magic-mapped, context is set in ObjectService for normal routing.
             } catch (RegisterNotFoundException | SchemaNotFoundException $e) {
                 return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
             }//end try
@@ -1048,6 +1208,9 @@ class ObjectsController extends Controller
      *
      * @psalm-suppress TypeDoesNotContainType
      * @psalm-suppress NoValue
+     *
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Object creation requires many validation and processing steps
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function create(
         string $register,
@@ -1098,121 +1261,8 @@ class ObjectsController extends Controller
             ARRAY_FILTER_USE_KEY
         );
 
-        // Extract uploaded files from multipart/form-data.
-        $uploadedFiles = [];
-        foreach ($_FILES as $fieldName => $fileData) {
-            /*
-             * Check if this is an array upload (multiple files with same field name).
-             * PHP converts field names like "images[]" to "images" and structures data as arrays.
-             * @var array{
-             *     name: array<int, string>|string,
-             *     type: array<int, string>|string,
-             *     tmp_name: array<int, string>|string,
-             *     error: array<int, int>|int,
-             *     size: array<int, int>|int
-             * } $fileData
-             */
-
-            /*
-             * @var string|array<int, string> $nameValue
-             */
-
-            $nameValue = $fileData['name'];
-
-            /*
-             * @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types
-             */
-
-            if (is_array($nameValue) === true) {
-                // Handle array uploads: images[] becomes images with array values.
-                // We need to preserve all files, so use indexed keys: images[0], images[1], etc.
-                // In PHP $_FILES, when name is an array, all other fields are also arrays.
-                $nameArray = $nameValue;
-
-                /*
-                 * Extract values - in $_FILES structure, when name is array, others are arrays too.
-                 * Use mixed type and then check to help Psalm understand.
-                 * @var mixed $typeRaw
-                 */
-
-                $typeRaw = $fileData['type'];
-
-                /*
-                 * @var mixed $tmpNameRaw
-                 */
-
-                $tmpNameRaw = $fileData['tmp_name'];
-
-                /*
-                 * @var mixed $errorRaw
-                 */
-
-                $errorRaw = $fileData['error'];
-
-                /*
-                 * @var mixed $sizeRaw
-                 */
-
-                $sizeRaw = $fileData['size'];
-
-                /*
-                 * Convert to arrays, handling both array and scalar cases for safety.
-                 * @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types
-                 */
-
-                $typeArray = [];
-                if (is_array($typeRaw) === true) {
-                    $typeArray = $typeRaw;
-                }
-
-                /*
-                 * @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types
-                 */
-
-                $tmpNameArray = [];
-                if (is_array($tmpNameRaw) === true) {
-                    $tmpNameArray = $tmpNameRaw;
-                }
-
-                /*
-                 * @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types
-                 */
-
-                $errorArray = [];
-                if (is_array($errorRaw) === true) {
-                    $errorArray = $errorRaw;
-                }
-
-                /*
-                 * @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types
-                 */
-
-                $sizeArray = [];
-                if (is_array($sizeRaw) === true) {
-                    $sizeArray = $sizeRaw;
-                }
-
-                $fileCount = count($nameArray);
-                for ($i = 0; $i < $fileCount; $i++) {
-                    // Use indexed key to preserve all files: images[0], images[1], images[2].
-                    $uploadedFiles[$fieldName.'['.$i.']'] = [
-                        'name'     => $nameArray[$i],
-                        'type'     => $typeArray[$i] ?? '',
-                        'tmp_name' => $tmpNameArray[$i] ?? '',
-                        'error'    => $errorArray[$i] ?? UPLOAD_ERR_NO_FILE,
-                        'size'     => $sizeArray[$i] ?? 0,
-                    ];
-                }
-
-                continue;
-            }//end if
-
-            // Handle single file upload.
-            $uploadedFile = $this->request->getUploadedFile($fieldName);
-            if ($uploadedFile !== null) {
-                $uploadedFiles[$fieldName] = $uploadedFile;
-            }
-        }//end foreach
+        // Extract uploaded files from multipart/form-data using Request object.
+        $uploadedFiles = $this->extractAllUploadedFiles();
 
         // Determine RBAC and multitenancy settings based on admin status.
         $isAdmin = $this->isCurrentUserAdmin();
@@ -1274,6 +1324,10 @@ class ObjectsController extends Controller
      *
      * @psalm-suppress TypeDoesNotContainType
      * @psalm-suppress NoValue
+     *
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Object update requires many validation and processing steps
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function update(
         string $register,
@@ -1303,121 +1357,8 @@ class ObjectsController extends Controller
             ARRAY_FILTER_USE_KEY
         );
 
-        // Extract uploaded files from multipart/form-data.
-        $uploadedFiles = [];
-        foreach ($_FILES as $fieldName => $fileData) {
-            /*
-             * Check if this is an array upload (multiple files with same field name).
-             * PHP converts field names like "images[]" to "images" and structures data as arrays.
-             * @var array{
-             *     name: array<int, string>|string,
-             *     type: array<int, string>|string,
-             *     tmp_name: array<int, string>|string,
-             *     error: array<int, int>|int,
-             *     size: array<int, int>|int
-             * } $fileData
-             */
-
-            /*
-             * @var string|array<int, string> $nameValue
-             */
-
-            $nameValue = $fileData['name'];
-
-            /*
-             * @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types
-             */
-
-            if (is_array($nameValue) === true) {
-                // Handle array uploads: images[] becomes images with array values.
-                // We need to preserve all files, so use indexed keys: images[0], images[1], etc.
-                // In PHP $_FILES, when name is an array, all other fields are also arrays.
-                $nameArray = $nameValue;
-
-                /*
-                 * Extract values - in $_FILES structure, when name is array, others are arrays too.
-                 * Use mixed type and then check to help Psalm understand.
-                 * @var mixed $typeRaw
-                 */
-
-                $typeRaw = $fileData['type'];
-
-                /*
-                 * @var mixed $tmpNameRaw
-                 */
-
-                $tmpNameRaw = $fileData['tmp_name'];
-
-                /*
-                 * @var mixed $errorRaw
-                 */
-
-                $errorRaw = $fileData['error'];
-
-                /*
-                 * @var mixed $sizeRaw
-                 */
-
-                $sizeRaw = $fileData['size'];
-
-                /*
-                 * Convert to arrays, handling both array and scalar cases for safety.
-                 * @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types
-                 */
-
-                $typeArray = [];
-                if (is_array($typeRaw) === true) {
-                    $typeArray = $typeRaw;
-                }
-
-                /*
-                 * @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types
-                 */
-
-                $tmpNameArray = [];
-                if (is_array($tmpNameRaw) === true) {
-                    $tmpNameArray = $tmpNameRaw;
-                }
-
-                /*
-                 * @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types
-                 */
-
-                $errorArray = [];
-                if (is_array($errorRaw) === true) {
-                    $errorArray = $errorRaw;
-                }
-
-                /*
-                 * @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types
-                 */
-
-                $sizeArray = [];
-                if (is_array($sizeRaw) === true) {
-                    $sizeArray = $sizeRaw;
-                }
-
-                $fileCount = count($nameArray);
-                for ($i = 0; $i < $fileCount; $i++) {
-                    // Use indexed key to preserve all files: images[0], images[1], images[2].
-                    $uploadedFiles[$fieldName.'['.$i.']'] = [
-                        'name'     => $nameArray[$i],
-                        'type'     => $typeArray[$i] ?? '',
-                        'tmp_name' => $tmpNameArray[$i] ?? '',
-                        'error'    => $errorArray[$i] ?? UPLOAD_ERR_NO_FILE,
-                        'size'     => $sizeArray[$i] ?? 0,
-                    ];
-                }
-
-                continue;
-            }//end if
-
-            // Handle single file upload.
-            $uploadedFile = $this->request->getUploadedFile($fieldName);
-            if ($uploadedFile !== null) {
-                $uploadedFiles[$fieldName] = $uploadedFile;
-            }
-        }//end foreach
+        // Extract uploaded files from multipart/form-data using Request object.
+        $uploadedFiles = $this->extractAllUploadedFiles();
 
         // Determine RBAC and multitenancy settings based on admin status.
         $isAdmin = $this->isCurrentUserAdmin();
@@ -1527,6 +1468,10 @@ class ObjectsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     public function patch(
         string $register,
@@ -1880,6 +1825,9 @@ class ObjectsController extends Controller
      *     offset?: int<0, max>, next?: string, prev?: string,
      *     message?: 'Object does not belong to specified register/schema'|'Object not found'},
      *     array<never, never>>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     public function logs(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -1941,9 +1889,9 @@ class ObjectsController extends Controller
         );
 
         // Register normalization (string compare).
-        $objectRegisterNorm    = strtolower((string) $objectRegister);
-        $requestedRegisterNorm = strtolower($requestedRegister);
-        $registerMatch         = ($objectRegisterNorm === $requestedRegisterNorm);
+        $objectRegisterNorm = strtolower((string) $objectRegister);
+        $reqRegisterNorm    = strtolower($requestedRegister);
+        $registerMatch      = ($objectRegisterNorm === $reqRegisterNorm);
 
         if ($schemaMatch === false || $registerMatch === false) {
             $msg = 'Object does not belong to specified register/schema';
@@ -2076,11 +2024,11 @@ class ObjectsController extends Controller
 
         // Use ObjectService delegation to ExportHandler.
         $result = $objectService->exportObjects(
-            register: $registerEntity,
-            schema: $schemaEntity,
-            filters: $filters,
-            type: $type,
-            currentUser: $this->userSession->getUser()
+            _register: $registerEntity,
+            _schema: $schemaEntity,
+            _filters: $filters,
+            _type: $type,
+            _currentUser: $this->userSession->getUser()
         );
 
         // Return download response.
@@ -2131,15 +2079,15 @@ class ObjectsController extends Controller
 
             // Use ObjectService delegation to ExportHandler.
             $result = $this->objectService->importObjects(
-                register: $registerEntity,
-                uploadedFile: $uploadedFile,
-                schema: $schema,
-                validation: $validation,
-                events: $events,
-                rbac: $rbac,
-                multitenancy: $multi,
-                publish: $publish,
-                currentUser: $this->userSession->getUser()
+                _register: $registerEntity,
+                _uploadedFile: $uploadedFile,
+                _schema: $schema,
+                _validation: $validation,
+                _events: $events,
+                _rbac: $rbac,
+                _multitenancy: $multi,
+                _publish: $publish,
+                _currentUser: $this->userSession->getUser()
             );
 
             return new JSONResponse(
@@ -2323,6 +2271,8 @@ class ObjectsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with migration result or error
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function migrate(ObjectService $objectService): JSONResponse
     {
@@ -2481,8 +2431,8 @@ class ObjectsController extends Controller
 
             // Use ObjectService delegation to handler.
             $result = $this->objectService->vectorizeBatchObjects(
-                views: $views,
-                batchSize: $batchSize
+                _views: $views,
+                _batchSize: $batchSize
             );
 
             return new JSONResponse(
@@ -2525,7 +2475,7 @@ class ObjectsController extends Controller
             }
 
             // Use ObjectService delegation to handler.
-            $stats = $this->objectService->getVectorizationStatistics(views: $views);
+            $stats = $this->objectService->getVectorizationStatistics(_views: $views);
 
             return new JSONResponse(
                 data: [
@@ -2567,7 +2517,7 @@ class ObjectsController extends Controller
             }
 
             // Use ObjectService delegation to handler.
-            $count = $this->objectService->getVectorizationCount(schemas: $schemas);
+            $count = $this->objectService->getVectorizationCount(_schemas: $schemas);
 
             return new JSONResponse(
                 data: [

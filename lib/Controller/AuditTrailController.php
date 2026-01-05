@@ -57,6 +57,9 @@ class AuditTrailController extends Controller
      * Extract pagination, filter, and search parameters from request
      *
      * @return array The extracted request parameters
+     *
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Request parameter extraction requires many conditional checks
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function extractRequestParameters(): array
     {

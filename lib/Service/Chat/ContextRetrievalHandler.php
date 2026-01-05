@@ -38,6 +38,8 @@ use Psr\Log\LoggerInterface;
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex RAG context retrieval with multiple search strategies
  */
 class ContextRetrievalHandler
 {
@@ -94,6 +96,10 @@ class ContextRetrievalHandler
      * @param array      $ragSettings   RAG configuration overrides (optional).
      *
      * @return array Retrieved context with semantic results, chunks, and metadata.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  RAG context retrieval requires many search strategies
+     * @SuppressWarnings(PHPMD.NPathComplexity)       RAG context retrieval requires many search strategies
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Complex RAG logic cannot be easily split
      */
     public function retrieveContext(
         string $query,
@@ -408,6 +414,9 @@ class ContextRetrievalHandler
      * @param array $result Search result array.
      *
      * @return string Human-readable source name
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Name extraction requires checking many possible fields
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Name extraction requires checking many possible fields
      */
     private function extractSourceName(array $result): string
     {

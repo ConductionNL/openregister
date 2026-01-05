@@ -43,6 +43,8 @@ use Psr\Log\LoggerInterface;
  * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class CreateFileHandler
 {
@@ -57,17 +59,17 @@ class CreateFileHandler
     /**
      * Constructor for CreateFileHandler.
      *
-     * @param IRootFolder             $rootFolder              Root folder for file operations.
-     * @param FolderManagementHandler $folderManagementHandler Folder management handler.
-     * @param FileValidationHandler   $fileValidationHandler   File validation handler.
-     * @param FileOwnershipHandler    $fileOwnershipHandler    File ownership handler.
-     * @param ObjectEntityMapper      $objectEntityMapper      Object entity mapper.
-     * @param LoggerInterface         $logger                  Logger for logging operations.
+     * @param IRootFolder             $rootFolder           Root folder for file operations.
+     * @param FolderManagementHandler $folderMgmtHandler    Folder management handler.
+     * @param FileValidationHandler   $fileValidHandler     File validation handler.
+     * @param FileOwnershipHandler    $fileOwnershipHandler File ownership handler.
+     * @param ObjectEntityMapper      $objectEntityMapper   Object entity mapper.
+     * @param LoggerInterface         $logger               Logger for logging operations.
      */
     public function __construct(
         private readonly IRootFolder $rootFolder,
-        private readonly FolderManagementHandler $folderManagementHandler,
-        private readonly FileValidationHandler $fileValidationHandler,
+        private readonly FolderManagementHandler $folderMgmtHandler,
+        private readonly FileValidationHandler $fileValidHandler,
         private readonly FileOwnershipHandler $fileOwnershipHandler,
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly LoggerInterface $logger
@@ -108,6 +110,11 @@ class CreateFileHandler
      *
      * @phpstan-param array<int, string> $tags
      * @psalm-param   array<int, string> $tags
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  Boolean flag is intentional for simple share toggle.
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * File creation requires handling multiple content formats and error cases.
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple execution paths for content processing and validation.
      */
     public function addFile(
         ObjectEntity|string $objectEntity,
@@ -132,7 +139,7 @@ class CreateFileHandler
             }
 
             // Use the new ID-based folder approach.
-            $folder = $this->folderManagementHandler->getObjectFolder(objectEntity: $objectEntity, registerId: $registerId);
+            $folder = $this->folderMgmtHandler->getObjectFolder(objectEntity: $objectEntity, registerId: $registerId);
 
             // Check if content is a data URI and extract the base64 content.
             if (str_starts_with($content, 'data:') === true) {
@@ -159,12 +166,12 @@ class CreateFileHandler
             }
 
             // Security: Block executable files.
-            $this->fileValidationHandler->blockExecutableFile(fileName: $fileName, fileContent: $content);
+            $this->fileValidHandler->blockExecutableFile(fileName: $fileName, fileContent: $content);
 
             $file = $folder->newFile($fileName);
 
             // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
-            $this->fileValidationHandler->checkOwnership($file);
+            $this->fileValidHandler->checkOwnership($file);
 
             // Write content to the file.
             $file->putContent($content);
@@ -225,6 +232,8 @@ class CreateFileHandler
      *
      * @phpstan-param array<int, string> $tags
      * @psalm-param   array<int, string> $tags
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag is intentional for simple share toggle.
      */
     public function saveFile(
         ObjectEntity $objectEntity,

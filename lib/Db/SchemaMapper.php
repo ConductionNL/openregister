@@ -73,6 +73,13 @@ use OCA\OpenRegister\Db\ObjectEntityMapper;
  * @method list<Schema> findEntities(IQueryBuilder $query)
  *
  * @template-extends QBMapper<Schema>
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.TooManyMethods)           Many methods required for schema management and analysis
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.ElseExpression)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class SchemaMapper extends QBMapper
 {
@@ -193,6 +200,7 @@ class SchemaMapper extends QBMapper
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Flags control security filtering behavior
+     * @SuppressWarnings(PHPMD.StaticAccess)          Schema::fromRow is a standard entity factory pattern
      */
     public function find(
         string | int $id,
@@ -473,129 +481,211 @@ class SchemaMapper extends QBMapper
      * @param Schema $schema The schema object to clean
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is standard Symfony UID pattern
      */
     private function cleanObject(Schema $schema): void
     {
-        // Enforce $ref is always a string in all properties and array items.
+        $this->cleanRefProperties($schema);
+        $this->ensureSchemaIdentifiers($schema);
+        $this->validateConfigurationFields($schema);
+        $this->buildRequiredFieldsArray($schema);
+        $this->autoPopulateConfigurationFields($schema);
+    }//end cleanObject()
+
+    /**
+     * Clean $ref properties to ensure they are strings
+     *
+     * @param Schema $schema Schema to clean
+     *
+     * @return void
+     */
+    private function cleanRefProperties(Schema $schema): void
+    {
         $properties = $schema->getProperties() ?? [];
         $this->enforceRefIsStringRecursive($properties);
         $schema->setProperties($properties);
+    }//end cleanRefProperties()
 
-        // Check if UUID is set, if not, generate a new one.
+    /**
+     * Ensure schema has UUID, slug, version and source
+     *
+     * @param Schema $schema Schema to update
+     *
+     * @return void
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is standard Symfony UID pattern
+     */
+    private function ensureSchemaIdentifiers(Schema $schema): void
+    {
         if ($schema->getUuid() === null) {
             $schema->setUuid((string) Uuid::v4());
         }
 
-        // Ensure the object has a slug.
         if (empty($schema->getSlug()) === true) {
-            // Convert to lowercase and replace spaces with dashes.
-            $slug = strtolower(trim($schema->getTitle() ?? 'schema'));
-            // Assuming title is used for slug.
-            // Remove special characters.
-            $slug = preg_replace('/[^a-z0-9-]/', '-', $slug);
-            // Remove multiple dashes.
-            $slug = preg_replace('/-+/', '-', $slug);
-            // Remove leading/trailing dashes.
-            $slug = trim($slug, '-');
-
-            $schema->setSlug($slug);
+            $schema->setSlug($this->generateSlug($schema->getTitle() ?? 'schema'));
         }
 
-        // Ensure the object has a version.
         if ($schema->getVersion() === null) {
             $schema->setVersion('0.0.1');
         }
 
-        // Ensure the object has a source set to 'internal' by default.
         if ($schema->getSource() === null || $schema->getSource() === '') {
             $schema->setSource('internal');
         }
+    }//end ensureSchemaIdentifiers()
 
-        $properties      = ($schema->getProperties() ?? []);
-        $propertyKeys    = array_keys($properties);
-        $configuration   = $schema->getConfiguration() ?? [];
+    /**
+     * Generate a slug from a title
+     *
+     * @param string $title Title to convert
+     *
+     * @return string Generated slug
+     */
+    private function generateSlug(string $title): string
+    {
+        $slug = strtolower(trim($title));
+        $slug = preg_replace('/[^a-z0-9-]/', '-', $slug);
+        $slug = preg_replace('/-+/', '-', $slug);
+        return trim($slug, '-');
+    }//end generateSlug()
+
+    /**
+     * Validate that configuration fields exist in properties
+     *
+     * @param Schema $schema Schema to validate
+     *
+     * @throws \Exception If field doesn't exist
+     *
+     * @return void
+     */
+    private function validateConfigurationFields(Schema $schema): void
+    {
+        $propertyKeys  = array_keys($schema->getProperties() ?? []);
+        $configuration = $schema->getConfiguration() ?? [];
+
         $objectNameField = $configuration['objectNameField'] ?? '';
-        $objectDescriptionField = $configuration['objectDescriptionField'] ?? '';
-
-        // If an object name field is provided, it must exist in the properties.
         if (empty($objectNameField) === false && in_array($objectNameField, $propertyKeys) === false) {
-            $msg = "The value for objectNameField ('$objectNameField') does not exist as a property in the schema.";
-            throw new Exception($msg);
-        }
-
-        // If an object description field is provided, it must exist in the properties.
-        if (empty($objectDescriptionField) === false && in_array($objectDescriptionField, $propertyKeys) === false) {
-            $msg = sprintf(
-                "The value for objectDescriptionField ('%s') does not exist as a property in the schema.",
-                $objectDescriptionField
+            throw new Exception(
+                "The value for objectNameField ('$objectNameField') does not exist as a property in the schema."
             );
-            throw new Exception($msg);
         }
 
-        // Establish the required fields based on the properties.
-        // If schema already has a required array (JSON Schema standard), preserve it.
-        // Otherwise, build from property-level 'required' flags (legacy support).
+        $objDescField = $configuration['objectDescriptionField'] ?? '';
+        if (empty($objDescField) === false && in_array($objDescField, $propertyKeys) === false) {
+            throw new Exception(
+                "The value for objectDescriptionField ('$objDescField') does not exist as a property in the schema."
+            );
+        }
+    }//end validateConfigurationFields()
+
+    /**
+     * Build required fields array from schema or property flags
+     *
+     * @param Schema $schema Schema to update
+     *
+     * @return void
+     */
+    private function buildRequiredFieldsArray(Schema $schema): void
+    {
         $existingRequired = $schema->getRequired();
-        $requiredFields   = [];
 
-        // PRIORITY 1: Use existing schema-level required array if present (JSON Schema standard).
         if (empty($existingRequired) === false) {
-            $requiredFields = $existingRequired;
-        } else {
-            // PRIORITY 2: Build from property-level 'required' flags (legacy/fallback).
-            foreach ($properties as $propertyKey => $property) {
-                // Check if the property has a 'required' field set to true or the string 'true'.
-                if (($property['required'] ?? null) !== null) {
-                    $requiredValue = $property['required'];
-                    if ($requiredValue === true
-                        || $requiredValue === 'true'
-                        || (is_string($requiredValue) === true && strtolower(trim($requiredValue)) === 'true')
-                    ) {
-                        $requiredFields[] = $propertyKey;
-                    }
-                }
+            return;
+        }
+
+        $requiredFields = [];
+        $properties     = $schema->getProperties() ?? [];
+
+        foreach ($properties as $propertyKey => $property) {
+            if ($this->isPropertyRequired($property) === true) {
+                $requiredFields[] = $propertyKey;
             }
         }
 
-        // Set the required fields on the schema.
         $schema->setRequired($requiredFields);
+    }//end buildRequiredFieldsArray()
 
-        // If the object name field is empty, try to find a logical key.
+    /**
+     * Check if a property is marked as required
+     *
+     * @param array $property Property definition
+     *
+     * @return bool True if required
+     */
+    private function isPropertyRequired(array $property): bool
+    {
+        $requiredValue = $property['required'] ?? null;
+
+        if ($requiredValue === null) {
+            return false;
+        }
+
+        if ($requiredValue === true || $requiredValue === 'true') {
+            return true;
+        }
+
+        return is_string($requiredValue) === true && strtolower(trim($requiredValue)) === 'true';
+    }//end isPropertyRequired()
+
+    /**
+     * Auto-populate configuration name/description fields if empty
+     *
+     * @param Schema $schema Schema to update
+     *
+     * @return void
+     */
+    private function autoPopulateConfigurationFields(Schema $schema): void
+    {
+        $propertyKeys  = array_keys($schema->getProperties() ?? []);
+        $configuration = $schema->getConfiguration() ?? [];
+
+        $nameFieldKeys = ['name', 'naam', 'title', 'titel'];
+        $descFieldKeys = ['description', 'beschrijving', 'omschrijving', 'summary'];
+
+        $objectNameField = $configuration['objectNameField'] ?? '';
         if (empty($objectNameField) === true) {
-            $nameKeys = [
-                'name',
-                'naam',
-                'title',
-                'titel',
-            ];
-            foreach ($nameKeys as $key) {
-                if (in_array($key, $propertyKeys) === true) {
-                    // Update the configuration array.
-                    $configuration['objectNameField'] = $key;
-                    $schema->setConfiguration($configuration);
-                    break;
-                }
+            $matchedKey = $this->findFirstMatchingKey(
+                propertyKeys: $propertyKeys,
+                candidates: $nameFieldKeys
+            );
+            if ($matchedKey !== null) {
+                $configuration['objectNameField'] = $matchedKey;
+                $schema->setConfiguration($configuration);
             }
         }
 
-        // If the object description field is empty, try to find a logical key.
-        if (empty($objectDescriptionField) === true) {
-            $descriptionKeys = [
-                'description',
-                'beschrijving',
-                'omschrijving',
-                'summary',
-            ];
-            foreach ($descriptionKeys as $key) {
-                if (in_array($key, $propertyKeys) === true) {
-                    // Update the configuration array.
-                    $configuration['objectDescriptionField'] = $key;
-                    $schema->setConfiguration($configuration);
-                    break;
-                }
+        $objDescField = $configuration['objectDescriptionField'] ?? '';
+        if (empty($objDescField) === true) {
+            $matchedKey = $this->findFirstMatchingKey(
+                propertyKeys: $propertyKeys,
+                candidates: $descFieldKeys
+            );
+            if ($matchedKey !== null) {
+                $configuration['objectDescriptionField'] = $matchedKey;
+                $schema->setConfiguration($configuration);
             }
         }
-    }//end cleanObject()
+    }//end autoPopulateConfigurationFields()
+
+    /**
+     * Find first key from candidates that exists in property keys
+     *
+     * @param array $propertyKeys Property key array
+     * @param array $candidates   Candidate keys to search for
+     *
+     * @return string|null Found key or null
+     */
+    private function findFirstMatchingKey(array $propertyKeys, array $candidates): string|null
+    {
+        foreach ($candidates as $key) {
+            if (in_array($key, $propertyKeys) === true) {
+                return $key;
+            }
+        }
+
+        return null;
+    }//end findFirstMatchingKey()
 
     /**
      * Recursively enforce that $ref is always a string in all properties and array items
@@ -605,6 +695,8 @@ class SchemaMapper extends QBMapper
      * @return void
      *
      * @throws \Exception If $ref is not a string or cannot be converted
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function enforceRefIsStringRecursive(array &$properties): void
     {
@@ -966,6 +1058,9 @@ class SchemaMapper extends QBMapper
      * @param string $targetSchemaSlug The target schema slug to look for
      *
      * @return bool True if a reference to the target schema is found
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Recursive reference checking requires many conditions
      */
     public function hasReferenceToSchema(
         array $properties,
@@ -1110,6 +1205,9 @@ class SchemaMapper extends QBMapper
      * @return null|string The facet type ('terms', 'date_histogram') or null if not facetable
      *
      * @psalm-return 'date_histogram'|'terms'|null
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     private function determineFacetTypeForProperty(array $property, string $fieldName): string|null
     {
@@ -1124,7 +1222,7 @@ class SchemaMapper extends QBMapper
         }
 
         // Auto-detect common facetable field names.
-        $commonFacetableFields = [
+        $commonFacetFields = [
             'type',
             'status',
             'category',
@@ -1145,7 +1243,7 @@ class SchemaMapper extends QBMapper
         ];
 
         $lowerFieldName = strtolower($fieldName);
-        if (in_array($lowerFieldName, $commonFacetableFields) === true) {
+        if (in_array($lowerFieldName, $commonFacetFields) === true) {
             return $this->determineFacetTypeFromProperty($property);
         }
 
@@ -1389,9 +1487,8 @@ class SchemaMapper extends QBMapper
                 $source = 'inherited';
             }
 
-            if ($isNative === true) {
-                $inheritedFrom = null;
-            } else {
+            $inheritedFrom = null;
+            if ($isNative === false) {
                 $inheritedFrom = $this->findPropertySource(
                     propertyName: $propName,
                     parentRefs: $allOf
@@ -1733,6 +1830,10 @@ class SchemaMapper extends QBMapper
      * @throws \Exception If child violates Liskov Substitution Principle
      *
      * @return array Merged property definition
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */
     private function deepMergePropertyWithValidation(
         array $parentProperty,
@@ -1893,43 +1994,165 @@ class SchemaMapper extends QBMapper
         string $propertyName,
         string $schemaId
     ): void {
-        // Type cannot be changed.
-        if ($constraint === 'type' && $parentValue !== $childValue) {
-            // Allow array of types if child is subset or equal.
-            if (is_array($parentValue) === true && is_array($childValue) === true) {
-                // Child must be subset of parent (more restrictive is ok).
-                $diff = array_diff($childValue, $parentValue);
-                if (count($diff) > 0) {
-                    $parentJson = json_encode($parentValue);
-                    $childJson  = json_encode($childValue);
-                    $msg1       = "Schema '{$schemaId}': Property '{$propertyName}' ";
-                    $msg2       = "cannot change type from {$parentJson} to {$childJson} ";
-                    $msg3       = '(adds types not in parent)';
-                    $message    = $msg1.$msg2.$msg3;
-                    throw new Exception($message);
-                }
+        if ($constraint === 'type') {
+            $this->validateTypeConstraint(
+                parentValue: $parentValue,
+                childValue: $childValue,
+                propertyName: $propertyName,
+                schemaId: $schemaId
+            );
+            return;
+        }
 
-                return;
-            }
+        if ($constraint === 'format') {
+            $this->validateFormatConstraint(
+                parentValue: $parentValue,
+                childValue: $childValue,
+                propertyName: $propertyName,
+                schemaId: $schemaId
+            );
+            return;
+        }
 
-            if (is_array($parentValue) === false && is_array($childValue) === false) {
-                $msg = sprintf(
-                    "Schema '%s': Property '%s' cannot change type from '%s' to '%s'",
+        if ($constraint === 'enum') {
+            $this->validateEnumConstraint(
+                parentValue: $parentValue,
+                childValue: $childValue,
+                propertyName: $propertyName,
+                schemaId: $schemaId
+            );
+            return;
+        }
+
+        if ($this->isMinimumConstraint($constraint) === true) {
+            $this->validateMinimumConstraint(
+                parentValue: $parentValue,
+                childValue: $childValue,
+                constraint: $constraint,
+                propertyName: $propertyName,
+                schemaId: $schemaId
+            );
+            return;
+        }
+
+        if ($this->isMaximumConstraint($constraint) === true) {
+            $this->validateMaximumConstraint(
+                parentValue: $parentValue,
+                childValue: $childValue,
+                constraint: $constraint,
+                propertyName: $propertyName,
+                schemaId: $schemaId
+            );
+            return;
+        }
+
+        if ($constraint === 'pattern') {
+            $this->validatePatternConstraint(
+                parentValue: $parentValue,
+                childValue: $childValue,
+                propertyName: $propertyName,
+                schemaId: $schemaId
+            );
+        }
+    }//end validateConstraintChange()
+
+    /**
+     * Check if constraint is a minimum constraint
+     *
+     * @param string $constraint Constraint name
+     *
+     * @return bool True if minimum constraint
+     */
+    private function isMinimumConstraint(string $constraint): bool
+    {
+        return in_array($constraint, ['minimum', 'minLength', 'minItems', 'minProperties'], true);
+    }//end isMinimumConstraint()
+
+    /**
+     * Check if constraint is a maximum constraint
+     *
+     * @param string $constraint Constraint name
+     *
+     * @return bool True if maximum constraint
+     */
+    private function isMaximumConstraint(string $constraint): bool
+    {
+        return in_array($constraint, ['maximum', 'maxLength', 'maxItems', 'maxProperties'], true);
+    }//end isMaximumConstraint()
+
+    /**
+     * Validate type constraint change
+     *
+     * @param mixed  $parentValue  Parent type value
+     * @param mixed  $childValue   Child type value
+     * @param string $propertyName Property name
+     * @param string $schemaId     Schema ID
+     *
+     * @throws \Exception If type change is invalid
+     *
+     * @return void
+     */
+    private function validateTypeConstraint(
+        mixed $parentValue,
+        mixed $childValue,
+        string $propertyName,
+        string $schemaId
+    ): void {
+        if ($parentValue === $childValue) {
+            return;
+        }
+
+        if (is_array($parentValue) === true && is_array($childValue) === true) {
+            $diff = array_diff($childValue, $parentValue);
+            if (count($diff) > 0) {
+                $parentJson = json_encode($parentValue);
+                $childJson  = json_encode($childValue);
+                $message    = sprintf(
+                    "Schema '%s': Property '%s' cannot change type from %s to %s (adds types not in parent)",
                     $schemaId,
                     $propertyName,
-                    $parentValue,
-                    $childValue
+                    $parentJson,
+                    $childJson
                 );
-                throw new Exception($msg);
+                throw new Exception($message);
             }
 
-            throw new Exception(
-                "Schema '{$schemaId}': Property '{$propertyName}' type change is not compatible"
-            );
-        }//end if
+            return;
+        }
 
-        // Format can only be added or made more restrictive.
-        if ($constraint === 'format' && $parentValue !== null && $parentValue !== $childValue) {
+        if (is_array($parentValue) === false && is_array($childValue) === false) {
+            $msg = sprintf(
+                "Schema '%s': Property '%s' cannot change type from '%s' to '%s'",
+                $schemaId,
+                $propertyName,
+                $parentValue,
+                $childValue
+            );
+            throw new Exception($msg);
+        }
+
+        throw new Exception("Schema '{$schemaId}': Property '{$propertyName}' type change is not compatible");
+    }//end validateTypeConstraint()
+
+    /**
+     * Validate format constraint change
+     *
+     * @param mixed  $parentValue  Parent format value
+     * @param mixed  $childValue   Child format value
+     * @param string $propertyName Property name
+     * @param string $schemaId     Schema ID
+     *
+     * @throws \Exception If format change is invalid
+     *
+     * @return void
+     */
+    private function validateFormatConstraint(
+        mixed $parentValue,
+        mixed $childValue,
+        string $propertyName,
+        string $schemaId
+    ): void {
+        if ($parentValue !== null && $parentValue !== $childValue) {
             $msg = sprintf(
                 "Schema '%s': Property '%s' cannot change format from '%s' to '%s'",
                 $schemaId,
@@ -1939,51 +2162,135 @@ class SchemaMapper extends QBMapper
             );
             throw new Exception($msg);
         }
+    }//end validateFormatConstraint()
 
-        // Enum can only be made more restrictive (subset).
-        if ($constraint === 'enum' && is_array($parentValue) === true && is_array($childValue) === true) {
-            $diff = array_diff($childValue, $parentValue);
-            if (count($diff) > 0) {
-                $msg = sprintf(
-                    "Schema '%s': Property '%s' enum cannot add values not in parent (added: %s)",
-                    $schemaId,
-                    $propertyName,
-                    json_encode($diff)
-                );
-                throw new Exception($msg);
-            }
+    /**
+     * Validate enum constraint change
+     *
+     * @param mixed  $parentValue  Parent enum value
+     * @param mixed  $childValue   Child enum value
+     * @param string $propertyName Property name
+     * @param string $schemaId     Schema ID
+     *
+     * @throws \Exception If enum change is invalid
+     *
+     * @return void
+     */
+    private function validateEnumConstraint(
+        mixed $parentValue,
+        mixed $childValue,
+        string $propertyName,
+        string $schemaId
+    ): void {
+        if (is_array($parentValue) === false || is_array($childValue) === false) {
+            return;
         }
 
-        // Minimum constraints can only be increased (more restrictive).
-        if (($constraint === 'minimum' || $constraint === 'minLength'
-            || $constraint === 'minItems' || $constraint === 'minProperties') === true
-            && is_numeric($parentValue) === true && is_numeric($childValue) === true
-        ) {
-            if ($childValue < $parentValue) {
-                $msg1    = "Schema '{$schemaId}': Property '{$propertyName}' ";
-                $msg2    = "{$constraint} cannot be decreased from ";
-                $msg3    = "{$parentValue} to {$childValue} (relaxes constraint)";
-                $message = $msg1.$msg2.$msg3;
-                throw new Exception($message);
-            }
+        $diff = array_diff($childValue, $parentValue);
+        if (count($diff) > 0) {
+            $msg = sprintf(
+                "Schema '%s': Property '%s' enum cannot add values not in parent (added: %s)",
+                $schemaId,
+                $propertyName,
+                json_encode($diff)
+            );
+            throw new Exception($msg);
+        }
+    }//end validateEnumConstraint()
+
+    /**
+     * Validate minimum constraint change
+     *
+     * @param mixed  $parentValue  Parent minimum value
+     * @param mixed  $childValue   Child minimum value
+     * @param string $constraint   Constraint name
+     * @param string $propertyName Property name
+     * @param string $schemaId     Schema ID
+     *
+     * @throws \Exception If minimum constraint is relaxed
+     *
+     * @return void
+     */
+    private function validateMinimumConstraint(
+        mixed $parentValue,
+        mixed $childValue,
+        string $constraint,
+        string $propertyName,
+        string $schemaId
+    ): void {
+        if (is_numeric($parentValue) === false || is_numeric($childValue) === false) {
+            return;
         }
 
-        // Maximum constraints can only be decreased (more restrictive).
-        if (($constraint === 'maximum' || $constraint === 'maxLength'
-            || $constraint === 'maxItems' || $constraint === 'maxProperties') === true
-            && is_numeric($parentValue) === true && is_numeric($childValue) === true
-        ) {
-            if ($childValue > $parentValue) {
-                $msg1    = "Schema '{$schemaId}': Property '{$propertyName}' ";
-                $msg2    = "{$constraint} cannot be increased from ";
-                $msg3    = "{$parentValue} to {$childValue} (relaxes constraint)";
-                $message = $msg1.$msg2.$msg3;
-                throw new Exception($message);
-            }
+        if ($childValue < $parentValue) {
+            $message = sprintf(
+                "Schema '%s': Property '%s' %s cannot be decreased from %s to %s (relaxes constraint)",
+                $schemaId,
+                $propertyName,
+                $constraint,
+                $parentValue,
+                $childValue
+            );
+            throw new Exception($message);
+        }
+    }//end validateMinimumConstraint()
+
+    /**
+     * Validate maximum constraint change
+     *
+     * @param mixed  $parentValue  Parent maximum value
+     * @param mixed  $childValue   Child maximum value
+     * @param string $constraint   Constraint name
+     * @param string $propertyName Property name
+     * @param string $schemaId     Schema ID
+     *
+     * @throws \Exception If maximum constraint is relaxed
+     *
+     * @return void
+     */
+    private function validateMaximumConstraint(
+        mixed $parentValue,
+        mixed $childValue,
+        string $constraint,
+        string $propertyName,
+        string $schemaId
+    ): void {
+        if (is_numeric($parentValue) === false || is_numeric($childValue) === false) {
+            return;
         }
 
-        // Pattern can only be added, not changed.
-        if ($constraint === 'pattern' && $parentValue !== null && $parentValue !== $childValue) {
+        if ($childValue > $parentValue) {
+            $message = sprintf(
+                "Schema '%s': Property '%s' %s cannot be increased from %s to %s (relaxes constraint)",
+                $schemaId,
+                $propertyName,
+                $constraint,
+                $parentValue,
+                $childValue
+            );
+            throw new Exception($message);
+        }
+    }//end validateMaximumConstraint()
+
+    /**
+     * Validate pattern constraint change
+     *
+     * @param mixed  $parentValue  Parent pattern value
+     * @param mixed  $childValue   Child pattern value
+     * @param string $propertyName Property name
+     * @param string $schemaId     Schema ID
+     *
+     * @throws \Exception If pattern change is invalid
+     *
+     * @return void
+     */
+    private function validatePatternConstraint(
+        mixed $parentValue,
+        mixed $childValue,
+        string $propertyName,
+        string $schemaId
+    ): void {
+        if ($parentValue !== null && $parentValue !== $childValue) {
             $msg = sprintf(
                 "Schema '%s': Property '%s' pattern cannot be changed from '%s' to '%s'",
                 $schemaId,
@@ -1993,7 +2300,7 @@ class SchemaMapper extends QBMapper
             );
             throw new Exception($msg);
         }
-    }//end validateConstraintChange()
+    }//end validatePatternConstraint()
 
     /**
      * Validate that replacing a property doesn't relax constraints
@@ -2087,8 +2394,8 @@ class SchemaMapper extends QBMapper
     {
         try {
             // Start with empty merged parent properties.
-            $mergedParentProperties = [];
-            $mergedParentRequired   = [];
+            $mergedParentProps    = [];
+            $mergedParentRequired = [];
 
             // Load and merge all parent schemas.
             foreach ($allOf as $parentRef) {
@@ -2105,8 +2412,8 @@ class SchemaMapper extends QBMapper
                 }
 
                 // Merge this parent's properties into the accumulated parent properties.
-                $mergedParentProperties = $this->mergeSchemaProperties(
-                    parentProperties: $mergedParentProperties,
+                $mergedParentProps = $this->mergeSchemaProperties(
+                    parentProperties: $mergedParentProps,
                     childProperties: $parentSchema->getProperties()
                 );
 
@@ -2118,7 +2425,7 @@ class SchemaMapper extends QBMapper
 
             // Extract only the properties that differ from merged parents.
             $deltaProperties = $this->extractPropertyDelta(
-                parentProperties: $mergedParentProperties,
+                parentProperties: $mergedParentProps,
                 childProperties: $schema->getProperties()
             );
 
@@ -2256,6 +2563,9 @@ class SchemaMapper extends QBMapper
      * @return array Array of schema UUIDs that compose with this schema
      *
      * @psalm-return list{0?: mixed,...}
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Schema composition search requires many conditional checks
      */
     public function findExtendedBy(int|string $schemaIdentifier): array
     {

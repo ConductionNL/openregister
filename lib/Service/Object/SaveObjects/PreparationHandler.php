@@ -55,16 +55,16 @@ class PreparationHandler
     /**
      * Constructor for PreparationHandler.
      *
-     * @param SaveObject            $saveHandler           Handler for save operations.
-     * @param SchemaMapper          $schemaMapper          Mapper for schema operations.
-     * @param BulkValidationHandler $bulkValidationHandler Handler for schema analysis.
-     * @param IUserSession          $userSession           User session for owner assignment.
-     * @param LoggerInterface       $logger                Logger for logging operations.
+     * @param SaveObject            $saveHandler      Handler for save operations.
+     * @param SchemaMapper          $schemaMapper     Mapper for schema operations.
+     * @param BulkValidationHandler $bulkValidHandler Handler for schema analysis.
+     * @param IUserSession          $userSession      User session for owner assignment.
+     * @param LoggerInterface       $logger           Logger for logging operations.
      */
     public function __construct(
         private readonly SaveObject $saveHandler,
         private readonly SchemaMapper $schemaMapper,
-        private readonly BulkValidationHandler $bulkValidationHandler,
+        private readonly BulkValidationHandler $bulkValidHandler,
         // REMOVED: private readonly.
         private readonly IUserSession $userSession,
         private readonly LoggerInterface $logger
@@ -93,6 +93,10 @@ class PreparationHandler
      *     1: array<int|string, Schema>, 2: array<int, array<string, mixed>>}
      * @phpstan-return array{0: array<int, array<string, mixed>>,
      *     1: array<int|string, Schema>, 2: array<int, array<string, mixed>>}
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex metadata hydration and schema processing
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Many conditional paths for metadata extraction
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Complete preparation pipeline with multiple steps
      */
     public function prepareObjectsForBulkSave(array $objects): array
     {
@@ -250,8 +254,8 @@ class PreparationHandler
             }
 
             // RELATIONS EXTRACTION: Scan the object data for relations.
-            $objectDataForRelations = $tempEntity->getObject();
-            $relations = $this->saveHandler->scanForRelations(data: $objectDataForRelations, prefix: '', schema: $schema);
+            $objDataForRels = $tempEntity->getObject();
+            $relations      = $this->saveHandler->scanForRelations(data: $objDataForRels, prefix: '', schema: $schema);
             $selfData['relations'] = $relations;
 
             $object['@self'] = $selfData;
@@ -300,7 +304,7 @@ class PreparationHandler
     private function getSchemaAnalysisWithCache(Schema $schema): array
     {
         // Delegate to BulkValidationHandler for comprehensive schema analysis.
-        return $this->bulkValidationHandler->performComprehensiveSchemaAnalysis($schema);
+        return $this->bulkValidHandler->performComprehensiveSchemaAnalysis($schema);
     }//end getSchemaAnalysisWithCache()
 
     /**
@@ -314,7 +318,7 @@ class PreparationHandler
     private function handlePreValidationCascading(array $object, string $uuid): array
     {
         // Delegate to BulkValidationHandler for pre-validation cascading.
-        [$processedObject, $processedUuid] = $this->bulkValidationHandler->handlePreValidationCascading(
+        [$processedObject, $processedUuid] = $this->bulkValidHandler->handlePreValidationCascading(
             object: $object,
             uuid: $uuid
         );

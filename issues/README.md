@@ -36,6 +36,10 @@ Sections:
 | # | Title | Priority | Status | Effort |
 |---|-------|----------|--------|--------|
 | 001 | [Magic Mapper Cross-Table Search Performance Optimization](001-magic-mapper-performance-optimization.md) | 🟡 Medium | 📋 Open | ⏱️ 2-4h |
+| 002 | [Magic Mapper Feature Completeness Verification](002-magic-mapper-feature-completeness-verification.md) | 🔴 High | 📋 Open | ⏱️ 4-6h |
+| 003 | [Magic Mapper CSV Object Reference Import](003-magic-mapper-csv-object-reference-import.md) | 🔴 High | 📋 Open | ⏱️ 4-6h |
+| 004 | [OpenCatalogi Magic Mapper Integration](004-opencatalogi-magic-mapper-integration.md) | 🟡 Medium | 📋 Open | ⏱️ 6-8h |
+| 005 | [PHPMD Suppressions Technical Debt](005-phpmd-suppressions-technical-debt.md) | 🟢 Low | 📋 Open | ⏱️ 8-16h |
 
 ## ✅ Closed Issues
 

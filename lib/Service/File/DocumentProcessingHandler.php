@@ -113,11 +113,11 @@ class DocumentProcessingHandler
 
         $fileName      = $node->getName();
         $fileExtension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
-        $fileNameWithoutExtension = pathinfo($fileName, PATHINFO_FILENAME);
+        $fileBaseName  = pathinfo($fileName, PATHINFO_FILENAME);
 
         // Generate output file name if not provided.
         if ($outputName === null) {
-            $outputName = $fileNameWithoutExtension.'_replaced';
+            $outputName = $fileBaseName.'_replaced';
             if (empty($fileExtension) === false) {
                 $outputName .= '.'.$fileExtension;
             }
@@ -166,9 +166,9 @@ class DocumentProcessingHandler
         // Generate anonymized file name.
         $fileName      = $node->getName();
         $fileExtension = pathinfo($fileName, PATHINFO_EXTENSION);
-        $fileNameWithoutExtension = pathinfo($fileName, PATHINFO_FILENAME);
+        $fileBaseName  = pathinfo($fileName, PATHINFO_FILENAME);
 
-        $anonymizedFileName = $fileNameWithoutExtension.'_anonymized';
+        $anonymizedFileName = $fileBaseName.'_anonymized';
         if (empty($fileExtension) === false) {
             $anonymizedFileName .= '.'.$fileExtension;
         }
@@ -195,6 +195,11 @@ class DocumentProcessingHandler
      * @psalm-param    array<string, string> $replacements
      * @phpstan-return File
      * @psalm-return   File
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess)          IOFactory::load is standard PhpWord pattern
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Document processing requires many conditional transformations
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Document processing requires many conditional branches
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Complex document processing requires extensive code
      */
     private function replaceWordsInWordDocument(
         Node $node,
@@ -378,23 +383,4 @@ class DocumentProcessingHandler
 
         return $newFile;
     }//end replaceWordsInTextDocument()
-
-    /**
-     * Get the current user.
-     *
-     * @return IUser The current user.
-     *
-     * @throws Exception If no user is logged in.
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future user context needs
-     */
-    private function getUser(): IUser
-    {
-        $user = $this->userSession->getUser();
-        if ($user === null) {
-            throw new Exception('User is not logged in');
-        }
-
-        return $user;
-    }//end getUser()
 }//end class

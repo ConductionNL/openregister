@@ -65,6 +65,10 @@ use OCA\OpenRegister\Service\FileService;
  * @method list<Register> findEntities(IQueryBuilder $query)
  *
  * @template-extends QBMapper<Register>
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class RegisterMapper extends QBMapper
 {
@@ -188,6 +192,9 @@ class RegisterMapper extends QBMapper
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Flags control security filtering behavior
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Find operation requires multiple lookup strategies
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */
     public function find(
         string|int $id,
@@ -535,6 +542,8 @@ class RegisterMapper extends QBMapper
      * @param Register $register The register object to clean
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is standard Symfony UID pattern
      */
     private function cleanObject(Register $register): void
     {

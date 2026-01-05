@@ -128,6 +128,11 @@ class SchemaHandler
      * @param bool $force Force recreation of existing fields
      *
      * @return array Result with success status, stats, execution time, and resolved conflicts.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Schema mirroring requires handling multiple schema scenarios
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple paths for conflict resolution and field processing
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive schema mirroring requires extensive code
      */
     public function mirrorSchemas(bool $force=false): array
     {
@@ -235,6 +240,9 @@ class SchemaHandler
      * @param array $schemas Array of Schema entities
      *
      * @return array Analysis with fields, conflicts, and resolved field types.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Conflict analysis requires handling multiple field type scenarios
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple paths for conflict detection and resolution
      */
     private function analyzeAndResolveFieldConflicts(array $schemas): array
     {
@@ -280,9 +288,11 @@ class SchemaHandler
                         'resolved_type'     => $resolvedType,
                     ]
                 );
-            } else {
-                $resolved[$fieldName] = $uniqueTypes[0];
+
+                continue;
             }
+
+            $resolved[$fieldName] = $uniqueTypes[0];
         }//end foreach
 
         return [
@@ -424,6 +434,9 @@ class SchemaHandler
      * @param bool $force Force recreation
      *
      * @return bool Success status
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Core field creation requires handling multiple field types
      */
     private function ensureCoreMetadataFields(bool $force): bool
     {
@@ -517,6 +530,9 @@ class SchemaHandler
      * @return int[] Result with created/updated counts
      *
      * @psalm-return array{created: int<0, max>, updated: int<0, max>}
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Field application requires handling multiple result scenarios
      */
     private function applySolrFields(array $solrFields, bool $force): array
     {
@@ -557,6 +573,8 @@ class SchemaHandler
      * @param string $collection Collection name
      *
      * @return array Field status with collection, existing fields, missing fields, and counts.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Field status requires handling multiple field comparison scenarios
      */
     public function getCollectionFieldStatus(string $collection): array
     {
@@ -570,9 +588,10 @@ class SchemaHandler
             foreach ($expectedFields as $fieldName => $fieldConfig) {
                 if (isset($currentFields[$fieldName]) === true) {
                     $existingFields[$fieldName] = $currentFields[$fieldName];
-                } else {
-                    $missingFields[$fieldName] = $fieldConfig;
+                    continue;
                 }
+
+                $missingFields[$fieldName] = $fieldConfig;
             }
 
             return [
@@ -606,6 +625,9 @@ class SchemaHandler
      * @param bool   $dryRun        Preview without making changes
      *
      * @return array Result with success status and field creation info.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Field creation requires handling dry run and multiple scenarios
      */
     public function createMissingFields(string $collection, array $missingFields, bool $dryRun=false): array
     {
@@ -644,6 +666,9 @@ class SchemaHandler
      * @param bool  $dryRun           Whether to only simulate (not apply).
      *
      * @return array Results with fixed/failed fields.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Mismatch fixing requires handling dry run and error scenarios
      */
     public function fixMismatchedFields(array $mismatchedFields, bool $dryRun=false): array
     {

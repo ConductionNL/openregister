@@ -87,6 +87,10 @@ class PermissionHandler
      * @return bool True if user has permission, false otherwise
      *
      * @throws Exception If user session is invalid or user groups cannot be determined
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) RBAC permission checks require multiple conditional paths
+     * @SuppressWarnings(PHPMD.NPathComplexity)      User/group/owner permission combinations create many paths
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  RBAC flag follows established API patterns
      */
     public function hasPermission(
         Schema $schema,
@@ -173,6 +177,8 @@ class PermissionHandler
      * @return void
      *
      * @throws Exception If permission is not granted
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) RBAC flag follows established API patterns
      */
     public function checkPermission(
         Schema $schema,
@@ -214,15 +220,17 @@ class PermissionHandler
      * @return array[] Filtered array of objects
      *
      * @psalm-return list<array<string, mixed>>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Permission filtering requires multiple conditional checks
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  RBAC/multitenancy flags follow established API patterns
      */
     public function filterObjectsForPermissions(array $objects, bool $rbac, bool $multitenancy): array
     {
         $filteredObjects = [];
         $currentUser     = $this->userSession->getUser();
+        $userId          = null;
         if ($currentUser !== null) {
             $userId = $currentUser->getUID();
-        } else {
-            $userId = null;
         }
 
         $activeOrganisation = $this->getActiveOrganisationForContext();
@@ -286,6 +294,9 @@ class PermissionHandler
      * @return string[] Filtered array of UUIDs
      *
      * @psalm-return list<string>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) UUID filtering with permission checks requires multiple conditions
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  RBAC/multitenancy flags follow established API patterns
      */
     public function filterUuidsForPermissions(array $uuids, bool $rbac, bool $multitenancy): array
     {

@@ -65,6 +65,8 @@ use Symfony\Component\Uid\Uuid;
  * @method static setAuthorization(?array $authorization)
  * @method string|null getParent()
  * @method static setParent(?string $parent)
+ *
+ * @SuppressWarnings(PHPMD.TooManyFields)
  */
 class Organisation extends Entity implements JsonSerializable
 {
@@ -374,6 +376,8 @@ class Organisation extends Entity implements JsonSerializable
      * Get whether this organisation is active
      *
      * @return bool Whether this organisation is active
+     *
+     * @SuppressWarnings(PHPMD.BooleanGetMethodName) Kept as getActive() for API compatibility
      */
     public function getActive(): bool
     {
@@ -390,12 +394,13 @@ class Organisation extends Entity implements JsonSerializable
     public function setActive(mixed $active): static
     {
         // Handle various input types defensively (including empty strings from API).
-        if ($active === '' || $active === null) {
-            parent::setActive(true);
-            // Default to true for organisations.
-        } else {
-            parent::setActive((bool) $active);
+        // Default to true for organisations.
+        $activeValue = true;
+        if ($active !== '' && $active !== null) {
+            $activeValue = (bool) $active;
         }
+
+        parent::setActive($activeValue);
 
         $this->markFieldUpdated('active');
         return $this;

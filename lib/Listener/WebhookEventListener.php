@@ -66,6 +66,8 @@ use Psr\Log\LoggerInterface;
  * WebhookEventListener dispatches webhooks for all OpenRegister events
  *
  * @template-implements IEventListener<Event>
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class WebhookEventListener implements IEventListener
 {
@@ -134,13 +136,19 @@ class WebhookEventListener implements IEventListener
     /**
      * Extract payload from event
      *
+     * Uses a unified approach by checking event types directly.
+     *
      * @param Event $event The event
      *
      * @return array<string, mixed>|null The event payload or null if not extractable
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Event handling requires checking many event types
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Event handling requires checking many event types
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Unified event extraction requires handling all types
      */
     private function extractPayload(Event $event): array|null
     {
-        // Object events - Before events (ing).
+        // Object events.
         if ($event instanceof ObjectCreatingEvent) {
             $object = $event->getObject();
             return [
@@ -166,15 +174,13 @@ class WebhookEventListener implements IEventListener
         }
 
         if ($event instanceof ObjectDeletingEvent) {
-            $object = $event->getObject();
             return [
                 'objectType' => 'object',
                 'action'     => 'deleting',
-                'object'     => $object->jsonSerialize(),
+                'object'     => $event->getObject()->jsonSerialize(),
             ];
         }
 
-        // Object events - After events (ed).
         if ($event instanceof ObjectCreatedEvent) {
             $object = $event->getObject();
             return [
@@ -198,16 +204,14 @@ class WebhookEventListener implements IEventListener
         }
 
         if ($event instanceof ObjectDeletedEvent) {
-            $object = $event->getObject();
             return [
                 'objectType' => 'object',
                 'action'     => 'deleted',
-                'object'     => $object->jsonSerialize(),
+                'object'     => $event->getObject()->jsonSerialize(),
             ];
         }
 
         if ($event instanceof ObjectLockedEvent || $event instanceof ObjectUnlockedEvent) {
-            $object = $event->getObject();
             $action = 'unlocked';
             if ($event instanceof ObjectLockedEvent) {
                 $action = 'locked';
@@ -216,7 +220,7 @@ class WebhookEventListener implements IEventListener
             return [
                 'objectType' => 'object',
                 'action'     => $action,
-                'object'     => $object->jsonSerialize(),
+                'object'     => $event->getObject()->jsonSerialize(),
             ];
         }
 
@@ -359,8 +363,7 @@ class WebhookEventListener implements IEventListener
             || $event instanceof ConfigurationUpdatedEvent
             || $event instanceof ConfigurationDeletedEvent
         ) {
-            $configuration = $event->getConfiguration();
-            $action        = match (true) {
+            $action = match (true) {
                 $event instanceof ConfigurationCreatedEvent => 'created',
                 $event instanceof ConfigurationUpdatedEvent => 'updated',
                 $event instanceof ConfigurationDeletedEvent => 'deleted',
@@ -369,13 +372,15 @@ class WebhookEventListener implements IEventListener
             return [
                 'objectType'    => 'configuration',
                 'action'        => $action,
-                'configuration' => $configuration->jsonSerialize(),
+                'configuration' => $event->getConfiguration()->jsonSerialize(),
             ];
         }
 
         // View events.
-        if ($event instanceof ViewCreatedEvent || $event instanceof ViewUpdatedEvent || $event instanceof ViewDeletedEvent) {
-            $view   = $event->getView();
+        if ($event instanceof ViewCreatedEvent
+            || $event instanceof ViewUpdatedEvent
+            || $event instanceof ViewDeletedEvent
+        ) {
             $action = match (true) {
                 $event instanceof ViewCreatedEvent => 'created',
                 $event instanceof ViewUpdatedEvent => 'updated',
@@ -385,7 +390,7 @@ class WebhookEventListener implements IEventListener
             return [
                 'objectType' => 'view',
                 'action'     => $action,
-                'view'       => $view->jsonSerialize(),
+                'view'       => $event->getView()->jsonSerialize(),
             ];
         }
 

@@ -84,6 +84,7 @@ class FileHandler implements TextExtractionHandlerInterface
      * @throws Exception When extraction fails.
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Force parameter follows interface contract
      */
     public function extractText(int $sourceId, array $sourceMeta, bool $force=false): array
     {
@@ -144,6 +145,8 @@ class FileHandler implements TextExtractionHandlerInterface
      * @param bool $force           Force flag.
      *
      * @return bool True if extraction is needed.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force parameter follows interface contract
      */
     public function needsExtraction(int $sourceId, int $sourceTimestamp, bool $force): bool
     {
@@ -212,6 +215,8 @@ class FileHandler implements TextExtractionHandlerInterface
      * @param string          $mimeType MIME type.
      *
      * @return string|null Extracted text or null if extraction failed.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple MIME type handling conditions
      */
     private function performTextExtraction(\OCP\Files\File $file, string $mimeType): ?string
     {

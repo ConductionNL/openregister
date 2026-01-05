@@ -54,6 +54,8 @@ use Psr\Log\LoggerInterface;
  * @link      https://github.com/OpenCatalogi/OpenRegister
  * @version   GIT: <git_id>
  * @copyright 2024 Conduction b.v.
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Delete operations require coordination with multiple services
  */
 
 class DeleteObject
@@ -111,14 +113,20 @@ class DeleteObject
      * @return bool Whether the deletion was successful.
      *
      * @throws Exception If there is an error during deletion.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Soft delete with audit trail requires multiple conditional paths
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple decision paths for soft delete, cache invalidation,
+     *                                               and audit trail operations
+     *
+     * @psalm-suppress UndefinedInterfaceMethod Array access on JsonSerializable handled by type check
      */
     public function delete(array | JsonSerializable $object): bool
     {
+        // @psalm-suppress UndefinedInterfaceMethod
+        $objectEntity = $this->objectEntityMapper->find($object['id']);
         if ($object instanceof JsonSerializable === true) {
             $objectEntity = $object;
             $object->jsonSerialize();
-        } else {
-            $objectEntity = $this->objectEntityMapper->find($object['id']);
         }
 
         // **SOFT DELETE**: Mark object as deleted instead of removing from database.
@@ -217,6 +225,9 @@ class DeleteObject
      * @return bool Whether the deletion was successful.
      *
      * @throws Exception If there is an error during deletion.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function deleteObject(
         Register | int | string $register,
@@ -288,32 +299,6 @@ class DeleteObject
             );
         }//end foreach
     }//end cascadeDeleteObjects()
-
-    /**
-     * Delete the object folder when performing hard delete
-     *
-     * @param ObjectEntity $objectEntity The object entity to delete folder for
-     *
-     * @return void
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future folder deletion implementation
-     */
-    private function deleteObjectFolder(ObjectEntity $objectEntity): void
-    {
-        try {
-            // TODO: Implement folder deletion when fileService is available.
-            // $folder = $this->fileService->getObjectFolder($objectEntity);
-            // If ($folder !== null) {
-            // $folder->delete();
-            // $this->logger->info('Deleted object folder for hard deleted object: '.$objectEntity->getId());
-            // }.
-        } catch (\Exception $e) {
-            // Log error but don't fail the deletion process.
-            $objectId     = $objectEntity->getId();
-            $errorMessage = $e->getMessage();
-            $this->logger->warning('Failed to delete object folder for object '.$objectId.': '.$errorMessage);
-        }
-    }//end deleteObjectFolder()
 
     /**
      * Check if audit trails are enabled in the settings

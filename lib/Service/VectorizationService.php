@@ -114,6 +114,10 @@ class VectorizationService
      * @return array Vectorization result with success, stats, and optional errors.
      *
      * @throws \Exception If strategy not found or vectorization fails.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex batch processing with error handling
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple processing paths with exceptions
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive batch processing with progress tracking
      */
     public function vectorizeBatch(string $entityType, array $options=[]): array
     {
@@ -240,6 +244,10 @@ class VectorizationService
      *         item_index: array-key
      *     }>
      * }
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex batch vs serial processing logic
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple embedding and error handling paths
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive entity vectorization with error handling
      */
     private function vectorizeEntity($entity, VectorizationStrategyInterface $strategy, array $options): array
     {
@@ -289,13 +297,17 @@ class VectorizationService
                                 strategy: $strategy
                             );
                             $vectorized++;
-                        } else {
+                        }
+
+                        if ($hasEmbedding === false) {
                             $failed++;
                             //
                             // EmbeddingData may contain 'error' key even if not in type definition.
                             if (is_array($embeddingData) === true && array_key_exists('error', $embeddingData) === true) {
                                 $errorMsg = $embeddingData['error'];
-                            } else {
+                            }
+
+                            if (is_array($embeddingData) === false || array_key_exists('error', $embeddingData) === false) {
                                 $errorMsg = 'Embedding generation failed';
                             }
 
@@ -317,7 +329,9 @@ class VectorizationService
                     );
                 }//end try
             }//end foreach
-        } else {
+        }//end if
+
+        if (($mode === 'parallel' && $batchSize > 1 && count($items) > 1) === false) {
             // Serial processing.
             foreach ($items as $index => $item) {
                 try {

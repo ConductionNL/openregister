@@ -93,6 +93,8 @@ class AgentTool extends AbstractTool implements ToolInterface
      * These are used by LLMs to understand what capabilities this tool provides.
      *
      * @return array<int, array<string, mixed>> Array of function definitions
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive function definitions for LLM
      */
     public function getFunctions(): array
     {
@@ -303,6 +305,8 @@ class AgentTool extends AbstractTool implements ToolInterface
      * @return (bool|mixed|string)[] Response with created agent
      *
      * @psalm-return array{success: bool, error?: string, details?: mixed, message?: string, data?: mixed}
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Optional nullable parameters for agent creation
      */
     public function createAgent(
         string $name,
@@ -364,6 +368,8 @@ class AgentTool extends AbstractTool implements ToolInterface
      * @return (bool|mixed|string)[] Response with updated agent
      *
      * @psalm-return array{success: bool, error?: string, details?: mixed, message?: string, data?: mixed}
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Optional nullable parameters for partial updates
      */
     public function updateAgent(
         string $uuid,

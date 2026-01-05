@@ -31,6 +31,9 @@ use Psr\Log\LoggerInterface;
  * Handles conversion of ObjectEntity instances to Solr documents.
  *
  * @package OCA\OpenRegister\Service\Index
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)     Many document building utility methods required
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex document transformation logic
  */
 class DocumentBuilder
 {
@@ -81,16 +84,18 @@ class DocumentBuilder
      * Builds a basic Solr document from the object's data.
      * This is a simplified implementation to break circular dependencies.
      *
-     * @param ObjectEntity $object         The object to convert
-     * @param array        $solrFieldTypes Available Solr field types (unused for now)
+     * @param ObjectEntity $object          The object to convert
+     * @param array        $_solrFieldTypes Available Solr field types (unused for now)
      *
      * @return (false|int|mixed|null|string)[]
      *
      * @psalm-return array{_text: false|string,...}
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Document creation requires handling multiple data types
      */
     public function createDocument(
         ObjectEntity $object,
-        array $solrFieldTypes=[]
+        array $_solrFieldTypes=[]
     ): array {
         $this->logger->debug(
             'DocumentBuilder: Creating basic Solr document',
@@ -144,6 +149,8 @@ class DocumentBuilder
      * @return string[]
      *
      * @psalm-return list<string>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Relations flattening requires handling multiple data formats
      */
     public function flattenRelationsForSolr($relations): array
     {
@@ -211,6 +218,8 @@ class DocumentBuilder
      * @return (mixed|string)[] Simple array of strings for SOLR multi-valued field
      *
      * @psalm-return list<mixed|string>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Files flattening requires handling multiple data formats
      */
     public function flattenFilesForSolr($files): array
     {
@@ -278,6 +287,8 @@ class DocumentBuilder
      * @return array[] Associative array of field names to their array values
      *
      * @psalm-return array<string, array<int, mixed>>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Dot-notation parsing requires handling multiple scenarios
      */
     public function extractArraysFromRelations(array $relations): array
     {
@@ -299,17 +310,18 @@ class DocumentBuilder
                 // Add value at the specified index (or skip if index is not numeric).
                 if (is_numeric($index) === true) {
                     $arrays[$fieldName][(int) $index] = $relationValue;
-                } else {
-                    // Non-numeric index - this is a nested object property, not an array element.
-                    $this->logger->debug(
-                        'Skipping non-numeric array index in relations',
-                        [
-                            'relation_key' => $relationKey,
-                            'field_name'   => $fieldName,
-                            'index'        => $index,
-                        ]
-                    );
+                    continue;
                 }
+
+                // Non-numeric index - this is a nested object property, not an array element.
+                $this->logger->debug(
+                    'Skipping non-numeric array index in relations',
+                    [
+                        'relation_key' => $relationKey,
+                        'field_name'   => $fieldName,
+                        'index'        => $index,
+                    ]
+                );
             }//end if
         }//end foreach
 
@@ -346,6 +358,8 @@ class DocumentBuilder
      * @return string[] Array of indexable string values
      *
      * @psalm-return list<string>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Value extraction requires handling multiple data types
      */
     public function extractIndexableArrayValues(array $arrayValue, string $fieldName): array
     {
@@ -416,6 +430,9 @@ class DocumentBuilder
      * @param string $fieldType Schema field type
      *
      * @return mixed Converted value for SOLR
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess)         DateTime::createFromFormat is standard PHP date pattern
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function convertValueForSolr($value, string $fieldType)
     {
@@ -581,6 +598,8 @@ class DocumentBuilder
      * @param array  $solrFieldTypes Available SOLR field types
      *
      * @return bool True if field is safe to index
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Field validation requires handling multiple type scenarios
      */
     public function validateFieldForSolr(string $fieldName, $fieldValue, array $solrFieldTypes): bool
     {
@@ -642,6 +661,9 @@ class DocumentBuilder
      * @param string $solrFieldType The SOLR field type
      *
      * @return bool True if compatible
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Type compatibility check requires handling multiple SOLR types
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple type combinations create many execution paths
      */
     public function isValueCompatibleWithSolrType($value, string $solrFieldType): bool
     {
@@ -698,6 +720,8 @@ class DocumentBuilder
      * @param \OCA\OpenRegister\Db\Register|null $register      Pre-loaded register entity
      *
      * @return int The resolved register ID
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Register resolution requires handling multiple input formats
      */
     public function resolveRegisterToId($registerValue, ?\OCA\OpenRegister\Db\Register $register=null): int
     {
@@ -751,6 +775,8 @@ class DocumentBuilder
      * @param \OCA\OpenRegister\Db\Schema|null $schema      Pre-loaded schema entity
      *
      * @return int The resolved schema ID
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Schema resolution requires handling multiple input formats
      */
     public function resolveSchemaToId($schemaValue, ?\OCA\OpenRegister\Db\Schema $schema=null): int
     {

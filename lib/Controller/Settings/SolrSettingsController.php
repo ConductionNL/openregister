@@ -318,6 +318,8 @@ class SolrSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with facet config and discovery
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */
     public function getSolrFacetConfigWithDiscovery(): JSONResponse
     {

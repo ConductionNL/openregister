@@ -128,6 +128,10 @@ use Psr\Log\LoggerInterface;
  * Thin controller layer for settings management.
  *
  * @psalm-suppress UnusedClass
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class SettingsController extends Controller
 {
@@ -559,6 +563,9 @@ class SettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with database info
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function getDatabaseInfo(): JSONResponse
     {
@@ -759,6 +766,8 @@ class SettingsController extends Controller
      *     organizations: array<array{id: mixed, name: mixed,
      *     type: 'NO TYPE'|mixed, object_json: mixed}>}},
      *     array<never, never>>
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */
     public function debugTypeFiltering(): JSONResponse
     {

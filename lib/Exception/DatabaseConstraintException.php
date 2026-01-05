@@ -119,6 +119,9 @@ class DatabaseConstraintException extends Exception
      * @param string $entityType The type of entity being saved (used in error messages)
      *
      * @return string User-friendly error message explaining the constraint violation
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Constraint parsing requires many conditional error type checks
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Constraint parsing requires many conditional error type checks
      */
     private static function parseConstraintError(string $dbMessage, string $entityType): string
     {
@@ -149,9 +152,9 @@ class DatabaseConstraintException extends Exception
 
         // Handle foreign key constraint violations.
         // Occurs when referencing non-existent records in related tables.
-        $isForeignKeyViolation = str_contains($dbMessage, 'foreign key constraint') === true
+        $isForeignKeyViol = str_contains($dbMessage, 'foreign key constraint') === true
             || str_contains($dbMessage, 'FOREIGN KEY') === true;
-        if ($isForeignKeyViolation === true) {
+        if ($isForeignKeyViol === true) {
             $msg = "This {$entityType} cannot be saved because it references data that doesn't exist. ";
             return $msg.'Please check your configuration and try again.';
         }

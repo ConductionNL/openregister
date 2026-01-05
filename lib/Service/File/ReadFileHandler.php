@@ -43,6 +43,8 @@ use OCA\OpenRegister\Service\File\FileValidationHandler;
  * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class ReadFileHandler
 {
@@ -57,17 +59,17 @@ class ReadFileHandler
     /**
      * Constructor for ReadFileHandler.
      *
-     * @param IRootFolder             $rootFolder              Root folder for file operations.
-     * @param FolderManagementHandler $folderManagementHandler Folder management handler.
-     * @param FileValidationHandler   $fileValidationHandler   File validation handler.
-     * @param FileOwnershipHandler    $fileOwnershipHandler    File ownership handler.
-     * @param ObjectEntityMapper      $objectEntityMapper      Object entity mapper.
-     * @param LoggerInterface         $logger                  Logger for logging operations.
+     * @param IRootFolder             $rootFolder           Root folder for file operations.
+     * @param FolderManagementHandler $folderMgmtHandler    Folder management handler.
+     * @param FileValidationHandler   $fileValidHandler     File validation handler.
+     * @param FileOwnershipHandler    $fileOwnershipHandler File ownership handler.
+     * @param ObjectEntityMapper      $objectEntityMapper   Object entity mapper.
+     * @param LoggerInterface         $logger               Logger for logging operations.
      */
     public function __construct(
         private readonly IRootFolder $rootFolder,
-        private readonly FolderManagementHandler $folderManagementHandler,
-        private readonly FileValidationHandler $fileValidationHandler,
+        private readonly FolderManagementHandler $folderMgmtHandler,
+        private readonly FileValidationHandler $fileValidHandler,
         private readonly FileOwnershipHandler $fileOwnershipHandler,
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly LoggerInterface $logger
@@ -114,6 +116,9 @@ class ReadFileHandler
      *
      * @throws NotFoundException If the folder is not found.
      * @throws DoesNotExistException If the object ID is not found.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) File lookup requires handling ID vs path scenarios
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple file resolution paths with fallback logic
      */
     public function getFile(ObjectEntity|string|null $object=null, string|int $file=''): ?File
     {
@@ -124,7 +129,7 @@ class ReadFileHandler
         }
 
         // Use the new ID-based folder approach.
-        $folder = $this->folderManagementHandler->getObjectFolder($object);
+        $folder = $this->folderMgmtHandler->getObjectFolder($object);
 
         // If $file is an integer or a string that is an integer, treat as file ID.
         if (is_int($file) === true || (is_string($file) === true && ctype_digit($file) === true) === true) {
@@ -134,7 +139,7 @@ class ReadFileHandler
                 if (empty($nodes) === false && $nodes[0] instanceof File) {
                     $fileNode = $nodes[0];
                     // Check ownership for NextCloud rights issues.
-                    $this->fileValidationHandler->checkOwnership($fileNode);
+                    $this->fileValidHandler->checkOwnership($fileNode);
                     return $fileNode;
                 }
             } catch (Exception $e) {
@@ -158,7 +163,7 @@ class ReadFileHandler
                 $fileNode = $folder->get($fileName);
 
                 // Check ownership for NextCloud rights issues.
-                $this->fileValidationHandler->checkOwnership($fileNode);
+                $this->fileValidHandler->checkOwnership($fileNode);
 
                 return $fileNode;
             } catch (NotFoundException) {
@@ -167,7 +172,7 @@ class ReadFileHandler
                     $fileNode = $folder->get($filePath);
 
                     // Check ownership for NextCloud rights issues.
-                    $this->fileValidationHandler->checkOwnership($fileNode);
+                    $this->fileValidHandler->checkOwnership($fileNode);
 
                     return $fileNode;
                 } catch (NotFoundException) {
@@ -214,7 +219,7 @@ class ReadFileHandler
             }
 
             // Check ownership for NextCloud rights issues.
-            $this->fileValidationHandler->checkOwnership($node);
+            $this->fileValidHandler->checkOwnership($node);
 
             return $node;
         } catch (Exception $e) {
@@ -235,6 +240,8 @@ class ReadFileHandler
      *
      * @psalm-return   list<\OCP\Files\Node>
      * @phpstan-return array<int, \OCP\Files\Node>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag is intentional for simple filter toggle
      */
     public function getFiles(ObjectEntity|string $object, ?bool $sharedFilesOnly=false): array
     {

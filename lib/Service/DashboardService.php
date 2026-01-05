@@ -49,6 +49,8 @@ use Psr\Log\LoggerInterface;
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class DashboardService
 {

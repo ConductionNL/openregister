@@ -31,6 +31,8 @@ use Psr\Log\LoggerInterface;
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Index\Backends\Solr
+ *
+ * @SuppressWarnings(PHPMD.ElseExpression) HTTP response handling requires else for error paths
  */
 class SolrDocumentIndexer
 {
@@ -92,6 +94,8 @@ class SolrDocumentIndexer
      * @param bool         $commit Whether to commit immediately
      *
      * @return bool True if successful
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      */
     public function indexObject(ObjectEntity $object, bool $commit=false): bool
     {
@@ -147,6 +151,8 @@ class SolrDocumentIndexer
      * @return (bool|int|string)[] Result with statistics
      *
      * @psalm-return array{success: bool, indexed: int<0, max>, failed: int<0, max>, error?: string}
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      */
     public function bulkIndexObjects(array $objects, bool $commit=true): array
     {
@@ -231,6 +237,8 @@ class SolrDocumentIndexer
      * @param bool  $commit    Whether to commit immediately
      *
      * @return bool True if successful
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      */
     public function indexDocuments(array $documents, bool $commit=false): bool
     {
@@ -278,6 +286,8 @@ class SolrDocumentIndexer
      * @param bool       $commit   Whether to commit immediately
      *
      * @return bool True if successful
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      */
     public function deleteObject(string|int $objectId, bool $commit=false): bool
     {
@@ -336,6 +346,8 @@ class SolrDocumentIndexer
      * @return (array|bool|string)[]|bool Results or boolean
      *
      * @psalm-return array{success: bool, error?: string, query?: string, result?: array}|bool
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      */
     public function deleteByQuery(string $query, bool $commit=false, bool $returnDetails=false): array|bool
     {
@@ -344,9 +356,9 @@ class SolrDocumentIndexer
         if ($collection === null) {
             if ($returnDetails === true) {
                 return ['success' => false, 'error' => 'No active collection'];
-            } else {
-                return false;
             }
+
+            return false;
         }
 
         try {

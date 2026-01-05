@@ -147,6 +147,9 @@ class ToolRegistry
      * @return void
      *
      * @throws \InvalidArgumentException If tool ID is invalid or already registered
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple validation checks required
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple validation paths with exceptions
      */
     public function registerTool(string $id, ToolInterface $tool, array $metadata): void
     {
@@ -229,6 +232,8 @@ class ToolRegistry
      * @param array $ids Array of tool IDs
      *
      * @return array Array of ToolInterface instances (key: id, value: tool)
+     *
+     * @SuppressWarnings(PHPMD.ElseExpression) Alternative path for tool not found logging
      */
     public function getTools(array $ids): array
     {

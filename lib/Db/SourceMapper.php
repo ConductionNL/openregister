@@ -52,6 +52,8 @@ use Symfony\Component\Uid\Uuid;
  * @method list<Source> findEntities(IQueryBuilder $query)
  *
  * @template-extends QBMapper<Source>
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class SourceMapper extends QBMapper
 {
@@ -188,11 +190,15 @@ class SourceMapper extends QBMapper
         foreach ($filters ?? [] as $filter => $value) {
             if ($value === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull($filter));
-            } else if ($value === 'IS NULL') {
-                $qb->andWhere($qb->expr()->isNull($filter));
-            } else {
-                $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
+                continue;
             }
+
+            if ($value === 'IS NULL') {
+                $qb->andWhere($qb->expr()->isNull($filter));
+                continue;
+            }
+
+            $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
         }
 
         if (empty($searchConditions) === false) {
@@ -215,6 +221,8 @@ class SourceMapper extends QBMapper
      *
      * @return Source The inserted source
      * @throws \Exception If user doesn't have create permission
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is standard Symfony UID pattern
      */
     public function insert(Entity $entity): Source
     {
@@ -305,6 +313,8 @@ class SourceMapper extends QBMapper
      * @param array $object The object to create
      *
      * @return Source The created source
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is standard Symfony UID pattern
      */
     public function createFromArray(array $object): Source
     {

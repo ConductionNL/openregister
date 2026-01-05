@@ -52,6 +52,9 @@ use Symfony\Component\Uid\Uuid;
  * @method           Agent findEntity(IQueryBuilder $query)
  * @method           Agent[] findAll(int|null $limit=null, int|null $offset=null)
  * @method           list<Agent> findEntities(IQueryBuilder $query)
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class AgentMapper extends QBMapper
 {
@@ -320,6 +323,8 @@ class AgentMapper extends QBMapper
      * @throws \Exception If user doesn't have read permission
      *
      * @psalm-return list<OCA\OpenRegister\Db\Agent>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function findAll(?int $limit=null, ?int $offset=null, ?array $filters=[], ?array $order=[]): array
     {

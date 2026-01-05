@@ -58,6 +58,10 @@ use PhpOffice\PhpSpreadsheet\IOFactory as SpreadsheetIOFactory;
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Text extraction requires comprehensive document parsing methods
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex multi-format document extraction logic
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Requires multiple document parsing libraries
  */
 class TextExtractionService
 {
@@ -117,6 +121,8 @@ class TextExtractionService
      * @param EntityRecognitionHandler $entityHandler        Handler for entity recognition
      * @param GdprEntityMapper         $entityMapper         Mapper for GDPR entities
      * @param EntityRelationMapper     $entityRelationMapper Mapper for entity relations
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      */
     public function __construct(
         private readonly FileMapper $fileMapper,
@@ -148,6 +154,8 @@ class TextExtractionService
      *
      * @throws NotFoundException If file doesn't exist in Nextcloud
      * @throws Exception If extraction fails
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag needed for force re-extraction behavior
      */
     public function extractFile(int $fileId, bool $forceReExtract=false): void
     {
@@ -248,6 +256,9 @@ class TextExtractionService
      *
      * @throws DoesNotExistException If object doesn't exist
      * @throws Exception If extraction fails
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Boolean flag needed for force re-extraction behavior
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive object extraction requires detailed processing
      */
     public function extractObject(int $objectId, bool $forceReExtract=false): void
     {
@@ -802,6 +813,8 @@ class TextExtractionService
      * @return string|null Extracted text content, or null if extraction not possible
      *
      * @throws Exception If file cannot be read
+     *
+     * @SuppressWarnings(PHPMD.ElseExpression) Else needed for multi-format extraction branching
      */
     private function performTextExtraction(int $fileId, array $ncFile): ?string
     {
@@ -1269,6 +1282,9 @@ class TextExtractionService
      * @return string|null Extracted text content
      *
      * @throws Exception If Word parsing fails
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess)         IOFactory::load is standard PhpWord pattern
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex document structure traversal
      */
     private function extractWord(\OCP\Files\File $file): ?string
     {
@@ -1366,6 +1382,10 @@ class TextExtractionService
      * @return string|null Extracted text content
      *
      * @throws Exception If spreadsheet parsing fails
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess)          IOFactory::load is standard PhpSpreadsheet pattern
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex multi-sheet and cell iteration
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive spreadsheet extraction logic
      */
     private function extractSpreadsheet(\OCP\Files\File $file): ?string
     {
@@ -1700,6 +1720,11 @@ class TextExtractionService
      * @return (int|mixed|string)[][] Array of chunk objects with text, start_offset, end_offset
      *
      * @psalm-return array<int<0, max>, array{text: mixed|string, start_offset: int|mixed, end_offset: int|mixed}>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex recursive splitting with multiple separator fallbacks
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Complex recursive splitting with multiple separator fallbacks
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive recursive text splitting logic
+     * @SuppressWarnings(PHPMD.ElseExpression)        Else needed for chunking decision paths
      */
     private function recursiveSplit(string $text, array $separators, int $chunkSize, int $chunkOverlap): array
     {
@@ -1865,6 +1890,8 @@ class TextExtractionService
      * @param array $chunks Array of chunk arrays with 'text' key
      *
      * @return float Average chunk size in characters
+     *
+     * @SuppressWarnings(PHPMD.ElseExpression) Else needed for chunk type detection
      */
     private function calculateAvgChunkSize(array $chunks): float
     {

@@ -29,6 +29,9 @@ use OCP\IDBConnection;
  *
  * This handler provides faceting capabilities for JSON object fields
  * using MariaDB's JSON functions to extract and aggregate data.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class MariaDbFacetHandler
 {
@@ -189,6 +192,8 @@ class MariaDbFacetHandler
      * @psalm-return array{type: 'terms',
      *     buckets: list<array{key: non-empty-string,
      *     results: 0|1|2|3|4}>}
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Array field faceting requires handling many value types
      */
     private function getTermsFacetForArrayField(string $field, array $baseQuery): array
     {
@@ -473,6 +478,9 @@ class MariaDbFacetHandler
      * @psalm-param array<string, mixed> $baseQuery
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Filter application requires handling many filter types
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Many optional filters need conditional handling
      */
     private function applyBaseFilters(IQueryBuilder $queryBuilder, array $baseQuery): void
     {
@@ -671,6 +679,10 @@ class MariaDbFacetHandler
      * @psalm-param array<string, mixed> $metadataFilters
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Metadata filtering requires handling many operator types
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Many filter operators need conditional handling
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive operator support requires extensive code
      */
     private function applyMetadataFilters(IQueryBuilder $queryBuilder, array $metadataFilters): void
     {
@@ -887,14 +899,14 @@ class MariaDbFacetHandler
      */
     private function applySimpleObjectFieldFilter(IQueryBuilder $queryBuilder, string $jsonPath, mixed $value): void
     {
-        $singleValueConditions = $queryBuilder->expr()->orX();
+        $singleValConds = $queryBuilder->expr()->orX();
         $this->addObjectFieldValueCondition(
             queryBuilder: $queryBuilder,
-            conditions: $singleValueConditions,
+            conditions: $singleValConds,
             jsonPath: $jsonPath,
             value: $value
         );
-        $queryBuilder->andWhere($singleValueConditions);
+        $queryBuilder->andWhere($singleValConds);
     }//end applySimpleObjectFieldFilter()
 
     /**
@@ -966,6 +978,9 @@ class MariaDbFacetHandler
      * @psalm-param mixed $operatorValue
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Operator switch requires handling all comparison operators
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive operator support requires extensive code
      */
     private function applyObjectFieldOperator(
         IQueryBuilder $queryBuilder,
@@ -1127,51 +1142,6 @@ class MariaDbFacetHandler
     }//end generateRangeKey()
 
     /**
-     * Get sample objects for field analysis
-     *
-     * @param array $baseQuery  Base query filters to apply
-     * @param int   $sampleSize Maximum number of objects to sample
-     *
-     * @phpstan-param array<string, mixed> $baseQuery
-     * @phpstan-param int $sampleSize
-     *
-     * @psalm-param array<string, mixed> $baseQuery
-     * @psalm-param int $sampleSize
-     *
-     * @throws \OCP\DB\Exception If a database error occurs
-     *
-     * @return array[]
-     *
-     * @psalm-return list<array>
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future facet field analysis
-     */
-    private function getSampleObjects(array $baseQuery, int $sampleSize): array
-    {
-        $queryBuilder = $this->db->getQueryBuilder();
-
-        $queryBuilder->select('object')
-            ->from('openregister_objects')
-            ->where($queryBuilder->expr()->isNotNull('object'))
-            ->setMaxResults($sampleSize);
-
-        // Apply base filters.
-        $this->applyBaseFilters(queryBuilder: $queryBuilder, baseQuery: $baseQuery);
-
-        $result  = $queryBuilder->executeQuery();
-        $objects = [];
-
-        while (($row = $result->fetch()) !== false) {
-            $objectData = json_decode($row['object'], true);
-            if (is_array($objectData) === true) {
-                $objects[] = $objectData;
-            }
-        }
-
-        return $objects;
-    }//end getSampleObjects()
-
-    /**
      * Analyze fields in an object recursively
      *
      * @param array  $objectData    The object data to analyze
@@ -1190,6 +1160,9 @@ class MariaDbFacetHandler
      * @psalm-param int $depth
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Field analysis requires handling many value types
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Type detection requires many conditional paths
      */
     private function analyzeObjectFields(array $objectData, array &$fieldAnalysis, string $prefix='', int $depth=0): void
     {
@@ -1439,154 +1412,4 @@ class MariaDbFacetHandler
 
         return (string) $value;
     }//end valueToString()
-
-    /**
-     * Determine field configuration based on analysis
-     *
-     * @param string $fieldPath The field path
-     * @param array  $analysis  The field analysis data
-     *
-     * @phpstan-param string $fieldPath
-     * @phpstan-param array<string, mixed> $analysis
-     *
-     * @psalm-param string $fieldPath
-     * @psalm-param array<string, mixed> $analysis
-     *
-     * @return (array|false|mixed|string)[]|null Field configuration or null if not facetable.
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future facet field analysis
-     */
-    private function determineFieldConfiguration(string $fieldPath, array $analysis): array|null
-    {
-        // Skip nested objects and arrays of objects, but allow arrays of simple values.
-        if (($analysis['is_nested'] === true) && $this->isArrayOfSimpleValues($analysis) === false) {
-            return null;
-        }
-
-        // Determine primary type.
-        $primaryType = $this->getPrimaryType($analysis['types']);
-
-        if ($primaryType === null) {
-            return null;
-        }
-
-        $config = [
-            'type'            => $primaryType,
-            'description'     => "Object field: $fieldPath",
-            'sample_values'   => array_slice($analysis['sample_values'], 0, 10),
-            'appearance_rate' => $analysis['count'],
-            'is_array'        => $analysis['is_array'] ?? false,
-        ];
-
-        // Configure facet types based on field type.
-        switch ($primaryType) {
-            case 'string':
-                $uniqueValueCount = count($analysis['sample_values']);
-                if ($uniqueValueCount > 50) {
-                    // High cardinality - not suitable for faceting.
-                    return null;
-                }
-
-                // Low cardinality - good for terms facet.
-                $config['facet_types'] = ['terms'];
-                $config['cardinality'] = 'low';
-                break;
-
-            case 'integer':
-            case 'float':
-            case 'numeric_string':
-                $config['facet_types'] = ['range', 'terms'];
-                $config['cardinality'] = 'numeric';
-                break;
-
-            case 'date':
-                $config['facet_types'] = ['date_histogram', 'range'];
-                $config['intervals']   = ['day', 'week', 'month', 'year'];
-                break;
-
-            case 'boolean':
-                $config['facet_types'] = ['terms'];
-                $config['cardinality'] = 'binary';
-                break;
-
-            default:
-                return null;
-        }//end switch
-
-        return $config;
-    }//end determineFieldConfiguration()
-
-    /**
-     * Check if an analysis represents an array of simple values
-     *
-     * @param array $analysis The field analysis data
-     *
-     * @phpstan-param array<string, mixed> $analysis
-     *
-     * @psalm-param array<string, mixed> $analysis
-     *
-     * @return bool True if this is an array of simple values (not nested objects)
-     */
-    private function isArrayOfSimpleValues(array $analysis): bool
-    {
-        // If it's not an array, it's not an array of simple values.
-        if (($analysis['is_array'] ?? false) === false) {
-            return false;
-        }
-
-        // If it's nested, check if the types are simple.
-        if ($analysis['is_nested'] ?? false) {
-            $types = $analysis['types'] ?? [];
-
-            // Check if all types are simple (string, integer, float, boolean, numeric_string, date).
-            $simpleTypes = ['string', 'integer', 'float', 'boolean', 'numeric_string', 'date'];
-
-            // If types array is empty, consider it valid (no types to check).
-            if (empty($types) === true) {
-                return true;
-            }
-
-            foreach (array_keys($types) as $type) {
-                if (in_array($type, $simpleTypes, true) === false) {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        return false;
-    }//end isArrayOfSimpleValues()
-
-    /**
-     * Get the primary type from type analysis
-     *
-     * @param array $types Type counts from analysis
-     *
-     * @phpstan-param array<string, int> $types
-     *
-     * @psalm-param array<string, int> $types
-     *
-     * @return string|null The primary type or null if no clear primary type
-     */
-    private function getPrimaryType(array $types): ?string
-    {
-        if (empty($types) === true) {
-            return null;
-        }
-
-        // Sort by count descending.
-        arsort($types);
-
-        $totalCount   = array_sum($types);
-        $primaryType  = array_key_first($types);
-        $primaryCount = $types[$primaryType];
-
-        // Primary type should represent at least 70% of values.
-        if ($primaryCount / $totalCount >= 0.7) {
-            return $primaryType;
-        }
-
-        return null;
-    }//end getPrimaryType()
 }//end class

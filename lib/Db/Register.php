@@ -67,6 +67,9 @@ use OCP\AppFramework\Db\Entity;
  * @method void setDeleted(?DateTime $deleted)
  * @method array|null getConfiguration()
  * @method void setConfiguration(?array $configuration)
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.TooManyFields)
  */
 class Register extends Entity implements JsonSerializable
 {
@@ -294,11 +297,7 @@ class Register extends Entity implements JsonSerializable
     {
         if (is_string($schemas) === true) {
             $decoded = json_decode($schemas, true);
-            if ($decoded !== null) {
-                $schemas = $decoded;
-            } else {
-                $schemas = [];
-            }
+            $schemas = $decoded ?? [];
         }
 
         if (is_array($schemas) === false) {

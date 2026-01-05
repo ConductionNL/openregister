@@ -23,6 +23,7 @@ use OCA\OpenRegister\Service\Object\SearchQueryHandler;
 use OCA\OpenRegister\Service\Object\FacetHandler;
 use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
 use OCP\AppFramework\IAppContainer;
+use OCP\IRequest;
 use Psr\Log\LoggerInterface;
 use React\Promise\Deferred;
 use React\Promise\Promise;
@@ -48,20 +49,27 @@ use React\Async;
  * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex query routing and optimization logic
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Query operations require many handler dependencies
  */
 class QueryHandler
 {
     /**
      * Constructor for QueryHandler.
      *
-     * @param ObjectEntityMapper             $objectEntityMapper Mapper for object entities.
-     * @param GetObject                      $getHandler         Handler for get operations.
-     * @param RenderObject                   $renderHandler      Handler for render operations.
-     * @param SearchQueryHandler             $searchQueryHandler Handler for search query operations.
-     * @param FacetHandler                   $facetHandler       Handler for facet operations.
-     * @param PerformanceOptimizationHandler $performanceHandler Handler for performance optimizations.
-     * @param IAppContainer                  $container          Application container for service access.
-     * @param LoggerInterface                $logger             Logger for logging operations.
+     * @param ObjectEntityMapper                       $objectEntityMapper  Mapper for objects.
+     * @param \OCA\OpenRegister\Db\UnifiedObjectMapper $unifiedObjectMapper Unified mapper.
+     * @param GetObject                                $getHandler          Get handler.
+     * @param RenderObject                             $renderHandler       Render handler.
+     * @param SearchQueryHandler                       $searchQueryHandler  Search handler.
+     * @param FacetHandler                             $facetHandler        Facet handler.
+     * @param PerformanceOptimizationHandler           $performanceHandler  Performance handler.
+     * @param IAppContainer                            $container           App container.
+     * @param LoggerInterface                          $logger              Logger.
+     * @param IRequest                                 $request             Request object.
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
@@ -72,7 +80,8 @@ class QueryHandler
         private readonly FacetHandler $facetHandler,
         private readonly PerformanceOptimizationHandler $performanceHandler,
         private readonly IAppContainer $container,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly IRequest $request
     ) {
     }//end __construct()
 
@@ -102,15 +111,15 @@ class QueryHandler
         ?array $ids=null,
         ?string $uses=null
     ): int {
-        $activeOrganisationUuid = null;
+        $activeOrgUuid = null;
         if ($_multitenancy === true) {
-            $activeOrganisationUuid = $this->performanceHandler->getActiveOrganisationForContext();
+            $activeOrgUuid = $this->performanceHandler->getActiveOrganisationForContext();
         }
 
         // Count uses the mapper's countSearchObjects.
         return $this->objectEntityMapper->countSearchObjects(
             query: $query,
-            _activeOrganisationUuid: $activeOrganisationUuid,
+            _activeOrganisationUuid: $activeOrgUuid,
             _rbac: $_rbac,
             _multitenancy: $_multitenancy,
             ids: $ids,
@@ -164,9 +173,9 @@ class QueryHandler
         $hasComplexRendering = $hasExtend || $hasFields || $hasFilter || $hasUnset;
 
         // Get active organization context for multi-tenancy (only if multi is enabled).
-        $activeOrganisationUuid = null;
+        $activeOrgUuid = null;
         if ($_multitenancy === true) {
-            $activeOrganisationUuid = $this->performanceHandler->getActiveOrganisationForContext();
+            $activeOrgUuid = $this->performanceHandler->getActiveOrganisationForContext();
         }
 
         // **MAPPER CALL**: Execute database search.
@@ -180,7 +189,7 @@ class QueryHandler
                 'rbac'       => $_rbac,
                 'multi'      => $_multitenancy,
                 'limit'      => $limit,
-                'requestUri' => $_SERVER['REQUEST_URI'] ?? 'unknown',
+                'requestUri' => $this->request->getRequestUri(),
             ]
         );
 
@@ -188,7 +197,7 @@ class QueryHandler
         $mapperStart = microtime(true);
         $result      = $this->unifiedObjectMapper->searchObjects(
             query: $query,
-            activeOrganisationUuid: $activeOrganisationUuid,
+            activeOrganisationUuid: $activeOrgUuid,
             rbac: $_rbac,
             multitenancy: $_multitenancy,
             ids: $ids,
@@ -384,7 +393,7 @@ class QueryHandler
             $this->logger->info(
                 message: '📊 PERFORMANCE MONITORING: _performance=true parameter detected',
                 context: [
-                    'requestUri' => $_SERVER['REQUEST_URI'] ?? 'unknown',
+                    'requestUri' => $this->request->getRequestUri(),
                     'purpose'    => 'performance_analysis',
                     'note'       => 'Response will include detailed performance metrics',
                 ]

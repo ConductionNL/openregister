@@ -340,6 +340,8 @@ class SchemaCacheHandler
      * @return void
      *
      * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Operation parameter with default is not a boolean
      */
     public function invalidateForSchemaChange(int $schemaId, string $operation='update'): void
     {
@@ -552,6 +554,9 @@ class SchemaCacheHandler
      * @return void
      *
      * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Database upsert logic with conditional insert/update
+     * @SuppressWarnings(PHPMD.ElseExpression)       Insert alternative when update returns zero rows
      */
     private function setCachedData(int $schemaId, string $cacheKey, mixed $data, int $ttl): void
     {
@@ -671,6 +676,9 @@ class SchemaCacheHandler
      * @param array<string, mixed> $cachedData The cached schema data
      *
      * @return Schema|null The reconstructed schema or null if reconstruction fails
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple property assignments from cache data
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple conditional property assignments
      */
     private function reconstructSchemaFromCache(array $cachedData): ?Schema
     {

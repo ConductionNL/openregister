@@ -263,6 +263,8 @@ class N8nSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with initialization result
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */
     public function initializeN8n(): JSONResponse
     {

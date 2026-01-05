@@ -37,6 +37,8 @@ use Psr\Log\LoggerInterface;
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Index\Backends
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) Implements SearchBackendInterface with many required methods
  */
 class SolrBackend implements SearchBackendInterface
 {
@@ -127,6 +129,8 @@ class SolrBackend implements SearchBackendInterface
      * @param bool $forceRefresh Bypass cache
      *
      * @return bool True if available
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      */
     public function isAvailable(bool $forceRefresh=false): bool
     {
@@ -136,14 +140,16 @@ class SolrBackend implements SearchBackendInterface
     /**
      * Test connection with diagnostics.
      *
-     * @param bool $includeCollectionTests Include collection tests
+     * @param bool $inclCollTests Include collection tests
      *
      * @return (bool|null|string)[] Test results
      *
      * @psalm-return array{success: bool, configured?: true,
      *     collection?: null|string, collection_exists?: bool, error?: 'Solr is not configured'}
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      */
-    public function testConnection(bool $includeCollectionTests=true): array
+    public function testConnection(bool $inclCollTests=true): array
     {
         if ($this->httpClient->isConfigured() === false) {
             return [
@@ -157,7 +163,7 @@ class SolrBackend implements SearchBackendInterface
             'configured' => true,
         ];
 
-        if ($includeCollectionTests === true) {
+        if ($inclCollTests === true) {
             $collection            = $this->collectionManager->getActiveCollectionName();
             $results['collection'] = $collection;
             $results['collection_exists'] = $collection !== null;
@@ -173,6 +179,8 @@ class SolrBackend implements SearchBackendInterface
      * @param bool         $commit Commit immediately
      *
      * @return bool True if successful
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      */
     public function indexObject(ObjectEntity $object, bool $commit=false): bool
     {
@@ -191,6 +199,8 @@ class SolrBackend implements SearchBackendInterface
      * @return (bool|int|string)[] Result with statistics
      *
      * @psalm-return array{success: bool, indexed: int<0, max>, failed: int<0, max>, error?: string}
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      */
     public function bulkIndexObjects(array $objects, bool $commit=true): array
     {
@@ -207,6 +217,8 @@ class SolrBackend implements SearchBackendInterface
      * @param bool       $commit   Commit immediately
      *
      * @return bool True if successful
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      */
     public function deleteObject(string|int $objectId, bool $commit=false): bool
     {
@@ -226,6 +238,8 @@ class SolrBackend implements SearchBackendInterface
      * @return (array|bool|string)[]|bool Results
      *
      * @psalm-return array{success: bool, error?: string, query?: string, result?: array}|bool
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      */
     public function deleteByQuery(string $query, bool $commit=false, bool $returnDetails=false): array|bool
     {
@@ -246,6 +260,8 @@ class SolrBackend implements SearchBackendInterface
      * @param bool  $deleted       Include deleted
      *
      * @return array Search results with pagination info.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      */
     public function searchObjectsPaginated(
         array $query=[],
@@ -323,6 +339,8 @@ class SolrBackend implements SearchBackendInterface
      * @return (bool|string)[] Results
      *
      * @psalm-return array{success: true, message: 'Simplified warmup - collection exists', collection_exists: bool}
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      */
     public function warmupIndex(
         array $schemas=[],

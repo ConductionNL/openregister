@@ -54,14 +54,14 @@ class RelationshipOptimizationHandler
      *
      * This method is placeholder - actual implementation to be added.
      *
-     * @param array $objects Array of ObjectEntity objects to scan.
-     * @param array $extend  Array of properties to extend.
+     * @param array $_objects Array of ObjectEntity objects to scan.
+     * @param array $_extend  Array of properties to extend.
      *
      * @return array Array of unique relationship IDs.
      *
      * @psalm-return array<never, never>
      */
-    public function extractAllRelationshipIds(array $objects, array $extend): array
+    public function extractAllRelationshipIds(array $_objects, array $_extend): array
     {
         // Placeholder - will be filled with actual implementation.
         return [];
@@ -72,13 +72,13 @@ class RelationshipOptimizationHandler
      *
      * This method is placeholder - actual implementation to be added.
      *
-     * @param array $relationshipIds Array of relationship IDs to load.
+     * @param array $_relationshipIds Array of relationship IDs to load.
      *
      * @return array Array mapping UUIDs to ObjectEntity objects.
      *
      * @psalm-return array<never, never>
      */
-    public function bulkLoadRelationshipsBatched(array $relationshipIds): array
+    public function bulkLoadRelationshipsBatched(array $_relationshipIds): array
     {
         // Placeholder - will be filled with actual implementation.
         return [];
@@ -89,13 +89,13 @@ class RelationshipOptimizationHandler
      *
      * This method is placeholder - actual implementation to be added.
      *
-     * @param array $relationshipIds Array of relationship IDs to load.
+     * @param array $_relationshipIds Array of relationship IDs to load.
      *
      * @return array Array mapping UUIDs to ObjectEntity objects.
      *
      * @psalm-return array<never, never>
      */
-    public function bulkLoadRelationshipsParallel(array $relationshipIds): array
+    public function bulkLoadRelationshipsParallel(array $_relationshipIds): array
     {
         // Placeholder - will be filled with actual implementation.
         return [];
@@ -106,13 +106,13 @@ class RelationshipOptimizationHandler
      *
      * This method is placeholder - actual implementation to be added.
      *
-     * @param array $relationshipIds Array of relationship IDs to load.
+     * @param array $_relationshipIds Array of relationship IDs to load.
      *
      * @return array Array mapping UUIDs to ObjectEntity objects.
      *
      * @psalm-return array<never, never>
      */
-    public function loadRelationshipChunkOptimized(array $relationshipIds): array
+    public function loadRelationshipChunkOptimized(array $_relationshipIds): array
     {
         // Placeholder - will be filled with actual implementation.
         return [];
@@ -123,11 +123,11 @@ class RelationshipOptimizationHandler
      *
      * This method is placeholder - actual implementation to be added.
      *
-     * @param array $row Database row data.
+     * @param array $_row Database row data.
      *
      * @return null Created object entity or null.
      */
-    public function createLightweightObjectEntity(array $row)
+    public function createLightweightObjectEntity(array $_row)
     {
         // Placeholder - will be filled with actual implementation.
         return null;

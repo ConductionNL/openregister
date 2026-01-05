@@ -234,6 +234,8 @@ class UploadService
      * @return array<string, mixed>|JSONResponse The response converted to PHP array or JSONResponse with error message
      *
      * @throws GuzzleException If HTTP request fails
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) Yaml::parse is standard Symfony Yaml pattern
      */
     private function getJSONfromURL(string $url): array | JSONResponse
     {

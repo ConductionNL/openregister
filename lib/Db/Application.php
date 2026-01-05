@@ -71,6 +71,8 @@ use Symfony\Component\Uid\Uuid;
  * @method void setUpdated(?DateTime $updated)
  *
  * @psalm-suppress PossiblyUnusedMethod
+ *
+ * @SuppressWarnings(PHPMD.TooManyFields) Domain entity requires many fields for complete application configuration
  */
 class Application extends Entity implements JsonSerializable
 {
@@ -115,7 +117,7 @@ class Application extends Entity implements JsonSerializable
      *
      * @var Configuration|null
      */
-    private ?Configuration $managedByConfiguration = null;
+    private ?Configuration $managedByConfig = null;
 
     /**
      * Array of configuration IDs associated with this application
@@ -245,6 +247,8 @@ class Application extends Entity implements JsonSerializable
      * @param string $uuid The UUID to validate
      *
      * @return bool True if UUID format is valid
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) Uuid::fromString is standard Symfony UID pattern
      */
     public static function isValidUuid(string $uuid): bool
     {
@@ -355,6 +359,8 @@ class Application extends Entity implements JsonSerializable
      * Get whether this application is active
      *
      * @return bool Whether this application is active
+     *
+     * @SuppressWarnings(PHPMD.BooleanGetMethodName) Kept as getActive() for API compatibility
      */
     public function getActive(): bool
     {
@@ -588,7 +594,7 @@ class Application extends Entity implements JsonSerializable
      */
     public function getManagedByConfigurationEntity(): ?Configuration
     {
-        return $this->managedByConfiguration;
+        return $this->managedByConfig;
     }//end getManagedByConfigurationEntity()
 
     /**
@@ -600,7 +606,7 @@ class Application extends Entity implements JsonSerializable
      */
     public function setManagedByConfigurationEntity(?Configuration $configuration): void
     {
-        $this->managedByConfiguration = $configuration;
+        $this->managedByConfig = $configuration;
     }//end setManagedByConfigurationEntity()
 
     /**
@@ -697,11 +703,11 @@ class Application extends Entity implements JsonSerializable
      */
     private function getManagedByConfigurationData(): array|null
     {
-        if ($this->managedByConfiguration !== null) {
+        if ($this->managedByConfig !== null) {
             return [
-                'id'    => $this->managedByConfiguration->getId(),
-                'uuid'  => $this->managedByConfiguration->getUuid(),
-                'title' => $this->managedByConfiguration->getTitle(),
+                'id'    => $this->managedByConfig->getId(),
+                'uuid'  => $this->managedByConfig->getUuid(),
+                'title' => $this->managedByConfig->getTitle(),
             ];
         }
 

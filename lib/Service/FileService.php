@@ -99,8 +99,15 @@ use Psr\Log\LoggerInterface;
  * This service provides functionalities for managing files and folders within the NextCloud environment,
  * including creation, deletion, sharing, and file updates. It integrates with NextCloud's file and
  * sharing APIs to provide seamless file management for the application.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.TooManyMethods)
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.TooManyFields)            File service orchestrates many handler classes
+ * @SuppressWarnings(PHPMD.LongVariable)             Handler properties use descriptive names for clarity
  */
-
 class FileService
 {
 
@@ -318,30 +325,32 @@ class FileService
     /**
      * Constructor
      *
-     * @param IConfig                   $config                    Configuration service
-     * @param FileMapper                $fileMapper                File mapper
-     * @param IGroupManager             $groupManager              Group manager
-     * @param LoggerInterface           $logger                    Logger
-     * @param ObjectEntityMapper        $objectEntityMapper        Object entity mapper
-     * @param IRootFolder               $rootFolder                Root folder
-     * @param IManager                  $shareManager              Share manager
-     * @param ISystemTagManager         $systemTagManager          System tag manager
-     * @param ISystemTagObjectMapper    $systemTagMapper           System tag mapper
-     * @param IURLGenerator             $urlGenerator              URL generator
-     * @param IUserManager              $userManager               User manager
-     * @param IUserSession              $userSession               User session
-     * @param FileValidationHandler     $fileValidationHandler     File validation handler
-     * @param FolderManagementHandler   $folderManagementHandler   Folder management handler
-     * @param FileOwnershipHandler      $fileOwnershipHandler      File ownership handler
-     * @param FileSharingHandler        $fileSharingHandler        File sharing handler
-     * @param CreateFileHandler         $createFileHandler         Create file handler
-     * @param ReadFileHandler           $readFileHandler           Read file handler
-     * @param UpdateFileHandler         $updateFileHandler         Update file handler
-     * @param DeleteFileHandler         $deleteFileHandler         Delete file handler
-     * @param TaggingHandler            $taggingHandler            Tagging handler
-     * @param FileFormattingHandler     $fileFormattingHandler     File formatting handler
-     * @param DocumentProcessingHandler $documentProcessingHandler Document processing handler
-     * @param FilePublishingHandler     $filePublishingHandler     File publishing handler
+     * @param IConfig                   $config               Configuration service
+     * @param FileMapper                $fileMapper           File mapper
+     * @param IGroupManager             $groupManager         Group manager
+     * @param LoggerInterface           $logger               Logger
+     * @param ObjectEntityMapper        $objectEntityMapper   Object entity mapper
+     * @param IRootFolder               $rootFolder           Root folder
+     * @param IManager                  $shareManager         Share manager
+     * @param ISystemTagManager         $systemTagManager     System tag manager
+     * @param ISystemTagObjectMapper    $systemTagMapper      System tag mapper
+     * @param IURLGenerator             $urlGenerator         URL generator
+     * @param IUserManager              $userManager          User manager
+     * @param IUserSession              $userSession          User session
+     * @param FileValidationHandler     $fileValidHandler     File validation handler
+     * @param FolderManagementHandler   $folderMgmtHandler    Folder management handler
+     * @param FileOwnershipHandler      $fileOwnershipHandler File ownership handler
+     * @param FileSharingHandler        $fileSharingHandler   File sharing handler
+     * @param CreateFileHandler         $createFileHandler    Create file handler
+     * @param ReadFileHandler           $readFileHandler      Read file handler
+     * @param UpdateFileHandler         $updateFileHandler    Update file handler
+     * @param DeleteFileHandler         $deleteFileHandler    Delete file handler
+     * @param TaggingHandler            $taggingHandler       Tagging handler
+     * @param FileFormattingHandler     $fileFormatHandler    File formatting handler
+     * @param DocumentProcessingHandler $docProcHandler       Document processing handler
+     * @param FilePublishingHandler     $filePubHandler       File publishing handler
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      */
     public function __construct(
         IConfig $config,
@@ -356,8 +365,8 @@ class FileService
         IURLGenerator $urlGenerator,
         IUserManager $userManager,
         IUserSession $userSession,
-        FileValidationHandler $fileValidationHandler,
-        FolderManagementHandler $folderManagementHandler,
+        FileValidationHandler $fileValidHandler,
+        FolderManagementHandler $folderMgmtHandler,
         FileOwnershipHandler $fileOwnershipHandler,
         FileSharingHandler $fileSharingHandler,
         CreateFileHandler $createFileHandler,
@@ -365,9 +374,9 @@ class FileService
         UpdateFileHandler $updateFileHandler,
         DeleteFileHandler $deleteFileHandler,
         TaggingHandler $taggingHandler,
-        FileFormattingHandler $fileFormattingHandler,
-        DocumentProcessingHandler $documentProcessingHandler,
-        FilePublishingHandler $filePublishingHandler
+        FileFormattingHandler $fileFormatHandler,
+        DocumentProcessingHandler $docProcHandler,
+        FilePublishingHandler $filePubHandler
     ) {
         $this->logger = $logger;
         $this->logger->debug('FileService constructor started.');
@@ -383,8 +392,8 @@ class FileService
         $this->urlGenerator          = $urlGenerator;
         $this->userManager           = $userManager;
         $this->userSession           = $userSession;
-        $this->fileValidationHandler = $fileValidationHandler;
-        $this->folderManagementHandler   = $folderManagementHandler;
+        $this->fileValidationHandler = $fileValidHandler;
+        $this->folderManagementHandler   = $folderMgmtHandler;
         $this->fileOwnershipHandler      = $fileOwnershipHandler;
         $this->fileSharingHandler        = $fileSharingHandler;
         $this->createFileHandler         = $createFileHandler;
@@ -392,9 +401,9 @@ class FileService
         $this->updateFileHandler         = $updateFileHandler;
         $this->deleteFileHandler         = $deleteFileHandler;
         $this->taggingHandler            = $taggingHandler;
-        $this->fileFormattingHandler     = $fileFormattingHandler;
-        $this->documentProcessingHandler = $documentProcessingHandler;
-        $this->filePublishingHandler     = $filePublishingHandler;
+        $this->fileFormattingHandler     = $fileFormatHandler;
+        $this->documentProcessingHandler = $docProcHandler;
+        $this->filePublishingHandler     = $filePubHandler;
 
         // Break circular dependency: FolderManagementHandler needs FileService for cross-handler coordination.
         $this->logger->debug('About to call folderManagementHandler->setFileService.');
@@ -470,26 +479,6 @@ class FileService
     }//end extractFileNameFromPath()
 
     /**
-     * Get the name for the folder of a Register (used for storing files of Schemas/Objects).
-     *
-     * @param Register $register The Register to get the folder name for
-     *
-     * @return null|string The name the folder for this Register should have
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future file management
-     */
-    private function getRegisterFolderName(Register $register): string|null
-    {
-        $title = $register->getTitle();
-
-        if (str_ends_with(haystack: strtolower(rtrim($title ?? '')), needle: 'register') === true) {
-            return $title;
-        }
-
-        return "$title Register";
-    }//end getRegisterFolderName()
-
-    /**
      * Creates a folder for a Schema to store files of Objects.
      *
      * This method creates a folder structure for a Schema within its parent Register's
@@ -549,35 +538,6 @@ class FileService
      *
      * @phpstan-return Node|null
      */
-
-    /**
-     * Get the folder name for an Object Entity.
-     *
-     * This method generates a folder name for an Object Entity based on its
-     * identifier or other properties.
-     *
-     * @param ObjectEntity|string $objectEntity The Object Entity or string UUID to get the folder name for
-     *
-     * @phpstan-return string
-     *
-     * @return string The object folder name
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future file management
-     */
-    private function getObjectFolderName(ObjectEntity|string $objectEntity): string
-    {
-        if (is_string($objectEntity) === true) {
-            return $objectEntity;
-        }
-
-        $uuid = $objectEntity->getUuid();
-        if ($uuid !== null && $uuid !== '') {
-            return $uuid;
-        }
-
-        $id = $objectEntity->getId();
-        return (string) $id;
-    }//end getObjectFolderName()
 
     /**
      * Creates a folder for either a Register or ObjectEntity and stores the folder ID.
@@ -678,25 +638,6 @@ class FileService
     }//end getOpenRegisterUserFolder()
 
     /**
-     * Get a Node by its ID.
-     *
-     * Delegates to FolderManagementHandler.
-     *
-     * @param int $nodeId The ID of the node to retrieve.
-     *
-     * @return Node|null The Node if found, null otherwise.
-     *
-     * @psalm-return   Node|null
-     * @phpstan-return Node|null
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Delegation method for future use
-     */
-    private function getNodeById(int $nodeId): ?Node
-    {
-        return $this->folderManagementHandler->getNodeById($nodeId);
-    }//end getNodeById()
-
-    /**
      * Get files for either a Register or ObjectEntity.
      *
      * This unified method handles file retrieval for both entity types,
@@ -711,6 +652,9 @@ class FileService
      *
      * @psalm-return   list<\OCP\Files\Node>
      * @phpstan-return array<int, Node>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  Boolean flag is intentional for simple filter toggle
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) File retrieval requires entity type checking
      */
     public function getFilesForEntity(Register|ObjectEntity $entity, ?bool $sharedFilesOnly=false): array
     {
@@ -774,20 +718,6 @@ class FileService
     }//end getObjectFolder()
 
     /**
-     * Create a folder path and return the Node.
-     *
-     * @param string $folderPath The full path to create
-     *
-     * @return Node The created folder
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Delegation method for future use
-     */
-    private function createFolderPath(string $folderPath): Node
-    {
-        return $this->folderManagementHandler->createFolderPath($folderPath);
-    }//end createFolderPath()
-
-    /**
      * Returns a share link for the given IShare object.
      *
      * @param IShare $share An IShare object we are getting the share link for
@@ -832,29 +762,6 @@ class FileService
     {
         return $this->fileOwnershipHandler->getUser();
     }//end getUser()
-
-    /**
-     * Set file ownership to the OpenRegister user at database level.
-     *
-     * @param Node $file The file node to change ownership for
-     *
-     * @return bool True if ownership was updated successfully, false otherwise
-     *
-     * @throws Exception If the ownership update fails
-     *
-     * @TODO: This is a hack to fix NextCloud file ownership issues on production
-     * @TODO: where files exist but can't be accessed due to permission problems.
-     * @TODO: This should be removed once the underlying NextCloud rights issue is resolved.
-     *
-     * @psalm-return   bool
-     * @phpstan-return bool
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Delegation method for future use
-     */
-    private function ownFile(Node $file): bool
-    {
-        return $this->fileValidationHandler->ownFile($file);
-    }//end ownFile()
 
     /**
      * Check file ownership and fix it if needed to prevent "File not found" errors.
@@ -1017,28 +924,6 @@ class FileService
      */
 
     /**
-     * Share a folder with a specific user.
-     *
-     * Delegates to FileSharingHandler for single-responsibility sharing operations.
-     *
-     * @param Node   $folder      The folder to share.
-     * @param string $userId      The user ID to share with.
-     * @param int    $permissions The permissions to grant (default: 31 = all).
-     *
-     * @return IShare|null The created share or null if user doesn't exist.
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Delegation method for future use
-     */
-    private function shareFolderWithUser(Node $folder, string $userId, int $permissions=31): ?IShare
-    {
-        return $this->fileSharingHandler->shareFolderWithUser(
-            folder: $folder,
-            userId: $userId,
-            permissions: $permissions
-        );
-    }//end shareFolderWithUser()
-
-    /**
      * Get the currently active user (not the OpenRegister system user).
      *
      * Delegates to FileOwnershipHandler.
@@ -1054,76 +939,6 @@ class FileService
     }//end getCurrentUser()
 
     /**
-     * Transfer file ownership to OpenRegister user and share with current user
-     *
-     * This method checks if the current user owns a file and if they are not the OpenRegister
-     * system user. If so, it transfers ownership to the OpenRegister user and creates a share
-     * with the current user to maintain access.
-     *
-     * @param File $file The file to potentially transfer ownership for
-     *
-     * @return void
-     *
-     * @throws \Exception If ownership transfer fails
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Delegation method for future use
-     */
-    private function transferFileOwnershipIfNeeded(File $file): void
-    {
-        $this->fileOwnershipHandler->transferFileOwnershipIfNeeded(
-            file: $file,
-            fileSharingHandler: $this->fileSharingHandler
-        );
-    }//end transferFileOwnershipIfNeeded()
-
-    /**
-     * Share a file with a specific user.
-     *
-     * Delegates to FileSharingHandler for single-responsibility sharing operations.
-     *
-     * @param File   $file        The file to share.
-     * @param string $userId      The user ID to share with.
-     * @param int    $permissions The permissions to grant (default: full permissions).
-     *
-     * @return void
-     *
-     * @throws \Exception If sharing fails.
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Delegation method for future use
-     */
-    private function shareFileWithUser(File $file, string $userId, int $permissions=31): void
-    {
-        $this->fileSharingHandler->shareFileWithUser(
-            file: $file,
-            userId: $userId,
-            permissions: $permissions
-        );
-    }//end shareFileWithUser()
-
-    /**
-     * Transfer folder ownership to OpenRegister user and share with current user
-     *
-     * This method checks if the current user owns a folder and if they are not the OpenRegister
-     * system user. If so, it transfers ownership to the OpenRegister user and creates a share
-     * with the current user to maintain access.
-     *
-     * @param Node $folder The folder to potentially transfer ownership for
-     *
-     * @return void
-     *
-     * @throws \Exception If ownership transfer fails
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Delegation method for future use
-     */
-    private function transferFolderOwnershipIfNeeded(Node $folder): void
-    {
-        $this->fileOwnershipHandler->transferFolderOwnershipIfNeeded(
-            folder: $folder,
-            fileSharingHandler: $this->fileSharingHandler
-        );
-    }//end transferFolderOwnershipIfNeeded()
-
-    /**
      * Creates and returns a share link for a file (or folder).
      *
      * See https://docs.nextcloud.com/server/latest/developer_manual/client_apis/OCS/ocs-share-api.html#create-a-new-share.
@@ -1137,6 +952,9 @@ class FileService
      * @return string The share link
      *
      * @psalm-suppress PossiblyUnusedReturnValue
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Share link creation requires handling multiple scenarios
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Share link creation has multiple error paths
      */
     public function createShareLink(string $path, ?int $shareType=3, ?int $permissions=null): string
     {
@@ -1329,6 +1147,8 @@ class FileService
      *
      * @phpstan-param array<int, string> $tags
      * @psalm-param   array<int, string> $tags
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag is intentional for simple share toggle
      */
     public function addFile(
         ObjectEntity | string $objectEntity, string $fileName,
@@ -1367,6 +1187,8 @@ class FileService
      *
      * @phpstan-param array<int, string> $tags
      * @psalm-param   array<int, string> $tags
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag is intentional for simple share toggle
      */
     public function saveFile(
         ObjectEntity $objectEntity,
@@ -1429,6 +1251,8 @@ class FileService
      *
      * @psalm-return   list<\OCP\Files\Node>
      * @phpstan-return array<int, Node>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag is intentional for simple filter toggle
      */
     public function getFiles(ObjectEntity | string $object, ?bool $sharedFilesOnly=false): array
     {
@@ -1709,88 +1533,6 @@ class FileService
     }//end debugListObjectFiles()
 
     /**
-     * Blocks executable files from being uploaded for security.
-     *
-     * Delegates to FileValidationHandler.
-     *
-     * @param string $fileName    The filename to check.
-     * @param string $fileContent The file content to check.
-     *
-     * @return void
-     *
-     * @throws Exception If an executable file is detected.
-     *
-     * @psalm-return   void
-     * @phpstan-return void
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Delegation method for future use
-     */
-    private function blockExecutableFile(string $fileName, string $fileContent): void
-    {
-        $this->fileValidationHandler->blockExecutableFile(fileName: $fileName, fileContent: $fileContent);
-    }//end blockExecutableFile()
-
-    /**
-     * Detects executable magic bytes in file content.
-     *
-     * Magic bytes are signatures at the start of files that identify the file type.
-     * This provides defense-in-depth against renamed executables.
-     *
-     * @param string $content  The file content to check
-     * @param string $fileName The filename for error messages
-     *
-     * @return void
-     *
-     * @throws Exception If executable magic bytes are detected
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Defense-in-depth security method reserved for future use
-     */
-    private function detectExecutableMagicBytes(string $content, string $fileName): void
-    {
-        // Common executable magic bytes.
-        $magicBytes = [
-            'MZ'               => 'Windows executable (PE/EXE)',
-            "\x7FELF"          => 'Linux/Unix executable (ELF)',
-            "#!/bin/sh"        => 'Shell script',
-            "#!/bin/bash"      => 'Bash script',
-            "#!/usr/bin/env"   => 'Script with env shebang',
-            "<?php"            => 'PHP script',
-            "\xCA\xFE\xBA\xBE" => 'Java class file',
-        ];
-
-        foreach ($magicBytes as $signature => $description) {
-            if (strpos($content, $signature) === 0) {
-                $this->logger->warning(
-                    message: 'Executable magic bytes detected',
-                    context: [
-                        'app'      => 'openregister',
-                        'filename' => $fileName,
-                        'type'     => $description,
-                    ]
-                );
-
-                $msg = "File '$fileName' has executable code ($description). Blocked for security.";
-                throw new Exception($msg);
-            }
-        }
-
-        // Check for script shebangs anywhere in first 4 lines.
-        $firstLines = substr($content, 0, 1024);
-        if (preg_match('/^#!.*\/(sh|bash|zsh|ksh|csh|python|perl|ruby|php|node)/m', $firstLines) === 1) {
-            throw new Exception(
-                "File '$fileName' contains script shebang. Script files are blocked for security reasons."
-            );
-        }
-
-        // Check for embedded PHP tags.
-        if (preg_match('/<\?php|<\?=|<script\s+language\s*=\s*["\']php/i', $firstLines) === 1) {
-            throw new Exception(
-                "File '$fileName' contains PHP code. PHP files are blocked for security reasons."
-            );
-        }
-    }//end detectExecutableMagicBytes()
-
-    /**
      * Creates a folder for an ObjectEntity and returns the folder ID without updating the object.
      *
      * This method creates a folder structure for an Object Entity within its parent
@@ -1813,144 +1555,6 @@ class FileService
             currentUser: $currentUser
         );
     }//end createObjectFolderWithoutUpdate()
-
-    /**
-     * Get node type from folder (file or folder).
-     *
-     * @param Node $node The node to check.
-     *
-     * @return string Node type ('file' or 'folder').
-     *
-     * @psalm-return 'file'|'folder'|'unknown'
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future file type detection
-     */
-    private function getNodeTypeFromFolder(Node $node): string
-    {
-        if ($node instanceof Folder) {
-            return 'folder';
-        }
-
-        if ($node instanceof File) {
-            return 'file';
-        }
-
-        return 'unknown';
-    }//end getNodeTypeFromFolder()
-
-    /**
-     * Get access URL from shares array.
-     *
-     * @param array $shares Array of IShare objects.
-     *
-     * @return null|string Access URL or null if not found.
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future share URL handling
-     */
-    private function getAccessUrlFromShares(array $shares): string|null
-    {
-        foreach ($shares as $share) {
-            if ($share instanceof IShare) {
-                $url = $this->getShareLink($share);
-                if ($url !== null && $url !== '') {
-                    return $url;
-                }
-            }
-        }
-
-        return null;
-    }//end getAccessUrlFromShares()
-
-    /**
-     * Get download URL from shares array.
-     *
-     * @param array $shares Array of IShare objects.
-     *
-     * @return null|string Download URL or null if not found. //end if
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future share URL handling
-     */
-    private function getDownloadUrlFromShares(array $shares): string|null
-    {
-        foreach ($shares as $share) {
-            if ($share instanceof IShare) {
-                $url = $this->getShareLink($share);
-                if ($url !== null && $url !== '') {
-                    return $url.'/download';
-                }
-            }
-        }
-
-        return null;
-    }//end getDownloadUrlFromShares()
-
-    /**
-     * Get published time from shares array.
-     *
-     * @param array $shares Array of IShare objects.
-     *
-     * @return string|null Published time as ISO8601 string or null if not found.
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future share metadata handling
-     */
-    private function getPublishedTimeFromShares(array $shares): ?string
-    {
-        foreach ($shares as $share) {
-            if ($share instanceof IShare) {
-                $stime = $share->getShareTime();
-                if ($stime !== null) {
-                    // GetShareTime() returns DateTime|null, convert to timestamp.
-                    // GetShareTime() always returns DateTime|null, so use getTimestamp().
-                    if ($stime instanceof \DateTime) {
-                        $timestamp = $stime->getTimestamp();
-                        return (new DateTime())->setTimestamp($timestamp)->format('c');
-                    }
-
-                    // If somehow not a DateTime (shouldn't happen), return current time.
-                    return (new DateTime())->format('c');
-                }
-            }
-        }
-
-        return null;
-    }//end getPublishedTimeFromShares()
-
-    /**
-     * Get object ID from ObjectEntity.
-     *
-     * @param ObjectEntity|null $object The object entity.
-     *
-     * @return string|null Object ID (UUID) or null if not available.
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future object identification
-     */
-    private function getObjectId(?ObjectEntity $object): ?string
-    {
-        if ($object === null) {
-            return null;
-        }
-
-        return $object->getUuid() ?? (string) $object->getId();
-    }//end getObjectId()
-
-    /**
-     * Get file in object folder message.
-     *
-     * @param bool $fileInObjectFolder Whether file is in object folder.
-     * @param int  $fileId             File ID.
-     *
-     * @return string Message describing the result.
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future debugging/logging
-     */
-    private function getFileInObjectFolderMessage(bool $fileInObjectFolder, int $fileId): string
-    {
-        if ($fileInObjectFolder === true) {
-            return "File $fileId is correctly located in object folder";
-        }
-
-        return "File $fileId is not in object folder";
-    }//end getFileInObjectFolderMessage()
 
     /**
      * Replace words in a document

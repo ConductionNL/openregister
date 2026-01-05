@@ -44,6 +44,8 @@ use Psr\Log\LoggerInterface;
  * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class UpdateFileHandler
 {
@@ -58,19 +60,19 @@ class UpdateFileHandler
     /**
      * Constructor for UpdateFileHandler.
      *
-     * @param IRootFolder             $rootFolder              Root folder for file operations.
-     * @param FolderManagementHandler $folderManagementHandler Folder management handler.
-     * @param FileValidationHandler   $fileValidationHandler   File validation handler.
-     * @param FileOwnershipHandler    $fileOwnershipHandler    File ownership handler.
-     * @param ReadFileHandler         $readFileHandler         Read file handler.
-     * @param ISystemTagManager       $systemTagManager        System tag manager.
-     * @param ISystemTagObjectMapper  $systemTagMapper         System tag object mapper.
-     * @param LoggerInterface         $logger                  Logger for logging operations.
+     * @param IRootFolder             $rootFolder           Root folder for file operations.
+     * @param FolderManagementHandler $folderMgmtHandler    Folder management handler.
+     * @param FileValidationHandler   $fileValidHandler     File validation handler.
+     * @param FileOwnershipHandler    $fileOwnershipHandler File ownership handler.
+     * @param ReadFileHandler         $readFileHandler      Read file handler.
+     * @param ISystemTagManager       $systemTagManager     System tag manager.
+     * @param ISystemTagObjectMapper  $systemTagMapper      System tag object mapper.
+     * @param LoggerInterface         $logger               Logger for logging operations.
      */
     public function __construct(
         private readonly IRootFolder $rootFolder,
-        private readonly FolderManagementHandler $folderManagementHandler,
-        private readonly FileValidationHandler $fileValidationHandler,
+        private readonly FolderManagementHandler $folderMgmtHandler,
+        private readonly FileValidationHandler $fileValidHandler,
         private readonly FileOwnershipHandler $fileOwnershipHandler,
         private readonly ReadFileHandler $readFileHandler,
         private readonly ISystemTagManager $systemTagManager,
@@ -108,6 +110,10 @@ class UpdateFileHandler
      *
      * @phpstan-param array<int, string> $tags
      * @psalm-param   array<int, string> $tags
+     *
+     * @SuppressWarnings(PHPMD.NPathComplexity)       File update requires handling many file system scenarios
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple file resolution and update paths
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive file update with logging requires extensive code
      */
     public function updateFile(
         string|int $filePath,
@@ -138,7 +144,7 @@ class UpdateFileHandler
             if ($file === null) {
                 // Try to find the file in the user folder by ID.
                 try {
-                    $userFolder = $this->folderManagementHandler->getOpenRegisterUserFolder();
+                    $userFolder = $this->folderMgmtHandler->getOpenRegisterUserFolder();
                     $nodes      = $userFolder->getById($filePath);
                     if (empty($nodes) === true) {
                         $this->logger->error(message: "updateFile: No file found with ID: $filePath");
@@ -174,7 +180,7 @@ class UpdateFileHandler
             // If object is provided, try to find the file in the object folder first.
             if ($object !== null) {
                 try {
-                    $objectFolder = $this->folderManagementHandler->getObjectFolder($object);
+                    $objectFolder = $this->folderMgmtHandler->getObjectFolder($object);
 
                     if ($objectFolder !== null) {
                         $this->logger->info(message: "updateFile: Object folder path: ".$objectFolder->getPath());
@@ -207,10 +213,12 @@ class UpdateFileHandler
                                 $this->logger->warning(message: $msg);
                             }
                         }
-                    } else {
+                    }//end if
+
+                    if ($objectFolder === null) {
                         $msg = "updateFile: Could not get object folder for object ID: ".$object->getId();
                         $this->logger->warning(message: $msg);
-                    }//end if
+                    }
                 } catch (Exception $e) {
                     $this->logger->error(message: "updateFile: Error accessing object folder: ".$e->getMessage());
                 }//end try
@@ -224,7 +232,7 @@ class UpdateFileHandler
             if ($file === null) {
                 $this->logger->info(message: "updateFile: Trying user folder approach with path: '$filePath'");
                 try {
-                    $userFolder = $this->folderManagementHandler->getOpenRegisterUserFolder();
+                    $userFolder = $this->folderMgmtHandler->getOpenRegisterUserFolder();
                     $file       = $userFolder->get(path: $filePath);
                     $msg        = "updateFile: Found file in user folder at path: $filePath (ID: ".$file->getId().")";
                     $this->logger->info(message: $msg);
@@ -244,13 +252,15 @@ class UpdateFileHandler
                                 $path     = $file->getPath();
                                 $msg      = "updateFile: Found file by ID $fileId: $fileName at path: $path";
                                 $this->logger->info(message: $msg);
-                            } else {
+                            }
+
+                            if (empty($nodes) === true) {
                                 $this->logger->warning(message: "updateFile: No file found with ID: $fileId");
                             }
                         } catch (Exception $e) {
                             $this->logger->error(message: "updateFile: Error finding file by ID $fileId: ".$e->getMessage());
                         }
-                    }
+                    }//end if
 
                     if ($file === null) {
                         throw new Exception("File $filePath does not exist");
@@ -271,10 +281,10 @@ class UpdateFileHandler
                 }
 
                 // Security: Block executable files.
-                $this->fileValidationHandler->blockExecutableFile(fileName: $file->getName(), fileContent: $content);
+                $this->fileValidHandler->blockExecutableFile(fileName: $file->getName(), fileContent: $content);
 
                 // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
-                $this->fileValidationHandler->checkOwnership($file);
+                $this->fileValidHandler->checkOwnership($file);
 
                 $file->putContent(data: $content);
                 $this->logger->info(message: "updateFile: Successfully updated file content: ".$file->getName());

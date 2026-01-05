@@ -75,6 +75,8 @@ class FileValidationHandler
      *
      * @psalm-return   void
      * @phpstan-return void
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive list of dangerous extensions requires extensive code
      */
     public function blockExecutableFile(string $fileName, string $fileContent): void
     {
@@ -249,6 +251,9 @@ class FileValidationHandler
      *
      * @psalm-return   void
      * @phpstan-return void
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Ownership checking requires handling multiple exception scenarios
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple paths for ownership verification and fixing
      */
     public function checkOwnership(Node $file): void
     {

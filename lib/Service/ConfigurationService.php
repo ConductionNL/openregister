@@ -63,6 +63,13 @@ use OCA\OpenRegister\Service\ObjectService;
  * Service for importing and exporting configurations in various formats.
  *
  * @package OCA\OpenRegister\Service
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.TooManyFields)            Configuration service coordinates many handler classes
+ * @SuppressWarnings(PHPMD.LongVariable)
  */
 class ConfigurationService
 {
@@ -94,15 +101,6 @@ class ConfigurationService
      * @var ConfigurationMapper The configuration mapper instance.
      */
     private ConfigurationMapper $configurationMapper;
-
-    /**
-     * OpenConnector service instance for handling OpenConnector operations
-     *
-     * Lazily loaded from container when OpenConnector app is installed.
-     *
-     * @var object|null OpenConnector service instance (from openconnector app) or null
-     */
-    private ?object $openConnectorConfigurationService = null;
 
     /**
      * App manager for checking installed apps
@@ -209,6 +207,13 @@ class ConfigurationService
     private readonly PreviewHandler $previewHandler;
 
     /**
+     * OpenConnector configuration service for optional integration.
+     *
+     * @var object|null The OpenConnector configuration service instance.
+     */
+    private ?object $openConnectorConfigurationService = null;
+
+    /**
      * Constructor
      *
      * Initializes service with required dependencies for configuration operations.
@@ -233,6 +238,8 @@ class ConfigurationService
      * @param string              $appDataPath         Application data path
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      */
     public function __construct(
         SchemaMapper $schemaMapper,
@@ -294,6 +301,8 @@ class ConfigurationService
      *
      * @return bool True if the OpenConnector service is available, false otherwise.
      * @throws ContainerExceptionInterface|NotFoundExceptionInterface
+     *
+     * @SuppressWarnings(PHPMD.BooleanGetMethodName) Kept as getOpenConnector() for API compatibility
      */
     public function getOpenConnector(): bool
     {
@@ -326,7 +335,8 @@ class ConfigurationService
      *
      * @throws Exception If configuration is invalid.
      *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Toggle to include/exclude objects in export
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  Toggle to include/exclude objects in export
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Export requires handling multiple input types
      */
     public function exportConfig(array | Configuration | Register $input=[], bool $includeObjects=false): array
     {
@@ -367,60 +377,6 @@ class ConfigurationService
     }//end getUploadedJson()
 
     /**
-     * A function used to decode file content or the response of an url get call.
-     * Before the data can be used to create or update an object.
-     *
-     * @param string      $data The file content or the response body content.
-     * @param string|null $type The file MIME type or the response Content-Type header.
-     *
-     * @return array|null The decoded data or null.
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Legacy delegation method kept for backward compatibility
-     */
-    private function decode(string $data, ?string $type): ?array
-    {
-        return $this->importHandler->decode(
-            data: $data,
-            type: $type
-        );
-    }//end decode()
-
-    /**
-     * Recursively converts stdClass objects to arrays to ensure consistent data structure (DELEGATED).
-     *
-     * @param mixed $data The data to convert.
-     *
-     * @return array The converted array data.
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Legacy delegation method kept for backward compatibility
-     */
-    private function ensureArrayStructure(mixed $data): array
-    {
-        return $this->importHandler->ensureArrayStructure($data);
-    }//end ensureArrayStructure()
-
-    /**
-     * Get JSON data from uploaded file (DELEGATED).
-     *
-     * @param array       $uploadedFile The uploaded file.
-     * @param string|null $_type        If the uploaded file should be a specific type of object (unused).
-     *
-     * @return JSONResponse|array A PHP array with the uploaded json data or a JSONResponse in case of an error.
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod)   Legacy delegation method kept for backward compatibility
-     *
-     * @psalm-return JSONResponse<400, array{error: string, 'MIME-type'?: string}, array<never, never>>|array
-     */
-    private function getJSONfromFile(array $uploadedFile, ?string $_type=null): array|JSONResponse
-    {
-        return $this->importHandler->getJSONfromFile(
-            uploadedFile: $uploadedFile,
-            _type: $_type
-        );
-    }//end getJSONfromFile()
-
-    /**
      * Uses Guzzle to call the given URL and returns response as PHP array (DELEGATED).
      *
      * @param string $url The URL to call.
@@ -435,22 +391,6 @@ class ConfigurationService
     {
         return $this->importHandler->getJSONfromURL($url);
     }//end getJSONfromURL()
-
-    /**
-     * Get JSON data from request body (DELEGATED).
-     *
-     * @param array|string $phpArray The PHP array or string to process.
-     *
-     * @return JSONResponse|array A PHP array with the uploaded json data or a JSONResponse in case of an error.
-     *
-     * @psalm-return JSONResponse<400, array{error: 'Failed to decode JSON input'}, array<never, never>>|array
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Legacy delegation method kept for backward compatibility
-     */
-    private function getJSONfromBody(array | string $phpArray): array|JSONResponse
-    {
-        return $this->importHandler->getJSONfromBody($phpArray);
-    }//end getJSONfromBody()
 
     /**
      * Import configuration from a JSON file.
@@ -487,7 +427,8 @@ class ConfigurationService
      *     rules: array
      * }
      *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag to override version checks
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Force flag to override version checks
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Configuration import requires many optional parameters
      */
     public function importFromJson(
         array $data,
@@ -506,104 +447,6 @@ class ConfigurationService
             force: $force
         );
     }//end importFromJson()
-
-    /**
-     * Create or update a configuration entity to track imported data
-     *
-     * This method creates or updates a Configuration entity to track which registers,
-     * schemas, and objects are managed by a specific app configuration.
-     *
-     * @param array       $data    The original import data
-     * @param string      $appId   The application ID
-     * @param string      $version The version of the import
-     * @param array       $result  The import result containing created entities
-     * @param string|null $owner   The owner of the configuration (for backwards compatibility)
-     *
-     * @return Configuration The created or updated configuration
-     *
-     * @throws Exception If configuration creation/update fails
-     *
-     * @psalm-suppress                              UnusedReturnValue
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Legacy delegation method kept for backward compatibility
-     */
-    private function createOrUpdateConfiguration(
-        array $data,
-        string $appId,
-        string $version,
-        array $result,
-        ?string $owner=null
-    ): Configuration {
-        return $this->importHandler->createOrUpdateConfiguration(
-            data: $data,
-            appId: $appId,
-            version: $version,
-            result: $result,
-            owner: $owner
-        );
-    }//end createOrUpdateConfiguration()
-
-    /**
-     * Import a register from configuration data
-     *
-     * @param array       $data    The register data.
-     * @param string|null $owner   The owner of the register.
-     * @param string|null $appId   The application ID.
-     * @param string|null $version The version string.
-     * @param bool        $force   Whether to force the import.
-     *
-     * @return Register The imported register or null if skipped.
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Legacy delegation method kept for backward compatibility
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag to override version checks
-     */
-    private function importRegister(
-        array $data,
-        ?string $owner=null,
-        ?string $appId=null,
-        ?string $version=null,
-        bool $force=false
-    ): Register {
-        return $this->importHandler->importRegister(
-            data: $data,
-            owner: $owner,
-            appId: $appId,
-            version: $version,
-            force: $force
-        );
-    }//end importRegister()
-
-    /**
-     * Import a schema from configuration data
-     *
-     * @param array       $data           The schema data.
-     * @param array       $slugsAndIdsMap Map of slugs to IDs.
-     * @param string|null $owner          The owner of the schema.
-     * @param string|null $appId          The application ID.
-     * @param string|null $version        The version string.
-     * @param bool        $force          Whether to force the import.
-     *
-     * @return Schema The imported schema.
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Legacy delegation method kept for backward compatibility
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag to override version checks
-     */
-    private function importSchema(
-        array $data,
-        array $slugsAndIdsMap,
-        ?string $owner=null,
-        ?string $appId=null,
-        ?string $version=null,
-        bool $force=false
-    ): Schema {
-        return $this->importHandler->importSchema(
-            data: $data,
-            slugsAndIdsMap: $slugsAndIdsMap,
-            owner: $owner,
-            appId: $appId,
-            version: $version,
-            force: $force
-        );
-    }//end importSchema()
 
     /**
      * Import configuration from a file path.
@@ -704,6 +547,8 @@ class ConfigurationService
      *
      * @return string|null The remote version, or null if check failed
      * @throws GuzzleException If HTTP request fails
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Version check has multiple error and validation conditions
      */
     public function checkRemoteVersion(Configuration $configuration): ?string
     {
@@ -780,6 +625,8 @@ class ConfigurationService
      *     lastChecked: string|null,
      *     message: string
      * }
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Version comparison has multiple null and comparison checks
      */
     public function compareVersions(Configuration $configuration): array
     {
@@ -910,77 +757,6 @@ class ConfigurationService
     {
         return $this->previewHandler->previewConfigurationChanges($configuration);
     }//end previewConfigurationChanges()
-
-    /**
-     * Preview changes for a single register
-     *
-     * @param string $slug         The register slug
-     * @param array  $registerData The register data from remote configuration
-     *
-     * @return array Preview information for this register
-     *
-     * @phpstan-return array{
-     *     type: string,
-     *     action: string,
-     *     slug: string,
-     *     title: string,
-     *     current: array|null,
-     *     proposed: array,
-     *     changes: array
-     * }
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Legacy delegation method kept for backward compatibility
-     */
-    private function previewRegisterChange(string $slug, array $registerData): array
-    {
-        $slug = strtolower($slug);
-        return $this->previewHandler->previewRegisterChange(
-            slug: $slug,
-            registerData: $registerData
-        );
-    }//end previewRegisterChange()
-
-    /**
-     * Compare two arrays and return a list of differences
-     *
-     * @param array  $current  The current data
-     * @param array  $proposed The proposed data
-     * @param string $prefix   Field name prefix for nested comparison
-     *
-     * @return array List of differences
-     *
-     * @psalm-return array<never, never>
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Legacy delegation method kept for backward compatibility
-     */
-    private function compareArrays(array $current, array $proposed, string $prefix=''): array
-    {
-        return $this->previewHandler->compareArrays(
-            current: $current,
-            proposed: $proposed,
-            prefix: $prefix
-        );
-    }//end compareArrays()
-
-    /**
-     * Check if an array is a simple (non-nested) array
-     *
-     * @param array $array The array to check
-     *
-     * @return bool True if the array contains only scalar values
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Legacy helper method kept for backward compatibility
-     */
-    private function isSimpleArray(array $array): bool
-    {
-        foreach ($array as $value) {
-            if (is_array($value) === true) {
-                return false;
-            }
-        }
-
-        return true;
-    }//end isSimpleArray()
 
     /**
      * Get the configured app version from appconfig
@@ -1158,6 +934,9 @@ class ConfigurationService
      */
     public function importConfigurationWithSelection(Configuration $configuration, array $selection): array
     {
-        return $this->previewHandler->importConfigurationWithSelection(configuration: $configuration, selection: $selection);
+        return $this->previewHandler->importConfigurationWithSelection(
+            _configuration: $configuration,
+            _selection: $selection
+        );
     }//end importConfigurationWithSelection()
 }//end class

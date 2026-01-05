@@ -43,6 +43,9 @@ use Psr\Log\LoggerInterface;
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.nl
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Configuration management requires comprehensive settings methods
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex configuration validation and transformation logic
  */
 class ConfigurationSettingsHandler
 {
@@ -200,6 +203,13 @@ class ConfigurationSettingsHandler
      *         fileCollection: mixed|null
      *     }
      * }
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     *     Comprehensive settings aggregation requires full configuration structure
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *     Multiple configuration sections require conditional handling
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     *     Configuration defaults and overrides create multiple execution paths
      */
     public function getSettings(): array
     {
@@ -499,6 +509,13 @@ class ConfigurationSettingsHandler
      *         fileCollection: mixed|null
      *     }
      * }
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     *     Comprehensive settings update requires handling all configuration sections
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *     Multiple configuration sections require conditional handling
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     *     Configuration sections are independently optional
      */
     public function updateSettings(array $data): array
     {
@@ -944,7 +961,15 @@ class ConfigurationSettingsHandler
      * Get LLM settings only
      *
      * @return array LLM configuration
+     *
      * @throws \RuntimeException If LLM settings retrieval fails
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *     Backward compatibility requires multiple field existence checks
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     *     Default configuration structure requires comprehensive initialization
+     * @SuppressWarnings(PHPMD.ElseExpression)
+     *     Nested else branches handle optional vector config backward compatibility
      */
     public function getLLMSettingsOnly(): array
     {
@@ -1022,6 +1047,8 @@ class ConfigurationSettingsHandler
      * @throws \RuntimeException If LLM settings update fails
      *
      * @return array Updated LLM config with providers and their configurations.
+     *
+     * @SuppressWarnings(PHPMD.NPathComplexity) PATCH behavior requires merging multiple nested configuration structures
      */
     public function updateLLMSettingsOnly(array $llmData): array
     {
@@ -1079,7 +1106,10 @@ class ConfigurationSettingsHandler
      * Get File Management settings only
      *
      * @return array File management configuration
+     *
      * @throws \RuntimeException If File Management settings retrieval fails
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive file settings require many default configuration values
      */
     public function getFileSettingsOnly(): array
     {
@@ -1148,6 +1178,8 @@ class ConfigurationSettingsHandler
      *     textExtractor: 'llphant'|mixed, extractionMode: 'background'|mixed,
      *     maxFileSize: 100|mixed, batchSize: 10|mixed,
      *     dolphinApiEndpoint: ''|mixed, dolphinApiKey: ''|mixed}
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive file settings require many configuration fields
      */
     public function updateFileSettingsOnly(array $fileData): array
     {

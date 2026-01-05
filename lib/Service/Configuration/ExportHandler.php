@@ -35,6 +35,8 @@ use Psr\Log\LoggerInterface;
  * Handles exporting configurations, registers, and schemas to OpenAPI format.
  *
  * @package OCA\OpenRegister\Service\Configuration
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class ExportHandler
 {
@@ -125,7 +127,10 @@ class ExportHandler
      *
      * @throws \OCP\DB\Exception If database operations fail.
      *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Toggle to include/exclude objects in export
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Toggle to include/exclude objects in export
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Export requires many conditional data transformations
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Configuration export has multiple input type conditions
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Export logic requires comprehensive data handling
      */
     public function exportConfig(
         array|Configuration|Register $input=[],
@@ -247,8 +252,8 @@ class ExportHandler
 
             // Get and export schemas associated with this register.
             $schemas = $this->registerMapper->getSchemasByRegisterId($register->getId());
-            $schemaIdsAndSlugsMap   = $this->schemaMapper->getIdToSlugMap();
-            $registerIdsAndSlugsMap = $this->registerMapper->getIdToSlugMap();
+            $schemaIdsAndSlugsMap = $this->schemaMapper->getIdToSlugMap();
+            $regIdSlugMap         = $this->registerMapper->getIdToSlugMap();
 
             foreach ($schemas as $schema) {
                 // Store schema in map by ID for reference.
@@ -257,7 +262,7 @@ class ExportHandler
                 $openApiSpec['components']['schemas'][$schema->getSlug()] = $this->exportSchema(
                     schema: $schema,
                     schemaIdsAndSlugsMap: $schemaIdsAndSlugsMap,
-                    registerIdsAndSlugsMap: $registerIdsAndSlugsMap
+                    regIdSlugMap: $regIdSlugMap
                 );
                 $openApiSpec['components']['registers'][$register->getSlug()]['schemas'][] = $schema->getSlug();
             }
@@ -329,9 +334,9 @@ class ExportHandler
      * It handles both the new objectConfiguration structure (with register and schema IDs)
      * and the legacy register property structure for backward compatibility.
      *
-     * @param Schema $schema                 The schema to export.
-     * @param array  $schemaIdsAndSlugsMap   Map of schema IDs to slugs.
-     * @param array  $registerIdsAndSlugsMap Map of register IDs to slugs.
+     * @param Schema $schema               The schema to export.
+     * @param array  $schemaIdsAndSlugsMap Map of schema IDs to slugs.
+     * @param array  $regIdSlugMap         Map of register IDs to slugs.
      *
      * @return ((mixed|string[])[]|bool|int|null|string)[]
      *
@@ -347,8 +352,12 @@ class ExportHandler
      *     published: null|string, depublished: null|string,
      *     configuration: array|null|string, allOf: array|null,
      *     oneOf: array|null, anyOf: array|null}
+     *
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Schema export requires many conditional transformations
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Property handling requires many type and structure checks
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Schema property transformation involves detailed logic
      */
-    private function exportSchema(Schema $schema, array $schemaIdsAndSlugsMap, array $registerIdsAndSlugsMap): array
+    private function exportSchema(Schema $schema, array $schemaIdsAndSlugsMap, array $regIdSlugMap): array
     {
         // Use jsonSerialize to get the JSON representation of the schema.
         $schemaArray = $schema->jsonSerialize();
@@ -392,12 +401,12 @@ class ExportHandler
                 $registerId = $property['objectConfiguration']['register'];
                 if (is_numeric($registerId) === true) {
                     $registerIdStr = (string) $registerId;
-                    if (($registerIdsAndSlugsMap[$registerIdStr] ?? null) !== null) {
+                    if (($regIdSlugMap[$registerIdStr] ?? null) !== null) {
                         /*
-                         * @var array<int|string, string> $registerIdsAndSlugsMap
+                         * @var array<int|string, string> $regIdSlugMap
                          */
 
-                        $property['objectConfiguration']['register'] = $registerIdsAndSlugsMap[$registerIdStr];
+                        $property['objectConfiguration']['register'] = $regIdSlugMap[$registerIdStr];
                     }
                 }
             }
@@ -436,12 +445,12 @@ class ExportHandler
                 $registerId = $property['items']['objectConfiguration']['register'];
                 if (is_numeric($registerId) === true) {
                     $registerIdStr = (string) $registerId;
-                    if (($registerIdsAndSlugsMap[$registerIdStr] ?? null) !== null) {
+                    if (($regIdSlugMap[$registerIdStr] ?? null) !== null) {
                         /*
-                         * @var array<int|string, string> $registerIdsAndSlugsMap
+                         * @var array<int|string, string> $regIdSlugMap
                          */
 
-                        $property['items']['objectConfiguration']['register'] = $registerIdsAndSlugsMap[$registerIdStr];
+                        $property['items']['objectConfiguration']['register'] = $regIdSlugMap[$registerIdStr];
                     }
                 }
             }//end if
@@ -475,12 +484,12 @@ class ExportHandler
                 if (is_string($property['register']) === true) {
                     $registerId    = $this->getLastNumericSegment(url: $property['register']);
                     $registerIdStr = $registerId;
-                    if (($registerIdsAndSlugsMap[$registerIdStr] ?? null) !== null) {
+                    if (($regIdSlugMap[$registerIdStr] ?? null) !== null) {
                         /*
-                         * @var array<int|string, string> $registerIdsAndSlugsMap
+                         * @var array<int|string, string> $regIdSlugMap
                          */
 
-                        $property['register'] = $registerIdsAndSlugsMap[$registerIdStr];
+                        $property['register'] = $regIdSlugMap[$registerIdStr];
                     }
                 }
             }
@@ -494,12 +503,12 @@ class ExportHandler
                 if (is_string($property['items']['register']) === true) {
                     $registerId    = $this->getLastNumericSegment(url: $property['items']['register']);
                     $registerIdStr = $registerId;
-                    if (($registerIdsAndSlugsMap[$registerIdStr] ?? null) !== null) {
+                    if (($regIdSlugMap[$registerIdStr] ?? null) !== null) {
                         /*
-                         * @var array<int|string, string> $registerIdsAndSlugsMap
+                         * @var array<int|string, string> $regIdSlugMap
                          */
 
-                        $property['items']['register'] = $registerIdsAndSlugsMap[$registerIdStr];
+                        $property['items']['register'] = $regIdSlugMap[$registerIdStr];
                     }
                 }
             }

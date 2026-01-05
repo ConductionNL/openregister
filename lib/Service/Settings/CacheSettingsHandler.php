@@ -45,6 +45,9 @@ use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.nl
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex cache management across multiple cache types
+ * @SuppressWarnings(PHPMD.LongVariable)             Cache service properties use descriptive names for clarity
  */
 class CacheSettingsHandler
 {
@@ -87,24 +90,24 @@ class CacheSettingsHandler
     /**
      * Constructor for CacheSettingsHandler
      *
-     * @param ICacheFactory      $cacheFactory            Cache factory.
-     * @param SchemaCacheHandler $schemaCacheService      Schema cache handler.
-     * @param FacetCacheHandler  $schemaFacetCacheService Schema facet cache service.
-     * @param CacheHandler|null  $objectCacheService      Object cache service (optional, lazy-loaded).
-     * @param IAppContainer|null $container               Container for lazy loading (optional).
+     * @param ICacheFactory      $cacheFactory       Cache factory.
+     * @param SchemaCacheHandler $schemaCacheService Schema cache handler.
+     * @param FacetCacheHandler  $facetCacheSvc      Schema facet cache service.
+     * @param CacheHandler|null  $objectCacheService Object cache service (optional, lazy-loaded).
+     * @param IAppContainer|null $container          Container for lazy loading (optional).
      *
      * @return void
      */
     public function __construct(
         ICacheFactory $cacheFactory,
         SchemaCacheHandler $schemaCacheService,
-        FacetCacheHandler $schemaFacetCacheService,
+        FacetCacheHandler $facetCacheSvc,
         ?CacheHandler $objectCacheService=null,
         ?IAppContainer $container=null
     ) {
         $this->cacheFactory            = $cacheFactory;
         $this->schemaCacheService      = $schemaCacheService;
-        $this->schemaFacetCacheService = $schemaFacetCacheService;
+        $this->schemaFacetCacheService = $facetCacheSvc;
         $this->objectCacheService      = $objectCacheService;
         $this->container = $container;
     }//end __construct()
@@ -118,6 +121,8 @@ class CacheSettingsHandler
      * @throws \RuntimeException If cache statistics retrieval fails
      *
      * @return array Cache stats with overview, services, names, distributed, performance, and lastUpdated.
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Complex statistics aggregation requires comprehensive data structure
      */
     public function getCacheStats(): array
     {
@@ -265,6 +270,8 @@ class CacheSettingsHandler
       * @param array $stats Cache statistics array
       *
       * @return float Hit rate percentage
+      *
+      * @SuppressWarnings(PHPMD.ElseExpression) Else clause improves readability of simple ratio calculation
       */
     private function calculateHitRate(array $stats): float
     {
@@ -342,7 +349,7 @@ class CacheSettingsHandler
       *
       * @throws \RuntimeException If cache clearing fails
       *
-      * @psalm-return     array{type: string, userId: null|string,
+      * @psalm-return array{type: string, userId: null|string,
       *     timestamp: string, results: array{names?: array{service: 'names',
       *     cleared: 0|mixed, success: bool, error?: string,
       *     before?: array{name_cache_size: int|mixed, name_hits: int|mixed,
@@ -378,7 +385,9 @@ class CacheSettingsHandler
       *     query_hit_rate: float, name_hit_rate: float, cache_size: int,
       *     query_cache_size: int, name_cache_size: int}|mixed}},
       *     errors: array<never, never>, totalCleared: 0|mixed}
-      * @SuppressWarnings (PHPMD.UnusedFormalParameter)
+      *
+      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple cache types require switch-based routing
       */
     public function clearCache(string $type='all', ?string $userId=null, array $_options=[]): array
     {
@@ -503,6 +512,9 @@ class CacheSettingsHandler
       *     name_hits: int|mixed, name_misses: int|mixed},
       *     after?: array{name_cache_size: int|mixed, name_hits: int|mixed,
       *     name_misses: int|mixed}}
+      *
+      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Cache clearing with fallback logic requires multiple branches
+      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple conditional branches for cache service resolution
       */
     private function clearNamesCache(): array
     {
@@ -557,6 +569,9 @@ class CacheSettingsHandler
       * Warmup object names cache manually
       *
       * @return array Result with success, loaded_names, execution_time, and before/after stats.
+      *
+      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Cache warmup with fallback logic requires multiple branches
+      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple conditional branches for cache service resolution
       */
     public function warmupNamesCache(): array
     {
@@ -611,7 +626,8 @@ class CacheSettingsHandler
       *
       * @return array Result with service, cleared count, success, and before/after stats.
       *
-      * @SuppressWarnings (PHPMD.UnusedFormalParameter)
+      * @SuppressWarnings                       (PHPMD.UnusedFormalParameter)
+      * @SuppressWarnings(PHPMD.ElseExpression) Conditional handling of optional array keys requires if-else structure
       */
     private function clearSchemaCache(?string $_userId=null): array
     {

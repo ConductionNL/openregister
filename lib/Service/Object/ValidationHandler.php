@@ -39,6 +39,8 @@ use Psr\Log\LoggerInterface;
  * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Validation requires multiple exception and entity dependencies
  */
 class ValidationHandler
 {
@@ -136,6 +138,8 @@ class ValidationHandler
      *     name: string|null, data: array<string, mixed>}>,
      *     invalid: array<int, array{id: int, uuid: string,
      *     name: string|null, data: array<string, mixed>, error: string}>}
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple exception types require separate handling
      */
     public function validateObjectsBySchema(int $schemaId, callable $saveCallback): array
     {
@@ -237,6 +241,9 @@ class ValidationHandler
      *     errors: list<array{keyword: 'exception'|'validation'|mixed,
      *     message: mixed|non-falsy-string, path: 'general'|'unknown'|mixed}>,
      *     id: int, name: null|string, uuid: null|string}>, schema_id: int}
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Comprehensive validation with detailed error extraction
+     * @SuppressWarnings(PHPMD.ElseExpression)       Different error extraction paths for validation and generic exceptions
      */
     public function validateSchemaObjects(int $schemaId, callable $saveCallback): array
     {
@@ -318,11 +325,11 @@ class ValidationHandler
      * This method resolves inversedBy relationships in filters and returns the matching object IDs.
      * It handles nested property filters (using underscore delimiters) and performs reverse lookups.
      *
-     * @param array $filters Query filters to process (passed by reference).
+     * @param array $_filters Query filters to process (passed by reference).
      *
      * @return array|null Matching object IDs or null.
      */
-    public function applyInversedByFilter(array &$filters): array|null
+    public function applyInversedByFilter(array &$_filters): array|null
     {
         // This method requires additional dependencies - placeholder for now.
         // Full implementation requires SchemaMapper, ObjectService->findAll, and Dot utilities.

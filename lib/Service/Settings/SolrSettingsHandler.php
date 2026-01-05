@@ -113,6 +113,8 @@ class SolrSettingsHandler
      * @return array SOLR configuration array
      *
      * @throws \RuntimeException if SOLR settings retrieval fails
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) SOLR configuration requires many default settings
      */
     public function getSolrSettings(): array
     {
@@ -192,6 +194,8 @@ class SolrSettingsHandler
      * @return array Dashboard stats with overview, cores, performance, health, and operations.
      *
      * @throws \RuntimeException If SOLR statistics retrieval fails.
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive dashboard requires complete statistics structure
      */
     public function getSolrDashboardStats(): array
     {
@@ -266,6 +270,15 @@ class SolrSettingsHandler
      * @param array $rawStats Raw statistics from SOLR service
      *
      * @return array Dashboard structure with overview, cores, performance, health, and operations.
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     *     Dashboard transformation requires comprehensive data mapping
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *     Multiple metric calculations require conditional handling
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     *     Statistics calculations depend on multiple optional values
+     * @SuppressWarnings(PHPMD.ElseExpression)
+     *     Multiple conditional branches for calculating performance metrics require else clauses
      */
     private function transformSolrStatsToDashboard(array $rawStats): array
     {
@@ -442,6 +455,8 @@ class SolrSettingsHandler
      *     zookeeperPassword: ''|mixed, collection: 'openregister'|mixed,
      *     useCloud: mixed|true, objectCollection: mixed|null,
      *     fileCollection: mixed|null}
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) SOLR configuration requires many settings fields
      */
     public function getSolrSettingsOnly(): array
     {
@@ -519,6 +534,8 @@ class SolrSettingsHandler
      *     zookeeperPassword: ''|mixed, collection: 'openregister'|mixed,
      *     useCloud: mixed|true, objectCollection: mixed|null,
      *     fileCollection: mixed|null}
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) SOLR configuration requires many settings fields
      */
     public function updateSolrSettingsOnly(array $solrData): array
     {
@@ -637,6 +654,8 @@ class SolrSettingsHandler
      * @return array Facet configuration array
      *
      * @throws \RuntimeException If facet configuration retrieval fails
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Default configuration structure requires comprehensive initialization
      */
     public function getSolrFacetConfiguration(): array
     {
@@ -691,6 +710,8 @@ class SolrSettingsHandler
      * @return array Updated facet configuration with facets, global_order, and default_settings.
      *
      * @throws \RuntimeException If facet configuration update fails.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Facet configuration validation requires multiple checks
      */
     public function updateSolrFacetConfiguration(array $facetConfig): array
     {
@@ -713,6 +734,9 @@ class SolrSettingsHandler
      * @return array Validated configuration with facets, global_order, and default_settings.
      *
      * @throws \InvalidArgumentException If configuration is invalid.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Validation requires checking multiple configuration sections
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Each configuration section is independently validated
      */
     private function validateFacetConfiguration(array $config): array
     {

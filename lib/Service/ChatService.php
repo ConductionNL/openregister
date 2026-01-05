@@ -183,6 +183,10 @@ class ChatService
      * @psalm-return array{message: string, sources: list<array>,
      *     timings: array{context: string, history: string, llm: string,
      *     total: string}}
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Chat processing involves multiple handler coordination steps
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Many optional paths for agent, title generation, and timing
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Full chat orchestration requires comprehensive step handling
      */
     public function processMessage(
         int $conversationId,
@@ -343,16 +347,16 @@ class ChatService
      * NOTE: This is a simplified version. The full testChat implementation
      * is preserved in ChatService_ORIGINAL_2156.php backup if needed.
      *
-     * @param string $provider    Provider name ('openai', 'fireworks', 'ollama').
-     * @param array  $config      Provider-specific configuration.
-     * @param string $testMessage Optional test message to send.
+     * @param string $provider     Provider name ('openai', 'fireworks', 'ollama').
+     * @param array  $config       Provider-specific configuration.
+     * @param string $_testMessage Optional test message to send.
      *
      * @return array Test result with success status, message, and optional error.
      */
     public function testChat(
         string $provider,
         array $config,
-        string $testMessage='Hello! Please respond with a brief greeting.'
+        string $_testMessage='Hello! Please respond with a brief greeting.'
     ): array {
         $this->logger->info(
             message: '[ChatService] Testing chat functionality',

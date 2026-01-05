@@ -43,8 +43,9 @@ use LLPhant\OllamaConfig;
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
-
 class ResponseGenerationHandler
 {
 
@@ -109,6 +110,11 @@ class ResponseGenerationHandler
      * @throws \Exception If LLM provider is not configured or API call fails
      *
      * @psalm-param array{text: string, sources: list<array>} $context
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess)          LLPhantMessage factory methods are standard LLPhant pattern
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Response generation requires many conditional API calls
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Response generation requires many conditional API calls
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) LLM provider configuration cannot be easily split
      */
     public function generateResponse(
         string $userMessage,
@@ -362,115 +368,6 @@ class ResponseGenerationHandler
     }//end generateResponse()
 
     /**
-     * Call Fireworks AI chat API directly (simple version)
-     *
-     * Makes a direct HTTP call to Fireworks AI without using the OpenAI library.
-     * This avoids issues with error handling in the library.
-     *
-     * @param string $apiKey  Fireworks API key.
-     * @param string $model   Model identifier.
-     * @param string $baseUrl Base API URL.
-     * @param string $message User message.
-     *
-     * @return string Generated response text
-     *
-     * @throws \Exception If API call fails
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Called via reflection in ConversationManagementHandler
-     */
-    private function callFireworksChatAPI(string $apiKey, string $model, string $baseUrl, string $message): string
-    {
-        $url = rtrim($baseUrl, '/').'/chat/completions';
-
-        $this->logger->debug(
-            message: '[ChatService] Calling Fireworks chat API directly',
-            context: [
-                'url'   => $url,
-                'model' => $model,
-            ]
-        );
-
-        $payload = [
-            'model'    => $model,
-            'messages' => [
-                [
-                    'role'    => 'user',
-                    'content' => $message,
-                ],
-            ],
-        ];
-
-        $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt(
-            $ch,
-            CURLOPT_HTTPHEADER,
-            [
-                'Authorization: Bearer '.$apiKey,
-                'Content-Type: application/json',
-            ]
-        );
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-
-        $response  = curl_exec($ch);
-        $httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $curlError = curl_error($ch);
-        curl_close($ch);
-
-        if ($curlError !== '') {
-            throw new Exception("Fireworks API request failed: {$curlError}");
-        }
-
-        if ($httpCode !== 200) {
-            // Parse error response.
-            $errorData = [];
-            if (is_string($response) === true) {
-                $errorData = json_decode($response, true);
-            }
-
-            $fallbackError = 'Unknown error';
-            if (is_string($response) === true) {
-                $fallbackError = $response;
-            }
-
-            $errorMessage = $errorData['error']['message'] ?? $errorData['error'] ?? $fallbackError;
-
-            // Make error messages user-friendly.
-            if ($httpCode === 401 || $httpCode === 403) {
-                throw new Exception('Authentication failed. Please check your Fireworks API key.');
-            }
-
-            if ($httpCode === 404) {
-                throw new Exception("Model not found: {$model}. Please check the model name.");
-            }
-
-            if ($httpCode === 429) {
-                throw new Exception('Rate limit exceeded. Please try again later.');
-            }
-
-            throw new Exception("Fireworks API error (HTTP {$httpCode}): {$errorMessage}");
-        }//end if
-
-        $data = [];
-        if (is_string($response) === true) {
-            $data = json_decode($response, true);
-        }
-
-        if (isset($data['choices'][0]['message']['content']) === false) {
-            $responseStr = 'Invalid response';
-            if (is_string($response) === true) {
-                $responseStr = $response;
-            }
-
-            throw new Exception("Unexpected Fireworks API response format: ".$responseStr);
-        }
-
-        return $data['choices'][0]['message']['content'];
-    }//end callFireworksChatAPI()
-
-    /**
      * Call Fireworks AI chat API with full message history
      *
      * Similar to callFireworksChatAPI but supports full conversation history.
@@ -485,6 +382,10 @@ class ResponseGenerationHandler
      * @return string Generated response text
      *
      * @throws \Exception If API call fails
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  API call requires handling many response scenarios
+     * @SuppressWarnings(PHPMD.NPathComplexity)       API call requires handling many response scenarios
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) API error handling requires verbose code
      */
     private function callFireworksChatAPIWithHistory(
         string $apiKey, string $model, string $baseUrl,
@@ -608,24 +509,4 @@ class ResponseGenerationHandler
 
         return $data['choices'][0]['message']['content'];
     }//end callFireworksChatAPIWithHistory()
-
-    /**
-     * Get URL from LLPhant config object
-     *
-     * Helper method to safely extract URL from config objects.
-     *
-     * @param object $llphantConfig LLPhant config object (OpenAIConfig or OllamaConfig).
-     *
-     * @return string URL or 'default' if not set
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future logging/debugging
-     */
-    private function getLlphantUrl(object $llphantConfig): string
-    {
-        if (property_exists($llphantConfig, 'url') === true && empty($llphantConfig->url) === false) {
-            return $llphantConfig->url;
-        }
-
-        return 'default';
-    }//end getLlphantUrl()
 }//end class

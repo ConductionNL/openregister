@@ -43,6 +43,7 @@ class Version1Date20250410070338 extends SimpleMigrationStep
      * @psalm-return ISchemaWrapper|null
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      * @return                                        ISchemaWrapper
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper

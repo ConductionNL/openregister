@@ -140,6 +140,8 @@ class VectorEmbeddings
      * @throws \Exception If embedding generation fails
      *
      * @psalm-return array<float>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex config validation logic
      */
     public function generateEmbeddingWithCustomConfig(string $text, array $config): array
     {
@@ -500,6 +502,10 @@ class VectorEmbeddings
      * Check if embedding model has changed since vectors were created
      *
      * @return array
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex model comparison logic
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple database queries and conditions
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Thorough model mismatch detection
      */
     public function checkEmbeddingModelMismatch(): array
     {
@@ -691,6 +697,8 @@ class VectorEmbeddings
      *
      * @return array{provider: string, model: string, dimensions: int,
      *               api_key: string|null, base_url: string|null} Configuration
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Provider-specific configuration mapping
      */
     private function getEmbeddingConfig(?string $provider=null): array
     {

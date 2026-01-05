@@ -514,9 +514,9 @@ class OptimizedFacetHandler
                 $title  = $result->fetchOne();
                 if ($title !== false) {
                     return (string) $title;
-                } else {
-                    return "Register $value";
                 }
+
+                return "Register $value";
             } catch (\Exception $e) {
                 return "Register $value";
             }
@@ -532,9 +532,9 @@ class OptimizedFacetHandler
                 $title  = $result->fetchOne();
                 if ($title !== false) {
                     return (string) $title;
-                } else {
-                    return "Schema $value";
                 }
+
+                return "Schema $value";
             } catch (\Exception $e) {
                 return "Schema $value";
             }

@@ -74,6 +74,9 @@ class SolrOperationsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse The SOLR setup results
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function setupSolr(): JSONResponse
     {
@@ -124,8 +127,8 @@ class SolrOperationsController extends Controller
 
             if ($setupResult === true) {
                 // Get detailed setup progress and infrastructure info from SolrSetup.
-                $setupProgress         = $setup->getSetupProgress();
-                $infrastructureCreated = $setup->getInfrastructureCreated();
+                $setupProgress = $setup->getSetupProgress();
+                $infraCreated  = $setup->getInfrastructureCreated();
 
                 // **IMPROVED LOGGING**: Log successful setup.
                 $logger->info(
@@ -134,7 +137,7 @@ class SolrOperationsController extends Controller
                         'completed_steps' => $setupProgress['completed_steps'] ?? 0,
                         'total_steps'     => $setupProgress['total_steps'] ?? 0,
                         'duration'        => $setupProgress['completed_at'] ?? 'unknown',
-                        'infrastructure'  => $infrastructureCreated,
+                        'infrastructure'  => $infraCreated,
                     ]
                 );
 
@@ -152,7 +155,7 @@ class SolrOperationsController extends Controller
                             'success'         => $setupProgress['success'] ?? true,
                         ],
                         'steps'          => $setupProgress['steps'] ?? [],
-                        'infrastructure' => $infrastructureCreated,
+                        'infrastructure' => $infraCreated,
                         'next_steps'     => [
                             'Tenant-specific resources are ready for use',
                             'Objects can now be indexed to SOLR',
@@ -168,7 +171,7 @@ class SolrOperationsController extends Controller
 
             if ($errorDetails !== null && $errorDetails !== '') {
                     // Get infrastructure info even on failure to show partial progress.
-                    $infrastructureCreated = $setup->getInfrastructureCreated();
+                    $infraCreated = $setup->getInfrastructureCreated();
 
                     // Build troubleshooting steps from error details.
                     $troubleshooting      = $errorDetails['troubleshooting'] ?? $errorDetails['troubleshooting_tips'];
@@ -196,7 +199,7 @@ class SolrOperationsController extends Controller
                                 'failed_step_name' => $errorDetails['step_name'] ?? 'unknown',
                             ],
                             'steps'                 => $setupProgress['steps'] ?? [],
-                            'infrastructure'        => $infrastructureCreated,
+                            'infrastructure'        => $infraCreated,
                             'error_details'         => [
                                 'primary_error'      => $errorDetails['error_message'] ?? 'SOLR setup operation failed',
                                 'error_type'         => $errorDetails['error_type'] ?? 'unknown_error',

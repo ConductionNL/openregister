@@ -51,7 +51,7 @@ class SchemaMapper
     /**
      * Map OpenRegister schema to search backend schema
      *
-     * @param array $schema OpenRegister schema
+     * @param array $_schema OpenRegister schema
      *
      * @return array Search backend schema
      *
@@ -59,7 +59,7 @@ class SchemaMapper
      *
      * @psalm-return array<never, never>
      */
-    public function mapToBackendSchema(array $schema): array
+    public function mapToBackendSchema(array $_schema): array
     {
         $this->logger->debug('[SchemaMapper] Mapping schema');
 

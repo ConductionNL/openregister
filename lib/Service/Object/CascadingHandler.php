@@ -69,6 +69,9 @@ class CascadingHandler
      * @return ((array|mixed|string)[]|null|string)[] Array containing [processed object, uuid].
      *
      * @psalm-return list{array<array|mixed|string>, null|string}
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex cascading logic with multiple relationship types
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple paths for handling different relationship configurations
      */
     public function handlePreValidationCascading(array $object, Schema $schema, ?string $uuid, int $currentRegister): array
     {
@@ -180,6 +183,9 @@ class CascadingHandler
      * @param int    $currentRegister Current register ID.
      *
      * @return string|null UUID of created object or null if creation failed.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     public function createRelatedObject(
         array $objectData,

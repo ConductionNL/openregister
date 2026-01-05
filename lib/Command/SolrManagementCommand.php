@@ -51,6 +51,8 @@ use Symfony\Component\Console\Input\InputArgument;
  * @link      https://github.com/OpenRegister/OpenRegister
  * @version   GIT: <git_id>
  * @copyright 2024 OpenRegister
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class SolrManagementCommand extends Command
 {
@@ -573,6 +575,8 @@ class SolrManagementCommand extends Command
      * @return int Exit code
      *
      * @psalm-return 0|1
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function handleStats(OutputInterface $output): int
     {

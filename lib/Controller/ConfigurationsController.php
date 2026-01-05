@@ -135,7 +135,9 @@ class ConfigurationsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @SuppressWarnings (PHPMD.StaticAccess) Uuid::v4() is a standard utility pattern
+     * @SuppressWarnings(PHPMD.StaticAccess)         Uuid::v4() is a standard utility pattern
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      *
      * @return JSONResponse JSON response with created configuration or error
      *

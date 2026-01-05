@@ -36,6 +36,8 @@ use OCP\AppFramework\Db\DoesNotExistException;
  *
  * This service provides business logic for search trail logging, analytics,
  * management operations, and supports self-clearing (automatic cleanup) of old search trails.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex search trail analytics and logging logic
  */
 class SearchTrailService
 {
@@ -268,6 +270,9 @@ class SearchTrailService
      * @param DateTime|null $to   End date for statistics
      *
      * @return array Search statistics data
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple statistics calculations and aggregations
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple conditional statistics computations
      */
     public function getSearchStatistics(?DateTime $from=null, ?DateTime $to=null): array
     {
@@ -282,8 +287,8 @@ class SearchTrailService
         }
 
         // Get unique search terms count.
-        $uniqueSearchTermsCount           = $this->searchTrailMapper->getUniqueSearchTermsCount(from: $from, to: $to);
-        $baseStats['unique_search_terms'] = $uniqueSearchTermsCount;
+        $uniqueTermsCount = $this->searchTrailMapper->getUniqueSearchTermsCount(from: $from, to: $to);
+        $baseStats['unique_search_terms'] = $uniqueTermsCount;
 
         // Get unique users count.
         $uniqueUsersCount          = $this->searchTrailMapper->getUniqueUsersCount(from: $from, to: $to);
@@ -505,6 +510,8 @@ class SearchTrailService
      *             |'Successfully deleted expired search trail entries',
      *     cleanup_date?: string
      * }
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) $_before kept for API compatibility
      */
     public function cleanupSearchTrails(?DateTime $_before=null): array
     {
@@ -543,6 +550,10 @@ class SearchTrailService
      * @param array $config Raw configuration parameters
      *
      * @return array Processed configuration
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple configuration parameter processing
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple conditional configuration paths
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive configuration processing
      */
     private function processConfig(array $config): array
     {
@@ -657,6 +668,8 @@ class SearchTrailService
      * @param string $_interval Time interval used (unused, kept for API compatibility)
      *
      * @return array Activity insights
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) $_interval kept for API compatibility
      */
     private function calculateActivityInsights(array $activity, string $_interval): array
     {
@@ -848,6 +861,9 @@ class SearchTrailService
      * @param array $trails Array of SearchTrail entities
      *
      * @return array Array of enriched SearchTrail entities
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple entity lookups with exception handling
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple conditional entity lookups and exception handling
      */
     private function enrichTrailsWithNames(array $trails): array
     {

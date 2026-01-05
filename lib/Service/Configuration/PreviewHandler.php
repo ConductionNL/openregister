@@ -134,6 +134,10 @@ class PreviewHandler
      *     synchronizations: array,
      *     rules: array
      * }|JSONResponse
+     *
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Preview comparison requires many conditional change checks
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multi-component preview has many entity type conditions
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Full preview involves registers, schemas, objects, and metadata
      */
     public function previewConfigurationChanges(Configuration $configuration): array|JSONResponse
     {
@@ -243,6 +247,8 @@ class PreviewHandler
      *     proposed: array,
      *     changes: array
      * }
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Register preview has multiple version comparison branches
      */
     public function previewRegisterChange(string $slug, array $registerData): array
     {
@@ -319,6 +325,8 @@ class PreviewHandler
      *     proposed: array,
      *     changes: array
      * }
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Schema preview has multiple version comparison branches
      */
     private function previewSchemaChange(string $slug, array $schemaData): array
     {
@@ -405,19 +413,22 @@ class PreviewHandler
      *
      * @return array Array of changes.
      *
-     * @psalm-return array<never, never>
+     * @psalm-suppress UnusedParam Parameters will be used when method is fully implemented
+     * @psalm-return   array<never, never>
      */
     public function compareArrays(array $current, array $proposed, string $prefix=''): array
     {
         // Method body will be extracted from ConfigurationService.
+        // Parameters intentionally unused in placeholder.
+        unset($current, $proposed, $prefix);
         return [];
     }//end compareArrays()
 
     /**
      * Placeholder method - will be populated with extracted method.
      *
-     * @param Configuration $configuration The configuration.
-     * @param array         $selection     Selection criteria.
+     * @param Configuration $_configuration The configuration.
+     * @param array         $_selection     Selection criteria.
      *
      * @return array Import results.
      *
@@ -425,7 +436,7 @@ class PreviewHandler
      *
      * @psalm-return array<never, never>
      */
-    public function importConfigurationWithSelection(Configuration $configuration, array $selection): array
+    public function importConfigurationWithSelection(Configuration $_configuration, array $_selection): array
     {
         // Method body will be extracted from ConfigurationService.
         return [];

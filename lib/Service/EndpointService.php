@@ -47,6 +47,8 @@ use Symfony\Component\Uid\Uuid;
  * @version GIT: <git-id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class EndpointService
 {
@@ -232,6 +234,10 @@ class EndpointService
      * @phpstan-return array{success: bool, statusCode: int, response: mixed, error?: string}
      * @psalm-return   array{success: bool, statusCode: int, response: mixed, error?: string}
      * @psalm-suppress UnusedParam - False positive: both parameters are used within the method.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Agent execution has multiple provider and tool conditions
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Agent setup involves many validation and config paths
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Agent execution with tools requires comprehensive logic
      */
     private function executeAgentEndpoint(Endpoint $endpoint, array $request): array
     {
@@ -389,98 +395,6 @@ class EndpointService
     }//end executeAgentEndpoint()
 
     /**
-     * Execute a tool function
-     *
-     * @param string $functionName Function name
-     * @param array  $arguments    Function arguments
-     * @param mixed  $agent        The agent
-     * @param mixed  $toolRegistry Tool registry
-     *
-     * @return array Function result
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future agent tool execution
-     */
-    private function executeToolFunction(string $functionName, array $arguments, $agent, $toolRegistry): array
-    {
-        try {
-            // Get agent's tools.
-            $agentTools = $agent->getTools() ?? [];
-
-            // Find which tool has this function.
-            foreach ($agentTools as $toolName) {
-                try {
-                    $tool = $toolRegistry->getTool($toolName);
-                    if ($tool === null) {
-                        continue;
-                    }
-
-                    $tool->setAgent($agent);
-
-                    // Check if this tool has the function.
-                    $toolFunctions = $tool->getFunctions();
-                    $hasFunction   = false;
-
-                    foreach ($toolFunctions as $func) {
-                        if ($func['name'] === $functionName) {
-                            $hasFunction = true;
-                            break;
-                        }
-                    }
-
-                    if ($hasFunction === true) {
-                        $this->logger->info(
-                            '[EndpointService] Calling tool function',
-                            [
-                                'tool'      => $toolName,
-                                'function'  => $functionName,
-                                'arguments' => $arguments,
-                            ]
-                        );
-
-                        // Call the function via __call magic method.
-                        // The tool's __call handles name conversion (e.g., cms_create_menu -> createMenu).
-                        // Spread the arguments array as individual parameters to avoid double-wrapping.
-                        $result = $tool->$functionName(...array_values([$arguments]));
-
-                        // If result is JSON string (from __call), decode it.
-                        if (is_string($result) === true) {
-                            $decoded = json_decode($result, true);
-                            if ($decoded !== null) {
-                                $result = $decoded;
-                            }
-                        }
-
-                        return $result;
-                    }//end if
-                } catch (\Exception $e) {
-                    $this->logger->error(
-                        '[EndpointService] Error checking tool: '.$toolName,
-                        [
-                            'error' => $e->getMessage(),
-                        ]
-                    );
-                }//end try
-            }//end foreach
-
-            return [
-                'error' => 'Function not found: '.$functionName,
-            ];
-        } catch (\Exception $e) {
-            $this->logger->error(
-                '[EndpointService] Error executing tool function',
-                [
-                    'function' => $functionName,
-                    'error'    => $e->getMessage(),
-                ]
-            );
-
-            return [
-                'error' => $e->getMessage(),
-            ];
-        }//end try
-    }//end executeToolFunction()
-
-    /**
      * Execute a webhook endpoint
      *
      * @param Endpoint $_endpoint The endpoint to execute
@@ -564,6 +478,8 @@ class EndpointService
      * @param Endpoint $endpoint The endpoint to check
      *
      * @return bool True if user can execute, false otherwise
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Permission check has multiple user and group conditions
      */
     private function canExecuteEndpoint(Endpoint $endpoint): bool
     {

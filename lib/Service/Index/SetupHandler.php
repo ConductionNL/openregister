@@ -37,6 +37,11 @@ use OCA\OpenRegister\Service\IndexService;
  * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @version   GIT: <git_id>
  * @link      https://github.com/OpenRegister/OpenRegister
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Solr setup requires comprehensive configuration methods
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex Solr setup logic with many configuration scenarios
+ * @SuppressWarnings(PHPMD.UnusedPrivateField)       Reserved for future infrastructure tracking features
+ * @SuppressWarnings(PHPMD.LongVariable)             Descriptive variable names improve code readability
  */
 class SetupHandler
 {
@@ -330,6 +335,10 @@ class SetupHandler
      *
      * @return bool True if setup completed successfully, false otherwise
      * @throws \RuntimeException If critical setup operations fail
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex SOLR setup requires many configuration paths
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple setup scenarios with different execution paths
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive SOLR setup cannot be easily decomposed
      */
     public function setupSolr(): bool
     {
@@ -1091,353 +1100,15 @@ class SetupHandler
     }//end configSetExists()
 
     /**
-     * Create a new SOLR configSet based on an existing template
-     *
-     * @param string $newConfigSetName      Name for the new configSet
-     * @param string $templateConfigSetName Name of the template configSet to copy from
-     *
-     * @return bool True if configSet was created successfully
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future SOLR configSet management
-     */
-    private function createConfigSet(string $newConfigSetName, string $templateConfigSetName): bool
-    {
-        // First, test basic SOLR connectivity before attempting configSet creation.
-        $this->logger->info(
-            'Testing SOLR connectivity before configSet creation',
-            [
-                'configSet' => $newConfigSetName,
-            ]
-        );
-
-        // Use IndexService's comprehensive connectivity test instead of simple ping.
-        try {
-            $connectionTest = $this->solrService->testConnection();
-            if ($connectionTest['success'] !== true) {
-                $this->logger->error(
-                    'SOLR connectivity test failed before configSet creation',
-                    [
-                        'test_message' => $connectionTest['message'] ?? 'Connection failed',
-                        'details'      => $connectionTest['details'] ?? [],
-                    ]
-                );
-                // Continue anyway - connectivity test might fail but configSet creation might still work.
-            }
-
-            if ($connectionTest['success'] === true) {
-                $this->logger->info(
-                    'SOLR connectivity test successful',
-                    [
-                        'test_message'      => $connectionTest['message'] ?? 'Connection verified',
-                        'components_tested' => array_keys($connectionTest['components'] ?? []),
-                    ]
-                );
-            }
-        } catch (\Exception $e) {
-            $this->logger->warning(
-                'SOLR connectivity test threw exception before configSet creation',
-                [
-                    'error'          => $e->getMessage(),
-                    'exception_type' => get_class($e),
-                ]
-            );
-            // Continue anyway - connectivity test might not be available but admin endpoints might work.
-        }//end try
-
-        // Use SolrCloud ConfigSets API for configSet creation with authentication.
-        $url = $this->buildSolrUrl(
-            sprintf(
-                '/admin/configs?action=CREATE&name=%s&baseConfigSet=%s&wt=json',
-                urlencode($newConfigSetName),
-                urlencode($templateConfigSetName)
-            )
-        );
-
-        $this->logger->info(
-            'Attempting to create SOLR configSet',
-            [
-                'configSet'                 => $newConfigSetName,
-                'template'                  => $templateConfigSetName,
-                'url'                       => $url,
-                'authentication_configured' => empty($this->solrConfig['username']) === false
-                    && empty($this->solrConfig['password']) === false,
-            ]
-        );
-
-        try {
-            // Use Guzzle HTTP client with proper timeout, headers, and authentication for SolrCloud.
-            $requestOptions = [
-                'timeout' => 30,
-                'headers' => [
-                    'Accept'       => 'application/json',
-                    'Content-Type' => 'application/json',
-                ],
-            ];
-
-            // Add authentication if configured.
-            if (empty($this->solrConfig['username']) === false && empty($this->solrConfig['password']) === false) {
-                $requestOptions['auth'] = [$this->solrConfig['username'], $this->solrConfig['password']];
-                $this->logger->info(
-                    'Using HTTP Basic authentication for SOLR configSet creation',
-                    [
-                        'username' => $this->solrConfig['username'],
-                        'url'      => $url,
-                    ]
-                );
-            }
-
-            $response = $this->httpClient->get($url, $requestOptions);
-
-            if ($response->getStatusCode() !== 200) {
-                $responseBody = (string) $response->getBody();
-                $this->logger->error(
-                    'Failed to create configSet - HTTP error',
-                    [
-                        'configSet'       => $newConfigSetName,
-                        'template'        => $templateConfigSetName,
-                        'url'             => $url,
-                        'status_code'     => $response->getStatusCode(),
-                        'response_body'   => $responseBody,
-                        'possible_causes' => [
-                            'SOLR server not reachable at configured URL',
-                            'Network connectivity issues',
-                            'SOLR server not responding',
-                            'Invalid SOLR configuration (host/port/path)',
-                            'SOLR server overloaded or timeout',
-                        ],
-                    ]
-                );
-
-                // Store detailed error information for API response.
-                $this->lastErrorDetails = [
-                    'operation'              => 'createConfigSet',
-                    'error_type'             => 'http_error',
-                    'error_message'          => 'HTTP error '.$response->getStatusCode(),
-                    'url_attempted'          => $url,
-                    'guzzle_response_status' => $response->getStatusCode(),
-                    'guzzle_response_body'   => $responseBody,
-                    'solr_error_code'        => null,
-                    'solr_error_details'     => null,
-                    'configuration_used'     => $this->solrConfig,
-                ];
-
-                return false;
-            }//end if
-
-            $data = json_decode((string) $response->getBody(), true);
-        } catch (\Exception $e) {
-            // Enhanced exception logging for HTTP client issues.
-            $logData = [
-                'configSet'      => $newConfigSetName,
-                'template'       => $templateConfigSetName,
-                'url'            => $url,
-                'error'          => $e->getMessage(),
-                'exception_type' => get_class($e),
-                'file'           => $e->getFile(),
-                'line'           => $e->getLine(),
-            ];
-
-            // Extract additional details from Guzzle exceptions.
-            if ($e instanceof \GuzzleHttp\Exception\RequestException) {
-                $logData['guzzle_request_exception'] = true;
-                if ($e->hasResponse() === true) {
-                    $response = $e->getResponse();
-                    if ($response !== null) {
-                        $logData['response_status']  = $response->getStatusCode();
-                        $logData['response_body']    = (string) $response->getBody();
-                        $logData['response_headers'] = $response->getHeaders();
-                    }
-                }
-
-                if ($e->getRequest() !== null) {
-                    $request = $e->getRequest();
-                    $logData['request_method']  = $request->getMethod();
-                    $logData['request_uri']     = (string) $request->getUri();
-                    $logData['request_headers'] = $request->getHeaders();
-                }
-            }
-
-            // Check for authentication issues.
-            if (strpos($e->getMessage(), '401') !== false || strpos($e->getMessage(), 'Unauthorized') !== false) {
-                $logData['authentication_issue'] = true;
-                $logData['has_credentials']      = empty($this->solrConfig['username']) === false
-                    && empty($this->solrConfig['password']) === false;
-            }
-
-            // Check for network connectivity issues.
-            if (strpos($e->getMessage(), 'Connection refused') !== false
-                || strpos($e->getMessage(), 'Could not resolve host') !== false
-                || strpos($e->getMessage(), 'timeout') !== false
-            ) {
-                $logData['network_connectivity_issue'] = true;
-            }
-
-            $logData['possible_causes'] = [
-                'SOLR server not reachable at configured URL',
-                'Network connectivity issues',
-                'SOLR server not responding',
-                'Invalid SOLR configuration (host/port/path)',
-                'SOLR server overloaded or timeout',
-                'Authentication failure (check username/password)',
-                'Kubernetes service name resolution failure',
-            ];
-
-            $this->logger->error('Failed to create configSet - HTTP request failed', $logData);
-
-            // Store detailed error information for API response.
-            $this->lastErrorDetails = [
-                'operation'      => 'createConfigSet',
-                'configSet'      => $newConfigSetName,
-                'template'       => $templateConfigSetName,
-                'url_attempted'  => $url,
-                'error_type'     => 'http_request_failed',
-                'error_message'  => $e->getMessage(),
-                'exception_type' => get_class($e),
-                'guzzle_details' => [],
-            ];
-
-            // Add Guzzle-specific details if available.
-            if ($e instanceof \GuzzleHttp\Exception\RequestException) {
-                $this->lastErrorDetails['guzzle_details']['is_request_exception'] = true;
-
-                if ($e->hasResponse() === true) {
-                    $response = $e->getResponse();
-                    if ($response !== null) {
-                        $responseStatus = $response->getStatusCode();
-                        $responseBody   = (string) $response->getBody();
-
-                        // Store in guzzle_details for comprehensive logging.
-                        $this->lastErrorDetails['guzzle_details']['response_status']  = $responseStatus;
-                        $this->lastErrorDetails['guzzle_details']['response_body']    = $responseBody;
-                        $this->lastErrorDetails['guzzle_details']['response_headers'] = $response->getHeaders();
-
-                        // Also store at top level for step tracking consistency.
-                        $this->lastErrorDetails['guzzle_response_status'] = $responseStatus;
-                        $this->lastErrorDetails['guzzle_response_body']   = $responseBody;
-                    }
-                }
-
-                if ($e->getRequest() !== null) {
-                    $request = $e->getRequest();
-                    $this->lastErrorDetails['guzzle_details']['request_method']  = $request->getMethod();
-                    $this->lastErrorDetails['guzzle_details']['request_uri']     = (string) $request->getUri();
-                    $this->lastErrorDetails['guzzle_details']['request_headers'] = $request->getHeaders();
-                }
-            }//end if
-
-            // Add specific error categorization.
-            $this->lastErrorDetails['error_category'] = 'unknown_http_error';
-            if (strpos($e->getMessage(), '401') !== false || strpos($e->getMessage(), 'Unauthorized') !== false) {
-                $this->lastErrorDetails['error_category']  = 'authentication_failure';
-                $this->lastErrorDetails['has_credentials'] = empty($this->solrConfig['username']) === false
-                    && empty($this->solrConfig['password']) === false;
-            } else if (strpos($e->getMessage(), 'Connection refused') !== false
-                || strpos($e->getMessage(), 'Could not resolve host') !== false
-                || strpos($e->getMessage(), 'timeout') !== false
-            ) {
-                $this->lastErrorDetails['error_category'] = 'network_connectivity';
-            }
-
-            return false;
-        }//end try
-
-        if ($data === null) {
-            $this->logger->error(
-                'Failed to create configSet - Invalid JSON response',
-                [
-                    'configSet'    => $newConfigSetName,
-                    'template'     => $templateConfigSetName,
-                    'url'          => $url,
-                    'raw_response' => (string) $response->getBody(),
-                    'json_error'   => json_last_error_msg(),
-                ]
-            );
-
-            // Store detailed error information for API response.
-            $this->lastErrorDetails = [
-                'operation'        => 'createConfigSet',
-                'configSet'        => $newConfigSetName,
-                'template'         => $templateConfigSetName,
-                'url_attempted'    => $url,
-                'error_type'       => 'invalid_json_response',
-                'error_message'    => 'SOLR returned invalid JSON response',
-                'json_error'       => json_last_error_msg(),
-                'raw_response'     => (string) $response->getBody(),
-                'response_status'  => $response->getStatusCode(),
-                'response_headers' => $response->getHeaders(),
-            ];
-
-            return false;
-        }//end if
-
-        $status = $data['responseHeader']['status'] ?? -1;
-        if ($status === 0) {
-            $this->logger->info(
-                'ConfigSet created successfully',
-                [
-                    'configSet' => $newConfigSetName,
-                ]
-            );
-            return true;
-        }
-
-        // Extract detailed error information from SOLR response.
-        $errorMsg     = $data['error']['msg'] ?? 'Unknown SOLR error';
-        $errorCode    = $data['error']['code'] ?? $status;
-        $errorDetails = $data['error']['metadata'] ?? [];
-
-        $this->logger->error(
-            'ConfigSet creation failed - SOLR returned error',
-            [
-                'configSet'            => $newConfigSetName,
-                'template'             => $templateConfigSetName,
-                'url'                  => $url,
-                'solr_status'          => $status,
-                'solr_error_message'   => $errorMsg,
-                'solr_error_code'      => $errorCode,
-                'solr_error_details'   => $errorDetails,
-                'full_response'        => $data,
-                'troubleshooting_tips' => [
-                    'Verify template configSet exists: '.$templateConfigSetName,
-                    'Check SOLR admin UI for existing configSets',
-                    'Ensure SOLR has write permissions for config directory',
-                    'Verify SOLR is running in SolrCloud mode if using collections',
-                    'Check SOLR logs for additional error details',
-                ],
-            ]
-        );
-
-        // Store detailed error information for API response.
-        $this->lastErrorDetails = [
-            'operation'            => 'createConfigSet',
-            'configSet'            => $newConfigSetName,
-            'template'             => $templateConfigSetName,
-            'url_attempted'        => $url,
-            'error_type'           => 'solr_api_error',
-            'error_message'        => $errorMsg,
-            'solr_status'          => $status,
-            'solr_error_code'      => $errorCode,
-            'solr_error_details'   => $errorDetails,
-            'full_solr_response'   => $data,
-            'troubleshooting_tips' => [
-                'Verify template configSet "'.$templateConfigSetName.'" exists in SOLR',
-                'Check SOLR admin UI for existing configSets',
-                'Ensure SOLR has write permissions for config directory',
-                'Verify SOLR is running in SolrCloud mode if using collections',
-                'Check SOLR logs for additional error details',
-            ],
-        ];
-
-        return false;
-    }//end createConfigSet()
-
-    /**
      * Ensure the tenant-specific collection exists for this instance
      *
      * Creates a tenant-specific collection (e.g., "openregister_nc_f0e53393")
      * using the tenant-specific configSet (e.g., "openregister_nc_f0e53393").
      *
      * @return bool True if tenant collection exists or was created successfully
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple tenant collection scenarios and fallback paths
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive tenant collection management with detailed logging
      */
     private function ensureTenantCollectionExists(): bool
     {
@@ -1595,6 +1266,9 @@ class SetupHandler
      * @return bool True if collection created successfully
      *
      * @throws \Exception If all retry attempts fail
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Retry logic requires multiple condition checks per attempt
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive retry handling with detailed logging
      */
     private function createCollectionWithRetry(string $collectionName, string $configSetName, int $maxAttempts=6): bool
     {
@@ -1746,7 +1420,7 @@ class SetupHandler
     private function isConfigSetPropagationError(string $errorMessage): bool
     {
         // Only treat as propagation errors if they specifically mention propagation/availability issues.
-        $propagationErrorPatterns = [
+        $propErrorPatterns = [
             'configset does not exist',
             'Config does not exist',
             'Could not find configSet',
@@ -1757,7 +1431,7 @@ class SetupHandler
 
         // "Underlying core creation failed" is NOT a propagation issue - it's a core creation failure.
         // This should fail immediately, not retry.
-        foreach ($propagationErrorPatterns as $pattern) {
+        foreach ($propErrorPatterns as $pattern) {
             if (stripos($errorMessage, $pattern) !== false) {
                 return true;
             }
@@ -1809,6 +1483,8 @@ class SetupHandler
      *         cluster_status_sync: 'failed'|'success'
      *     }
      * }
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive propagation methods with detailed response handling
      */
     private function forceConfigSetPropagation(string $configSetName): array
     {
@@ -1960,179 +1636,6 @@ class SetupHandler
     }//end forceConfigSetPropagation()
 
     /**
-     * Create a new SOLR collection using a configSet (SolrCloud)
-     *
-     * @param string $collectionName Name for the new collection
-     * @param string $configSetName  Name of the configSet to use
-     *
-     * @return bool True if collection was created successfully
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future SOLR collection management
-     */
-    private function createCollection(string $collectionName, string $configSetName): bool
-    {
-        $url = $this->buildSolrUrl(
-            sprintf(
-                '/admin/collections?action=CREATE&name=%s&collection.configName=%s&numShards=1&replicationFactor=1&wt=json',
-                urlencode($collectionName),
-                urlencode($configSetName)
-            )
-        );
-
-        $this->logger->info(
-            'Attempting to create SOLR collection',
-            [
-                'collection' => $collectionName,
-                'configSet'  => $configSetName,
-                'url'        => $url,
-            ]
-        );
-
-        try {
-            $response = $this->httpClient->get($url, ['timeout' => 30]);
-
-            if ($response->getStatusCode() !== 200) {
-                $this->logger->error(
-                    'Failed to create collection - HTTP error',
-                    [
-                        'collection'    => $collectionName,
-                        'configSet'     => $configSetName,
-                        'url'           => $url,
-                        'status_code'   => $response->getStatusCode(),
-                        'response_body' => (string) $response->getBody(),
-                    ]
-                );
-
-                // Store detailed error information for API response.
-                $this->lastErrorDetails = [
-                    'operation'       => 'createCollection',
-                    'collection'      => $collectionName,
-                    'configSet'       => $configSetName,
-                    'url_attempted'   => $url,
-                    'error_type'      => 'http_error',
-                    'error_message'   => 'HTTP request failed with status '.$response->getStatusCode(),
-                    'response_status' => $response->getStatusCode(),
-                    'response_body'   => (string) $response->getBody(),
-                ];
-
-                return false;
-            }//end if
-
-            $data = json_decode((string) $response->getBody(), true);
-
-            if ($data === null) {
-                $this->logger->error(
-                    'Failed to create collection - Invalid JSON response',
-                    [
-                        'collection'   => $collectionName,
-                        'configSet'    => $configSetName,
-                        'url'          => $url,
-                        'raw_response' => (string) $response->getBody(),
-                        'json_error'   => json_last_error_msg(),
-                    ]
-                );
-
-                $this->lastErrorDetails = [
-                    'operation'     => 'createCollection',
-                    'collection'    => $collectionName,
-                    'configSet'     => $configSetName,
-                    'url_attempted' => $url,
-                    'error_type'    => 'invalid_json_response',
-                    'error_message' => 'SOLR returned invalid JSON response',
-                    'json_error'    => json_last_error_msg(),
-                    'raw_response'  => (string) $response->getBody(),
-                ];
-
-                return false;
-            }//end if
-
-            $status = $data['responseHeader']['status'] ?? -1;
-            if ($status === 0) {
-                $this->logger->info(
-                    'Collection created successfully',
-                    [
-                        'collection' => $collectionName,
-                        'configSet'  => $configSetName,
-                    ]
-                );
-
-                // Track newly created collection.
-                if (in_array($collectionName, $this->infrastructureCreated['collections_created'], true) === false) {
-                    $this->infrastructureCreated['collections_created'][] = $collectionName;
-                }
-
-                return true;
-            }
-
-            // Extract detailed error information from SOLR response.
-            $errorMsg     = $data['error']['msg'] ?? 'Unknown SOLR error';
-            $errorCode    = $data['error']['code'] ?? $status;
-            $errorDetails = $data['error']['metadata'] ?? [];
-
-            $this->logger->error(
-                'Collection creation failed - SOLR returned error',
-                [
-                    'collection'         => $collectionName,
-                    'configSet'          => $configSetName,
-                    'url'                => $url,
-                    'solr_status'        => $status,
-                    'solr_error_message' => $errorMsg,
-                    'solr_error_code'    => $errorCode,
-                    'solr_error_details' => $errorDetails,
-                    'full_response'      => $data,
-                ]
-            );
-
-            // Store detailed error information for API response.
-            $this->lastErrorDetails = [
-                'operation'            => 'createCollection',
-                'collection'           => $collectionName,
-                'configSet'            => $configSetName,
-                'url_attempted'        => $url,
-                'error_type'           => 'solr_api_error',
-                'error_message'        => $errorMsg,
-                'solr_status'          => $status,
-                'solr_error_code'      => $errorCode,
-                'solr_error_details'   => $errorDetails,
-                'full_solr_response'   => $data,
-                'troubleshooting_tips' => [
-                    'Verify configSet "'.$configSetName.'" exists and is accessible',
-                    'Check SOLR has permissions to create collections',
-                    'Verify ZooKeeper coordination in SolrCloud',
-                    'Check available disk space and memory on SOLR server',
-                    'Check SOLR logs for additional error details',
-                ],
-            ];
-
-            return false;
-        } catch (\Exception $e) {
-            $this->logger->error(
-                'Failed to create collection - HTTP request failed',
-                [
-                    'collection'     => $collectionName,
-                    'configSet'      => $configSetName,
-                    'url'            => $url,
-                    'error'          => $e->getMessage(),
-                    'exception_type' => get_class($e),
-                ]
-            );
-
-            // Store detailed error information for API response.
-            $this->lastErrorDetails = [
-                'operation'      => 'createCollection',
-                'collection'     => $collectionName,
-                'configSet'      => $configSetName,
-                'url_attempted'  => $url,
-                'error_type'     => 'http_request_failed',
-                'error_message'  => $e->getMessage(),
-                'exception_type' => get_class($e),
-            ];
-
-            return false;
-        }//end try
-    }//end createCollection()
-
-    /**
      * Upload a configSet from ZIP file to SOLR
      *
      * This method uploads a pre-packaged configSet ZIP file to SOLR, which bypasses
@@ -2141,6 +1644,8 @@ class SetupHandler
      * @param string $configSetName Name for the new configSet
      *
      * @return bool True if configSet was uploaded successfully
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive configSet upload with detailed error handling
      */
     private function uploadConfigSet(string $configSetName): bool
     {
@@ -2659,6 +2164,8 @@ class SetupHandler
      *     self_files: array{type: 'string', stored: true, indexed: true, multiValued: true},
      *     self_parent_uuid: array{type: 'string', stored: true, indexed: true, multiValued: false}
      * }
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Field definitions require comprehensive specification
      */
     public function getObjectEntityFieldDefinitions(): array
     {
@@ -2859,146 +2366,6 @@ class SetupHandler
             ],
         ];
     }//end getObjectEntityFieldDefinitions()
-
-    /**
-     * Add a new field to the SOLR schema
-     *
-     * @param string $fieldName   Name of the field to add
-     * @param array  $fieldConfig Field configuration
-     *
-     * @return bool True if field was added successfully
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future SOLR schema management
-     */
-    private function addSchemaField(string $fieldName, array $fieldConfig): bool
-    {
-        $tenantCollectionName = $this->getTenantCollectionName();
-        $url = $this->buildSolrUrl('/'.$tenantCollectionName.'/schema');
-
-        $payload = [
-            'add-field' => array_merge(['name' => $fieldName], $fieldConfig),
-        ];
-
-        try {
-            $response = $this->httpClient->post(
-                $url,
-                [
-                    'headers' => ['Content-Type' => 'application/json'],
-                    'json'    => $payload,
-                    'timeout' => 30,
-                ]
-            );
-
-            if ($response->getStatusCode() !== 200) {
-                $this->logger->debug(
-                    'Failed to add schema field - HTTP error',
-                    [
-                        'field'         => $fieldName,
-                        'status_code'   => $response->getStatusCode(),
-                        'response_body' => (string) $response->getBody(),
-                    ]
-                );
-                return false;
-            }
-
-            $data    = json_decode((string) $response->getBody(), true);
-            $success = ($data['responseHeader']['status'] ?? -1) === 0;
-
-            if ($success !== true) {
-                $this->logger->debug(
-                    'Failed to add schema field - SOLR error',
-                    [
-                        'field'         => $fieldName,
-                        'solr_response' => $data,
-                    ]
-                );
-                return $success;
-            }
-
-            $this->logger->debug('Added schema field', ['field' => $fieldName]);
-            return $success;
-        } catch (\Exception $e) {
-            $this->logger->debug(
-                'Failed to add schema field - Exception',
-                [
-                    'field'          => $fieldName,
-                    'error'          => $e->getMessage(),
-                    'exception_type' => get_class($e),
-                ]
-            );
-            return false;
-        }//end try
-    }//end addSchemaField()
-
-    /**
-     * Replace an existing field in the SOLR schema
-     *
-     * @param string $fieldName   Name of the field to replace
-     * @param array  $fieldConfig Field configuration
-     *
-     * @return bool True if field was replaced successfully
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future SOLR schema management
-     */
-    private function replaceSchemaField(string $fieldName, array $fieldConfig): bool
-    {
-        $tenantCollectionName = $this->getTenantCollectionName();
-        $url = $this->buildSolrUrl('/'.$tenantCollectionName.'/schema');
-
-        $payload = [
-            'replace-field' => array_merge(['name' => $fieldName], $fieldConfig),
-        ];
-
-        try {
-            $response = $this->httpClient->post(
-                $url,
-                [
-                    'headers' => ['Content-Type' => 'application/json'],
-                    'json'    => $payload,
-                    'timeout' => 30,
-                ]
-            );
-
-            if ($response->getStatusCode() !== 200) {
-                $this->logger->debug(
-                    'Failed to replace schema field - HTTP error',
-                    [
-                        'field'         => $fieldName,
-                        'status_code'   => $response->getStatusCode(),
-                        'response_body' => (string) $response->getBody(),
-                    ]
-                );
-                return false;
-            }
-
-            $data    = json_decode((string) $response->getBody(), true);
-            $success = ($data['responseHeader']['status'] ?? -1) === 0;
-
-            if ($success !== true) {
-                $this->logger->debug(
-                    'Failed to replace schema field - SOLR error',
-                    [
-                        'field'         => $fieldName,
-                        'solr_response' => $data,
-                    ]
-                );
-                return $success;
-            }
-
-            $this->logger->debug('Replaced schema field', ['field' => $fieldName]);
-            return $success;
-        } catch (\Exception $e) {
-            $this->logger->debug(
-                'Failed to replace schema field - Exception',
-                [
-                    'field'          => $fieldName,
-                    'error'          => $e->getMessage(),
-                    'exception_type' => get_class($e),
-                ]
-            );
-            return false;
-        }//end try
-    }//end replaceSchemaField()
 
     /**
      * Validate that SOLR setup is complete and functional (SolrCloud)

@@ -68,6 +68,9 @@ class MetadataHydrationHandler
      * @param Schema       $schema The schema containing metadata configuration.
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     public function hydrateObjectMetadata(ObjectEntity $entity, Schema $schema): void
     {
@@ -203,10 +206,11 @@ class MetadataHydrationHandler
             if ($value !== null && trim((string) $value) !== '') {
                 $result    = str_replace($fullMatch, trim((string) $value), $result);
                 $hasValues = true;
-            } else {
-                // Replace with empty string for missing/empty values.
-                $result = str_replace($fullMatch, '', $result);
+                continue;
             }
+
+            // Replace with empty string for missing/empty values.
+            $result = str_replace($fullMatch, '', $result);
         }
 
         if ($hasValues === false) {
@@ -219,9 +223,9 @@ class MetadataHydrationHandler
 
         if ($result !== '') {
             return $result;
-        } else {
-            return null;
         }
+
+        return null;
     }//end processTwigLikeTemplate()
 
     /**
@@ -259,6 +263,9 @@ class MetadataHydrationHandler
      * @param Schema $schema The schema configuration.
      *
      * @return string|null The generated slug or null.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple fallback paths for slug source determination
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple nested conditional paths for evaluating different field options
      */
     public function generateSlug(array $data, Schema $schema): string|null
     {

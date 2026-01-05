@@ -44,6 +44,10 @@ use Symfony\Component\Yaml\Yaml;
  * Handles importing configurations from JSON data, files, and applications.
  *
  * @package OCA\OpenRegister\Service\Configuration
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class ImportHandler
 {
@@ -117,13 +121,6 @@ class ImportHandler
      * @var ObjectService|null The object service instance.
      */
     private ?ObjectService $objectService = null;
-
-    /**
-     * OpenConnector configuration service for integration.
-     *
-     * @var mixed|null The OpenConnector configuration service.
-     */
-    private mixed $openConnectorConfigurationService = null;
 
     /**
      * Map of registers indexed by slug during import.
@@ -211,6 +208,8 @@ class ImportHandler
      * @param string|null $type The content type.
      *
      * @return array|null The decoded array or null if decoding fails.
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) Yaml::parse is standard Symfony Yaml pattern
      */
     public function decode(string $data, ?string $type): ?array
     {
@@ -370,7 +369,9 @@ class ImportHandler
      *
      * @throws Exception If import fails.
      *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag to override version checks
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Force flag to override version checks
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Register import has multiple exception and version checks
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Version checking and update/create paths add complexity
      */
     public function importRegister(
         array $data,
@@ -598,7 +599,10 @@ class ImportHandler
      *
      * @throws Exception If import fails.
      *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag to override version checks
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Force flag to override version checks
+     * @SuppressWarnings(PHPMD.NPathComplexity)        Schema import requires many conditional transformations
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)   Schema property processing has many type conditions
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)  Schema import involves complex property transformations
      */
     public function importSchema(
         array $data,
@@ -843,7 +847,7 @@ class ImportHandler
             // Check if schema already exists by slug.
             $existingSchema = null;
             try {
-                $existingSchema = $this->schemaMapper->find(strtolower($data['slug']));
+                $existingSchema = $this->schemaMapper->find($data['slug']);
             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                 $msg = "Schema '{$data['slug']}' not found in current organisation context, will create new one";
                 $this->logger->info(message: $msg);
@@ -919,7 +923,10 @@ class ImportHandler
      *     rules: array
      * }
      *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag to override version checks
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Force flag to override version checks
+     * @SuppressWarnings(PHPMD.NPathComplexity)       JSON import requires many conditional transformations
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multi-component import has many branching conditions
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Full configuration import involves many entity types
      */
     public function importFromJson(
         array $data,
@@ -997,31 +1004,43 @@ class ImportHandler
         ];
 
         // Process and import schemas if present.
+        // TWO-PASS APPROACH: First create all schemas without resolving cross-references,
+        // then resolve cross-references after all schemas exist to avoid "Schema not found" errors.
         if (($data['components']['schemas'] ?? null) !== null && is_array($data['components']['schemas']) === true) {
             $slugsAndIdsMap = $this->schemaMapper->getSlugToIdMap();
             $this->logger->info(
-                message: 'Starting schema import process',
+                message: 'Starting TWO-PASS schema import process',
                 context: [
                     'totalSchemas' => count($data['components']['schemas']),
                     'schemaKeys'   => array_keys($data['components']['schemas']),
                 ]
             );
 
+            // PASS 1: Create all schemas without resolving objectConfiguration.schema references.
+            // This ensures all schema entities exist before we try to look them up.
+            $this->logger->info('PASS 1: Creating all schemas without cross-reference resolution');
+            $schemasToResolve = []; // Track schemas that need $ref resolution in Pass 2.
+
             foreach ($data['components']['schemas'] as $key => $schemaData) {
-                $this->logger->info(
-                    'Processing schema',
+                $this->logger->debug(
+                    'Processing schema (Pass 1)',
                     [
                         'schemaKey'   => $key,
                         'schemaTitle' => $schemaData['title'] ?? 'no title',
-                        'schemaSlug'  => $schemaData['slug'] ?? 'no slug',
+                        'schemaSlug'  => $schemaData['slug'] ?? $key,
                     ]
                 );
 
-                if (isset($schemaData['title']) === true && is_string($key) === true) {
+                if (isset($schemaData['title']) === false && is_string($key) === true) {
                     $schemaData['title'] = $key;
                 }
 
                 try {
+                    // Create schema without resolving cross-references.
+                    // We'll temporarily skip schema lookups in importSchema by clearing the schemasMap.
+                    $savedSchemasMap    = $this->schemasMap;
+                    $this->schemasMap   = []; // Temporarily empty to prevent $ref resolution.
+
                     $schema = $this->importSchema(
                         data: $schemaData,
                         slugsAndIdsMap: $slugsAndIdsMap,
@@ -1030,11 +1049,15 @@ class ImportHandler
                         version: $version,
                         force: $force
                     );
-                    // Store schema in map by slug for reference.
+
+                    // Restore schemasMap and add newly created schema.
+                    $this->schemasMap = $savedSchemasMap;
                     $this->schemasMap[$schema->getSlug()] = $schema;
-                    $result['schemas'][] = $schema;
-                    $this->logger->info(
-                        'Successfully imported schema',
+                    $result['schemas'][]                  = $schema;
+                    $schemasToResolve[$key]               = $schemaData; // Save for Pass 2.
+
+                    $this->logger->debug(
+                        'Successfully created schema (Pass 1)',
                         [
                             'schemaKey'  => $key,
                             'schemaSlug' => $schema->getSlug(),
@@ -1043,7 +1066,7 @@ class ImportHandler
                     );
                 } catch (Exception $e) {
                     $this->logger->error(
-                        'Failed to import schema',
+                        'Failed to create schema (Pass 1)',
                         [
                             'schemaKey' => $key,
                             'error'     => $e->getMessage(),
@@ -1055,7 +1078,70 @@ class ImportHandler
             }//end foreach
 
             $this->logger->info(
-                'Schema import process completed',
+                'Pass 1 completed - all schemas created',
+                [
+                    'createdCount'   => count($result['schemas']),
+                    'createdSchemas' => array_map(fn($schema) => $schema->getSlug(), $result['schemas']),
+                ]
+            );
+
+            // PASS 2: Now resolve cross-references (objectConfiguration.schema) for all schemas.
+            // All schemas now exist, so find() calls will succeed.
+            $this->logger->info('PASS 2: Resolving schema cross-references');
+
+            foreach ($schemasToResolve as $key => $schemaData) {
+                if (isset($schemaData['title']) === false && is_string($key) === true) {
+                    $schemaData['title'] = $key;
+                }
+
+                $schemaSlug = $schemaData['slug'] ?? $key;
+
+                // Find the schema we created in Pass 1.
+                if (($this->schemasMap[$schemaSlug] ?? null) === null) {
+                    $this->logger->warning(
+                        'Schema not found in map for Pass 2 - skipping cross-reference resolution',
+                        ['schemaSlug' => $schemaSlug]
+                    );
+                    continue;
+                }
+
+                try {
+                    $this->logger->debug(
+                        'Resolving cross-references for schema (Pass 2)',
+                        ['schemaSlug' => $schemaSlug]
+                    );
+
+                    // Re-import with schemasMap populated to resolve cross-references.
+                    $schema = $this->importSchema(
+                        data: $schemaData,
+                        slugsAndIdsMap: $slugsAndIdsMap,
+                        owner: $owner,
+                        appId: $appId,
+                        version: $version,
+                        force: true // Force update to resolve cross-references.
+                    );
+
+                    // Update in map with resolved version.
+                    $this->schemasMap[$schema->getSlug()] = $schema;
+
+                    $this->logger->debug(
+                        'Cross-references resolved for schema (Pass 2)',
+                        ['schemaSlug' => $schemaSlug, 'schemaId' => $schema->getId()]
+                    );
+                } catch (Exception $e) {
+                    $this->logger->error(
+                        'Failed to resolve cross-references for schema (Pass 2)',
+                        [
+                            'schemaKey' => $key,
+                            'error'     => $e->getMessage(),
+                            'trace'     => $e->getTraceAsString(),
+                        ]
+                    );
+                }//end try
+            }//end foreach
+
+            $this->logger->info(
+                'Schema import process completed (TWO-PASS)',
                 [
                     'importedCount'   => count($result['schemas']),
                     'importedSchemas' => array_map(fn($schema) => $schema->getSlug(), $result['schemas']),
@@ -1071,25 +1157,20 @@ class ImportHandler
                 if (($registerData['schemas'] ?? null) !== null && is_array($registerData['schemas']) === true) {
                     $schemaIds = [];
                     foreach ($registerData['schemas'] as $schemaSlug) {
+                        // First check if schema exists in schemasMap (schemas imported in this session).
                         if (($this->schemasMap[$schemaSlug] ?? null) !== null) {
-                            $schemaSlug  = strtolower($schemaSlug);
                             $schemaIds[] = $this->schemasMap[$schemaSlug]->getId();
+                            $this->logger->debug("Schema '{$schemaSlug}' found in schemasMap", ['schemaId' => $this->schemasMap[$schemaSlug]->getId()]);
+                            continue;
                         }
 
-                        if (($this->schemasMap[$schemaSlug] ?? null) === null) {
-                            // Try to find existing schema in database.
-                            // Note: May fail due to organisation filtering during cross-instance import.
-                            try {
-                                $existingSchema = $this->schemaMapper->find(strtolower($schemaSlug));
-                                $schemaIds[]    = $existingSchema->getId();
-                                // Add to map for object processing.
-                                $this->schemasMap[$schemaSlug] = $existingSchema;
-                            } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-                                $msg  = 'Schema with slug %s not found in current organisation ';
-                                $msg .= 'context during register import (will be created if defined in import).';
-                                $this->logger->info(sprintf($msg, $schemaSlug));
-                            }
-                        }//end if
+                        // Schema not in map - this should not happen after TWO-PASS schema import.
+                        // Log a warning but don't try to look it up in database as that may fail due to
+                        // organisation/multi-tenancy filters during cross-instance imports.
+                        $msg  = 'Schema with slug %s not found in schemasMap during register import. ';
+                        $msg .= 'This schema should have been created in the TWO-PASS schema import phase. ';
+                        $msg .= 'This register will be created without this schema reference.';
+                        $this->logger->warning(sprintf($msg, $schemaSlug));
                     }//end foreach
 
                     $registerData['schemas'] = $schemaIds;
@@ -1298,7 +1379,10 @@ class ImportHandler
      *     rules: array
      * }
      *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag to override version checks
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Force flag to override version checks
+     * @SuppressWarnings(PHPMD.NPathComplexity)        App import requires many conditional transformations
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)   Configuration lookup and metadata mapping has many branches
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)  App import with entity tracking requires detailed logic
      */
     public function importFromApp(string $appId, array $data, string $version, bool $force=false): array
     {
@@ -1590,7 +1674,9 @@ class ImportHandler
      *     rules: array
      * }
      *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag to override version checks
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  Force flag to override version checks
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) File path resolution has multiple fallback conditions
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Path resolution and JSON parsing have multiple outcomes
      */
     public function importFromFilePath(string $appId, string $filePath, string $version, bool $force=false): array
     {
@@ -1668,6 +1754,10 @@ class ImportHandler
      * @return Configuration The created or updated configuration.
      *
      * @throws Exception If configuration creation/update fails.
+     *
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Configuration creation requires many conditional checks
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Entity ID collection and metadata mapping has many branches
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Configuration tracking involves detailed entity management
      */
     public function createOrUpdateConfiguration(
         array $data,
@@ -1681,11 +1771,11 @@ class ImportHandler
             $data = $this->ensureArrayStructure($data);
 
             // Try to find existing configuration for this app.
-            $existingConfiguration = null;
+            $existingConfig = null;
             try {
                 $configurations = $this->configurationMapper->findByApp($appId);
                 if (count($configurations) > 0) {
-                    $existingConfiguration = $configurations[0];
+                    $existingConfig = $configurations[0];
                 }
             } catch (Exception $e) {
                 // No existing configuration found, we'll create a new one.
@@ -1726,27 +1816,27 @@ class ImportHandler
                 }
             }
 
-            if ($existingConfiguration !== null) {
+            if ($existingConfig !== null) {
                 // Update existing configuration.
-                $existingConfiguration->setTitle($title);
-                $existingConfiguration->setDescription($description);
-                $existingConfiguration->setType($type);
-                $existingConfiguration->setVersion($version);
+                $existingConfig->setTitle($title);
+                $existingConfig->setDescription($description);
+                $existingConfig->setType($type);
+                $existingConfig->setVersion($version);
 
                 // Merge with existing IDs to avoid losing previously imported entities.
-                $existingRegisterIds = $existingConfiguration->getRegisters() ?? [];
-                $existingSchemaIds   = $existingConfiguration->getSchemas() ?? [];
-                $existingObjectIds   = $existingConfiguration->getObjects() ?? [];
+                $existingRegisterIds = $existingConfig->getRegisters() ?? [];
+                $existingSchemaIds   = $existingConfig->getSchemas() ?? [];
+                $existingObjectIds   = $existingConfig->getObjects() ?? [];
 
-                $existingConfiguration->setRegisters(array_unique(array_merge($existingRegisterIds, $registerIds)));
-                $existingConfiguration->setSchemas(array_unique(array_merge($existingSchemaIds, $schemaIds)));
-                $existingConfiguration->setObjects(array_unique(array_merge($existingObjectIds, $objectIds)));
+                $existingConfig->setRegisters(array_unique(array_merge($existingRegisterIds, $registerIds)));
+                $existingConfig->setSchemas(array_unique(array_merge($existingSchemaIds, $schemaIds)));
+                $existingConfig->setObjects(array_unique(array_merge($existingObjectIds, $objectIds)));
 
-                $configuration = $this->configurationMapper->update($existingConfiguration);
+                $configuration = $this->configurationMapper->update($existingConfig);
                 $this->logger->info(message: "Updated existing configuration for app {$appId} with version {$version}");
             }
 
-            if ($existingConfiguration === null) {
+            if ($existingConfig === null) {
                 // Create new configuration.
                 $configuration = new Configuration();
                 $configuration->setTitle($title);

@@ -36,6 +36,8 @@ use OCP\AppFramework\Db\DoesNotExistException;
  * @package  OCA\OpenRegister\Controller
  *
  * @psalm-suppress UnusedClass
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class ViewsController extends Controller
 {
@@ -94,6 +96,8 @@ class ViewsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with views or error
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function index(): JSONResponse
     {
@@ -241,6 +245,8 @@ class ViewsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with created view or error
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function create(): JSONResponse
     {
@@ -342,6 +348,8 @@ class ViewsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with updated view or error
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function update(string $id): JSONResponse
     {
@@ -454,6 +462,8 @@ class ViewsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with patched view or error
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function patch(string $id): JSONResponse
     {

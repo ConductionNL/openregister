@@ -32,6 +32,9 @@ use Psr\Log\LoggerInterface;
  * Service for generating OpenAPI Specification (OAS) documentation for registers and schemas.
  * Creates comprehensive API documentation including endpoints, schemas, parameters,
  * and examples based on register and schema definitions.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)     OAS generation requires many endpoint and schema methods
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex OpenAPI schema generation logic
  */
 class OasService
 {
@@ -93,6 +96,11 @@ class OasService
      * @return array<string, mixed> The complete OpenAPI specification array
      *
      * @throws \Exception When base OAS file cannot be read or parsed
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex OAS generation with multiple schema and path operations
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple conditional paths for register and schema processing
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) OAS generation requires multiple steps: setup, schema loading,
+     *                                               CRUD paths, validation
      */
     public function createOas(?string $registerId=null): array
     {
@@ -328,6 +336,10 @@ class OasService
      *     format?: mixed,
      *     type?: 'string'|mixed
      * }
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Many OpenAPI schema keywords require individual validation
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple conditional paths for schema keyword processing
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive OpenAPI schema validation logic
      */
     private function sanitizePropertyDefinition($propertyDefinition): array
     {
@@ -343,7 +355,7 @@ class OasService
         $cleanDef = [];
 
         // Standard OpenAPI schema keywords that are allowed.
-        $allowedSchemaKeywords = [
+        $allowedKeywords = [
             'type',
             'format',
             'description',
@@ -381,7 +393,7 @@ class OasService
         ];
 
         // Copy only valid OpenAPI schema keywords.
-        foreach ($allowedSchemaKeywords as $keyword) {
+        foreach ($allowedKeywords as $keyword) {
             if (($propertyDefinition[$keyword] ?? null) !== null) {
                 $cleanDef[$keyword] = $propertyDefinition[$keyword];
             }
@@ -540,6 +552,9 @@ class OasService
      *                             (only used for collection endpoints)
      *
      * @return array List of query parameter definitions for OpenAPI spec.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  Boolean flag controls collection vs single item parameters
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Dynamic parameter generation from schema properties
      */
     private function createCommonQueryParameters(bool $isCollection=false, ?object $schema=null): array
     {
@@ -1291,6 +1306,9 @@ class OasService
      * OpenAPI tools to fail when parsing the specification.
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple nested loops and conditional checks for validating
+     *                                               paths, responses, and schemas
      */
     private function validateOasIntegrity(): void
     {
@@ -1329,6 +1347,9 @@ class OasService
      * @param string               $context Context information for debugging
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Recursive schema validation with multiple reference types
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple conditional paths for allOf, $ref, and nested validation
      */
     private function validateSchemaReferences(array &$schema, string $context): void
     {

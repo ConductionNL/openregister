@@ -79,6 +79,13 @@ class LlmSettingsHandler
      * @return array LLM configuration.
      *
      * @throws \RuntimeException If LLM settings retrieval fails.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *     Backward compatibility requires multiple field existence checks
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     *     Default configuration structure requires comprehensive initialization
+     * @SuppressWarnings(PHPMD.ElseExpression)
+     *     Nested else branches handle optional vector config backward compatibility
      */
     public function getLLMSettingsOnly(): array
     {
@@ -156,6 +163,8 @@ class LlmSettingsHandler
      * @return array Updated LLM settings with provider configs and vector settings.
      *
      * @throws \RuntimeException If LLM settings update fails.
+     *
+     * @SuppressWarnings(PHPMD.NPathComplexity) PATCH behavior requires merging multiple nested configuration structures
      */
     public function updateLLMSettingsOnly(array $llmData): array
     {

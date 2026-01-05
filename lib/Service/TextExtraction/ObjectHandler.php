@@ -85,6 +85,10 @@ class ObjectHandler implements TextExtractionHandlerInterface
      * }
      *
      * @throws Exception When extraction fails.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  Force parameter follows interface contract
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Object extraction requires multiple field checks
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple field extraction paths with optional data
      */
     public function extractText(int $sourceId, array $sourceMeta, bool $force=false): array
     {
@@ -194,6 +198,8 @@ class ObjectHandler implements TextExtractionHandlerInterface
      * @param bool $force           Force flag.
      *
      * @return bool True if extraction is needed.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force parameter follows interface contract
      */
     public function needsExtraction(int $sourceId, int $sourceTimestamp, bool $force): bool
     {
@@ -265,6 +271,10 @@ class ObjectHandler implements TextExtractionHandlerInterface
      * @param int    $depth  Current recursion depth.
      *
      * @return string Extracted text.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Recursive extraction requires multiple type checks
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple value type handling paths
+     * @SuppressWarnings(PHPMD.ElseExpression)       Multiple conditions for different type handling
      */
     private function extractTextFromArray(array $data, string $prefix='', int $depth=0): string
     {

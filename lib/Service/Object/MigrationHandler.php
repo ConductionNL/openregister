@@ -46,13 +46,13 @@ class MigrationHandler
     /**
      * Constructor for MigrationHandler.
      *
-     * @param ObjectEntityMapper      $objectMapper            Mapper for object entities.
-     * @param SchemaMapper            $schemaMapper            Mapper for schema entities.
-     * @param RegisterMapper          $registerMapper          Mapper for register entities.
-     * @param SaveObject              $saveHandler             Handler for saving objects.
-     * @param UtilityHandler          $utilityHandler          Handler for utility operations.
-     * @param DataManipulationHandler $dataManipulationHandler Handler for data manipulation.
-     * @param LoggerInterface         $logger                  Logger for logging operations.
+     * @param ObjectEntityMapper      $objectMapper     Mapper for object entities.
+     * @param SchemaMapper            $schemaMapper     Mapper for schema entities.
+     * @param RegisterMapper          $registerMapper   Mapper for register entities.
+     * @param SaveObject              $saveHandler      Handler for saving objects.
+     * @param UtilityHandler          $utilityHandler   Handler for utility operations.
+     * @param DataManipulationHandler $dataManipHandler Handler for data manipulation.
+     * @param LoggerInterface         $logger           Logger for logging operations.
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectMapper,
@@ -60,7 +60,7 @@ class MigrationHandler
         private readonly RegisterMapper $registerMapper,
         private readonly SaveObject $saveHandler,
         private readonly UtilityHandler $utilityHandler,
-        private readonly DataManipulationHandler $dataManipulationHandler,
+        private readonly DataManipulationHandler $dataManipHandler,
         private readonly LoggerInterface $logger
     ) {
     }//end __construct()
@@ -82,6 +82,10 @@ class MigrationHandler
      *
      * @throws OcpDoesNotExistException If register or schema not found.
      * @throws InvalidArgumentException If invalid parameters provided.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Migration with validation requires multiple conditional checks
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple migration paths for different object types
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive migration requires detailed processing
      */
     public function migrateObjects(
         string|int $sourceRegister,
@@ -181,7 +185,7 @@ class MigrationHandler
                     $sourceData = $sourceObject->getObject();
 
                     // Map properties according to mapping configuration.
-                    $mappedData = $this->dataManipulationHandler->mapObjectProperties(
+                    $mappedData = $this->dataManipHandler->mapObjectProperties(
                         sourceData: $sourceData,
                         mapping: $mapping
                     );

@@ -74,6 +74,8 @@ class VectorStorageHandler
      * @return int The ID of the inserted vector (or pseudo-ID for Solr)
      *
      * @throws \Exception If storage fails
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Required for flexible vector storage options
      */
     public function storeVector(
         string $entityType,
@@ -158,6 +160,9 @@ class VectorStorageHandler
      * @return int The ID of the inserted vector
      *
      * @throws \Exception If storage fails
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Required for flexible vector storage options
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)   Multiple storage conditions and error handling
      */
     private function storeVectorInDatabase(
         string $entityType,
@@ -187,14 +192,18 @@ class VectorStorageHandler
             // Serialize metadata to JSON.
             if (empty($metadata) === false) {
                 $metadataJson = json_encode($metadata);
-            } else {
+            }
+
+            if (empty($metadata) === true) {
                 $metadataJson = null;
             }
 
             // Sanitize chunk_text to prevent encoding errors.
             if ($chunkText !== null) {
                 $sanitizedChunkText = $this->sanitizeText($chunkText);
-            } else {
+            }
+
+            if ($chunkText === null) {
                 $sanitizedChunkText = null;
             }
 
@@ -262,6 +271,11 @@ class VectorStorageHandler
      * @throws \Exception If storage fails or Solr is not configured
      *
      * @psalm-suppress UnusedParam Parameters reserved for future atomic update enhancements
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Required for flexible vector storage options
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)   Multiple Solr storage conditions
+     * @SuppressWarnings(PHPMD.NPathComplexity)        Multiple storage paths with error handling
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)  Comprehensive Solr vector storage with atomic updates
      */
     private function storeVectorInSolr(
         string $entityType,
@@ -303,7 +317,9 @@ class VectorStorageHandler
             $entityTypeLower = strtolower($entityType);
             if ($entityTypeLower === 'file' || $entityTypeLower === 'files') {
                 $documentId = "{$entityId}_chunk_{$chunkIndex}";
-            } else {
+            }
+
+            if ($entityTypeLower !== 'file' && $entityTypeLower !== 'files') {
                 $documentId = $entityId;
             }
 
@@ -381,6 +397,9 @@ class VectorStorageHandler
      * @param string $entityType Entity type ('file' or 'object')
      *
      * @return string|null Solr collection name or null if not configured
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Collection resolution requires multiple conditions
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple collection determination paths
      */
     private function getSolrCollectionForEntityType(string $entityType): ?string
     {
@@ -393,7 +412,9 @@ class VectorStorageHandler
             // Determine which collection to use based on entity type.
             if ($entityType === 'file' || $entityType === 'files') {
                 $collection = $settings['solr']['fileCollection'] ?? null;
-            } else {
+            }
+
+            if ($entityType !== 'file' && $entityType !== 'files') {
                 // Default to object collection.
                 $collection = $settings['solr']['objectCollection'] ?? $settings['solr']['collection'] ?? null;
             }

@@ -53,6 +53,10 @@ use Psr\Log\LoggerInterface;
  * - Table doesn't exist and autoCreate enabled → Create table, use MagicMapper
  *
  * @package OCA\OpenRegister\Db
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class UnifiedObjectMapper extends AbstractObjectMapper
 {
@@ -264,7 +268,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      *
      * @psalm-return list<ObjectEntity>
      *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Include deleted toggle is intentional
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Include deleted toggle is intentional
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Required for flexible query interface
      */
     public function findAll(
         ?int $limit=null,
@@ -491,6 +496,9 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      * @return array Array of complete objects with object_status field
      *
      * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */
     public function ultraFastBulkSave(
         array $insertObjects=[],
@@ -726,12 +734,12 @@ class UnifiedObjectMapper extends AbstractObjectMapper
     /**
      * Search objects.
      *
-     * @param array       $query                  Search query
-     * @param string|null $activeOrganisationUuid Organisation UUID
-     * @param bool        $rbac                   Apply RBAC
-     * @param bool        $multitenancy           Apply multitenancy
-     * @param array|null  $ids                    Specific IDs
-     * @param string|null $uses                   Uses filter
+     * @param array       $query         Search query
+     * @param string|null $activeOrgUuid Organisation UUID
+     * @param bool        $rbac          Apply RBAC
+     * @param bool        $multitenancy  Apply multitenancy
+     * @param array|null  $ids           Specific IDs
+     * @param string|null $uses          Uses filter
      *
      * @return ObjectEntity[]
      *
@@ -741,7 +749,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      */
     public function searchObjects(
         array $query=[],
-        ?string $activeOrganisationUuid=null,
+        ?string $activeOrgUuid=null,
         bool $rbac=true,
         bool $multitenancy=true,
         ?array $ids=null,
@@ -772,12 +780,12 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                 );
                 // Fall through to blob storage.
             }
-        }
+        }//end if
 
         $this->logger->debug('[UnifiedObjectMapper] Routing searchObjects() to blob storage (ObjectEntityMapper)');
         return $this->objectEntityMapper->searchObjects(
             query: $query,
-            _activeOrganisationUuid: $activeOrganisationUuid,
+            _activeOrgUuid: $activeOrgUuid,
             _rbac: $rbac,
             _multitenancy: $multitenancy,
             ids: $ids,
@@ -788,12 +796,12 @@ class UnifiedObjectMapper extends AbstractObjectMapper
     /**
      * Count search objects.
      *
-     * @param array       $query                  Search query
-     * @param string|null $activeOrganisationUuid Organisation UUID
-     * @param bool        $rbac                   Apply RBAC
-     * @param bool        $multitenancy           Apply multitenancy
-     * @param array|null  $ids                    Specific IDs
-     * @param string|null $uses                   Uses filter
+     * @param array       $query         Search query
+     * @param string|null $activeOrgUuid Organisation UUID
+     * @param bool        $rbac          Apply RBAC
+     * @param bool        $multitenancy  Apply multitenancy
+     * @param array|null  $ids           Specific IDs
+     * @param string|null $uses          Uses filter
      *
      * @return int Object count
      *
@@ -801,7 +809,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      */
     public function countSearchObjects(
         array $query=[],
-        ?string $activeOrganisationUuid=null,
+        ?string $activeOrgUuid=null,
         bool $rbac=true,
         bool $multitenancy=true,
         ?array $ids=null,
@@ -809,7 +817,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
     ): int {
         return $this->objectEntityMapper->countSearchObjects(
             query: $query,
-            _activeOrganisationUuid: $activeOrganisationUuid,
+            _activeOrgUuid: $activeOrgUuid,
             _rbac: $rbac,
             _multitenancy: $multitenancy,
             ids: $ids,
@@ -828,7 +836,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      */
     public function countAll(?array $filters=null, ?Schema $schema=null, ?Register $register=null): int
     {
-        return $this->objectEntityMapper->countAll(filters: $filters, schema: $schema, register: $register);
+        return $this->objectEntityMapper->countAll(_filters: $filters, schema: $schema, register: $register);
     }//end countAll()
 
     /**

@@ -55,6 +55,9 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Objects\Handlers
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Export operations require complex format handling
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Export requires coordination with multiple services
  */
 class ExportHandler
 {
@@ -194,6 +197,10 @@ class ExportHandler
      * @return array Import result with created, updated, errors, and performance stats.
      *
      * @throws \Exception If import fails.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Import options require multiple boolean flags for configuration
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple file type handlers require conditional branching
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Import orchestration requires comprehensive error handling
      */
     public function import(
         Register $register,

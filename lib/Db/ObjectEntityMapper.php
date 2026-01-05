@@ -69,6 +69,14 @@ use Psr\Log\LoggerInterface;
  *
  * @package          OCA\OpenRegister\Db
  * @template-extends QBMapper<ObjectEntity>
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.TooManyMethods)
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.ExcessivePublicCount)
+ * @SuppressWarnings(PHPMD.ElseExpression)
  */
 class ObjectEntityMapper extends QBMapper
 {
@@ -106,14 +114,14 @@ class ObjectEntityMapper extends QBMapper
      *
      * @var BulkOperationsHandler
      */
-    private BulkOperationsHandler $bulkOperationsHandler;
+    private BulkOperationsHandler $bulkOpsHandler;
 
     /**
      * Query optimization handler - needs QueryBuilderHandler
      *
      * @var QueryOptimizationHandler
      */
-    private QueryOptimizationHandler $queryOptimizationHandler;
+    private QueryOptimizationHandler $queryOptHandler;
 
     /**
      * Organisation mapper
@@ -210,15 +218,15 @@ class ObjectEntityMapper extends QBMapper
         $this->organisationMapper = $organisationMapper;
 
         // Initialize handlers (no circular dependencies).
-        $this->queryBuilderHandler      = new QueryBuilderHandler(db: $db, logger: $logger);
-        $this->statisticsHandler        = new StatisticsHandler(db: $db, logger: $logger, tableName: 'openregister_objects');
-        $this->facetsHandler            = new FacetsHandler(logger: $logger, schemaMapper: $schemaMapper);
-        $this->queryOptimizationHandler = new QueryOptimizationHandler(
+        $this->queryBuilderHandler = new QueryBuilderHandler(db: $db, logger: $logger);
+        $this->statisticsHandler   = new StatisticsHandler(db: $db, logger: $logger, tableName: 'openregister_objects');
+        $this->facetsHandler       = new FacetsHandler(logger: $logger, schemaMapper: $schemaMapper);
+        $this->queryOptHandler     = new QueryOptimizationHandler(
             db: $db,
             logger: $logger,
             tableName: 'openregister_objects'
         );
-        $this->bulkOperationsHandler    = new BulkOperationsHandler(
+        $this->bulkOpsHandler      = new BulkOperationsHandler(
             db: $db,
             logger: $logger,
             queryBuilderHandler: $this->queryBuilderHandler,
@@ -822,7 +830,7 @@ class ObjectEntityMapper extends QBMapper
      */
     public function ultraFastBulkSave(array $insertObjects=[], array $updateObjects=[]): array
     {
-        return $this->bulkOperationsHandler->ultraFastBulkSave(insertObjects: $insertObjects, updateObjects: $updateObjects);
+        return $this->bulkOpsHandler->ultraFastBulkSave(insertObjects: $insertObjects, updateObjects: $updateObjects);
     }//end ultraFastBulkSave()
 
     /**
@@ -899,7 +907,7 @@ class ObjectEntityMapper extends QBMapper
             }//end try
         }//end if
 
-        return $this->bulkOperationsHandler->deleteObjects(uuids: $uuids, hardDelete: $hardDelete);
+        return $this->bulkOpsHandler->deleteObjects(uuids: $uuids, hardDelete: $hardDelete);
     }//end deleteObjects()
 
     /**
@@ -914,7 +922,8 @@ class ObjectEntityMapper extends QBMapper
      *
      * @psalm-return list<mixed>
      *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) DateTime or bool controls publish timing
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  DateTime or bool controls publish timing
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function publishObjects(
         array $uuids=[],
@@ -971,7 +980,7 @@ class ObjectEntityMapper extends QBMapper
         }//end if
 
         // Original blob storage publish logic.
-        return $this->bulkOperationsHandler->publishObjects(uuids: $uuids, datetime: $datetime);
+        return $this->bulkOpsHandler->publishObjects(uuids: $uuids, datetime: $datetime);
     }//end publishObjects()
 
     /**
@@ -986,7 +995,8 @@ class ObjectEntityMapper extends QBMapper
      *
      * @psalm-return list<mixed>
      *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) DateTime or bool controls depublish timing
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  DateTime or bool controls depublish timing
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function depublishObjects(
         array $uuids=[],
@@ -1037,7 +1047,7 @@ class ObjectEntityMapper extends QBMapper
             }//end try
         }//end if
 
-        return $this->bulkOperationsHandler->depublishObjects(uuids: $uuids, datetime: $datetime);
+        return $this->bulkOpsHandler->depublishObjects(uuids: $uuids, datetime: $datetime);
     }//end depublishObjects()
 
     /**
@@ -1056,7 +1066,7 @@ class ObjectEntityMapper extends QBMapper
      */
     public function publishObjectsBySchema(int $schemaId, bool $publishAll=false): array
     {
-        return $this->bulkOperationsHandler->publishObjectsBySchema(schemaId: $schemaId, publishAll: $publishAll);
+        return $this->bulkOpsHandler->publishObjectsBySchema(schemaId: $schemaId, publishAll: $publishAll);
     }//end publishObjectsBySchema()
 
     /**
@@ -1075,7 +1085,7 @@ class ObjectEntityMapper extends QBMapper
      */
     public function deleteObjectsBySchema(int $schemaId, bool $hardDelete=false): array
     {
-        return $this->bulkOperationsHandler->deleteObjectsBySchema(schemaId: $schemaId, hardDelete: $hardDelete);
+        return $this->bulkOpsHandler->deleteObjectsBySchema(schemaId: $schemaId, hardDelete: $hardDelete);
     }//end deleteObjectsBySchema()
 
     /**
@@ -1091,7 +1101,7 @@ class ObjectEntityMapper extends QBMapper
      */
     public function deleteObjectsByRegister(int $registerId): array
     {
-        return $this->bulkOperationsHandler->deleteObjectsByRegister($registerId);
+        return $this->bulkOpsHandler->deleteObjectsByRegister($registerId);
     }//end deleteObjectsByRegister()
 
     /**
@@ -1107,7 +1117,7 @@ class ObjectEntityMapper extends QBMapper
      */
     public function processInsertChunk(array $insertChunk): array
     {
-        return $this->bulkOperationsHandler->processInsertChunk($insertChunk);
+        return $this->bulkOpsHandler->processInsertChunk($insertChunk);
     }//end processInsertChunk()
 
     /**
@@ -1123,7 +1133,7 @@ class ObjectEntityMapper extends QBMapper
      */
     public function processUpdateChunk(array $updateChunk): array
     {
-        return $this->bulkOperationsHandler->processUpdateChunk($updateChunk);
+        return $this->bulkOpsHandler->processUpdateChunk($updateChunk);
     }//end processUpdateChunk()
 
     /**
@@ -1138,7 +1148,7 @@ class ObjectEntityMapper extends QBMapper
      */
     public function calculateOptimalChunkSize(array $insertObjects, array $updateObjects): int
     {
-        return $this->bulkOperationsHandler->calculateOptimalChunkSize(
+        return $this->bulkOpsHandler->calculateOptimalChunkSize(
             insertObjects: $insertObjects,
             updateObjects: $updateObjects
         );
@@ -1160,7 +1170,7 @@ class ObjectEntityMapper extends QBMapper
      */
     public function separateLargeObjects(array $objects, int $maxSafeSize=1000000): array
     {
-        return $this->queryOptimizationHandler->separateLargeObjects(objects: $objects, maxSafeSize: $maxSafeSize);
+        return $this->queryOptHandler->separateLargeObjects(objects: $objects, maxSafeSize: $maxSafeSize);
     }//end separateLargeObjects()
 
     /**
@@ -1174,7 +1184,7 @@ class ObjectEntityMapper extends QBMapper
      */
     public function processLargeObjectsIndividually(array $largeObjects): array
     {
-        return $this->queryOptimizationHandler->processLargeObjectsIndividually($largeObjects);
+        return $this->queryOptHandler->processLargeObjectsIndividually($largeObjects);
     }//end processLargeObjectsIndividually()
 
     /**
@@ -1195,7 +1205,7 @@ class ObjectEntityMapper extends QBMapper
         ?string $defaultOrganisation=null,
         int $batchSize=1000
     ): array {
-        return $this->queryOptimizationHandler->bulkOwnerDeclaration(
+        return $this->queryOptHandler->bulkOwnerDeclaration(
             defaultOwner: $defaultOwner,
             defaultOrganisation: $defaultOrganisation,
             batchSize: $batchSize
@@ -1213,7 +1223,7 @@ class ObjectEntityMapper extends QBMapper
      */
     public function setExpiryDate(int $retentionMs): int
     {
-        return $this->queryOptimizationHandler->setExpiryDate($retentionMs);
+        return $this->queryOptHandler->setExpiryDate($retentionMs);
     }//end setExpiryDate()
 
     /**
@@ -1226,7 +1236,7 @@ class ObjectEntityMapper extends QBMapper
      */
     public function applyCompositeIndexOptimizations(IQueryBuilder $_qb, array $filters): void
     {
-        $this->queryOptimizationHandler->applyCompositeIndexOptimizations(_qb: $_qb, filters: $filters);
+        $this->queryOptHandler->applyCompositeIndexOptimizations(_qb: $_qb, filters: $filters);
     }//end applyCompositeIndexOptimizations()
 
     /**
@@ -1238,7 +1248,7 @@ class ObjectEntityMapper extends QBMapper
      */
     public function optimizeOrderBy(IQueryBuilder $qb): void
     {
-        $this->queryOptimizationHandler->optimizeOrderBy($qb);
+        $this->queryOptHandler->optimizeOrderBy($qb);
     }//end optimizeOrderBy()
 
     /**
@@ -1252,7 +1262,7 @@ class ObjectEntityMapper extends QBMapper
      */
     public function addQueryHints(IQueryBuilder $qb, array $filters, bool $skipRbac): void
     {
-        $this->queryOptimizationHandler->addQueryHints(qb: $qb, filters: $filters, skipRbac: $skipRbac);
+        $this->queryOptHandler->addQueryHints(qb: $qb, filters: $filters, skipRbac: $skipRbac);
     }//end addQueryHints()
 
     /**
@@ -1264,7 +1274,7 @@ class ObjectEntityMapper extends QBMapper
      */
     public function hasJsonFilters(array $filters): bool
     {
-        return $this->queryOptimizationHandler->hasJsonFilters($filters);
+        return $this->queryOptHandler->hasJsonFilters($filters);
     }//end hasJsonFilters()
 
     // ==================================================================================
@@ -1286,7 +1296,10 @@ class ObjectEntityMapper extends QBMapper
      * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found.
      * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple objects found.
      *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Flags control security filtering behavior
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Find operation requires multiple lookup strategies
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */
     public function find(
         string|int $identifier, ?Register $register=null,
@@ -1584,7 +1597,8 @@ class ObjectEntityMapper extends QBMapper
      *
      * @psalm-return list<ObjectEntity>
      *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Include deleted toggle is intentional
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Include deleted toggle is intentional
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Required for flexible query interface
      */
     public function findAll(
         ?int $limit=null,
@@ -1601,46 +1615,178 @@ class ObjectEntityMapper extends QBMapper
         ?Schema $schema=null,
         ?bool $published=null
     ): array {
-        // Check if magic mapping should be used.
-        $useMagic = $register !== null && $schema !== null
-            && $this->shouldUseMagicMapperForRegisterSchema(register: $register, schema: $schema) === true;
-        if ($useMagic === true) {
-            try {
-                $this->logger->debug('[ObjectEntityMapper] Routing findAll() to UnifiedObjectMapper (MagicMapper)');
-                $unifiedObjectMapper = \OC::$server->get(UnifiedObjectMapper::class);
-                return $unifiedObjectMapper->findAll(
-                    limit: $limit,
-                    offset: $offset,
-                    filters: $filters,
-                    searchConditions: $searchConditions,
-                    searchParams: $searchParams,
-                    sort: $sort,
-                    search: $search,
-                    ids: $ids,
-                    uses: $uses,
-                    includeDeleted: $includeDeleted,
-                    register: $register,
-                    schema: $schema,
-                    published: $published
-                );
-            } catch (Exception $e) {
-                $this->logger->error(
-                    '[ObjectEntityMapper] Magic mapper findAll failed, falling back to blob storage',
-                    [
-                        'error'     => $e->getMessage(),
-                        'exception' => get_class($e),
-                    ]
-                );
-                // Fallback to default blob storage if magic mapper fails.
-            }//end try
-        }//end if
+        if ($this->shouldRoutToMagicMapper(register: $register, schema: $schema) === true) {
+            $result = $this->tryMagicMapperFindAll(
+                limit: $limit,
+                offset: $offset,
+                filters: $filters,
+                searchConditions: $searchConditions,
+                searchParams: $searchParams,
+                sort: $sort,
+                search: $search,
+                ids: $ids,
+                uses: $uses,
+                includeDeleted: $includeDeleted,
+                register: $register,
+                schema: $schema,
+                published: $published
+            );
+            if ($result !== null) {
+                return $result;
+            }
+        }
 
-        // Original blob storage findAll logic.
-            $qb = $this->db->getQueryBuilder();
+        $qb = $this->buildFindAllQuery(
+            filters: $filters,
+            includeDeleted: $includeDeleted,
+            register: $register,
+            schema: $schema,
+            ids: $ids,
+            published: $published,
+            sort: $sort,
+            limit: $limit,
+            offset: $offset
+        );
+        return $this->findEntities($qb);
+    }//end findAll()
+
+    /**
+     * Check if query should be routed to magic mapper
+     *
+     * @param Register|null $register Register to check
+     * @param Schema|null   $schema   Schema to check
+     *
+     * @return bool True if should use magic mapper
+     */
+    private function shouldRoutToMagicMapper(?Register $register, ?Schema $schema): bool
+    {
+        return $register !== null && $schema !== null
+            && $this->shouldUseMagicMapperForRegisterSchema(register: $register, schema: $schema) === true;
+    }//end shouldRoutToMagicMapper()
+
+    /**
+     * Try to execute findAll via magic mapper
+     *
+     * @param int|null      $limit            The number of objects to return.
+     * @param int|null      $offset           The offset of the objects to return.
+     * @param array|null    $filters          The filters to apply to the objects.
+     * @param array|null    $searchConditions The search conditions to apply to the objects.
+     * @param array|null    $searchParams     The search parameters to apply to the objects.
+     * @param array         $sort             The sort order to apply.
+     * @param string|null   $search           The search string to apply.
+     * @param array|null    $ids              Array of IDs or UUIDs to filter by.
+     * @param string|null   $uses             Value that must be present in relations.
+     * @param bool          $includeDeleted   Whether to include deleted objects.
+     * @param Register|null $register         Optional register to filter objects.
+     * @param Schema|null   $schema           Optional schema to filter objects.
+     * @param bool|null     $published        If true, only return currently published objects.
+     *
+     * @return array|null Result array or null if failed
+     *
+     * @psalm-suppress UnusedParam Parameters are passed to UnifiedObjectMapper::findAll()
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Include deleted toggle is intentional
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Required for flexible query interface
+     */
+    private function tryMagicMapperFindAll(
+        ?int $limit,
+        ?int $offset,
+        ?array $filters,
+        ?array $searchConditions,
+        ?array $searchParams,
+        array $sort,
+        ?string $search,
+        ?array $ids,
+        ?string $uses,
+        bool $includeDeleted,
+        ?Register $register,
+        ?Schema $schema,
+        ?bool $published
+    ): array|null {
+        try {
+            $this->logger->debug('[ObjectEntityMapper] Routing findAll() to UnifiedObjectMapper (MagicMapper)');
+            $unifiedObjectMapper = \OC::$server->get(UnifiedObjectMapper::class);
+            return $unifiedObjectMapper->findAll(
+                limit: $limit,
+                offset: $offset,
+                filters: $filters,
+                searchConditions: $searchConditions,
+                searchParams: $searchParams,
+                sort: $sort,
+                search: $search,
+                ids: $ids,
+                uses: $uses,
+                includeDeleted: $includeDeleted,
+                register: $register,
+                schema: $schema,
+                published: $published
+            );
+        } catch (Exception $e) {
+            $this->logger->error(
+                '[ObjectEntityMapper] Magic mapper findAll failed, falling back to blob storage',
+                [
+                    'error'     => $e->getMessage(),
+                    'exception' => get_class($e),
+                ]
+            );
+            return null;
+        }//end try
+    }//end tryMagicMapperFindAll()
+
+    /**
+     * Build the findAll query for blob storage
+     *
+     * @param array|null    $filters        The filters to apply
+     * @param bool          $includeDeleted Whether to include deleted
+     * @param Register|null $register       Register filter
+     * @param Schema|null   $schema         Schema filter
+     * @param array|null    $ids            IDs to filter
+     * @param bool|null     $published      Published filter
+     * @param array         $sort           Sort order
+     * @param int|null      $limit          Result limit
+     * @param int|null      $offset         Result offset
+     *
+     * @return IQueryBuilder Query builder
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Include deleted toggle is intentional
+     */
+    private function buildFindAllQuery(
+        ?array $filters,
+        bool $includeDeleted,
+        ?Register $register,
+        ?Schema $schema,
+        ?array $ids,
+        ?bool $published,
+        array $sort,
+        ?int $limit,
+        ?int $offset
+    ): IQueryBuilder {
+        $qb = $this->db->getQueryBuilder();
         $qb->select('*')->from('openregister_objects');
 
-        // **@SELF FILTER PROCESSING**: Handle @self.* filters from query.
-        // Process @self.deleted filter if present in filters array.
+        $this->applyDeletedFilter(qb: $qb, filters: $filters, includeDeleted: $includeDeleted);
+        $this->applyRegisterSchemaFilters(qb: $qb, register: $register, schema: $schema);
+        $this->applyIdFilters(qb: $qb, ids: $ids);
+        $this->applyPublishedFilter(qb: $qb, published: $published);
+        $this->applySorting(qb: $qb, sort: $sort);
+        $this->applyPagination(qb: $qb, limit: $limit, offset: $offset);
+
+        return $qb;
+    }//end buildFindAllQuery()
+
+    /**
+     * Apply deleted filter to query
+     *
+     * @param IQueryBuilder $qb             Query builder
+     * @param array|null    $filters        Filters array
+     * @param bool          $includeDeleted Include deleted flag
+     *
+     * @return void
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Include deleted toggle is intentional
+     */
+    private function applyDeletedFilter(IQueryBuilder $qb, ?array $filters, bool $includeDeleted): void
+    {
         $hasDeletedFilter = false;
         if ($filters !== null && isset($filters['@self.deleted']) === true) {
             $deletedFilter = $filters['@self.deleted'];
@@ -1650,88 +1796,133 @@ class ObjectEntityMapper extends QBMapper
                 $qb->andWhere($qb->expr()->isNull('deleted'));
             }
 
-            // Additional @self.deleted.* filters can be added here for nested properties.
             $hasDeletedFilter = true;
         }
 
-        // Apply basic deleted filter ONLY if no @self.deleted filter was specified.
-        // Default behavior: exclude deleted objects unless explicitly filtered.
         if ($hasDeletedFilter === false && $includeDeleted === false) {
             $qb->andWhere($qb->expr()->isNull('deleted'));
         }
+    }//end applyDeletedFilter()
 
-        // Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
+    /**
+     * Apply register and schema filters to query
+     *
+     * @param IQueryBuilder $qb       Query builder
+     * @param Register|null $register Register filter
+     * @param Schema|null   $schema   Schema filter
+     *
+     * @return void
+     */
+    private function applyRegisterSchemaFilters(IQueryBuilder $qb, ?Register $register, ?Schema $schema): void
+    {
         if ($register !== null) {
             $registerId = (string) $register->getId();
-            $qb->andWhere(
-                $qb->expr()->eq('register', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_STR))
-            );
+            $qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_STR)));
         }
 
         if ($schema !== null) {
             $schemaId = (string) $schema->getId();
+            $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_STR)));
+        }
+    }//end applyRegisterSchemaFilters()
+
+    /**
+     * Apply ID filters to query
+     *
+     * @param IQueryBuilder $qb  Query builder
+     * @param array|null    $ids IDs to filter
+     *
+     * @return void
+     */
+    private function applyIdFilters(IQueryBuilder $qb, ?array $ids): void
+    {
+        if ($ids === null || empty($ids) === true) {
+            return;
+        }
+
+        $numericIds = array_filter($ids, 'is_numeric');
+        $stringIds  = array_filter($ids, fn ($id) => is_string($id) === true);
+
+        $idConditions = [];
+        if (empty($numericIds) === false) {
+            $idConditions[] = $qb->expr()->in('id', $qb->createNamedParameter($numericIds, IQueryBuilder::PARAM_INT_ARRAY));
+        }
+
+        if (empty($stringIds) === false) {
+            $idConditions[] = $qb->expr()->in('uuid', $qb->createNamedParameter($stringIds, IQueryBuilder::PARAM_STR_ARRAY));
+        }
+
+        if (empty($idConditions) === false) {
+            $qb->andWhere($qb->expr()->orX(...$idConditions));
+        }
+    }//end applyIdFilters()
+
+    /**
+     * Apply published filter to query
+     *
+     * @param IQueryBuilder $qb        Query builder
+     * @param bool|null     $published Published filter
+     *
+     * @return void
+     */
+    private function applyPublishedFilter(IQueryBuilder $qb, ?bool $published): void
+    {
+        if ($published === null) {
+            return;
+        }
+
+        $now = (new DateTime())->format('Y-m-d H:i:s');
+
+        if ($published === true) {
+            $qb->andWhere($qb->expr()->isNotNull('published'));
+            $qb->andWhere($qb->expr()->lte('published', $qb->createNamedParameter($now)));
             $qb->andWhere(
-                $qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_STR))
+                $qb->expr()->orX(
+                    $qb->expr()->isNull('depublished'),
+                    $qb->expr()->gt('depublished', $qb->createNamedParameter($now))
+                )
             );
+            return;
         }
 
-        // Apply ID filters.
-        if ($ids !== null && empty($ids) === false) {
-            $numericIds = array_filter($ids, 'is_numeric');
-            $stringIds  = array_filter($ids, fn ($id) => is_string($id) === true);
+        $qb->andWhere($qb->expr()->isNull('published'));
+    }//end applyPublishedFilter()
 
-            $idConditions = [];
-            if (empty($numericIds) === false) {
-                $numericParam   = $qb->createNamedParameter($numericIds, IQueryBuilder::PARAM_INT_ARRAY);
-                $idConditions[] = $qb->expr()->in('id', $numericParam);
-            }
-
-            if (empty($stringIds) === false) {
-                $stringParam    = $qb->createNamedParameter($stringIds, IQueryBuilder::PARAM_STR_ARRAY);
-                $idConditions[] = $qb->expr()->in('uuid', $stringParam);
-            }
-
-            if (empty($idConditions) === false) {
-                $qb->andWhere($qb->expr()->orX(...$idConditions));
-            }
-        }
-
-        // Apply published filter.
-        if ($published !== null) {
-            $now = (new DateTime())->format('Y-m-d H:i:s');
-            if ($published === true) {
-                $qb->andWhere($qb->expr()->isNotNull('published'));
-                $qb->andWhere($qb->expr()->lte('published', $qb->createNamedParameter($now)));
-                $qb->andWhere(
-                    $qb->expr()->orX(
-                        $qb->expr()->isNull('depublished'),
-                        $qb->expr()->gt('depublished', $qb->createNamedParameter($now))
-                    )
-                );
-            }
-
-            if ($published === false) {
-                $qb->andWhere($qb->expr()->isNull('published'));
-            }
-        }
-
-        // Apply sorting.
-        if (empty($sort) === false) {
-            foreach ($sort as $field => $direction) {
-                $orderDirection = 'ASC';
-                if ($direction === 'desc') {
-                    $orderDirection = 'DESC';
-                }
-
-                $qb->addOrderBy($field, $orderDirection);
-            }
-        }
-
+    /**
+     * Apply sorting to query
+     *
+     * @param IQueryBuilder $qb   Query builder
+     * @param array         $sort Sort order
+     *
+     * @return void
+     */
+    private function applySorting(IQueryBuilder $qb, array $sort): void
+    {
         if (empty($sort) === true) {
             $qb->addOrderBy('id', 'ASC');
+            return;
         }
 
-        // Apply pagination.
+        foreach ($sort as $field => $direction) {
+            if ($direction === 'desc') {
+                $qb->addOrderBy($field, 'DESC');
+            } else {
+                $qb->addOrderBy($field, 'ASC');
+            }
+        }
+    }//end applySorting()
+
+    /**
+     * Apply pagination to query
+     *
+     * @param IQueryBuilder $qb     Query builder
+     * @param int|null      $limit  Result limit
+     * @param int|null      $offset Result offset
+     *
+     * @return void
+     */
+    private function applyPagination(IQueryBuilder $qb, ?int $limit, ?int $offset): void
+    {
         if ($limit !== null) {
             $qb->setMaxResults($limit);
         }
@@ -1739,9 +1930,7 @@ class ObjectEntityMapper extends QBMapper
         if ($offset !== null) {
             $qb->setFirstResult($offset);
         }
-
-        return $this->findEntities($qb);
-    }//end findAll()
+    }//end applyPagination()
 
     /**
      * Find all entities directly from blob storage (skip magic mapper check).
@@ -1767,8 +1956,9 @@ class ObjectEntityMapper extends QBMapper
      *
      * @psalm-return list<ObjectEntity>
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter) Parameters reserved for interface compatibility.
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Include deleted toggle is intentional
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)  Parameters reserved for interface compatibility.
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Include deleted toggle is intentional
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Required for flexible query interface
      */
     public function findAllDirectBlobStorage(
         ?int $limit=null,
@@ -1785,108 +1975,17 @@ class ObjectEntityMapper extends QBMapper
         ?Schema $schema=null,
         ?bool $published=null
     ): array {
-        // Original blob storage findAll logic (same as lines 1513-1606).
-        $qb = $this->db->getQueryBuilder();
-        $qb->select('*')->from('openregister_objects');
-
-        // Process @self.deleted filter if present in filters array.
-        $hasDeletedFilter = false;
-        if ($filters !== null && isset($filters['@self.deleted']) === true) {
-            $deletedFilter = $filters['@self.deleted'];
-            if ($deletedFilter === 'IS NOT NULL') {
-                $qb->andWhere($qb->expr()->isNotNull('deleted'));
-            } else if ($deletedFilter === 'IS NULL') {
-                $qb->andWhere($qb->expr()->isNull('deleted'));
-            }
-
-            $hasDeletedFilter = true;
-        }
-
-        // Apply basic deleted filter ONLY if no @self.deleted filter was specified.
-        if ($hasDeletedFilter === false && $includeDeleted === false) {
-            $qb->andWhere($qb->expr()->isNull('deleted'));
-        }
-
-        // Note: register and schema columns are VARCHAR(255), not BIGINT.
-        if ($register !== null) {
-            $registerId = (string) $register->getId();
-            $qb->andWhere(
-                $qb->expr()->eq('register', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_STR))
-            );
-        }
-
-        if ($schema !== null) {
-            $schemaId = (string) $schema->getId();
-            $qb->andWhere(
-                $qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_STR))
-            );
-        }
-
-        // Apply ID filters.
-        if ($ids !== null && empty($ids) === false) {
-            $numericIds = array_filter($ids, 'is_numeric');
-            $stringIds  = array_filter($ids, fn ($id) => is_string($id) === true);
-
-            $idConditions = [];
-            if (empty($numericIds) === false) {
-                $numericParam   = $qb->createNamedParameter($numericIds, IQueryBuilder::PARAM_INT_ARRAY);
-                $idConditions[] = $qb->expr()->in('id', $numericParam);
-            }
-
-            if (empty($stringIds) === false) {
-                $stringParam    = $qb->createNamedParameter($stringIds, IQueryBuilder::PARAM_STR_ARRAY);
-                $idConditions[] = $qb->expr()->in('uuid', $stringParam);
-            }
-
-            if (empty($idConditions) === false) {
-                $qb->andWhere($qb->expr()->orX(...$idConditions));
-            }
-        }
-
-        // Apply published filter.
-        if ($published !== null) {
-            $now = (new DateTime())->format('Y-m-d H:i:s');
-            if ($published === true) {
-                $qb->andWhere($qb->expr()->isNotNull('published'));
-                $qb->andWhere($qb->expr()->lte('published', $qb->createNamedParameter($now)));
-                $qb->andWhere(
-                    $qb->expr()->orX(
-                        $qb->expr()->isNull('depublished'),
-                        $qb->expr()->gt('depublished', $qb->createNamedParameter($now))
-                    )
-                );
-            }
-
-            if ($published === false) {
-                $qb->andWhere($qb->expr()->isNull('published'));
-            }
-        }
-
-        // Apply sorting.
-        if (empty($sort) === false) {
-            foreach ($sort as $field => $direction) {
-                $orderDirection = 'ASC';
-                if ($direction === 'desc') {
-                    $orderDirection = 'DESC';
-                }
-
-                $qb->addOrderBy($field, $orderDirection);
-            }
-        }
-
-        if (empty($sort) === true) {
-            $qb->addOrderBy('id', 'ASC');
-        }
-
-        // Apply pagination.
-        if ($limit !== null) {
-            $qb->setMaxResults($limit);
-        }
-
-        if ($offset !== null) {
-            $qb->setFirstResult($offset);
-        }
-
+        $qb = $this->buildFindAllQuery(
+            filters: $filters,
+            includeDeleted: $includeDeleted,
+            register: $register,
+            schema: $schema,
+            ids: $ids,
+            published: $published,
+            sort: $sort,
+            limit: $limit,
+            offset: $offset
+        );
         return $this->findEntities($qb);
     }//end findAllDirectBlobStorage()
 
@@ -1896,12 +1995,12 @@ class ObjectEntityMapper extends QBMapper
      * This method is restored from pre-refactor version for compatibility.
      * Note: This is a simplified version. For full functionality, use QueryHandler.
      *
-     * @param array       $query                   Query parameters.
-     * @param string|null $_activeOrganisationUuid Active organisation UUID.
-     * @param bool        $_rbac                   Whether to apply RBAC checks.
-     * @param bool        $_multitenancy           Whether to apply multitenancy filtering.
-     * @param array|null  $ids                     Array of IDs or UUIDs to filter by.
-     * @param string|null $uses                    Value that must be present in relations.
+     * @param array       $query          Query parameters.
+     * @param string|null $_activeOrgUuid Active organisation UUID.
+     * @param bool        $_rbac          Whether to apply RBAC checks.
+     * @param bool        $_multitenancy  Whether to apply multitenancy filtering.
+     * @param array|null  $ids            Array of IDs or UUIDs to filter by.
+     * @param string|null $uses           Value that must be present in relations.
      *
      * @return ObjectEntity[]
      *
@@ -1911,7 +2010,7 @@ class ObjectEntityMapper extends QBMapper
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Flags control security filtering behavior
      */
     public function searchObjects(
-        array $query=[], ?string $_activeOrganisationUuid=null,
+        array $query=[], ?string $_activeOrgUuid=null,
         bool $_rbac=true, bool $_multitenancy=true,
         ?array $ids=null, ?string $uses=null
     ): array|int {
@@ -1943,20 +2042,21 @@ class ObjectEntityMapper extends QBMapper
      *
      * This method is restored from pre-refactor version for compatibility.
      *
-     * @param array       $query                   Query parameters.
-     * @param string|null $_activeOrganisationUuid Active organisation UUID.
-     * @param bool        $_rbac                   Whether to apply RBAC checks.
-     * @param bool        $_multitenancy           Whether to apply multitenancy filtering.
-     * @param array|null  $ids                     Array of IDs or UUIDs to filter by.
-     * @param string|null $uses                    Value that must be present in relations.
+     * @param array       $query          Query parameters.
+     * @param string|null $_activeOrgUuid Active organisation UUID.
+     * @param bool        $_rbac          Whether to apply RBAC checks.
+     * @param bool        $_multitenancy  Whether to apply multitenancy filtering.
+     * @param array|null  $ids            Array of IDs or UUIDs to filter by.
+     * @param string|null $uses           Value that must be present in relations.
      *
      * @return int Count of objects.
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) Parameters reserved for interface compatibility.
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Flags control security filtering behavior
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function countSearchObjects(
-        array $query=[], ?string $_activeOrganisationUuid=null,
+        array $query=[], ?string $_activeOrgUuid=null,
         bool $_rbac=true, bool $_multitenancy=true,
         ?array $ids=null, ?string $uses=null
     ): int {
@@ -2009,13 +2109,13 @@ class ObjectEntityMapper extends QBMapper
     /**
      * Count all objects with optional filtering.
      *
-     * @param array|null    $filters  Filter parameters.
+     * @param array|null    $_filters Filter parameters.
      * @param Schema|null   $schema   Optional schema to filter by.
      * @param Register|null $register Optional register to filter by.
      *
      * @return int Count of objects.
      */
-    public function countAll(?array $filters=null, ?Schema $schema=null, ?Register $register=null): int
+    public function countAll(?array $_filters=null, ?Schema $schema=null, ?Register $register=null): int
     {
         $qb = $this->db->getQueryBuilder();
         $qb->select($qb->func()->count('id'))
@@ -2146,63 +2246,4 @@ class ObjectEntityMapper extends QBMapper
         // Limit to prevent performance issues.
         return $this->findEntities($qb);
     }//end findByRelation()
-
-    // ==================================================================================
-    // RBAC AND MULTITENANCY HELPERS (Kept in Facade)
-    // ==================================================================================
-
-    /**
-     * Check if RBAC is enabled in app configuration.
-     *
-     * @return bool True if RBAC is enabled.
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future RBAC implementation
-     */
-    private function isRbacEnabled(): bool
-    {
-        $rbacConfig = $this->appConfig->getValueString('openregister', 'rbac', '');
-        if (empty($rbacConfig) === true) {
-            return false;
-        }
-
-        $rbacData = json_decode($rbacConfig, true);
-        return $rbacData['enabled'] ?? false;
-    }//end isRbacEnabled()
-
-    /**
-     * Check if multi-tenancy is enabled in app configuration.
-     *
-     * @return bool True if multi-tenancy is enabled.
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future multi-tenancy implementation
-     */
-    private function isMultiTenancyEnabled(): bool
-    {
-        $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
-        if (empty($multitenancyConfig) === true) {
-            return false;
-        }
-
-        $multitenancyData = json_decode($multitenancyConfig, true);
-        return $multitenancyData['enabled'] ?? false;
-    }//end isMultiTenancyEnabled()
-
-    /**
-     * Check if multitenancy admin override is enabled.
-     *
-     * @return bool True if admin override is enabled.
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future multi-tenancy implementation
-     */
-    private function isMultitenancyAdminOverrideEnabled(): bool
-    {
-        $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
-        if (empty($multitenancyConfig) === true) {
-                return true;
-            // Default to true.
-        }
-
-        $multitenancyData = json_decode($multitenancyConfig, true);
-        return $multitenancyData['adminOverride'] ?? true;
-    }//end isMultitenancyAdminOverrideEnabled()
 }//end class

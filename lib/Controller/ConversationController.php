@@ -45,8 +45,9 @@ use Symfony\Component\Uid\Uuid;
  * @package  OCA\OpenRegister\Controller
  *
  * @psalm-suppress UnusedClass
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-
 class ConversationController extends Controller
 {
 
@@ -119,6 +120,8 @@ class ConversationController extends Controller
      * @param ChatService         $chatService         Chat service
      * @param LoggerInterface     $logger              Logger
      * @param string              $userId              User ID
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      */
     public function __construct(
         string $appName,
@@ -644,6 +647,8 @@ class ConversationController extends Controller
      *     array{error?: 'Access denied'|'Conversation not found'|
      *     'Failed to delete conversation', message: string, uuid?: string,
      *     archived?: true}, array<never, never>>
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */
     public function destroy(string $uuid): JSONResponse
     {

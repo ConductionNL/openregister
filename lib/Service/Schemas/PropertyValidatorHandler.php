@@ -27,6 +27,8 @@ use Psr\Log\LoggerInterface;
  * Class PropertyValidatorHandler
  *
  * Service class for validating schema properties according to JSON Schema specification
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex JSON Schema property validation logic
  */
 class PropertyValidatorHandler
 {
@@ -108,6 +110,9 @@ class PropertyValidatorHandler
      * @return true True if the property is valid
      *
      * @psalm-suppress PossiblyUnusedReturnValue
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex JSON Schema property validation with multiple type checks
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple validation paths for different property types
      */
     public function validateProperty(array $property, string $path=''): bool
     {
@@ -240,6 +245,9 @@ class PropertyValidatorHandler
      * @phpstan-return bool
      *
      * @psalm-suppress UnusedReturnValue
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple file property validations
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple validation paths for file properties
      */
     private function validateFileProperty(array $property, string $path): bool
     {

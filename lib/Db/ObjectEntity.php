@@ -114,6 +114,9 @@ use OCP\IUserSession;
  * @method void setPublished(?DateTime $published)
  * @method DateTime|null getModified()
  * @method void setModified(?DateTime $modified)
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.TooManyFields)
  */
 class ObjectEntity extends Entity implements JsonSerializable
 {
@@ -459,7 +462,7 @@ class ObjectEntity extends Entity implements JsonSerializable
     protected function getter(string $name): mixed
     {
         // Array fields that should return [] instead of null when unset.
-        $arrayFieldsWithEmptyDefault = [
+        $arrayEmptyDefaults = [
             'files',
             'relations',
             'authorization',
@@ -471,7 +474,7 @@ class ObjectEntity extends Entity implements JsonSerializable
         ];
 
         // If this is an array field and it's null, return empty array.
-        if (in_array($name, $arrayFieldsWithEmptyDefault) === true && property_exists($this, $name) === true) {
+        if (in_array($name, $arrayEmptyDefaults) === true && property_exists($this, $name) === true) {
             return $this->$name ?? [];
         }
 
@@ -640,6 +643,8 @@ class ObjectEntity extends Entity implements JsonSerializable
      *     updated: null|string, created: null|string,
      *     published: null|string, depublished: null|string,
      *     deleted: array|null}
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function getObjectArray(array $object=[]): array
     {

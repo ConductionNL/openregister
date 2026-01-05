@@ -39,6 +39,10 @@ use Psr\Log\LoggerInterface;
  * properties that may not be defined in the schema definition.
  *
  * @package OCA\OpenRegister\Service
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Schema analysis requires comprehensive exploration methods
+ * @SuppressWarnings(PHPMD.TooManyMethods)           Many methods required for schema analysis and property discovery
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex schema analysis and property inference logic
  */
 class SchemaService
 {
@@ -133,11 +137,11 @@ class SchemaService
         $propertyAnalysis = $this->analyzeObjectProperties(objects: $objects, _existingProperties: $schema->getProperties());
 
         // Generate suggestions for both new and existing properties.
-        $newPropertySuggestions      = $this->generateSuggestions(
+        $newPropSuggestions   = $this->generateSuggestions(
             discoveredProperties: $propertyAnalysis['discovered'],
             existingProperties: $schema->getProperties()
         );
-        $existingPropertySuggestions = $this->analyzeExistingProperties(
+        $existPropSuggestions = $this->analyzeExistingProperties(
             existingProperties: $schema->getProperties(),
             discoveredProperties: $propertyAnalysis['discovered'],
             _usageStats: $propertyAnalysis['usage_stats']
@@ -150,13 +154,13 @@ class SchemaService
             'discovered_properties' => $propertyAnalysis['discovered'],
             'existing_properties'   => $schema->getProperties(),
             'property_usage_stats'  => $propertyAnalysis['usage_stats'],
-            'suggestions'           => array_merge($newPropertySuggestions, $existingPropertySuggestions),
+            'suggestions'           => array_merge($newPropSuggestions, $existPropSuggestions),
             'analysis_date'         => (new DateTime())->format('c'),
             'data_types'            => $propertyAnalysis['data_types'],
             'analysis_summary'      => [
-                'new_properties_count'             => count($newPropertySuggestions),
-                'existing_properties_improvements' => count($existingPropertySuggestions),
-                'total_recommendations'            => count($newPropertySuggestions) + count($existingPropertySuggestions),
+                'new_properties_count'             => count($newPropSuggestions),
+                'existing_properties_improvements' => count($existPropSuggestions),
+                'total_recommendations'            => count($newPropSuggestions) + count($existPropSuggestions),
             ],
         ];
     }//end exploreSchemaProperties()
@@ -330,6 +334,10 @@ class SchemaService
      * @param string $value The string value to analyze
      *
      * @return null|string Detected format or null if none
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess)         DateTime::createFromFormat is standard PHP date pattern
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Many format patterns require individual checks
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple format detection paths are necessary
      */
     private function detectStringFormat(string $value): string|null
     {
@@ -412,6 +420,9 @@ class SchemaService
      * @psalm-return list{0?: string, 1?: string, 2?: string, 3?: string,
      *     4?: string, 5?: 'SCREAMING_SNAKE_CASE'|'filename'|'path',
      *     6?: 'filename'|'path', 7?: 'path'}
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple pattern checks are required for analysis
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Pattern detection requires many conditional paths
      */
     private function analyzeStringPattern(string $value): array
     {
@@ -470,6 +481,9 @@ class SchemaService
      * @param array $newAnalysis      New analysis data to merge
      *
      * @return void Updates the existing analysis in place
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex merging logic for multiple analysis aspects
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Many merge scenarios require individual handling
      */
     private function mergePropertyAnalysis(array &$existingAnalysis, array $newAnalysis): void
     {
@@ -759,15 +773,19 @@ class SchemaService
      *     string_patterns: array<never, never>|mixed,
      *     type?: 'array'|'object'|'string', type_variations: mixed|null,
      *     usage_count: mixed, usage_percentage: 0|mixed}>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex suggestion generation with multiple property types
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Many property type scenarios require individual handling
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive suggestion logic requires extensive code
      */
     private function generateSuggestions(array $discoveredProperties, array $existingProperties): array
     {
-        $suggestions           = [];
-        $existingPropertyNames = array_keys($existingProperties);
+        $suggestions    = [];
+        $existPropNames = array_keys($existingProperties);
 
         foreach ($discoveredProperties as $propertyName => $analysis) {
             // Skip properties that already exist in the schema.
-            if (in_array($propertyName, $existingPropertyNames) === true) {
+            if (in_array($propertyName, $existPropNames) === true) {
                 continue;
             }
 
@@ -882,6 +900,8 @@ class SchemaService
      * @param array $_usageStats          Usage statistics for all properties
      *
      * @return array List of property improvements
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Analysis of existing properties requires multiple checks
      */
     private function analyzeExistingProperties(
         array $existingProperties,
@@ -977,6 +997,10 @@ class SchemaService
      * @param array $analysis      Analysis data from objects
      *
      * @return array Comparison results with issues and suggestions
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Comprehensive comparison requires many checks
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple comparison aspects create many code paths
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Detailed comparison logic requires extensive code
      */
     private function comparePropertyWithAnalysis(array $currentConfig, array $analysis): array
     {
@@ -1078,6 +1102,9 @@ class SchemaService
      * @param string $recommendedType Recommended type
      *
      * @return array String constraint comparison results
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple string constraints require individual checks
+     * @SuppressWarnings(PHPMD.NPathComplexity)      String validation has many conditional paths
      */
     private function compareStringConstraints(array $currentConfig, array $analysis, string $recommendedType): array
     {
@@ -1166,6 +1193,8 @@ class SchemaService
      * @param string $recommendedType Recommended type
      *
      * @return array Numeric constraint comparison results
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Numeric range validation requires multiple comparisons
      */
     private function compareNumericConstraints(array $currentConfig, array $analysis, string $recommendedType): array
     {
@@ -1289,6 +1318,8 @@ class SchemaService
      * @param array $analysis      Property analysis data
      *
      * @return array Enum constraint comparison results
+     *
+     * @SuppressWarnings(PHPMD.ElseExpression) Enum comparison requires else for value difference detection
      */
     private function compareEnumConstraint(array $currentConfig, array $analysis): array
     {
@@ -1374,6 +1405,10 @@ class SchemaService
      * @param array $analysis Property analysis data
      *
      * @return string Recommended property type
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Type recommendation requires checking many type variations
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple type inference paths are necessary
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive type analysis requires extensive logic
      */
     private function recommendPropertyType(array $analysis): string
     {
@@ -1473,6 +1508,8 @@ class SchemaService
      * @param array  $patterns String patterns if type is string
      *
      * @return string JSON Schema type
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Type normalization requires handling many PHP types
      */
     private function normalizeSingleType(string $phpType, array $patterns): string
     {

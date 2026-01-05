@@ -48,6 +48,11 @@ use Psr\Log\LoggerInterface;
  * @link      https://github.com/OpenCatalogi/OpenRegister
  * @version   GIT: <git_id>
  * @copyright 2024 Conduction b.v.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Cache operations require many utility methods
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)     Public API for comprehensive cache management
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex cache invalidation and warming logic
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Cache handler requires multiple dependencies for comprehensive caching
  */
 class CacheHandler
 {
@@ -269,6 +274,8 @@ class CacheHandler
      * @return bool True if indexing was successful or index unavailable
      *
      * @psalm-suppress UnusedReturnValue
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      */
     private function indexObjectInSolr(ObjectEntity $object, bool $commit=false): bool
     {
@@ -344,6 +351,8 @@ class CacheHandler
      * @return bool True if removal was successful or index unavailable
      *
      * @psalm-suppress UnusedReturnValue
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      */
     private function removeObjectFromSolr(ObjectEntity $object, bool $commit=false): bool
     {
@@ -390,6 +399,9 @@ class CacheHandler
      * @param string $prefix     Field prefix for nested objects
      *
      * @return array Dynamic search fields
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     private function extractDynamicFieldsFromObject(array $objectData, string $prefix=''): array
     {
@@ -437,52 +449,6 @@ class CacheHandler
 
         return $dynamicFields;
     }//end extractDynamicFieldsFromObject()
-
-    /**
-     * Build full-text content for search catch-all field
-     *
-     * @param ObjectEntity $object     Object entity
-     * @param array        $objectData Object data
-     *
-     * @return string Full-text content for searching
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future full-text search implementation
-     */
-    private function buildFullTextContent(ObjectEntity $object, array $objectData): string
-    {
-        $textContent = [];
-
-        // Add metadata fields.
-        $textContent[] = $object->getName();
-        $textContent[] = $object->getDescription();
-        $textContent[] = $object->getSummary();
-
-        // Extract text from object data recursively.
-        $this->extractTextFromArray(data: $objectData, textContent: $textContent);
-
-        return implode(' ', array_filter($textContent));
-    }//end buildFullTextContent()
-
-    /**
-     * Extract text content from array recursively
-     *
-     * @param array $data        Array to extract text from
-     * @param array $textContent Reference to text content array
-     *
-     * @return void
-     */
-    private function extractTextFromArray(array $data, array &$textContent): void
-    {
-        foreach ($data as $key => $value) {
-            // Suppress unused variable warning for $key - only processing values.
-            unset($key);
-            if (is_string($value) === true) {
-                $textContent[] = $value;
-            } else if (is_array($value) === true) {
-                $this->extractTextFromArray(data: $value, textContent: $textContent);
-            }
-        }
-    }//end extractTextFromArray()
 
     /**
      * Check if a string represents a date
@@ -796,6 +762,9 @@ class CacheHandler
      * @param int|null          $schemaId   Schema ID for targeted invalidation
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     public function invalidateForObjectChange(
         ?ObjectEntity $object=null,
@@ -894,69 +863,6 @@ class CacheHandler
             ]
         );
     }//end clearObjectFromCache()
-
-    /**
-     * Generate cache key for search queries
-     *
-     * Creates a unique cache key based on search parameters, user context,
-     * and authorization settings to ensure proper cache isolation.
-     *
-     * @param array       $query                  Search query parameters
-     * @param string|null $activeOrganisationUuid Active organization UUID
-     * @param bool        $_rbac                  Whether RBAC is enabled
-     * @param bool        $_multitenancy          Whether multi-tenancy is enabled
-     *
-     * @return string The generated cache key
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future search cache implementation
-     */
-    private function generateSearchCacheKey(
-        array $query,
-        ?string $activeOrganisationUuid,
-        bool $_rbac,
-        bool $_multitenancy
-    ): string {
-        $user   = $this->userSession->getUser();
-        $userId = 'anonymous';
-        if ($user === true) {
-            $userId = $user->getUID();
-        }
-
-        // Convert booleans to strings for cache key.
-        $rbacStr = 'false';
-        if ($_rbac === true) {
-            $rbacStr = 'true';
-        }
-
-        $multiStr = 'false';
-        if ($_multitenancy === true) {
-            $multiStr = 'true';
-        }
-
-        // Create consistent key components.
-        $keyComponents = [
-            'user'  => $userId,
-            'org'   => $activeOrganisationUuid ?? 'null',
-            'rbac'  => $rbacStr,
-            'multi' => $multiStr,
-            'query' => $query,
-        ];
-
-        // Sort query parameters for consistent key generation.
-        if (($keyComponents['query'] ?? null) !== null && is_array($keyComponents['query']) === true) {
-            ksort($keyComponents['query']);
-            array_walk_recursive(
-                $keyComponents['query'],
-                function (&$value) {
-                    if (is_array($value) === true) {
-                        sort($value);
-                    }
-                }
-            );
-        }
-
-        return 'search_'.hash('sha256', json_encode($keyComponents));
-    }//end generateSearchCacheKey()
 
     /**
      * Clear all caches (Administrative Operation)
@@ -1093,6 +999,9 @@ class CacheHandler
      * @param string|int $identifier Object ID or UUID
      *
      * @return string|null Object name or null if not found
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     public function getSingleObjectName(string|int $identifier): ?string
     {
@@ -1178,6 +1087,11 @@ class CacheHandler
      * @phpstan-return array<string, string>
      * @psalm-param    array<string|int> $identifiers
      * @psalm-return   array<string, string>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     * Bulk name retrieval with multiple cache layers requires extensive handling.
      */
     public function getMultipleObjectNames(array $identifiers): array
     {
@@ -1299,6 +1213,8 @@ class CacheHandler
      *
      * @phpstan-return array<string, string>
      * @psalm-return   array<string, string>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      */
     public function getAllObjectNames(bool $forceWarmup=false): array
     {

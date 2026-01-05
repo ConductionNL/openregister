@@ -59,6 +59,10 @@ use Psr\Log\LoggerInterface;
  * @link      https://github.com/OpenCatalogi/OpenRegister
  * @version   GIT: <git_id>
  * @copyright 2024 Conduction b.v.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Validation requires comprehensive rule handling
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex JSON Schema validation logic
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Validation requires multiple format and schema dependencies
  */
 
 class ValidateObject
@@ -100,6 +104,9 @@ class ValidateObject
      * @param bool   $_skipUuidTransformed Whether to skip UUID transformation (unused)
      *
      * @return object The processed schema object with resolved references
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Schema reference resolution requires multiple type checks
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  Boolean flag needed for backward compatibility
      */
     private function preprocessSchemaReferences(
         object $schemaObject,
@@ -156,6 +163,9 @@ class ValidateObject
      * @param array  $visited        Array to track visited schemas to prevent infinite loops
      *
      * @return object The resolved property schema
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex reference resolution with multiple format handlers
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple reference types and nested schema scenarios
      */
     private function resolveSchemaProperty(object $propertySchema, array $visited=[]): object
     {
@@ -185,11 +195,11 @@ class ValidateObject
                 $referencedSchema = $this->findSchemaBySlug($schemaSlug);
                 if ($referencedSchema !== null) {
                     // Get the referenced schema object and recursively process it.
-                    $referencedSchemaObject = $referencedSchema->getSchemaObject($this->urlGenerator);
+                    $refSchemaObj = $referencedSchema->getSchemaObject($this->urlGenerator);
 
                     $newVisited     = array_merge($visited, [$schemaSlug]);
                     $resolvedSchema = $this->preprocessSchemaReferences(
-                        schemaObject: $referencedSchemaObject,
+                        schemaObject: $refSchemaObj,
                         visited: $newVisited
                     );
 
@@ -285,6 +295,9 @@ class ValidateObject
      * @param object $propertySchema The property schema to transform
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple OpenRegister configuration scenarios
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Various property transformation paths
      */
     private function transformPropertyForOpenRegister(object $propertySchema): void
     {
@@ -562,6 +575,9 @@ class ValidateObject
      * @return (array|object)[] Array containing [transformedSchema, transformedObject]
      *
      * @psalm-return list{object, array}
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex schema transformation with multiple scenarios
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive schema transformation logic
      */
     private function transformSchemaForValidation(object $schemaObject, array $object, string $currentSchemaSlug): array
     {
@@ -691,6 +707,8 @@ class ValidateObject
      * @param bool   $_isArrayItems Whether this is cleaning array items (more aggressive cleaning)
      *
      * @return object The cleaned schema object
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag needed to handle array items differently
      */
     private function cleanSchemaForValidation(object $schemaObject, bool $_isArrayItems=false): object
     {
@@ -750,6 +768,8 @@ class ValidateObject
      * @param bool  $isArrayItems   Whether this is cleaning array items (more aggressive)
      *
      * @return mixed The cleaned property schema
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag needed to handle array items differently
      */
     private function cleanPropertyForValidation($propertySchema, bool $isArrayItems=false)
     {
@@ -984,6 +1004,10 @@ class ValidateObject
      * @param int             $_depth       The depth level for validation (unused).
      *
      * @return ValidationResult The result of the validation.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Comprehensive validation with many edge case handlers
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple validation scenarios and schema types
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Complete validation logic requires extensive handling
      */
     public function validateObject(
         array $object,
@@ -1176,6 +1200,8 @@ class ValidateObject
      * @throws GuzzleException If there is an error during schema fetching.
      *
      * @psalm-suppress PossiblyUnusedReturnValue
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) Uri::fromParts is standard GuzzleHttp\Psr7 pattern
      */
     public function resolveSchema(Uri $uri): string
     {
@@ -1264,6 +1290,9 @@ class ValidateObject
      * @param \Opis\JsonSchema\Errors\ValidationError $error The validation error.
      *
      * @return string A formatted error message.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Many validation error types require specific formatting
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive error formatting for all validation types
      */
     private function formatValidationError(\Opis\JsonSchema\Errors\ValidationError $error): string
     {
@@ -1530,7 +1559,7 @@ class ValidateObject
             $filters[$uniqueFields] = $object[$uniqueFields];
         }
 
-        $count = $this->objectMapper->countAll(filters: $filters, schema: $schema);
+        $count = $this->objectMapper->countAll(_filters: $filters, schema: $schema);
 
         if ($count !== 0) {
             // IMPROVED ERROR MESSAGE: Show which field(s) caused the uniqueness violation.

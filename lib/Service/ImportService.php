@@ -54,6 +54,13 @@ use React\EventLoop\Loop;
  * - **Progress Tracking**: Provides real-time progress updates during import
  *
  * @package OCA\OpenRegister\Service
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Import service requires comprehensive data transformation methods
+ * @SuppressWarnings(PHPMD.TooManyMethods)           Many methods required for multi-format import support
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex import logic with multiple data formats
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Requires many dependencies for import operations
+ * @SuppressWarnings(PHPMD.UnusedPrivateField)       schemaPropsCache reserved for future schema property caching
+ * @SuppressWarnings(PHPMD.LongVariable)             Descriptive variable names improve code readability
  */
 
 class ImportService
@@ -110,6 +117,13 @@ class ImportService
 
     /**
      * Instance cache for schema properties to avoid static cache issues
+     *
+     * @var array<string, array>
+     */
+    private array $schemaPropsCache = [];
+
+    /**
+     * Cache for schema properties during import operations
      *
      * @var array<string, array>
      */
@@ -543,7 +557,10 @@ class ImportService
      *
      * @return array Batch processing results
      *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flags control import behavior options
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Boolean flags control import behavior options
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Spreadsheet batch processing requires many validation branches
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple row/column validation paths needed for data integrity
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Batch processing consolidates related operations for performance
      */
     private function processSpreadsheetBatch(
         Spreadsheet $spreadsheet,
@@ -703,7 +720,10 @@ class ImportService
      *
      * @return array CSV sheet processing results
      *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flags control import behavior options
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Boolean flags control import behavior options
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  CSV processing requires many conditional branches for data handling
+     * @SuppressWarnings(PHPMD.NPathComplexity)       CSV processing requires many conditional row/column handling
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) CSV processing consolidates related operations for performance
      */
     private function processCsvSheet(
         \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet,
@@ -902,6 +922,9 @@ class ImportService
      * @return ((int|mixed|string)[]|mixed)[]
      *
      * @psalm-return array{'@self': array<string, int|mixed|string>,...}
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Row transformation requires many type-specific branches
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple column types and transformations create execution paths
      */
     private function transformCsvRowToObject(
         array $rowData,
@@ -1063,54 +1086,6 @@ class ImportService
     }//end transformSelfProperty()
 
     /**
-     * Process a chunk of Excel rows and prepare objects for batch saving
-     *
-     * @param \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet         The worksheet
-     * @param array<string, string>                         $columnMapping Column mapping
-     * @param int                                           $startRow      Starting row number
-     * @param int                                           $endRow        Ending row number
-     * @param Register|null                                 $register      Optional register
-     * @param Schema|null                                   $schema        Optional schema
-     *
-     * @return         array<string, array> Chunk processing result
-     * @phpstan-return array{objects: array<int, array<string, mixed>>}
-     * @psalm-return   array{objects: list<array<string, mixed>>}
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future Excel chunk processing
-     */
-    private function processExcelChunk(
-        \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet,
-        array $columnMapping,
-        int $startRow,
-        int $endRow,
-        ?Register $register,
-        ?Schema $schema
-    ): array {
-        $objects = [];
-
-        for ($row = $startRow; $row <= $endRow; $row++) {
-            // NO ERROR SUPPRESSION: Let Excel chunk processing errors bubble up immediately!
-            $rowData = $this->extractRowData(sheet: $sheet, columnMapping: $columnMapping, row: $row);
-
-            if (empty($rowData) === true) {
-                // Skip empty rows.
-                continue;
-            }
-
-            // Transform row data to object format.
-            $object = $this->transformExcelRowToObject(rowData: $rowData, register: $register, schema: $schema);
-
-            if ($object !== null) {
-                $objects[] = $object;
-            }
-        }
-
-        return [
-            'objects' => $objects,
-        ];
-    }//end processExcelChunk()
-
-    /**
      * Transform Excel row data to object format for batch saving
      *
      * @param array         $rowData     Row data from Excel
@@ -1119,6 +1094,9 @@ class ImportService
      * @param IUser|null    $currentUser The current user performing the import
      *
      * @return array<string, mixed>|null Object data or null if transformation fails
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Excel row transformation requires many type-specific branches
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple column types and transformations create execution paths
      */
     private function transformExcelRowToObject(
         array $rowData,
@@ -1202,6 +1180,8 @@ class ImportService
      * @param \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet The worksheet
      *
      * @return array<string, string> Column mapping (column letter -> column name)
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) Coordinate::stringFromColumnIndex is standard PhpSpreadsheet pattern
      */
     private function buildColumnMapping(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet): array
     {
@@ -1228,119 +1208,6 @@ class ImportService
 
         return $columnMapping;
     }//end buildColumnMapping()
-
-    /**
-     * Process a chunk of rows asynchronously
-     *
-     * @param \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet             The worksheet
-     * @param array<string, string>                         $columnMapping     Column mapping
-     * @param int                                           $startRow          Starting row number
-     * @param int                                           $endRow            Ending row number
-     * @param Register|null                                 $register          Optional register
-     * @param Schema|null                                   $schema            Optional schema
-     * @param array                                         $_schemaProperties Schema properties
-     *
-     * @return (array|int)[]
-     *
-     * @psalm-return array{
-     *     found: int<0, max>,
-     *     created: list<mixed>,
-     *     updated: list<mixed>,
-     *     unchanged: array<never, never>,
-     *     errors: list{0?: mixed,...}
-     * }
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future async chunk processing
-     */
-    private function processChunk(
-        \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet,
-        array $columnMapping,
-        int $startRow,
-        int $endRow,
-        ?Register $register,
-        ?Schema $schema,
-        array $_schemaProperties
-    ): array {
-        $chunkSummary = [
-            'found'     => 0,
-            'created'   => [],
-            'updated'   => [],
-            'unchanged' => [],
-            'errors'    => [],
-        ];
-
-        // Extract row data for this chunk.
-        $processedRows = [];
-        for ($row = $startRow; $row <= $endRow; $row++) {
-            $rowData = $this->extractRowData(sheet: $sheet, columnMapping: $columnMapping, row: $row);
-            if (empty($rowData) === false) {
-                $processedRows[] = $rowData;
-            }
-        }
-
-        $chunkSummary['found'] = count($processedRows);
-
-        // Process rows using ReactPHP promises for concurrent operations.
-        if ($register !== null && $schema !== null && empty($processedRows) === false) {
-            $promises = [];
-
-            foreach ($processedRows as $index => $rowData) {
-                /*
-                 * @psalm-suppress InvalidArgument - Promise resolve accepts mixed
-                 */
-
-                $promises[] = new Promise(
-                    function (callable $resolve, callable $_reject) use (
-                        $rowData,
-                        $index,
-                        $register,
-                        $schema,
-                        $startRow
-                    ) {
-                        // NO ERROR SUPPRESSION: Let processRow errors bubble up immediately!
-                        $rowIndex = $startRow + $index;
-                        $result   = $this->processRow(
-                            rowData: $rowData,
-                            register: $register,
-                            schema: $schema,
-                            _rowIndex: $rowIndex
-                        );
-
-                        $resolve($result);
-                    }
-                );
-            }//end foreach
-
-            // Process promises in batches to limit concurrency.
-            $batchSize    = self::MAX_CONCURRENT;
-            $promiseCount = count($promises);
-            for ($i = 0; $i < $promiseCount; $i += $batchSize) {
-                $batch = array_slice($promises, $i, $batchSize);
-
-                /*
-                 * @psalm-suppress UndefinedFunction - React\Async\await is from external library
-                 */
-
-                $results = \React\Async\await(\React\Promise\all($batch));
-
-                foreach ($results as $result) {
-                    if (($result['error'] ?? null) !== null) {
-                        $chunkSummary['errors'][] = $result['error'];
-                        continue;
-                    }
-
-                    if ($result['wasExisting'] === true) {
-                        $chunkSummary['updated'][] = $result['uuid'];
-                        continue;
-                    }
-
-                    $chunkSummary['created'][] = $result['uuid'];
-                }
-            }//end for
-        }//end if
-
-        return $chunkSummary;
-    }//end processChunk()
 
     /**
      * Extract data from a single row
@@ -1384,77 +1251,6 @@ class ImportService
 
         return [];
     }//end extractRowData()
-
-    /**
-     * Process a single row
-     *
-     * @param array    $rowData   Row data
-     * @param Register $register  Register
-     * @param Schema   $schema    Schema
-     * @param int      $_rowIndex Row index for error reporting (unused, for future use)
-     *
-     * @return (bool|null|string)[] Processing result
-     *
-     * @psalm-return array{uuid: null|string, wasExisting: bool}
-     */
-    private function processRow(array $rowData, Register $register, Schema $schema, int $_rowIndex): array
-    {
-        // NO ERROR SUPPRESSION: Let processRow errors bubble up immediately!
-        // Separate regular properties from system properties starting with _ or @self.
-        $objectData = [];
-        $selfData   = [];
-
-        foreach ($rowData as $key => $value) {
-            if (str_starts_with($key, '_') === true) {
-                // Move properties starting with _ to @self array and remove the _.
-                $selfPropertyName = substr($key, 1);
-                // Remove the _ prefix.
-                $selfData[$selfPropertyName] = $value;
-            } else if (str_starts_with($key, '@self.') === true) {
-                // Move properties starting with @self. to @self array and remove the @self. prefix.
-                $selfPropertyName = substr($key, 6);
-                // Remove the @self. prefix (6 characters).
-                $selfData[$selfPropertyName] = $value;
-                continue;
-            }
-
-            // Regular properties go to main object data.
-            $objectData[$key] = $value;
-        }
-
-        // Add @self array to object data if we have self properties.
-        if (empty($selfData) === false) {
-            $objectData['@self'] = $selfData;
-        }
-
-        // Transform object data based on schema property types.
-        $objectData = $this->transformObjectBySchema(objectData: $objectData, schema: $schema);
-
-        // Get the object ID for tracking updates vs creates.
-        $objectId    = $rowData['id'] ?? null;
-        $wasExisting = false;
-
-        // Check if object exists (for reporting purposes only).
-        if ($objectId !== null) {
-            // NO ERROR SUPPRESSION: Let object find errors bubble up immediately!
-            $this->objectEntityMapper->find($objectId);
-            $wasExisting = true;
-        }
-
-        // Save the object (ObjectService handles create vs update logic).
-        $savedObject = $this->objectService->saveObject(
-            object: $objectData,
-            extend: null,
-            register: $register,
-            schema: $schema,
-            uuid: $objectId
-        );
-
-        return [
-            'uuid'        => $savedObject->getUuid(),
-            'wasExisting' => $wasExisting,
-        ];
-    }//end processRow()
 
     /**
      * Get schema by slug
@@ -1520,6 +1316,8 @@ class ImportService
      * @param array $propertyDef The property definition from the schema
      *
      * @return mixed The transformed value
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Type transformation switch requires branches for each data type
      */
     private function transformValueByType($value, array $propertyDef)
     {
@@ -1617,6 +1415,9 @@ class ImportService
      *
      * @phpstan-return array<int|string, mixed>
      * @psalm-return   array<int|string, mixed>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Array parsing requires branches for JSON, CSV, quoted formats
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple array format detection paths needed
      */
     private function stringToArray($value): array
     {

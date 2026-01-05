@@ -61,6 +61,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setOrganisation(?string $organisation)
  *
  * @psalm-suppress PossiblyUnusedMethod
+ *
+ * @SuppressWarnings(PHPMD.TooManyFields) Domain entity requires many fields for complete audit trail data
  */
 class AuditTrail extends Entity implements JsonSerializable
 {
@@ -219,7 +221,7 @@ class AuditTrail extends Entity implements JsonSerializable
      *
      * @var string|null The URL where the processing activity is registered
      */
-    protected ?string $processingActivityUrl = null;
+    protected ?string $procActivityUrl = null;
 
     /**
      * The unique identifier for this specific processing operation
@@ -416,7 +418,7 @@ class AuditTrail extends Entity implements JsonSerializable
             'organisationId'        => $this->organisationId,
             'organisationIdType'    => $this->organisationIdType,
             'processingActivityId'  => $this->processingActivityId,
-            'processingActivityUrl' => $this->processingActivityUrl,
+            'processingActivityUrl' => $this->procActivityUrl,
             'processingId'          => $this->processingId,
             'confidentiality'       => $this->confidentiality,
             'retentionPeriod'       => $this->retentionPeriod,

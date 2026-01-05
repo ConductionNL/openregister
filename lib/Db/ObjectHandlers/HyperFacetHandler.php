@@ -72,6 +72,9 @@ use React\Promise\PromiseInterface;
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   GIT: <git-id>
  * @link      https://www.OpenRegister.app
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class HyperFacetHandler
 {
@@ -217,6 +220,8 @@ class HyperFacetHandler
      * @phpstan-return array<string, mixed>
      * @psalm-param    array<string, mixed> $facetConfig
      * @psalm-return   array<string, mixed>
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */
     public function getHyperOptimizedFacets(array $facetConfig, array $baseQuery=[]): array
     {
@@ -795,6 +800,8 @@ class HyperFacetHandler
      * @phpstan-param array<string, mixed> $baseQuery
      * @psalm-param   IQueryBuilder $queryBuilder
      * @psalm-param   array<string, mixed> $baseQuery
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function applyOptimizedBaseFilters(IQueryBuilder $queryBuilder, array $baseQuery): void
     {

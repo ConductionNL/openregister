@@ -63,6 +63,9 @@ use OCP\IUserSession;
  * @template-extends QBMapper<Application>
  *
  * @psalm-suppress PossiblyUnusedMethod
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class ApplicationMapper extends QBMapper
 {

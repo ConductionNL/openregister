@@ -138,6 +138,10 @@ class SolrQueryExecutor
      * @param bool  $deleted      Include deleted items
      *
      * @return array Paginated search results with pagination info.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Paginated search requires handling multiple filter conditions
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple filter combinations create many execution paths
      */
     public function searchPaginated(
         array $query=[],
@@ -183,6 +187,8 @@ class SolrQueryExecutor
      * @return (int|mixed|string)[] Solr query parameters
      *
      * @psalm-return array{q: '*:*'|mixed, start: int, rows: int, sort?: string, fl?: mixed|string}
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Query building requires handling multiple parameter types
      */
     private function buildSolrQuery(array $query): array
     {
@@ -199,10 +205,9 @@ class SolrQueryExecutor
 
         // Handle field selection.
         if (isset($query['_fields']) === true) {
+            $solrQuery['fl'] = $query['_fields'];
             if (is_array($query['_fields']) === true) {
                 $solrQuery['fl'] = implode(',', $query['_fields']);
-            } else {
-                $solrQuery['fl'] = $query['_fields'];
             }
         }
 
@@ -224,10 +229,9 @@ class SolrQueryExecutor
 
         $sortParts = [];
         foreach ($order as $field => $direction) {
+            $dir = 'asc';
             if (strtolower((string) $direction) === 'desc') {
                 $dir = 'desc';
-            } else {
-                $dir = 'asc';
             }
 
             $sortParts[] = "{$field} {$dir}";
@@ -254,10 +258,9 @@ class SolrQueryExecutor
         $limit = (int) ($query['_limit'] ?? 30);
         $page  = (int) ($query['_page'] ?? 1);
 
+        $pages = 0;
         if ($limit > 0) {
             $pages = (int) ceil($numFound / $limit);
-        } else {
-            $pages = 0;
         }
 
         return [

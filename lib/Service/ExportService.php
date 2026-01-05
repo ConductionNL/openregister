@@ -45,6 +45,9 @@ use React\EventLoop\Loop;
  * Service for exporting data to various formats
  *
  * @package OCA\OpenRegister\Service
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class ExportService
 {
@@ -126,6 +129,8 @@ class ExportService
      * @param IUser|null    $currentUser Current user for permission checks
      *
      * @return Spreadsheet
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Export requires handling multiple input combinations
      */
     public function exportToExcel(
         ?Register $register=null,
@@ -212,6 +217,8 @@ class ExportService
      * @param IUser|null    $currentUser Current user for permission checks
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Sheet population has multiple filter and data conditions
      */
     private function populateSheet(
         Spreadsheet $spreadsheet,
@@ -305,6 +312,8 @@ class ExportService
      * @return (int|string)[]
      *
      * @psalm-return array<array-key>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Header generation has multiple schema and permission conditions
      */
     private function getHeaders(?Schema $schema=null, ?IUser $currentUser=null): array
     {
@@ -378,6 +387,10 @@ class ExportService
      * @param string       $header The header to get value for
      *
      * @return string|null
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Complex multi-step value extraction logic
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Value extraction requires many conditional type checks
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple header prefix and value type conditions
      */
     private function getObjectValue(ObjectEntity $object, string $header): ?string
     {

@@ -49,6 +49,12 @@ use RuntimeException;
  * @author   Conduction BV <info@conduction.nl>
  * @license  EUPL-1.2 https://opensource.org/licenses/EUPL-1.2
  * @link     https://www.conduction.nl
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.ElseExpression)
  */
 class BulkOperationsHandler
 {
@@ -618,6 +624,8 @@ class BulkOperationsHandler
      * @return int Estimated size in bytes.
      *
      * @psalm-return int<0, max>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function estimateObjectSize(mixed $object): int
     {
@@ -735,6 +743,9 @@ class BulkOperationsHandler
      * @throws \OCP\DB\Exception If a database error occurs.
      *
      * @psalm-return list<mixed>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     private function bulkInsert(array $insertObjects): array
     {
@@ -910,7 +921,9 @@ class BulkOperationsHandler
      *
      * @psalm-return list<mixed>
      *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Hard delete toggle controls permanent vs soft delete
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  Hard delete toggle controls permanent vs soft delete
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     private function bulkDelete(array $uuids, bool $hardDelete=false): array
     {
@@ -1214,6 +1227,9 @@ class BulkOperationsHandler
      * @param string       $column The column name.
      *
      * @return mixed The column value with proper transformations applied.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     private function getEntityValue(ObjectEntity $entity, string $column): mixed
     {

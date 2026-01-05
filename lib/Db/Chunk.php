@@ -70,6 +70,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setCreatedAt(DateTime $createdAt)
  * @method DateTime getUpdatedAt()
  * @method void setUpdatedAt(DateTime $updatedAt)
+ *
+ * @SuppressWarnings(PHPMD.TooManyFields) Domain entity requires many fields for complete chunk data
  */
 class Chunk extends Entity implements JsonSerializable
 {

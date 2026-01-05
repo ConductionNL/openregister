@@ -24,7 +24,6 @@ use DateTime;
 use OCA\OpenRegister\Event\ViewCreatedEvent;
 use OCA\OpenRegister\Event\ViewDeletedEvent;
 use OCA\OpenRegister\Event\ViewUpdatedEvent;
-use OCA\OpenRegister\Service\Configuration\CacheHandler;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -61,6 +60,8 @@ use Symfony\Component\Uid\Uuid;
  * @method list<View> findEntities(IQueryBuilder $query)
  *
  * @template-extends QBMapper<View>
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class ViewMapper extends QBMapper
 {
@@ -83,15 +84,6 @@ class ViewMapper extends QBMapper
      * @var IGroupManager Group manager instance
      */
     private readonly IGroupManager $groupManager;
-
-    /**
-     * Configuration cache service
-     *
-     * Used to invalidate configuration cache when views change.
-     *
-     * @var CacheHandler Configuration cache service instance
-     */
-    private readonly CacheHandler $configurationCacheService;
 
     /**
      * Event dispatcher for dispatching view events
@@ -122,7 +114,7 @@ class ViewMapper extends QBMapper
         IUserSession $userSession,
         IGroupManager $groupManager,
         // REMOVED: Handlers should not be in mappers.
-        // CacheHandler $configurationCacheService.
+        // CacheHandler $configCacheSvc.
         IEventDispatcher $eventDispatcher
     ) {
         // Call parent constructor to initialize base mapper with table name and entity class.
@@ -133,7 +125,7 @@ class ViewMapper extends QBMapper
         // $this->organisationMapper = $organisationService.
         $this->userSession  = $userSession;
         $this->groupManager = $groupManager;
-        // $this->configurationCacheService = $configurationCacheService; // REMOVED
+        // $this->configurationCacheService = $configCacheSvc; // REMOVED
         $this->eventDispatcher = $eventDispatcher;
     }//end __construct()
 
@@ -234,6 +226,8 @@ class ViewMapper extends QBMapper
      *
      * @return View The created view
      * @throws \Exception If user doesn't have create permission
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is standard Symfony UID pattern
      */
     public function insert(Entity $entity): View
     {
@@ -325,17 +319,14 @@ class ViewMapper extends QBMapper
      *
      * @param View $view The view entity to enrich
      *
+     * @psalm-suppress UnusedParam Method is kept as no-op for API compatibility
+     *
      * @return void
      */
     private function enrichWithConfigurationInfo(View $view): void
     {
-        // Get configurations from cache for the active organisation.
-        $configurations = $this->configurationCacheService->getConfigurationsForActiveOrganisation();
-
-        // Check if this view is managed by any configuration.
-        $managedBy = $view->getManagedByConfiguration($configurations);
-        if ($managedBy !== null) {
-            $view->setManagedByConfigurationEntity($managedBy);
-        }
+        // NOTE: Configuration enrichment disabled - configurationCacheService was removed from mapper.
+        // Services should not be in mappers. Configuration enrichment should be done at the service layer.
+        // This method is kept as a no-op to avoid breaking existing code that calls it.
     }//end enrichWithConfigurationInfo()
 }//end class

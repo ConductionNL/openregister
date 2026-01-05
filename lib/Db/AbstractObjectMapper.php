@@ -42,6 +42,8 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
  * - Uniform bulk operations and statistics gathering
  *
  * @package OCA\OpenRegister\Db
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  */
 abstract class AbstractObjectMapper
 {
@@ -98,7 +100,8 @@ abstract class AbstractObjectMapper
      *
      * @psalm-return list<ObjectEntity>
      *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Include deleted toggle is intentional
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Include deleted toggle is intentional
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Required for flexible query interface
      */
     abstract public function findAll(
         ?int $limit=null,
@@ -322,12 +325,12 @@ abstract class AbstractObjectMapper
     /**
      * Search for objects with complex filtering.
      *
-     * @param array       $query                  Query parameters.
-     * @param string|null $activeOrganisationUuid Active organisation UUID.
-     * @param bool        $rbac                   Whether to apply RBAC checks.
-     * @param bool        $multitenancy           Whether to apply multitenancy filtering.
-     * @param array|null  $ids                    Array of IDs or UUIDs to filter by.
-     * @param string|null $uses                   Value that must be present in relations.
+     * @param array       $query         Query parameters.
+     * @param string|null $activeOrgUuid Active organisation UUID.
+     * @param bool        $rbac          Whether to apply RBAC checks.
+     * @param bool        $multitenancy  Whether to apply multitenancy filtering.
+     * @param array|null  $ids           Array of IDs or UUIDs to filter by.
+     * @param string|null $uses          Value that must be present in relations.
      *
      * @return ObjectEntity[]|int
      *
@@ -337,7 +340,7 @@ abstract class AbstractObjectMapper
      */
     abstract public function searchObjects(
         array $query=[],
-        ?string $activeOrganisationUuid=null,
+        ?string $activeOrgUuid=null,
         bool $rbac=true,
         bool $multitenancy=true,
         ?array $ids=null,
@@ -347,12 +350,12 @@ abstract class AbstractObjectMapper
     /**
      * Count search results.
      *
-     * @param array       $query                  Query parameters.
-     * @param string|null $activeOrganisationUuid Active organisation UUID.
-     * @param bool        $rbac                   Whether to apply RBAC checks.
-     * @param bool        $multitenancy           Whether to apply multitenancy filtering.
-     * @param array|null  $ids                    Array of IDs or UUIDs to filter by.
-     * @param string|null $uses                   Value that must be present in relations.
+     * @param array       $query         Query parameters.
+     * @param string|null $activeOrgUuid Active organisation UUID.
+     * @param bool        $rbac          Whether to apply RBAC checks.
+     * @param bool        $multitenancy  Whether to apply multitenancy filtering.
+     * @param array|null  $ids           Array of IDs or UUIDs to filter by.
+     * @param string|null $uses          Value that must be present in relations.
      *
      * @return int Count of objects.
      *
@@ -360,7 +363,7 @@ abstract class AbstractObjectMapper
      */
     abstract public function countSearchObjects(
         array $query=[],
-        ?string $activeOrganisationUuid=null,
+        ?string $activeOrgUuid=null,
         bool $rbac=true,
         bool $multitenancy=true,
         ?array $ids=null,

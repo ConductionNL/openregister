@@ -61,11 +61,11 @@ class DataManipulationHandler
         $current = $data;
 
         foreach ($keys as $key) {
-            if (is_array($current) === true && array_key_exists($key, $current) === true) {
-                $current = $current[$key];
-            } else {
+            if (is_array($current) === false || array_key_exists($key, $current) === false) {
                 return null;
             }
+
+            $current = $current[$key];
         }
 
         return $current;

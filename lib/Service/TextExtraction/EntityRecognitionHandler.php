@@ -117,6 +117,8 @@ class EntityRecognitionHandler
      * @throws Exception When processing fails.
      *
      * @psalm-return array{chunks_processed: int<0, max>, entities_found: int<0, max>, relations_created: int<0, max>}
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Chunk processing requires multiple condition checks
      */
     public function processSourceChunks(string $sourceType, int $sourceId, array $options=[]): array
     {
@@ -191,6 +193,10 @@ class EntityRecognitionHandler
      * @return array Extraction results with entities_found, relations_created, and entities list.
      *
      * @throws Exception When extraction fails.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Entity extraction requires multiple condition checks
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple entity detection paths with error handling
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive entity extraction with logging
      */
     public function extractFromChunk(Chunk $chunk, array $options=[]): array
     {
@@ -346,6 +352,9 @@ class EntityRecognitionHandler
      * @param float      $confidenceThreshold Minimum confidence.
      *
      * @return array Detected entities with type, value, category, position, and confidence.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple entity type patterns require separate conditions
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple regex pattern matching paths
      */
     private function detectWithRegex(string $text, ?array $entityTypes, float $confidenceThreshold): array
     {
@@ -478,6 +487,8 @@ class EntityRecognitionHandler
      * @return GdprEntity Entity instance.
      *
      * @throws Exception When entity creation fails.
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is standard Symfony UID pattern
      */
     private function findOrCreateEntity(string $type, string $value, string $category): GdprEntity
     {

@@ -32,8 +32,10 @@ use OCP\IRequest;
  * Handles all search trail related operations and analytics
  *
  * @psalm-suppress UnusedClass
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
-
 class SearchTrailController extends Controller
 {
     /**
@@ -55,6 +57,10 @@ class SearchTrailController extends Controller
      * Extract pagination, filter, and search parameters from request
      *
      * @return array Request parameters including pagination and filters
+     *
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Request parameter extraction requires many conditional checks
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function extractRequestParameters(): array
     {
@@ -197,6 +203,9 @@ class SearchTrailController extends Controller
      *     next?: null|string,
      *     prev?: null|string
      * }
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     private function paginate(array $results, ?int $total=0, ?int $limit=20, ?int $offset=0, ?int $page=1): array
     {
@@ -237,7 +246,7 @@ class SearchTrailController extends Controller
         ];
 
         // Add next/prev page URLs if applicable.
-        $currentUrl = $_SERVER['REQUEST_URI'];
+        $currentUrl = $this->request->getRequestUri();
 
         // Add next page link if there are more pages.
         if ($page < $pages) {

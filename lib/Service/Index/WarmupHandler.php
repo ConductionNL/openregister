@@ -113,6 +113,10 @@ class WarmupHandler
      * @param array  $schemaIds     Schema IDs to filter.
      *
      * @return array Results with statistics and errors.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Index warmup requires handling multiple configuration scenarios
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple warmup modes create many execution paths
      */
     public function warmupIndex(
         array $schemas=[],

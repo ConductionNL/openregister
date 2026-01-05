@@ -34,6 +34,8 @@ interface TextExtractionHandlerInterface
      * @param array<string, mixed> $sourceMeta Source metadata.
      * @param bool                 $force      Force re-extraction even if up-to-date.
      *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force parameter is required for extraction control
+     *
      * @return array{
      *     source_type: string,
      *     source_id: int,

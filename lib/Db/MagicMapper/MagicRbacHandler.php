@@ -37,14 +37,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db\MagicMapper;
 
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
-use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IUserSession;
 use OCP\IGroupManager;
 use OCP\IUserManager;
 use OCP\IAppConfig;
-use Psr\Log\LoggerInterface;
 
 /**
  * RBAC (Role-Based Access Control) handler for MagicMapper dynamic tables
@@ -85,76 +81,4 @@ class MagicRbacHandler
         private readonly IAppConfig $appConfig,
     ) {
     }//end __construct()
-
-    /**
-     * Apply access rules for unauthenticated users
-     *
-     * @param IQueryBuilder $_qb         Query builder to modify
-     * @param Schema        $schema      Schema with authorization config
-     * @param string        $_tableAlias Table alias for the dynamic table
-     *
-     * @return void
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod)   Reserved for future RBAC implementation
-     */
-    private function applyUnauthenticatedAccess(IQueryBuilder $_qb, Schema $schema, string $_tableAlias): void
-    {
-        $authorization = $schema->getAuthorization();
-
-        if (empty($authorization) === true) {
-            // No authorization - public access allowed.
-            return;
-        }
-
-        // Authorization is always an array from getAuthorization().
-        $authConfig = $authorization;
-
-        $readPerms = $authConfig['read'] ?? [];
-
-        // Check for explicit public read access.
-        if (is_array($readPerms) === true && in_array('public', $readPerms) === true) {
-            return;
-            // Full public access - no filtering needed.
-        }
-    }//end applyUnauthenticatedAccess()
-
-    /**
-     * Check if RBAC is enabled in app configuration
-     *
-     * @return bool True if RBAC is enabled, false otherwise
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future RBAC implementation
-     */
-    private function isRbacEnabled(): bool
-    {
-        $rbacConfig = $this->appConfig->getValueString('openregister', 'rbac', '');
-        if (empty($rbacConfig) === true) {
-            return false;
-        }
-
-        $rbacData = json_decode($rbacConfig, true);
-        $enabled  = $rbacData['enabled'] ?? false;
-        return $enabled === true;
-    }//end isRbacEnabled()
-
-    /**
-     * Check if RBAC admin override is enabled in app configuration
-     *
-     * @return bool True if RBAC admin override is enabled, false otherwise
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future RBAC implementation
-     */
-    private function isAdminOverrideEnabled(): bool
-    {
-        $rbacConfig = $this->appConfig->getValueString('openregister', 'rbac', '');
-        if (empty($rbacConfig) === true) {
-            return true;
-            // Default to true if no RBAC config exists.
-        }
-
-        $rbacData      = json_decode($rbacConfig, true);
-        $adminOverride = $rbacData['adminOverride'] ?? true;
-        return $adminOverride === true;
-    }//end isAdminOverrideEnabled()
 }//end class

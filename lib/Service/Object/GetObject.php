@@ -83,6 +83,7 @@ class GetObject
      * @throws DoesNotExistException If object not found.
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Boolean flags required for flexible API filtering
      */
     public function find(
         string $id,
@@ -135,6 +136,7 @@ class GetObject
      * @throws DoesNotExistException If object not found.
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Boolean flags required for flexible API filtering
      */
     public function findSilent(
         string $id,
@@ -183,8 +185,10 @@ class GetObject
      *
      * @return ObjectEntity[]
      *
-     * @psalm-return     list<ObjectEntity>
-     * @SuppressWarnings (PHPMD.UnusedFormalParameter)
+     * @psalm-return                                   list<ObjectEntity>
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Required for flexible query interface
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Boolean flags required for flexible API filtering
      */
     public function findAll(
         ?int $limit=null,
@@ -274,6 +278,7 @@ class GetObject
      * @psalm-return array<\OCA\OpenRegister\Db\AuditTrail>
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Boolean flags required for flexible API filtering
      */
     public function findLogs(
         ObjectEntity $object,

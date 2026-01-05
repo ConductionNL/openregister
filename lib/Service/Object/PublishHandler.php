@@ -72,6 +72,8 @@ class PublishHandler
      * @return ObjectEntity Published object
      *
      * @throws \Exception If publish operation fails
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) RBAC/multitenancy flags follow established API patterns
      */
     public function publish(
         string $uuid,
@@ -158,6 +160,8 @@ class PublishHandler
      * @return ObjectEntity Depublished object
      *
      * @throws \Exception If depublish operation fails
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) RBAC/multitenancy flags follow established API patterns
      */
     public function depublish(
         string $uuid,
@@ -228,6 +232,8 @@ class PublishHandler
      * @param ObjectEntity $object Object to check
      *
      * @return bool True if published, false otherwise
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Publication status requires checking multiple date conditions
      */
     public function isPublished(ObjectEntity $object): bool
     {
@@ -277,6 +283,8 @@ class PublishHandler
      * @psalm-return array{is_published: bool, publication_date: mixed|null,
      *     depublication_date: mixed|null, publication_scheduled: bool,
      *     depublication_scheduled: bool}
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple date conversions and scheduling checks
      */
     public function getPublicationStatus(ObjectEntity $object): array
     {

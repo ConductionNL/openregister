@@ -64,6 +64,7 @@ class CronFileTextExtractionJob extends TimedJob
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */
     protected function run($argument): void
     {

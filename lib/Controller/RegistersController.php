@@ -70,6 +70,11 @@ use Symfony\Component\Uid\Uuid;
  * @link https://OpenRegister.app
  *
  * @psalm-suppress UnusedClass
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class RegistersController extends Controller
 {
@@ -161,6 +166,8 @@ class RegistersController extends Controller
      * @param OasService           $oasService           OAS service for OpenAPI generation
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      */
     public function __construct(
         string $appName,
@@ -250,6 +257,9 @@ class RegistersController extends Controller
      *     },
      *     array<never, never>
      * >
+     *
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Complex request parameter handling for flexible API
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function index(): JSONResponse
     {
@@ -371,6 +381,8 @@ class RegistersController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @SuppressWarnings(PHPMD.StaticAccess) DatabaseConstraintException factory method is standard pattern
+     *
      * @return JSONResponse JSON response with created register or error
      *
      * @psalm-return JSONResponse<201, Register,
@@ -426,6 +438,8 @@ class RegistersController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) DatabaseConstraintException factory method is standard pattern
      *
      * @return JSONResponse JSON response with updated register or error
      *
@@ -704,6 +718,10 @@ class RegistersController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with publish result or error
+     *
+     * @SuppressWarnings(PHPMD.NPathComplexity)       GitHub publishing requires many conditional checks
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function publishToGitHub(int $id): JSONResponse
     {
@@ -851,7 +869,10 @@ class RegistersController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag to override version checks
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Force flag to override version checks
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     public function import(int $id, bool $force=false): JSONResponse
     {

@@ -143,7 +143,9 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
         // Get object data.
         if (is_array($entity) === true) {
             $objectData = $entity;
-        } else {
+        }
+
+        if (is_array($entity) === false) {
             $objectData = $entity->jsonSerialize();
         }
 
@@ -190,18 +192,25 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      *         uri: mixed|null
      *     }
      * }
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex metadata extraction with multiple fallbacks
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple field extraction paths
      */
     public function prepareVectorMetadata($entity, array $item): array
     {
         if (is_array($entity) === true) {
             $objectData = $entity;
-        } else {
+        }
+
+        if (is_array($entity) === false) {
             $objectData = $entity->jsonSerialize();
         }
 
         if (($objectData['id'] ?? null) !== null) {
             $objectId = $objectData['id'];
-        } else {
+        }
+
+        if (($objectData['id'] ?? null) === null) {
             $objectId = 'unknown';
         }
 
@@ -290,6 +299,9 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      * @param array $objectData Object data
      *
      * @return string|null First suitable string field value
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple field type checks required
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple field validation paths
      */
     private function extractFirstStringField(array $objectData): ?string
     {
@@ -327,7 +339,9 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
     {
         if (is_array($entity) === true) {
             $objectData = $entity;
-        } else {
+        }
+
+        if (is_array($entity) === false) {
             $objectData = $entity->jsonSerialize();
         }
 

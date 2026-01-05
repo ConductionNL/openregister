@@ -33,6 +33,8 @@ use Psr\Log\LoggerInterface;
  * @author   Conduction BV <info@conduction.nl>
  * @license  EUPL-1.2 https://opensource.org/licenses/EUPL-1.2
  * @link     https://www.conduction.nl
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class FacetsHandler
 {
@@ -99,6 +101,9 @@ class FacetsHandler
      * @throws \OCP\DB\Exception If a database error occurs.
      *
      * @return ((((int|mixed|string)[]|int|mixed|string)[]|string)[]|string)[][] Facet results.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     public function getSimpleFacets(array $query=[]): array
     {
@@ -305,6 +310,8 @@ class FacetsHandler
      * @param array  $property    The property definition.
      *
      * @return (mixed|string[])[]|null Field configuration or null if not facetable.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function generateFieldConfigFromProperty(string $propertyKey, array $property): array|null
     {

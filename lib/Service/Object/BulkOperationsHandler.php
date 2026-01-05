@@ -81,6 +81,8 @@ class BulkOperationsHandler
      * @phpstan-param Schema|null $currentSchema
      *
      * @return array Bulk save results with performance, statistics, and categorized objects.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) - Boolean flags control bulk operation behavior
      */
     public function saveObjects(
         array $objects,
@@ -171,6 +173,8 @@ class BulkOperationsHandler
      * @phpstan-param  array<int, string> $uuids
      * @psalm-return   array<int, int>
      * @phpstan-return array<int, int>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) - Boolean flags control RBAC and multitenancy behavior
      */
     public function deleteObjects(
         array $uuids=[],
@@ -259,6 +263,8 @@ class BulkOperationsHandler
      * @phpstan-param  array<int, string> $uuids
      * @psalm-return   array<int, string>
      * @phpstan-return array<int, string>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) - Boolean flags control RBAC and multitenancy behavior
      */
     public function publishObjects(
         array $uuids=[],
@@ -348,6 +354,8 @@ class BulkOperationsHandler
      * @phpstan-param  array<int, string> $uuids
      * @psalm-return   array<int, string>
      * @phpstan-return array<int, string>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) - Boolean flags control RBAC and multitenancy behavior
      */
     public function depublishObjects(
         array $uuids=[],
@@ -433,6 +441,8 @@ class BulkOperationsHandler
      *
      * @phpstan-return array{published_count: int, published_uuids: array<int, string>, schema_id: int}
      * @psalm-return   array{published_count: int<min, max>, published_uuids: array<int, string>, schema_id: int}
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) - Boolean flag controls whether to publish all objects
      */
     public function publishObjectsBySchema(int $schemaId, bool $publishAll=false): array
     {
@@ -495,6 +505,8 @@ class BulkOperationsHandler
      *
      * @phpstan-return array{deleted_count: int, deleted_uuids: array<int, string>, schema_id: int}
      * @psalm-return   array{deleted_count: int<min, max>, deleted_uuids: array<int, string>, schema_id: int}
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) - Boolean flag controls hard vs soft delete behavior
      */
     public function deleteObjectsBySchema(int $schemaId, bool $hardDelete=false): array
     {

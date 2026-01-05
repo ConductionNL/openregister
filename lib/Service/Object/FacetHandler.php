@@ -35,11 +35,11 @@ use Psr\Log\LoggerInterface;
  * that solve the pagination vs faceting conflict.
  *
  * **KEY FEATURES**:
- * - 🎯 Smart Fallback: Collection-wide facets when filters return empty.
- * - ⚡ Response Caching: Lightning-fast repeated requests.
- * - 🏗️ Clean Architecture: Integrated handler pattern.
- * - 📊 Performance Optimized: Multiple optimization strategies.
- * - 🔄 Backwards Compatible: Drop-in replacement for existing faceting.
+ * - Smart Fallback: Collection-wide facets when filters return empty.
+ * - Response Caching: Lightning-fast repeated requests.
+ * - Clean Architecture: Integrated handler pattern.
+ * - Performance Optimized: Multiple optimization strategies.
+ * - Backwards Compatible: Drop-in replacement for existing faceting.
  *
  * @category Handler
  * @package  OCA\OpenRegister\Service\Object
@@ -47,6 +47,8 @@ use Psr\Log\LoggerInterface;
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://OpenRegister.app
  * @version  2.0.0
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex faceting logic with multiple strategies
  */
 class FacetHandler
 {
@@ -188,21 +190,21 @@ class FacetHandler
      * PERFORMANCE OPTIMIZED**: Uses pre-computed schema facets stored in database
      * instead of runtime analysis for lightning-fast _facetable=true requests.
      *
-     * @param array $baseQuery  Base query filters to apply for context.
-     * @param int   $sampleSize Sample size (kept for backward compatibility).
+     * @param array $baseQuery   Base query filters to apply for context.
+     * @param int   $_sampleSize Sample size (kept for backward compatibility).
      *
      * @psalm-param array<string, mixed> $baseQuery
-     * @psalm-param int $sampleSize
+     * @psalm-param int $_sampleSize
      *
      * @phpstan-param array<string, mixed> $baseQuery
-     * @phpstan-param int $sampleSize
+     * @phpstan-param int $_sampleSize
      *
      * @return array[]
      *
      * @psalm-return   array{'@self': array, object_fields: array}
      * @phpstan-return array<string, mixed>
      */
-    public function getFacetableFields(array $baseQuery=[], int $sampleSize=100): array
+    public function getFacetableFields(array $baseQuery=[], int $_sampleSize=100): array
     {
         $startTime = microtime(true);
 
@@ -296,14 +298,14 @@ class FacetHandler
         $facets = $this->objectEntityMapper->getSimpleFacets($facetQuery);
 
         // **STAGE 2**: Check if we got meaningful facets.
-        $totalFacetResults     = $this->countFacetResults($facets);
-        $hasRestrictiveFilters = $this->hasRestrictiveFilters($facetQuery);
+        $totalFacetResults = $this->countFacetResults($facets);
+        $hasRestrictFilter = $this->hasRestrictiveFilters($facetQuery);
 
         $strategy     = 'filtered';
         $fallbackUsed = false;
 
         // **INTELLIGENT FALLBACK**: If no facets and we have restrictive filters, try broader query.
-        if ($totalFacetResults === 0 && $hasRestrictiveFilters === true) {
+        if ($totalFacetResults === 0 && $hasRestrictFilter === true) {
             $this->logger->debug(
                 message: 'Facets empty with restrictive filters, trying collection-wide fallback',
                 context: [
@@ -346,7 +348,7 @@ class FacetHandler
                 'strategy'                => $strategy,
                 'fallback_used'           => $fallbackUsed,
                 'total_facet_results'     => $this->countFacetResults($facets),
-                'has_restrictive_filters' => $hasRestrictiveFilters,
+                'has_restrictive_filters' => $hasRestrictFilter,
             ],
         ];
     }//end calculateFacetsWithFallback()
@@ -362,11 +364,10 @@ class FacetHandler
     private function generateFacetCacheKey(array $facetQuery, array $facetConfig): string
     {
         // **RBAC COMPLIANCE**: Include user context for role-based access control.
-        $user = $this->userSession->getUser();
+        $user   = $this->userSession->getUser();
+        $userId = 'anonymous';
         if ($user !== null) {
             $userId = $user->getUID();
-        } else {
-            $userId = 'anonymous';
         }
 
         // Get organization context if available.
@@ -433,10 +434,9 @@ class FacetHandler
         try {
             // Use different TTL based on strategy.
             $fallbackUsed = $result['performance_metadata']['fallback_used'] ?? false;
+            $ttl          = self::FACET_CACHE_TTL;
             if ($fallbackUsed === true) {
                 $ttl = self::COLLECTION_FACET_TTL;
-            } else {
-                $ttl = self::FACET_CACHE_TTL;
             }
 
             $this->facetCache->set($cacheKey, $result, $ttl);
@@ -522,12 +522,12 @@ class FacetHandler
             // Get specific schemas.
             if (is_array($schemaFilter) === true) {
                 return $this->schemaMapper->findMultiple($schemaFilter);
-            } else {
-                try {
-                    return [$this->schemaMapper->find($schemaFilter)];
-                } catch (\Exception $e) {
-                    return [];
-                }
+            }
+
+            try {
+                return [$this->schemaMapper->find($schemaFilter)];
+            } catch (\Exception $e) {
+                return [];
             }
         }
 

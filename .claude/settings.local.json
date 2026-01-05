@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(composer run-script:*)",
+      "Bash(composer phpcs:*)",
+      "Bash(composer phpmd:*)",
+      "Bash(composer psalm:*)",
+      "Bash(composer phpcs:fix:*)",
+      "Bash(./vendor/bin/phpmd:*)",
+      "Bash(cat:*)",
+      "Bash(echo:*)",
+      "Bash(./vendor/bin/phpcs:*)",
+      "Bash(./vendor/bin/phpcbf:*)",
+      "Bash(./vendor/bin/psalm:*)",
+      "Bash(sudo chown:*)",
+      "Bash(xargs -I {} sh -c 'echo \"\"$\\(grep -c \"\"@SuppressWarnings\\(PHPMD\"\" {} 2>/dev/null\\) {}\"\"')",
+      "Bash(docker ps:*)",
+      "Bash(docker exec:*)",
+      "Bash(./run-tests.sh:*)"
+    ]
+  }
+}

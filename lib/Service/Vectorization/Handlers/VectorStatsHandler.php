@@ -152,6 +152,8 @@ class VectorStatsHandler
      *     file_vectors: int,
      *     source: 'solr'|'solr_error'|'solr_unavailable'
      * }
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multi-collection stats gathering requires multiple conditions
      */
     private function getStatsFromSolr(): array
     {
@@ -257,6 +259,8 @@ class VectorStatsHandler
      * @param mixed  $solrBackend Solr backend instance
      *
      * @return array{count: int, by_model: array} Count and breakdown by model
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Facet processing requires multiple conditions
      */
     private function countVectorsInCollection(
         string $collection,

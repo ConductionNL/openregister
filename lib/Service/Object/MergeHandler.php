@@ -79,6 +79,10 @@ class MergeHandler
      * @psalm-param array<string, mixed> $mergeData
      *
      * @phpstan-param array<string, mixed> $mergeData
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex merge operation handling files, relations, and references
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple merge paths for different data types and actions
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive merge requires handling all object aspects
      */
     public function mergeObjects(string $sourceObjectId, array $mergeData): array
     {
@@ -217,13 +221,15 @@ class MergeHandler
                     'action'    => 'transferred',
                     'relations' => $transferredRelations,
                 ];
-            } else {
+            }
+
+            if ($relationAction !== 'transfer') {
                 $mergeReport['actions']['relations']           = [
                     'action'    => 'dropped',
                     'relations' => $sourceObject->getRelations(),
                 ];
                 $mergeReport['statistics']['relationsDropped'] = count($sourceObject->getRelations());
-            }//end if
+            }
 
             // Update target object with merged data.
             $targetObject->setObject($targetObjectData);
@@ -298,6 +304,8 @@ class MergeHandler
      *     transferred: 0|1|2, errors: list<non-falsy-string>}
      * @phpstan-return array{files: list<array<string, mixed>>, transferred: int,
      *     errors: list<string>}
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) File transfer with error handling requires multiple conditions
      */
     private function transferObjectFiles(ObjectEntity $sourceObject, ObjectEntity $targetObject): array
     {

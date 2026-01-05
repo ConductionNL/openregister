@@ -151,6 +151,9 @@ class RegisterService
      * @return Register[] Array of found register entities
      *
      * @psalm-return array<Register>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Optional parameters use null defaults for flexibility
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Multiple optional filter parameters for flexibility
      */
     public function findAll(
         ?int $limit=null,
@@ -255,6 +258,9 @@ class RegisterService
      *
      * @psalm-return   void
      * @phpstan-return void
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple folder state checks and error handling
+     * @SuppressWarnings(PHPMD.ElseExpression)       Alternative handling for failed folder creation
      */
     private function ensureRegisterFolderExists(Register $entity): void
     {

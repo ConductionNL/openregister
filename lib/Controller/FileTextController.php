@@ -339,19 +339,19 @@ class FileTextController extends Controller
     /**
      * Process and index a single extracted file
      *
-     * @param int      $fileId       File ID
-     * @param int|null $chunkSize    Chunk size in characters
-     * @param int|null $chunkOverlap Overlap between chunks in characters (reserved for future use)
+     * @param int      $fileId        File ID
+     * @param int|null $chunkSize     Chunk size in characters
+     * @param int|null $_chunkOverlap Overlap between chunks in characters (reserved for future use)
      *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @SuppressWarnings (PHPMD.UnusedFormalParameter) $chunkOverlap reserved for future implementation
+     * @SuppressWarnings (PHPMD.UnusedFormalParameter) $_chunkOverlap reserved for future implementation
      *
      * @return JSONResponse JSON response with indexing result
      */
-    public function processAndIndexFile(int $fileId, ?int $chunkSize=null, ?int $chunkOverlap=null): JSONResponse
+    public function processAndIndexFile(int $fileId, ?int $chunkSize=null, ?int $_chunkOverlap=null): JSONResponse
     {
         try {
             $options = [];

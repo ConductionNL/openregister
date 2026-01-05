@@ -39,6 +39,9 @@ use Psr\Log\LoggerInterface;
  *
  * @category Controller
  * @package  OCA\OpenRegister\Controller\Settings
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class SolrManagementController extends Controller
 {
@@ -73,6 +76,8 @@ class SolrManagementController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with SOLR field configuration
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */
     public function getSolrFields(): JSONResponse
     {
@@ -184,6 +189,9 @@ class SolrManagementController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with field creation result
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function createMissingSolrFields(): JSONResponse
     {
