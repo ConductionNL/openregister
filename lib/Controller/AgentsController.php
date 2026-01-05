@@ -458,13 +458,10 @@ class AgentsController extends Controller
      *
      * @param int $id The ID of the agent to patch
      *
+     * @return JSONResponse JSON response with updated agent or error.
+     *
      * @NoAdminRequired
-     *
-     * @return JSONResponse |JSONResponse<400|403, array{error: string}, array<never, never>>
-     *
      * @NoCSRFRequired
-     *
-     * @psalm-return JSONResponse<200, Agent, array<never, never>>|JSONResponse<400|403, array{error: string}, array<never, never>>
      */
     public function patch(int $id): JSONResponse
     {

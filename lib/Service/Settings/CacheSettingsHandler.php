@@ -312,9 +312,7 @@ class CacheSettingsHandler
      /**
       * Get cache performance metrics for the last period
       *
-      * @return (float|string)[]
-      *
-      * @psalm-return array{averageHitTime: float, averageMissTime: float, performanceGain: float, optimalHitRate: float, currentTrend: 'improving'}
+      * @return array Performance metrics with timing data.
       */
     private function getCachePerformanceMetrics(): array
     {

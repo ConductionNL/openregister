@@ -342,9 +342,7 @@ class SaveObjects
      * @param Schema|string|int|null   $schema        Schema parameter
      * @param bool                     $isMixedSchema Whether mixed-schema operation
      *
-     * @return (Schema|array|mixed)[][] [processedObjects, schemaCache, invalidObjects]
-     *
-     * @psalm-return array{0: array<array<string, mixed>|mixed>, 1: array<int|string, Schema>, 2: array<int, array<string, mixed>>}
+     * @return array [processedObjects, schemaCache, invalidObjects].
      */
     private function prepareObjectsForSave(
         array $objects,

@@ -242,9 +242,7 @@ class CloudEventFormatter
      *
      * @param IRequest $request The HTTP request
      *
-     * @return string[]
-     *
-     * @psalm-return array{'X-Requested-With'?: string, 'User-Agent'?: string, Authorization?: string, Accept?: string, 'Content-Type'?: string}
+     * @return array<string, string> Request headers.
      */
     private function getRequestHeaders(IRequest $request): array
     {

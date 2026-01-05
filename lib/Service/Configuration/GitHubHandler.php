@@ -104,9 +104,7 @@ class GitHubHandler
     /**
      * Get authentication headers for GitHub API
      *
-     * @return string[]
-     *
-     * @psalm-return array{Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', Authorization?: string}
+     * @return array<string, string> GitHub API headers.
      */
     private function getHeaders(): array
     {

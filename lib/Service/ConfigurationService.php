@@ -772,8 +772,6 @@ class ConfigurationService
      *     lastChecked: string|null,
      *     message: string
      * }
-     *
-     * @psalm-return array{hasUpdate: bool, localVersion: null|string, remoteVersion: null|string, lastChecked: null|string, message: string}
      */
     public function compareVersions(Configuration $configuration): array
     {

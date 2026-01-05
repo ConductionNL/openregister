@@ -1537,15 +1537,12 @@ class ObjectsController extends Controller
      * @param string        $schema        The schema ID
      * @param ObjectService $objectService The object service
      *
+     * @return JSONResponse JSON response with success or error.
+     *
      * @throws Exception
      *
-     * @return JSONResponse JSONResponse<403|500, array{error: string}, array<never, never>>
-     *
      * @NoAdminRequired
-     *
      * @NoCSRFRequired
-     *
-     * @psalm-return JSONResponse<204, null, array<never, never>>|JSONResponse<403|500, array{error: string}, array<never, never>>
      */
     public function destroy(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -1987,15 +1984,12 @@ class ObjectsController extends Controller
      *
      * @param int $register The ID of the register to import into
      *
-     * @return JSONResponse The result of the import operation
+     * @return JSONResponse JSON response with import result or error.
      *
      * @NoAdminRequired
-     *
      * @NoCSRFRequired
      *
      * @psalm-suppress NoValue
-     *
-     * @psalm-return JSONResponse<200|400|500, array{error?: string, message?: 'Import successful', summary?: mixed}, array<never, never>>
      */
     public function import(int $register): JSONResponse
     {
@@ -2285,16 +2279,13 @@ class ObjectsController extends Controller
      * @param string        $schema        The schema (identifier or slug) to search within
      * @param ObjectService $objectService The object service for handling object operations
      *
-     * @return DataDownloadResponse|JSONResponse JSONResponse<404|500, array{error: string}, array<never, never>>
+     * @return DataDownloadResponse|JSONResponse Download response or error.
      *
-     * @throws ContainerExceptionInterface If there's an issue with dependency injection
-     * @throws NotFoundExceptionInterface If the FileService dependency is not found
+     * @throws ContainerExceptionInterface If there's an issue with dependency injection.
+     * @throws NotFoundExceptionInterface If the FileService dependency is not found.
      *
      * @NoAdminRequired
-     *
      * @NoCSRFRequired
-     *
-     * @psalm-return DataDownloadResponse<200, string, array<never, never>>|JSONResponse<404|500, array{error: string}, array<never, never>>
      */
     public function downloadFiles(
         string $id,

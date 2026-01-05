@@ -1860,8 +1860,11 @@ class SaveObject
      *
      * @throws Exception If object is locked by another user.
      */
-    private function findAndValidateExistingObject(string $uuid, ?Register $register=null, ?Schema $schema=null): ?ObjectEntity
-    {
+    private function findAndValidateExistingObject(
+        string $uuid,
+        ?Register $register=null,
+        ?Schema $schema=null
+    ): ?ObjectEntity {
         try {
             $existingObject = $this->objectEntityMapper->find(identifier: $uuid, register: $register, schema: $schema);
 

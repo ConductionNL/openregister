@@ -472,9 +472,7 @@ class TextExtractionService
      *
      * @param string $text Input text.
      *
-     * @return (float|null|string)[]
-     *
-     * @psalm-return array{language: 'en'|'nl'|null, language_level: null, language_confidence: float|null, detection_method: 'heuristic'|'none'}
+     * @return array Language detection result with confidence.
      */
     private function detectLanguageSignals(string $text): array
     {

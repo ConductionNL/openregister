@@ -82,9 +82,7 @@ class ObjectsTool extends AbstractTool
     /**
      * Get tool description
      *
-     * @return string The tool description
-     *
-     * @psalm-return 'Manage objects: search, view, create, update, or delete objects. Objects are data records conforming to schemas.'
+     * @return string The tool description.
      */
     public function getDescription(): string
     {

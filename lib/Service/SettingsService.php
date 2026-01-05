@@ -1081,11 +1081,11 @@ class SettingsService
     /**
      * Process batch jobs in serial mode
      *
-     * @param array                                        $batchJobs     Array of batch job definitions.
-     * @param \OCA\OpenRegister\Db\ObjectEntityMapper      $objectMapper  The object entity mapper.
-     * @param \OCA\OpenRegister\Service\ObjectService|null $objectService The object service instance (nullable due to circular dependency).
-     * @param array                                        $results       Results array to update.
-     * @param bool                                         $collectErrors Whether to collect all errors.
+     * @param array                                   $batchJobs     Array of batch job definitions.
+     * @param \OCA\OpenRegister\Db\ObjectEntityMapper $objectMapper  The object entity mapper.
+     * @param ObjectService|null                      $objectService The object service instance.
+     * @param array                                   $results       Results array to update.
+     * @param bool                                    $collectErrors Whether to collect all errors.
      *
      * @return void
      */
@@ -1212,12 +1212,12 @@ class SettingsService
     /**
      * Process batch jobs in parallel mode
      *
-     * @param array                                        $batchJobs       Array of batch job definitions.
-     * @param \OCA\OpenRegister\Db\ObjectEntityMapper      $objectMapper    The object entity mapper.
-     * @param \OCA\OpenRegister\Service\ObjectService|null $objectService   The object service instance (nullable due to circular dependency).
-     * @param array                                        $results         Results array to update.
-     * @param bool                                         $collectErrors   Whether to collect all errors.
-     * @param int                                          $parallelBatches Number of parallel batches.
+     * @param array                                   $batchJobs       Array of batch job definitions.
+     * @param \OCA\OpenRegister\Db\ObjectEntityMapper $objectMapper    The object entity mapper.
+     * @param ObjectService|null                      $objectService   The object service instance.
+     * @param array                                   $results         Results array to update.
+     * @param bool                                    $collectErrors   Whether to collect all errors.
+     * @param int                                     $parallelBatches Number of parallel batches.
      *
      * @return void
      */

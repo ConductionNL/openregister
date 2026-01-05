@@ -226,9 +226,7 @@ class LockHandler
      *
      * @param string $identifier Object ID or UUID
      *
-     * @return (bool|mixed|null|string)[]|null
-     *
-     * @psalm-return array{locked_at: mixed, process: mixed|null, duration: mixed|null, expires_at?: string, is_expired?: bool}|null
+     * @return array|null Lock info array or null if not found.
      */
     public function getLockInfo(string $identifier): array|null
     {

@@ -305,9 +305,7 @@ class IndexService
      * @param array  $missingFields Missing field definitions
      * @param bool   $dryRun        Preview without making changes
      *
-     * @return ((int|string)[]|int|true)[]
-     *
-     * @psalm-return array{success: true, created?: int<0, max>, failed?: int, dry_run?: true, fields_to_add?: list<array-key>}
+     * @return array Result with success status and field creation info.
      */
     public function createMissingFields(string $collection, array $missingFields, bool $dryRun=false): array
     {

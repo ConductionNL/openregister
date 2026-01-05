@@ -691,13 +691,10 @@ class FilesController extends Controller
      * @param string $id       The ID of the object to retrieve files for
      * @param int    $fileId   ID of the file to update
      *
-     * @return JSONResponse
+     * @return JSONResponse JSON response with updated file or error.
      *
      * @NoAdminRequired
-     *
      * @NoCSRFRequired
-     *
-     * @psalm-return JSONResponse<200|400|404, array{error?: mixed|string, labels?: list<string>|mixed,...}, array<never, never>>
      */
     public function update(
         string $register,

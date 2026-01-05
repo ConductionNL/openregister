@@ -105,13 +105,10 @@ class SourcesController extends Controller
      *
      * @param string $id The ID of the source to retrieve
      *
-     * @return JSONResponse |JSONResponse<404, array{error: 'Not Found'}, array<never, never>>
+     * @return JSONResponse JSON response with source data or error.
      *
      * @NoAdminRequired
-     *
      * @NoCSRFRequired
-     *
-     * @psalm-return JSONResponse<200, Source, array<never, never>>|JSONResponse<404, array{error: 'Not Found'}, array<never, never>>
      */
     public function show(string $id): JSONResponse
     {

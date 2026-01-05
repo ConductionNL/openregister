@@ -230,9 +230,7 @@ class CronFileTextExtractionJob extends TimedJob
      * @param int             $batchSize       Maximum number of files to retrieve
      * @param LoggerInterface $logger          Logger for debug messages
      *
-     * @return (int|null|string)[][]
-     *
-     * @psalm-return list<array{checksum: null|string, fileid: int, mimetype: string, mtime: int, name: string, path: string, size: int}>
+     * @return array<int, array<string, mixed>> List of pending files with metadata.
      */
     private function getPendingFiles(
         FileMapper $fileMapper,

@@ -2442,11 +2442,9 @@ class ObjectService
      * @param bool   $rbac          Apply RBAC filters
      * @param bool   $_multitenancy Apply multitenancy filters
      *
-     * @return (ObjectEntity[]|int|mixed)[]
+     * @return array Results with object entities and pagination info.
      *
-     * @throws \Exception If retrieval fails
-     *
-     * @psalm-return array{results: list<OCA\OpenRegister\Db\ObjectEntity>, total: int<0, max>, limit: 30|mixed, offset: 0|mixed}
+     * @throws \Exception If retrieval fails.
      */
     public function getObjectUses(
         string $objectId,

@@ -907,11 +907,9 @@ class ConfigurationController extends Controller
      *
      * @param array $params Request parameters containing owner, repo, path, branch
      *
-     * @return (array|string)[]
+     * @return array Config data with source URL and metadata.
      *
-     * @throws Exception If parameters are missing or GitHub API call fails
-     *
-     * @psalm-return array{configData: array, sourceUrl: string, metadata: array{owner: string, repo: string, path: string, branch: string}}
+     * @throws Exception If parameters are missing or GitHub API call fails.
      */
     private function fetchConfigFromGitHub(array $params): array
     {
@@ -1483,9 +1481,7 @@ class ConfigurationController extends Controller
      * @param string                $content JSON content to publish.
      * @param string|null           $fileSha Existing file SHA for updates.
      *
-     * @return (mixed|null|true)[] Result from GitHub API.
-     *
-     * @psalm-return array{success: true, commit_sha: mixed|null, file_sha: mixed|null, commit_url: mixed|null, file_url: mixed|null}
+     * @return array Result from GitHub API with commit info.
      */
     private function publishConfigurationToGitHub(array $params, string $content, ?string $fileSha): array
     {

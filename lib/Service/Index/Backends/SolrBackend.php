@@ -245,9 +245,7 @@ class SolrBackend implements SearchBackendInterface
      * @param bool  $published     Filter published
      * @param bool  $deleted       Include deleted
      *
-     * @return (array|int|mixed)[] Search results
-     *
-     * @psalm-return array{results: array<never, never>|mixed, total: 0|mixed, limit: int, offset: 0|mixed, page: int, pages: int}
+     * @return array Search results with pagination info.
      */
     public function searchObjectsPaginated(
         array $query=[],
@@ -379,9 +377,7 @@ class SolrBackend implements SearchBackendInterface
      * @param string $name   Collection name
      * @param array  $config Configuration
      *
-     * @return (mixed|string|true)[] Results
-     *
-     * @psalm-return array{success: true, message: 'Collection created successfully', collection: string, configSet: 'openregister_configset'|mixed}
+     * @return array Results with success status and collection info.
      */
     public function createCollection(string $name, array $config=[]): array
     {
