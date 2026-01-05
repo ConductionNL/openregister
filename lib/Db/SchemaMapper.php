@@ -192,7 +192,7 @@ class SchemaMapper extends QBMapper
      * @throws \Exception If user doesn't have read permission
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Flags control security filtering behavior
      */
     public function find(
         string | int $id,
@@ -366,9 +366,9 @@ class SchemaMapper extends QBMapper
      *
      * @throws \Exception If user doesn't have read permission
      *
-     * @psalm-return     list<OCA\OpenRegister\Db\Schema>
+     * @psalm-return                                  list<OCA\OpenRegister\Db\Schema>
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Flags control security filtering behavior
      */
     public function findAll(
         ?int $limit=null,

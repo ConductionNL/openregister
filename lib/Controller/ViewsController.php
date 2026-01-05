@@ -289,7 +289,9 @@ class ViewsController extends Controller
                 $query = $data['query'];
             }
 
-            if (($data['configuration'] ?? null) === null && (($data['query'] ?? null) === null || is_array($data['query']) === false)) {
+            $hasConfiguration = ($data['configuration'] ?? null) !== null;
+            $hasQuery         = ($data['query'] ?? null) !== null && is_array($data['query']) === true;
+            if ($hasConfiguration === false && $hasQuery === false) {
                 return new JSONResponse(
                     data: [
                         'error' => 'View query or configuration is required',
@@ -388,7 +390,9 @@ class ViewsController extends Controller
                 $query = $data['query'];
             }
 
-            if (($data['configuration'] ?? null) === null && (($data['query'] ?? null) === null || is_array($data['query']) === false)) {
+            $hasConfiguration = ($data['configuration'] ?? null) !== null;
+            $hasQuery         = ($data['query'] ?? null) !== null && is_array($data['query']) === true;
+            if ($hasConfiguration === false && $hasQuery === false) {
                 return new JSONResponse(
                     data: [
                         'error' => 'View query or configuration is required',

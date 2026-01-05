@@ -2158,8 +2158,10 @@ class MagicMapper
                             ['field' => $field]
                         );
                     }
+
                     continue;
                 }
+
                 $method = 'set'.ucfirst($field);
                 if (method_exists($objectEntity, $method) === false) {
                     $this->logger->warning(
@@ -2168,6 +2170,7 @@ class MagicMapper
                     );
                     continue;
                 }
+
                 $objectEntity->$method($value);
                 // Debug critical fields.
                 if (in_array($field, ['id', 'uuid', 'owner'], true) === true) {
@@ -2569,6 +2572,7 @@ class MagicMapper
                 $orConditions[] = "LOWER({$columnName}) % LOWER(".$qb->createNamedParameter($searchTerm).')';
                 continue;
             }
+
             // MariaDB/MySQL: Use LIKE for case-insensitive substring match.
             $orConditions[] = "LOWER({$columnName}) LIKE LOWER(".$qb->createNamedParameter('%'.$searchTerm.'%').')';
         }
@@ -2584,6 +2588,7 @@ class MagicMapper
             $qb->addSelect($qb->createFunction('1 AS _search_score'));
             return;
         }
+
         $scoreExpressions = [];
         foreach ($searchableFields as $columnName) {
             // Build similarity expression for each field.
@@ -3449,6 +3454,7 @@ class MagicMapper
                 ]
             );
         }
+
         if ($hardDelete === false) {
             // Soft delete - set _deleted field.
             if ($entity->getDeleted() === null || empty($entity->getDeleted()) === true) {

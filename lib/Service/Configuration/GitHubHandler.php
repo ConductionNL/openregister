@@ -331,6 +331,7 @@ class GitHubHandler
                         $message .= 'Settings to increase to 5,000 requests/hour (30/minute for Code Search).';
                         return $message;
                     }
+
                     $message  = 'GitHub Code Search API rate limit exceeded (30 requests per ';
                     $message .= 'minute). Please wait a few minutes before trying again. The ';
                     $message .= 'discovery search makes multiple API calls to find configurations.';
@@ -1155,6 +1156,7 @@ class GitHubHandler
         if ($token !== '') {
             return $token;
         }
+
         return null;
     }//end getUserToken()
 
@@ -1172,6 +1174,7 @@ class GitHubHandler
             $this->config->deleteUserValue($userId, 'openregister', 'github_token');
             return;
         }
+
         $this->config->setUserValue($userId, 'openregister', 'github_token', $token);
     }//end setUserToken()
 

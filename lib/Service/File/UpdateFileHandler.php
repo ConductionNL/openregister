@@ -154,7 +154,7 @@ class UpdateFileHandler
                     throw new Exception("File with ID $filePath does not exist: ".$e->getMessage());
                 }
             }
-        }
+        }//end if
 
         if (is_int($originalFilePath) === false) {
             // Handle string file paths (existing logic).
@@ -210,11 +210,11 @@ class UpdateFileHandler
                     } else {
                         $msg = "updateFile: Could not get object folder for object ID: ".$object->getId();
                         $this->logger->warning(message: $msg);
-                    }
+                    }//end if
                 } catch (Exception $e) {
                     $this->logger->error(message: "updateFile: Error accessing object folder: ".$e->getMessage());
                 }//end try
-            }
+            }//end if
 
             if ($object === null) {
                 $this->logger->info(message: "updateFile: No object provided, will search in user folder");

@@ -402,7 +402,11 @@ class BulkController extends Controller
             $isMixedSchema = ($resolved['schema'] === 0);
 
             // Determine schema to use (null for mixed-schema, resolved for single-schema).
-            $schemaToUse = $isMixedSchema === true ? null : $resolved['schema'];
+            if ($isMixedSchema === true) {
+                $schemaToUse = null;
+            } else {
+                $schemaToUse = $resolved['schema'];
+            }
 
             $savedObjects = $this->objectService->saveObjects(
                 objects: $objects,

@@ -84,7 +84,7 @@ class DownloadService
      *
      * @NoReturn
      *
-     * @SuppressWarnings(PHPMD.ExitExpression) Exit is intentional for file download.
+     * @SuppressWarnings(PHPMD.ExitExpression)      Exit is intentional for file download.
      * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future download functionality
      */
     private function downloadJson(string $jsonData, string $filename): never

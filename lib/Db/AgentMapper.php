@@ -344,16 +344,18 @@ class AgentMapper extends QBMapper
                         );
                         continue;
                     }
+
                     if (is_array($value) === true) {
                         $qb->andWhere(
                             $qb->expr()->in($field, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY))
                         );
                         continue;
                     }
+
                     $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR)));
                 }
             }
-        }
+        }//end if
 
         // Apply ordering.
         if (empty($order) === false) {
@@ -361,6 +363,7 @@ class AgentMapper extends QBMapper
                 $qb->addOrderBy($field, $direction);
             }
         }
+
         if (empty($order) === true) {
             $qb->orderBy('created', 'DESC');
         }
@@ -540,16 +543,18 @@ class AgentMapper extends QBMapper
                         );
                         continue;
                     }
+
                     if (is_array($value) === true) {
                         $qb->andWhere(
                             $qb->expr()->in($field, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY))
                         );
                         continue;
                     }
+
                     $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR)));
                 }
             }
-        }
+        }//end if
 
         // Apply organisation filter (all users including admins must have active org).
         $this->applyOrganisationFilter($qb);

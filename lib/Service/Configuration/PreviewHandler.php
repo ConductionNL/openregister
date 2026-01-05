@@ -294,7 +294,7 @@ class PreviewHandler
                 // Build list of changed fields.
                 $preview['changes'] = $this->compareArrays(current: $currentData, proposed: $registerData);
             }
-        }
+        }//end if
 
         return $preview;
     }//end previewRegisterChange()
@@ -370,7 +370,7 @@ class PreviewHandler
                 // Build list of changed fields.
                 $preview['changes'] = $this->compareArrays(current: $currentData, proposed: $schemaData);
             }
-        }
+        }//end if
 
         return $preview;
     }//end previewSchemaChange()

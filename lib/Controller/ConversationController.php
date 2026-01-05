@@ -699,7 +699,7 @@ class ConversationController extends Controller
                     ],
                     statusCode: 200
                 );
-            }
+            }//end if
 
             // First delete - perform soft delete (archive).
             $this->conversationMapper->softDelete($conversation->getId());

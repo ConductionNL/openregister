@@ -138,8 +138,8 @@ class AuditHandler
             $objectSchemaId   = $this->extractSchemaId($objectSchema);
             $objectSchemaSlug = $this->extractSchemaSlug($objectSchema);
 
-            $requestedSchemaNorm = strtolower($requestedSchema);
-            $objectSchemaIdNorm  = strtolower((string) $objectSchemaId);
+            $requestedSchemaNorm  = strtolower($requestedSchema);
+            $objectSchemaIdNorm   = strtolower((string) $objectSchemaId);
             $objectSchemaSlugNorm = null;
             if ($objectSchemaSlug !== null) {
                 $objectSchemaSlugNorm = strtolower($objectSchemaSlug);

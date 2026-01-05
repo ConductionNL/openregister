@@ -269,7 +269,7 @@ class ExportHandler
                     publish: $publish,
                     currentUser: $currentUser
                 );
-            }
+            }//end if
 
             if ($result === null) {
                 throw new InvalidArgumentException("Unsupported file type: {$extension}");

@@ -187,7 +187,7 @@ class RegisterMapper extends QBMapper
      * @throws \Exception If RBAC permission check fails
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Flags control security filtering behavior
      */
     public function find(
         string|int $id,
@@ -429,9 +429,9 @@ class RegisterMapper extends QBMapper
      *
      * @return Register[]
      *
-     * @psalm-return     list<OCA\OpenRegister\Db\Register>
+     * @psalm-return                                  list<OCA\OpenRegister\Db\Register>
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Flags control security filtering behavior
      */
     public function findAll(
         ?int $limit=null,
@@ -461,10 +461,12 @@ class RegisterMapper extends QBMapper
                 $qb->andWhere($qb->expr()->isNotNull($filter));
                 continue;
             }
+
             if ($value === 'IS NULL') {
                 $qb->andWhere($qb->expr()->isNull($filter));
                 continue;
             }
+
             $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
         }
 

@@ -509,10 +509,12 @@ class ConfigurationMapper extends QBMapper
                 $qb->andWhere($qb->expr()->isNotNull($filter));
                 continue;
             }
+
             if ($value === 'IS NULL') {
                 $qb->andWhere($qb->expr()->isNull($filter));
                 continue;
             }
+
             $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
         }
 

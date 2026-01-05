@@ -238,10 +238,11 @@ class FacetsHandler
                             );
                             continue;
                         }
+
                         $facetableFields[$propertyKey] = $fieldConfig;
                     }
                 }
-            }
+            }//end foreach
         }//end foreach
 
         return $facetableFields;
@@ -268,7 +269,7 @@ class FacetsHandler
 
         // Check if specific schemas are requested in the query.
         if (($baseQuery['@self']['schema'] ?? null) !== null) {
-            $schemaValue = $baseQuery['@self']['schema'];
+            $schemaValue   = $baseQuery['@self']['schema'];
             $schemaFilters = [$schemaValue];
             if (is_array($schemaValue) === true) {
                 $schemaFilters = $schemaValue;
@@ -280,6 +281,7 @@ class FacetsHandler
             // Get all schemas.
             return $this->schemaMapper->findAll();
         }
+
         // Get specific schemas.
         return $this->schemaMapper->findMultiple($schemaFilters);
     }//end getSchemasForQuery()

@@ -193,7 +193,7 @@ class ConversationManagementHandler
                     }
 
                     $config->url = $baseUrl;
-                }
+                }//end if
 
                 if ($chatProvider !== 'openai' && $chatProvider !== 'fireworks') {
                     return $this->generateFallbackTitle($firstMessage);
@@ -230,7 +230,7 @@ class ConversationManagementHandler
                 // Use native Ollama chat.
                 $chat  = new OllamaChat($config);
                 $title = $chat->generateText($prompt);
-            }
+            }//end if
 
             if ($chatProvider !== 'fireworks' && $chatProvider !== 'ollama') {
                 // OpenAI chat.
@@ -536,7 +536,7 @@ class ConversationManagementHandler
             // Use native Ollama chat.
             $chat = new OllamaChat($config);
             return $chat->generateText($prompt);
-        }
+        }//end if
         // OpenAI chat.
         $chat = new OpenAIChat($config);
         return $chat->generateText($prompt);

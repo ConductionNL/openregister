@@ -151,7 +151,7 @@ class FileFormattingHandler
                 }
 
                 continue;
-            }
+            }//end if
 
             $remainingLabels[] = $label;
         }//end foreach

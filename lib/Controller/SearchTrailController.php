@@ -571,7 +571,7 @@ class SearchTrailController extends Controller
                 }
 
                 return new JSONResponse(data: $paginatedUserAgents);
-            }
+            }//end if
 
             // If service returns a simple array, statusCode: treat it as the user agents list.
             // $serviceResult is always an array at this point (non-null).

@@ -465,6 +465,7 @@ class MagicFacetHandler
                     $qb->andWhere($qb->expr()->in("t.{$columnName}", $paramValue));
                     continue;
                 }
+
                 $qb->andWhere($qb->expr()->eq("t.{$columnName}", $qb->createNamedParameter($value)));
             }
         }
@@ -493,6 +494,7 @@ class MagicFacetHandler
                 $qb->andWhere($qb->expr()->in("t.{$columnName}", $paramValue));
                 continue;
             }
+
             $qb->andWhere($qb->expr()->eq("t.{$columnName}", $qb->createNamedParameter($value)));
         }
     }//end applyBaseFilters()
@@ -724,7 +726,7 @@ class MagicFacetHandler
 
             for ($i = 0; $i < $numRanges; $i++) {
                 $from = $min + ($i * $step);
-                $to = $min + (($i + 1) * $step);
+                $to   = $min + (($i + 1) * $step);
                 if ($i === $numRanges - 1) {
                     $to = null;
                 }

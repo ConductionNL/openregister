@@ -363,7 +363,7 @@ class EndpointService
                     'statusCode' => 200,
                     'response'   => $response,
                 ];
-            }
+            }//end if
 
             return [
                 'success'    => false,

@@ -611,6 +611,7 @@ class HyperFacetHandler
                 );
                 continue;
             }
+
             // JSON field facets use statistical estimation.
             $approximateFacets[$facetName] = $this->estimateJsonFieldFacet(
                 _field: $facetName,
@@ -971,6 +972,7 @@ class HyperFacetHandler
             if (is_array($cached) === true) {
                 return $cached;
             }
+
             return null;
         } catch (\Exception $e) {
             return null;
@@ -1010,12 +1012,15 @@ class HyperFacetHandler
         if ($size <= self::SMALL_DATASET_THRESHOLD) {
             return 'small';
         }
+
         if ($size <= self::MEDIUM_DATASET_THRESHOLD) {
             return 'medium';
         }
+
         if ($size <= self::LARGE_DATASET_THRESHOLD) {
             return 'large';
         }
+
         return 'huge';
     }//end categorizeDatasetSize()
 
@@ -1079,10 +1084,12 @@ class HyperFacetHandler
             // 100% - exact
             return self::SMALL_SAMPLE_RATE;
         }
+
         if ($datasetSize <= self::MEDIUM_DATASET_THRESHOLD) {
             // 10% sampling
             return self::MEDIUM_SAMPLE_RATE;
         }
+
         // 5% sampling
         return self::LARGE_SAMPLE_RATE;
     }//end getSampleRate()
@@ -1111,6 +1118,7 @@ class HyperFacetHandler
                 $metadataFacets = $config;
                 continue;
             }
+
             $jsonFacets[$facetName] = $config;
         }
 

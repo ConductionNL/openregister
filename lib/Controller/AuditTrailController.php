@@ -299,7 +299,7 @@ class AuditTrailController extends Controller
             $exportResult = $this->logService->exportLogs(format: $format, config: $exportConfig);
 
             // Return export data.
-            $content = $exportResult['content'];
+            $content     = $exportResult['content'];
             $contentSize = 0;
             if (is_string($content) === true) {
                 $contentSize = strlen($content);

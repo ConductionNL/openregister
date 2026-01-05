@@ -105,6 +105,7 @@ class QueryOptimizationHandler
                 $largeObjects[] = $object;
                 continue;
             }
+
             $normalObjects[] = $object;
         }
 

@@ -198,7 +198,7 @@ class ExportHandler
             $openApiSpec['x-openregister'] = [
                 'type' => 'register',
             ];
-        }
+        }//end if
 
         if (($input instanceof Configuration) === false && ($input instanceof Register) === false) {
             // Get all registers associated with this configuration.
@@ -536,6 +536,7 @@ class ExportHandler
         if (is_numeric($lastSegment) === true) {
             return $lastSegment;
         }
+
         return $url;
     }//end getLastNumericSegment()
 }//end class

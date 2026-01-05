@@ -276,6 +276,7 @@ class DeleteObject
                         originalObjectId: $originalObjectId
                     );
                 }
+
                 continue;
             }
 

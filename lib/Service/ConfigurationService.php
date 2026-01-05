@@ -408,7 +408,7 @@ class ConfigurationService
      * @return JSONResponse|array A PHP array with the uploaded json data or a JSONResponse in case of an error.
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Legacy delegation method kept for backward compatibility
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod)   Legacy delegation method kept for backward compatibility
      *
      * @psalm-return JSONResponse<400, array{error: string, 'MIME-type'?: string}, array<never, never>>|array
      */
@@ -523,7 +523,7 @@ class ConfigurationService
      *
      * @throws Exception If configuration creation/update fails
      *
-     * @psalm-suppress UnusedReturnValue
+     * @psalm-suppress                              UnusedReturnValue
      * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Legacy delegation method kept for backward compatibility
      */
     private function createOrUpdateConfiguration(

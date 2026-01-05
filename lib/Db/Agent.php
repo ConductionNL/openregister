@@ -398,6 +398,7 @@ class Agent extends Entity implements JsonSerializable
         if (($object['uuid'] ?? null) !== null && empty($object['uuid']) === false) {
             $uuid = $object['uuid'];
         }
+
         $this->setUuid($uuid);
 
         $this->setName($object['name'] ?? null);

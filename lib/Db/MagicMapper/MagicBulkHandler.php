@@ -198,6 +198,7 @@ class MagicBulkHandler
                 $updateObjects[] = $object;
                 continue;
             }
+
             $insertObjects[] = $object;
         }
 
@@ -537,8 +538,7 @@ class MagicBulkHandler
         // PERFORMANCE: Event dispatching disabled by default.
         // Dispatching events for 20k+ objects causes 10x slowdown (5000 obj/s -> 500 obj/s).
         // Enable via $dispatchEvents parameter when business logic hooks are needed.
-        // $this->dispatchBulkEvents(results: $allResults, register: $register, schema: $schema);
-
+        // $this->dispatchBulkEvents(results: $allResults, register: $register, schema: $schema).
         return $allResults;
     }//end bulkUpsert()
 
@@ -576,6 +576,7 @@ class MagicBulkHandler
                     $filteredObject[$columnName] = $value;
                     continue;
                 }
+
                 // Log dropped columns for debugging purposes.
                 $this->logger->debug(
                     '[MagicBulkHandler] Dropping column not in table',
@@ -605,6 +606,7 @@ class MagicBulkHandler
                     $deduplicatedChunk[$seenUuids[$uuid]] = $objectData;
                     continue;
                 }
+
                 // Add new object.
                 $index = count($deduplicatedChunk);
                 $deduplicatedChunk[$index] = $objectData;
@@ -649,12 +651,16 @@ class MagicBulkHandler
         }
 
         // Build UPSERT SQL.
+        // NOTE: tableName doesn't include 'oc_' prefix, we must add it manually for raw SQL.
+        // Using hardcoded 'oc_' prefix as IDBConnection doesn't expose getPrefix() in Nextcloud 32.
+        $fullTableName = 'oc_'.$tableName;
+
         // MySQL/MariaDB: INSERT...ON DUPLICATE KEY UPDATE.
-        $sql  = "INSERT INTO `{$tableName}` ({$columnList}) VALUES ".implode(',', $valuesClause);
+        $sql  = "INSERT INTO `{$fullTableName}` ({$columnList}) VALUES ".implode(',', $valuesClause);
         $sql .= ' ON DUPLICATE KEY UPDATE ';
         if ($isPostgres === true) {
             // PostgreSQL: INSERT...ON CONFLICT DO UPDATE.
-            $sql  = "INSERT INTO \"{$tableName}\" ({$columnList}) VALUES ".implode(',', $valuesClause);
+            $sql  = "INSERT INTO \"{$fullTableName}\" ({$columnList}) VALUES ".implode(',', $valuesClause);
             $sql .= ' ON CONFLICT (_uuid) DO UPDATE SET ';
         }
 
@@ -666,20 +672,23 @@ class MagicBulkHandler
                 // Never update UUID or created timestamp.
                 continue;
             }
+
             if ($column === '_updated') {
                 // Always update the updated timestamp.
                 $updateClauses[] = '`_updated` = NOW()';
                 if ($isPostgres === true) {
                     $updateClauses[count($updateClauses) - 1] = '"_updated" = NOW()';
                 }
+
                 continue;
             }
+
             // Update all other columns.
             $updateClauses[] = "`{$column}` = VALUES(`{$column}`)";
             if ($isPostgres === true) {
                 $updateClauses[count($updateClauses) - 1] = "\"{$column}\" = EXCLUDED.\"{$column}\"";
             }
-        }
+        }//end foreach
 
         $sql .= implode(', ', $updateClauses);
 
@@ -714,6 +723,9 @@ class MagicBulkHandler
         $completeObjects = [];
 
         if (empty($uuids) === false) {
+            // Get full table name with hardcoded prefix.
+            $fullTableName = 'oc_'.$tableName;
+
             $placeholders = implode(',', array_fill(0, count($uuids), '?'));
 
             // Build SELECT query with object_status classification.
@@ -725,7 +737,7 @@ class MagicBulkHandler
                            WHEN `_updated` >= '{$operationStartTime}' THEN 'updated'
                            ELSE 'unchanged'
                        END as object_status
-                FROM `{$tableName}`
+                FROM `{$fullTableName}`
                 WHERE `_uuid` IN ({$placeholders})
             ";
             if ($isPostgres === true) {
@@ -737,7 +749,7 @@ class MagicBulkHandler
                                WHEN \"_updated\" >= '{$operationStartTime}' THEN 'updated'
                                ELSE 'unchanged'
                            END as object_status
-                    FROM \"{$tableName}\"
+                    FROM \"{$fullTableName}\"
                     WHERE \"_uuid\" IN ({$placeholders})
                 ";
             }
@@ -774,19 +786,25 @@ class MagicBulkHandler
             $platform   = $this->db->getDatabasePlatform();
             $isPostgres = $platform->getName() === 'postgresql';
 
+            // Get full table name with hardcoded prefix.
+            $fullTableName = 'oc_'.$tableName;
+
             // MySQL/MariaDB: use SHOW COLUMNS.
-            $sql = "SHOW COLUMNS FROM `$tableName`";
+            $sql = "SHOW COLUMNS FROM `$fullTableName`";
             if ($isPostgres === true) {
-                // PostgreSQL: query information_schema.
+                // PostgreSQL: query information_schema with full table name.
                 $sql = "SELECT column_name
                         FROM information_schema.columns
                         WHERE table_name = ? AND table_schema = 'public'";
             }
 
             $stmt = $this->db->prepare($sql);
-            $stmt->execute();
             if ($isPostgres === true) {
+                // PostgreSQL information_schema expects table name WITHOUT prefix.
                 $stmt->execute([$tableName]);
+            } else {
+                // MySQL/MariaDB: SHOW COLUMNS doesn't need parameters.
+                $stmt->execute();
             }
 
             $columns = [];
@@ -810,7 +828,10 @@ class MagicBulkHandler
         } catch (\Exception $e) {
             $this->logger->error(
                 '[MagicBulkHandler] Failed to get table columns',
-                ['table' => $tableName, 'error' => $e->getMessage()]
+                [
+                    'table' => $tableName,
+                    'error' => $e->getMessage(),
+                ]
             );
             return [];
         }//end try
@@ -830,8 +851,8 @@ class MagicBulkHandler
      *
      * @return void
      *
-     * @psalm-suppress UnusedParam - params are used in named arguments to convertRowToObjectEntity
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future bulk event dispatching
+     * @psalm-suppress                              UnusedParam - params are used in named arguments.
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future bulk event dispatching.
      */
     private function dispatchBulkEvents(array $results, Register $register, Schema $schema): void
     {

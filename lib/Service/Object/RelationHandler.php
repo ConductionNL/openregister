@@ -126,7 +126,7 @@ class RelationHandler
             $foundIds = array_map(
                 function (ObjectEntity $object) use ($property, $key) {
                     $serialized = $object->jsonSerialize();
-                    $idRaw = null;
+                    $idRaw      = null;
                     if (is_array($property) === true
                         && is_array($serialized) === true
                         && isset($property['inversedBy']) === true

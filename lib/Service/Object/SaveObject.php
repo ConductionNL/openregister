@@ -1630,7 +1630,7 @@ class SaveObject
                             $sanitizedArray[$index] = $item;
                             if ($item === '') {
                                 $sanitizedArray[$index] = null;
-                                $hasChanges             = true;
+                                $hasChanges = true;
                             }
                         }
 

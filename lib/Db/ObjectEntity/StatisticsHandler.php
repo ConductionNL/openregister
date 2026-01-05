@@ -124,6 +124,7 @@ class StatisticsHandler
                     $param     = $qb->createNamedParameter($stringIds, $paramType);
                     $qb->andWhere($qb->expr()->in('register', $param));
                 }
+
                 if (is_array($registerId) === false) {
                     $param = $qb->createNamedParameter((string) $registerId, IQueryBuilder::PARAM_STR);
                     $qb->andWhere($qb->expr()->eq('register', $param));
@@ -140,6 +141,7 @@ class StatisticsHandler
                     $param     = $qb->createNamedParameter($stringIds, $paramType);
                     $qb->andWhere($qb->expr()->in('schema', $param));
                 }
+
                 if (is_array($schemaId) === false) {
                     $param = $qb->createNamedParameter((string) $schemaId, IQueryBuilder::PARAM_STR);
                     $qb->andWhere($qb->expr()->eq('schema', $param));

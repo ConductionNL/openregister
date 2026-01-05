@@ -1326,7 +1326,7 @@ class SaveObjects
      * @return array Chunk processing results with saved, updated, invalid, errors, and statistics.
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future chunk processing
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod)   Reserved for future chunk processing
      */
     private function processObjectsChunk(
         array $objects, array $schemaCache, bool $_rbac,

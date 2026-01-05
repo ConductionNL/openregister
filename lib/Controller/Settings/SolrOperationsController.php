@@ -160,7 +160,7 @@ class SolrOperationsController extends Controller
                         ],
                     ]
                 );
-            }
+            }//end if
 
             // Get detailed error information and setup progress from SolrSetup.
             $errorDetails  = $setup->getLastErrorDetails();
@@ -219,7 +219,7 @@ class SolrOperationsController extends Controller
                         ],
                         statusCode: 422
                     );
-            }
+            }//end if
 
             // Fallback to generic error if no detailed error information is available.
             $lastError = error_get_last();
@@ -609,7 +609,6 @@ class SolrOperationsController extends Controller
                     if ($success === true) {
                         $message = 'Index committed successfully';
                     }
-
                     return new JSONResponse(
                         data: [
                             'success'   => $success,
@@ -627,7 +626,6 @@ class SolrOperationsController extends Controller
                     if ($success === true) {
                         $message = 'Index optimized successfully';
                     }
-
                     return new JSONResponse(
                         data: [
                             'success'   => $success,
@@ -645,7 +643,6 @@ class SolrOperationsController extends Controller
                     if ($result['success'] === true) {
                         $message = 'Index cleared successfully';
                     }
-
                     return new JSONResponse(
                         data: [
                             'success'       => $result['success'],

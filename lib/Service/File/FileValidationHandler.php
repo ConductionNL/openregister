@@ -295,7 +295,7 @@ class FileValidationHandler
                     );
 
                     return;
-                }
+                }//end if
 
                 $this->logger->info(
                     message: "checkOwnership: File {$file->getName()} has correct owner but not accessible"

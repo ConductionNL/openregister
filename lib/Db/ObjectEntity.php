@@ -771,7 +771,8 @@ class ObjectEntity extends Entity implements JsonSerializable
                 ]
             );
             return true;
-        }
+        }//end if
+
         // Create new lock.
         $expiration = clone $now;
         $expiration->add(new DateInterval('PT'.($duration ?? 0).'S'));

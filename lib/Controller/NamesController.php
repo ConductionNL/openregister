@@ -120,9 +120,11 @@ class NamesController extends Controller
                 // Parse IDs from different possible formats.
                 if (is_string($requestedIds) === true) {
                     // Handle comma-separated string or JSON array string.
-                    $requestedIds = str_starts_with($requestedIds, '[') === true
-                        ? (json_decode($requestedIds, true) ?? [])
-                        : array_map('trim', explode(',', $requestedIds));
+                    if (str_starts_with($requestedIds, '[') === true) {
+                        $requestedIds = json_decode($requestedIds, true) ?? [];
+                    } else {
+                        $requestedIds = array_map('trim', explode(',', $requestedIds));
+                    }
                 }
 
                 if (is_string($requestedIds) === false && is_array($requestedIds) === false) {
@@ -140,7 +142,7 @@ class NamesController extends Controller
                         'execution_time'  => round((microtime(true) - $startTime) * 1000, 2).'ms',
                     ]
                 );
-            }
+            }//end if
 
             if ($requestedIds === null) {
                 // Get all object names (triggers warmup if needed).

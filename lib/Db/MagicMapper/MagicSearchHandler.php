@@ -121,7 +121,7 @@ class MagicSearchHandler
             ->setMaxResults($limit)
             ->setFirstResult($offset);
         if ($count === true) {
-            $queryBuilder->resetQueryParts(['select', 'maxResults', 'firstResult']);
+            $queryBuilder->resetQueryParts(queryParts: ['select', 'maxResults', 'firstResult']);
             $queryBuilder->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'count')
                 ->from($tableName, 't');
         }
@@ -159,6 +159,7 @@ class MagicSearchHandler
             $result = $queryBuilder->executeQuery();
             return (int) $result->fetchOne();
         }
+
         return $this->executeSearchQuery(qb: $queryBuilder, register: $register, schema: $schema, tableName: $tableName);
     }//end searchObjects()
 
@@ -220,6 +221,7 @@ class MagicSearchHandler
                 );
                 continue;
             }
+
             $qb->andWhere($qb->expr()->eq("t.{$columnName}", $qb->createNamedParameter($value)));
         }
     }//end applyMetadataFilters()
@@ -246,10 +248,12 @@ class MagicSearchHandler
                     $qb->andWhere($qb->expr()->isNotNull("t.{$columnName}"));
                     continue;
                 }
+
                 if ($value === 'IS NULL') {
                     $qb->andWhere($qb->expr()->isNull("t.{$columnName}"));
                     continue;
                 }
+
                 if (is_array($value) === true) {
                     $qb->andWhere(
                         $qb->expr()->in(
@@ -259,8 +263,9 @@ class MagicSearchHandler
                     );
                     continue;
                 }
+
                 $qb->andWhere($qb->expr()->eq("t.{$columnName}", $qb->createNamedParameter($value)));
-            }
+            }//end if
         }//end foreach
     }//end applyObjectFilters()
 
@@ -408,6 +413,7 @@ class MagicSearchHandler
                     $metadataData[$metadataField] = $value;
                     continue;
                 }
+
                 // Schema property column - add to object data.
                 $objectData[$column] = $value;
             }

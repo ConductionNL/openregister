@@ -874,6 +874,7 @@ class ObjectEntityMapper extends QBMapper
                             // Hard delete: remove from database.
                             $unifiedObjectMapper->delete($object);
                         }
+
                         if ($hardDelete === false) {
                             // Soft delete: set deleted timestamp.
                             $object->setDeleted(new DateTime());
@@ -1413,7 +1414,7 @@ class ObjectEntityMapper extends QBMapper
      * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple objects found.
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) $_rbac reserved for interface compatibility.
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Flags control security filtering behavior
      */
     public function findDirectBlobStorage(
         string|int $identifier, ?Register $register=null,
@@ -1498,6 +1499,7 @@ class ObjectEntityMapper extends QBMapper
                 $numericIds[] = $id;
                 continue;
             }
+
             $uuids[] = $id;
         }
 
@@ -1707,6 +1709,7 @@ class ObjectEntityMapper extends QBMapper
                     )
                 );
             }
+
             if ($published === false) {
                 $qb->andWhere($qb->expr()->isNull('published'));
             }
@@ -1723,6 +1726,7 @@ class ObjectEntityMapper extends QBMapper
                 $qb->addOrderBy($field, $orderDirection);
             }
         }
+
         if (empty($sort) === true) {
             $qb->addOrderBy('id', 'ASC');
         }
@@ -1764,7 +1768,7 @@ class ObjectEntityMapper extends QBMapper
      * @psalm-return list<ObjectEntity>
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) Parameters reserved for interface compatibility.
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Include deleted toggle is intentional
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Include deleted toggle is intentional
      */
     public function findAllDirectBlobStorage(
         ?int $limit=null,
@@ -1852,6 +1856,7 @@ class ObjectEntityMapper extends QBMapper
                     )
                 );
             }
+
             if ($published === false) {
                 $qb->andWhere($qb->expr()->isNull('published'));
             }
@@ -1868,6 +1873,7 @@ class ObjectEntityMapper extends QBMapper
                 $qb->addOrderBy($field, $orderDirection);
             }
         }
+
         if (empty($sort) === true) {
             $qb->addOrderBy('id', 'ASC');
         }
@@ -1902,7 +1908,7 @@ class ObjectEntityMapper extends QBMapper
      * @psalm-return list<ObjectEntity>
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) Parameters reserved for interface compatibility.
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Flags control security filtering behavior
      */
     public function searchObjects(
         array $query=[], ?string $_activeOrganisationUuid=null,
@@ -1947,7 +1953,7 @@ class ObjectEntityMapper extends QBMapper
      * @return int Count of objects.
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) Parameters reserved for interface compatibility.
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Flags control security filtering behavior
      */
     public function countSearchObjects(
         array $query=[], ?string $_activeOrganisationUuid=null,
@@ -1968,6 +1974,7 @@ class ObjectEntityMapper extends QBMapper
                 $qb->andWhere($qb->expr()->isNull('deleted'));
             }
         }
+
         if (isset($query['@self.deleted']) === false) {
             // Default behavior: exclude deleted objects unless explicitly filtered.
             $qb->andWhere($qb->expr()->isNull('deleted'));
@@ -2127,6 +2134,7 @@ class ObjectEntityMapper extends QBMapper
                 $qb->expr()->like('object', $qb->createNamedParameter('%'.$qb->escapeLikeParameter($search).'%'))
             );
         }
+
         if ($partialMatch === false) {
             // @psalm-suppress UndefinedInterfaceMethod
             $qb->andWhere(
