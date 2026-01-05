@@ -331,9 +331,9 @@ class Version1Date20251102160000 extends SimpleMigrationStep
             $output->info(message: '   • Organisation and user ownership');
 
             return $schema;
-        } else {
-            $output->info(message: '⚠️  Agents table already exists!');
         }//end if
+
+        $output->info(message: '⚠️  Agents table already exists!');
 
         return null;
     }//end changeSchema()

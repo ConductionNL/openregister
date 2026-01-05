@@ -271,10 +271,9 @@ class ObjectEntityMapper extends QBMapper
             // Get current user from session.
             $user = $this->userSession->getUser();
 
+            $userId = 'system';
             if ($user !== null) {
                 $userId = $user->getUID();
-            } else {
-                $userId = 'system';
             }
 
             // Get the active organization from session at time of lock for audit trail.
@@ -287,11 +286,11 @@ class ObjectEntityMapper extends QBMapper
             // Calculate expiration time for the lock.
             $now        = new DateTime();
             $expiration = clone $now;
+            // Default 1 hour if no duration specified.
+            $expiration->add(new DateInterval('PT3600S'));
             if ($lockDuration !== null && $lockDuration > 0) {
+                $expiration = clone $now;
                 $expiration->add(new DateInterval('PT'.$lockDuration.'S'));
-            } else {
-                // Default 1 hour if no duration specified.
-                $expiration->add(new DateInterval('PT3600S'));
             }
 
             $lockData = [
@@ -562,10 +561,9 @@ class ObjectEntityMapper extends QBMapper
         if ($register !== null && $schema !== null) {
             $this->logger->debug('[ObjectEntityMapper::update] Has register+schema params - checking magic mapper');
             $useMagic = $this->shouldUseMagicMapperForRegisterSchema(register: $register, schema: $schema);
+            $this->logger->debug('[ObjectEntityMapper::update] shouldUseMagicMapper result: FALSE');
             if ($useMagic === true) {
                 $this->logger->debug('[ObjectEntityMapper::update] shouldUseMagicMapper result: TRUE');
-            } else {
-                $this->logger->debug('[ObjectEntityMapper::update] shouldUseMagicMapper result: FALSE');
             }
         } else if ($entity instanceof ObjectEntity) {
             $this->logger->debug('[ObjectEntityMapper::update] No register/schema params - checking entity');
@@ -847,6 +845,8 @@ class ObjectEntityMapper extends QBMapper
      * @return array Array of UUIDs of deleted objects.
      *
      * @psalm-return list<mixed>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Hard delete toggle controls permanent vs soft delete
      */
     public function deleteObjects(
         array $uuids=[],
@@ -873,7 +873,8 @@ class ObjectEntityMapper extends QBMapper
                         if ($hardDelete === true) {
                             // Hard delete: remove from database.
                             $unifiedObjectMapper->delete($object);
-                        } else {
+                        }
+                        if ($hardDelete === false) {
                             // Soft delete: set deleted timestamp.
                             $object->setDeleted(new DateTime());
                             $unifiedObjectMapper->update($object);
@@ -911,6 +912,8 @@ class ObjectEntityMapper extends QBMapper
      * @return array Array of UUIDs of published objects.
      *
      * @psalm-return list<mixed>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) DateTime or bool controls publish timing
      */
     public function publishObjects(
         array $uuids=[],
@@ -981,6 +984,8 @@ class ObjectEntityMapper extends QBMapper
      * @return array Array of UUIDs of depublished objects.
      *
      * @psalm-return list<mixed>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) DateTime or bool controls depublish timing
      */
     public function depublishObjects(
         array $uuids=[],
@@ -1045,6 +1050,8 @@ class ObjectEntityMapper extends QBMapper
      * @throws \Exception If the publishing operation fails.
      *
      * @psalm-return array{published_count: int<0, max>, published_uuids: list<mixed>, schema_id: int}
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Publish all toggle controls scope of operation
      */
     public function publishObjectsBySchema(int $schemaId, bool $publishAll=false): array
     {
@@ -1062,6 +1069,8 @@ class ObjectEntityMapper extends QBMapper
      * @throws \Exception If the deletion operation fails.
      *
      * @psalm-return array{deleted_count: int<0, max>, deleted_uuids: list<mixed>, schema_id: int}
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Hard delete toggle controls permanent vs soft delete
      */
     public function deleteObjectsBySchema(int $schemaId, bool $hardDelete=false): array
     {
@@ -1275,6 +1284,8 @@ class ObjectEntityMapper extends QBMapper
      *
      * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found.
      * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple objects found.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
      */
     public function find(
         string|int $identifier, ?Register $register=null,
@@ -1343,18 +1354,18 @@ class ObjectEntityMapper extends QBMapper
 
         // Build OR conditions for matching against id, uuid, slug, or uri.
         // Note: Only include id comparison if identifier is actually numeric (PostgreSQL strict typing).
+        $qb->where(
+            $qb->expr()->orX(
+                $qb->expr()->eq('uuid', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
+                $qb->expr()->eq('slug', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
+                $qb->expr()->eq('uri', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR))
+            )
+        );
         if (is_numeric($identifier) === true) {
+            $qb->resetQueryPart('where');
             $qb->where(
                 $qb->expr()->orX(
                     $qb->expr()->eq('id', $qb->createNamedParameter((int) $identifier, IQueryBuilder::PARAM_INT)),
-                    $qb->expr()->eq('uuid', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
-                    $qb->expr()->eq('slug', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
-                    $qb->expr()->eq('uri', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR))
-                )
-            );
-        } else {
-            $qb->where(
-                $qb->expr()->orX(
                     $qb->expr()->eq('uuid', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
                     $qb->expr()->eq('slug', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
                     $qb->expr()->eq('uri', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR))
@@ -1402,6 +1413,7 @@ class ObjectEntityMapper extends QBMapper
      * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple objects found.
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) $_rbac reserved for interface compatibility.
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
      */
     public function findDirectBlobStorage(
         string|int $identifier, ?Register $register=null,
@@ -1415,18 +1427,18 @@ class ObjectEntityMapper extends QBMapper
             ->from('openregister_objects');
 
         // Build OR conditions for matching against id, uuid, slug, or uri.
+        $qb->where(
+            $qb->expr()->orX(
+                $qb->expr()->eq('uuid', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
+                $qb->expr()->eq('slug', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
+                $qb->expr()->eq('uri', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR))
+            )
+        );
         if (is_numeric($identifier) === true) {
+            $qb->resetQueryPart('where');
             $qb->where(
                 $qb->expr()->orX(
                     $qb->expr()->eq('id', $qb->createNamedParameter((int) $identifier, IQueryBuilder::PARAM_INT)),
-                    $qb->expr()->eq('uuid', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
-                    $qb->expr()->eq('slug', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
-                    $qb->expr()->eq('uri', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR))
-                )
-            );
-        } else {
-            $qb->where(
-                $qb->expr()->orX(
                     $qb->expr()->eq('uuid', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
                     $qb->expr()->eq('slug', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
                     $qb->expr()->eq('uri', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR))
@@ -1484,9 +1496,9 @@ class ObjectEntityMapper extends QBMapper
         foreach ($ids as $id) {
             if (is_numeric($id) === true) {
                 $numericIds[] = $id;
-            } else {
-                $uuids[] = $id;
+                continue;
             }
+            $uuids[] = $id;
         }
 
         $qb->select('*')
@@ -1531,11 +1543,11 @@ class ObjectEntityMapper extends QBMapper
             ->from('openregister_objects', 'o');
 
         // PostgreSQL requires explicit casting for VARCHAR to BIGINT comparison.
+        // MySQL/MariaDB does implicit type conversion.
+        $qb->leftJoin('o', 'openregister_schemas', 's', 'o.schema = s.id');
         if ($platform === 'postgresql') {
+            $qb->resetQueryPart('join');
             $qb->leftJoin('o', 'openregister_schemas', 's', 'CAST(o.schema AS BIGINT) = s.id');
-        } else {
-            // MySQL/MariaDB does implicit type conversion.
-            $qb->leftJoin('o', 'openregister_schemas', 's', 'o.schema = s.id');
         }
 
         $qb->where($qb->expr()->eq('o.schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)))
@@ -1569,6 +1581,8 @@ class ObjectEntityMapper extends QBMapper
      * @throws \OCP\DB\Exception If a database error occurs.
      *
      * @psalm-return list<ObjectEntity>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Include deleted toggle is intentional
      */
     public function findAll(
         ?int $limit=null,
@@ -1692,7 +1706,8 @@ class ObjectEntityMapper extends QBMapper
                         $qb->expr()->gt('depublished', $qb->createNamedParameter($now))
                     )
                 );
-            } else {
+            }
+            if ($published === false) {
                 $qb->andWhere($qb->expr()->isNull('published'));
             }
         }
@@ -1700,15 +1715,15 @@ class ObjectEntityMapper extends QBMapper
         // Apply sorting.
         if (empty($sort) === false) {
             foreach ($sort as $field => $direction) {
+                $orderDirection = 'ASC';
                 if ($direction === 'desc') {
                     $orderDirection = 'DESC';
-                } else {
-                    $orderDirection = 'ASC';
                 }
 
                 $qb->addOrderBy($field, $orderDirection);
             }
-        } else {
+        }
+        if (empty($sort) === true) {
             $qb->addOrderBy('id', 'ASC');
         }
 
@@ -1749,6 +1764,7 @@ class ObjectEntityMapper extends QBMapper
      * @psalm-return list<ObjectEntity>
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) Parameters reserved for interface compatibility.
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Include deleted toggle is intentional
      */
     public function findAllDirectBlobStorage(
         ?int $limit=null,
@@ -1835,7 +1851,8 @@ class ObjectEntityMapper extends QBMapper
                         $qb->expr()->gt('depublished', $qb->createNamedParameter($now))
                     )
                 );
-            } else {
+            }
+            if ($published === false) {
                 $qb->andWhere($qb->expr()->isNull('published'));
             }
         }
@@ -1843,15 +1860,15 @@ class ObjectEntityMapper extends QBMapper
         // Apply sorting.
         if (empty($sort) === false) {
             foreach ($sort as $field => $direction) {
+                $orderDirection = 'ASC';
                 if ($direction === 'desc') {
                     $orderDirection = 'DESC';
-                } else {
-                    $orderDirection = 'ASC';
                 }
 
                 $qb->addOrderBy($field, $orderDirection);
             }
-        } else {
+        }
+        if (empty($sort) === true) {
             $qb->addOrderBy('id', 'ASC');
         }
 
@@ -1885,6 +1902,7 @@ class ObjectEntityMapper extends QBMapper
      * @psalm-return list<ObjectEntity>
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) Parameters reserved for interface compatibility.
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
      */
     public function searchObjects(
         array $query=[], ?string $_activeOrganisationUuid=null,
@@ -1929,6 +1947,7 @@ class ObjectEntityMapper extends QBMapper
      * @return int Count of objects.
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) Parameters reserved for interface compatibility.
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
      */
     public function countSearchObjects(
         array $query=[], ?string $_activeOrganisationUuid=null,
@@ -1948,7 +1967,8 @@ class ObjectEntityMapper extends QBMapper
             } else if ($deletedFilter === 'IS NULL') {
                 $qb->andWhere($qb->expr()->isNull('deleted'));
             }
-        } else {
+        }
+        if (isset($query['@self.deleted']) === false) {
             // Default behavior: exclude deleted objects unless explicitly filtered.
             $qb->andWhere($qb->expr()->isNull('deleted'));
         }
@@ -2086,6 +2106,8 @@ class ObjectEntityMapper extends QBMapper
      * @return ObjectEntity[]
      *
      * @psalm-return list<ObjectEntity>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Partial match toggle controls search behavior
      */
     public function findByRelation(string $search, bool $partialMatch=true): array
     {
@@ -2104,7 +2126,8 @@ class ObjectEntityMapper extends QBMapper
             $qb->andWhere(
                 $qb->expr()->like('object', $qb->createNamedParameter('%'.$qb->escapeLikeParameter($search).'%'))
             );
-        } else {
+        }
+        if ($partialMatch === false) {
             // @psalm-suppress UndefinedInterfaceMethod
             $qb->andWhere(
                 $qb->expr()->like('object', $qb->createNamedParameter('%"'.$qb->escapeLikeParameter($search).'"%'))
@@ -2124,6 +2147,8 @@ class ObjectEntityMapper extends QBMapper
      * Check if RBAC is enabled in app configuration.
      *
      * @return bool True if RBAC is enabled.
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future RBAC implementation
      */
     private function isRbacEnabled(): bool
     {
@@ -2140,6 +2165,8 @@ class ObjectEntityMapper extends QBMapper
      * Check if multi-tenancy is enabled in app configuration.
      *
      * @return bool True if multi-tenancy is enabled.
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future multi-tenancy implementation
      */
     private function isMultiTenancyEnabled(): bool
     {
@@ -2156,6 +2183,8 @@ class ObjectEntityMapper extends QBMapper
      * Check if multitenancy admin override is enabled.
      *
      * @return bool True if admin override is enabled.
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future multi-tenancy implementation
      */
     private function isMultitenancyAdminOverrideEnabled(): bool
     {

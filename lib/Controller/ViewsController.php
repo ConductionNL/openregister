@@ -141,11 +141,12 @@ class ViewsController extends Controller
                     $offset = ($page - 1) * $limit;
                 }
 
+                $sliceOffset = 0;
                 if ($offset !== null) {
-                    $views = array_slice(array: $views, offset: $offset, length: $limit);
-                } else {
-                    $views = array_slice(array: $views, offset: 0, length: $limit);
+                    $sliceOffset = $offset;
                 }
+
+                $views = array_slice(array: $views, offset: $sliceOffset, length: $limit);
             }
 
             return new JSONResponse(
@@ -286,14 +287,16 @@ class ViewsController extends Controller
             } else if (($data['query'] ?? null) !== null && is_array($data['query']) === true) {
                 // Direct query parameter.
                 $query = $data['query'];
-            } else {
+            }
+
+            if (($data['configuration'] ?? null) === null && (($data['query'] ?? null) === null || is_array($data['query']) === false)) {
                 return new JSONResponse(
                     data: [
                         'error' => 'View query or configuration is required',
                     ],
                     statusCode: 400
                 );
-            }//end if
+            }
 
             $view = $this->viewService->create(
                 name: $data['name'],
@@ -383,14 +386,16 @@ class ViewsController extends Controller
             } else if (($data['query'] ?? null) !== null && is_array($data['query']) === true) {
                 // Direct query parameter.
                 $query = $data['query'];
-            } else {
+            }
+
+            if (($data['configuration'] ?? null) === null && (($data['query'] ?? null) === null || is_array($data['query']) === false)) {
                 return new JSONResponse(
                     data: [
                         'error' => 'View query or configuration is required',
                     ],
                     statusCode: 400
                 );
-            }//end if
+            }
 
             $view = $this->viewService->update(
                 id: $id,

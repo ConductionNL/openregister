@@ -136,7 +136,9 @@ class ContextRetrievalHandler
                         'filteredViews' => count($viewFilters),
                     ]
                 );
-            } else {
+            }
+
+            if (empty($selectedViews) === true) {
                 // Use all agent views.
                 $viewFilters = $agentViews;
                 $this->logger->info(
@@ -199,7 +201,9 @@ class ContextRetrievalHandler
                 );
                 // Extract results array from hybrid search response.
                 $results = $hybridResponse['results'] ?? [];
-            } else {
+            }
+
+            if ($searchMode !== 'semantic' && $searchMode !== 'hybrid') {
                 // Keyword search.
                 $results = $this->searchKeywordOnly(query: $query, _limit: $fetchLimit);
             }//end if
@@ -218,10 +222,9 @@ class ContextRetrievalHandler
             }
 
             // Determine raw results count for logging.
+            $rawResultsCount = gettype($results);
             if (is_array($results) === true) {
                 $rawResultsCount = count($results);
-            } else {
-                $rawResultsCount = gettype($results);
             }
 
             // Filter and build context - track file and object counts separately.
@@ -423,10 +426,9 @@ class ContextRetrievalHandler
 
         // Check metadata for object_title, file_name, etc.
         if (empty($result['metadata']) === false) {
+            $metadata = json_decode($result['metadata'], true);
             if (is_array($result['metadata']) === true) {
                 $metadata = $result['metadata'];
-            } else {
-                $metadata = json_decode($result['metadata'], true);
             }
 
             if (empty($metadata['object_title']) === false) {

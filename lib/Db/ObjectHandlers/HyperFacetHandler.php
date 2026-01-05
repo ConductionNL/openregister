@@ -609,15 +609,15 @@ class HyperFacetHandler
                     _config: $config,
                     _baseQuery: $baseQuery
                 );
-            } else {
-                // JSON field facets use statistical estimation.
-                $approximateFacets[$facetName] = $this->estimateJsonFieldFacet(
-                    _field: $facetName,
-                        config: $config,
-                    _baseQuery: $baseQuery,
-                        stats: $datasetStats
-                );
+                continue;
             }
+            // JSON field facets use statistical estimation.
+            $approximateFacets[$facetName] = $this->estimateJsonFieldFacet(
+                _field: $facetName,
+                    config: $config,
+                _baseQuery: $baseQuery,
+                    stats: $datasetStats
+            );
         }
 
         return $approximateFacets;
@@ -970,9 +970,8 @@ class HyperFacetHandler
             $cached = $this->facetCache->get($cacheKey);
             if (is_array($cached) === true) {
                 return $cached;
-            } else {
-                return null;
             }
+            return null;
         } catch (\Exception $e) {
             return null;
         }
@@ -1010,13 +1009,14 @@ class HyperFacetHandler
     {
         if ($size <= self::SMALL_DATASET_THRESHOLD) {
             return 'small';
-        } else if ($size <= self::MEDIUM_DATASET_THRESHOLD) {
-            return 'medium';
-        } else if ($size <= self::LARGE_DATASET_THRESHOLD) {
-            return 'large';
-        } else {
-            return 'huge';
         }
+        if ($size <= self::MEDIUM_DATASET_THRESHOLD) {
+            return 'medium';
+        }
+        if ($size <= self::LARGE_DATASET_THRESHOLD) {
+            return 'large';
+        }
+        return 'huge';
     }//end categorizeDatasetSize()
 
     /**
@@ -1076,15 +1076,15 @@ class HyperFacetHandler
     private function getSampleRate(int $datasetSize): float
     {
         if ($datasetSize <= self::SMALL_DATASET_THRESHOLD) {
-            return self::SMALL_SAMPLE_RATE;
             // 100% - exact
-        } else if ($datasetSize <= self::MEDIUM_DATASET_THRESHOLD) {
-            return self::MEDIUM_SAMPLE_RATE;
-            // 10% sampling
-        } else {
-            return self::LARGE_SAMPLE_RATE;
-            // 5% sampling
+            return self::SMALL_SAMPLE_RATE;
         }
+        if ($datasetSize <= self::MEDIUM_DATASET_THRESHOLD) {
+            // 10% sampling
+            return self::MEDIUM_SAMPLE_RATE;
+        }
+        // 5% sampling
+        return self::LARGE_SAMPLE_RATE;
     }//end getSampleRate()
 
     /**
@@ -1109,9 +1109,9 @@ class HyperFacetHandler
         foreach ($facetConfig as $facetName => $config) {
             if ($facetName === '@self') {
                 $metadataFacets = $config;
-            } else {
-                $jsonFacets[$facetName] = $config;
+                continue;
             }
+            $jsonFacets[$facetName] = $config;
         }
 
         return [$metadataFacets, $jsonFacets];

@@ -15,7 +15,6 @@
 namespace OCA\OpenRegister\Service\Object\SaveObjects;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\SaveObject;
@@ -45,13 +44,6 @@ use Exception;
  */
 class PreparationHandler
 {
-
-    /**
-     * Static cache for registers to avoid repeated DB queries.
-     *
-     * @var array<int, Register>
-     */
-    private static array $registerCache = [];
 
     /**
      * Static cache for schemas to avoid repeated DB queries.

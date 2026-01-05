@@ -384,15 +384,15 @@ class SettingsController extends Controller
                         ],
                     ]
                 );
-            } else {
-                return new JSONResponse(
-                    data: [
-                        'success' => false,
-                        'message' => 'SOLR setup failed - check logs',
-                    ],
-                    statusCode: 422
-                );
-            }//end if
+            }
+
+            return new JSONResponse(
+                data: [
+                    'success' => false,
+                    'message' => 'SOLR setup failed - check logs',
+                ],
+                statusCode: 422
+            );
         } catch (Exception $e) {
             return new JSONResponse(
                 data: [
@@ -463,16 +463,16 @@ class SettingsController extends Controller
                     ],
                     statusCode: 200
                 );
-            } else {
-                return new JSONResponse(
-                    data: [
-                        'success'    => false,
-                        'message'    => $result['message'] ?? 'Failed to reindex collection',
-                        'collection' => $name,
-                    ],
-                    statusCode: 422
-                );
             }
+
+            return new JSONResponse(
+                data: [
+                    'success'    => false,
+                    'message'    => $result['message'] ?? 'Failed to reindex collection',
+                    'collection' => $name,
+                ],
+                statusCode: 422
+            );
         } catch (Exception $e) {
             return new JSONResponse(
                 data: [
@@ -567,10 +567,9 @@ class SettingsController extends Controller
             // Note: getDatabasePlatform() returns a platform instance, but we avoid type hinting it.
             $platform = $this->db->getDatabasePlatform();
             // Get platform name as string.
+            $platformName = 'unknown';
             if (method_exists($platform, 'getName') === true) {
                 $platformName = $platform->getName();
-            } else {
-                $platformName = 'unknown';
             }
 
             // Determine database type and version.
@@ -587,15 +586,13 @@ class SettingsController extends Controller
                     $result  = $stmt->execute();
                     $version = $result->fetchOne();
 
+                    $dbType = 'MySQL';
                     if (stripos($version, 'MariaDB') !== false) {
                         $dbType = 'MariaDB';
-                        preg_match('/\d+\.\d+\.\d+/', $version, $matches);
-                        $dbVersion = $matches[0] ?? $version;
-                    } else {
-                        $dbType = 'MySQL';
-                        preg_match('/\d+\.\d+\.\d+/', $version, $matches);
-                        $dbVersion = $matches[0] ?? $version;
                     }
+
+                    preg_match('/\d+\.\d+\.\d+/', $version, $matches);
+                    $dbVersion = $matches[0] ?? $version;
                 } catch (Exception $e) {
                     $dbType    = 'MySQL/MariaDB';
                     $dbVersion = 'Unknown';
@@ -626,14 +623,13 @@ class SettingsController extends Controller
                     $result    = $stmt->execute();
                     $hasVector = $result->fetchOne() > 0;
 
+                    $vectorSupport     = false;
+                    $recommendedPlugin = 'pgvector (not installed)';
+                    $performanceNote   = 'Install pgvector extension: CREATE EXTENSION vector;';
                     if ($hasVector === true) {
                         $vectorSupport     = true;
                         $recommendedPlugin = 'pgvector (installed ✓)';
                         $performanceNote   = 'Optimal: Using database-level vector operations for fast semantic search.';
-                    } else {
-                        $vectorSupport     = false;
-                        $recommendedPlugin = 'pgvector (not installed)';
-                        $performanceNote   = 'Install pgvector extension: CREATE EXTENSION vector;';
                     }
                 } catch (Exception $e) {
                     $vectorSupport     = false;
@@ -1019,10 +1015,9 @@ class SettingsController extends Controller
             );
 
             // Ensure result is an array for spread operator.
+            $resultArray = [];
             if (is_array($result) === true) {
                 $resultArray = $result;
-            } else {
-                $resultArray = [];
             }
 
             return new JSONResponse(

@@ -19,11 +19,6 @@
 
 namespace OCA\OpenRegister\Service\Handler;
 
-use Exception;
-use OCA\OpenRegister\Db\Agent;
-use OCA\OpenRegister\Db\AgentMapper;
-use Psr\Log\LoggerInterface;
-
 /**
  * Class AgentHandler
  *
@@ -33,18 +28,4 @@ use Psr\Log\LoggerInterface;
  */
 class AgentHandler
 {
-
-    /**
-     * Agent mapper instance.
-     *
-     * @var AgentMapper The agent mapper instance.
-     */
-    private AgentMapper $agentMapper;
-
-    /**
-     * Logger instance.
-     *
-     * @var LoggerInterface The logger instance.
-     */
-    private LoggerInterface $logger;
 }//end class

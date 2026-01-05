@@ -467,25 +467,25 @@ class SolrManagementController extends Controller
                         'field_name' => $fieldName,
                     ]
                 );
-            } else {
-                $logger->warning(
-                    '❌ Failed to delete SOLR field via API',
-                    [
-                        'field_name' => $fieldName,
-                        'error'      => $result['message'],
-                        'user'       => $this->userId,
-                    ]
-                );
+            }
 
-                return new JSONResponse(
-                    data: [
-                        'success' => false,
-                        'message' => $result['message'],
-                        'error'   => $result['error'] ?? null,
-                    ],
-                    statusCode: 422
-                );
-            }//end if
+            $logger->warning(
+                '❌ Failed to delete SOLR field via API',
+                [
+                    'field_name' => $fieldName,
+                    'error'      => $result['message'],
+                    'user'       => $this->userId,
+                ]
+            );
+
+            return new JSONResponse(
+                data: [
+                    'success' => false,
+                    'message' => $result['message'],
+                    'error'   => $result['error'] ?? null,
+                ],
+                statusCode: 422
+            );
         } catch (Exception $e) {
             $logger = $logger ?? \OC::$server->get(\Psr\Log\LoggerInterface::class);
             $logger->error(
@@ -741,6 +741,8 @@ class SolrManagementController extends Controller
      *     array<array-key, mixed>,
      *     array<never, never>
      * >|JSONResponse<500, array{success: false, error: string, trace: string}, array<never, never>>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Toggle to enable/disable data copying
      */
     public function copySolrCollection(
         string $sourceCollection,
@@ -816,27 +818,27 @@ class SolrManagementController extends Controller
                     ],
                     statusCode: 200
                 );
-            } else {
-                $logger->error(
-                    '❌ SOLR collection deletion failed',
-                    [
-                        'error'      => $result['message'],
-                        'error_code' => $result['error_code'] ?? 'unknown',
-                        'collection' => $name,
-                    ]
-                );
+            }
 
-                return new JSONResponse(
-                    data: [
-                        'success'    => false,
-                        'message'    => $result['message'],
-                        'error_code' => $result['error_code'] ?? 'unknown',
-                        'collection' => $name,
-                        'solr_error' => $result['solr_error'] ?? null,
-                    ],
-                    statusCode: 422
-                );
-            }//end if
+            $logger->error(
+                '❌ SOLR collection deletion failed',
+                [
+                    'error'      => $result['message'],
+                    'error_code' => $result['error_code'] ?? 'unknown',
+                    'collection' => $name,
+                ]
+            );
+
+            return new JSONResponse(
+                data: [
+                    'success'    => false,
+                    'message'    => $result['message'],
+                    'error_code' => $result['error_code'] ?? 'unknown',
+                    'collection' => $name,
+                    'solr_error' => $result['solr_error'] ?? null,
+                ],
+                statusCode: 422
+            );
         } catch (Exception $e) {
             $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
             $logger->error(

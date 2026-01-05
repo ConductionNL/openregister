@@ -174,10 +174,11 @@ class SolrFacetProcessor
         $processed = [];
 
         foreach ($facetFields as $fieldName => $values) {
-            $items = [];
+            $items       = [];
+            $valuesCount = count($values);
 
             // Solr returns facets as [value1, count1, value2, count2, ...].
-            for ($i = 0; $i < count($values); $i += 2) {
+            for ($i = 0; $i < $valuesCount; $i += 2) {
                 if (isset($values[$i], $values[$i + 1]) === true) {
                     $items[] = [
                         'value' => $values[$i],
@@ -192,7 +193,7 @@ class SolrFacetProcessor
                     'items' => $items,
                 ];
             }
-        }
+        }//end foreach
 
         return $processed;
     }//end processFacetResponse()

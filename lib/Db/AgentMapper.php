@@ -342,13 +342,15 @@ class AgentMapper extends QBMapper
                         $qb->andWhere(
                             $qb->expr()->eq($field, $qb->createNamedParameter((bool) $value, IQueryBuilder::PARAM_BOOL))
                         );
-                    } else if (is_array($value) === true) {
+                        continue;
+                    }
+                    if (is_array($value) === true) {
                         $qb->andWhere(
                             $qb->expr()->in($field, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY))
                         );
-                    } else {
-                        $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR)));
+                        continue;
                     }
+                    $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR)));
                 }
             }
         }
@@ -358,7 +360,8 @@ class AgentMapper extends QBMapper
             foreach ($order as $field => $direction) {
                 $qb->addOrderBy($field, $direction);
             }
-        } else {
+        }
+        if (empty($order) === true) {
             $qb->orderBy('created', 'DESC');
         }
 
@@ -535,13 +538,15 @@ class AgentMapper extends QBMapper
                         $qb->andWhere(
                             $qb->expr()->eq($field, $qb->createNamedParameter((bool) $value, IQueryBuilder::PARAM_BOOL))
                         );
-                    } else if (is_array($value) === true) {
+                        continue;
+                    }
+                    if (is_array($value) === true) {
                         $qb->andWhere(
                             $qb->expr()->in($field, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY))
                         );
-                    } else {
-                        $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR)));
+                        continue;
                     }
+                    $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR)));
                 }
             }
         }

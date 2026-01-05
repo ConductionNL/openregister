@@ -351,16 +351,14 @@ class DashboardController extends Controller
         ?int $schemaId=null
     ): JSONResponse {
         try {
+            $fromDate = null;
             if ($from !== null) {
                 $fromDate = new DateTime($from);
-            } else {
-                $fromDate = null;
             }
 
+            $tillDate = null;
             if ($till !== null) {
                 $tillDate = new DateTime($till);
-            } else {
-                $tillDate = null;
             }
 
             $data = $this->dashboardService->getAuditTrailActionChartData(

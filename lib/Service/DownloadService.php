@@ -83,6 +83,9 @@ class DownloadService
      * @return never This method exits script execution after sending file
      *
      * @NoReturn
+     *
+     * @SuppressWarnings(PHPMD.ExitExpression) Exit is intentional for file download.
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future download functionality
      */
     private function downloadJson(string $jsonData, string $filename): never
     {
@@ -124,6 +127,8 @@ class DownloadService
      * @return RegisterMapper|SchemaMapper The appropriate mapper instance
      *
      * @throws InvalidArgumentException If an unknown object type is provided
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future download functionality
      */
     private function getMapper(string $objectType): RegisterMapper|SchemaMapper
     {

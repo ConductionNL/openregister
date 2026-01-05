@@ -142,22 +142,19 @@ class SchemasController extends Controller
         $params = $this->request->getParams();
 
         // Extract pagination and search parameters.
+        $limit = null;
         if (isset($params['_limit']) === true) {
             $limit = (int) $params['_limit'];
-        } else {
-            $limit = null;
         }
 
+        $offset = null;
         if (isset($params['_offset']) === true) {
             $offset = (int) $params['_offset'];
-        } else {
-            $offset = null;
         }
 
+        $page = null;
         if (isset($params['_page']) === true) {
             $page = (int) $params['_page'];
-        } else {
-            $page = null;
         }
 
         // Note: search parameter not currently used in this endpoint.
@@ -587,7 +584,9 @@ class SchemasController extends Controller
         if ($id !== null) {
             // If ID is provided, find the existing schema.
             $schema = $this->schemaMapper->find($id);
-        } else {
+        }
+
+        if ($id === null) {
             // Otherwise, create a new schema.
             $schema = new Schema();
             $schema->setUuid(Uuid::v4()->toRfc4122());
@@ -609,7 +608,10 @@ class SchemasController extends Controller
             // Update the schema with the data from the uploaded JSON.
             $schema->hydrate($phpArray);
 
-            if ($schema->getId() === null) {
+            // Track whether this is a new schema before potential insert.
+            $isNewSchema = ($schema->getId() === null);
+
+            if ($isNewSchema === true) {
                 // Insert a new schema if no ID is set.
                 $schema = $this->schemaMapper->insert($schema);
 
@@ -623,7 +625,9 @@ class SchemasController extends Controller
                 // **CACHE INVALIDATION**: Clear all schema-related caches when schema is created.
                 $this->schemaCacheService->invalidateForSchemaChange(schemaId: $schema->getId(), operation: 'create');
                 $this->schemaFacetCacheService->invalidateForSchemaChange(schemaId: $schema->getId(), operation: 'create');
-            } else {
+            }
+
+            if ($isNewSchema === false) {
                 // Update the existing schema.
                 $schema = $this->schemaMapper->update($schema);
 
@@ -633,7 +637,7 @@ class SchemasController extends Controller
                     schemaId: $schema->getId(),
                     operation: 'update'
                 );
-            }//end if
+            }
 
             return new JSONResponse(data: $schema);
         } catch (DBException $e) {
@@ -948,11 +952,9 @@ class SchemasController extends Controller
     {
         try {
             // Get the publication date from request if provided, otherwise use now.
-            $date = null;
+            $date = new DateTime();
             if ($this->request->getParam('date') !== null) {
                 $date = new DateTime($this->request->getParam('date'));
-            } else {
-                $date = new DateTime();
             }
 
             // Get the schema.
@@ -1030,11 +1032,9 @@ class SchemasController extends Controller
     {
         try {
             // Get the depublication date from request if provided, otherwise use now.
-            $date = null;
+            $date = new DateTime();
             if ($this->request->getParam('date') !== null) {
                 $date = new DateTime($this->request->getParam('date'));
-            } else {
-                $date = new DateTime();
             }
 
             // Get the schema.

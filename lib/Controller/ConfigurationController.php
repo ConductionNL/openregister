@@ -1566,7 +1566,9 @@ class ConfigurationController extends Controller
             $message .= ". Note: Published to branch '{$params['branch']}' (default is '{$defaultBranch}'). ";
             $message .= 'GitHub Code Search primarily indexes the default branch, ';
             $message .= 'so this configuration may not appear in search results immediately.';
-        } else {
+        }
+
+        if ($defaultBranch === null || $params['branch'] === $defaultBranch) {
             $message .= ". Note: GitHub Code Search may take a few minutes to index new files.";
         }
 

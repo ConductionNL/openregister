@@ -69,18 +69,22 @@ class Version1Date20251107170000 extends SimpleMigrationStep
                 );
                 $output->info(message: '✅ Added chunks_json column to file_texts table');
                 $updated = true;
-            } else {
+            }
+
+            if ($table->hasColumn('chunks_json') === true && $updated === false) {
                 $output->info(message: 'ℹ️  chunks_json column already exists in file_texts table');
             }
-        } else {
+        }//end if
+
+        if ($schema->hasTable('openregister_file_texts') === false) {
             $output->warning(message: '⚠️  openregister_file_texts table does not exist');
         }//end if
 
-        if ($updated === true) {
-            return $schema;
+        if ($updated === false) {
+            return null;
         }
 
-        return null;
+        return $schema;
     }//end changeSchema()
 
     /**

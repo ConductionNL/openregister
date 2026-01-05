@@ -76,15 +76,19 @@ class Version1Date20250908174500 extends SimpleMigrationStep
                         // Don't fail the migration - log the issue but continue.
                         $output->info(message: 'ℹ️  Migration continuing without UUID constraint');
                     }
-                } else {
-                    $output->info(message: 'ℹ️  UUID unique constraint already exists');
+
+                    return $schema;
                 }
-            } else {
-                $output->info(message: '⚠️  UUID column not found - cannot add unique constraint');
+
+                $output->info(message: 'ℹ️  UUID unique constraint already exists');
+                return $schema;
             }//end if
-        } else {
-            $output->info(message: '⚠️  openregister_objects table not found');
+
+            $output->info(message: '⚠️  UUID column not found - cannot add unique constraint');
+            return $schema;
         }//end if
+
+        $output->info(message: '⚠️  openregister_objects table not found');
 
         $output->info(message: '🎉 UUID unique constraint migration completed');
 

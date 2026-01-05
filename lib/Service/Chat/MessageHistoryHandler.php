@@ -139,7 +139,9 @@ class MessageHistoryHandler
                     $history[] = LLPhantMessage::assistant($content);
                 } else if ($role === 'system') {
                     $history[] = LLPhantMessage::system($content);
-                } else {
+                }
+
+                if ($role !== 'user' && $role !== 'assistant' && $role !== 'system') {
                     $this->logger->warning(
                         message: '[ChatService] Unknown message role',
                         context: [
@@ -147,7 +149,9 @@ class MessageHistoryHandler
                         ]
                     );
                 }
-            } else {
+            }
+
+            if (empty($role) === true || empty($content) === true) {
                 $this->logger->warning(
                     message: '[ChatService] Skipping message with missing role or content',
                     context: [

@@ -1097,6 +1097,8 @@ class SetupHandler
      * @param string $templateConfigSetName Name of the template configSet to copy from
      *
      * @return bool True if configSet was created successfully
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future SOLR configSet management
      */
     private function createConfigSet(string $newConfigSetName, string $templateConfigSetName): bool
     {
@@ -1528,26 +1530,17 @@ class SetupHandler
             return false;
         } catch (\Exception $e) {
             // Capture SOLR API errors (400 responses, validation errors, etc.).
-            $solrResponse  = null;
             $errorCategory = 'solr_api_error';
-            $retryDetails  = null;
 
-            // Try to extract retry details and SOLR response from nested exception.
+            // Try to extract error category from nested exception.
             if (($e->getPrevious() !== null) === true && ($e->getPrevious()->getMessage() !== null) === true) {
-                $possibleJson    = $e->getPrevious()->getMessage();
-                $decodedResponse = json_decode($possibleJson, true);
-                if (json_last_error() === JSON_ERROR_NONE) {
-                    // Regular SOLR response (default).
-                    $solrResponse  = $decodedResponse;
+                $possibleJson = $e->getPrevious()->getMessage();
+                // Check if message is valid JSON (indicates SOLR response).
+                // Call json_decode only for its side effect on json_last_error().
+                $isValidJson = (json_decode($possibleJson, true) !== null || json_last_error() === JSON_ERROR_NONE);
+                if ($isValidJson === true) {
+                    // Valid JSON response indicates SOLR validation error.
                     $errorCategory = 'solr_validation_error';
-
-                    // Check if this is retry details from createCollectionWithRetry.
-                    $hasAttempts   = ($decodedResponse['attempts'] ?? null) !== null;
-                    $hasTimestamps = ($decodedResponse['attempt_timestamps'] ?? null) !== null;
-                    if ($hasAttempts === true && $hasTimestamps === true) {
-                        $retryDetails = $decodedResponse;
-                        $solrResponse = $decodedResponse['last_solr_response'] ?? null;
-                    }
                 }
             }
 
@@ -1562,12 +1555,6 @@ class SetupHandler
                 ]
             );
 
-            // Determine SOLR response value for error details.
-            // Note: $retryDetails is checked but $solrResponseValue calculation was incorrect.
-            // Simplified to just use $solrResponse directly.
-            // If ($retryDetails === true) {
-            // $solrResponseValue = $retryDetails;
-            // }.
             $this->lastErrorDetails = [
                 'primary_error'      => 'Failed to create tenant collection "'.$tenantCollectionName.'"',
                 'error_type'         => 'collection_creation_failure',
@@ -1979,6 +1966,8 @@ class SetupHandler
      * @param string $configSetName  Name of the configSet to use
      *
      * @return bool True if collection was created successfully
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future SOLR collection management
      */
     private function createCollection(string $collectionName, string $configSetName): bool
     {
@@ -2878,6 +2867,8 @@ class SetupHandler
      * @param array  $fieldConfig Field configuration
      *
      * @return bool True if field was added successfully
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future SOLR schema management
      */
     private function addSchemaField(string $fieldName, array $fieldConfig): bool
     {
@@ -2946,6 +2937,8 @@ class SetupHandler
      * @param array  $fieldConfig Field configuration
      *
      * @return bool True if field was replaced successfully
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future SOLR schema management
      */
     private function replaceSchemaField(string $fieldName, array $fieldConfig): bool
     {

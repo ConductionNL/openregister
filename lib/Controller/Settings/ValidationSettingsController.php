@@ -225,10 +225,9 @@ class ValidationSettingsController extends Controller
             $predictionSafe = $totalEstimatedMemory < ($availableMemory * 0.8);
             // Use 80% as safety margin.
             // Get recommendation message based on prediction safety.
+            $recommendationMessage = 'Warning: Memory usage may exceed available memory';
             if ($predictionSafe === true) {
                 $recommendationMessage = 'Safe to process';
-            } else {
-                $recommendationMessage = 'Warning: Memory usage may exceed available memory';
             }
 
             $noteMessage = 'Fast prediction mode - actual object count will be determined during processing';

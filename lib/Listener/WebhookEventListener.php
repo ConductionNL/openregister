@@ -175,21 +175,22 @@ class WebhookEventListener implements IEventListener
         }
 
         // Object events - After events (ed).
-        if ($event instanceof ObjectCreatedEvent || $event instanceof ObjectUpdatedEvent) {
-            if ($event instanceof ObjectCreatedEvent) {
-                $object = $event->getObject();
-            } else {
-                $object = $event->getNewObject();
-            }
-
-            $action = 'updated';
-            if ($event instanceof ObjectCreatedEvent) {
-                $action = 'created';
-            }
-
+        if ($event instanceof ObjectCreatedEvent) {
+            $object = $event->getObject();
             return [
                 'objectType' => 'object',
-                'action'     => $action,
+                'action'     => 'created',
+                'object'     => $object->jsonSerialize(),
+                'register'   => $object->getRegister(),
+                'schema'     => $object->getSchema(),
+            ];
+        }
+
+        if ($event instanceof ObjectUpdatedEvent) {
+            $object = $event->getNewObject();
+            return [
+                'objectType' => 'object',
+                'action'     => 'updated',
                 'object'     => $object->jsonSerialize(),
                 'register'   => $object->getRegister(),
                 'schema'     => $object->getSchema(),

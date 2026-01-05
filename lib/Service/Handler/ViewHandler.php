@@ -19,11 +19,6 @@
 
 namespace OCA\OpenRegister\Service\Handler;
 
-use Exception;
-use OCA\OpenRegister\Db\View;
-use OCA\OpenRegister\Db\ViewMapper;
-use Psr\Log\LoggerInterface;
-
 /**
  * Class ViewHandler
  *
@@ -33,18 +28,4 @@ use Psr\Log\LoggerInterface;
  */
 class ViewHandler
 {
-
-    /**
-     * View mapper instance.
-     *
-     * @var ViewMapper The view mapper instance.
-     */
-    private ViewMapper $viewMapper;
-
-    /**
-     * Logger instance.
-     *
-     * @var LoggerInterface The logger instance.
-     */
-    private LoggerInterface $logger;
 }//end class

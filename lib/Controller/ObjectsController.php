@@ -478,12 +478,11 @@ class ObjectsController extends Controller
         $limit  = $query['_limit'] ?? 20;
         $offset = $query['_offset'] ?? 0;
         $total  = count($serializedResults);
+        $pages  = 1;
+        $page   = 1;
         if ($limit > 0) {
             $pages = (int) ceil($total / $limit);
             $page  = (int) floor($offset / $limit) + 1;
-        } else {
-            $pages = 1;
-            $page  = 1;
         }
 
         return new JSONResponse(
@@ -615,16 +614,14 @@ class ObjectsController extends Controller
         // If multiple schemas or registers are specified via parameters, use cross-table search.
         if ((count($schemasList) > 1) || (count($registersList) > 1)) {
             // Use schema list if specified, otherwise use URL path schema.
+            $finalSchemas = [$schema];
             if (empty($schemasList) === false) {
                 $finalSchemas = $schemasList;
-            } else {
-                $finalSchemas = [$schema];
             }
 
+            $finalRegisters = [$register];
             if (empty($registersList) === false) {
                 $finalRegisters = $registersList;
-            } else {
-                $finalRegisters = [$register];
             }
 
             return $this->crossTableSearch(
@@ -694,12 +691,11 @@ class ObjectsController extends Controller
                 $limit  = $query['_limit'] ?? 20;
                 $offset = $query['_offset'] ?? 0;
                 $total  = count($serializedResults);
+                $pages  = 1;
+                $page   = 1;
                 if ($limit > 0) {
                     $pages = (int) ceil($total / $limit);
                     $page  = (int) floor($offset / $limit) + 1;
-                } else {
-                    $pages = 1;
-                    $page  = 1;
                 }
 
                 // Return in expected format.
@@ -1040,40 +1036,36 @@ class ObjectsController extends Controller
                  * @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types
                  */
 
+                $typeArray = [];
                 if (is_array($typeRaw) === true) {
                     $typeArray = $typeRaw;
-                } else {
-                    $typeArray = [];
                 }
 
                 /*
                  * @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types
                  */
 
+                $tmpNameArray = [];
                 if (is_array($tmpNameRaw) === true) {
                     $tmpNameArray = $tmpNameRaw;
-                } else {
-                    $tmpNameArray = [];
                 }
 
                 /*
                  * @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types
                  */
 
+                $errorArray = [];
                 if (is_array($errorRaw) === true) {
                     $errorArray = $errorRaw;
-                } else {
-                    $errorArray = [];
                 }
 
                 /*
                  * @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types
                  */
 
+                $sizeArray = [];
                 if (is_array($sizeRaw) === true) {
                     $sizeArray = $sizeRaw;
-                } else {
-                    $sizeArray = [];
                 }
 
                 $fileCount = count($nameArray);
@@ -1249,40 +1241,36 @@ class ObjectsController extends Controller
                  * @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types
                  */
 
+                $typeArray = [];
                 if (is_array($typeRaw) === true) {
                     $typeArray = $typeRaw;
-                } else {
-                    $typeArray = [];
                 }
 
                 /*
                  * @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types
                  */
 
+                $tmpNameArray = [];
                 if (is_array($tmpNameRaw) === true) {
                     $tmpNameArray = $tmpNameRaw;
-                } else {
-                    $tmpNameArray = [];
                 }
 
                 /*
                  * @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types
                  */
 
+                $errorArray = [];
                 if (is_array($errorRaw) === true) {
                     $errorArray = $errorRaw;
-                } else {
-                    $errorArray = [];
                 }
 
                 /*
                  * @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types
                  */
 
+                $sizeArray = [];
                 if (is_array($sizeRaw) === true) {
                     $sizeArray = $sizeRaw;
-                } else {
-                    $sizeArray = [];
                 }
 
                 $fileCount = count($nameArray);
@@ -2005,10 +1993,9 @@ class ObjectsController extends Controller
 
             // Get optional schema for CSV (can be null, handler will auto-resolve).
             $schemaId = $this->request->getParam(key: 'schema');
+            $schema   = null;
             if ($schemaId !== null && $schemaId !== '') {
                 $schema = $this->schemaMapper->find($schemaId);
-            } else {
-                $schema = null;
             }
 
             // Get optional parameters with sensible defaults.

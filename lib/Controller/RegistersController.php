@@ -257,22 +257,19 @@ class RegistersController extends Controller
         $params = $this->request->getParams();
 
         // Extract pagination and search parameters.
+        $limit = null;
         if (isset($params['_limit']) === true) {
             $limit = (int) $params['_limit'];
-        } else {
-            $limit = null;
         }
 
+        $offset = null;
         if (isset($params['_offset']) === true) {
             $offset = (int) $params['_offset'];
-        } else {
-            $offset = null;
         }
 
+        $page = null;
         if (isset($params['_page']) === true) {
             $page = (int) $params['_page'];
-        } else {
-            $page = null;
         }
 
         // Note: search parameter not currently used in this endpoint.
@@ -804,15 +801,16 @@ class RegistersController extends Controller
                 $delayNote  = 'This may not appear in search results immediately.';
                 $branchNote = "Note: Published to branch '{$branch}' (default is '{$defaultBranch}').";
                 $message   .= ". {$branchNote} {$searchNote} {$delayNote}";
-            } else {
+            }
+
+            if (($defaultBranch === null || $defaultBranch === '') === true || $branch === $defaultBranch) {
                 $message .= ". Note: GitHub Code Search may take a few minutes to index new files.";
             }
 
             // Determine indexing note.
+            $indexingNote = "File published successfully. GitHub Code Search indexing may take a few minutes.";
             if (($defaultBranch !== null) === true && $branch !== $defaultBranch) {
                 $indexingNote = "Published to non-default branch. For discovery, publish to '{$defaultBranch}' branch.";
-            } else {
-                $indexingNote = "File published successfully. GitHub Code Search indexing may take a few minutes.";
             }
 
             return new JSONResponse(
@@ -852,6 +850,8 @@ class RegistersController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag to override version checks
      */
     public function import(int $id, bool $force=false): JSONResponse
     {
@@ -871,7 +871,9 @@ class RegistersController extends Controller
                     $type = 'excel';
                 } else if ($extension === 'csv') {
                     $type = 'csv';
-                } else {
+                }
+
+                if (in_array($extension, ['xlsx', 'xls', 'csv']) === false) {
                     $type = 'configuration';
                 }
             }
@@ -1123,6 +1125,8 @@ class RegistersController extends Controller
      * @param bool   $default   Default value if parameter is not present
      *
      * @return bool The parsed boolean value
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Default value is needed for parameter parsing
      */
     private function parseBooleanParam(string $paramName, bool $default=false): bool
     {
@@ -1209,11 +1213,9 @@ class RegistersController extends Controller
     {
         try {
             // Get the publication date from request if provided, otherwise use now.
-            $date = null;
+            $date = new DateTime();
             if ($this->request->getParam('date') !== null) {
                 $date = new DateTime($this->request->getParam('date'));
-            } else {
-                $date = new DateTime();
             }
 
             // Get the register.
@@ -1309,11 +1311,9 @@ class RegistersController extends Controller
     {
         try {
             // Get the depublication date from request if provided, otherwise use now.
-            $date = null;
+            $date = new DateTime();
             if ($this->request->getParam('date') !== null) {
                 $date = new DateTime($this->request->getParam('date'));
-            } else {
-                $date = new DateTime();
             }
 
             // Get the register.

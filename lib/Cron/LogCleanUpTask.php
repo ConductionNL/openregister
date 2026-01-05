@@ -105,14 +105,15 @@ class LogCleanUpTask extends TimedJob
                         'app' => 'openregister',
                     ]
                 );
-            } else {
-                $this->logger->debug(
-                    'No expired audit trail logs found to clear',
-                    [
-                        'app' => 'openregister',
-                    ]
-                );
+                return;
             }
+
+            $this->logger->debug(
+                'No expired audit trail logs found to clear',
+                [
+                    'app' => 'openregister',
+                ]
+            );
         } catch (\Exception $e) {
             // Log any errors that occur during cleanup.
             $this->logger->error(

@@ -123,7 +123,8 @@ class StatisticsHandler
                     $paramType = \Doctrine\DBAL\Connection::PARAM_STR_ARRAY;
                     $param     = $qb->createNamedParameter($stringIds, $paramType);
                     $qb->andWhere($qb->expr()->in('register', $param));
-                } else {
+                }
+                if (is_array($registerId) === false) {
                     $param = $qb->createNamedParameter((string) $registerId, IQueryBuilder::PARAM_STR);
                     $qb->andWhere($qb->expr()->eq('register', $param));
                 }
@@ -138,7 +139,8 @@ class StatisticsHandler
                     $paramType = \Doctrine\DBAL\Connection::PARAM_STR_ARRAY;
                     $param     = $qb->createNamedParameter($stringIds, $paramType);
                     $qb->andWhere($qb->expr()->in('schema', $param));
-                } else {
+                }
+                if (is_array($schemaId) === false) {
                     $param = $qb->createNamedParameter((string) $schemaId, IQueryBuilder::PARAM_STR);
                     $qb->andWhere($qb->expr()->eq('schema', $param));
                 }
@@ -228,11 +230,11 @@ class StatisticsHandler
                 ->from($this->tableName, 'o');
 
             // PostgreSQL requires explicit casting for VARCHAR to BIGINT comparison.
+            // MySQL/MariaDB does implicit type conversion.
+            $qb->leftJoin('o', 'openregister_registers', 'r', 'o.register = r.id');
             if ($platform === 'postgresql') {
+                $qb->resetQueryPart('join');
                 $qb->leftJoin('o', 'openregister_registers', 'r', 'CAST(o.register AS BIGINT) = r.id');
-            } else {
-                // MySQL/MariaDB does implicit type conversion.
-                $qb->leftJoin('o', 'openregister_registers', 'r', 'o.register = r.id');
             }
 
             $qb->groupBy('r.id', 'r.title')->orderBy('count', 'DESC');
@@ -302,11 +304,11 @@ class StatisticsHandler
                 ->from($this->tableName, 'o');
 
             // PostgreSQL requires explicit casting for VARCHAR to BIGINT comparison.
+            // MySQL/MariaDB does implicit type conversion.
+            $qb->leftJoin('o', 'openregister_schemas', 's', 'o.schema = s.id');
             if ($platform === 'postgresql') {
+                $qb->resetQueryPart('join');
                 $qb->leftJoin('o', 'openregister_schemas', 's', 'CAST(o.schema AS BIGINT) = s.id');
-            } else {
-                // MySQL/MariaDB does implicit type conversion.
-                $qb->leftJoin('o', 'openregister_schemas', 's', 'o.schema = s.id');
             }
 
             $qb->groupBy('s.id', 's.title')->orderBy('count', 'DESC');

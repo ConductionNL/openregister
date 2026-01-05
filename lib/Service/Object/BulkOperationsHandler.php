@@ -184,14 +184,13 @@ class BulkOperationsHandler
         }
 
         // Apply RBAC and multi-organization filtering if enabled.
+        $filteredUuids = $uuids;
         if ($_rbac === true || $_multitenancy === true) {
             $filteredUuids = $this->permissionHandler->filterUuidsForPermissions(
                 uuids: $uuids,
                 rbac: $_rbac,
                 multitenancy: $_multitenancy
             );
-        } else {
-            $filteredUuids = $uuids;
         }
 
         // Use the mapper's bulk delete operation (now with register/schema for magic mapper).
@@ -274,14 +273,13 @@ class BulkOperationsHandler
         }
 
         // Apply RBAC and multi-organization filtering if enabled.
+        $filteredUuids = $uuids;
         if ($_rbac === true || $_multitenancy === true) {
             $filteredUuids = $this->permissionHandler->filterUuidsForPermissions(
                 uuids: $uuids,
                 rbac: $_rbac,
                 multitenancy: $_multitenancy
             );
-        } else {
-            $filteredUuids = $uuids;
         }
 
         // Use the mapper's bulk publish operation (now with register/schema for magic mapper).
@@ -364,14 +362,13 @@ class BulkOperationsHandler
         }
 
         // Apply RBAC and multi-organization filtering if enabled.
+        $filteredUuids = $uuids;
         if ($_rbac === true || $_multitenancy === true) {
             $filteredUuids = $this->permissionHandler->filterUuidsForPermissions(
                 uuids: $uuids,
                 rbac: $_rbac,
                 multitenancy: $_multitenancy
             );
-        } else {
-            $filteredUuids = $uuids;
         }
 
         // Use the mapper's bulk depublish operation (now with register/schema for magic mapper).

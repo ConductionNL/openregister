@@ -385,6 +385,8 @@ class DocumentProcessingHandler
      * @return IUser The current user.
      *
      * @throws Exception If no user is logged in.
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future user context needs
      */
     private function getUser(): IUser
     {

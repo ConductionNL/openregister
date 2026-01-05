@@ -210,6 +210,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      *
      * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found.
      * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple objects found.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
      */
     public function find(
         string|int $identifier,
@@ -261,6 +263,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      * @throws \OCP\DB\Exception If a database error occurs.
      *
      * @psalm-return list<ObjectEntity>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Include deleted toggle is intentional
      */
     public function findAll(
         ?int $limit=null,
@@ -598,6 +602,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      * @return array Delete results
      *
      * @psalm-return list<mixed>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Hard delete toggle controls permanent vs soft delete
      */
     public function deleteObjects(array $uuids=[], bool $hardDelete=false): array
     {
@@ -613,6 +619,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      * @return array Publish results
      *
      * @psalm-return list<mixed>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) DateTime or bool controls publish timing
      */
     public function publishObjects(array $uuids=[], DateTime|bool $datetime=true): array
     {
@@ -628,6 +636,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      * @return array Depublish results
      *
      * @psalm-return list<mixed>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) DateTime or bool controls depublish timing
      */
     public function depublishObjects(array $uuids=[], DateTime|bool $datetime=true): array
     {
@@ -726,6 +736,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      * @return ObjectEntity[]
      *
      * @psalm-return list<OCA\OpenRegister\Db\ObjectEntity>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
      */
     public function searchObjects(
         array $query=[],
@@ -756,6 +768,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      * @param string|null $uses                   Uses filter
      *
      * @return int Object count
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
      */
     public function countSearchObjects(
         array $query=[],

@@ -421,40 +421,40 @@ class WebhooksController extends Controller
                         'message' => 'Test webhook delivered successfully',
                     ]
                 );
-            } else {
-                // Get the latest log entry to retrieve error details.
-                $latestLogs   = $this->webhookLogMapper->findByWebhook(webhookId: $id, limit: 1, offset: 0);
-                $errorMessage = 'Test webhook delivery failed';
-                $errorDetails = null;
+            }
 
-                if (empty($latestLogs) === false) {
-                    $latestLog = $latestLogs[0];
-                    if ($latestLog->getErrorMessage() !== null) {
-                        $errorMessage = $latestLog->getErrorMessage();
-                    }
+            // Get the latest log entry to retrieve error details.
+            $latestLogs   = $this->webhookLogMapper->findByWebhook(webhookId: $id, limit: 1, offset: 0);
+            $errorMessage = 'Test webhook delivery failed';
+            $errorDetails = null;
 
-                    if ($latestLog->getStatusCode() !== null) {
-                        $errorDetails = [
-                            'status_code'   => $latestLog->getStatusCode(),
-                            'response_body' => $latestLog->getResponseBody(),
-                        ];
-                    }
+            if (empty($latestLogs) === false) {
+                $latestLog = $latestLogs[0];
+                if ($latestLog->getErrorMessage() !== null) {
+                    $errorMessage = $latestLog->getErrorMessage();
                 }
 
-                $responseData = [
-                    'success' => false,
-                    'message' => $errorMessage,
-                ];
-
-                if ($errorDetails !== null) {
-                    $responseData['error_details'] = $errorDetails;
+                if ($latestLog->getStatusCode() !== null) {
+                    $errorDetails = [
+                        'status_code'   => $latestLog->getStatusCode(),
+                        'response_body' => $latestLog->getResponseBody(),
+                    ];
                 }
+            }
 
-                return new JSONResponse(
-                    data: $responseData,
-                    statusCode: 500
-                );
-            }//end if
+            $responseData = [
+                'success' => false,
+                'message' => $errorMessage,
+            ];
+
+            if ($errorDetails !== null) {
+                $responseData['error_details'] = $errorDetails;
+            }
+
+            return new JSONResponse(
+                data: $responseData,
+                statusCode: 500
+            );
         } catch (DoesNotExistException $e) {
             return new JSONResponse(
                 data: [

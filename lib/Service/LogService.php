@@ -383,22 +383,28 @@ class LogService
                         $failed++;
                     }
                 }
-            } else {
-                // Otherwise, use filters to find logs to delete.
-                $logs = $this->auditTrailMapper->findAll(
-                    filters: $config['filters'] ?? [],
-                    search: $config['search'] ?? null
-                );
 
-                foreach ($logs as $log) {
-                    try {
-                        $this->auditTrailMapper->delete($log);
-                        $deleted++;
-                    } catch (Exception $e) {
-                        $failed++;
-                    }
+                return [
+                    'success' => true,
+                    'deleted' => $deleted,
+                    'failed'  => $failed,
+                ];
+            }
+
+            // Otherwise, use filters to find logs to delete.
+            $logs = $this->auditTrailMapper->findAll(
+                filters: $config['filters'] ?? [],
+                search: $config['search'] ?? null
+            );
+
+            foreach ($logs as $log) {
+                try {
+                    $this->auditTrailMapper->delete($log);
+                    $deleted++;
+                } catch (Exception $e) {
+                    $failed++;
                 }
-            }//end if
+            }
 
             return [
                 'deleted' => $deleted,

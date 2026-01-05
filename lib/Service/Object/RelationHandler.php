@@ -126,30 +126,33 @@ class RelationHandler
             $foundIds = array_map(
                 function (ObjectEntity $object) use ($property, $key) {
                     $serialized = $object->jsonSerialize();
+                    $idRaw = null;
                     if (is_array($property) === true
                         && is_array($serialized) === true
                         && isset($property['inversedBy']) === true
                     ) {
                         $idRaw = $serialized[$property['inversedBy']];
-                    } else {
-                        $idRaw = null;
                     }
 
                     if (Uuid::isValid($idRaw) === true) {
                         return $idRaw;
-                    } else if (filter_var($idRaw, FILTER_VALIDATE_URL) !== false) {
+                    }
+
+                    if (filter_var($idRaw, FILTER_VALIDATE_URL) !== false) {
                         $path = explode(separator: '/', string: parse_url($idRaw, PHP_URL_PATH));
 
                         return end($path);
                     }
+
+                    return null;
                 },
                 $objects
             );
 
-            if ($ids === []) {
-                $ids = $foundIds;
-            } else {
+            if ($ids !== []) {
                 $ids = array_intersect(array1: $ids, array2: $foundIds);
+            } else {
+                $ids = $foundIds;
             }
 
             foreach (array_keys($value) as $k) {
@@ -454,13 +457,9 @@ class RelationHandler
             // Apply pagination.
             $limit  = $filters['_limit'] ?? 30;
             $offset = $filters['_offset'] ?? 0;
+            $total  = 0;
             if (is_array($contracts) === true) {
-                $total = count($contracts);
-            } else {
-                $total = 0;
-            }
-
-            if (is_array($contracts) === true) {
+                $total     = count($contracts);
                 $contracts = array_slice($contracts, $offset, $limit);
             }
 

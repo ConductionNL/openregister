@@ -196,9 +196,9 @@ class Version1Date20251102140000 extends SimpleMigrationStep
             $output->info('   • Future: Expose views as API endpoints');
 
             return $schema;
-        } else {
-            $output->info(message: 'ℹ️  Views table already exists, skipping...');
         }//end if
+
+        $output->info(message: 'ℹ️  Views table already exists, skipping...');
 
         return null;
     }//end changeSchema()

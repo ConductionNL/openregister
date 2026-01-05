@@ -1030,41 +1030,41 @@ class ConfigurationSettingsHandler
             $existingConfig = $this->getLLMSettingsOnly();
 
             // Merge with existing config (PATCH behavior).
-            $n  = $llmData;
-            $o  = $existingConfig;
-            $nO = $n['openaiConfig'] ?? [];
-            $oO = $o['openaiConfig'] ?? [];
-            $nL = $n['ollamaConfig'] ?? [];
-            $oL = $o['ollamaConfig'] ?? [];
-            $nF = $n['fireworksConfig'] ?? [];
-            $oF = $o['fireworksConfig'] ?? [];
-            $nV = $n['vectorConfig'] ?? [];
-            $oV = $o['vectorConfig'] ?? [];
+            $newConfig    = $llmData;
+            $oldConfig    = $existingConfig;
+            $newOpenai    = $newConfig['openaiConfig'] ?? [];
+            $oldOpenai    = $oldConfig['openaiConfig'] ?? [];
+            $newOllama    = $newConfig['ollamaConfig'] ?? [];
+            $oldOllama    = $oldConfig['ollamaConfig'] ?? [];
+            $newFireworks = $newConfig['fireworksConfig'] ?? [];
+            $oldFireworks = $oldConfig['fireworksConfig'] ?? [];
+            $newVector    = $newConfig['vectorConfig'] ?? [];
+            $oldVector    = $oldConfig['vectorConfig'] ?? [];
 
             $llmConfig = [
-                'enabled'           => $n['enabled'] ?? $o['enabled'] ?? false,
-                'embeddingProvider' => $n['embeddingProvider'] ?? $o['embeddingProvider'] ?? null,
-                'chatProvider'      => $n['chatProvider'] ?? $o['chatProvider'] ?? null,
+                'enabled'           => $newConfig['enabled'] ?? $oldConfig['enabled'] ?? false,
+                'embeddingProvider' => $newConfig['embeddingProvider'] ?? $oldConfig['embeddingProvider'] ?? null,
+                'chatProvider'      => $newConfig['chatProvider'] ?? $oldConfig['chatProvider'] ?? null,
                 'openaiConfig'      => [
-                    'apiKey'         => $nO['apiKey'] ?? $oO['apiKey'] ?? '',
-                    'model'          => $nO['model'] ?? $oO['model'] ?? null,
-                    'chatModel'      => $nO['chatModel'] ?? $oO['chatModel'] ?? null,
-                    'organizationId' => $nO['organizationId'] ?? $oO['organizationId'] ?? '',
+                    'apiKey'         => $newOpenai['apiKey'] ?? $oldOpenai['apiKey'] ?? '',
+                    'model'          => $newOpenai['model'] ?? $oldOpenai['model'] ?? null,
+                    'chatModel'      => $newOpenai['chatModel'] ?? $oldOpenai['chatModel'] ?? null,
+                    'organizationId' => $newOpenai['organizationId'] ?? $oldOpenai['organizationId'] ?? '',
                 ],
                 'ollamaConfig'      => [
-                    'url'       => $nL['url'] ?? $oL['url'] ?? 'http://localhost:11434',
-                    'model'     => $nL['model'] ?? $oL['model'] ?? null,
-                    'chatModel' => $nL['chatModel'] ?? $oL['chatModel'] ?? null,
+                    'url'       => $newOllama['url'] ?? $oldOllama['url'] ?? 'http://localhost:11434',
+                    'model'     => $newOllama['model'] ?? $oldOllama['model'] ?? null,
+                    'chatModel' => $newOllama['chatModel'] ?? $oldOllama['chatModel'] ?? null,
                 ],
                 'fireworksConfig'   => [
-                    'apiKey'         => $nF['apiKey'] ?? $oF['apiKey'] ?? '',
-                    'embeddingModel' => $nF['embeddingModel'] ?? $oF['embeddingModel'] ?? null,
-                    'chatModel'      => $nF['chatModel'] ?? $oF['chatModel'] ?? null,
-                    'baseUrl'        => $nF['baseUrl'] ?? $oF['baseUrl'] ?? self::FIREWORKS_API_URL,
+                    'apiKey'         => $newFireworks['apiKey'] ?? $oldFireworks['apiKey'] ?? '',
+                    'embeddingModel' => $newFireworks['embeddingModel'] ?? $oldFireworks['embeddingModel'] ?? null,
+                    'chatModel'      => $newFireworks['chatModel'] ?? $oldFireworks['chatModel'] ?? null,
+                    'baseUrl'        => $newFireworks['baseUrl'] ?? $oldFireworks['baseUrl'] ?? self::FIREWORKS_API_URL,
                 ],
                 'vectorConfig'      => [
-                    'backend'   => $nV['backend'] ?? $oV['backend'] ?? 'php',
-                    'solrField' => $nV['solrField'] ?? $oV['solrField'] ?? '_embedding_',
+                    'backend'   => $newVector['backend'] ?? $oldVector['backend'] ?? 'php',
+                    'solrField' => $newVector['solrField'] ?? $oldVector['solrField'] ?? '_embedding_',
                 ],
             ];
 

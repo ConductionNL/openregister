@@ -306,12 +306,11 @@ class AuditTrailMapper extends QBMapper
         $auditTrail->setAction($action);
         $auditTrail->setChanged($changed);
 
+        $auditTrail->setUser('System');
+        $auditTrail->setUserName('System');
         if ($user !== null) {
             $auditTrail->setUser($user->getUID());
             $auditTrail->setUserName($user->getDisplayName());
-        } else {
-            $auditTrail->setUser('System');
-            $auditTrail->setUserName('System');
         }
 
         $auditTrail->setSession(session_id());
@@ -427,6 +426,8 @@ class AuditTrailMapper extends QBMapper
      * @throws \Exception If revert fails
      *
      * @return ObjectEntity The reverted object (unsaved)
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Controls version handling strategy on revert
      */
     public function revertObject($identifier, $until=null, bool $overwriteVersion=false): ObjectEntity
     {

@@ -76,28 +76,44 @@ class SolrEventListener implements IEventListener
                 $this->logger->debug('=== END EVENT DEBUG ===');
                 $this->logger->debug('Handling ObjectCreatedEvent', ['object_id' => $event->getObject()->getId()]);
                 $this->handleObjectCreated($event);
-            } else if ($event instanceof ObjectUpdatedEvent) {
+                return;
+            }
+
+            if ($event instanceof ObjectUpdatedEvent) {
                 $this->logger->debug('Handling ObjectUpdatedEvent', ['object_id' => $event->getNewObject()->getId()]);
                 $this->handleObjectUpdated($event);
-            } else if ($event instanceof ObjectDeletedEvent) {
+                return;
+            }
+
+            if ($event instanceof ObjectDeletedEvent) {
                 $this->logger->debug('Handling ObjectDeletedEvent', ['object_id' => $event->getObject()->getId()]);
                 $this->handleObjectDeleted($event);
-            } else if ($event instanceof SchemaCreatedEvent) {
+                return;
+            }
+
+            if ($event instanceof SchemaCreatedEvent) {
                 $this->handleSchemaCreated($event);
-            } else if ($event instanceof SchemaUpdatedEvent) {
+                return;
+            }
+
+            if ($event instanceof SchemaUpdatedEvent) {
                 $this->handleSchemaUpdated($event);
-            } else if ($event instanceof SchemaDeletedEvent) {
+                return;
+            }
+
+            if ($event instanceof SchemaDeletedEvent) {
                 $this->handleSchemaDeleted($event);
-            } else {
-                // Log unhandled events for debugging.
-                $this->logger->debug(
-                    'SolrEventListener: Received unhandled event',
-                    [
-                        'eventClass' => get_class($event),
-                        'app'        => 'openregister',
-                    ]
-                );
-            }//end if
+                return;
+            }
+
+            // Log unhandled events for debugging.
+            $this->logger->debug(
+                'SolrEventListener: Received unhandled event',
+                [
+                    'eventClass' => get_class($event),
+                    'app'        => 'openregister',
+                ]
+            );
         } catch (\Exception $e) {
             // Log errors but don't break the application flow.
             $this->logger->error(

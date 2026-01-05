@@ -60,22 +60,25 @@ class Version1Date20251107190000 extends SimpleMigrationStep
             $table = $schema->getTable('openregister_organisations');
 
             // Remove is_default column if it exists.
-            if ($table->hasColumn('is_default') === true) {
-                $table->dropColumn('is_default');
-                $output->info(message: '✅ Removed is_default column from organisations table');
-                $updated = true;
-            } else {
+            if ($table->hasColumn('is_default') === false) {
                 $output->info(message: 'ℹ️  is_default column does not exist in organisations table');
+                return null;
             }
-        } else {
+
+            $table->dropColumn('is_default');
+            $output->info(message: '✅ Removed is_default column from organisations table');
+            $updated = true;
+        }
+
+        if ($schema->hasTable('openregister_organisations') === false) {
             $output->warning(message: '⚠️  openregister_organisations table does not exist');
         }
 
-        if ($updated === true) {
-            return $schema;
+        if ($updated === false) {
+            return null;
         }
 
-        return null;
+        return $schema;
     }//end changeSchema()
 
     /**

@@ -180,10 +180,9 @@ class OptimizedBulkOperations
         $objectsPerSecond = count($allObjects) / $totalTime;
 
         // Calculate performance improvement.
+        $performanceImprovement = 'baseline';
         if ($objectsPerSecond > 165) {
             $performanceImprovement = round($objectsPerSecond / 165, 1).'x faster';
-        } else {
-            $performanceImprovement = 'baseline';
         }
 
         $this->logger->info(
@@ -361,10 +360,9 @@ class OptimizedBulkOperations
 
         // ENHANCED RETURN: Return complete objects with timestamps for precise classification.
         // If complete objects available, return them; otherwise fallback to UUID array.
+        $finalResult = array_filter($processedUUIDs);
         if (empty($completeObjects) === false) {
             $finalResult = $completeObjects;
-        } else {
-            $finalResult = array_filter($processedUUIDs);
         }
 
         // DEBUG: Returning bulk operation results.
@@ -393,12 +391,11 @@ class OptimizedBulkOperations
         $isPostgres = $platform->getName() === 'postgresql';
 
         // Build INSERT portion with proper column quoting.
+        $columnList = '`'.implode('`, `', $columns).'`';
+        $sql       .= "INSERT INTO `{$tableName}` ({$columnList}) VALUES ";
         if ($isPostgres === true) {
             $columnList = '"'.implode('", "', $columns).'"';
-            $sql       .= "INSERT INTO \"{$tableName}\" ({$columnList}) VALUES ";
-        } else {
-            $columnList = '`'.implode('`, `', $columns).'`';
-            $sql       .= "INSERT INTO `{$tableName}` ({$columnList}) VALUES ";
+            $sql        = "INSERT INTO \"{$tableName}\" ({$columnList}) VALUES ";
         }
 
         // Build VALUES portion - MEMORY INTENSIVE!
@@ -424,12 +421,11 @@ class OptimizedBulkOperations
         $platform   = $this->db->getDatabasePlatform();
         $isPostgres = $platform->getName() === 'postgresql';
 
+        // MySQL/MariaDB uses ON DUPLICATE KEY UPDATE.
+        $sql .= ' ON DUPLICATE KEY UPDATE ';
         if ($isPostgres === true) {
             // PostgreSQL uses ON CONFLICT ... DO UPDATE SET.
-            $sql .= ' ON CONFLICT (uuid) DO UPDATE SET ';
-        } else {
-            // MySQL/MariaDB uses ON DUPLICATE KEY UPDATE.
-            $sql .= ' ON DUPLICATE KEY UPDATE ';
+            $sql = rtrim($sql, ' ON DUPLICATE KEY UPDATE ').' ON CONFLICT (uuid) DO UPDATE SET ';
         }
 
         $updateClauses = [];

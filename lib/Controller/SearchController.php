@@ -182,7 +182,9 @@ class SearchController extends Controller
                 [$query],
                 $searchArray
             );
-        } else {
+        }
+
+        if (is_array($searchArray) === false || empty($searchArray) === true) {
             // Handle comma-separated values in the main query.
             $searchTerms = array_filter(
                 array_map('trim', explode(',', $query)),

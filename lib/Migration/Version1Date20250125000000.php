@@ -69,9 +69,9 @@ class Version1Date20250125000000 extends SimpleMigrationStep
             );
             $output->info('✅ Added configuration column to webhooks table');
             return $schema;
-        } else {
-            $output->info('ℹ️  Configuration column already exists in webhooks table');
-        }//end if
+        }
+
+        $output->info('ℹ️  Configuration column already exists in webhooks table');
 
         return null;
     }//end changeSchema()

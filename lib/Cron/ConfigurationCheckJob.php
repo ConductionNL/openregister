@@ -109,10 +109,11 @@ class ConfigurationCheckJob extends TimedJob
             $this->setInterval(86400 * 365);
             // 1 year.
             $this->logger->info('Configuration check job is disabled (interval set to 0)');
-        } else {
-            $this->setInterval($interval);
-            $this->logger->info("Configuration check job interval set to {$interval} seconds");
+            return;
         }
+
+        $this->setInterval($interval);
+        $this->logger->info("Configuration check job interval set to {$interval} seconds");
     }//end __construct()
 
     /**
@@ -214,9 +215,10 @@ class ConfigurationCheckJob extends TimedJob
             // Handle the update based on auto-update setting.
             if ($configuration->getAutoUpdate() === true) {
                 $this->handleAutoUpdate(configuration: $configuration, stats: $stats);
-            } else {
-                $this->sendUpdateNotification($configuration);
+                return;
             }
+
+            $this->sendUpdateNotification($configuration);
         } catch (Exception $e) {
             $stats['failed']++;
             $this->logger->error("Error checking configuration {$configuration->getId()}: ".$e->getMessage());

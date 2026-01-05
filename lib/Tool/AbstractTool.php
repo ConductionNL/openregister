@@ -237,10 +237,9 @@ abstract class AbstractTool implements ToolInterface
         ];
 
         // Use custom message if provided, otherwise use default message.
+        $messageText = 'Executing function';
         if ($message !== '') {
             $messageText = $message;
-        } else {
-            $messageText = 'Executing function';
         }
 
         // Format log message with tool name, function name, and message text.
@@ -347,22 +346,20 @@ abstract class AbstractTool implements ToolInterface
 
                 // Step 5a: Extract argument value.
                 // Priority: named argument > positional argument > null.
+                // Use positional argument as default.
+                $value = $arguments[$index] ?? null;
                 if ($isAssociative === true && (($arguments[$paramName] ?? null) !== null)) {
                     // Use named argument if available (associative array).
                     $value = $arguments[$paramName];
-                } else {
-                    // Use positional argument if available (indexed array).
-                    $value = $arguments[$index] ?? null;
                 }
 
                 // Step 5b: Handle null values and string 'null' from LLM.
                 // LLMs sometimes return string 'null' instead of actual null value.
                 if ($value === 'null' || $value === null) {
                     // Use default value if parameter has one, otherwise null.
+                    $value = null;
                     if ($param->isDefaultValueAvailable() === true) {
                         $value = $param->getDefaultValue();
-                    } else {
-                        $value = null;
                     }
                 } else if ($param->hasType() === true) {
                     // Step 5c: Type-cast argument to match method signature.
@@ -387,9 +384,7 @@ abstract class AbstractTool implements ToolInterface
                         } else if ($typeName === 'array') {
                             // Cast to array type.
                             // If already array, keep it; otherwise convert to empty array.
-                            if (is_array($value) === true) {
-                                $value = $value;
-                            } else {
+                            if (is_array($value) !== true) {
                                 $value = [];
                             }
                         }//end if

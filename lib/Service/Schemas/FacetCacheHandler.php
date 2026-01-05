@@ -393,6 +393,8 @@ class FacetCacheHandler
      * @throws \OCP\DB\Exception If a database error occurs
      *
      * @return array Facetable fields with @self metadata fields and object_fields from schema properties.
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future facet field generation
      */
     private function generateFacetableFieldsFromSchema(int $schemaId): array
     {
@@ -649,6 +651,8 @@ class FacetCacheHandler
      * @param array  $facetConfig Facet configuration
      *
      * @return string Cache key
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future facet caching
      */
     private function buildFacetCacheKey(string $facetType, string $fieldName, array $facetConfig): string
     {
@@ -665,6 +669,8 @@ class FacetCacheHandler
      * @return mixed|null Cached data or null if not found/expired
      *
      * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future facet caching
      */
     private function getCachedFacetData(int $schemaId, string $cacheKey): mixed
     {

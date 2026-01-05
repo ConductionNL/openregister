@@ -58,18 +58,19 @@ class Version1Date20251107000000 extends SimpleMigrationStep
             $table = $schema->getTable('openregister_organisations');
 
             // Check if roles column still exists.
-            if ($table->hasColumn('roles') === true) {
-                $output->info(message: '🗑️  Removing deprecated roles column from organisations table...');
-
-                $table->dropColumn('roles');
-
-                $output->info(message: '   ✓ Dropped roles column');
-                $output->info(message: '✅ Cleanup completed - organisations table now only uses groups column');
-
-                return $schema;
-            } else {
+            if ($table->hasColumn('roles') === false) {
                 $output->info(message: '   ℹ️  Roles column already removed');
+                return null;
             }
+
+            $output->info(message: '🗑️  Removing deprecated roles column from organisations table...');
+
+            $table->dropColumn('roles');
+
+            $output->info(message: '   ✓ Dropped roles column');
+            $output->info(message: '✅ Cleanup completed - organisations table now only uses groups column');
+
+            return $schema;
         }
 
         return null;

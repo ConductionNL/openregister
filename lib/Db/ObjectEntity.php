@@ -597,10 +597,9 @@ class ObjectEntity extends Entity implements JsonSerializable
     public function jsonSerialize(): array
     {
         // Backwards compatibility for old objects.
+        $object = [];
         if (($this->object ?? null) !== null) {
             $object = $this->object;
-        } else {
-            $object = [];
         }
 
         // Default to an empty array if $this->object is null.
@@ -771,21 +770,21 @@ class ObjectEntity extends Entity implements JsonSerializable
                     'expiration' => $newExpiration->format('c'),
                 ]
             );
-        } else {
-            // Create new lock.
-            $expiration = clone $now;
-            $expiration->add(new DateInterval('PT'.($duration ?? 0).'S'));
+            return true;
+        }
+        // Create new lock.
+        $expiration = clone $now;
+        $expiration->add(new DateInterval('PT'.($duration ?? 0).'S'));
 
-            $this->setLocked(
-                locked: [
-                    'user'       => $userId,
-                    'process'    => $process,
-                    'created'    => $now->format('c'),
-                    'duration'   => $duration,
-                    'expiration' => $expiration->format('c'),
-                ]
-            );
-        }//end if
+        $this->setLocked(
+            locked: [
+                'user'       => $userId,
+                'process'    => $process,
+                'created'    => $now->format('c'),
+                'duration'   => $duration,
+                'expiration' => $expiration->format('c'),
+            ]
+        );
 
         return true;
     }//end lock()

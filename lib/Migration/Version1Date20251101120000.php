@@ -235,9 +235,9 @@ class Version1Date20251101120000 extends SimpleMigrationStep
             $output->info(message: '   • Version tracking and activation status');
 
             return $schema;
-        } else {
-            $output->info(message: 'ℹ️  Applications table already exists, skipping...');
         }//end if
+
+        $output->info(message: 'ℹ️  Applications table already exists, skipping...');
 
         return null;
     }//end changeSchema()

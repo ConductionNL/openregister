@@ -89,6 +89,8 @@ class MagicOrganizationHandler
      * Check if published objects should bypass multi-tenancy restrictions
      *
      * @return bool True if published objects should bypass multi-tenancy, false otherwise
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future multi-tenancy implementation
      */
     private function shouldPublishedObjectsBypassMultiTenancy(): bool
     {
@@ -109,6 +111,8 @@ class MagicOrganizationHandler
      * @param string        $tableAlias Table alias for the dynamic table
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future multi-tenancy implementation
      */
     private function applyUnauthenticatedOrganizationAccess(IQueryBuilder $qb, string $tableAlias): void
     {
@@ -130,6 +134,8 @@ class MagicOrganizationHandler
      * Get the system default organization UUID
      *
      * @return null|string Default organization UUID or null if not found
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future multi-tenancy implementation
      */
     private function getSystemDefaultOrganizationUuid(): string|null
     {
@@ -156,6 +162,8 @@ class MagicOrganizationHandler
      * Check if multi-tenancy is enabled in app configuration
      *
      * @return bool True if multi-tenancy is enabled, false otherwise
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future multi-tenancy implementation
      */
     private function isMultiTenancyEnabled(): bool
     {
@@ -172,6 +180,8 @@ class MagicOrganizationHandler
      * Check if admin override is enabled in app configuration
      *
      * @return bool True if admin override is enabled, false otherwise
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future multi-tenancy implementation
      */
     private function isAdminOverrideEnabled(): bool
     {

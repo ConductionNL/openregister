@@ -83,16 +83,18 @@ class Version1Date20251107160000 extends SimpleMigrationStep
 
                 $output->info(message: '✅ Added UUID column to file_texts table');
                 $updated = true;
-            } else {
+            }
+
+            if ($table->hasColumn('uuid') === true) {
                 $output->info(message: 'ℹ️  UUID column already exists in file_texts table');
             }//end if
         }//end if
 
-        if ($updated === true) {
-            return $schema;
+        if ($updated === false) {
+            return null;
         }
 
-        return null;
+        return $schema;
     }//end changeSchema()
 
     /**

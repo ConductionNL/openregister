@@ -64,28 +64,25 @@ class AuditTrailController extends Controller
         $params = $this->request->getParams();
 
         // Extract pagination parameters.
+        $limit = 20;
         if (($params['limit'] ?? null) !== null) {
             $limit = (int) $params['limit'];
         } else if (($params['_limit'] ?? null) !== null) {
             $limit = (int) $params['_limit'];
-        } else {
-            $limit = 20;
         }
 
+        $offset = null;
         if (($params['offset'] ?? null) !== null) {
             $offset = (int) $params['offset'];
         } else if (($params['_offset'] ?? null) !== null) {
             $offset = (int) $params['_offset'];
-        } else {
-            $offset = null;
         }
 
+        $page = null;
         if (($params['page'] ?? null) !== null) {
             $page = (int) $params['page'];
         } else if (($params['_page'] ?? null) !== null) {
             $page = (int) $params['_page'];
-        } else {
-            $page = null;
         }
 
         // If we have a page but no offset, calculate the offset.
@@ -102,7 +99,9 @@ class AuditTrailController extends Controller
             $sortField        = $params['sort'] ?? $params['_sort'] ?? 'created';
             $sortOrder        = $params['order'] ?? $params['_order'] ?? 'DESC';
             $sort[$sortField] = $sortOrder;
-        } else {
+        }
+
+        if (empty($sort) === true) {
             $sort['created'] = 'DESC';
         }
 
@@ -301,10 +300,9 @@ class AuditTrailController extends Controller
 
             // Return export data.
             $content = $exportResult['content'];
+            $contentSize = 0;
             if (is_string($content) === true) {
                 $contentSize = strlen($content);
-            } else {
-                $contentSize = 0;
             }
 
             return new JSONResponse(
@@ -359,14 +357,14 @@ class AuditTrailController extends Controller
                     ],
                     statusCode: 200
                 );
-            } else {
-                return new JSONResponse(
-                    data: [
-                        'error' => 'Failed to delete audit trail',
-                    ],
-                    statusCode: 500
-                );
             }
+
+            return new JSONResponse(
+                data: [
+                    'error' => 'Failed to delete audit trail',
+                ],
+                statusCode: 500
+            );
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             return new JSONResponse(
                 data: [
@@ -466,16 +464,16 @@ class AuditTrailController extends Controller
                     ],
                     statusCode: 200
                 );
-            } else {
-                return new JSONResponse(
-                    data: [
-                        'success' => true,
-                        'message' => 'No expired audit trails found to clear',
-                        'deleted' => 0,
-                    ],
-                    statusCode: 200
-                );
             }
+
+            return new JSONResponse(
+                data: [
+                    'success' => true,
+                    'message' => 'No expired audit trails found to clear',
+                    'deleted' => 0,
+                ],
+                statusCode: 200
+            );
         } catch (\Exception $e) {
             return new JSONResponse(
                 data: [

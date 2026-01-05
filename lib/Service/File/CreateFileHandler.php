@@ -252,18 +252,18 @@ class CreateFileHandler
                     tags: $tags,
                     object: $objectEntity
                 );
-            } else {
-                // File doesn't exist, create it.
-                $this->logger->info(message: "File $fileName doesn't exist for object {$objectId}, creating...");
+            }
 
-                return $this->addFile(
-                    objectEntity: $objectEntity,
-                    fileName: $fileName,
-                    content: $content,
-                    share: $share,
-                    tags: $tags
-                );
-            }//end if
+            // File doesn't exist, create it.
+            $this->logger->info(message: "File $fileName doesn't exist for object {$objectId}, creating...");
+
+            return $this->addFile(
+                objectEntity: $objectEntity,
+                fileName: $fileName,
+                content: $content,
+                share: $share,
+                tags: $tags
+            );
         } catch (NotPermittedException $e) {
             // Log permission error and rethrow exception.
             $this->logger->error(message: "Permission denied saving file $fileName: ".$e->getMessage());

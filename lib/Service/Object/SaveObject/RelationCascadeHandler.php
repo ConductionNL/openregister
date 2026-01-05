@@ -400,11 +400,12 @@ class RelationCascadeHandler
      */
     private function resolveRelationPath(array &$objectData, string $relationPath): void
     {
-        $parts   = explode('.', $relationPath);
-        $current = &$objectData;
+        $parts      = explode('.', $relationPath);
+        $partsCount = count($parts);
+        $current    = &$objectData;
 
         // Navigate to the parent of the target property.
-        for ($i = 0; $i < count($parts) - 1; $i++) {
+        for ($i = 0; $i < $partsCount - 1; $i++) {
             if (isset($current[$parts[$i]]) === false) {
                 return;
             }

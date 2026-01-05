@@ -396,16 +396,14 @@ class Endpoint extends Entity implements JsonSerializable
             'organisation'   => $this->organisation,
         ];
 
+        $result['created'] = null;
         if (isset($this->created) === true) {
             $result['created'] = $this->created->format('c');
-        } else {
-            $result['created'] = null;
         }
 
+        $result['updated'] = null;
         if (isset($this->updated) === true) {
             $result['updated'] = $this->updated->format('c');
-        } else {
-            $result['updated'] = null;
         }
 
         return $result;

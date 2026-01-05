@@ -300,6 +300,8 @@ class ConfigurationsController extends Controller
      * @psalm-return DataDownloadResponse<200, 'application/json',
      *     array<never, never>>|JSONResponse<400, array{error: string},
      *     array<never, never>>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Toggle to include/exclude objects in export
      */
     public function export(int $id, bool $includeObjects=false): JSONResponse|DataDownloadResponse
     {

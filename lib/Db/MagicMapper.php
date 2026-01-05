@@ -312,6 +312,8 @@ class MagicMapper
      * @throws Exception If table creation/update fails
      *
      * @return true True if table was created/updated successfully
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag allows table recreation
      */
     public function ensureTableForRegisterSchema(Register $register, Schema $schema, bool $force=false): bool
     {
@@ -713,15 +715,18 @@ class MagicMapper
     private function checkTableExistsInDatabase(string $tableName): bool
     {
         try {
-            // Nextcloud 32+ uses a different API. We use a simple SELECT query.
-            $qb = $this->db->getQueryBuilder();
-            $qb->select($qb->createFunction('1'))
-                ->from($tableName)
-                ->setMaxResults(1);
+            // Check if table exists in information_schema.
+            // NOTE: We use raw SQL here because information_schema is a system table.
+            $prefix = 'oc_';
+            // Nextcloud default prefix.
+            $fullTableName = $prefix.$tableName;
 
-            $qb->executeQuery();
+            $sql  = "SELECT 1 FROM information_schema.tables WHERE table_name = ? AND table_schema = 'public' LIMIT 1";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$fullTableName]);
+            $result = $stmt->fetch();
 
-            return true;
+            return $result !== false;
         } catch (Exception $e) {
             // Table doesn't exist or query failed.
             $this->logger->debug(
@@ -1491,12 +1496,11 @@ class MagicMapper
 
                 // AUTOINCREMENT (primary key columns).
                 if (($column['autoincrement'] ?? false) === true) {
+                    // MySQL uses AUTO_INCREMENT.
+                    $def .= ' AUTO_INCREMENT';
                     if ($isPostgres === true) {
                         // PostgreSQL uses BIGSERIAL.
                         $def = $colName.' BIGSERIAL';
-                    } else {
-                        // MySQL uses AUTO_INCREMENT.
-                        $def .= ' AUTO_INCREMENT';
                     }
                 }
 
@@ -1616,6 +1620,8 @@ class MagicMapper
      * @return void
      *
      * @psalm-param TableColumnConfig $column
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future use in table management
      */
     private function addColumnToTable($table, array $column): void
     {
@@ -1767,9 +1773,8 @@ class MagicMapper
         $uuidFromTop  = $objectData['id'] ?? $objectData['uuid'] ?? null;
         $existingUuid = $uuidFromMeta ?? $uuidFromSelf ?? $uuidFromTop;
 
-        if (empty($existingUuid) === true) {
-            $preparedData[self::METADATA_PREFIX.'uuid'] = Uuid::v4()->toRfc4122();
-        } else {
+        $preparedData[self::METADATA_PREFIX.'uuid'] = Uuid::v4()->toRfc4122();
+        if (empty($existingUuid) === false) {
             $preparedData[self::METADATA_PREFIX.'uuid'] = $existingUuid;
         }
 
@@ -1976,14 +1981,11 @@ class MagicMapper
 
         // Apply _search (fuzzy, case-insensitive, multi-column search).
         $hasSearch = isset($query['_search']) === true && empty($query['_search']) === false;
+        // No search, just select all columns.
+        $qb->select('*');
         if ($hasSearch === true) {
-            // Select all columns first.
-            $qb->select('*');
             // Then apply fuzzy search which will add the score column.
             $this->applyFuzzySearch(qb: $qb, searchTerm: $query['_search'], schema: $schema);
-        } else {
-            // No search, just select all columns.
-            $qb->select('*');
         }
 
         // Apply filters.
@@ -2148,24 +2150,7 @@ class MagicMapper
 
             // Set metadata fields on ObjectEntity.
             foreach ($metadata as $field => $value) {
-                if ($value !== null) {
-                    $method = 'set'.ucfirst($field);
-                    if (method_exists($objectEntity, $method) === true) {
-                        $objectEntity->$method($value);
-                        // Debug critical fields.
-                        if (in_array($field, ['id', 'uuid', 'owner'], true) === true) {
-                            $this->logger->debug(
-                                '[MagicMapper] Set critical metadata field',
-                                ['field' => $field, 'value' => $value]
-                            );
-                        }
-                    } else {
-                        $this->logger->warning(
-                            '[MagicMapper] Method does not exist for metadata field',
-                            ['field' => $field, 'method' => $method]
-                        );
-                    }
-                } else {
+                if ($value === null) {
                     // Log when metadata field is null.
                     if ($field === 'uuid' || $field === 'id' || $field === 'owner') {
                         $this->logger->warning(
@@ -2173,7 +2158,24 @@ class MagicMapper
                             ['field' => $field]
                         );
                     }
-                }//end if
+                    continue;
+                }
+                $method = 'set'.ucfirst($field);
+                if (method_exists($objectEntity, $method) === false) {
+                    $this->logger->warning(
+                        '[MagicMapper] Method does not exist for metadata field',
+                        ['field' => $field, 'method' => $method]
+                    );
+                    continue;
+                }
+                $objectEntity->$method($value);
+                // Debug critical fields.
+                if (in_array($field, ['id', 'uuid', 'owner'], true) === true) {
+                    $this->logger->debug(
+                        '[MagicMapper] Set critical metadata field',
+                        ['field' => $field, 'value' => $value]
+                    );
+                }
             }//end foreach
 
             // Verify entity state after setting metadata.
@@ -2247,6 +2249,8 @@ class MagicMapper
      * @param string $name The name to sanitize
      *
      * @return string Sanitized table name
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future use in table management
      */
     private function sanitizeTableName(string $name): string
     {
@@ -2563,10 +2567,10 @@ class MagicMapper
                 // The % operator uses trigram similarity (requires pg_trgm extension).
                 $orConditions[] = "LOWER({$columnName}) ILIKE LOWER(".$qb->createNamedParameter('%'.$searchTerm.'%').')';
                 $orConditions[] = "LOWER({$columnName}) % LOWER(".$qb->createNamedParameter($searchTerm).')';
-            } else {
-                // MariaDB/MySQL: Use LIKE for case-insensitive substring match.
-                $orConditions[] = "LOWER({$columnName}) LIKE LOWER(".$qb->createNamedParameter('%'.$searchTerm.'%').')';
+                continue;
             }
+            // MariaDB/MySQL: Use LIKE for case-insensitive substring match.
+            $orConditions[] = "LOWER({$columnName}) LIKE LOWER(".$qb->createNamedParameter('%'.$searchTerm.'%').')';
         }
 
         if (empty($orConditions) === false) {
@@ -2575,23 +2579,23 @@ class MagicMapper
 
         // Add computed _search_score column for PostgreSQL (for ranking).
         // We need to add the score as a literal expression to avoid quoting issues.
-        if ($platform instanceof PostgreSQLPlatform === true) {
-            $scoreExpressions = [];
-            foreach ($searchableFields as $columnName) {
-                // Build similarity expression for each field.
-                $paramPlaceholder   = $qb->createNamedParameter($searchTerm);
-                $scoreExpressions[] = "similarity(LOWER({$columnName}), LOWER({$paramPlaceholder}))";
-            }
-
-            // Build the GREATEST() expression.
-            if (count($scoreExpressions) > 0) {
-                $scoreFormula = 'GREATEST('.implode(', ', $scoreExpressions).')';
-                // Use createFunction to add raw SQL expression.
-                $qb->addSelect($qb->createFunction($scoreFormula.' AS _search_score'));
-            }
-        } else {
+        if ($platform instanceof PostgreSQLPlatform === false) {
             // MariaDB doesn't have similarity function, use a constant score.
             $qb->addSelect($qb->createFunction('1 AS _search_score'));
+            return;
+        }
+        $scoreExpressions = [];
+        foreach ($searchableFields as $columnName) {
+            // Build similarity expression for each field.
+            $paramPlaceholder   = $qb->createNamedParameter($searchTerm);
+            $scoreExpressions[] = "similarity(LOWER({$columnName}), LOWER({$paramPlaceholder}))";
+        }
+
+        // Build the GREATEST() expression.
+        if (count($scoreExpressions) > 0) {
+            $scoreFormula = 'GREATEST('.implode(', ', $scoreExpressions).')';
+            // Use createFunction to add raw SQL expression.
+            $qb->addSelect($qb->createFunction($scoreFormula.' AS _search_score'));
         }
     }//end applyFuzzySearch()
 
@@ -2721,18 +2725,28 @@ class MagicMapper
     private function getExistingTableColumns(string $tableName): array
     {
         try {
-            // @psalm-suppress UndefinedInterfaceMethod
-            $schemaManager = $this->db->getSchemaManager();
-            $columns       = $schemaManager->listTableColumns($tableName);
+            // Use direct SQL query to get table columns (Nextcloud 32 compatible).
+            // NOTE: We use raw SQL here because information_schema is a system table that should not be prefixed.
+            $prefix = 'oc_';
+            // Nextcloud default prefix.
+            $fullTableName = $prefix.$tableName;
+
+            $sql = "SELECT column_name, data_type, character_maximum_length, is_nullable, column_default 
+                    FROM information_schema.columns 
+                    WHERE table_name = ? AND table_schema = 'public'";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$fullTableName]);
+            $columns = $stmt->fetchAll();
 
             $columnDefinitions = [];
             foreach ($columns as $column) {
-                $columnDefinitions[$column->getName()] = [
-                    'name'     => $column->getName(),
-                    'type'     => $column->getType()->getName(),
-                    'length'   => $column->getLength(),
-                    'nullable' => $column->getNotnull() === false,
-                    'default'  => $column->getDefault(),
+                $columnDefinitions[$column['column_name']] = [
+                    'name'     => $column['column_name'],
+                    'type'     => $column['data_type'],
+                    'length'   => $column['character_maximum_length'],
+                    'nullable' => $column['is_nullable'] === 'YES',
+                    'default'  => $column['column_default'],
                 ];
             }
 
@@ -2763,14 +2777,17 @@ class MagicMapper
      */
     private function updateTableStructure(string $tableName, array $currentColumns, array $requiredColumns): void
     {
-        /*
-         * @var DoctrineSchema $schema
-         */
-
-        $schema = $this->db->createSchema();
-        $table  = $schema->getTable($tableName);
-
         // Find columns to add.
+        $platform      = $this->db->getDatabasePlatform();
+        $isPostgres    = ($platform->getName() === 'postgresql');
+        $tablePrefix   = $this->config->getSystemValue('dbtableprefix', 'oc_');
+        $fullTableName = $tablePrefix.$tableName;
+
+        $tableNameQuoted = '`'.$fullTableName.'`';
+        if ($isPostgres === true) {
+            $tableNameQuoted = '"'.$fullTableName.'"';
+        }
+
         foreach ($requiredColumns as $columnName => $columnDef) {
             if (isset($currentColumns[$columnName]) === false) {
                 $this->logger->info(
@@ -2782,12 +2799,35 @@ class MagicMapper
                     ]
                 );
 
-                $this->addColumnToTable(table: $table, column: $columnDef);
-            }
-        }
+                // Build ALTER TABLE ADD COLUMN SQL.
+                $colNameQuoted = '`'.$columnName.'`';
+                if ($isPostgres === true) {
+                    $colNameQuoted = '"'.$columnName.'"';
+                }
 
-        // Execute schema changes.
-        $this->db->migrateToSchema($schema);
+                $colType = $this->mapColumnTypeToSQL(type: $columnDef['type'], column: $columnDef);
+
+                $sql = 'ALTER TABLE '.$tableNameQuoted.' ADD COLUMN '.$colNameQuoted.' '.$colType;
+
+                // Add NOT NULL if specified.
+                if (($columnDef['nullable'] ?? true) === false) {
+                    $sql .= ' NOT NULL';
+                }
+
+                // Add DEFAULT if specified.
+                if (isset($columnDef['default']) === true) {
+                    $defaultValue = $columnDef['default'];
+                    if (is_string($columnDef['default']) === true) {
+                        $defaultValue = "'".$columnDef['default']."'";
+                    }
+
+                    $sql .= ' DEFAULT '.$defaultValue;
+                }
+
+                // Execute ALTER TABLE.
+                $this->db->executeStatement($sql);
+            }//end if
+        }//end foreach
 
         $this->logger->info(
             'Successfully updated table structure',
@@ -2821,13 +2861,19 @@ class MagicMapper
      * @throws Exception If table drop fails
      *
      * @return void
+     *
+     * @psalm-suppress UndefinedInterfaceMethod quoteIdentifier exists via DBAL Connection
      */
     private function dropTable(string $tableName): void
     {
         try {
-            // @psalm-suppress UndefinedInterfaceMethod
-            $schemaManager = $this->db->getSchemaManager();
-            $schemaManager->dropTable($tableName);
+            // Use direct SQL to drop table (Nextcloud 32 compatible).
+            $qb     = $this->db->getQueryBuilder();
+            $prefix = 'oc_';
+            // Nextcloud default prefix.
+            $fullTableName = $prefix.$tableName;
+            $quotedTable   = $qb->getConnection()->quoteIdentifier($fullTableName);
+            $qb->getConnection()->executeStatement('DROP TABLE IF EXISTS '.$quotedTable);
 
             // Clear from cache - need to clear by table name pattern.
             foreach (array_keys(self::$tableExistsCache) as $cacheKey) {
@@ -2920,17 +2966,25 @@ class MagicMapper
     public function getExistingRegisterSchemaTables(): array
     {
         try {
-            // @psalm-suppress UndefinedInterfaceMethod
-            $schemaManager = $this->db->getSchemaManager();
-            $allTables     = $schemaManager->listTableNames();
+            // Use direct SQL to list tables (Nextcloud 32 compatible).
+            // NOTE: We use raw SQL here because pg_tables is a system table that should not be prefixed.
+            $prefix = 'oc_';
+            // Nextcloud default prefix.
+            $searchPattern = $prefix.self::TABLE_PREFIX.'%';
+
+            $sql  = "SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename LIKE ?";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$searchPattern]);
+            $rows = $stmt->fetchAll();
 
             $registerSchemaTables = [];
-            $prefix = self::TABLE_PREFIX;
+            $fullPrefix           = $prefix.self::TABLE_PREFIX;
 
-            foreach ($allTables as $tableName) {
-                if (str_starts_with($tableName, $prefix) === true) {
+            foreach ($rows as $row) {
+                $tableName = $row['tablename'];
+                if (str_starts_with($tableName, $fullPrefix) === true) {
                     // Extract register and schema IDs from table name.
-                    $suffix = substr($tableName, strlen($prefix));
+                    $suffix = substr($tableName, strlen($fullPrefix));
 
                     // Expected format: {registerId}_{schemaId}.
                     if (preg_match('/^(\d+)_(\d+)$/', $suffix, $matches) === 1) {
@@ -3167,12 +3221,11 @@ class MagicMapper
 
         // Add published filter if specified.
         if ($published !== null) {
+            // Only unpublished objects.
+            $query['@self']['published'] = 'IS NULL';
             if ($published === true) {
                 // Only published objects.
                 $query['@self']['published'] = 'IS NOT NULL';
-            } else {
-                // Only unpublished objects.
-                $query['@self']['published'] = 'IS NULL';
             }
         }
 
@@ -3353,6 +3406,8 @@ class MagicMapper
      * @throws Exception If deletion fails.
      *
      * @return ObjectEntity The deleted object entity.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Hard delete toggle controls permanent vs soft delete
      */
     public function deleteObjectEntity(
         ObjectEntity $entity,
@@ -3393,7 +3448,8 @@ class MagicMapper
                     'tableName' => $tableName,
                 ]
             );
-        } else {
+        }
+        if ($hardDelete === false) {
             // Soft delete - set _deleted field.
             if ($entity->getDeleted() === null || empty($entity->getDeleted()) === true) {
                 // Mark as deleted using entity method.
@@ -3410,7 +3466,7 @@ class MagicMapper
                     'tableName' => $tableName,
                 ]
             );
-        }//end if
+        }
 
         // Dispatch deleted event for audit trails.
         $this->eventDispatcher->dispatch(ObjectDeletedEvent::class, new ObjectDeletedEvent(object: $entity));

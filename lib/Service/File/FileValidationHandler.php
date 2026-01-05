@@ -256,7 +256,7 @@ class FileValidationHandler
             // Try to read the file to trigger any potential access issues.
             if ($file instanceof File) {
                 $file->getContent();
-            } else if ($file instanceof Folder) {
+            } else if ($file instanceof Folder === true) {
                 // For folders, try to list contents.
                 $file->getDirectoryListing();
             }
@@ -283,21 +283,23 @@ class FileValidationHandler
                     // Try to fix the ownership.
                     $ownershipFixed = $this->ownFile($file);
 
-                    if ($ownershipFixed === true) {
-                        $this->logger->info(
-                            message: "checkOwnership: Fixed ownership for file {$file->getName()}"
-                        );
-                    } else {
+                    if ($ownershipFixed === false) {
                         $this->logger->error(
                             message: "checkOwnership: Failed to fix ownership for file {$file->getName()}"
                         );
                         throw new Exception("Failed to fix file ownership for file: ".$file->getName());
                     }
-                } else {
+
                     $this->logger->info(
-                        message: "checkOwnership: File {$file->getName()} has correct owner but not accessible"
+                        message: "checkOwnership: Fixed ownership for file {$file->getName()}"
                     );
-                }//end if
+
+                    return;
+                }
+
+                $this->logger->info(
+                    message: "checkOwnership: File {$file->getName()} has correct owner but not accessible"
+                );
             } catch (Exception $ownershipException) {
                 $this->logger->error(
                     message: "checkOwnership: Error for file {$file->getName()}: ".$ownershipException->getMessage()
@@ -353,15 +355,17 @@ class FileValidationHandler
 
             $result = $this->fileMapper->setFileOwnership(fileId: $fileId, userId: $userId);
 
-            if ($result === true) {
-                $this->logger->info(
-                    message: "ownFile: Successfully set ownership of file {$file->getName()} (ID: $fileId) to user: $userId"
-                );
-            } else {
+            if ($result === false) {
                 $this->logger->warning(
                     message: "ownFile: Failed to set ownership of file {$file->getName()} (ID: $fileId) to user: $userId"
                 );
+
+                return $result;
             }
+
+            $this->logger->info(
+                message: "ownFile: Successfully set ownership of file {$file->getName()} (ID: $fileId) to user: $userId"
+            );
 
             return $result;
         } catch (Exception $e) {

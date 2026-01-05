@@ -1297,7 +1297,6 @@ class SchemaService
 
         // Check if analysis suggests enum values.
         $enumValues = $analysis['enum_values'] ?? null;
-        $usageCount = $analysis['usage_count'] ?? 0;
 
         if ($enumValues !== null && is_array($enumValues) === true) {
             $currentEnum = $currentConfig['enum'] ?? null;

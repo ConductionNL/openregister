@@ -113,7 +113,9 @@ class Version1Date20251114130000 extends SimpleMigrationStep
 
         if ($migratedCount > 0) {
             $output->info(message: "   ✓ Migrated {$migratedCount} schema(s) from extend to allOf");
-        } else {
+        }
+
+        if ($migratedCount === 0) {
             $output->info(message: '   ℹ️  No schemas with extend field found');
         }
     }//end preSchemaChange()
@@ -144,19 +146,21 @@ class Version1Date20251114130000 extends SimpleMigrationStep
             $table = $schema->getTable('openregister_schemas');
 
             // Remove extend column if it exists.
-            if ($table->hasColumn('extend') === true) {
-                $table->dropColumn('extend');
-
-                $output->info(message: '   ✓ Removed extend column from schemas table');
-                $output->info(message: '✅ Migration completed successfully');
-                $output->info(message: '📚 Use allOf, oneOf, or anyOf for schema composition');
-                $output->info('   See: https://json-schema.org/understanding-json-schema/reference/combining');
-            } else {
+            if ($table->hasColumn('extend') === false) {
                 $output->info(message: '   ⚠️  extend column does not exist (already removed)');
+                return $schema;
             }
-        } else {
-            $output->info(message: '⚠️  Schemas table does not exist!');
+
+            $table->dropColumn('extend');
+
+            $output->info(message: '   ✓ Removed extend column from schemas table');
+            $output->info(message: '✅ Migration completed successfully');
+            $output->info(message: '📚 Use allOf, oneOf, or anyOf for schema composition');
+            $output->info('   See: https://json-schema.org/understanding-json-schema/reference/combining');
+            return $schema;
         }
+
+        $output->info(message: '⚠️  Schemas table does not exist!');
 
         return $schema;
     }//end changeSchema()

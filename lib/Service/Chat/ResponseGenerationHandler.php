@@ -375,6 +375,8 @@ class ResponseGenerationHandler
      * @return string Generated response text
      *
      * @throws \Exception If API call fails
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Called via reflection in ConversationManagementHandler
      */
     private function callFireworksChatAPI(string $apiKey, string $model, string $baseUrl, string $message): string
     {
@@ -423,16 +425,14 @@ class ResponseGenerationHandler
 
         if ($httpCode !== 200) {
             // Parse error response.
+            $errorData = [];
             if (is_string($response) === true) {
                 $errorData = json_decode($response, true);
-            } else {
-                $errorData = [];
             }
 
+            $fallbackError = 'Unknown error';
             if (is_string($response) === true) {
                 $fallbackError = $response;
-            } else {
-                $fallbackError = 'Unknown error';
             }
 
             $errorMessage = $errorData['error']['message'] ?? $errorData['error'] ?? $fallbackError;
@@ -564,16 +564,14 @@ class ResponseGenerationHandler
 
         if ($httpCode !== 200) {
             // Parse error response.
+            $errorData = [];
             if (is_string($response) === true) {
                 $errorData = json_decode($response, true);
-            } else {
-                $errorData = [];
             }
 
+            $fallbackError = 'Unknown error';
             if (is_string($response) === true) {
                 $fallbackError = $response;
-            } else {
-                $fallbackError = 'Unknown error';
             }
 
             $errorMessage = $errorData['error']['message'] ?? $errorData['error'] ?? $fallbackError;
@@ -619,6 +617,8 @@ class ResponseGenerationHandler
      * @param object $llphantConfig LLPhant config object (OpenAIConfig or OllamaConfig).
      *
      * @return string URL or 'default' if not set
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future logging/debugging
      */
     private function getLlphantUrl(object $llphantConfig): string
     {

@@ -95,10 +95,9 @@ class SolrOperationsController extends Controller
             $solrSettings = $this->settingsService->getSolrSettings();
 
             // Determine port value for configuration display.
+            $portValue = 'default';
             if (($solrSettings['port'] !== null) === true && ($solrSettings['port'] !== '') === true) {
                 $portValue = $solrSettings['port'];
-            } else {
-                $portValue = 'default';
             }
 
             // **IMPROVED LOGGING**: Log SOLR configuration (without sensitive data).
@@ -161,12 +160,13 @@ class SolrOperationsController extends Controller
                         ],
                     ]
                 );
-            } else {
-                // Get detailed error information and setup progress from SolrSetup.
-                $errorDetails  = $setup->getLastErrorDetails();
-                $setupProgress = $setup->getSetupProgress();
+            }
 
-                if ($errorDetails !== null && $errorDetails !== '') {
+            // Get detailed error information and setup progress from SolrSetup.
+            $errorDetails  = $setup->getLastErrorDetails();
+            $setupProgress = $setup->getSetupProgress();
+
+            if ($errorDetails !== null && $errorDetails !== '') {
                     // Get infrastructure info even on failure to show partial progress.
                     $infrastructureCreated = $setup->getInfrastructureCreated();
 
@@ -219,47 +219,46 @@ class SolrOperationsController extends Controller
                         ],
                         statusCode: 422
                     );
-                } else {
-                    // Fallback to generic error if no detailed error information is available.
-                    $lastError = error_get_last();
+            }
 
-                    // Get last system error message.
-                    $lastSystemError = 'No system error captured';
-                    if ($lastError !== null && (($lastError['message'] ?? null) !== null)) {
-                        $lastSystemError = $lastError['message'];
-                    }
+            // Fallback to generic error if no detailed error information is available.
+            $lastError = error_get_last();
 
-                    // Get port value or default.
-                    $portValue = 'default';
-                    if ($solrSettings['port'] !== null && $solrSettings['port'] !== '') {
-                        $portValue = $solrSettings['port'];
-                    }
+            // Get last system error message.
+            $lastSystemError = 'No system error captured';
+            if ($lastError !== null && (($lastError['message'] ?? null) !== null)) {
+                $lastSystemError = $lastError['message'];
+            }
 
-                    return new JSONResponse(
-                        data: [
-                            'success'               => false,
-                            'message'               => 'SOLR setup failed',
-                            'timestamp'             => date('Y-m-d H:i:s'),
-                            'error_details'         => [
-                                'primary_error'      => 'Setup failed but no detailed error information was captured',
-                                'last_system_error'  => $lastSystemError,
-                                'configuration_used' => [
-                                    'host'   => $solrSettings['host'],
-                                    'port'   => $portValue,
-                                    'scheme' => $solrSettings['scheme'],
-                                    'path'   => $solrSettings['path'],
-                                ],
-                            ],
-                            'troubleshooting_steps' => [
-                                'Check SOLR server logs for detailed error messages',
-                                'Verify SOLR server connectivity',
-                                'Check SOLR configuration',
-                            ],
+            // Get port value or default for fallback error response.
+            $portValueFallback = 'default';
+            if ($solrSettings['port'] !== null && $solrSettings['port'] !== '') {
+                $portValueFallback = $solrSettings['port'];
+            }
+
+            return new JSONResponse(
+                data: [
+                    'success'               => false,
+                    'message'               => 'SOLR setup failed',
+                    'timestamp'             => date('Y-m-d H:i:s'),
+                    'error_details'         => [
+                        'primary_error'      => 'Setup failed but no detailed error information was captured',
+                        'last_system_error'  => $lastSystemError,
+                        'configuration_used' => [
+                            'host'   => $solrSettings['host'],
+                            'port'   => $portValueFallback,
+                            'scheme' => $solrSettings['scheme'],
+                            'path'   => $solrSettings['path'],
                         ],
-                        statusCode: 422
-                    );
-                }//end if
-            }//end if
+                    ],
+                    'troubleshooting_steps' => [
+                        'Check SOLR server logs for detailed error messages',
+                        'Verify SOLR server connectivity',
+                        'Check SOLR configuration',
+                    ],
+                ],
+                statusCode: 422
+            );
         } catch (Exception $e) {
             // Get logger for error logging if not already available.
             if (isset($logger) === false) {
@@ -485,16 +484,16 @@ class SolrOperationsController extends Controller
                         'query'     => $query,
                     ]
                 );
-            } else {
-                return new JSONResponse(
-                    data: [
-                        'success'       => false,
-                        'error'         => $result['error'],
-                        'error_details' => $result['error_details'] ?? null,
-                    ],
-                    statusCode: 422
-                );
-            }//end if
+            }
+
+            return new JSONResponse(
+                data: [
+                    'success'       => false,
+                    'error'         => $result['error'],
+                    'error_details' => $result['error_details'] ?? null,
+                ],
+                statusCode: 422
+            );
         } catch (Exception $e) {
             $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
             $logger->error(
@@ -606,11 +605,11 @@ class SolrOperationsController extends Controller
                     $success = $guzzleSolrService->commit();
 
                     // Get commit message based on success.
+                    $message = 'Failed to commit index';
                     if ($success === true) {
                         $message = 'Index committed successfully';
-                    } else {
-                        $message = 'Failed to commit index';
                     }
+
                     return new JSONResponse(
                         data: [
                             'success'   => $success,
@@ -624,11 +623,11 @@ class SolrOperationsController extends Controller
                     $success = $guzzleSolrService->optimize();
 
                     // Get optimize message based on success.
+                    $message = 'Failed to optimize index';
                     if ($success === true) {
                         $message = 'Index optimized successfully';
-                    } else {
-                        $message = 'Failed to optimize index';
                     }
+
                     return new JSONResponse(
                         data: [
                             'success'   => $success,
@@ -642,11 +641,11 @@ class SolrOperationsController extends Controller
                     $result = $guzzleSolrService->clearIndex();
 
                     // Get clear message based on success.
+                    $message = 'Failed to clear index: '.($result['error'] ?? 'Unknown error');
                     if ($result['success'] === true) {
                         $message = 'Index cleared successfully';
-                    } else {
-                        $message = 'Failed to clear index: '.($result['error'] ?? 'Unknown error');
                     }
+
                     return new JSONResponse(
                         data: [
                             'success'       => $result['success'],

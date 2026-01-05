@@ -500,9 +500,9 @@ class LlmSettingsController extends Controller
 
             if ($result['success'] === true) {
                 return new JSONResponse(data: $result);
-            } else {
-                return new JSONResponse(data: $result, statusCode: 500);
             }
+
+            return new JSONResponse(data: $result, statusCode: 500);
         } catch (Exception $e) {
             return new JSONResponse(
                 data: [

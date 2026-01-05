@@ -493,17 +493,17 @@ class EndpointsController extends Controller
                         'response'   => $result['response'],
                     ]
                 );
-            } else {
-                // Return failure response with error details.
-                return new JSONResponse(
-                    data: [
-                        'success'    => false,
-                        'message'    => $result['error'] ?? 'Test endpoint execution failed',
-                        'statusCode' => $result['statusCode'],
-                    ],
-                    statusCode: $result['statusCode']
-                );
             }
+
+            // Return failure response with error details.
+            return new JSONResponse(
+                data: [
+                    'success'    => false,
+                    'message'    => $result['error'] ?? 'Test endpoint execution failed',
+                    'statusCode' => $result['statusCode'],
+                ],
+                statusCode: $result['statusCode']
+            );
         } catch (DoesNotExistException $e) {
             // Endpoint not found - return 404 error.
             return new JSONResponse(
@@ -712,14 +712,16 @@ class EndpointsController extends Controller
                     offset: null
                 );
                 $total = count($allLogsForEndpoint);
-            } else {
+            }
+
+            if ($endpointId === null || $endpointId === '' || $endpointId === '0') {
                 // No endpoint filter - get all logs from all endpoints.
                 $logs = $this->endpointLogMapper->findAll(limit: $limit, offset: $offset);
 
                 // Get total count for all logs (without pagination).
                 $allLogs = $this->endpointLogMapper->findAll(limit: null, offset: null);
                 $total   = count($allLogs);
-            }//end if
+            }
 
             // Return successful response with logs and total count.
             return new JSONResponse(

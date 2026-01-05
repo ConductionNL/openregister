@@ -124,7 +124,9 @@ class GitHubHandler
                     'token_prefix' => substr($token, 0, 8).'...',
                 ]
             );
-        } else {
+        }
+
+        if (empty($token) === true) {
             $this->logger->warning(
                 message: 'No GitHub API token configured - unauthenticated access (60 requests/hour limit)'
             );
@@ -328,12 +330,11 @@ class GitHubHandler
                         $message .= 'unauthenticated). Please configure a GitHub API token in ';
                         $message .= 'Settings to increase to 5,000 requests/hour (30/minute for Code Search).';
                         return $message;
-                    } else {
-                        $message  = 'GitHub Code Search API rate limit exceeded (30 requests per ';
-                        $message .= 'minute). Please wait a few minutes before trying again. The ';
-                        $message .= 'discovery search makes multiple API calls to find configurations.';
-                        return $message;
                     }
+                    $message  = 'GitHub Code Search API rate limit exceeded (30 requests per ';
+                    $message .= 'minute). Please wait a few minutes before trying again. The ';
+                    $message .= 'discovery search makes multiple API calls to find configurations.';
+                    return $message;
                 }
                 return 'Access forbidden. Please check your GitHub API token permissions in Settings.';
 
@@ -1153,9 +1154,8 @@ class GitHubHandler
         $token = $this->config->getUserValue($userId, 'openregister', 'github_token', '');
         if ($token !== '') {
             return $token;
-        } else {
-            return null;
         }
+        return null;
     }//end getUserToken()
 
     /**
@@ -1170,9 +1170,9 @@ class GitHubHandler
     {
         if ($token === null) {
             $this->config->deleteUserValue($userId, 'openregister', 'github_token');
-        } else {
-            $this->config->setUserValue($userId, 'openregister', 'github_token', $token);
+            return;
         }
+        $this->config->setUserValue($userId, 'openregister', 'github_token', $token);
     }//end setUserToken()
 
     /**
@@ -1186,10 +1186,9 @@ class GitHubHandler
     {
         try {
             // Get user token if userId provided, otherwise use app-level token.
+            $token = $this->config->getAppValue('openregister', 'github_api_token', '');
             if ($userId !== null) {
                 $token = $this->getUserToken($userId);
-            } else {
-                $token = $this->config->getAppValue('openregister', 'github_api_token', '');
             }
 
             if ($token === null || $token === '') {

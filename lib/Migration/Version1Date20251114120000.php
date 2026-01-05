@@ -77,7 +77,9 @@ class Version1Date20251114120000 extends SimpleMigrationStep
                 );
 
                 $output->info(message: '   ✓ Added all_of column to schemas table');
-            } else {
+            }
+
+            if ($table->hasColumn('all_of') === true) {
                 $output->info(message: '   ⚠️  all_of column already exists');
             }
 
@@ -94,7 +96,9 @@ class Version1Date20251114120000 extends SimpleMigrationStep
                 );
 
                 $output->info(message: '   ✓ Added one_of column to schemas table');
-            } else {
+            }
+
+            if ($table->hasColumn('one_of') === true) {
                 $output->info(message: '   ⚠️  one_of column already exists');
             }
 
@@ -111,7 +115,9 @@ class Version1Date20251114120000 extends SimpleMigrationStep
                 );
 
                 $output->info(message: '   ✓ Added any_of column to schemas table');
-            } else {
+            }
+
+            if ($table->hasColumn('any_of') === true) {
                 $output->info(message: '   ⚠️  any_of column already exists');
             }
 
@@ -123,9 +129,10 @@ class Version1Date20251114120000 extends SimpleMigrationStep
             $output->info(message: '   • Liskov Substitution Principle enforcement');
             $output->info(message: '   • Metadata override support (title, description, order)');
             $output->info('📚 See: https://json-schema.org/understanding-json-schema/reference/combining');
-        } else {
-            $output->info(message: '⚠️  Schemas table does not exist!');
+            return $schema;
         }//end if
+
+        $output->info(message: '⚠️  Schemas table does not exist!');
 
         return $schema;
     }//end changeSchema()

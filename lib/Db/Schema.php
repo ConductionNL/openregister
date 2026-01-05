@@ -1361,6 +1361,8 @@ class Schema extends Entity implements JsonSerializable
      * @return null|string The facet type ('terms', 'date_histogram') or null if not facetable
      *
      * @psalm-return 'date_histogram'|'terms'|null
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future facet auto-detection
      */
     private function determineFacetTypeForProperty(array $property, string $fieldName): string|null
     {

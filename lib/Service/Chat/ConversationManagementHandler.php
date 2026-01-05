@@ -164,7 +164,9 @@ class ConversationManagementHandler
                 $config->url   = rtrim($ollamaConfig['url'], '/').'/api/';
                 $config->model = $ollamaConfig['chatModel'] ?? 'llama2';
                 $config->modelOptions['temperature'] = 0.7;
-            } else {
+            }
+
+            if ($chatProvider !== 'ollama') {
                 // OpenAI and Fireworks use OpenAIConfig.
                 $config = new OpenAIConfig();
 
@@ -191,7 +193,9 @@ class ConversationManagementHandler
                     }
 
                     $config->url = $baseUrl;
-                } else {
+                }
+
+                if ($chatProvider !== 'openai' && $chatProvider !== 'fireworks') {
                     return $this->generateFallbackTitle($firstMessage);
                 }//end if
 
@@ -226,7 +230,9 @@ class ConversationManagementHandler
                 // Use native Ollama chat.
                 $chat  = new OllamaChat($config);
                 $title = $chat->generateText($prompt);
-            } else {
+            }
+
+            if ($chatProvider !== 'fireworks' && $chatProvider !== 'ollama') {
                 // OpenAI chat.
                 $chat  = new OpenAIChat($config);
                 $title = $chat->generateText($prompt);
@@ -452,10 +458,9 @@ class ConversationManagementHandler
         // Build conversation text.
         $conversationText = '';
         foreach ($messages as $message) {
+            $role = 'Assistant';
             if ($message->getRole() === Message::ROLE_USER) {
                 $role = 'User';
-            } else {
-                $role = 'Assistant';
             }
 
             $conversationText .= "{$role}: {$message->getContent()}\n\n";
@@ -473,7 +478,9 @@ class ConversationManagementHandler
             $config        = new OllamaConfig();
             $config->url   = rtrim($ollamaConfig['url'], '/').'/api/';
             $config->model = $ollamaConfig['chatModel'] ?? 'llama2';
-        } else {
+        }
+
+        if ($chatProvider !== 'ollama') {
             // OpenAI and Fireworks use OpenAIConfig.
             $config = new OpenAIConfig();
 
@@ -529,10 +536,9 @@ class ConversationManagementHandler
             // Use native Ollama chat.
             $chat = new OllamaChat($config);
             return $chat->generateText($prompt);
-        } else {
-            // OpenAI chat.
-            $chat = new OpenAIChat($config);
-            return $chat->generateText($prompt);
-        }//end if
+        }
+        // OpenAI chat.
+        $chat = new OpenAIChat($config);
+        return $chat->generateText($prompt);
     }//end generateSummary()
 }//end class

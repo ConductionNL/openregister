@@ -277,6 +277,8 @@ trait MultiTenancyTrait
      * @param bool          $multiTenancyEnabled Whether multitenancy is enabled (default: true)
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control multitenancy filtering behavior
      */
     protected function applyOrganisationFilter(
         IQueryBuilder $qb,

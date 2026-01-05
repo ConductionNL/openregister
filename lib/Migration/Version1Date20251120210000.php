@@ -276,9 +276,11 @@ class Version1Date20251120210000 extends SimpleMigrationStep
             $table->addIndex(['enabled'], 'openregister_webhooks_enabled');
 
             $output->info('✅ Created webhooks table');
-        } else {
-            $output->info('ℹ️  Webhooks table already exists');
         }//end if
+
+        if ($schema->hasTable('openregister_webhooks') === true) {
+            $output->info('ℹ️  Webhooks table already exists');
+        }
 
         // Create webhook_logs table if it doesn't exist.
         if ($schema->hasTable('openregister_webhook_logs') === false) {
@@ -423,9 +425,11 @@ class Version1Date20251120210000 extends SimpleMigrationStep
             $logsTable->addIndex(['created'], 'webhook_logs_created_idx');
 
             $output->info('✅ Created webhook_logs table');
-        } else {
-            $output->info('ℹ️  Webhook_logs table already exists');
         }//end if
+
+        if ($schema->hasTable('openregister_webhook_logs') === true) {
+            $output->info('ℹ️  Webhook_logs table already exists');
+        }
 
         // NOTE: No foreign key constraint added due to Nextcloud/Doctrine prefix handling issues.
         // Referential integrity is maintained by the application code instead.

@@ -267,7 +267,9 @@ class ObjectsProvider implements IFilteringProvider
         if ($until !== null) {
             if (($searchQuery['@self']['created'] ?? null) !== null) {
                 $searchQuery['@self']['created']['$lte'] = $until;
-            } else {
+            }
+
+            if (($searchQuery['@self']['created'] ?? null) === null) {
                 $searchQuery['@self']['created'] = ['$lte' => $until];
             }
         }
@@ -365,8 +367,8 @@ class ObjectsProvider implements IFilteringProvider
         $description = implode(' • ', $parts);
         if ($description !== '') {
             return $description;
-        } else {
-            return $this->l10n->t(text: 'Open Register Object');
         }
+
+        return $this->l10n->t(text: 'Open Register Object');
     }//end buildDescription()
 }//end class

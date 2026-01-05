@@ -123,11 +123,10 @@ class DeleteObject
 
         // **SOFT DELETE**: Mark object as deleted instead of removing from database.
         // Set deletion metadata with user, timestamp, and organization information.
-        $user = $this->userSession->getUser();
+        $user   = $this->userSession->getUser();
+        $userId = 'system';
         if ($user !== null) {
             $userId = $user->getUID();
-        } else {
-            $userId = 'system';
         }
 
         // Get the active organization from session at time of deletion for audit trail.
@@ -172,17 +171,15 @@ class DeleteObject
             $schemaId   = $objectEntity->getSchema();
 
             // Convert register ID to int if numeric.
+            $registerIdInt = null;
             if ($registerId !== null && is_numeric($registerId) === true) {
                 $registerIdInt = (int) $registerId;
-            } else {
-                $registerIdInt = null;
             }
 
             // Convert schema ID to int if numeric.
+            $schemaIdInt = null;
             if ($schemaId !== null && is_numeric($schemaId) === true) {
                 $schemaIdInt = (int) $schemaId;
-            } else {
-                $schemaIdInt = null;
             }
 
             try {
@@ -279,14 +276,15 @@ class DeleteObject
                         originalObjectId: $originalObjectId
                     );
                 }
-            } else {
-                $this->deleteObject(
-                    register: $register,
-                    schema: $schema,
-                    uuid: $value,
-                    originalObjectId: $originalObjectId
-                );
+                continue;
             }
+
+            $this->deleteObject(
+                register: $register,
+                schema: $schema,
+                uuid: $value,
+                originalObjectId: $originalObjectId
+            );
         }//end foreach
     }//end cascadeDeleteObjects()
 
@@ -296,6 +294,8 @@ class DeleteObject
      * @param ObjectEntity $objectEntity The object entity to delete folder for
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future folder deletion implementation
      */
     private function deleteObjectFolder(ObjectEntity $objectEntity): void
     {

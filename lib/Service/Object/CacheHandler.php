@@ -445,6 +445,8 @@ class CacheHandler
      * @param array        $objectData Object data
      *
      * @return string Full-text content for searching
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future full-text search implementation
      */
     private function buildFullTextContent(ObjectEntity $object, array $objectData): string
     {
@@ -905,6 +907,8 @@ class CacheHandler
      * @param bool        $_multitenancy          Whether multi-tenancy is enabled
      *
      * @return string The generated cache key
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future search cache implementation
      */
     private function generateSearchCacheKey(
         array $query,

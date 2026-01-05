@@ -1391,15 +1391,15 @@ class SettingsService
         $units     = ['B', 'KB', 'MB', 'GB', 'TB'];
         $unitCount = count($units);
 
-        $i = 0;
-        for (; $bytes > 1024 && $i < $unitCount - 1; $i++) {
+        $unitIndex = 0;
+        for (; $bytes > 1024 && $unitIndex < $unitCount - 1; $unitIndex++) {
             $bytes /= 1024;
         }
 
-        // Ensure $i is within bounds (0-4) for the $units array.
-        $i = min($i, $unitCount - 1);
+        // Ensure $unitIndex is within bounds (0-4) for the $units array.
+        $unitIndex = min($unitIndex, $unitCount - 1);
 
-        return round($bytes, $precision).' '.$units[$i];
+        return round($bytes, $precision).' '.$units[$unitIndex];
     }//end formatBytes()
 
     /**

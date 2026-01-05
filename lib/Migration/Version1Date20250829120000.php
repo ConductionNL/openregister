@@ -244,14 +244,11 @@ class Version1Date20250829120000 extends SimpleMigrationStep
             $table = $schema->getTable('openregister_registers');
 
             // Check if both columns exist before adding constraint.
-            if ($table->hasColumn('organisation') === true && $table->hasColumn('slug') === true) {
-                $indexName = 'registers_organisation_slug_unique';
-                if ($table->hasIndex($indexName) === false) {
-                    $table->addUniqueIndex(['organisation', 'slug'], $indexName);
-                    $output->info(message: 'Added unique constraint on (organisation, slug) for registers table');
-                }
-            } else {
+            if ($table->hasColumn('organisation') === false || $table->hasColumn('slug') === false) {
                 $output->warning('Cannot add unique constraint: organisation or slug column missing in registers table');
+            } else if ($table->hasIndex('registers_organisation_slug_unique') === false) {
+                $table->addUniqueIndex(['organisation', 'slug'], 'registers_organisation_slug_unique');
+                $output->info(message: 'Added unique constraint on (organisation, slug) for registers table');
             }
         }
 
@@ -260,14 +257,11 @@ class Version1Date20250829120000 extends SimpleMigrationStep
             $table = $schema->getTable('openregister_schemas');
 
             // Check if both columns exist before adding constraint.
-            if ($table->hasColumn('organisation') === true && $table->hasColumn('slug') === true) {
-                $indexName = 'schemas_organisation_slug_unique';
-                if ($table->hasIndex($indexName) === false) {
-                    $table->addUniqueIndex(['organisation', 'slug'], $indexName);
-                    $output->info(message: 'Added unique constraint on (organisation, slug) for schemas table');
-                }
-            } else {
+            if ($table->hasColumn('organisation') === false || $table->hasColumn('slug') === false) {
                 $output->warning('Cannot add unique constraint: organisation or slug column missing in schemas table');
+            } else if ($table->hasIndex('schemas_organisation_slug_unique') === false) {
+                $table->addUniqueIndex(['organisation', 'slug'], 'schemas_organisation_slug_unique');
+                $output->info(message: 'Added unique constraint on (organisation, slug) for schemas table');
             }
         }
 

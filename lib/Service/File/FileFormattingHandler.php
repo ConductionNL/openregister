@@ -103,12 +103,11 @@ class FileFormattingHandler
         $shares = $this->fileService->findShares($file);
 
         // Get base metadata array.
+        $accessUrl   = null;
+        $downloadUrl = null;
         if (count($shares) > 0) {
             $accessUrl   = $this->fileService->getShareLink($shares[0]);
             $downloadUrl = $accessUrl.'/download';
-        } else {
-            $accessUrl   = null;
-            $downloadUrl = null;
         }
 
         $metadata = [
@@ -149,10 +148,12 @@ class FileFormattingHandler
                 } else {
                     // If key doesn't exist, create new entry.
                     $metadata[$key] = $value;
-                }//end if
-            } else {
-                $remainingLabels[] = $label;
-            }//end if
+                }
+
+                continue;
+            }
+
+            $remainingLabels[] = $label;
         }//end foreach
 
         // Update labels array to only contain non-processed labels.

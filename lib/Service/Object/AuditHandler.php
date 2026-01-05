@@ -122,12 +122,11 @@ class AuditHandler
     {
         try {
             // Get object's register and schema.
+            $objectRegister = $object->getRegister();
+            $objectSchema   = $object->getSchema();
             if (is_array($object) === true) {
                 $objectRegister = $object['register'] ?? null;
                 $objectSchema   = $object['schema'] ?? null;
-            } else {
-                $objectRegister = $object->getRegister();
-                $objectSchema   = $object->getSchema();
             }
 
             // Normalize and compare register.
@@ -141,10 +140,9 @@ class AuditHandler
 
             $requestedSchemaNorm = strtolower($requestedSchema);
             $objectSchemaIdNorm  = strtolower((string) $objectSchemaId);
+            $objectSchemaSlugNorm = null;
             if ($objectSchemaSlug !== null) {
                 $objectSchemaSlugNorm = strtolower($objectSchemaSlug);
-            } else {
-                $objectSchemaSlugNorm = null;
             }
 
             // Check schema match (by ID or slug).

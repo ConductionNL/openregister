@@ -252,6 +252,8 @@ class ImportService
      *     debug?: array{headers: array<never, never>, processableHeaders: array<never, never>,
      *             schemaProperties: list<array-key>}
      * }>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flags control import behavior options
      */
     public function importFromExcel(
         string $filePath,
@@ -330,6 +332,8 @@ class ImportService
      * @param IUser|null    $currentUser   Current user for RBAC checks (default: null).
      *
      * @return array Import results by schema
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flags control import behavior options
      */
     public function importFromCsv(
         string $filePath,
@@ -423,6 +427,8 @@ class ImportService
      *     deduplication_efficiency?: non-empty-lowercase-string,
      *     schema: array{id: int, slug: null|string, title: null|string}|null
      * }>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flags control import behavior options
      */
     private function processMultiSchemaSpreadsheetAsync(
         Spreadsheet $spreadsheet,
@@ -536,6 +542,8 @@ class ImportService
      * @param IUser|null    $currentUser   The current user performing the import
      *
      * @return array Batch processing results
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flags control import behavior options
      */
     private function processSpreadsheetBatch(
         Spreadsheet $spreadsheet,
@@ -556,9 +564,6 @@ class ImportService
             'unchanged' => [],
             'errors'    => [],
         ];
-
-        // REMOVED ERROR SUPPRESSION: Let bulk save errors bubble up immediately!
-        $startTime = microtime(true);
 
         // Get the active sheet.
         $sheet      = $spreadsheet->getActiveSheet();
@@ -697,6 +702,8 @@ class ImportService
      * @param IUser|null                                    $currentUser   The current user performing the import
      *
      * @return array CSV sheet processing results
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flags control import behavior options
      */
     private function processCsvSheet(
         \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet,
@@ -1068,6 +1075,8 @@ class ImportService
      * @return         array<string, array> Chunk processing result
      * @phpstan-return array{objects: array<int, array<string, mixed>>}
      * @psalm-return   array{objects: list<array<string, mixed>>}
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future Excel chunk processing
      */
     private function processExcelChunk(
         \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet,
@@ -1240,6 +1249,8 @@ class ImportService
      *     unchanged: array<never, never>,
      *     errors: list{0?: mixed,...}
      * }
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future async chunk processing
      */
     private function processChunk(
         \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet,
@@ -1850,6 +1861,8 @@ class ImportService
      * @return bool True if job was scheduled successfully
      *
      * @psalm-suppress PossiblyUnusedReturnValue
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Immediate flag controls scheduling timing
      */
     public function scheduleSmartSolrWarmup(array $importSummary, bool $immediate=false): bool
     {

@@ -146,6 +146,8 @@ class ConfigurationMapper extends QBMapper
      * @throws DoesNotExistException
      * @throws MultipleObjectsReturnedException
      * @throws \Exception If user doesn't have read permission
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Multitenancy toggle is intentional
      */
     public function find(int $id, bool $_multitenancy=true): Configuration
     {
@@ -478,6 +480,8 @@ class ConfigurationMapper extends QBMapper
      * @throws \Exception If user doesn't have read permission
      *
      * @psalm-return list<OCA\OpenRegister\Db\Configuration>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Multitenancy toggle is intentional
      */
     public function findAll(
         ?int $limit=null,
@@ -503,11 +507,13 @@ class ConfigurationMapper extends QBMapper
         foreach ($filters ?? [] as $filter => $value) {
             if ($value === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull($filter));
-            } else if ($value === 'IS NULL') {
-                $qb->andWhere($qb->expr()->isNull($filter));
-            } else {
-                $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
+                continue;
             }
+            if ($value === 'IS NULL') {
+                $qb->andWhere($qb->expr()->isNull($filter));
+                continue;
+            }
+            $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
         }
 
         // Apply search conditions.

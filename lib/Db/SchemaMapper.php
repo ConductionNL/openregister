@@ -192,6 +192,7 @@ class SchemaMapper extends QBMapper
      * @throws \Exception If user doesn't have read permission
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
      */
     public function find(
         string | int $id,
@@ -212,17 +213,17 @@ class SchemaMapper extends QBMapper
 
         // Build OR conditions for matching against id, uuid, or slug.
         // Note: Only include id comparison if $id is actually numeric (PostgreSQL strict typing).
+        $qb->where(
+            $qb->expr()->orX(
+                $qb->expr()->eq('uuid', $qb->createNamedParameter(value: $id, type: IQueryBuilder::PARAM_STR)),
+                $qb->expr()->eq('slug', $qb->createNamedParameter(value: $id, type: IQueryBuilder::PARAM_STR))
+            )
+        );
         if (is_numeric($id) === true) {
+            $qb->resetQueryPart('where');
             $qb->where(
                 $qb->expr()->orX(
                     $qb->expr()->eq('id', $qb->createNamedParameter(value: (int) $id, type: IQueryBuilder::PARAM_INT)),
-                    $qb->expr()->eq('uuid', $qb->createNamedParameter(value: $id, type: IQueryBuilder::PARAM_STR)),
-                    $qb->expr()->eq('slug', $qb->createNamedParameter(value: $id, type: IQueryBuilder::PARAM_STR))
-                )
-            );
-        } else {
-            $qb->where(
-                $qb->expr()->orX(
                     $qb->expr()->eq('uuid', $qb->createNamedParameter(value: $id, type: IQueryBuilder::PARAM_STR)),
                     $qb->expr()->eq('slug', $qb->createNamedParameter(value: $id, type: IQueryBuilder::PARAM_STR))
                 )
@@ -288,6 +289,8 @@ class SchemaMapper extends QBMapper
      * @return Schema[]
      *
      * @psalm-return list<\OCA\OpenRegister\Db\Schema>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
      */
     public function findMultiple(array $ids, ?bool $published=null, bool $_rbac=true, bool $_multitenancy=true): array
     {
@@ -364,7 +367,8 @@ class SchemaMapper extends QBMapper
      * @throws \Exception If user doesn't have read permission
      *
      * @psalm-return     list<OCA\OpenRegister\Db\Schema>
-     * @SuppressWarnings (PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
      */
     public function findAll(
         ?int $limit=null,

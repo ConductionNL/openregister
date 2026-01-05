@@ -80,6 +80,8 @@ class MagicFacetHandler
      *     buckets: list<array{count: int, from?: mixed|null,
      *     key?: mixed|string, to?: mixed|null, value?: mixed}>,
      *     total_buckets: int<0, max>, error?: string, interval?: string}
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future facet implementation
      */
     private function getMetadataFieldFacet(string $field, array $config, array $baseQuery, string $tableName): array
     {
@@ -133,6 +135,8 @@ class MagicFacetHandler
      *     buckets?: list<array{count: int, from?: mixed|null,
      *     key?: mixed|string, to?: mixed|null, value?: mixed}>,
      *     total_buckets?: int<0, max>, error?: string, interval?: string}
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future facet implementation
      */
     private function getSchemaPropertyFacet(
         string $field,
@@ -459,9 +463,9 @@ class MagicFacetHandler
                         \Doctrine\DBAL\Connection::PARAM_STR_ARRAY
                     );
                     $qb->andWhere($qb->expr()->in("t.{$columnName}", $paramValue));
-                } else {
-                    $qb->andWhere($qb->expr()->eq("t.{$columnName}", $qb->createNamedParameter($value)));
+                    continue;
                 }
+                $qb->andWhere($qb->expr()->eq("t.{$columnName}", $qb->createNamedParameter($value)));
             }
         }
 
@@ -487,9 +491,9 @@ class MagicFacetHandler
                     \Doctrine\DBAL\Connection::PARAM_STR_ARRAY
                 );
                 $qb->andWhere($qb->expr()->in("t.{$columnName}", $paramValue));
-            } else {
-                $qb->andWhere($qb->expr()->eq("t.{$columnName}", $qb->createNamedParameter($value)));
+                continue;
             }
+            $qb->andWhere($qb->expr()->eq("t.{$columnName}", $qb->createNamedParameter($value)));
         }
     }//end applyBaseFilters()
 
@@ -538,6 +542,8 @@ class MagicFacetHandler
      *         facet_types: list{'date_histogram', 'range'}
      *     }
      * }
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future facet implementation
      */
     private function getMetadataFacetableFields(): array
     {
@@ -594,6 +600,8 @@ class MagicFacetHandler
      *     title: mixed, description: mixed|string,
      *     facet_types: list{0: 'date_histogram'|'range'|'terms',
      *     1?: 'range'|'terms'}}>
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future facet implementation
      */
     private function getSchemaFacetableFields(Schema $schema): array
     {
@@ -633,9 +641,8 @@ class MagicFacetHandler
             case 'string':
                 if ($format === 'date' || $format === 'date-time') {
                     return ['date_histogram', 'range'];
-                } else {
-                    return ['terms'];
                 }
+                return ['terms'];
 
             case 'integer':
             case 'number':
@@ -717,16 +724,14 @@ class MagicFacetHandler
 
             for ($i = 0; $i < $numRanges; $i++) {
                 $from = $min + ($i * $step);
+                $to = $min + (($i + 1) * $step);
                 if ($i === $numRanges - 1) {
                     $to = null;
-                } else {
-                    $to = $min + (($i + 1) * $step);
                 }
 
+                $key = "{$from}-{$to}";
                 if ($to === null) {
                     $key = "{$from}+";
-                } else {
-                    $key = "{$from}-{$to}";
                 }
 
                 $ranges[] = [

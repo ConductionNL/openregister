@@ -240,6 +240,8 @@ class ConversationMapper extends QBMapper
      * @return Conversation[]
      *
      * @psalm-return list<\OCA\OpenRegister\Db\Conversation>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Include deleted toggle is intentional
      */
     public function findByUser(
         string $userId,
@@ -361,6 +363,8 @@ class ConversationMapper extends QBMapper
      * @param bool        $includeDeleted Whether to include soft-deleted conversations
      *
      * @return int Total count
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Include deleted toggle is intentional
      */
     public function countByUser(
         string $userId,

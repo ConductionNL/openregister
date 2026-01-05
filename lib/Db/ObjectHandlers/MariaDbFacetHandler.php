@@ -1143,6 +1143,8 @@ class MariaDbFacetHandler
      * @return array[]
      *
      * @psalm-return list<array>
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future facet field analysis
      */
     private function getSampleObjects(array $baseQuery, int $sampleSize): array
     {
@@ -1451,6 +1453,8 @@ class MariaDbFacetHandler
      * @psalm-param array<string, mixed> $analysis
      *
      * @return (array|false|mixed|string)[]|null Field configuration or null if not facetable.
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future facet field analysis
      */
     private function determineFieldConfiguration(string $fieldPath, array $analysis): array|null
     {

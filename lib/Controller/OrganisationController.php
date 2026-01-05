@@ -163,14 +163,14 @@ class OrganisationController extends Controller
                     ],
                     statusCode: Http::STATUS_OK
                 );
-            } else {
-                return new JSONResponse(
-                    data: [
-                        'error' => 'Failed to set active organisation',
-                    ],
-                    statusCode: Http::STATUS_BAD_REQUEST
-                );
-            }//end if
+            }
+
+            return new JSONResponse(
+                data: [
+                    'error' => 'Failed to set active organisation',
+                ],
+                statusCode: Http::STATUS_BAD_REQUEST
+            );
         } catch (Exception $e) {
             $this->logger->error(
                 message: 'Failed to set active organisation',
@@ -348,14 +348,14 @@ class OrganisationController extends Controller
                     ],
                     statusCode: Http::STATUS_OK
                 );
-            } else {
-                return new JSONResponse(
-                    data: [
-                        'error' => 'Failed to join organisation',
-                    ],
-                    statusCode: Http::STATUS_BAD_REQUEST
-                );
             }
+
+            return new JSONResponse(
+                data: [
+                    'error' => 'Failed to join organisation',
+                ],
+                statusCode: Http::STATUS_BAD_REQUEST
+            );
         } catch (Exception $e) {
             $this->logger->error(
                 message: 'Failed to join organisation',
@@ -412,14 +412,14 @@ class OrganisationController extends Controller
                     ],
                     statusCode: Http::STATUS_OK
                 );
-            } else {
-                return new JSONResponse(
-                    data: [
-                        'error' => 'Failed to leave organisation',
-                    ],
-                    statusCode: Http::STATUS_BAD_REQUEST
-                );
             }
+
+            return new JSONResponse(
+                data: [
+                    'error' => 'Failed to leave organisation',
+                ],
+                statusCode: Http::STATUS_BAD_REQUEST
+            );
         } catch (Exception $e) {
             $this->logger->error(
                 message: 'Failed to leave organisation',
@@ -612,7 +612,9 @@ class OrganisationController extends Controller
             // Otherwise search by name.
             if (empty(trim($query)) === true) {
                 $organisations = $this->organisationMapper->findAll(limit: $limit, offset: $offset);
-            } else {
+            }
+
+            if (empty(trim($query)) === false) {
                 $organisations = $this->organisationMapper->findByName(name: trim($query), limit: $limit, offset: $offset);
             }
 

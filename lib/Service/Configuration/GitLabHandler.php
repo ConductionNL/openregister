@@ -141,10 +141,9 @@ class GitLabHandler
         try {
             // Build search query.
             // Always search for x-openregister, optionally filter by additional terms.
+            $searchQuery = 'x-openregister';
             if (empty($search) === false) {
                 $searchQuery = 'x-openregister '.$search;
-            } else {
-                $searchQuery = 'x-openregister';
             }
 
             $this->logger->info(

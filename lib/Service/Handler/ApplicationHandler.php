@@ -19,11 +19,6 @@
 
 namespace OCA\OpenRegister\Service\Handler;
 
-use Exception;
-use OCA\OpenRegister\Db\Application;
-use OCA\OpenRegister\Db\ApplicationMapper;
-use Psr\Log\LoggerInterface;
-
 /**
  * Class ApplicationHandler
  *
@@ -33,18 +28,4 @@ use Psr\Log\LoggerInterface;
  */
 class ApplicationHandler
 {
-
-    /**
-     * Application mapper instance.
-     *
-     * @var ApplicationMapper The application mapper instance.
-     */
-    private ApplicationMapper $applicationMapper;
-
-    /**
-     * Logger instance.
-     *
-     * @var LoggerInterface The logger instance.
-     */
-    private LoggerInterface $logger;
 }//end class

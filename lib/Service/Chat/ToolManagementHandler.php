@@ -124,10 +124,9 @@ class ToolManagementHandler
 
         foreach ($enabledToolIds as $toolId) {
             // Support both old format (register, schema, objects) and new format (app.tool).
+            $fullToolId = 'openregister.'.$toolId;
             if (strpos($toolId, '.') !== false) {
                 $fullToolId = $toolId;
-            } else {
-                $fullToolId = 'openregister.'.$toolId;
             }
 
             $tool = $this->toolRegistry->getTool($fullToolId);
@@ -138,7 +137,9 @@ class ToolManagementHandler
                     message: '[ChatService] Loaded tool',
                     context: ['id' => $fullToolId]
                 );
-            } else {
+            }
+
+            if ($tool === null) {
                 $this->logger->warning(
                     message: '[ChatService] Tool not found',
                     context: ['id' => $fullToolId]

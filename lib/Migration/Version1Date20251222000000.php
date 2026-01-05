@@ -105,7 +105,9 @@ class Version1Date20251222000000 extends SimpleMigrationStep
 
             if ($result > 0) {
                 $output->info(message: "   ✓ Fixed required field for {$result} schemas");
-            } else {
+            }
+
+            if ($result === 0) {
                 $output->info(message: '   ℹ️  No schemas needed fixing (all had valid required fields)');
             }
 

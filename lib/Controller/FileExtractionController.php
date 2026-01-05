@@ -189,6 +189,8 @@ class FileExtractionController extends Controller
      *     },
      *     array<never, never>
      * >
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag allows re-extraction bypass
      */
     public function extract(int $id, bool $forceReExtract=false): JSONResponse
     {

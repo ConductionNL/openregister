@@ -77,7 +77,9 @@ class Version1Date20251107180000 extends SimpleMigrationStep
                 );
                 $output->info(message: '✅ Added tools column to agents table');
                 $updated = true;
-            } else {
+            }
+
+            if ($table->hasColumn('tools') === true && $updated === false) {
                 $output->info(message: 'ℹ️  tools column already exists in agents table');
             }
 
@@ -95,18 +97,22 @@ class Version1Date20251107180000 extends SimpleMigrationStep
                 );
                 $output->info(message: '✅ Added user column to agents table');
                 $updated = true;
-            } else {
+            }
+
+            if ($table->hasColumn('user') === true) {
                 $output->info(message: 'ℹ️  user column already exists in agents table');
             }
-        } else {
+        }//end if
+
+        if ($schema->hasTable('openregister_agents') === false) {
             $output->warning(message: '⚠️  openregister_agents table does not exist');
         }//end if
 
-        if ($updated === true) {
-            return $schema;
+        if ($updated === false) {
+            return null;
         }
 
-        return null;
+        return $schema;
     }//end changeSchema()
 
     /**

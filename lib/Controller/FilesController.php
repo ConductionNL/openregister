@@ -559,42 +559,36 @@ class FilesController extends Controller
             }
 
             // Extract file arrays safely.
+            $typeArray = [];
             if (is_array($files['type'] ?? null) === true) {
                 $typeArray = $files['type'];
-            } else {
-                $typeArray = [];
             }
 
+            $tmpNameArray = [];
             if (is_array($files['tmp_name'] ?? null) === true) {
                 $tmpNameArray = $files['tmp_name'];
-            } else {
-                $tmpNameArray = [];
             }
 
             $errorValue = $files['error'] ?? null;
+            $errorArray = [];
             if (is_array($errorValue) === true) {
                 $errorArray = $errorValue;
-            } else {
-                $errorArray = [];
             }
 
+            $errorScalar = null;
             if (is_int($errorValue) === true) {
                 $errorScalar = $errorValue;
-            } else {
-                $errorScalar = null;
             }
 
             $sizeValue = $files['size'] ?? null;
+            $sizeArray = [];
             if (is_array($sizeValue) === true) {
                 $sizeArray = $sizeValue;
-            } else {
-                $sizeArray = [];
             }
 
+            $sizeScalar = null;
             if (is_int($sizeValue) === true) {
                 $sizeScalar = $sizeValue;
-            } else {
-                $sizeScalar = null;
             }
 
             $uploadedFiles[] = [

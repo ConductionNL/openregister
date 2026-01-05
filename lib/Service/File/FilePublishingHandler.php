@@ -112,15 +112,17 @@ class FilePublishingHandler
 
             // Try to find the file in the object's folder by ID.
             $fileNode = $this->fileService->getFile(object: $object, file: $file);
-            if ($fileNode !== null) {
-                $foundMsg  = "publishFile: Found file by ID: ".$fileNode->getName();
-                $foundMsg .= " (ID: ".$fileNode->getId().")";
-                $this->logger->info(message: $foundMsg);
-            } else {
+            if ($fileNode === null) {
                 $this->logger->error(message: "publishFile: No file found with ID: $file");
                 throw new Exception("File with ID $file does not exist");
             }
-        } else {
+
+            $foundMsg  = "publishFile: Found file by ID: ".$fileNode->getName();
+            $foundMsg .= " (ID: ".$fileNode->getId().")";
+            $this->logger->info(message: $foundMsg);
+        }
+
+        if (is_int($originalFile) === false) {
             // Handle string file paths (existing logic).
             // Clean file path and extract filename using utility method.
             $pathInfo = $this->fileService->extractFileNameFromPath($file);
@@ -256,15 +258,17 @@ class FilePublishingHandler
 
             // Try to find the file in the object's folder by ID.
             $file = $this->fileService->getFile(object: $object, file: $filePath);
-            if ($file !== null) {
-                $foundMsg  = "unpublishFile: Found file by ID: ".$file->getName();
-                $foundMsg .= " (ID: ".$file->getId().")";
-                $this->logger->info(message: $foundMsg);
-            } else {
+            if ($file === null) {
                 $this->logger->error(message: "unpublishFile: No file found with ID: $filePath");
                 throw new Exception("File with ID $filePath does not exist");
             }
-        } else {
+
+            $foundMsg  = "unpublishFile: Found file by ID: ".$file->getName();
+            $foundMsg .= " (ID: ".$file->getId().")";
+            $this->logger->info(message: $foundMsg);
+        }
+
+        if (is_int($originalFilePath) === false) {
             // Handle string file paths (existing logic).
             // Clean file path and extract filename using utility method.
             $pathInfo = $this->fileService->extractFileNameFromPath($filePath);

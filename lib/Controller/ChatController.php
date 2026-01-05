@@ -731,7 +731,9 @@ class ChatController extends Controller
                         'hasComment' => empty($comment) === false,
                     ]
                 );
-            } else {
+            }
+
+            if ($existingFeedback === null) {
                 // Create new feedback.
                 $feedback = new Feedback();
                 $feedback->setMessageId($messageId);
@@ -753,7 +755,7 @@ class ChatController extends Controller
                         'hasComment' => empty($comment) === false,
                     ]
                 );
-            }//end if
+            }
 
             return new JSONResponse(data: $feedback->jsonSerialize(), statusCode: 200);
         } catch (Exception $e) {

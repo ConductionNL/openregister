@@ -103,9 +103,9 @@ class Version1Date20251102150000 extends SimpleMigrationStep
             $output->info(message: '   • Favorite functionality');
 
             return $schema;
-        } else {
-            $output->info(message: '⚠️  Views table not found!');
         }//end if
+
+        $output->info(message: '⚠️  Views table not found!');
 
         return null;
     }//end changeSchema()

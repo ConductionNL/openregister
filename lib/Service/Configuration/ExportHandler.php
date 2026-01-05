@@ -124,6 +124,8 @@ class ExportHandler
      * @return array The OpenAPI specification array.
      *
      * @throws \OCP\DB\Exception If database operations fail.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Toggle to include/exclude objects in export
      */
     public function exportConfig(
         array|Configuration|Register $input=[],
@@ -196,7 +198,9 @@ class ExportHandler
             $openApiSpec['x-openregister'] = [
                 'type' => 'register',
             ];
-        } else {
+        }
+
+        if (($input instanceof Configuration) === false && ($input instanceof Register) === false) {
             // Get all registers associated with this configuration.
             $configuration = $this->configurationMapper->find($input['id']);
 
@@ -213,7 +217,9 @@ class ExportHandler
             // Add x-openregister metadata if available in input.
             if (($input['x-openregister'] ?? null) !== null) {
                 $openApiSpec['x-openregister'] = $input['x-openregister'];
-            } else {
+            }
+
+            if (($input['x-openregister'] ?? null) === null) {
                 // Create basic metadata from input.
                 $openApiSpec['x-openregister'] = [
                     'title'       => $input['title'] ?? null,
@@ -529,8 +535,7 @@ class ExportHandler
         // Return numeric segment if found, otherwise return original URL.
         if (is_numeric($lastSegment) === true) {
             return $lastSegment;
-        } else {
-            return $url;
         }
+        return $url;
     }//end getLastNumericSegment()
 }//end class

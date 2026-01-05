@@ -90,7 +90,9 @@ class Version1Date20251110000000 extends SimpleMigrationStep
 
                 $output->info(message: '    ✅ organisations.parent column added');
                 $updated = true;
-            } else {
+            }
+
+            if ($table->hasColumn('parent') === true && $updated === false) {
                 $output->info(message: '  ℹ️  organisations.parent column already exists');
             }
 
@@ -102,42 +104,44 @@ class Version1Date20251110000000 extends SimpleMigrationStep
 
                 $output->info(message: '    ✅ Index on parent column added');
                 $updated = true;
-            } else {
+            }
+
+            if ($table->hasIndex('parent_organisation_idx') === true) {
                 $output->info(message: '  ℹ️  Index on parent column already exists');
             }
-        } else {
-            $output->warning(message: '  ⚠️  organisations table not found - skipping hierarchy migration');
         }//end if
 
-        if ($updated === true) {
-            $output->info(message: '');
-            $output->info(message: '🎉 Organisation hierarchy support added successfully!');
-            $output->info(message: '');
-            $output->info('📊 Summary:');
-            $output->info(message: '   • Parent column added to organisations table');
-            $output->info(message: '   • Index created for efficient parent lookups');
-            $output->info(message: '   • Foreign key constraint will be handled at application level');
-            $output->info(message: '');
-            $output->info('✨ Features enabled:');
-            $output->info(message: '   • Parent-child organisation relationships');
-            $output->info(message: '   • Children inherit parent resource access');
-            $output->info(message: '   • Recursive parent chain lookups');
-            $output->info(message: '   • Support for multi-level hierarchies (max 10 levels)');
-            $output->info(message: '');
-            $output->info('📖 Use Case Example:');
-            $output->info(message: '   VNG (root) → Amsterdam → Deelgemeente Noord');
-            $output->info(message: '   → Noord sees schemas from Amsterdam and VNG');
-            $output->info(message: '');
-        } else {
+        if ($schema->hasTable('openregister_organisations') === false) {
+            $output->warning(message: '  ⚠️  organisations table not found - skipping hierarchy migration');
+            return null;
+        }//end if
+
+        if ($updated === false) {
             $output->info(message: '');
             $output->info(message: 'ℹ️  No changes needed - organisation hierarchy already configured');
-        }//end if
-
-        if ($updated === true) {
-            return $schema;
+            return null;
         }
 
-        return null;
+        $output->info(message: '');
+        $output->info(message: '🎉 Organisation hierarchy support added successfully!');
+        $output->info(message: '');
+        $output->info('📊 Summary:');
+        $output->info(message: '   • Parent column added to organisations table');
+        $output->info(message: '   • Index created for efficient parent lookups');
+        $output->info(message: '   • Foreign key constraint will be handled at application level');
+        $output->info(message: '');
+        $output->info('✨ Features enabled:');
+        $output->info(message: '   • Parent-child organisation relationships');
+        $output->info(message: '   • Children inherit parent resource access');
+        $output->info(message: '   • Recursive parent chain lookups');
+        $output->info(message: '   • Support for multi-level hierarchies (max 10 levels)');
+        $output->info(message: '');
+        $output->info('📖 Use Case Example:');
+        $output->info(message: '   VNG (root) → Amsterdam → Deelgemeente Noord');
+        $output->info(message: '   → Noord sees schemas from Amsterdam and VNG');
+        $output->info(message: '');
+
+        return $schema;
     }//end changeSchema()
 
     /**

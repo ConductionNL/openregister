@@ -96,6 +96,7 @@ class MagicRbacHandler
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod)   Reserved for future RBAC implementation
      */
     private function applyUnauthenticatedAccess(IQueryBuilder $_qb, Schema $schema, string $_tableAlias): void
     {
@@ -122,6 +123,8 @@ class MagicRbacHandler
      * Check if RBAC is enabled in app configuration
      *
      * @return bool True if RBAC is enabled, false otherwise
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future RBAC implementation
      */
     private function isRbacEnabled(): bool
     {
@@ -139,6 +142,8 @@ class MagicRbacHandler
      * Check if RBAC admin override is enabled in app configuration
      *
      * @return bool True if RBAC admin override is enabled, false otherwise
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future RBAC implementation
      */
     private function isAdminOverrideEnabled(): bool
     {

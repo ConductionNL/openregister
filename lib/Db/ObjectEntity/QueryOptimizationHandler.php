@@ -103,9 +103,9 @@ class QueryOptimizationHandler
 
             if ($objectSize > $maxSafeSize) {
                 $largeObjects[] = $object;
-            } else {
-                $normalObjects[] = $object;
+                continue;
             }
+            $normalObjects[] = $object;
         }
 
         return [

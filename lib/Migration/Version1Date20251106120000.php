@@ -242,7 +242,9 @@ class Version1Date20251106120000 extends SimpleMigrationStep
                 $column = $table->getColumn('organisation');
                 if ($column->getType()->getName() === Types::STRING) {
                     $output->info(message: '  ✅ schemas.organisation already string UUID (no change needed)');
-                } else {
+                }
+
+                if ($column->getType()->getName() !== Types::STRING) {
                     // If somehow it's not a string, fix it.
                     $output->info(message: '  📝 Updating schemas.organisation to string UUID');
 
@@ -258,28 +260,25 @@ class Version1Date20251106120000 extends SimpleMigrationStep
             }
         }//end if
 
-        if ($updated === true) {
-            $output->info(message: '');
-            $output->info(message: '🎉 Multi-tenancy organisation columns updated successfully!');
-            $output->info('📊 Summary:');
-            $output->info('   • Configurations: organisation updated to string UUID');
-            $output->info('   • Agents: organisation updated to string UUID');
-            $output->info('   • Applications: organisation updated to string UUID');
-            $output->info('   • View: organisation column added (string UUID)');
-            $output->info('   • Sources: organisation column added (string UUID)');
-            $output->info('   • Registers: organisation column added (string UUID)');
-            $output->info('   • Schemas: organisation verified as string UUID');
-            $output->info(message: '');
-            $output->info(message: '✅ All entities now support multi-tenancy with organisation UUIDs');
-        } else {
+        if ($updated === false) {
             $output->info(message: '');
             $output->info(message: 'ℹ️  No changes needed - all organisation columns already configured correctly');
-        }
-
-        if ($updated === true) {
-            return $schema;
-        } else {
             return null;
         }
+
+        $output->info(message: '');
+        $output->info(message: '🎉 Multi-tenancy organisation columns updated successfully!');
+        $output->info('📊 Summary:');
+        $output->info('   • Configurations: organisation updated to string UUID');
+        $output->info('   • Agents: organisation updated to string UUID');
+        $output->info('   • Applications: organisation updated to string UUID');
+        $output->info('   • View: organisation column added (string UUID)');
+        $output->info('   • Sources: organisation column added (string UUID)');
+        $output->info('   • Registers: organisation column added (string UUID)');
+        $output->info('   • Schemas: organisation verified as string UUID');
+        $output->info(message: '');
+        $output->info(message: '✅ All entities now support multi-tenancy with organisation UUIDs');
+
+        return $schema;
     }//end changeSchema()
 }//end class

@@ -151,16 +151,18 @@ class ExportService
                     currentUser: $currentUser
                 );
             }
-        } else {
-            // Export single schema.
-            $this->populateSheet(
-                spreadsheet: $spreadsheet,
-                register: $register,
-                schema: $schema,
-                filters: $filters,
-                currentUser: $currentUser
-            );
-        }//end if
+
+            return $spreadsheet;
+        }
+
+        // Export single schema.
+        $this->populateSheet(
+            spreadsheet: $spreadsheet,
+            register: $register,
+            schema: $schema,
+            filters: $filters,
+            currentUser: $currentUser
+        );
 
         return $spreadsheet;
     }//end exportToExcel()
@@ -220,11 +222,12 @@ class ExportService
     ): void {
         $sheet = $spreadsheet->createSheet();
 
+        $sheetTitle = 'data';
         if ($schema !== null) {
-            $sheet->setTitle($schema->getSlug());
-        } else {
-            $sheet->setTitle('data');
+            $sheetTitle = $schema->getSlug();
         }
+
+        $sheet->setTitle($sheetTitle);
 
         $headers = $this->getHeaders(schema: $schema, currentUser: $currentUser);
         $row     = 1;
@@ -255,11 +258,11 @@ class ExportService
                 // For now, we'll skip them to get basic functionality working.
                 // TODO: Add support for JSON property filtering in ObjectEntityMapper.
                 continue;
-            } else {
-                // Metadata filter - remove @self. prefix.
-                $metaField = substr($key, 6);
-                $objectFilters[$metaField] = $value;
             }
+
+            // Metadata filter - remove @self. prefix.
+            $metaField = substr($key, 6);
+            $objectFilters[$metaField] = $value;
         }
 
         // Use ObjectService::searchObjects directly with proper RBAC and multi-tenancy filtering.

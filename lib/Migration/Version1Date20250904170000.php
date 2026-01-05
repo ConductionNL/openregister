@@ -109,6 +109,8 @@ class Version1Date20250904170000 extends SimpleMigrationStep
      * @param IOutput                     $output Migration output
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Skipped due to MySQL key length limitations
      */
     private function optimizeRelationshipTable($table, IOutput $output): void
     {

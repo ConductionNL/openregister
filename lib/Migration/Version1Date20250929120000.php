@@ -80,12 +80,13 @@ class Version1Date20250929120000 extends SimpleMigrationStep
                 $output->info(message: '🚀 Existing schemas default to searchable for backward compatibility!');
 
                 return $schema;
-            } else {
-                $output->info(message: 'ℹ️  Searchable column already exists, skipping...');
-            }//end if
-        } else {
-            $output->info(message: '⚠️  Schemas table not found, skipping searchable column addition');
+            }
+
+            $output->info(message: 'ℹ️  Searchable column already exists, skipping...');
+            return null;
         }//end if
+
+        $output->info(message: '⚠️  Schemas table not found, skipping searchable column addition');
 
         return null;
     }//end changeSchema()
@@ -120,7 +121,9 @@ class Version1Date20250929120000 extends SimpleMigrationStep
             if ($totalSchemas > 0) {
                 $schemaMsg = "Found {$totalSchemas} existing schemas - all automatically set to searchable=true";
                 $output->info(message: $schemaMsg);
-            } else {
+            }
+
+            if ($totalSchemas === 0) {
                 $output->info(message: 'ℹ️  No existing schemas found - ready for new schemas with searchable control');
             }
 
@@ -129,6 +132,6 @@ class Version1Date20250929120000 extends SimpleMigrationStep
             $output->info('❌ Failed to verify schemas: '.$e->getMessage());
             $output->info(message: '⚠️  This may indicate an issue with the searchable column');
             $output->info('💡 Manual check: SELECT searchable FROM oc_openregister_schemas LIMIT 1');
-        }
+        }//end try
     }//end postSchemaChange()
 }//end class

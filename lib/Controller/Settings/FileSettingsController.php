@@ -187,14 +187,14 @@ class FileSettingsController extends Controller
                         'message' => 'Dolphin connection successful',
                     ]
                 );
-            } else {
-                return new JSONResponse(
-                    data: [
-                        'success' => false,
-                        'error'   => 'Dolphin API returned HTTP '.$httpCode,
-                    ]
-                );
             }
+
+            return new JSONResponse(
+                data: [
+                    'success' => false,
+                    'error'   => 'Dolphin API returned HTTP '.$httpCode,
+                ]
+            );
         } catch (Exception $e) {
             return new JSONResponse(
                 data: [
@@ -279,10 +279,9 @@ class FileSettingsController extends Controller
             $guzzleSolrService->setActiveCollection($originalCollection);
 
             // Determine message based on result.
+            $message = 'Failed to ensure file metadata fields';
             if ($result === true) {
                 $message = 'File metadata fields ensured successfully';
-            } else {
-                $message = 'Failed to ensure file metadata fields';
             }
 
             return new JSONResponse(
@@ -347,7 +346,9 @@ class FileSettingsController extends Controller
                 foreach ($notIndexed as $fileId) {
                     $filesToProcess[] = $fileId;
                 }
-            } else {
+            }
+
+            if ($skipIndexed === false) {
                 $completed = $textExtractionService->findByStatus('file', 'completed', $maxFiles, 0);
                 foreach ($completed as $fileId) {
                     $filesToProcess[] = $fileId;
@@ -439,16 +440,16 @@ class FileSettingsController extends Controller
                         'file_id' => $fileId,
                     ]
                 );
-            } else {
-                return new JSONResponse(
-                    data: [
-                        'success' => false,
-                        'message' => $result['errors'][0] ?? 'Failed to index file',
-                        'file_id' => $fileId,
-                    ],
-                    statusCode: 422
-                );
             }
+
+            return new JSONResponse(
+                data: [
+                    'success' => false,
+                    'message' => $result['errors'][0] ?? 'Failed to index file',
+                    'file_id' => $fileId,
+                ],
+                statusCode: 422
+            );
         } catch (Exception $e) {
             $this->logger->error(
                 '[SettingsController] Failed to index file',

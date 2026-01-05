@@ -19,11 +19,6 @@
 
 namespace OCA\OpenRegister\Service\Handler;
 
-use Exception;
-use OCA\OpenRegister\Db\Organisation;
-use OCA\OpenRegister\Db\OrganisationMapper;
-use Psr\Log\LoggerInterface;
-
 /**
  * Class OrganisationHandler
  *
@@ -33,18 +28,4 @@ use Psr\Log\LoggerInterface;
  */
 class OrganisationHandler
 {
-
-    /**
-     * Organisation mapper instance.
-     *
-     * @var OrganisationMapper The organisation mapper instance.
-     */
-    private OrganisationMapper $organisationMapper;
-
-    /**
-     * Logger instance.
-     *
-     * @var LoggerInterface The logger instance.
-     */
-    private LoggerInterface $logger;
 }//end class

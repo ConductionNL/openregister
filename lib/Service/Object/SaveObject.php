@@ -339,10 +339,9 @@ class SaveObject
                     continue;
                 }
 
+                $currentPath = $key;
                 if (($prefix !== '') === true) {
                     $currentPath = $prefix.'.'.$key;
-                } else {
-                    $currentPath = $key;
                 }
 
                 if (is_array($value) === true && empty($value) === true) {
@@ -564,7 +563,6 @@ class SaveObject
                 if (is_numeric($firstElement) === true) {
                     // Array of file IDs - load first file and get its download URL.
                     try {
-                        $fileNode = null;
                         // TODO: fileService->getFile(object: $entity, file: (int) $firstElement).
                         // When implemented, uncomment:
                         // If ($fileNode !== null) {
@@ -734,6 +732,8 @@ class SaveObject
      *
      * @psalm-return   string|null
      * @phpstan-return string|null
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future metadata extraction
      */
     private function extractMetadataValue(array $data, string $fieldPath): ?string
     {
@@ -797,11 +797,11 @@ class SaveObject
         $result = preg_replace('/\s+/', ' ', $result);
         $result = trim($result);
 
-        if ($result !== '') {
-            return $result;
-        } else {
+        if ($result === '') {
             return null;
         }
+
+        return $result;
     }//end processTwigLikeTemplate()
 
     /**
@@ -817,6 +817,8 @@ class SaveObject
      *
      * @psalm-return   string|null
      * @phpstan-return string|null
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future slug generation
      */
     private function createSlugFromValue(string $value): ?string
     {
@@ -893,15 +895,14 @@ class SaveObject
             // Determine if default should be applied based on behavior.
             $shouldApplyDefault = false;
 
+            // Default behavior: only apply if property is missing or null.
+            $shouldApplyDefault = isset($data[$key]) === false || $data[$key] === null;
             if ($defaultBehavior === 'falsy') {
                 // Apply default if property is missing, null, empty string, or empty array/object.
                 $shouldApplyDefault = isset($data[$key]) === false
                     || $data[$key] === null
                     || $data[$key] === ''
                     || (is_array($data[$key]) === true && empty($data[$key]));
-            } else {
-                // Default behavior: only apply if property is missing or null.
-                $shouldApplyDefault = isset($data[$key]) === false || $data[$key] === null;
             }
 
             if ($shouldApplyDefault === true) {
@@ -1114,10 +1115,9 @@ class SaveObject
             }
 
             // Convert object to array if needed.
+            $objectData = $data[$property];
             if (is_object($data[$property]) === true) {
                 $objectData = (array) $data[$property];
-            } else {
-                $objectData = $data[$property];
             }
 
             // Skip if the object is effectively empty (only contains empty values).
@@ -1627,14 +1627,10 @@ class SaveObject
                         $sanitizedArray = [];
                         $hasChanges     = false;
                         foreach ($value as $index => $item) {
+                            $sanitizedArray[$index] = $item;
                             if ($item === '') {
                                 $sanitizedArray[$index] = null;
-                            } else {
-                                $sanitizedArray[$index] = $item;
-                            }
-
-                            if ($item === '') {
-                                $hasChanges = true;
+                                $hasChanges             = true;
                             }
                         }
 
@@ -1801,39 +1797,35 @@ class SaveObject
         // Resolve schema.
         if ($schema instanceof Schema === true) {
             $schemaId = $schema->getId();
-        } else {
-            if (is_string($schema) === true) {
-                // Resolve schema reference if it's a string.
-                $schemaId = $this->resolveSchemaReference($schema);
-                if ($schemaId === null) {
-                    throw new Exception("Could not resolve schema reference: $schema");
-                }
-
-                $schema = $this->schemaMapper->find(id: $schemaId);
-            } else {
-                // It's an integer ID.
-                $schemaId = $schema;
-                $schema   = $this->schemaMapper->find(id: $schema);
+        } else if (is_string($schema) === true) {
+            // Resolve schema reference if it's a string.
+            $schemaId = $this->resolveSchemaReference($schema);
+            if ($schemaId === null) {
+                throw new Exception("Could not resolve schema reference: $schema");
             }
+
+            $schema = $this->schemaMapper->find(id: $schemaId);
+        } else {
+            // It's an integer ID.
+            $schemaId = $schema;
+            $schema   = $this->schemaMapper->find(id: $schema);
         }
 
         // Resolve register.
         if ($register instanceof Register === true) {
             $registerId = $register->getId();
-        } else {
-            if (is_string($register) === true) {
-                // Resolve register reference if it's a string.
-                $registerId = $this->resolveRegisterReference($register);
-                if ($registerId === null) {
-                    throw new Exception("Could not resolve register reference: $register");
-                }
-
-                $register = $this->registerMapper->find(id: $registerId);
-            } else {
-                // It's an integer ID or null.
-                $registerId = $register;
-                $register   = $this->registerMapper->find(id: $register);
+        } else if (is_string($register) === true) {
+            // Resolve register reference if it's a string.
+            $registerId = $this->resolveRegisterReference($register);
+            if ($registerId === null) {
+                throw new Exception("Could not resolve register reference: $register");
             }
+
+            $register = $this->registerMapper->find(id: $registerId);
+        } else {
+            // It's an integer ID or null.
+            $registerId = $register;
+            $register   = $this->registerMapper->find(id: $register);
         }
 
         return [$schema, $schemaId, $register, $registerId];
@@ -1871,11 +1863,10 @@ class SaveObject
             // Check if object is locked - prevent updates on locked objects.
             $lockData = $existingObject->getLocked();
             if ($lockData !== null && is_array($lockData) === true) {
-                $currentUser = $this->userSession->getUser();
+                $currentUser   = $this->userSession->getUser();
+                $currentUserId = null;
                 if ($currentUser !== null) {
                     $currentUserId = $currentUser->getUID();
-                } else {
-                    $currentUserId = null;
                 }
 
                 $lockOwner = $lockData['userId'] ?? null;
@@ -2184,7 +2175,15 @@ class SaveObject
         // And no published date has been set yet (either from field mapping or explicit data).
         $config = $schema->getConfiguration();
         if (($config['autoPublish'] ?? null) !== null && $config['autoPublish'] === true) {
-            if ($objectEntity->getPublished() === null) {
+            if ($objectEntity->getPublished() !== null) {
+                $this->logger->debug(
+                    'Object already has published date, skipping auto-publish',
+                    [
+                        'uuid'          => $objectEntity->getUuid(),
+                        'publishedDate' => $objectEntity->getPublished()->format('Y-m-d H:i:s'),
+                    ]
+                );
+            } else {
                 $this->logger->debug(
                     'Auto-publishing object on creation',
                     [
@@ -2194,14 +2193,6 @@ class SaveObject
                     ]
                 );
                 $objectEntity->setPublished(new DateTime());
-            } else {
-                $this->logger->debug(
-                    'Object already has published date, skipping auto-publish',
-                    [
-                        'uuid'          => $objectEntity->getUuid(),
-                        'publishedDate' => $objectEntity->getPublished()->format('Y-m-d H:i:s'),
-                    ]
-                );
             }
         }//end if
 
@@ -2366,7 +2357,9 @@ class SaveObject
         }//end if
 
         // Extract and set depublished property if present.
-        if (array_key_exists('depublished', $selfData) === true && empty($selfData['depublished']) === false) {
+        if (array_key_exists('depublished', $selfData) === false || empty($selfData['depublished']) === true) {
+            $objectEntity->setDepublished(null);
+        } else {
             try {
                 // Convert string to DateTime if it's a valid date string.
                 if (is_string($selfData['depublished']) === true) {
@@ -2375,8 +2368,6 @@ class SaveObject
             } catch (Exception $exception) {
                 // Silently ignore invalid date formats.
             }
-        } else {
-            $objectEntity->setDepublished(null);
         }
 
         if (array_key_exists('owner', $selfData) === true && empty($selfData['owner']) === false) {

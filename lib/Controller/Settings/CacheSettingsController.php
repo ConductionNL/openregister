@@ -156,16 +156,16 @@ class CacheSettingsController extends Controller
                     ],
                     statusCode: 200
                 );
-            } else {
-                return new JSONResponse(
-                    data: [
-                        'success'    => false,
-                        'message'    => $result['message'] ?? 'Failed to clear collection',
-                        'collection' => $name,
-                    ],
-                    statusCode: 422
-                );
             }
+
+            return new JSONResponse(
+                data: [
+                    'success'    => false,
+                    'message'    => $result['message'] ?? 'Failed to clear collection',
+                    'collection' => $name,
+                ],
+                statusCode: 422
+            );
         } catch (Exception $e) {
             return new JSONResponse(
                 data: [

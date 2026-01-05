@@ -19,11 +19,6 @@
 
 namespace OCA\OpenRegister\Service\Handler;
 
-use Exception;
-use OCA\OpenRegister\Db\Source;
-use OCA\OpenRegister\Db\SourceMapper;
-use Psr\Log\LoggerInterface;
-
 /**
  * Class SourceHandler
  *
@@ -33,18 +28,4 @@ use Psr\Log\LoggerInterface;
  */
 class SourceHandler
 {
-
-    /**
-     * Source mapper instance.
-     *
-     * @var SourceMapper The source mapper instance.
-     */
-    private SourceMapper $sourceMapper;
-
-    /**
-     * Logger instance.
-     *
-     * @var LoggerInterface The logger instance.
-     */
-    private LoggerInterface $logger;
 }//end class

@@ -152,7 +152,9 @@ class Version1Date20251106000000 extends SimpleMigrationStep
 
                 $output->info(message: '✅ Added openregister_configurations.organisation column (VARCHAR(36))');
                 $updated = true;
-            } else {
+            }
+
+            if ($table->hasColumn('organisation') === true) {
                 // Ensure existing column is VARCHAR(36) for UUID.
                 $column = $table->getColumn('organisation');
                 $column->setType(\Doctrine\DBAL\Types\Type::getType(Types::STRING));
@@ -166,10 +168,10 @@ class Version1Date20251106000000 extends SimpleMigrationStep
             }//end if
         }//end if
 
-        if ($updated === true) {
-            return $schema;
-        } else {
+        if ($updated === false) {
             return null;
         }
+
+        return $schema;
     }//end changeSchema()
 }//end class

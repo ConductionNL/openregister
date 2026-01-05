@@ -541,10 +541,9 @@ class SearchTrailController extends Controller
                 // GetUserAgentStatistics returns: user_agents, browser_distribution, total_user_agents, period.
                 $userAgentsArray = $serviceResult['user_agents'];
                 // Ensure we have a proper indexed array for pagination.
+                $userAgents = [];
                 if (is_array($userAgentsArray) === true) {
                     $userAgents = array_values($userAgentsArray);
-                } else {
-                    $userAgents = [];
                 }
 
                 $totalUniqueAgents = $serviceResult['total_user_agents'] ?? 0;
@@ -572,28 +571,28 @@ class SearchTrailController extends Controller
                 }
 
                 return new JSONResponse(data: $paginatedUserAgents);
-            } else {
-                // If service returns a simple array, statusCode: treat it as the user agents list.
-                // $serviceResult is always an array at this point (non-null).
-                $userAgentsArray = $serviceResult;
-                // Ensure we have a proper indexed array for pagination.
-                // $userAgentsArray is always an array at this point, but may be associative.
-                $userAgents        = array_values($userAgentsArray);
-                $totalUniqueAgents = count($userAgents);
+            }
 
-                // Use pagination format for the user agents array.
-                $page   = $params['page'] ?? 1;
-                $offset = $params['offset'] ?? 0;
-                $paginatedUserAgents = $this->paginate(
-                    results: $userAgents,
-                        total: $totalUniqueAgents,
-                        limit: $limit,
-                        offset: $offset,
-                        page: $page
-                );
+            // If service returns a simple array, statusCode: treat it as the user agents list.
+            // $serviceResult is always an array at this point (non-null).
+            $userAgentsArray = $serviceResult;
+            // Ensure we have a proper indexed array for pagination.
+            // $userAgentsArray is always an array at this point, but may be associative.
+            $userAgents        = array_values($userAgentsArray);
+            $totalUniqueAgents = count($userAgents);
 
-                return new JSONResponse(data: $paginatedUserAgents);
-            }//end if
+            // Use pagination format for the user agents array.
+            $page   = $params['page'] ?? 1;
+            $offset = $params['offset'] ?? 0;
+            $paginatedUserAgents = $this->paginate(
+                results: $userAgents,
+                    total: $totalUniqueAgents,
+                    limit: $limit,
+                    offset: $offset,
+                    page: $page
+            );
+
+            return new JSONResponse(data: $paginatedUserAgents);
         } catch (\Exception $e) {
             $errorMsg = 'Failed to get user agent statistics: '.$e->getMessage();
             return new JSONResponse(data: ['error' => $errorMsg], statusCode: 500);
@@ -717,7 +716,9 @@ class SearchTrailController extends Controller
                 $content     = json_encode($exportData, JSON_PRETTY_PRINT);
                 $contentType = 'application/json';
                 $filename    = 'search-trails-'.date('Y-m-d-H-i-s').'.json';
-            } else {
+            }
+
+            if ($format !== 'json') {
                 // Default to CSV.
                 $content     = $this->arrayToCsv($exportData);
                 $contentType = 'text/csv';
@@ -886,15 +887,15 @@ class SearchTrailController extends Controller
                         'deleted' => 'All expired search trails have been deleted',
                     ]
                 );
-            } else {
-                return new JSONResponse(
-                    data: [
-                        'success' => true,
-                        'message' => 'No expired search trails found to clear',
-                        'deleted' => 0,
-                    ]
-                );
             }
+
+            return new JSONResponse(
+                data: [
+                    'success' => true,
+                    'message' => 'No expired search trails found to clear',
+                    'deleted' => 0,
+                ]
+            );
         } catch (\Exception $e) {
             return new JSONResponse(
                 data: [

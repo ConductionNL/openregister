@@ -22,7 +22,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
-use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -64,15 +63,6 @@ use Symfony\Component\Uid\Uuid;
 class WebhookMapper extends QBMapper
 {
     use MultiTenancyTrait;
-
-    /**
-     * Organisation service for multi-tenancy
-     *
-     * Used to filter webhooks by organisation for multi-tenant support.
-     *
-     * @var OrganisationService Organisation service instance
-     */
-    private readonly OrganisationMapper $organisationMapper;
 
     /**
      * User session for current user
@@ -323,6 +313,8 @@ class WebhookMapper extends QBMapper
      * @return Webhook
      *
      * @psalm-suppress PossiblyUnusedReturnValue
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flags control update behavior
      */
     public function updateStatistics(Webhook $webhook, bool $success, bool $incrementOnly=false): Webhook
     {

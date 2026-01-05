@@ -140,21 +140,23 @@ class UpdateFileHandler
                 try {
                     $userFolder = $this->folderManagementHandler->getOpenRegisterUserFolder();
                     $nodes      = $userFolder->getById($filePath);
-                    if (empty($nodes) === false) {
-                        $file  = $nodes[0];
-                        $fname = $file->getName();
-                        $fid   = $file->getId();
-                        $this->logger->info(message: "updateFile: Found file by ID in user folder: $fname (ID: $fid)");
-                    } else {
+                    if (empty($nodes) === true) {
                         $this->logger->error(message: "updateFile: No file found with ID: $filePath");
                         throw new Exception("File with ID $filePath does not exist");
                     }
+
+                    $file  = $nodes[0];
+                    $fname = $file->getName();
+                    $fid   = $file->getId();
+                    $this->logger->info(message: "updateFile: Found file by ID in user folder: $fname (ID: $fid)");
                 } catch (Exception $e) {
                     $this->logger->error(message: "updateFile: Error finding file by ID $filePath: ".$e->getMessage());
                     throw new Exception("File with ID $filePath does not exist: ".$e->getMessage());
                 }
             }
-        } else {
+        }
+
+        if (is_int($originalFilePath) === false) {
             // Handle string file paths (existing logic).
             // Clean file path and extract filename using utility method.
             $pathInfo = $this->fileService->extractFileNameFromPath($filePath);
@@ -165,7 +167,7 @@ class UpdateFileHandler
             if ($fileName !== $filePath) {
                 $this->logger->info(message: "updateFile: Extracted filename from path: '$fileName' (from '$filePath')");
             }
-        }//end if
+        }
 
         // Skip the existing object/user folder search logic for file IDs since we already found the file.
         if ($file === null) {
@@ -208,13 +210,15 @@ class UpdateFileHandler
                     } else {
                         $msg = "updateFile: Could not get object folder for object ID: ".$object->getId();
                         $this->logger->warning(message: $msg);
-                    }//end if
+                    }
                 } catch (Exception $e) {
                     $this->logger->error(message: "updateFile: Error accessing object folder: ".$e->getMessage());
                 }//end try
-            } else {
+            }
+
+            if ($object === null) {
                 $this->logger->info(message: "updateFile: No object provided, will search in user folder");
-            }//end if
+            }
 
             // If object wasn't provided or file wasn't found in object folder, try user folder.
             if ($file === null) {

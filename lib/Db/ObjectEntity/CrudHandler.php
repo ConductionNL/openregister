@@ -119,6 +119,8 @@ class CrudHandler
      * @param bool   $includeDeleted Whether to include deleted entities in search (default: false).
      *
      * @return ObjectEntity The updated entity
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Include deleted toggle is intentional
      */
     public function update(Entity $entity, bool $includeDeleted=false): ObjectEntity
     {

@@ -231,14 +231,14 @@ class FacetsHandler
 
                     if ($fieldConfig !== null) {
                         // If field already exists from another schema, merge configurations.
-                        if (($facetableFields[$propertyKey] ?? null) !== null) {
+                        if (isset($facetableFields[$propertyKey]) === true) {
                             $facetableFields[$propertyKey] = $this->mergeFieldConfigs(
                                 existing: $facetableFields[$propertyKey],
                                 new: $fieldConfig
                             );
-                        } else {
-                            $facetableFields[$propertyKey] = $fieldConfig;
+                            continue;
                         }
+                        $facetableFields[$propertyKey] = $fieldConfig;
                     }
                 }
             }
@@ -269,10 +269,9 @@ class FacetsHandler
         // Check if specific schemas are requested in the query.
         if (($baseQuery['@self']['schema'] ?? null) !== null) {
             $schemaValue = $baseQuery['@self']['schema'];
+            $schemaFilters = [$schemaValue];
             if (is_array($schemaValue) === true) {
                 $schemaFilters = $schemaValue;
-            } else {
-                $schemaFilters = [$schemaValue];
             }
         }
 
@@ -280,10 +279,9 @@ class FacetsHandler
         if (empty($schemaFilters) === true) {
             // Get all schemas.
             return $this->schemaMapper->findAll();
-        } else {
-            // Get specific schemas.
-            return $this->schemaMapper->findMultiple($schemaFilters);
         }
+        // Get specific schemas.
+        return $this->schemaMapper->findMultiple($schemaFilters);
     }//end getSchemasForQuery()
 
     /**
@@ -337,10 +335,10 @@ class FacetsHandler
         // Add additional configuration based on type.
         switch ($type) {
             case 'string':
+                $config['cardinality'] = 'text';
                 if ($format === 'date' || $format === 'date-time') {
                     $config['intervals'] = ['day', 'week', 'month', 'year'];
-                } else {
-                    $config['cardinality'] = 'text';
+                    unset($config['cardinality']);
                 }
                 break;
 
@@ -384,11 +382,8 @@ class FacetsHandler
             case 'string':
                 if ($format === 'date' || $format === 'date-time') {
                     return ['date_histogram', 'range'];
-                } else if ($format === 'email' || $format === 'uri' || $format === 'uuid') {
-                    return ['terms'];
-                } else {
-                    return ['terms'];
                 }
+                return ['terms'];
 
             case 'integer':
             case 'number':

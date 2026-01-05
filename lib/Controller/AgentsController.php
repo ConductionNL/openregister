@@ -187,10 +187,9 @@ class AgentsController extends Controller
             // Extract pagination parameters.
             $limit  = (int) ($params['_limit'] ?? 50);
             $offset = (int) ($params['_offset'] ?? 0);
+            $page = null;
             if (isset($params['_page']) === true) {
                 $page = (int) $params['_page'];
-            } else {
-                $page = null;
             }
 
             // Convert page to offset if provided (page-based pagination).

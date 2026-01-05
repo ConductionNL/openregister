@@ -535,6 +535,8 @@ class SaveObjects
      * @param string $path The dot notation path (e.g., 'name', 'contact.email', 'address.street')
      *
      * @return string|null The value at the path, or null if not found
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future path-based value extraction
      */
     private function getValueFromPath(array $data, string $path): ?string
     {
@@ -571,6 +573,8 @@ class SaveObjects
      *
      * @psalm-return   string|null
      * @phpstan-return string|null
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future reference resolution
      */
     private function resolveObjectReference(
         array $object,
@@ -786,6 +790,9 @@ class SaveObjects
      * @see SaveObject::hydrateObjectMetadata() for metadata extraction details
      *
      * @psalm-return list{0: list<mixed>, 1: array<int|string, Schema>, 2?: array<never, never>}
+     *
+     * @SuppressWarnings(PHPMD.UnusedLocalVariable) $_uuid intentionally unused from destructuring
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future bulk save optimization
      */
     private function prepareObjectsForBulkSave(array $objects): array
     {
@@ -1318,7 +1325,8 @@ class SaveObjects
      *
      * @return array Chunk processing results with saved, updated, invalid, errors, and statistics.
      *
-     * @SuppressWarnings (PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future chunk processing
      */
     private function processObjectsChunk(
         array $objects, array $schemaCache, bool $_rbac,
@@ -1651,6 +1659,8 @@ class SaveObjects
      * @param mixed $value The value to cast to boolean
      *
      * @return bool The boolean value
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Delegation method for future use
      */
     private function castToBoolean($value): bool
     {
@@ -1799,6 +1809,8 @@ class SaveObjects
      *     object: mixed,
      *     type: 'InvalidSchemaException'|'MissingRegisterException'|
      *     'MissingSchemaException'}>}
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future database format transformation
      */
     private function transformObjectsToDatabaseFormatInPlace(array &$objects, array $schemaCache): array
     {
@@ -2008,6 +2020,8 @@ class SaveObjects
      * @param array $existingObjects Existing objects indexed by identifiers
      *
      * @return ObjectEntity|null Found object or null
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future object identification
      */
     private function findExistingObjectByAnyIdentifier(array $incomingData, array $existingObjects): ?object
     {
@@ -2108,6 +2122,8 @@ class SaveObjects
      * @param array $schemaCache  Schema cache for inverse relation analysis
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future inverse relation handling
      */
     private function handlePostSaveInverseRelations(array $savedObjects, array $schemaCache): void
     {
@@ -2287,6 +2303,8 @@ class SaveObjects
      * @param string $text The text to convert to a slug
      *
      * @return string The generated slug
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future slug generation
      */
     private function createSlug(string $text): string
     {

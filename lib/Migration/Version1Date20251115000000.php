@@ -75,7 +75,9 @@ class Version1Date20251115000000 extends SimpleMigrationStep
                 );
 
                 $output->info(message: '   ✓ Added is_local column to configurations table');
-            } else {
+            }
+
+            if ($table->hasColumn('is_local') === true) {
                 $output->info(message: '   ⚠️  is_local column already exists');
             }
 
@@ -92,7 +94,9 @@ class Version1Date20251115000000 extends SimpleMigrationStep
                 );
 
                 $output->info(message: '   ✓ Added sync_enabled column to configurations table');
-            } else {
+            }
+
+            if ($table->hasColumn('sync_enabled') === true) {
                 $output->info(message: '   ⚠️  sync_enabled column already exists');
             }
 
@@ -109,7 +113,9 @@ class Version1Date20251115000000 extends SimpleMigrationStep
                 );
 
                 $output->info(message: '   ✓ Added sync_interval column to configurations table');
-            } else {
+            }
+
+            if ($table->hasColumn('sync_interval') === true) {
                 $output->info(message: '   ⚠️  sync_interval column already exists');
             }
 
@@ -126,7 +132,9 @@ class Version1Date20251115000000 extends SimpleMigrationStep
                 );
 
                 $output->info(message: '   ✓ Added last_sync_date column to configurations table');
-            } else {
+            }
+
+            if ($table->hasColumn('last_sync_date') === true) {
                 $output->info(message: '   ⚠️  last_sync_date column already exists');
             }
 
@@ -144,7 +152,9 @@ class Version1Date20251115000000 extends SimpleMigrationStep
                 );
 
                 $output->info(message: '   ✓ Added sync_status column to configurations table');
-            } else {
+            }
+
+            if ($table->hasColumn('sync_status') === true) {
                 $output->info(message: '   ⚠️  sync_status column already exists');
             }
 
@@ -164,7 +174,9 @@ class Version1Date20251115000000 extends SimpleMigrationStep
                 );
 
                 $output->info(message: '   ✓ Added openregister column to configurations table');
-            } else {
+            }
+
+            if ($table->hasColumn('openregister') === true) {
                 $output->info(message: '   ⚠️  openregister column already exists');
             }
 
@@ -174,9 +186,10 @@ class Version1Date20251115000000 extends SimpleMigrationStep
             $output->info(message: '   • Automatic synchronization from external sources');
             $output->info(message: '   • Synchronization status and history tracking');
             $output->info(message: '   • Configurable sync intervals per configuration');
-        } else {
-            $output->info(message: '⚠️  Configurations table does not exist!');
+            return $schema;
         }//end if
+
+        $output->info(message: '⚠️  Configurations table does not exist!');
 
         return $schema;
     }//end changeSchema()

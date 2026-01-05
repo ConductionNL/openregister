@@ -63,6 +63,8 @@ abstract class AbstractObjectMapper
      *
      * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found.
      * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple objects found.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
      */
     abstract public function find(
         string|int $identifier,
@@ -95,6 +97,8 @@ abstract class AbstractObjectMapper
      * @throws \OCP\DB\Exception If a database error occurs.
      *
      * @psalm-return list<ObjectEntity>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Include deleted toggle is intentional
      */
     abstract public function findAll(
         ?int $limit=null,
@@ -217,6 +221,8 @@ abstract class AbstractObjectMapper
      * @param bool  $hardDelete Whether to force hard delete.
      *
      * @return array Array of UUIDs of deleted objects.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Hard delete toggle controls permanent vs soft delete
      */
     abstract public function deleteObjects(array $uuids=[], bool $hardDelete=false): array;
 
@@ -227,6 +233,8 @@ abstract class AbstractObjectMapper
      * @param DateTime|bool $datetime Optional datetime for publishing.
      *
      * @return array Array of UUIDs of published objects.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) DateTime or bool controls publish timing
      */
     abstract public function publishObjects(array $uuids=[], DateTime|bool $datetime=true): array;
 
@@ -237,6 +245,8 @@ abstract class AbstractObjectMapper
      * @param DateTime|bool $datetime Optional datetime for depublishing.
      *
      * @return array Array of UUIDs of depublished objects.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) DateTime or bool controls depublish timing
      */
     abstract public function depublishObjects(array $uuids=[], DateTime|bool $datetime=true): array;
 
@@ -322,6 +332,8 @@ abstract class AbstractObjectMapper
      * @return ObjectEntity[]|int
      *
      * @psalm-return list<ObjectEntity>|int
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
      */
     abstract public function searchObjects(
         array $query=[],
@@ -343,6 +355,8 @@ abstract class AbstractObjectMapper
      * @param string|null $uses                   Value that must be present in relations.
      *
      * @return int Count of objects.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
      */
     abstract public function countSearchObjects(
         array $query=[],

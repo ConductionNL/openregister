@@ -363,14 +363,14 @@ class EndpointService
                     'statusCode' => 200,
                     'response'   => $response,
                 ];
-            } else {
-                return [
-                    'success'    => false,
-                    'statusCode' => 501,
-                    'response'   => null,
-                    'error'      => 'Provider '.$agent->getProvider().' not yet implemented for endpoint execution',
-                ];
-            }//end if
+            }
+
+            return [
+                'success'    => false,
+                'statusCode' => 501,
+                'response'   => null,
+                'error'      => 'Provider '.$agent->getProvider().' not yet implemented for endpoint execution',
+            ];
         } catch (\Exception $e) {
             $this->logger->error(
                 '[EndpointService] Error executing agent endpoint: '.$e->getMessage(),
@@ -397,6 +397,8 @@ class EndpointService
      * @param mixed  $toolRegistry Tool registry
      *
      * @return array Function result
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future agent tool execution
      */
     private function executeToolFunction(string $functionName, array $arguments, $agent, $toolRegistry): array
     {

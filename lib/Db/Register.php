@@ -700,6 +700,8 @@ class Register extends Entity implements JsonSerializable
      * @param string|null $comment         Optional comment describing why magic mapping is enabled.
      *
      * @return static Returns self for method chaining.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Auto-create table toggle is intentional
      */
     public function enableMagicMappingForSchema(int $schemaId, bool $autoCreateTable=true, ?string $comment=null): static
     {

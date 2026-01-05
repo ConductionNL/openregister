@@ -86,12 +86,16 @@ class Version1Date20251201120000 extends SimpleMigrationStep
                 $table->addIndex(['organisation'], 'views_organisation_index');
 
                 $output->info('✅ Added organisation column to openregister_views table');
-            } else {
+            }
+
+            if ($table->hasColumn('organisation') === true) {
                 $output->info('ℹ️  Organisation column already exists in openregister_views table');
             }//end if
-        } else {
-            $output->info('ℹ️  openregister_views table does not exist, skipping...');
         }//end if
+
+        if ($schema->hasTable('openregister_views') === false) {
+            $output->info('ℹ️  openregister_views table does not exist, skipping...');
+        }
 
         return $schema;
     }//end changeSchema()

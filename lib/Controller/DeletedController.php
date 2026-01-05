@@ -122,7 +122,9 @@ class DeletedController extends Controller
             $sortField        = $params['sort'] ?? $params['_sort'] ?? 'updated';
             $sortOrder        = $params['order'] ?? $params['_order'] ?? 'DESC';
             $sort[$sortField] = $sortOrder;
-        } else {
+        }
+
+        if (empty($sort) === true) {
             // Default sort by updated (last modified) which includes soft delete time.
             // Note: Cannot sort by 'deleted' directly as it's a JSON column in PostgreSQL.
             $sort['updated'] = 'DESC';
@@ -428,14 +430,15 @@ class DeletedController extends Controller
                 $foundIds[] = $object->getId();
 
                 try {
-                    if ($object->getDeleted() !== null) {
-                        $object->setDeleted(null);
-                        $this->objectEntityMapper->update(entity: $object);
-                        $restored++;
-                    } else {
+                    if ($object->getDeleted() === null) {
                         // Object exists but is not deleted.
                         $failed++;
+                        continue;
                     }
+
+                    $object->setDeleted(null);
+                    $this->objectEntityMapper->update(entity: $object);
+                    $restored++;
                 } catch (\Exception $e) {
                     $failed++;
                 }
@@ -558,13 +561,14 @@ class DeletedController extends Controller
                 $foundIds[] = $object->getId();
 
                 try {
-                    if ($object->getDeleted() !== null) {
-                        $this->objectEntityMapper->delete($object);
-                        $deleted++;
-                    } else {
+                    if ($object->getDeleted() === null) {
                         // Object exists but is not deleted.
                         $failed++;
+                        continue;
                     }
+
+                    $this->objectEntityMapper->delete($object);
+                    $deleted++;
                 } catch (\Exception $e) {
                     $failed++;
                 }

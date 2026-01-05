@@ -484,9 +484,9 @@ class MetricsService
         // Some database drivers return int, others return result object.
         if (is_int($result) === true) {
             return $result;
-        } else {
-            return (int) $result->rowCount();
         }
+
+        return (int) $result->rowCount();
     }//end cleanOldMetrics()
 
     /**

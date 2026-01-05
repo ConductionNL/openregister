@@ -288,17 +288,15 @@ class EndpointLog extends Entity implements JsonSerializable
     public function jsonSerialize(): array
     {
         // Format expires date.
+        $expiresFormatted = null;
         if (isset($this->expires) === true) {
             $expiresFormatted = $this->expires->format('c');
-        } else {
-            $expiresFormatted = null;
         }
 
         // Format created date.
+        $createdFormatted = null;
         if (isset($this->created) === true) {
             $createdFormatted = $this->created->format('c');
-        } else {
-            $createdFormatted = null;
         }
 
         return [

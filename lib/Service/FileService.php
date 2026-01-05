@@ -475,6 +475,8 @@ class FileService
      * @param Register $register The Register to get the folder name for
      *
      * @return null|string The name the folder for this Register should have
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future file management
      */
     private function getRegisterFolderName(Register $register): string|null
     {
@@ -559,6 +561,8 @@ class FileService
      * @phpstan-return string
      *
      * @return string The object folder name
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future file management
      */
     private function getObjectFolderName(ObjectEntity|string $objectEntity): string
     {
@@ -600,9 +604,9 @@ class FileService
         try {
             if ($entity instanceof Register) {
                 return $this->createRegisterFolderById(register: $entity, currentUser: $currentUser);
-            } else {
-                return $this->createObjectFolderById(objectEntity: $entity, currentUser: $currentUser);
             }
+
+            return $this->createObjectFolderById(objectEntity: $entity, currentUser: $currentUser);
         } catch (exception $e) {
             $this->logger->error(
                 message: 'Failed to create folder for entity: {message}',
@@ -684,6 +688,8 @@ class FileService
      *
      * @psalm-return   Node|null
      * @phpstan-return Node|null
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Delegation method for future use
      */
     private function getNodeById(int $nodeId): ?Node
     {
@@ -709,10 +715,9 @@ class FileService
     public function getFilesForEntity(Register|ObjectEntity $entity, ?bool $sharedFilesOnly=false): array
     {
 
+        $folder = $this->getObjectFolder($entity);
         if ($entity instanceof Register) {
             $folder = $this->getRegisterFolderById($entity);
-        } else {
-            $folder = $this->getObjectFolder($entity);
         }
 
         if ($folder === null) {
@@ -774,6 +779,8 @@ class FileService
      * @param string $folderPath The full path to create
      *
      * @return Node The created folder
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Delegation method for future use
      */
     private function createFolderPath(string $folderPath): Node
     {
@@ -841,6 +848,8 @@ class FileService
      *
      * @psalm-return   bool
      * @phpstan-return bool
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Delegation method for future use
      */
     private function ownFile(Node $file): bool
     {
@@ -1017,6 +1026,8 @@ class FileService
      * @param int    $permissions The permissions to grant (default: 31 = all).
      *
      * @return IShare|null The created share or null if user doesn't exist.
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Delegation method for future use
      */
     private function shareFolderWithUser(Node $folder, string $userId, int $permissions=31): ?IShare
     {
@@ -1054,6 +1065,8 @@ class FileService
      * @return void
      *
      * @throws \Exception If ownership transfer fails
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Delegation method for future use
      */
     private function transferFileOwnershipIfNeeded(File $file): void
     {
@@ -1075,6 +1088,8 @@ class FileService
      * @return void
      *
      * @throws \Exception If sharing fails.
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Delegation method for future use
      */
     private function shareFileWithUser(File $file, string $userId, int $permissions=31): void
     {
@@ -1097,6 +1112,8 @@ class FileService
      * @return void
      *
      * @throws \Exception If ownership transfer fails
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Delegation method for future use
      */
     private function transferFolderOwnershipIfNeeded(Node $folder): void
     {
@@ -1705,6 +1722,8 @@ class FileService
      *
      * @psalm-return   void
      * @phpstan-return void
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Delegation method for future use
      */
     private function blockExecutableFile(string $fileName, string $fileContent): void
     {
@@ -1723,6 +1742,8 @@ class FileService
      * @return void
      *
      * @throws Exception If executable magic bytes are detected
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Defense-in-depth security method reserved for future use
      */
     private function detectExecutableMagicBytes(string $content, string $fileName): void
     {
@@ -1801,6 +1822,8 @@ class FileService
      * @return string Node type ('file' or 'folder').
      *
      * @psalm-return 'file'|'folder'|'unknown'
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future file type detection
      */
     private function getNodeTypeFromFolder(Node $node): string
     {
@@ -1821,6 +1844,8 @@ class FileService
      * @param array $shares Array of IShare objects.
      *
      * @return null|string Access URL or null if not found.
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future share URL handling
      */
     private function getAccessUrlFromShares(array $shares): string|null
     {
@@ -1842,6 +1867,8 @@ class FileService
      * @param array $shares Array of IShare objects.
      *
      * @return null|string Download URL or null if not found. //end if
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future share URL handling
      */
     private function getDownloadUrlFromShares(array $shares): string|null
     {
@@ -1863,6 +1890,8 @@ class FileService
      * @param array $shares Array of IShare objects.
      *
      * @return string|null Published time as ISO8601 string or null if not found.
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future share metadata handling
      */
     private function getPublishedTimeFromShares(array $shares): ?string
     {
@@ -1892,6 +1921,8 @@ class FileService
      * @param ObjectEntity|null $object The object entity.
      *
      * @return string|null Object ID (UUID) or null if not available.
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future object identification
      */
     private function getObjectId(?ObjectEntity $object): ?string
     {
@@ -1909,6 +1940,8 @@ class FileService
      * @param int  $fileId             File ID.
      *
      * @return string Message describing the result.
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future debugging/logging
      */
     private function getFileInObjectFolderMessage(bool $fileInObjectFolder, int $fileId): string
     {

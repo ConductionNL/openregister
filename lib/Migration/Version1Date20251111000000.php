@@ -95,7 +95,9 @@ class Version1Date20251111000000 extends SimpleMigrationStep
 
                 $output->info(message: '    ✅ vectors.embedding_model column added');
                 $updated = true;
-            } else {
+            }
+
+            if ($table->hasColumn('embedding_model') === true && $updated === false) {
                 $output->info(message: '  ℹ️  vectors.embedding_model column already exists');
             }
 
@@ -107,42 +109,44 @@ class Version1Date20251111000000 extends SimpleMigrationStep
 
                 $output->info(message: '    ✅ Index on embedding_model column added');
                 $updated = true;
-            } else {
+            }
+
+            if ($table->hasIndex('embedding_model_idx') === true) {
                 $output->info(message: '  ℹ️  Index on embedding_model column already exists');
             }
-        } else {
-            $output->warning(message: '  ⚠️  vectors table not found - skipping model tracking migration');
         }//end if
 
-        if ($updated === true) {
-            $output->info(message: '');
-            $output->info(message: '🎉 Embedding model tracking added successfully!');
-            $output->info(message: '');
-            $output->info('📊 Summary:');
-            $output->info(message: '   • embedding_model column added to vectors table');
-            $output->info(message: '   • Index created for efficient model filtering');
-            $output->info(message: '');
-            $output->info('✨ Features enabled:');
-            $output->info(message: '   • Track which model generated each vector');
-            $output->info(message: '   • Detect when embedding model changes');
-            $output->info(message: '   • Warn users to regenerate vectors after model change');
-            $output->info(message: '   • Selectively delete vectors by model');
-            $output->info(message: '');
-            $output->info('⚠️  IMPORTANT:');
-            $output->info(message: '   • Existing vectors have NULL embedding_model');
-            $output->info(message: '   • New vectors will track their model automatically');
-            $output->info(message: '   • If you change embedding models, DELETE ALL VECTORS and re-vectorize');
-            $output->info(message: '');
-        } else {
+        if ($schema->hasTable('openregister_vectors') === false) {
+            $output->warning(message: '  ⚠️  vectors table not found - skipping model tracking migration');
+            return null;
+        }//end if
+
+        if ($updated === false) {
             $output->info(message: '');
             $output->info(message: 'ℹ️  No changes needed - embedding model tracking already configured');
-        }//end if
-
-        if ($updated === true) {
-            return $schema;
+            return null;
         }
 
-        return null;
+        $output->info(message: '');
+        $output->info(message: '🎉 Embedding model tracking added successfully!');
+        $output->info(message: '');
+        $output->info('📊 Summary:');
+        $output->info(message: '   • embedding_model column added to vectors table');
+        $output->info(message: '   • Index created for efficient model filtering');
+        $output->info(message: '');
+        $output->info('✨ Features enabled:');
+        $output->info(message: '   • Track which model generated each vector');
+        $output->info(message: '   • Detect when embedding model changes');
+        $output->info(message: '   • Warn users to regenerate vectors after model change');
+        $output->info(message: '   • Selectively delete vectors by model');
+        $output->info(message: '');
+        $output->info('⚠️  IMPORTANT:');
+        $output->info(message: '   • Existing vectors have NULL embedding_model');
+        $output->info(message: '   • New vectors will track their model automatically');
+        $output->info(message: '   • If you change embedding models, DELETE ALL VECTORS and re-vectorize');
+        $output->info(message: '');
+
+        return $schema;
     }//end changeSchema()
 
     /**

@@ -161,23 +161,23 @@ class LlmSettingsHandler
     {
         try {
             // Get existing config for PATCH support.
-            $ex = $this->getLLMSettingsOnly();
+            $existingConfig = $this->getLLMSettingsOnly();
 
             // Create shorter refs to sub-configs for readability.
             $newOai = $llmData['openaiConfig'] ?? [];
-            $exOai  = $ex['openaiConfig'] ?? [];
+            $exOai  = $existingConfig['openaiConfig'] ?? [];
             $newOll = $llmData['ollamaConfig'] ?? [];
-            $exOll  = $ex['ollamaConfig'] ?? [];
+            $exOll  = $existingConfig['ollamaConfig'] ?? [];
             $newFw  = $llmData['fireworksConfig'] ?? [];
-            $exFw   = $ex['fireworksConfig'] ?? [];
+            $exFw   = $existingConfig['fireworksConfig'] ?? [];
             $newVec = $llmData['vectorConfig'] ?? [];
-            $exVec  = $ex['vectorConfig'] ?? [];
+            $exVec  = $existingConfig['vectorConfig'] ?? [];
 
             // Merge with existing config (PATCH behavior).
             $llmConfig = [
-                'enabled'           => $llmData['enabled'] ?? $ex['enabled'] ?? false,
-                'embeddingProvider' => $llmData['embeddingProvider'] ?? $ex['embeddingProvider'] ?? null,
-                'chatProvider'      => $llmData['chatProvider'] ?? $ex['chatProvider'] ?? null,
+                'enabled'           => $llmData['enabled'] ?? $existingConfig['enabled'] ?? false,
+                'embeddingProvider' => $llmData['embeddingProvider'] ?? $existingConfig['embeddingProvider'] ?? null,
+                'chatProvider'      => $llmData['chatProvider'] ?? $existingConfig['chatProvider'] ?? null,
                 'openaiConfig'      => [
                     'apiKey'         => $newOai['apiKey'] ?? $exOai['apiKey'] ?? '',
                     'model'          => $newOai['model'] ?? $exOai['model'] ?? null,

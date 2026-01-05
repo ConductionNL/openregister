@@ -248,10 +248,9 @@ class SolrController extends Controller
             );
 
             // Ensure result is an array for spread operator.
+            $resultArray = [];
             if (is_array($result) === true) {
                 $resultArray = $result;
-            } else {
-                $resultArray = [];
             }
 
             return new JSONResponse(
@@ -913,10 +912,9 @@ class SolrController extends Controller
             $result = $solrObjectService->vectorizeObject(object: $object, provider: $provider);
 
             // Ensure result is an array for spread operator.
+            $resultArray = [];
             if (is_array($result) === true) {
                 $resultArray = $result;
-            } else {
-                $resultArray = [];
             }
 
             return new JSONResponse(
@@ -1039,10 +1037,9 @@ class SolrController extends Controller
             $result = $solrObjectService->vectorizeObjects(objects: $objects, provider: $provider);
 
             // Ensure result is an array for spread operator.
+            $resultArray = [];
             if (is_array($result) === true) {
                 $resultArray = $result;
-            } else {
-                $resultArray = [];
             }
 
             return new JSONResponse(
@@ -1128,10 +1125,9 @@ class SolrController extends Controller
 
             // Calculate progress.
             $vectorizedObjects = $vectorStats['object_vectors'] ?? 0;
+            $progress          = 0;
             if ($totalObjects > 0) {
                 $progress = round(($vectorizedObjects / $totalObjects) * 100, 2);
-            } else {
-                $progress = 0;
             }
 
             return new JSONResponse(

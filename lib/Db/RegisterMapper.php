@@ -187,6 +187,7 @@ class RegisterMapper extends QBMapper
      * @throws \Exception If RBAC permission check fails
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
      */
     public function find(
         string|int $id,
@@ -220,17 +221,17 @@ class RegisterMapper extends QBMapper
 
         // Build OR conditions for matching against id, uuid, or slug.
         // Note: Only include id comparison if $id is actually numeric (PostgreSQL strict typing).
+        $qb->where(
+            $qb->expr()->orX(
+                $qb->expr()->eq('uuid', $qb->createNamedParameter($id, IQueryBuilder::PARAM_STR)),
+                $qb->expr()->eq('slug', $qb->createNamedParameter($id, IQueryBuilder::PARAM_STR))
+            )
+        );
         if (is_numeric($id) === true) {
+            $qb->resetQueryPart('where');
             $qb->where(
                 $qb->expr()->orX(
                     $qb->expr()->eq('id', $qb->createNamedParameter((int) $id, IQueryBuilder::PARAM_INT)),
-                    $qb->expr()->eq('uuid', $qb->createNamedParameter($id, IQueryBuilder::PARAM_STR)),
-                    $qb->expr()->eq('slug', $qb->createNamedParameter($id, IQueryBuilder::PARAM_STR))
-                )
-            );
-        } else {
-            $qb->where(
-                $qb->expr()->orX(
                     $qb->expr()->eq('uuid', $qb->createNamedParameter($id, IQueryBuilder::PARAM_STR)),
                     $qb->expr()->eq('slug', $qb->createNamedParameter($id, IQueryBuilder::PARAM_STR))
                 )
@@ -357,6 +358,8 @@ class RegisterMapper extends QBMapper
      * @return Register[]
      *
      * @psalm-return list<\OCA\OpenRegister\Db\Register>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
      */
     public function findMultiple(array $ids, ?bool $published=null, bool $_rbac=true, bool $_multitenancy=true): array
     {
@@ -427,7 +430,8 @@ class RegisterMapper extends QBMapper
      * @return Register[]
      *
      * @psalm-return     list<OCA\OpenRegister\Db\Register>
-     * @SuppressWarnings (PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
      */
     public function findAll(
         ?int $limit=null,
@@ -455,11 +459,13 @@ class RegisterMapper extends QBMapper
         foreach ($filters ?? [] as $filter => $value) {
             if ($value === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull($filter));
-            } else if ($value === 'IS NULL') {
-                $qb->andWhere($qb->expr()->isNull($filter));
-            } else {
-                $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
+                continue;
             }
+            if ($value === 'IS NULL') {
+                $qb->andWhere($qb->expr()->isNull($filter));
+                continue;
+            }
+            $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
         }
 
         if (empty($searchConditions) === false) {
@@ -473,10 +479,9 @@ class RegisterMapper extends QBMapper
         // Published registers can bypass multi-tenancy restrictions if configured
         // ApplyOrganisationFilter handles $multiTenancyEnabled=false internally
         // Use $published parameter if provided, otherwise check config.
+        $enablePublished = $this->shouldPublishedObjectsBypassMultiTenancy();
         if ($published !== null) {
             $enablePublished = $published;
-        } else {
-            $enablePublished = $this->shouldPublishedObjectsBypassMultiTenancy();
         }
 
         $this->applyOrganisationFilter(
@@ -666,10 +671,9 @@ class RegisterMapper extends QBMapper
         $this->verifyOrganisationAccess($entity);
 
         // Check for attached objects before deleting.
+        $registerId = $entity->id;
         if (method_exists($entity, 'getId') === true) {
             $registerId = $entity->getId();
-        } else {
-            $registerId = $entity->id;
         }
 
         $stats = $this->objectEntityMapper->getStatistics(registerId: $registerId, schemaId: null);
@@ -699,6 +703,8 @@ class RegisterMapper extends QBMapper
      * @return Schema[]
      *
      * @psalm-return list<\OCA\OpenRegister\Db\Schema>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
      */
     public function getSchemasByRegisterId(
         int $registerId,

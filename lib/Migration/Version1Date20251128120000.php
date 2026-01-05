@@ -277,9 +277,11 @@ class Version1Date20251128120000 extends SimpleMigrationStep
             );
 
             $output->info('✅ Created endpoints table');
-        } else {
-            $output->info('ℹ️  Endpoints table already exists');
         }//end if
+
+        if ($schema->hasTable('openregister_endpoints') === true) {
+            $output->info('ℹ️  Endpoints table already exists');
+        }
 
         // Create endpoint_logs table.
         if ($schema->hasTable('openregister_endpoint_logs') === false) {
@@ -404,9 +406,11 @@ class Version1Date20251128120000 extends SimpleMigrationStep
             );
 
             $output->info('✅ Created endpoint_logs table');
-        } else {
-            $output->info('ℹ️  Endpoint_logs table already exists');
         }//end if
+
+        if ($schema->hasTable('openregister_endpoint_logs') === true) {
+            $output->info('ℹ️  Endpoint_logs table already exists');
+        }
 
         return $schema;
     }//end changeSchema()

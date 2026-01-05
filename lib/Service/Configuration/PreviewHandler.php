@@ -257,10 +257,9 @@ class PreviewHandler
         }
 
         // Determine action.
+        $action = 'update';
         if ($existingRegister === null) {
             $action = 'create';
-        } else {
-            $action = 'update';
         }
 
         $preview = [
@@ -289,7 +288,9 @@ class PreviewHandler
                     $proposedVersion,
                     $currentVersion
                 );
-            } else {
+            }
+
+            if (version_compare($proposedVersion, $currentVersion, '>') === true) {
                 // Build list of changed fields.
                 $preview['changes'] = $this->compareArrays(current: $currentData, proposed: $registerData);
             }
@@ -332,10 +333,9 @@ class PreviewHandler
         }
 
         // Determine action.
+        $action = 'update';
         if ($existingSchema === null) {
             $action = 'create';
-        } else {
-            $action = 'update';
         }
 
         $preview = [
@@ -364,7 +364,9 @@ class PreviewHandler
                     $proposedVersion,
                     $currentVersion
                 );
-            } else {
+            }
+
+            if (version_compare($proposedVersion, $currentVersion, '>') === true) {
                 // Build list of changed fields.
                 $preview['changes'] = $this->compareArrays(current: $currentData, proposed: $schemaData);
             }

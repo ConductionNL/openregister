@@ -116,14 +116,14 @@ class MagicSearchHandler
         $queryBuilder = $this->db->getQueryBuilder();
 
         // Build base query - different for count vs search.
+        $queryBuilder->select('t.*')
+            ->from($tableName, 't')
+            ->setMaxResults($limit)
+            ->setFirstResult($offset);
         if ($count === true) {
+            $queryBuilder->resetQueryParts(['select', 'maxResults', 'firstResult']);
             $queryBuilder->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'count')
                 ->from($tableName, 't');
-        } else {
-            $queryBuilder->select('t.*')
-                ->from($tableName, 't')
-                ->setMaxResults($limit)
-                ->setFirstResult($offset);
         }
 
         // Apply basic filters (deleted, published, etc.).
@@ -158,9 +158,8 @@ class MagicSearchHandler
         if ($count === true) {
             $result = $queryBuilder->executeQuery();
             return (int) $result->fetchOne();
-        } else {
-            return $this->executeSearchQuery(qb: $queryBuilder, register: $register, schema: $schema, tableName: $tableName);
         }
+        return $this->executeSearchQuery(qb: $queryBuilder, register: $register, schema: $schema, tableName: $tableName);
     }//end searchObjects()
 
     /**
@@ -219,9 +218,9 @@ class MagicSearchHandler
                         $qb->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)
                     )
                 );
-            } else {
-                $qb->andWhere($qb->expr()->eq("t.{$columnName}", $qb->createNamedParameter($value)));
+                continue;
             }
+            $qb->andWhere($qb->expr()->eq("t.{$columnName}", $qb->createNamedParameter($value)));
         }
     }//end applyMetadataFilters()
 
@@ -245,18 +244,22 @@ class MagicSearchHandler
 
                 if ($value === 'IS NOT NULL') {
                     $qb->andWhere($qb->expr()->isNotNull("t.{$columnName}"));
-                } else if ($value === 'IS NULL') {
+                    continue;
+                }
+                if ($value === 'IS NULL') {
                     $qb->andWhere($qb->expr()->isNull("t.{$columnName}"));
-                } else if (is_array($value) === true) {
+                    continue;
+                }
+                if (is_array($value) === true) {
                     $qb->andWhere(
                         $qb->expr()->in(
                             "t.{$columnName}",
                             $qb->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)
                         )
                     );
-                } else {
-                    $qb->andWhere($qb->expr()->eq("t.{$columnName}", $qb->createNamedParameter($value)));
+                    continue;
                 }
+                $qb->andWhere($qb->expr()->eq("t.{$columnName}", $qb->createNamedParameter($value)));
             }
         }//end foreach
     }//end applyObjectFilters()
@@ -403,10 +406,10 @@ class MagicSearchHandler
                     // Metadata column - remove prefix and map to ObjectEntity.
                     $metadataField = substr($column, 1);
                     $metadataData[$metadataField] = $value;
-                } else {
-                    // Schema property column - add to object data.
-                    $objectData[$column] = $value;
+                    continue;
                 }
+                // Schema property column - add to object data.
+                $objectData[$column] = $value;
             }
 
             // Set metadata properties.

@@ -794,10 +794,9 @@ class OasService
     private function createPutOperation(object $schema): array
     {
         // Determine schema name for use in schema references.
+        $schemaName = 'UnknownSchema';
         if (($schema->getTitle() !== null && $schema->getTitle() !== '') === true) {
             $schemaName = $schema->getTitle();
-        } else {
-            $schemaName = 'UnknownSchema';
         }
 
         return [
@@ -865,10 +864,9 @@ class OasService
     private function createPostOperation(object $schema): array
     {
         // Determine schema name for use in schema references.
+        $schemaName = 'UnknownSchema';
         if (($schema->getTitle() !== null && $schema->getTitle() !== '') === true) {
             $schemaName = $schema->getTitle();
-        } else {
-            $schemaName = 'UnknownSchema';
         }
 
         return [

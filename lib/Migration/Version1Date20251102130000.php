@@ -81,12 +81,13 @@ class Version1Date20251102130000 extends SimpleMigrationStep
                 $output->info(message: '   • Empty array = all users have access');
 
                 return $schema;
-            } else {
-                $output->info(message: 'ℹ️  Groups column already exists, skipping...');
-            }//end if
-        } else {
-            $output->info(message: '⚠️  Applications table not found!');
+            }
+
+            $output->info(message: 'ℹ️  Groups column already exists, skipping...');
+            return null;
         }//end if
+
+        $output->info(message: '⚠️  Applications table not found!');
 
         return null;
     }//end changeSchema()

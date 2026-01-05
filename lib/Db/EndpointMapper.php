@@ -22,7 +22,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
-use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -64,15 +63,6 @@ use Symfony\Component\Uid\Uuid;
 class EndpointMapper extends QBMapper
 {
     use MultiTenancyTrait;
-
-    /**
-     * Organisation service for multi-tenancy
-     *
-     * Used to filter endpoints by organisation for multi-tenant support.
-     *
-     * @var OrganisationService Organisation service instance
-     */
-    private readonly OrganisationMapper $organisationMapper;
 
     /**
      * User session for current user

@@ -369,6 +369,8 @@ class ImportHandler
      * @return Register The imported register.
      *
      * @throws Exception If import fails.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag to override version checks
      */
     public function importRegister(
         array $data,
@@ -595,6 +597,8 @@ class ImportHandler
      * @return Schema The imported schema.
      *
      * @throws Exception If import fails.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag to override version checks
      */
     public function importSchema(
         array $data,
@@ -914,6 +918,8 @@ class ImportHandler
      *     synchronizations: array,
      *     rules: array
      * }
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag to override version checks
      */
     public function importFromJson(
         array $data,
@@ -1180,10 +1186,9 @@ class ImportHandler
                     // Handle both ObjectEntity instances and array results from searchObjects.
                     // searchObjects returns ObjectEntity or arrays depending on configuration.
                     // @var ObjectEntity|array $existingObject.
+                    $existingObjectData = $existingObject->jsonSerialize();
                     if (is_array($existingObject) === true) {
                         $existingObjectData = $existingObject;
-                    } else {
-                        $existingObjectData = $existingObject->jsonSerialize();
                     }
 
                     $importedVersion = $objectData['@self']['version'] ?? $objectData['version'] ?? '1.0.0';
@@ -1292,6 +1297,8 @@ class ImportHandler
      *     synchronizations: array,
      *     rules: array
      * }
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag to override version checks
      */
     public function importFromApp(string $appId, array $data, string $version, bool $force=false): array
     {
@@ -1582,6 +1589,8 @@ class ImportHandler
      *     synchronizations: array,
      *     rules: array
      * }
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag to override version checks
      */
     public function importFromFilePath(string $appId, string $filePath, string $version, bool $force=false): array
     {

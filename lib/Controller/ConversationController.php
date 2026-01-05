@@ -193,7 +193,9 @@ class ConversationController extends Controller
                     userId: $this->userId,
                     organisation: $organisationUuid
                 );
-            } else {
+            }
+
+            if ($showDeleted === false) {
                 // Fetch only active (non-deleted) conversations.
                 $conversations = $this->conversationMapper->findByUser(
                     userId: $this->userId,
@@ -209,7 +211,7 @@ class ConversationController extends Controller
                     organisation: $organisationUuid,
                     includeDeleted: false
                 );
-            }//end if
+            }
 
             return new JSONResponse(
                 data: [
@@ -697,26 +699,26 @@ class ConversationController extends Controller
                     ],
                     statusCode: 200
                 );
-            } else {
-                // First delete - perform soft delete (archive).
-                $this->conversationMapper->softDelete($conversation->getId());
+            }
 
-                $this->logger->info(
-                    '[ConversationController] Conversation archived (soft deleted)',
-                    [
-                        'uuid' => $uuid,
-                    ]
-                );
+            // First delete - perform soft delete (archive).
+            $this->conversationMapper->softDelete($conversation->getId());
 
-                return new JSONResponse(
-                    data: [
-                        'message'  => 'Conversation archived successfully',
-                        'uuid'     => $uuid,
-                        'archived' => true,
-                    ],
-                    statusCode: 200
-                );
-            }//end if
+            $this->logger->info(
+                '[ConversationController] Conversation archived (soft deleted)',
+                [
+                    'uuid' => $uuid,
+                ]
+            );
+
+            return new JSONResponse(
+                data: [
+                    'message'  => 'Conversation archived successfully',
+                    'uuid'     => $uuid,
+                    'archived' => true,
+                ],
+                statusCode: 200
+            );
         } catch (DoesNotExistException $e) {
             return new JSONResponse(
                 data: [

@@ -93,13 +93,14 @@ class Version1Date20250903170000 extends SimpleMigrationStep
         foreach ($singleColumnIndexes as $column => $config) {
             if ($table->hasColumn($column) === true && $table->hasIndex($config['name']) === false) {
                 // Only add indexes for columns that won't exceed key size limits.
-                if ($config['length'] === null) {
-                    $table->addIndex([$column], $config['name']);
-                    $output->info("Added performance index: {$config['name']} on column '{$column}'");
-                    $changed = true;
-                } else {
+                if ($config['length'] !== null) {
                     $output->info("Skipped index: {$config['name']} due to potential key size limit");
+                    continue;
                 }
+
+                $table->addIndex([$column], $config['name']);
+                $output->info("Added performance index: {$config['name']} on column '{$column}'");
+                $changed = true;
             }
         }
 
@@ -115,18 +116,15 @@ class Version1Date20250903170000 extends SimpleMigrationStep
         $output->info(message: 'Focus on basic indexes that provide maximum performance benefit');
 
         // Log completion.
-        if ($changed === true) {
-            $output->info(message: '=== Performance Index Migration Completed Successfully ===');
-            $output->info('Expected performance improvement: 80-95% reduction in query time');
-            $output->info('Target: 30 second queries should now run in <1 second');
-        } else {
+        if ($changed === false) {
             $output->info(message: '=== All Performance Indexes Already Exist ===');
+            return null;
         }
 
-        if ($changed === true) {
-            return $schema;
-        }
+        $output->info(message: '=== Performance Index Migration Completed Successfully ===');
+        $output->info('Expected performance improvement: 80-95% reduction in query time');
+        $output->info('Target: 30 second queries should now run in <1 second');
 
-        return null;
+        return $schema;
     }//end changeSchema()
 }//end class

@@ -25,7 +25,6 @@ use OCA\OpenRegister\Event\ViewCreatedEvent;
 use OCA\OpenRegister\Event\ViewDeletedEvent;
 use OCA\OpenRegister\Event\ViewUpdatedEvent;
 use OCA\OpenRegister\Service\Configuration\CacheHandler;
-use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -66,15 +65,6 @@ use Symfony\Component\Uid\Uuid;
 class ViewMapper extends QBMapper
 {
     use MultiTenancyTrait;
-
-    /**
-     * Organisation service for multi-tenancy
-     *
-     * Used to filter views by organisation for multi-tenant support.
-     *
-     * @var OrganisationService Organisation service instance
-     */
-    private readonly OrganisationMapper $organisationMapper;
 
     /**
      * User session for current user

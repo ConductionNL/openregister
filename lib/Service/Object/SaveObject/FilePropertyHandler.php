@@ -16,6 +16,7 @@ namespace OCA\OpenRegister\Service\Object\SaveObject;
 
 use Exception;
 use finfo;
+use RuntimeException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCP\Files\File;
@@ -604,7 +605,7 @@ class FilePropertyHandler
         // Placeholder return until file service is implemented.
         // Suppress unused variable warning for $objectEntity - needed for future file service.
         unset($objectEntity);
-        throw new \RuntimeException('File creation not yet implemented - fileService not available');
+        throw new RuntimeException('File creation not yet implemented - fileService not available');
     }//end processStringFileInput()
 
     /**
@@ -633,6 +634,8 @@ class FilePropertyHandler
      * @phpstan-return int
      *
      * @throws Exception If file processing fails.
+     *
+     * @SuppressWarnings(PHPMD.UnusedLocalVariable) $fileId is prepared for future file service implementation
      */
     private function processFileObjectInput(
         ObjectEntity $objectEntity,
@@ -803,6 +806,8 @@ class FilePropertyHandler
      * @phpstan-return void
      *
      * @throws Exception If validation fails.
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future file validation
      */
     private function validateExistingFileAgainstConfig(
         File $file,
@@ -858,6 +863,8 @@ class FilePropertyHandler
      *
      * @psalm-return   void
      * @phpstan-return void
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future auto-tagging implementation
      */
     private function applyAutoTagsToExistingFile(File $file, array $fileConfig, string $propertyName, ?int $index=null): void
     {
@@ -1172,6 +1179,8 @@ class FilePropertyHandler
      *
      * @psalm-return   string
      * @phpstan-return string
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Reserved for future file name generation
      */
     private function generateFileName(string $propertyName, string $extension, ?int $index=null): string
     {

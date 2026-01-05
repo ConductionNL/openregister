@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Service\Object;
 use DateTime;
 use Exception;
 use InvalidArgumentException;
+use RuntimeException;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -125,32 +126,32 @@ class ExportHandler
                     currentUser: $currentUser
                 );
 
-                $result = [
+                return [
                     'content'  => $content,
                     'filename' => "{$filenameBase}.csv",
                     'mimetype' => 'text/csv',
                 ];
-            } else {
-                // Default to Excel.
-                $spreadsheet = $this->exportService->exportToExcel(
-                    register: $register,
-                    schema: $schema,
-                    filters: $filters,
-                    currentUser: $currentUser
-                );
+            }
 
-                // Create Excel writer and get content.
-                $writer = new Xlsx($spreadsheet);
-                ob_start();
-                $writer->save('php://output');
-                $content = ob_get_clean();
+            // Default to Excel.
+            $spreadsheet = $this->exportService->exportToExcel(
+                register: $register,
+                schema: $schema,
+                filters: $filters,
+                currentUser: $currentUser
+            );
 
-                $result = [
-                    'content'  => $content,
-                    'filename' => "{$filenameBase}.xlsx",
-                    'mimetype' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                ];
-            }//end if
+            // Create Excel writer and get content.
+            $writer = new Xlsx($spreadsheet);
+            ob_start();
+            $writer->save('php://output');
+            $content = ob_get_clean();
+
+            $result = [
+                'content'  => $content,
+                'filename' => "{$filenameBase}.xlsx",
+                'mimetype' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            ];
 
             $this->logger->info(
                 message: '[ExportHandler] Export completed',
@@ -268,9 +269,11 @@ class ExportHandler
                     publish: $publish,
                     currentUser: $currentUser
                 );
-            } else {
+            }
+
+            if ($result === null) {
                 throw new InvalidArgumentException("Unsupported file type: {$extension}");
-            }//end if
+            }
 
             $this->logger->info(
                 message: '[ExportHandler] Import completed',
@@ -321,7 +324,7 @@ class ExportHandler
             // getObjectDirectory() and createZipFromDirectory() are not yet implemented.
             $message  = 'File download not yet implemented - FileService::getObjectDirectory() and ';
             $message .= 'FileService::createZipFromDirectory() not available. Object ID: '.$objectId;
-            throw new \RuntimeException($message);
+            throw new RuntimeException($message);
 
             // Original implementation (commented out until FileService methods exist):
             // $objectDir = $this->fileService->getObjectDirectory(object: $object);
@@ -331,8 +334,7 @@ class ExportHandler
             // $zipPath = $this->fileService->createZipFromDirectory(directory: $objectDir);
             // Suppress unused variable warning - $object needed when FileService is implemented.
             unset($object);
-            $objectDir = '';
-            $zipPath   = '';
+            $zipPath = '';
 
             // Read ZIP content.
             $content = file_get_contents($zipPath);

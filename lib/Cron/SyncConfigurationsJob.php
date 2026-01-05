@@ -316,14 +316,14 @@ class SyncConfigurationsJob extends TimedJob
 
         // Parse GitLab URL to extract namespace, project, ref, and path.
         // Format: https://gitlab.com/namespace/project/-/blob/branch/path/to/file.json.
-        if (preg_match('#gitlab\.com/([^/]+)/([^/]+)/-/blob/([^/]+)/(.+)$#', $sourceUrl, $matches) === 1) {
-            $namespace = $matches[1];
-            $project   = $matches[2];
-            $ref       = $matches[3];
-            $path      = $matches[4];
-        } else {
+        if (preg_match('#gitlab\.com/([^/]+)/([^/]+)/-/blob/([^/]+)/(.+)$#', $sourceUrl, $matches) !== 1) {
             throw new Exception('Invalid GitLab URL format');
         }
+
+        $namespace = $matches[1];
+        $project   = $matches[2];
+        $ref       = $matches[3];
+        $path      = $matches[4];
 
         // Get project info.
         $projectData = $this->gitlabService->getProjectByPath(namespace: $namespace, project: $project);

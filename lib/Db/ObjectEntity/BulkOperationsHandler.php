@@ -134,18 +134,17 @@ class BulkOperationsHandler
     {
         // Only create OptimizedBulkOperations if we have an eventDispatcher.
         // This maintains backward compatibility.
+        // Fallback without event dispatcher (legacy mode).
+        $optimizedHandler = new OptimizedBulkOperations(
+            db: $this->db,
+            logger: $this->logger,
+            eventDispatcher: \OC::$server->get(IEventDispatcher::class)
+        );
         if ($this->eventDispatcher !== null) {
             $optimizedHandler = new OptimizedBulkOperations(
                 db: $this->db,
                 logger: $this->logger,
                 eventDispatcher: $this->eventDispatcher
-            );
-        } else {
-            // Fallback without event dispatcher (legacy mode).
-            $optimizedHandler = new OptimizedBulkOperations(
-                db: $this->db,
-                logger: $this->logger,
-                eventDispatcher: \OC::$server->get(IEventDispatcher::class)
             );
         }
 
@@ -166,6 +165,8 @@ class BulkOperationsHandler
      * @return array Array of UUIDs of deleted objects.
      *
      * @psalm-return list<mixed>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Hard delete toggle controls permanent vs soft delete
      */
     public function deleteObjects(array $uuids=[], bool $hardDelete=false): array
     {
@@ -215,6 +216,8 @@ class BulkOperationsHandler
      * @return array Array of UUIDs of published objects.
      *
      * @psalm-return list<mixed>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) DateTime or bool controls publish timing
      */
     public function publishObjects(array $uuids=[], \DateTime|bool $datetime=true): array
     {
@@ -260,6 +263,8 @@ class BulkOperationsHandler
      * @return array Array of UUIDs of depublished objects.
      *
      * @psalm-return list<mixed>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) DateTime or bool controls depublish timing
      */
     public function depublishObjects(array $uuids=[], \DateTime|bool $datetime=true): array
     {
@@ -308,6 +313,8 @@ class BulkOperationsHandler
      *
      * @psalm-return array{published_count: int<0, max>,
      *     published_uuids: list<mixed>, schema_id: int}
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Publish all toggle controls scope of operation
      */
     public function publishObjectsBySchema(int $schemaId, bool $publishAll=false): array
     {
@@ -356,6 +363,8 @@ class BulkOperationsHandler
      * @throws \Exception If the deletion operation fails.
      *
      * @psalm-return array{deleted_count: int<0, max>, deleted_uuids: list<mixed>, schema_id: int}
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Hard delete toggle controls permanent vs soft delete
      */
     public function deleteObjectsBySchema(int $schemaId, bool $hardDelete=false): array
     {
@@ -900,6 +909,8 @@ class BulkOperationsHandler
      * @return array Array of UUIDs of deleted objects.
      *
      * @psalm-return list<mixed>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Hard delete toggle controls permanent vs soft delete
      */
     private function bulkDelete(array $uuids, bool $hardDelete=false): array
     {
@@ -1010,6 +1021,8 @@ class BulkOperationsHandler
      * @return array Array of UUIDs of published objects.
      *
      * @psalm-return list<mixed>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) DateTime or bool controls publish timing
      */
     private function bulkPublish(array $uuids, \DateTime|bool $datetime=true): array
     {
@@ -1092,6 +1105,8 @@ class BulkOperationsHandler
      * @return array Array of UUIDs of depublished objects.
      *
      * @psalm-return list<mixed>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) DateTime or bool controls depublish timing
      */
     private function bulkDepublish(array $uuids, \DateTime|bool $datetime=true): array
     {
@@ -1226,11 +1241,7 @@ class BulkOperationsHandler
 
         // Handle boolean values.
         if (is_bool($value) === true) {
-            if ($value === true) {
-                $value = 1;
-            } else {
-                $value = 0;
-            }
+            $value = $value === true ? 1 : 0;
         }
 
         // Handle null values.

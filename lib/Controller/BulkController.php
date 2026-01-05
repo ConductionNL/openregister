@@ -247,10 +247,9 @@ class BulkController extends Controller
             $publishedUuids = $this->objectService->publishObjects(uuids: $uuids, datetime: $datetime ?? true);
 
             // Format datetime for response.
+            $datetimeUsed = $datetime;
             if ($datetime instanceof \DateTime) {
                 $datetimeUsed = $datetime->format('Y-m-d H:i:s');
-            } else {
-                $datetimeUsed = $datetime;
             }
 
             return new JSONResponse(
@@ -324,10 +323,9 @@ class BulkController extends Controller
             $depublishedUuids = $this->objectService->depublishObjects(uuids: $uuids, datetime: $datetime ?? true);
 
             // Format datetime for response.
+            $datetimeUsed = $datetime;
             if ($datetime instanceof \DateTime) {
                 $datetimeUsed = $datetime->format('Y-m-d H:i:s');
-            } else {
-                $datetimeUsed = $datetime;
             }
 
             return new JSONResponse(
@@ -403,29 +401,18 @@ class BulkController extends Controller
             // Use schema=0 to indicate mixed-schema operations where objects specify their own schemas.
             $isMixedSchema = ($resolved['schema'] === 0);
 
-            if ($isMixedSchema === true) {
-                // Mixed-schema operation - use resolved register ID.
-                $savedObjects = $this->objectService->saveObjects(
-                    objects: $objects,
-                    register: $resolved['register'],
-                    schema: null,
-                    _rbac: true,
-                    _multitenancy: true,
-                    validation: true,
-                    events: false
-                );
-            } else {
-                // Single-schema operation - use resolved numeric IDs.
-                $savedObjects = $this->objectService->saveObjects(
-                    objects: $objects,
-                    register: $resolved['register'],
-                    schema: $resolved['schema'],
-                    _rbac: true,
-                    _multitenancy: true,
-                    validation: true,
-                    events: false
-                );
-            }//end if
+            // Determine schema to use (null for mixed-schema, resolved for single-schema).
+            $schemaToUse = $isMixedSchema === true ? null : $resolved['schema'];
+
+            $savedObjects = $this->objectService->saveObjects(
+                objects: $objects,
+                register: $resolved['register'],
+                schema: $schemaToUse,
+                _rbac: true,
+                _multitenancy: true,
+                validation: true,
+                events: false
+            );
 
             $savedCount = ($savedObjects['statistics']['saved'] ?? 0) + ($savedObjects['statistics']['updated'] ?? 0);
 

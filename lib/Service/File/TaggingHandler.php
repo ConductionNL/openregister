@@ -78,11 +78,10 @@ class TaggingHandler
     public function attachTagsToFile(string $fileId, array $tags=[]): void
     {
         // Get all existing tags for the file and convert to array of just the IDs.
-        $oldTagIds = $this->systemTagMapper->getTagIdsForObjects(objIds: [$fileId], objectType: self::FILE_TAG_TYPE);
-        if (isset($oldTagIds[$fileId]) === false || empty($oldTagIds[$fileId]) === true) {
-            $oldTagIds = [];
-        } else {
-            $oldTagIds = $oldTagIds[$fileId];
+        $oldTagIdsResult = $this->systemTagMapper->getTagIdsForObjects(objIds: [$fileId], objectType: self::FILE_TAG_TYPE);
+        $oldTagIds       = [];
+        if (isset($oldTagIdsResult[$fileId]) === true && empty($oldTagIdsResult[$fileId]) === false) {
+            $oldTagIds = $oldTagIdsResult[$fileId];
         }
 
         // Create new tags if they don't exist.
@@ -215,10 +214,9 @@ class TaggingHandler
      */
     public function generateObjectTag(ObjectEntity|string $objectEntity): string
     {
+        $identifier = $objectEntity;
         if ($objectEntity instanceof ObjectEntity === true) {
             $identifier = $objectEntity->getUuid() ?? (string) $objectEntity->getId();
-        } else {
-            $identifier = $objectEntity;
         }
 
         return 'object:'.$identifier;

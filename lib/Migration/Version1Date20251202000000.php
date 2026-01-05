@@ -82,7 +82,9 @@ class Version1Date20251202000000 extends SimpleMigrationStep
                 );
 
                 $output->info('   ✓ Added published column to schemas table');
-            } else {
+            }
+
+            if ($schemasTable->hasColumn('published') === true) {
                 $output->info('   ⚠️  published column already exists in schemas table');
             }
 
@@ -99,12 +101,16 @@ class Version1Date20251202000000 extends SimpleMigrationStep
                 );
 
                 $output->info('   ✓ Added depublished column to schemas table');
-            } else {
+            }
+
+            if ($schemasTable->hasColumn('depublished') === true) {
                 $output->info('   ⚠️  depublished column already exists in schemas table');
             }
-        } else {
-            $output->info('⚠️  Schemas table does not exist!');
         }//end if
+
+        if ($schema->hasTable('openregister_schemas') === false) {
+            $output->info('⚠️  Schemas table does not exist!');
+        }
 
         // Add columns to registers table.
         if ($schema->hasTable('openregister_registers') === true) {
@@ -125,7 +131,9 @@ class Version1Date20251202000000 extends SimpleMigrationStep
                 );
 
                 $output->info('   ✓ Added published column to registers table');
-            } else {
+            }
+
+            if ($registersTable->hasColumn('published') === true) {
                 $output->info('   ⚠️  published column already exists in registers table');
             }
 
@@ -144,12 +152,16 @@ class Version1Date20251202000000 extends SimpleMigrationStep
                 );
 
                 $output->info('   ✓ Added depublished column to registers table');
-            } else {
+            }
+
+            if ($registersTable->hasColumn('depublished') === true) {
                 $output->info('   ⚠️  depublished column already exists in registers table');
             }
-        } else {
-            $output->info('⚠️  Registers table does not exist!');
         }//end if
+
+        if ($schema->hasTable('openregister_registers') === false) {
+            $output->info('⚠️  Registers table does not exist!');
+        }
 
         $output->info('✅ Publication fields added successfully');
         $output->info('🎯 Features enabled:');

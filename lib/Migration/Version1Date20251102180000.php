@@ -145,7 +145,9 @@ class Version1Date20251102180000 extends SimpleMigrationStep
 
                 if ($result > 0) {
                     $output->info(message: "   ✓ Copied data from roles to groups for {$result} organisations");
-                } else {
+                }
+
+                if ($result === 0) {
                     $output->info(message: '   ℹ️  No data to migrate (already migrated or roles column empty)');
                 }
             } catch (\Exception $copyError) {

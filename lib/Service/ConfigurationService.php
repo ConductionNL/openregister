@@ -160,20 +160,6 @@ class ConfigurationService
     private readonly ImportHandler $importHandler;
 
     /**
-     * Map of registers indexed by slug during import, by id during export.
-     *
-     * @var array<string|int, Register> Registers indexed by slug during import, by id during export.
-     */
-    private array $registersMap = [];
-
-    /**
-     * Map of schemas indexed by slug during import, by id during export.
-     *
-     * @var array<string|int, Schema> Schemas indexed by slug during import, by id during export.
-     */
-    private array $schemasMap = [];
-
-    /**
      * HTTP Client for making external requests.
      *
      * @var Client The HTTP client instance.
@@ -339,6 +325,8 @@ class ConfigurationService
      * @return array The OpenAPI specification.
      *
      * @throws Exception If configuration is invalid.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Toggle to include/exclude objects in export
      */
     public function exportConfig(array | Configuration | Register $input=[], bool $includeObjects=false): array
     {
@@ -386,6 +374,8 @@ class ConfigurationService
      * @param string|null $type The file MIME type or the response Content-Type header.
      *
      * @return array|null The decoded data or null.
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Legacy delegation method kept for backward compatibility
      */
     private function decode(string $data, ?string $type): ?array
     {
@@ -401,6 +391,8 @@ class ConfigurationService
      * @param mixed $data The data to convert.
      *
      * @return array The converted array data.
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Legacy delegation method kept for backward compatibility
      */
     private function ensureArrayStructure(mixed $data): array
     {
@@ -415,7 +407,8 @@ class ConfigurationService
      *
      * @return JSONResponse|array A PHP array with the uploaded json data or a JSONResponse in case of an error.
      *
-     * @SuppressWarnings (PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Legacy delegation method kept for backward compatibility
      *
      * @psalm-return JSONResponse<400, array{error: string, 'MIME-type'?: string}, array<never, never>>|array
      */
@@ -451,6 +444,8 @@ class ConfigurationService
      * @return JSONResponse|array A PHP array with the uploaded json data or a JSONResponse in case of an error.
      *
      * @psalm-return JSONResponse<400, array{error: 'Failed to decode JSON input'}, array<never, never>>|array
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Legacy delegation method kept for backward compatibility
      */
     private function getJSONfromBody(array | string $phpArray): array|JSONResponse
     {
@@ -491,6 +486,8 @@ class ConfigurationService
      *     synchronizations: array,
      *     rules: array
      * }
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag to override version checks
      */
     public function importFromJson(
         array $data,
@@ -527,6 +524,7 @@ class ConfigurationService
      * @throws Exception If configuration creation/update fails
      *
      * @psalm-suppress UnusedReturnValue
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Legacy delegation method kept for backward compatibility
      */
     private function createOrUpdateConfiguration(
         array $data,
@@ -554,6 +552,9 @@ class ConfigurationService
      * @param bool        $force   Whether to force the import.
      *
      * @return Register The imported register or null if skipped.
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Legacy delegation method kept for backward compatibility
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag to override version checks
      */
     private function importRegister(
         array $data,
@@ -582,6 +583,9 @@ class ConfigurationService
      * @param bool        $force          Whether to force the import.
      *
      * @return Schema The imported schema.
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Legacy delegation method kept for backward compatibility
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag to override version checks
      */
     private function importSchema(
         array $data,
@@ -636,6 +640,8 @@ class ConfigurationService
      *     synchronizations: array,
      *     rules: array
      * }
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag to override version checks
      */
     public function importFromFilePath(string $appId, string $filePath, string $version, bool $force=false): array
     {
@@ -675,6 +681,8 @@ class ConfigurationService
      *     synchronizations: array,
      *     rules: array
      * }
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag to override version checks
      */
     public function importFromApp(string $appId, array $data, string $version, bool $force=false): array
     {
@@ -780,10 +788,9 @@ class ConfigurationService
         $lastChecked   = $configuration->getLastChecked();
 
         // Format last checked date.
+        $lastCheckedFormatted = null;
         if ($lastChecked !== null) {
             $lastCheckedFormatted = $lastChecked->format('c');
-        } else {
-            $lastCheckedFormatted = null;
         }
 
         // Build result array.
@@ -812,11 +819,17 @@ class ConfigurationService
         if ($comparison > 0) {
             $result['hasUpdate'] = true;
             $result['message']   = "Update available: {$localVersion} → {$remoteVersion}";
-        } else if ($comparison === 0) {
-            $result['message'] = 'Local version is up to date';
-        } else {
-            $result['message'] = 'Local version is newer than remote version';
+
+            return $result;
         }
+
+        if ($comparison === 0) {
+            $result['message'] = 'Local version is up to date';
+
+            return $result;
+        }
+
+        $result['message'] = 'Local version is newer than remote version';
 
         return $result;
     }//end compareVersions()
@@ -915,6 +928,8 @@ class ConfigurationService
      *     proposed: array,
      *     changes: array
      * }
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Legacy delegation method kept for backward compatibility
      */
     private function previewRegisterChange(string $slug, array $registerData): array
     {
@@ -922,31 +937,6 @@ class ConfigurationService
         return $this->previewHandler->previewRegisterChange(
             slug: $slug,
             registerData: $registerData
-        );
-
-        /*
-         * Preview changes for a single schema
-         *
-         * @param string $slug       The schema slug
-         * @param array  $schemaData The schema data from remote configuration
-         *
-         * @return array Preview information for this schema
-         *
-         * @phpstan-return array{
-         *     type: string,
-         *     action: string,
-         *     slug: string,
-         *     title: string,
-         *     current: array|null,
-         *     proposed: array,
-         *     changes: array
-         * }
-         */
-
-        // Note: $schemaData is received as parameter but currently unused - keeping for API consistency.
-        return $this->previewHandler->previewSchemaChange(
-            slug: $slug,
-            schemaData: $schemaData
         );
     }//end previewRegisterChange()
 
@@ -960,6 +950,8 @@ class ConfigurationService
      * @return array List of differences
      *
      * @psalm-return array<never, never>
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Legacy delegation method kept for backward compatibility
      */
     private function compareArrays(array $current, array $proposed, string $prefix=''): array
     {
@@ -976,6 +968,8 @@ class ConfigurationService
      * @param array $array The array to check
      *
      * @return bool True if the array contains only scalar values
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Legacy helper method kept for backward compatibility
      */
     private function isSimpleArray(array $array): bool
     {

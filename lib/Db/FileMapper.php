@@ -173,30 +173,27 @@ class FileMapper extends QBMapper
         $row = $result->fetch();
         while ($row !== false) {
             // Add share-related fields (public URLs if shared).
+            // Add authenticated URLs for non-shared files (requires login).
+            $row['accessUrl']   = $this->generateAuthenticatedAccessUrl($row['fileid']);
+            $row['downloadUrl'] = $this->generateAuthenticatedDownloadUrl($row['fileid']);
             if (empty($row['share_token']) === false) {
                 $row['accessUrl']   = $this->generateShareUrl($row['share_token']);
                 $row['downloadUrl'] = $this->generateShareUrl($row['share_token']).'/download';
-            } else {
-                // Add authenticated URLs for non-shared files (requires login).
-                $row['accessUrl']   = $this->generateAuthenticatedAccessUrl($row['fileid']);
-                $row['downloadUrl'] = $this->generateAuthenticatedDownloadUrl($row['fileid']);
             }
 
+            $row['published'] = null;
             if (empty($row['share_stime']) === false) {
                 $row['published'] = (new DateTime())->setTimestamp($row['share_stime'])->format('c');
-            } else {
-                $row['published'] = null;
             }
 
             // Extract owner from storage ID (format is usually "home::username").
             $row['owner'] = null;
             if (empty($row['storage_id']) === false) {
+                // Fallback to full storage ID.
+                $row['owner'] = $row['storage_id'];
                 if (str_starts_with($row['storage_id'], 'home::') === true) {
-                    $row['owner'] = substr($row['storage_id'], 6);
                     // Remove "home::" prefix.
-                } else {
-                    $row['owner'] = $row['storage_id'];
-                    // Fallback to full storage ID.
+                    $row['owner'] = substr($row['storage_id'], 6);
                 }
             }
 
@@ -274,30 +271,27 @@ class FileMapper extends QBMapper
         }
 
         // Add share-related fields (public URLs if shared).
+        // Add authenticated URLs for non-shared files (requires login).
+        $file['accessUrl']   = $this->generateAuthenticatedAccessUrl($file['fileid']);
+        $file['downloadUrl'] = $this->generateAuthenticatedDownloadUrl($file['fileid']);
         if (empty($file['share_token']) === false) {
             $file['accessUrl']   = $this->generateShareUrl($file['share_token']);
             $file['downloadUrl'] = $this->generateShareUrl($file['share_token']).'/download';
-        } else {
-            // Add authenticated URLs for non-shared files (requires login).
-            $file['accessUrl']   = $this->generateAuthenticatedAccessUrl($file['fileid']);
-            $file['downloadUrl'] = $this->generateAuthenticatedDownloadUrl($file['fileid']);
         }
 
+        $file['published'] = null;
         if (empty($file['share_stime']) === false) {
             $file['published'] = (new DateTime())->setTimestamp($file['share_stime'])->format('c');
-        } else {
-            $file['published'] = null;
         }
 
         // Extract owner from storage ID (format is usually "home::username").
         $file['owner'] = null;
         if (empty($file['storage_id']) === false) {
+            // Fallback to full storage ID.
+            $file['owner'] = $file['storage_id'];
             if (str_starts_with($file['storage_id'], 'home::') === true) {
-                $file['owner'] = substr($file['storage_id'], 6);
                 // Remove "home::" prefix.
-            } else {
-                $file['owner'] = $file['storage_id'];
-                // Fallback to full storage ID.
+                $file['owner'] = substr($file['storage_id'], 6);
             }
         }
 
@@ -361,7 +355,8 @@ class FileMapper extends QBMapper
             // Use the fileid as the node id.
             $nodeId = (int) $rows[0]['fileid'];
             return $this->getFiles($nodeId);
-        } else if ($count > 1) {
+        }
+        if ($count > 1) {
             // Multiple folders found with same UUID - pick the oldest one (lowest fileid).
             // TODO: Add nightly cron job to cleanup orphaned folders and logs.
             usort(
@@ -372,10 +367,9 @@ class FileMapper extends QBMapper
             );
             $oldestNodeId = (int) $rows[0]['fileid'];
             return $this->getFiles($oldestNodeId);
-        } else {
-            // No results found, return empty array.
-            return [];
         }
+        // No results found, return empty array.
+        return [];
     }//end getFilesForObject()
 
     /**

@@ -201,16 +201,17 @@ class WebhookRetryJob extends TimedJob
                             'log_id'     => $log->getId(),
                         ]
                     );
-                } else {
-                    $this->logger->warning(
-                        'Webhook retry failed',
-                        [
-                            'webhook_id' => $webhook->getId(),
-                            'log_id'     => $log->getId(),
-                            'attempt'    => $log->getAttempt() + 1,
-                        ]
-                    );
+                    continue;
                 }
+
+                $this->logger->warning(
+                    'Webhook retry failed',
+                    [
+                        'webhook_id' => $webhook->getId(),
+                        'log_id'     => $log->getId(),
+                        'attempt'    => $log->getAttempt() + 1,
+                    ]
+                );
             } catch (\Exception $e) {
                 $this->logger->error(
                     'Error processing webhook retry',
