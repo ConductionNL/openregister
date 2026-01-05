@@ -102,7 +102,8 @@ class UploadService
 
         // Process based on upload source type.
         if (empty($data['file']) === false) {
-            return $this->processFileUpload($data['file']);
+            // File upload handling - throws Exception (not yet implemented).
+            $this->processFileUpload($data['file']);
         }
 
         if (empty($data['url']) === false) {
@@ -140,7 +141,9 @@ class UploadService
      *
      * @return JSONResponse|null Error response if validation fails, null if valid.
      *
-     * @psalm-return JSONResponse<400, array{error: 'Missing one of these keys in your POST body: file, url or json.'}, array<never, never>>|null
+     * @psalm-return JSONResponse<400,
+     *     array{error: 'Missing one of these keys in your POST body: file, url or json.'},
+     *     array<never, never>>|null
      */
     private function validateUploadSource(array $data): JSONResponse|null
     {
@@ -184,24 +187,16 @@ class UploadService
      */
     private function processUrlUpload(string $url): array | JSONResponse
     {
-        $phpArray = $this->getJSONfromURL($url);
+        $result = $this->getJSONfromURL($url);
 
         // Handle array response (direct array return).
-        if (is_array($phpArray) === true) {
-            $phpArray['source'] = $url;
-            return $phpArray;
+        if (is_array($result) === true) {
+            $result['source'] = $url;
+            return $result;
         }
 
-        // Handle JSONResponse return type (extract data from response).
-        // @psalm-suppress RedundantCondition - JSONResponse always has getData method.
-        $phpArrayData = $phpArray->getData();
-        if (is_array($phpArrayData) === true) {
-            $phpArrayData['source'] = $url;
-            return $phpArrayData;
-        }
-
-        // Fallback: return error response if parsing failed.
-        return new JSONResponse(data: ['error' => 'Failed to parse JSON from URL'], statusCode: 400);
+        // If it's a JSONResponse (error case), return it directly.
+        return $result;
     }//end processUrlUpload()
 
     /**
@@ -247,7 +242,8 @@ class UploadService
             $response = $this->client->request('GET', $url);
         } catch (\GuzzleHttp\Exception\BadResponseException $e) {
             // Return error response if HTTP request fails.
-            return new JSONResponse(data: ['error' => 'Failed to do a GET api-call on url: '.$url.' '.$e->getMessage()], statusCode: 400);
+            $errorMsg = 'Failed to do a GET api-call on url: '.$url.' '.$e->getMessage();
+            return new JSONResponse(data: ['error' => $errorMsg], statusCode: 400);
         }
 
         // Step 2: Get response body content as string.

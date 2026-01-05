@@ -349,7 +349,14 @@ class EndpointService
                 ];
 
                 // Call Ollama API directly.
-                $response = $this->callOllamaWithTools($ollamaUrl, $agent->getModel(), $messages, $functions, $agent, $toolRegistry);
+                $response = $this->callOllamaWithTools(
+                    $ollamaUrl,
+                    $agent->getModel(),
+                    $messages,
+                    $functions,
+                    $agent,
+                    $toolRegistry
+                );
 
                 return [
                     'success'    => true,
@@ -481,7 +488,8 @@ class EndpointService
      *
      * @phpstan-return array{success: bool, statusCode: int, response: mixed, error?: string}
      *
-     * @psalm-return array{success: true, statusCode: 200, response: array{message: 'Webhook endpoint executed (placeholder)'}}
+     * @psalm-return array{success: true, statusCode: 200,
+     *     response: array{message: 'Webhook endpoint executed (placeholder)'}}
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
@@ -506,7 +514,8 @@ class EndpointService
      *
      * @phpstan-return array{success: bool, statusCode: int, response: mixed, error?: string}
      *
-     * @psalm-return array{success: true, statusCode: 200, response: array{message: 'Register endpoint executed (placeholder)'}}
+     * @psalm-return array{success: true, statusCode: 200,
+     *     response: array{message: 'Register endpoint executed (placeholder)'}}
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
@@ -531,7 +540,8 @@ class EndpointService
      *
      * @phpstan-return array{success: bool, statusCode: int, response: mixed, error?: string}
      *
-     * @psalm-return array{success: true, statusCode: 200, response: array{message: 'Schema endpoint executed (placeholder)'}}
+     * @psalm-return array{success: true, statusCode: 200,
+     *     response: array{message: 'Schema endpoint executed (placeholder)'}}
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */

@@ -554,7 +554,7 @@ class FileService
      * This method generates a folder name for an Object Entity based on its
      * identifier or other properties.
      *
-     * @param ObjectEntity $objectEntity The Object Entity to get the folder name for
+     * @param ObjectEntity|string $objectEntity The Object Entity or string UUID to get the folder name for
      *
      * @phpstan-return string
      *
@@ -562,15 +562,7 @@ class FileService
      */
     private function getObjectFolderName(ObjectEntity|string $objectEntity): string
     {
-        /*
-         * @psalm-suppress TypeDoesNotContainType - Function accepts ObjectEntity|string, but callers may always pass ObjectEntity
-         */
-
         if (is_string($objectEntity) === true) {
-            /*
-             * @psalm-suppress NoValue - guaranteed to return string
-             */
-
             return $objectEntity;
         }
 
@@ -651,9 +643,7 @@ class FileService
      * @throws Exception If folder creation fails
      * @throws NotPermittedException If folder creation is not permitted
      *
-     * @phpstan-return Node|null
-     *
-     * @return Node|null The created folder node
+     * @return Node The created folder
      */
     private function createObjectFolderById(
         ObjectEntity|string $objectEntity,
@@ -785,10 +775,7 @@ class FileService
      *
      * @param string $folderPath The full path to create
      *
-     * @psalm-return   Node|null
-     * @phpstan-return Node|null
-     *
-     * @return Node|null The created folder node
+     * @return Node The created folder
      */
     private function createFolderPath(string $folderPath): Node
     {
@@ -909,7 +896,8 @@ class FileService
      * @throws InvalidPathException If file paths are invalid.
      * @throws NotFoundException If files are not found.
      *
-     * @phpstan-return array{results: array<int, array<string, mixed>>, total: int, page: int, pages: int, limit: int, offset: int}
+     * @phpstan-return array{results: array<int, array<string, mixed>>, total: int,
+     *                 page: int, pages: int, limit: int, offset: int}
      */
     public function formatFiles(array $files, ?array $requestParams=[]): array
     {
@@ -1152,7 +1140,8 @@ class FileService
             // Note: userId and userFolder not currently used - file retrieved from rootFolder.
             $this->getOpenRegisterUserFolder();
         } catch (Exception) {
-            $this->logger->error(message: "Can't create share link for $path because OpenRegister user folder couldn't be found.");
+            $msg = "Can't create share link for $path because OpenRegister user folder couldn't be found.";
+            $this->logger->error(message: $msg);
             return "OpenRegister user folder couldn't be found.";
         }
 
@@ -1201,9 +1190,12 @@ class FileService
      *
      * Delegates to UpdateFileHandler for single-responsibility file update operations.
      *
-     * @param string|int        $filePath The path (from root) where to save the file, including filename and extension, or file ID.
-     * @param mixed             $content  Optional content of the file. If null, only metadata like tags will be updated.
-     * @param array             $tags     Optional array of tags to attach to the file (excluding object tags which are preserved).
+     * @param string|int        $filePath The path (from root) where to save the file,
+     *                                    including filename and extension, or file ID.
+     * @param mixed             $content  Optional content of the file.
+     *                                    If null, only metadata like tags will be updated.
+     * @param array             $tags     Optional array of tags to attach to the file
+     *                                    (excluding object tags which are preserved).
      * @param ObjectEntity|null $object   Optional object entity to search in object folder first.
      *
      * @throws Exception If the file doesn't exist or if file operations fail.
@@ -1364,8 +1356,13 @@ class FileService
      * @phpstan-param array<int, string> $tags
      * @psalm-param   array<int, string> $tags
      */
-    public function saveFile(ObjectEntity $objectEntity, string $fileName, string $content, bool $share=false, array $tags=[]): File
-    {
+    public function saveFile(
+        ObjectEntity $objectEntity,
+        string $fileName,
+        string $content,
+        bool $share=false,
+        array $tags=[]
+    ): File {
         return $this->createFileHandler->saveFile(
             objectEntity: $objectEntity,
             fileName: $fileName,
@@ -1435,7 +1432,8 @@ class FileService
      * Delegates to ReadFileHandler for single-responsibility file retrieval operations.
      *
      * @param ObjectEntity|string|null $object The object or object ID to fetch files for (ignored if $file is an ID).
-     * @param string|int               $file   The file name/path within the object folder, or the file ID (int or numeric string).
+     * @param string|int               $file   The file name/path within the object folder,
+     *                                         or the file ID (int or numeric string).
      *
      * @return File|null The file if found, null otherwise.
      *
@@ -1662,7 +1660,9 @@ class FileService
             $objectFolder = $this->getObjectFolder($object);
 
             if ($objectFolder === null) {
-                $this->logger->warning(message: "debugListObjectFiles: Could not get object folder for object ID: ".$object->getId());
+                $objectId = $object->getId();
+                $msg      = "debugListObjectFiles: Could not get object folder for object ID: ".$objectId;
+                $this->logger->warning(message: $msg);
                 return [];
             }
 
@@ -1681,12 +1681,17 @@ class FileService
                 $fileList[] = $fileInfo;
             }
 
+            $objectId  = $object->getId();
+            $fileCount = count($fileList);
+            $filesJson = json_encode($fileList);
             $this->logger->info(
-                message: "debugListObjectFiles: Object ".$object->getId()." folder contains ".count($fileList)." files: ".json_encode($fileList)
+                message: "debugListObjectFiles: Object $objectId folder contains $fileCount files: $filesJson"
             );
             return $fileList;
         } catch (Exception $e) {
-            $this->logger->error(message: "debugListObjectFiles: Error listing files for object ".$object->getId().": ".$e->getMessage());
+            $objectId = $object->getId();
+            $errorMsg = $e->getMessage();
+            $this->logger->error(message: "debugListObjectFiles: Error listing files for object $objectId: $errorMsg");
             return [];
         }//end try
     }//end debugListObjectFiles()
@@ -1748,9 +1753,8 @@ class FileService
                     ]
                 );
 
-                throw new Exception(
-                    "File '$fileName' contains executable code ($description). Executable files are blocked for security reasons."
-                );
+                $msg = "File '$fileName' has executable code ($description). Blocked for security.";
+                throw new Exception($msg);
             }
         }
 
@@ -1784,10 +1788,7 @@ class FileService
      * @throws NotPermittedException If folder creation is not permitted
      * @throws NotFoundException If parent folders do not exist
      *
-     * @return int|null
-     *
-     * @psalm-return   int|null
-     * @phpstan-return int|null
+     * @return int The created folder ID
      */
     public function createObjectFolderWithoutUpdate(ObjectEntity $objectEntity, ?IUser $currentUser=null): int
     {

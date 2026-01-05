@@ -160,10 +160,11 @@ class OrganisationService
      * @param IUserSession         $userSession        User session service
      * @param ISession             $session            Session storage service for caching
      * @param IConfig              $config             Configuration service for persistent storage
+     * @param IAppConfig           $appConfig          App configuration service
      * @param IGroupManager        $groupManager       Group manager service
      * @param IUserManager         $userManager        User manager service
      * @param LoggerInterface      $logger             Logger service
-     * @param SettingsService|null $settingsService    Settings service (optional to avoid circular dependency)
+     * @param SettingsService|null $settingsService    Settings service (optional)
      */
     public function __construct(
         OrganisationMapper $organisationMapper,
@@ -225,7 +226,8 @@ class OrganisationService
      *
      * @throws \RuntimeException If Organisation settings retrieval fails
      *
-     * @psalm-return array{organisation: array{default_organisation: mixed|null, auto_create_default_organisation: mixed|true}}
+     * @psalm-return array{organisation: array{default_organisation: mixed|null,
+     *               auto_create_default_organisation: mixed|true}}
      */
     public function getOrganisationSettingsOnly(): array
     {
@@ -426,7 +428,7 @@ class OrganisationService
      *
      * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      *
-     * @psalm-return list<OCA\OpenRegister\Db\Organisation>
+     * @psalm-return list<\OCA\OpenRegister\Db\Organisation>
      */
     public function getUserOrganisations(bool $_useCache=true): array
     {
@@ -457,9 +459,9 @@ class OrganisationService
      * Get the active organisation for the current user
      * Uses session caching to avoid repeated database calls for RBAC performance
      *
-     * @return OCA\OpenRegister\Db\Organisation|Organisation|null The active organisation or null if none set
+     * @return Organisation|null The active organisation or null
      */
-    public function getActiveOrganisation(): Organisation|null
+    public function getActiveOrganisation(): ?Organisation
     {
         $user = $this->getCurrentUser();
         if ($user === null) {
@@ -697,8 +699,12 @@ class OrganisationService
      *
      * @throws Exception If user not logged in or organisation creation fails
      */
-    public function createOrganisation(string $name, string $description='', bool $addCurrentUser=true, string $uuid=''): Organisation
-    {
+    public function createOrganisation(
+        string $name,
+        string $description='',
+        bool $addCurrentUser=true,
+        string $uuid=''
+    ): Organisation {
         $user   = $this->getCurrentUser();
         $userId = null;
 
@@ -959,8 +965,9 @@ class OrganisationService
         foreach ($entityTypes as $entityType) {
             if (($authorization[$entityType] ?? null) !== null && is_array($authorization[$entityType]) === true) {
                 foreach (['create', 'read', 'update', 'delete'] as $action) {
-                    if (($authorization[$entityType][$action] ?? null) !== null && is_array($authorization[$entityType][$action]) === true) {
-                        if (in_array($adminGroupId, $authorization[$entityType][$action], true) === false) {
+                    $actionAuth = $authorization[$entityType][$action] ?? null;
+                    if ($actionAuth !== null && is_array($actionAuth) === true) {
+                        if (in_array($adminGroupId, $actionAuth, true) === false) {
                             $authorization[$entityType][$action][] = $adminGroupId;
                         }
                     }
@@ -1008,8 +1015,9 @@ class OrganisationService
         foreach ($entityTypes as $entityType) {
             if (($authorization[$entityType] ?? null) !== null && is_array($authorization[$entityType]) === true) {
                 foreach (['create', 'read', 'update', 'delete'] as $action) {
-                    if (($authorization[$entityType][$action] ?? null) !== null && is_array($authorization[$entityType][$action]) === true) {
-                        if (in_array($adminGroupId, $authorization[$entityType][$action], true) === true) {
+                    $actionAuth = $authorization[$entityType][$action] ?? null;
+                    if ($actionAuth !== null && is_array($actionAuth) === true) {
+                        if (in_array($adminGroupId, $actionAuth, true) === true) {
                             return true;
                         }
                     }
@@ -1035,9 +1043,9 @@ class OrganisationService
      *
      * @param string $userId The user ID to fetch active organisation for
      *
-     * @return OCA\OpenRegister\Db\Organisation|Organisation|null The active organisation or null if none set
+     * @return Organisation|null The active organisation or null
      */
-    private function fetchActiveOrganisationFromDatabase(string $userId): Organisation|null
+    private function fetchActiveOrganisationFromDatabase(string $userId): ?Organisation
     {
         // Get active organisation UUID from user configuration (persistent).
         $activeUuid = $this->config->getUserValue(

@@ -142,7 +142,8 @@ class CacheSettingsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|422, array{success: bool, message: mixed|string, collection: string}, array<never, never>>
+     * @psalm-return JSONResponse<200|422, array{success: bool, message: mixed|string, collection: string},
+     *     array<never, never>>
      */
     public function clearSpecificCollection(string $name): JSONResponse
     {

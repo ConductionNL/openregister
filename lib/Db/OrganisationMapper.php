@@ -128,7 +128,11 @@ class OrganisationMapper extends QBMapper
         $entity = parent::update($entity);
 
         // Dispatch update event.
-        $this->eventDispatcher->dispatchTyped(new OrganisationUpdatedEvent(newOrganisation: $entity, oldOrganisation: $oldEntity));
+        $event = new OrganisationUpdatedEvent(
+            newOrganisation: $entity,
+            oldOrganisation: $oldEntity
+        );
+        $this->eventDispatcher->dispatchTyped($event);
 
         return $entity;
     }//end update()
@@ -436,7 +440,7 @@ class OrganisationMapper extends QBMapper
      *
      * @return Organisation[]
      *
-     * @psalm-return list<OCA\OpenRegister\Db\Organisation>
+     * @psalm-return list<Organisation>
      */
     public function findAll(int $limit=50, int $offset=0): array
     {

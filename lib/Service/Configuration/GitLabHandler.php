@@ -75,9 +75,9 @@ class GitLabHandler
     /**
      * GitLabHandler constructor
      *
-     * @param IClient         $client HTTP client
-     * @param IConfig         $config Configuration service
-     * @param LoggerInterface $logger Logger instance
+     * @param IClientService  $clientService HTTP client service
+     * @param IConfig         $config        Configuration service
+     * @param LoggerInterface $logger        Logger instance
      */
     public function __construct(
         IClientService $clientService,
@@ -248,13 +248,8 @@ class GitLabHandler
 
             $branches = json_decode($response->getBody(), true);
 
+            // Format branch data for frontend.
             return array_map(
-                /**
-                 * @return (false|mixed|null)[]
-                 *
-                 * @psalm-return array{name: mixed, commit: mixed|null, protected: false|mixed, default: false|mixed}
-                 */
-
                 function (array $branch): array {
                     return [
                         'name'      => $branch['name'],
@@ -392,19 +387,21 @@ class GitLabHandler
                     $configData = $this->parseConfigurationFile(projectId: $projectId, path: $item['path'], ref: $ref);
 
                     if ($configData !== null) {
-                        $files[] = [
+                        $info     = $configData['info'] ?? [];
+                        $xOpenReg = $configData['x-openregister'] ?? [];
+                        $files[]  = [
                             'path'   => $item['path'],
                             'id'     => $item['id'] ?? null,
                             'config' => [
-                                'title'       => $configData['info']['title'] ?? $configData['x-openregister']['title'] ?? basename($item['path']),
-                                'description' => $configData['info']['description'] ?? $configData['x-openregister']['description'] ?? '',
-                                'version'     => $configData['info']['version'] ?? $configData['x-openregister']['version'] ?? '1.0.0',
-                                'app'         => $configData['x-openregister']['app'] ?? null,
-                                'type'        => $configData['x-openregister']['type'] ?? 'manual',
+                                'title'       => $info['title'] ?? $xOpenReg['title'] ?? basename($item['path']),
+                                'description' => $info['description'] ?? $xOpenReg['description'] ?? '',
+                                'version'     => $info['version'] ?? $xOpenReg['version'] ?? '1.0.0',
+                                'app'         => $xOpenReg['app'] ?? null,
+                                'type'        => $xOpenReg['type'] ?? 'manual',
                             ],
                         ];
                     }
-                }
+                }//end if
             }//end foreach
 
             return $files;

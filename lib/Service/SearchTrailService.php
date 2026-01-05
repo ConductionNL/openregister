@@ -304,8 +304,14 @@ class SearchTrailService
         $baseStats['unique_users'] = $uniqueUsersCount;
 
         // Get session-based statistics.
-        $baseStats['avg_searches_per_session']     = $this->searchTrailMapper->getAverageSearchesPerSession(from: $from, to: $to);
-        $baseStats['avg_object_views_per_session'] = $this->searchTrailMapper->getAverageObjectViewsPerSession(from: $from, to: $to);
+        $baseStats['avg_searches_per_session']     = $this->searchTrailMapper->getAverageSearchesPerSession(
+            from: $from,
+            to: $to
+        );
+        $baseStats['avg_object_views_per_session'] = $this->searchTrailMapper->getAverageObjectViewsPerSession(
+            from: $from,
+            to: $to
+        );
 
         // Get unique organizations count (placeholder for now).
         $baseStats['unique_organizations'] = 0;
@@ -537,7 +543,8 @@ class SearchTrailService
      *     success: bool,
      *     deleted: 0|1,
      *     error?: string,
-     *     message: 'Cleanup operation failed'|'No expired entries to delete'|'Successfully deleted expired search trail entries',
+     *     message: 'Cleanup operation failed'|'No expired entries to delete'
+     *             |'Successfully deleted expired search trail entries',
      *     cleanup_date?: string
      * }
      */

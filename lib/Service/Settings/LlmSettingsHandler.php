@@ -174,36 +174,44 @@ class LlmSettingsHandler
     {
         try {
             // Get existing config for PATCH support.
-            $existingConfig = $this->getLLMSettingsOnly();
+            $ex = $this->getLLMSettingsOnly();
+
+            // Create shorter refs to sub-configs for readability.
+            $newOai = $llmData['openaiConfig'] ?? [];
+            $exOai  = $ex['openaiConfig'] ?? [];
+            $newOll = $llmData['ollamaConfig'] ?? [];
+            $exOll  = $ex['ollamaConfig'] ?? [];
+            $newFw  = $llmData['fireworksConfig'] ?? [];
+            $exFw   = $ex['fireworksConfig'] ?? [];
+            $newVec = $llmData['vectorConfig'] ?? [];
+            $exVec  = $ex['vectorConfig'] ?? [];
 
             // Merge with existing config (PATCH behavior).
             $llmConfig = [
-                'enabled'           => $llmData['enabled'] ?? $existingConfig['enabled'] ?? false,
-                'embeddingProvider' => $llmData['embeddingProvider'] ?? $existingConfig['embeddingProvider'] ?? null,
-                'chatProvider'      => $llmData['chatProvider'] ?? $existingConfig['chatProvider'] ?? null,
+                'enabled'           => $llmData['enabled'] ?? $ex['enabled'] ?? false,
+                'embeddingProvider' => $llmData['embeddingProvider'] ?? $ex['embeddingProvider'] ?? null,
+                'chatProvider'      => $llmData['chatProvider'] ?? $ex['chatProvider'] ?? null,
                 'openaiConfig'      => [
-                    'apiKey'         => $llmData['openaiConfig']['apiKey'] ?? $existingConfig['openaiConfig']['apiKey'] ?? '',
-                    'model'          => $llmData['openaiConfig']['model'] ?? $existingConfig['openaiConfig']['model'] ?? null,
-                    'chatModel'      => $llmData['openaiConfig']['chatModel'] ?? $existingConfig['openaiConfig']['chatModel'] ?? null,
-                    'organizationId' => $llmData['openaiConfig']['organizationId'] ?? $existingConfig['openaiConfig']['organizationId'] ?? '',
+                    'apiKey'         => $newOai['apiKey'] ?? $exOai['apiKey'] ?? '',
+                    'model'          => $newOai['model'] ?? $exOai['model'] ?? null,
+                    'chatModel'      => $newOai['chatModel'] ?? $exOai['chatModel'] ?? null,
+                    'organizationId' => $newOai['organizationId'] ?? $exOai['organizationId'] ?? '',
                 ],
                 'ollamaConfig'      => [
-                    'url'       => $llmData['ollamaConfig']['url'] ?? $existingConfig['ollamaConfig']['url'] ?? 'http://localhost:11434',
-                    'model'     => $llmData['ollamaConfig']['model'] ?? $existingConfig['ollamaConfig']['model'] ?? null,
-                    'chatModel' => $llmData['ollamaConfig']['chatModel'] ?? $existingConfig['ollamaConfig']['chatModel'] ?? null,
+                    'url'       => $newOll['url'] ?? $exOll['url'] ?? 'http://localhost:11434',
+                    'model'     => $newOll['model'] ?? $exOll['model'] ?? null,
+                    'chatModel' => $newOll['chatModel'] ?? $exOll['chatModel'] ?? null,
                 ],
                 'fireworksConfig'   => [
-                    'apiKey'         => $llmData['fireworksConfig']['apiKey'] ?? $existingConfig['fireworksConfig']['apiKey'] ?? '',
-                    'embeddingModel' => $llmData['fireworksConfig']['embeddingModel'] ?? $existingConfig['fireworksConfig']['embeddingModel'] ?? null,
-                    'chatModel'      => $llmData['fireworksConfig']['chatModel'] ?? $existingConfig['fireworksConfig']['chatModel'] ?? null,
+                    'apiKey'         => $newFw['apiKey'] ?? $exFw['apiKey'] ?? '',
+                    'embeddingModel' => $newFw['embeddingModel'] ?? $exFw['embeddingModel'] ?? null,
+                    'chatModel'      => $newFw['chatModel'] ?? $exFw['chatModel'] ?? null,
                     // phpcs:ignore Generic.Files.LineLength.TooLong -- URL cannot be split
-                    'baseUrl'        => $llmData['fireworksConfig']['baseUrl'] ?? // phpcs:ignore Generic.Files.LineLength.TooLong -- URL
-                        $existingConfig['fireworksConfig']['baseUrl'] ??
-                        'https://api.fireworks.ai/inference/v1',
+                    'baseUrl'        => $newFw['baseUrl'] ?? $exFw['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1',
                 ],
                 'vectorConfig'      => [
-                    'backend'   => $llmData['vectorConfig']['backend'] ?? $existingConfig['vectorConfig']['backend'] ?? 'php',
-                    'solrField' => $llmData['vectorConfig']['solrField'] ?? $existingConfig['vectorConfig']['solrField'] ?? '_embedding_',
+                    'backend'   => $newVec['backend'] ?? $exVec['backend'] ?? 'php',
+                    'solrField' => $newVec['solrField'] ?? $exVec['solrField'] ?? '_embedding_',
                 ],
             ];
 

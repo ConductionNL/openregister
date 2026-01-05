@@ -93,10 +93,10 @@ class CronFileTextExtractionJob extends TimedJob
             $settingsService = \OC::$server->get(SettingsService::class);
 
             /*
-             * @var TextExtractionService $textExtractionService
+             * @var TextExtractionService $textExtractor
              */
 
-            $textExtractionService = \OC::$server->get(TextExtractionService::class);
+            $textExtractor = \OC::$server->get(TextExtractionService::class);
 
             /*
              * @var FileMapper $fileMapper
@@ -169,7 +169,7 @@ class CronFileTextExtractionJob extends TimedJob
                         ]
                     );
 
-                    $textExtractionService->extractFile(fileId: $fileId, forceReExtract: false);
+                    $textExtractor->extractFile(fileId: $fileId, forceReExtract: false);
                     $processed++;
 
                     $logger->debug(
@@ -234,8 +234,12 @@ class CronFileTextExtractionJob extends TimedJob
      *
      * @psalm-return array<int, array{fileid?: int, name?: string, ...}>
      */
-    private function getPendingFiles(FileMapper $fileMapper, string $extractionScope, int $batchSize, LoggerInterface $logger): array
-    {
+    private function getPendingFiles(
+        FileMapper $fileMapper,
+        string $extractionScope,
+        int $batchSize,
+        LoggerInterface $logger
+    ): array {
         // Log query parameters for debugging.
         $logger->debug(
             'Fetching pending files for cron extraction',
@@ -248,9 +252,8 @@ class CronFileTextExtractionJob extends TimedJob
         try {
             // Get pending files based on extraction scope.
             // Files are considered "pending" if they have no extracted text or if extraction failed previously.
-            $pendingFiles = $fileMapper->findPendingExtraction(
-                limit: $batchSize,
-                scope: $extractionScope
+            $pendingFiles = $fileMapper->findUntrackedFiles(
+                limit: $batchSize
             );
 
             $logger->debug(

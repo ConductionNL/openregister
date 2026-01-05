@@ -239,7 +239,11 @@ class TransformationHandler
             if (($selfData['relations'] ?? null) === null || empty($selfData['relations']) === true) {
                 if (($schemaCache[$selfData['schema']] ?? null) !== null) {
                     $schema    = $schemaCache[$selfData['schema']];
-                    $relations = $this->relationCascadeHandler->scanForRelations(data: $businessData, prefix: '', schema: $schema);
+                    $relations = $this->relationCascadeHandler->scanForRelations(
+                        data: $businessData,
+                        prefix: '',
+                        schema: $schema
+                    );
                     $selfData['relations'] = $relations;
 
                     $this->logger->info(

@@ -92,15 +92,29 @@ class MagicFacetHandler
 
             case 'date_histogram':
                 $interval = $config['interval'] ?? 'month';
-                return $this->getDateHistogramFacet(columnName: $columnName, interval: $interval, baseQuery: $baseQuery, tableName: $tableName);
+                return $this->getDateHistogramFacet(
+                    columnName: $columnName,
+                    interval: $interval,
+                    baseQuery: $baseQuery,
+                    tableName: $tableName
+                );
 
             case 'range':
                 $ranges = $config['ranges'] ?? [];
-                return $this->getRangeFacet(columnName: $columnName, ranges: $ranges, baseQuery: $baseQuery, tableName: $tableName);
+                return $this->getRangeFacet(
+                    columnName: $columnName,
+                    ranges: $ranges,
+                    baseQuery: $baseQuery,
+                    tableName: $tableName
+                );
 
             default:
-                return $this->getTermsFacet(columnName: $columnName, baseQuery: $baseQuery, tableName: $tableName);
-        }
+                return $this->getTermsFacet(
+                    columnName: $columnName,
+                    baseQuery: $baseQuery,
+                    tableName: $tableName
+                );
+        }//end switch
     }//end getMetadataFieldFacet()
 
     /**
@@ -120,8 +134,13 @@ class MagicFacetHandler
      *     key?: mixed|string, to?: mixed|null, value?: mixed}>,
      *     total_buckets?: int<0, max>, error?: string, interval?: string}
      */
-    private function getSchemaPropertyFacet(string $field, array $config, array $baseQuery, Schema $schema, string $tableName): array
-    {
+    private function getSchemaPropertyFacet(
+        string $field,
+        array $config,
+        array $baseQuery,
+        Schema $schema,
+        string $tableName
+    ): array {
         $type       = $config['type'] ?? 'terms';
         $columnName = $this->sanitizeColumnName($field);
 
@@ -133,19 +152,37 @@ class MagicFacetHandler
 
         switch ($type) {
             case 'terms':
-                return $this->getTermsFacet(columnName: $columnName, baseQuery: $baseQuery, tableName: $tableName);
+                return $this->getTermsFacet(
+                    columnName: $columnName,
+                    baseQuery: $baseQuery,
+                    tableName: $tableName
+                );
 
             case 'date_histogram':
                 $interval = $config['interval'] ?? 'month';
-                return $this->getDateHistogramFacet(columnName: $columnName, interval: $interval, baseQuery: $baseQuery, tableName: $tableName);
+                return $this->getDateHistogramFacet(
+                    columnName: $columnName,
+                    interval: $interval,
+                    baseQuery: $baseQuery,
+                    tableName: $tableName
+                );
 
             case 'range':
                 $ranges = $config['ranges'] ?? [];
-                return $this->getRangeFacet(columnName: $columnName, ranges: $ranges, baseQuery: $baseQuery, tableName: $tableName);
+                return $this->getRangeFacet(
+                    columnName: $columnName,
+                    ranges: $ranges,
+                    baseQuery: $baseQuery,
+                    tableName: $tableName
+                );
 
             default:
-                return $this->getTermsFacet(columnName: $columnName, baseQuery: $baseQuery, tableName: $tableName);
-        }
+                return $this->getTermsFacet(
+                    columnName: $columnName,
+                    baseQuery: $baseQuery,
+                    tableName: $tableName
+                );
+        }//end switch
     }//end getSchemaPropertyFacet()
 
     /**
@@ -417,7 +454,11 @@ class MagicFacetHandler
                 } else if ($value === 'IS NULL') {
                     $qb->andWhere($qb->expr()->isNull("t.{$columnName}"));
                 } else if (is_array($value) === true) {
-                    $qb->andWhere($qb->expr()->in("t.{$columnName}", $qb->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+                    $paramValue = $qb->createNamedParameter(
+                        $value,
+                        \Doctrine\DBAL\Connection::PARAM_STR_ARRAY
+                    );
+                    $qb->andWhere($qb->expr()->in("t.{$columnName}", $paramValue));
                 } else {
                     $qb->andWhere($qb->expr()->eq("t.{$columnName}", $qb->createNamedParameter($value)));
                 }
@@ -441,7 +482,11 @@ class MagicFacetHandler
             } else if ($value === 'IS NULL') {
                 $qb->andWhere($qb->expr()->isNull("t.{$columnName}"));
             } else if (is_array($value) === true) {
-                $qb->andWhere($qb->expr()->in("t.{$columnName}", $qb->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+                $paramValue = $qb->createNamedParameter(
+                    $value,
+                    \Doctrine\DBAL\Connection::PARAM_STR_ARRAY
+                );
+                $qb->andWhere($qb->expr()->in("t.{$columnName}", $paramValue));
             } else {
                 $qb->andWhere($qb->expr()->eq("t.{$columnName}", $qb->createNamedParameter($value)));
             }

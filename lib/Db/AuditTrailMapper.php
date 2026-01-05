@@ -107,7 +107,7 @@ class AuditTrailMapper extends QBMapper
      *
      * @return AuditTrail[]
      *
-     * @psalm-return list<OCA\OpenRegister\Db\AuditTrail>
+     * @psalm-return list<AuditTrail>
      */
     public function findAll(
         ?int $limit=null,
@@ -482,13 +482,7 @@ class AuditTrailMapper extends QBMapper
                 $reflection = new ReflectionClass($object);
                 $property   = $reflection->getProperty($field);
 
-                /*
-                 * Suppress unused method call warning for reflection.
-                 *
-                 * @psalm-suppress UnusedMethodCall
-                 */
-
-                $property->setAccessible(true);
+                // Note: setAccessible() is no longer needed in PHP 8.1+ for same-class properties
                 $property->setValue($object, $change['old']);
             }
         }
@@ -500,7 +494,8 @@ class AuditTrailMapper extends QBMapper
      *
      * @param int|null $registerId The register ID (null for all registers)
      * @param int|null $schemaId   The schema ID (null for all schemas)
-     * @param array    $exclude    Array of register/schema combinations to exclude, format: [['register' => id, 'schema' => id], ...]
+     * @param array    $exclude    Array of register/schema combinations to exclude,
+     *                             format: [['register' => id, 'schema' => id], ...]
      *
      * @return int[] Array containing total count and size of audit trails:
      *               - total: Total number of audit trails
@@ -521,13 +516,15 @@ class AuditTrailMapper extends QBMapper
             // Add register filter if provided.
             // Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
             if ($registerId !== null) {
-                $qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter((string) $registerId, IQueryBuilder::PARAM_STR)));
+                $registerParam = $qb->createNamedParameter((string) $registerId, IQueryBuilder::PARAM_STR);
+                $qb->andWhere($qb->expr()->eq('register', $registerParam));
             }
 
             // Add schema filter if provided.
             // Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
             if ($schemaId !== null) {
-                $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter((string) $schemaId, IQueryBuilder::PARAM_STR)));
+                $schemaParam = $qb->createNamedParameter((string) $schemaId, IQueryBuilder::PARAM_STR);
+                $qb->andWhere($qb->expr()->eq('schema', $schemaParam));
             }
 
             // Add exclusions if provided.
@@ -620,8 +617,12 @@ class AuditTrailMapper extends QBMapper
      * @psalm-return array{labels: list<array-key>,
      *     series: list<array{data: list<int>, name: string}>}
      */
-    public function getActionChartData(?\DateTime $from=null, ?\DateTime $till=null, ?int $registerId=null, ?int $schemaId=null): array
-    {
+    public function getActionChartData(
+        ?\DateTime $from=null,
+        ?\DateTime $till=null,
+        ?int $registerId=null,
+        ?int $schemaId=null
+    ): array {
         try {
             $qb = $this->db->getQueryBuilder();
 
@@ -637,23 +638,27 @@ class AuditTrailMapper extends QBMapper
 
             // Add date range filters if provided.
             if ($from !== null) {
-                $qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d'), IQueryBuilder::PARAM_STR)));
+                $fromParam = $qb->createNamedParameter($from->format('Y-m-d'), IQueryBuilder::PARAM_STR);
+                $qb->andWhere($qb->expr()->gte('created', $fromParam));
             }
 
             if ($till !== null) {
-                $qb->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($till->format('Y-m-d'), IQueryBuilder::PARAM_STR)));
+                $tillParam = $qb->createNamedParameter($till->format('Y-m-d'), IQueryBuilder::PARAM_STR);
+                $qb->andWhere($qb->expr()->lte('created', $tillParam));
             }
 
             // Add register filter if provided.
             // Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
             if ($registerId !== null) {
-                $qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter((string) $registerId, IQueryBuilder::PARAM_STR)));
+                $registerParam = $qb->createNamedParameter((string) $registerId, IQueryBuilder::PARAM_STR);
+                $qb->andWhere($qb->expr()->eq('register', $registerParam));
             }
 
             // Add schema filter if provided.
             // Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
             if ($schemaId !== null) {
-                $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter((string) $schemaId, IQueryBuilder::PARAM_STR)));
+                $schemaParam = $qb->createNamedParameter((string) $schemaId, IQueryBuilder::PARAM_STR);
+                $qb->andWhere($qb->expr()->eq('schema', $schemaParam));
             }
 
             $results = $qb->executeQuery()->fetchAll();
@@ -744,13 +749,15 @@ class AuditTrailMapper extends QBMapper
             // Add register filter if provided.
             // Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
             if ($registerId !== null) {
-                $qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter((string) $registerId, IQueryBuilder::PARAM_STR)));
+                $registerParam = $qb->createNamedParameter((string) $registerId, IQueryBuilder::PARAM_STR);
+                $qb->andWhere($qb->expr()->eq('register', $registerParam));
             }
 
             // Add schema filter if provided.
             // Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
             if ($schemaId !== null) {
-                $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter((string) $schemaId, IQueryBuilder::PARAM_STR)));
+                $schemaParam = $qb->createNamedParameter((string) $schemaId, IQueryBuilder::PARAM_STR);
+                $qb->andWhere($qb->expr()->eq('schema', $schemaParam));
             }
 
             $results = $qb->executeQuery()->fetchAll();
@@ -837,13 +844,15 @@ class AuditTrailMapper extends QBMapper
             // Add register filter if provided.
             // Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
             if ($registerId !== null) {
-                $qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter((string) $registerId, IQueryBuilder::PARAM_STR)));
+                $registerParam = $qb->createNamedParameter((string) $registerId, IQueryBuilder::PARAM_STR);
+                $qb->andWhere($qb->expr()->eq('register', $registerParam));
             }
 
             // Add schema filter if provided.
             // Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
             if ($schemaId !== null) {
-                $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter((string) $schemaId, IQueryBuilder::PARAM_STR)));
+                $schemaParam = $qb->createNamedParameter((string) $schemaId, IQueryBuilder::PARAM_STR);
+                $qb->andWhere($qb->expr()->eq('schema', $schemaParam));
             }
 
             $results = $qb->executeQuery()->fetchAll();
@@ -916,13 +925,15 @@ class AuditTrailMapper extends QBMapper
             // Add register filter if provided.
             // Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
             if ($registerId !== null) {
-                $qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter((string) $registerId, IQueryBuilder::PARAM_STR)));
+                $registerParam = $qb->createNamedParameter((string) $registerId, IQueryBuilder::PARAM_STR);
+                $qb->andWhere($qb->expr()->eq('register', $registerParam));
             }
 
             // Add schema filter if provided.
             // Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
             if ($schemaId !== null) {
-                $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter((string) $schemaId, IQueryBuilder::PARAM_STR)));
+                $schemaParam = $qb->createNamedParameter((string) $schemaId, IQueryBuilder::PARAM_STR);
+                $qb->andWhere($qb->expr()->eq('schema', $schemaParam));
             }
 
             // Apply limit.
@@ -957,8 +968,10 @@ class AuditTrailMapper extends QBMapper
     /**
      * Clear expired logs from the database
      *
-     * This method deletes all audit trail logs that have expired (i.e., their 'expires' date is earlier than the current date and time)
-     * and have the 'expires' column set. This helps maintain database performance by removing old log entries that are no longer needed.
+     * This method deletes all audit trail logs that have expired
+     * (i.e., their 'expires' date is earlier than the current date and time)
+     * and have the 'expires' column set. This helps maintain database performance
+     * by removing old log entries that are no longer needed.
      *
      * @return bool True if any logs were deleted, false otherwise
      *

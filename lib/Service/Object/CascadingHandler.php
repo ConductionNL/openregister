@@ -77,12 +77,6 @@ class CascadingHandler
             // Get the URL generator from the SaveObject handler.
             $urlGenerator         = new ReflectionClass($this->saveHandler);
             $urlGeneratorProperty = $urlGenerator->getProperty('urlGenerator');
-
-            /*
-             * @psalm-suppress UnusedMethodCall
-             */
-
-            $urlGeneratorProperty->setAccessible(true);
             $urlGeneratorInstance = $urlGeneratorProperty->getValue($this->saveHandler);
 
             $schemaObject = $schema->getSchemaObject($urlGeneratorInstance);
@@ -187,8 +181,12 @@ class CascadingHandler
      *
      * @return string|null UUID of created object or null if creation failed.
      */
-    public function createRelatedObject(array $objectData, array $definition, string $parentUuid, int $currentRegister): ?string
-    {
+    public function createRelatedObject(
+        array $objectData,
+        array $definition,
+        string $parentUuid,
+        int $currentRegister
+    ): ?string {
         try {
             // Resolve schema reference to actual schema ID.
             $schemaRef = $definition['$ref'] ?? null;

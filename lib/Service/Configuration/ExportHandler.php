@@ -265,8 +265,16 @@ class ExportHandler
                 foreach ($objects as $object) {
                     // Use maps to get slugs.
                     $object = $object->jsonSerialize();
-                    $object['@self']['register'] = $this->registersMap[$object['@self']['register']]->getSlug();
-                    $object['@self']['schema']   = $this->schemasMap[$object['@self']['schema']]->getSlug();
+                    $registerId = (int) $object['@self']['register'];
+                    $schemaId   = (int) $object['@self']['schema'];
+                    if (isset($this->registersMap[$registerId]) === true) {
+                        $object['@self']['register'] = $this->registersMap[$registerId]->getSlug();
+                    }
+
+                    if (isset($this->schemasMap[$schemaId]) === true) {
+                        $object['@self']['schema'] = $this->schemasMap[$schemaId]->getSlug();
+                    }
+
                     $openApiSpec['components']['objects'][] = $object;
                 }
             }
@@ -294,20 +302,9 @@ class ExportHandler
      *
      * @param Register $register The register to export.
      *
-     * @return array The OpenAPI register specification.
+     * @return ((int|mixed|null|string|string[])[]|null|string)[]
      *
-     * @psalm-return array{slug: null|string, title: null|string,
-     *     version: null|string, description: null|string,
-     *     schemas: array<int|string>, source: null|string,
-     *     tablePrefix: null|string, folder: null|string,
-     *     updated: null|string, created: null|string, owner: null|string,
-     *     application: null|string, authorization: array|null,
-     *     groups: array<string, list<string>>,
-     *     quota: array{storage: null, bandwidth: null, requests: null,
-     *     users: null, groups: null},
-     *     usage: array{storage: 0, bandwidth: 0, requests: 0, users: 0,
-     *     groups: int<0, max>}, deleted: null|string,
-     *     published: null|string, depublished: null|string}
+     * @psalm-return array{slug: null|string, title: null|string, version: null|string, description: null|string, schemas: array<int|string>, source: null|string, tablePrefix: null|string, folder: null|string, updated: null|string, created: null|string, owner: null|string, application: null|string, authorization: array|null, groups: array<string, list<string>>, configuration: array|null, quota: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: 0, groups: int<0, max>}, deleted: null|string, published: null|string, depublished: null|string}
      */
     private function exportRegister(Register $register): array
     {

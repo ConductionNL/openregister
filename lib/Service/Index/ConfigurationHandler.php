@@ -44,9 +44,10 @@ class ConfigurationHandler
     /**
      * Solr configuration array.
      *
-     * @var array{enabled: bool, host?: string, port?: int|string, core?: string, path?: string, username?: string, password?: string}
+     * @var array{enabled: bool, host?: string, port?: int|string, core?: string,
+     *            path?: string, username?: string, password?: string, scheme?: string}
      */
-    private array $solrConfig = [];
+    private array $solrConfig = ['enabled' => false];
 
     /**
      * HTTP client for Solr communication.
@@ -234,7 +235,8 @@ class ConfigurationHandler
      *
      * @return (bool|int|string)[] Solr configuration.
      *
-     * @psalm-return array{enabled: bool, host?: string, port?: int|string, core?: string, path?: string, username?: string, password?: string}
+     * @psalm-return array{enabled: bool, host?: string, port?: int|string, core?: string,
+     *     path?: string, username?: string, password?: string, scheme?: string}
      */
     public function getSolrConfig(): array
     {

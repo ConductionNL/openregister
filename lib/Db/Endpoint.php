@@ -175,9 +175,7 @@ class Endpoint extends Entity implements JsonSerializable
      * If an action is not present as a key, or its value is an empty array,
      * it is assumed that all users have permission for that action.
      *
-     * @var         array|null Array of group-based permissions
-     * @phpstan-var array<string, array<string>>|null
-     * @psalm-var   array<string, list<string>>|null
+     * @var array<string, array<string>>|null Array of group-based permissions
      */
     protected ?array $groups = [];
 

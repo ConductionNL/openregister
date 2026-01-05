@@ -70,7 +70,12 @@ class OpenRegisterAdmin implements ISettings
             'mySetting' => $this->config->getSystemValue('open_register_setting', true),
         ];
 
-        return new TemplateResponse(appName: 'openregister', templateName: 'settings/admin', params: $parameters, renderAs: 'admin');
+        return new TemplateResponse(
+            appName: 'openregister',
+            templateName: 'settings/admin',
+            params: $parameters,
+            renderAs: 'admin'
+        );
     }//end getForm()
 
     /**

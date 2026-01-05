@@ -62,13 +62,15 @@ class Version1Date20251115000000 extends SimpleMigrationStep
 
             // Add isLocal field (boolean) - true = maintained locally, false = imported externally.
             if ($table->hasColumn('is_local') === false) {
+                $comment  = 'Whether this configuration is maintained locally (true) ';
+                $comment .= 'or imported from external source (false)';
                 $table->addColumn(
                     'is_local',
                     Types::BOOLEAN,
                     [
                         'notnull' => true,
                         'default' => true,
-                        'comment' => 'Whether this configuration is maintained locally (true) or imported from external source (false)',
+                        'comment' => $comment,
                     ]
                 );
 
@@ -148,6 +150,8 @@ class Version1Date20251115000000 extends SimpleMigrationStep
 
             // Add openregister field (string) - required OpenRegister version.
             if ($table->hasColumn('openregister') === false) {
+                $comment  = 'Required OpenRegister version using Composer notation ';
+                $comment .= '(e.g., ^v8.14.0, ~1.2.0, >=1.0.0 <2.0.0)';
                 $table->addColumn(
                     'openregister',
                     Types::STRING,
@@ -155,7 +159,7 @@ class Version1Date20251115000000 extends SimpleMigrationStep
                         'notnull' => false,
                         'length'  => 100,
                         'default' => null,
-                        'comment' => 'Required OpenRegister version using Composer notation (e.g., ^v8.14.0, ~1.2.0, >=1.0.0 <2.0.0)',
+                        'comment' => $comment,
                     ]
                 );
 

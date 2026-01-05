@@ -180,9 +180,7 @@ class SolrQueryExecutor
      *
      * @param array $query OpenRegister query
      *
-     * @return (int|mixed|string)[] Solr query parameters
-     *
-     * @psalm-return array{q: '*:*'|mixed, start: int, rows: int, sort?: string, fl?: mixed|string}
+     * @return array<string, mixed> Solr query parameters
      */
     private function buildSolrQuery(array $query): array
     {
@@ -244,7 +242,8 @@ class SolrQueryExecutor
      *
      * @return (array|int|mixed)[] Paginated result
      *
-     * @psalm-return array{results: array<never, never>|mixed, total: 0|mixed, limit: int, offset: 0|mixed, page: int, pages: int}
+     * @psalm-return array{results: array<never, never>|mixed, total: 0|mixed,
+     *     limit: int, offset: 0|mixed, page: int, pages: int}
      */
     private function convertToPaginatedFormat(array $solrResult, array $query): array
     {

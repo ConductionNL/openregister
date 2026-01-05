@@ -27,6 +27,10 @@ namespace OCA\OpenRegister\Db\ObjectHandlers;
 
 use DateTime;
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Event\ObjectCreatedEvent;
+use OCA\OpenRegister\Event\ObjectUpdatedEvent;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use Psr\Log\LoggerInterface;
@@ -61,6 +65,13 @@ class OptimizedBulkOperations
     private LoggerInterface $logger;
 
     /**
+     * Event dispatcher for business logic hooks
+     *
+     * @var IEventDispatcher
+     */
+    private IEventDispatcher $eventDispatcher;
+
+    /**
      * Maximum SQL statement size in bytes (16MB)
      *
      * @var int Maximum SQL statement size in bytes (16MB)
@@ -84,13 +95,15 @@ class OptimizedBulkOperations
     /**
      * Constructor
      *
-     * @param IDBConnection   $db     Database connection
-     * @param LoggerInterface $logger Logger instance
+     * @param IDBConnection     $db              Database connection
+     * @param LoggerInterface   $logger          Logger instance
+     * @param IEventDispatcher  $eventDispatcher Event dispatcher for business logic hooks
      */
-    public function __construct(IDBConnection $db, LoggerInterface $logger)
+    public function __construct(IDBConnection $db, LoggerInterface $logger, IEventDispatcher $eventDispatcher)
     {
-        $this->db     = $db;
-        $this->logger = $logger;
+        $this->db              = $db;
+        $this->logger          = $logger;
+        $this->eventDispatcher = $eventDispatcher;
     }//end __construct()
 
     /**
@@ -141,7 +154,11 @@ class OptimizedBulkOperations
             $chunkStartTime = microtime(true);
 
             // MEMORY-INTENSIVE: Build massive INSERT...ON DUPLICATE KEY UPDATE statement.
-            $chunkUUIDs     = $this->processUnifiedChunk(objects: $chunk, chunkNumber: $chunkIndex + 1, _totalChunks: $totalChunks);
+            $chunkUUIDs     = $this->processUnifiedChunk(
+                objects: $chunk,
+                chunkNumber: $chunkIndex + 1,
+                _totalChunks: $totalChunks
+            );
             $processedUUIDs = array_merge($processedUUIDs, $chunkUUIDs);
 
             $chunkTime = microtime(true) - $chunkStartTime;
@@ -179,6 +196,14 @@ class OptimizedBulkOperations
             ]
         );
 
+        // CRITICAL: Dispatch events for business logic hooks.
+        // This ensures software catalog and other apps can react to bulk changes.
+        $this->dispatchBulkEvents(
+            insertObjects: $insertObjects,
+            updateObjects: $updateObjects,
+            processedUUIDs: $processedUUIDs
+        );
+
         return $processedUUIDs;
     }//end ultraFastUnifiedBulkSave()
 
@@ -188,9 +213,9 @@ class OptimizedBulkOperations
      * PERFORMANCE STRATEGY: Build one massive SQL statement in memory that handles
      * both inserts and updates, eliminating thousands of individual operations.
      *
-     * @param array $objects     Unified object array
-     * @param int   $chunkNumber Current chunk number for logging
-     * @param int   $totalChunks Total chunks for progress tracking
+     * @param array $objects      Unified object array
+     * @param int   $chunkNumber  Current chunk number for logging
+     * @param int   $_totalChunks Total chunks for progress tracking
      *
      * @return array Array of processed UUIDs
      *
@@ -215,8 +240,13 @@ class OptimizedBulkOperations
         $tableName = 'oc_openregister_objects';
 
         // Map object columns to actual database columns.
-        $dbColumns = $this->mapObjectColumnsToDatabase($columns);
-        $sql       = $this->buildMassiveInsertOnDuplicateKeyUpdateSQL(tableName: $tableName, columns: $dbColumns, objectCount: count($objects));
+        $dbColumns   = $this->mapObjectColumnsToDatabase($columns);
+        $objectCount = count($objects);
+        $sql         = $this->buildMassiveInsertOnDuplicateKeyUpdateSQL(
+            tableName: $tableName,
+            columns: $dbColumns,
+            objectCount: $objectCount
+        );
 
         // PARAMETER BINDING: Build parameters array in memory (can be very large).
         $parameters = [];
@@ -418,10 +448,12 @@ class OptimizedBulkOperations
                             // PostgreSQL: Use EXCLUDED.column for new values.
                             if ($dataCol === 'object') {
                                 // JSON comparison for PostgreSQL.
-                                $changeChecks[] = "(\"{$dataCol}\" IS DISTINCT FROM EXCLUDED.\"{$dataCol}\")";
-                            } else if (in_array($dataCol, ['files', 'relations', 'authorization', 'validation', 'geo', 'retention', 'groups']) === true) {
+                                $check          = "(\"{$dataCol}\" IS DISTINCT FROM EXCLUDED.\"{$dataCol}\")";
+                                $changeChecks[] = $check;
+                            } else if (in_array($dataCol, $this->getJsonColumns()) === true) {
                                 // JSON fields comparison.
-                                $changeChecks[] = "(\"{$dataCol}\" IS DISTINCT FROM EXCLUDED.\"{$dataCol}\")";
+                                $check          = "(\"{$dataCol}\" IS DISTINCT FROM EXCLUDED.\"{$dataCol}\")";
+                                $changeChecks[] = $check;
                             } else {
                                 // Regular field comparison.
                                 $changeChecks[] = "(\"{$dataCol}\" IS DISTINCT FROM EXCLUDED.\"{$dataCol}\")";
@@ -430,13 +462,19 @@ class OptimizedBulkOperations
                             // MySQL/MariaDB: Use VALUES(column) for new values.
                             if ($dataCol === 'object') {
                                 // SPECIAL HANDLING: JSON comparison for object data.
-                                $changeChecks[] = "JSON_EXTRACT(`{$dataCol}`, '$') != JSON_EXTRACT(VALUES(`{$dataCol}`), '$')";
-                            } else if (in_array($dataCol, ['files', 'relations', 'authorization', 'validation', 'geo', 'retention', 'groups']) === true) {
+                                $jsonExtract    = "JSON_EXTRACT(`{$dataCol}`, '\$')";
+                                $jsonExtractVal = "JSON_EXTRACT(VALUES(`{$dataCol}`), '\$')";
+                                $changeChecks[] = "{$jsonExtract} != {$jsonExtractVal}";
+                            } else if (in_array($dataCol, $this->getJsonColumns()) === true) {
                                 // JSON fields comparison.
-                                $changeChecks[] = "COALESCE(`{$dataCol}`, '{}') != COALESCE(VALUES(`{$dataCol}`), '{}')";
+                                $colVal         = "COALESCE(`{$dataCol}`, '{}')";
+                                $valuesCol      = "COALESCE(VALUES(`{$dataCol}`), '{}')";
+                                $changeChecks[] = "{$colVal} != {$valuesCol}";
                             } else {
                                 // Regular field comparison with NULL handling.
-                                $changeChecks[] = "COALESCE(`{$dataCol}`, '') != COALESCE(VALUES(`{$dataCol}`), '')";
+                                $colVal         = "COALESCE(`{$dataCol}`, '')";
+                                $valuesCol      = "COALESCE(VALUES(`{$dataCol}`), '')";
+                                $changeChecks[] = "{$colVal} != {$valuesCol}";
                             }
                         }//end if
                     }//end foreach
@@ -640,18 +678,20 @@ class OptimizedBulkOperations
                 // We only want to store the 'object' property contents in the database object column.
                 // VALIDATION: object property MUST be set and MUST be an array.
                 if (isset($objectData['object']) === false) {
-                    throw new InvalidArgumentException(
-                        "Object data is missing required 'object' property. Available keys: ".json_encode(array_keys($objectData))
-                    );
+                    $availableKeys = json_encode(array_keys($objectData));
+                    $errorMessage  = "Object data is missing required 'object' property. ";
+                    $errorMessage .= "Available keys: ".$availableKeys;
+                    throw new InvalidArgumentException($errorMessage);
                 }
 
                 $objectContent = $objectData['object'];
 
                 // VALIDATION: object content must be an array, not a string or other type.
                 if (is_array($objectContent) === false) {
-                    throw new InvalidArgumentException(
-                        "Object content must be an array, got ".gettype($objectContent).". This suggests double JSON encoding or malformed CSV parsing."
-                    );
+                    $contentType   = gettype($objectContent);
+                    $errorMessage  = "Object content must be an array, got ".$contentType.". ";
+                    $errorMessage .= "This suggests double JSON encoding or malformed CSV parsing.";
+                    throw new InvalidArgumentException($errorMessage);
                 }
 
                 // Normal case - array data needs JSON encoding.
@@ -732,4 +772,150 @@ class OptimizedBulkOperations
         $dateTime = new DateTime($value);
         return $dateTime->format('Y-m-d H:i:s');
     }//end convertDateTimeToMySQLFormat()
+
+    /**
+     * Get list of JSON columns for comparison operations
+     *
+     * @return string[] List of JSON column names
+     */
+    private function getJsonColumns(): array
+    {
+        return [
+            'files',
+            'relations',
+            'authorization',
+            'validation',
+            'geo',
+            'retention',
+            'groups',
+        ];
+    }//end getJsonColumns()
+
+    /**
+     * Dispatch events for bulk operation results.
+     *
+     * This method ensures that business logic hooks (listeners) are triggered
+     * for each object that was created or updated during a bulk operation.
+     * This is CRITICAL for software catalog and other apps that depend on
+     * object lifecycle events.
+     *
+     * @param array $insertObjects  Array of objects that were inserted
+     * @param array $updateObjects  Array of objects that were updated
+     * @param array $_processedUUIDs Array of processed UUIDs (reserved for future use)
+     *
+     * @return void
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     */
+    private function dispatchBulkEvents(array $insertObjects, array $updateObjects, array $_processedUUIDs): void
+    {
+        $createdCount = 0;
+        $updatedCount = 0;
+
+        // Dispatch events for inserted objects (created).
+        foreach ($insertObjects as $objectData) {
+            try {
+                // Create ObjectEntity from raw data for event dispatching.
+                $entity = $this->createEntityFromData($objectData);
+
+                if ($entity !== null) {
+                    $this->eventDispatcher->dispatch(
+                        ObjectCreatedEvent::class,
+                        new ObjectCreatedEvent(object: $entity)
+                    );
+                    $createdCount++;
+                }
+            } catch (\Exception $e) {
+                // Log but don't fail the entire bulk operation if one event fails.
+                $this->logger->warning(
+                    '[OptimizedBulkOperations] Failed to dispatch created event',
+                    [
+                        'uuid'  => $objectData['uuid'] ?? 'unknown',
+                        'error' => $e->getMessage(),
+                    ]
+                );
+            }//end try
+        }//end foreach
+
+        // Dispatch events for updated objects.
+        foreach ($updateObjects as $entity) {
+            try {
+                if ($entity instanceof ObjectEntity) {
+                    // For bulk updates, we don't have the old object.
+                    // Pass the entity as both old and new (best approximation for bulk context).
+                    $this->eventDispatcher->dispatch(
+                        ObjectUpdatedEvent::class,
+                        new ObjectUpdatedEvent(newObject: $entity, oldObject: $entity)
+                    );
+                    $updatedCount++;
+                }
+            } catch (\Exception $e) {
+                // Log but don't fail the entire bulk operation if one event fails.
+                $this->logger->warning(
+                    '[OptimizedBulkOperations] Failed to dispatch updated event',
+                    [
+                        'uuid'  => $entity->getUuid() ?? 'unknown',
+                        'error' => $e->getMessage(),
+                    ]
+                );
+            }//end try
+        }//end foreach
+
+        $this->logger->info(
+            '[OptimizedBulkOperations] Dispatched bulk events',
+            [
+                'created' => $createdCount,
+                'updated' => $updatedCount,
+                'total'   => $createdCount + $updatedCount,
+            ]
+        );
+    }//end dispatchBulkEvents()
+
+    /**
+     * Create ObjectEntity from raw data array.
+     *
+     * @param array $data Raw object data
+     *
+     * @return ObjectEntity|null Created entity or null on failure
+     */
+    private function createEntityFromData(array $data): ?ObjectEntity
+    {
+        try {
+            $entity = new ObjectEntity();
+
+            // Set metadata fields.
+            if (isset($data['uuid']) === true) {
+                $entity->setUuid($data['uuid']);
+            }
+
+            if (isset($data['register']) === true) {
+                $entity->setRegister((string) $data['register']);
+            }
+
+            if (isset($data['schema']) === true) {
+                $entity->setSchema((string) $data['schema']);
+            }
+
+            if (isset($data['owner']) === true) {
+                $entity->setOwner($data['owner']);
+            }
+
+            if (isset($data['organisation']) === true) {
+                $entity->setOrganisation($data['organisation']);
+            }
+
+            // Set object data.
+            if (isset($data['object']) === true) {
+                $entity->setObject($data['object']);
+            }
+
+            return $entity;
+        } catch (\Exception $e) {
+            $this->logger->warning(
+                '[OptimizedBulkOperations] Failed to create entity from data',
+                ['error' => $e->getMessage()]
+            );
+            return null;
+        }//end try
+    }//end createEntityFromData()
 }//end class

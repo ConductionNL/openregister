@@ -123,8 +123,13 @@ class FileCrudHandler
      *
      * @todo Extract full implementation from FileService::addFile()
      */
-    public function addFile(ObjectEntity|string $objectEntity, string $fileName, string $content, bool $share=false, array $tags=[])
-    {
+    public function addFile(
+        ObjectEntity|string $objectEntity,
+        string $fileName,
+        string $content,
+        bool $share=false,
+        array $tags=[]
+    ) {
         // TODO: Extract full implementation from FileService
         // This involves:
         // 1. Getting object folder via folderManagementHandler
@@ -302,8 +307,13 @@ class FileCrudHandler
      *
      * @todo Extract full implementation from FileService::saveFile()
      */
-    public function saveFile(ObjectEntity $objectEntity, string $fileName, string $content, bool $share=false, array $tags=[])
-    {
+    public function saveFile(
+        ObjectEntity $objectEntity,
+        string $fileName,
+        string $content,
+        bool $share=false,
+        array $tags=[]
+    ) {
         // TODO: Extract full implementation from FileService
         // This is an upsert operation that:
         // 1. Checks if file exists via getFile().

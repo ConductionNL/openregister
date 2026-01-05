@@ -27,6 +27,7 @@ use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\IndexService;
+use OCA\OpenRegister\Service\Index\Backends\SolrBackend;
 
 /**
  * VectorSearchHandler
@@ -220,11 +221,8 @@ class VectorSearchHandler
 
             $settings = $this->settingsService->getSettings();
 
-            /*
-             * Get vector field from LLM configuration, default to '_embedding_'.
-             * @psalm-suppress InvalidArrayOffset
-             */
-
+            // Get vector field from LLM configuration, default to '_embedding_'.
+            /** @var array{llm?: array{vectorConfig?: array{solrField?: string}}} $settings */
             $vectorField = $settings['llm']['vectorConfig']['solrField'] ?? '_embedding_';
             $allResults  = [];
 
@@ -251,18 +249,16 @@ class VectorSearchHandler
                     'wt'   => 'json',
                 ];
 
-                /*
-                 * @psalm-suppress UndefinedInterfaceMethod - buildSolrBaseUrl and getHttpClient exist on Solr backend implementation
-                 */
+                // Cast to SolrBackend to access Solr-specific methods.
+                if ($solrBackend instanceof SolrBackend === false) {
+                    throw new Exception('Vector search requires SolrBackend');
+                }
 
-                $solrUrl = $solrBackend->buildSolrBaseUrl()."/{$collection}/select";
+                $baseUrl = $solrBackend->getHttpClient()->buildSolrBaseUrl();
+                $solrUrl = $baseUrl."/{$collection}/select";
 
                 try {
-                    /*
-                     * @psalm-suppress UndefinedInterfaceMethod
-                     */
-
-                    $response = $solrBackend->getHttpClient()->get(
+                    $response = $solrBackend->getHttpClient()->getHttpClient()->get(
                         $solrUrl,
                         ['query' => $queryParams]
                     );

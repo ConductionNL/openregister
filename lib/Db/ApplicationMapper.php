@@ -23,7 +23,6 @@ use DateTime;
 use OCA\OpenRegister\Event\ApplicationCreatedEvent;
 use OCA\OpenRegister\Event\ApplicationDeletedEvent;
 use OCA\OpenRegister\Event\ApplicationUpdatedEvent;
-use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -70,13 +69,13 @@ class ApplicationMapper extends QBMapper
     use MultiTenancyTrait;
 
     /**
-     * Organisation service for multi-tenancy
+     * Organisation mapper for multi-tenancy
      *
      * Used to get active organisation and apply organisation filters.
      *
-     * @var OrganisationService Organisation service instance
+     * @var OrganisationMapper Organisation mapper instance
      */
-    private readonly OrganisationService $organisationService;
+    protected OrganisationMapper $organisationMapper;
 
     /**
      * User session for current user
@@ -275,7 +274,7 @@ class ApplicationMapper extends QBMapper
      *
      * @throws \Exception If user doesn't have read permission
      *
-     * @psalm-return list<OCA\OpenRegister\Db\Application>
+     * @psalm-return list<Application>
      */
     public function findAll(
         ?int $limit=null,

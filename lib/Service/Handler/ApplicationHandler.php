@@ -37,16 +37,14 @@ class ApplicationHandler
     /**
      * Application mapper instance.
      *
-     * @var                                        ApplicationMapper The application mapper instance.
-     * @SuppressWarnings(PHPMD.UnusedPrivateField)
+     * @var ApplicationMapper The application mapper instance.
      */
     private ApplicationMapper $applicationMapper;
 
     /**
      * Logger instance.
      *
-     * @var                                        LoggerInterface The logger instance.
-     * @SuppressWarnings(PHPMD.UnusedPrivateField)
+     * @var LoggerInterface The logger instance.
      */
     private LoggerInterface $logger;
 }//end class

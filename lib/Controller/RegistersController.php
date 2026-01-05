@@ -149,6 +149,7 @@ class RegistersController extends Controller
      * @param ObjectEntityMapper   $objectEntityMapper   Object entity mapper for database operations
      * @param UploadService        $uploadService        Upload service for file uploads
      * @param LoggerInterface      $logger               Logger for error tracking
+     * @param IUserSession         $userSession          User session service
      * @param ConfigurationService $configurationService Configuration service for import/export
      * @param AuditTrailMapper     $auditTrailMapper     Audit trail mapper for log statistics
      * @param ExportService        $exportService        Export service for data exports
@@ -200,44 +201,11 @@ class RegistersController extends Controller
      *
      * This method returns a JSON response containing an array of all registers in the system.
      *
-     * @return JSONResponse A JSON response containing the list of registers
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<
-     *     200,
-     *     array{
-     *         results: array<
-     *             array{
-     *                 id: int,
-     *                 uuid: null|string,
-     *                 slug: null|string,
-     *                 title: null|string,
-     *                 version: null|string,
-     *                 description: null|string,
-     *                 schemas: array<int|string>,
-     *                 source: null|string,
-     *                 tablePrefix: null|string,
-     *                 folder: null|string,
-     *                 updated: null|string,
-     *                 created: null|string,
-     *                 owner: null|string,
-     *                 application: null|string,
-     *                 organisation: null|string,
-     *                 authorization: array|null,
-     *                 groups: array<string, list<string>>,
-     *                 quota: array{storage: null, bandwidth: null, requests: null, users: null, groups: null},
-     *                 usage: array{storage: 0, bandwidth: 0, requests: 0, users: 0, groups: int<0, max>},
-     *                 deleted: null|string,
-     *                 published: null|string,
-     *                 depublished: null|string
-     *             }
-     *         >
-     *     },
-     *     array<never, never>
-     * >
+     * @psalm-return JSONResponse<200, array{results: array<array{id: int, uuid: null|string, slug: null|string, title: null|string, version: null|string, description: null|string, schemas: array<int|string>, source: null|string, tablePrefix: null|string, folder: null|string, updated: null|string, created: null|string, owner: null|string, application: null|string, organisation: null|string, authorization: array|null, groups: array<string, list<string>>, configuration: array|null, quota: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: 0, groups: int<0, max>}, deleted: null|string, published: null|string, depublished: null|string}>}, array<never, never>>
      */
     public function index(): JSONResponse
     {
@@ -277,7 +245,13 @@ class RegistersController extends Controller
         // Extract filters.
         $filters = $params['filters'] ?? [];
 
-        $registers    = $this->registerService->findAll(limit: $limit, offset: $offset, filters: $filters, searchConditions: [], searchParams: []);
+        $registers    = $this->registerService->findAll(
+            limit: $limit,
+            offset: $offset,
+            filters: $filters,
+            searchConditions: [],
+            searchParams: []
+        );
         $registersArr = array_map(fn($register) => $register->jsonSerialize(), $registers);
 
         // If 'schemas' is requested in _extend, expand schema IDs to full schema objects.
@@ -291,7 +265,8 @@ class RegistersController extends Controller
                             $expandedSchemas[] = $schema->jsonSerialize();
                         } catch (DoesNotExistException $e) {
                             // Schema not found, skip it.
-                            $this->logger->warning(message: 'Schema not found for expansion', context: ['schemaId' => $schemaId]);
+                            $ctx = ['schemaId' => $schemaId];
+                            $this->logger->warning(message: 'Schema not found for expansion', context: $ctx);
                         }
                     }
 
@@ -386,10 +361,6 @@ class RegistersController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with created register
-     *
-     * @psalm-return JSONResponse<201, Register,
-     *     array<never, never>>|JSONResponse<int, array{error: string},
-     *     array<never, never>>
      */
     public function create(): JSONResponse
     {
@@ -413,11 +384,20 @@ class RegistersController extends Controller
             return new JSONResponse(data: $this->registerService->createFromArray($data), statusCode: 201);
         } catch (DBException $e) {
             // Handle database constraint violations with user-friendly messages.
-            $constraintException = DatabaseConstraintException::fromDatabaseException(dbException: $e, entityType: 'register');
-            return new JSONResponse(data: ['error' => $constraintException->getMessage()], statusCode: $constraintException->getHttpStatusCode());
+            $constraintException = DatabaseConstraintException::fromDatabaseException(
+                dbException: $e,
+                entityType: 'register'
+            );
+            return new JSONResponse(
+                data: ['error' => $constraintException->getMessage()],
+                statusCode: $constraintException->getHttpStatusCode()
+            );
         } catch (DatabaseConstraintException $e) {
             // Handle our custom database constraint exceptions.
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $e->getHttpStatusCode());
+            return new JSONResponse(
+                data: ['error' => $e->getMessage()],
+                statusCode: $e->getHttpStatusCode()
+            );
         }
     }//end create()
 
@@ -433,10 +413,6 @@ class RegistersController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with updated register
-     *
-     * @psalm-return JSONResponse<200, Register,
-     *     array<never, never>>|JSONResponse<int, array{error: string},
-     *     array<never, never>>
      */
     public function update(int $id): JSONResponse
     {
@@ -461,11 +437,20 @@ class RegistersController extends Controller
             return new JSONResponse(data: $this->registerService->updateFromArray(id: $id, data: $data));
         } catch (DBException $e) {
             // Handle database constraint violations with user-friendly messages.
-            $constraintException = DatabaseConstraintException::fromDatabaseException(dbException: $e, entityType: 'register');
-            return new JSONResponse(data: ['error' => $constraintException->getMessage()], statusCode: $constraintException->getHttpStatusCode());
+            $constraintException = DatabaseConstraintException::fromDatabaseException(
+                dbException: $e,
+                entityType: 'register'
+            );
+            return new JSONResponse(
+                data: ['error' => $constraintException->getMessage()],
+                statusCode: $constraintException->getHttpStatusCode()
+            );
         } catch (DatabaseConstraintException $e) {
             // Handle our custom database constraint exceptions.
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $e->getHttpStatusCode());
+            return new JSONResponse(
+                data: ['error' => $e->getMessage()],
+                statusCode: $e->getHttpStatusCode()
+            );
         }
     }//end update()
 
@@ -484,9 +469,7 @@ class RegistersController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200, Register,
-     *     array<never, never>>|JSONResponse<int, array{error: string},
-     *     array<never, never>>
+     * @return JSONResponse JSON response with patched register
      */
     public function patch(int $id): JSONResponse
     {
@@ -504,13 +487,11 @@ class RegistersController extends Controller
      *
      * @throws Exception If there is an error deleting the register
      *
-     * @return JSONResponse An empty JSON response
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|409|500, array{error?: string}, array<never, never>>
+     * @return JSONResponse JSON response confirming deletion or error
      */
     public function destroy(int $id): JSONResponse
     {
@@ -602,9 +583,7 @@ class RegistersController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response with register objects
-     *
-     * @psalm-return JSONResponse<200, list<OCA\OpenRegister\Db\OCA\OpenRegister\Db\OCA\OpenRegister\Db\ObjectEntity>, array<never, never>>
+     * @return JSONResponse JSON response with objects list
      */
     public function objects(int $register, int $schema): JSONResponse
     {
@@ -644,9 +623,10 @@ class RegistersController extends Controller
     {
         try {
             // Get export format from query parameter.
-            $format         = $this->request->getParam(key: 'format', default: 'configuration');
-            $includeObjects = filter_var($this->request->getParam(key: 'includeObjects', default: false), FILTER_VALIDATE_BOOLEAN);
-            $register       = $this->registerService->find($id);
+            $format          = $this->request->getParam(key: 'format', default: 'configuration');
+            $includeObjParam = $this->request->getParam(key: 'includeObjects', default: false);
+            $includeObjects  = filter_var($includeObjParam, FILTER_VALIDATE_BOOLEAN);
+            $register        = $this->registerService->find($id);
 
             switch ($format) {
                 case 'excel':
@@ -657,18 +637,22 @@ class RegistersController extends Controller
                         currentUser: $this->userSession->getUser()
                     );
                     $writer      = new Xlsx($spreadsheet);
-                    $filename    = sprintf('%s_%s.xlsx', $register->getSlug() ?? 'register', (new DateTime())->format('Y-m-d_His'));
+                    $slug        = $register->getSlug() ?? 'register';
+                    $date        = (new DateTime())->format('Y-m-d_His');
+                    $filename    = sprintf('%s_%s.xlsx', $slug, $date);
                     ob_start();
                     $writer->save('php://output');
                     $content = ob_get_clean();
-                    return new DataDownloadResponse($content, $filename, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+                    $mime    = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+                    return new DataDownloadResponse($content, $filename, $mime);
                 case 'csv':
                     // CSV exports require a specific schema.
                     $schemaId = $this->request->getParam('schema');
 
                     if ($schemaId === null || $schemaId === '') {
                         // If no schema specified, return error (CSV cannot handle multiple schemas).
-                        return new JSONResponse(data: ['error' => 'CSV export requires a specific schema to be selected'], statusCode: 400);
+                        $errMsg = 'CSV export requires a specific schema to be selected';
+                        return new JSONResponse(data: ['error' => $errMsg], statusCode: 400);
                     }
 
                     $schema   = $this->schemaMapper->find($schemaId);
@@ -687,13 +671,18 @@ class RegistersController extends Controller
                     return new DataDownloadResponse($csv, $filename, 'text/csv');
                 case 'configuration':
                 default:
-                    $exportData  = $this->configurationService->exportConfig(input: $register, includeObjects: $includeObjects);
+                    $exportData  = $this->configurationService->exportConfig(
+                        input: $register,
+                        includeObjects: $includeObjects
+                    );
                     $jsonContent = json_encode($exportData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
                     if ($jsonContent === false) {
                         throw new Exception('Failed to encode register data to JSON');
                     }
 
-                    $filename = sprintf('%s_%s.json', $register->getSlug() ?? 'register', (new DateTime())->format('Y-m-d_His'));
+                    $slug     = $register->getSlug() ?? 'register';
+                    $date     = (new DateTime())->format('Y-m-d_His');
+                    $filename = sprintf('%s_%s.json', $slug, $date);
                     return new DataDownloadResponse($jsonContent, $filename, 'application/json');
             }//end switch
         } catch (Exception $e) {
@@ -713,13 +702,6 @@ class RegistersController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with GitHub publish results
-     *
-     * @psalm-return JSONResponse<int,
-     *     array{error?: string, success?: true, message?: string,
-     *     registerId?: int, commit_sha?: mixed|null,
-     *     commit_url?: mixed|null, file_url?: mixed|null, branch?: string,
-     *     default_branch?: 'main'|mixed|null, indexing_note?: string},
-     *     array<never, never>>
      */
     public function publishToGitHub(int $id): JSONResponse
     {
@@ -813,7 +795,10 @@ class RegistersController extends Controller
 
             $message = 'Register OAS published successfully to GitHub';
             if (($defaultBranch !== null && $defaultBranch !== '') === true && $branch !== $defaultBranch) {
-                $message .= ". Note: Published to branch '{$branch}' (default is '{$defaultBranch}'). GitHub Code Search primarily indexes the default branch, so this may not appear in search results immediately.";
+                $searchNote = 'GitHub Code Search primarily indexes the default branch.';
+                $delayNote  = 'This may not appear in search results immediately.';
+                $branchNote = "Note: Published to branch '{$branch}' (default is '{$defaultBranch}').";
+                $message   .= ". {$branchNote} {$searchNote} {$delayNote}";
             } else {
                 $message .= ". Note: GitHub Code Search may take a few minutes to index new files.";
             }
@@ -933,7 +918,7 @@ class RegistersController extends Controller
 
                     if ($schemaId === null || $schemaId === '') {
                         return new JSONResponse(
-                            data: ['error' => 'Schema parameter is required for CSV imports. Please specify ?schema=105 in your request.'],
+                            data: ['error' => 'Schema parameter is required for CSV imports.'],
                             statusCode: 400
                         );
                     }
@@ -961,7 +946,10 @@ class RegistersController extends Controller
                     // Initialize the uploaded files array.
                     $uploadedFiles = [$uploadedFile];
                     // Get the uploaded JSON data.
-                    $jsonData = $this->configurationService->getUploadedJson(data: $this->request->getParams(), uploadedFiles: $uploadedFiles);
+                    $jsonData = $this->configurationService->getUploadedJson(
+                        data: $this->request->getParams(),
+                        uploadedFiles: $uploadedFiles
+                    );
                     if ($jsonData instanceof JSONResponse) {
                         return $jsonData;
                     }
@@ -1005,7 +993,7 @@ class RegistersController extends Controller
                         }
                     }
 
-                    // If no registers defined in oas, update the register that was given through query with created schema's.
+                    // If no registers in oas, update the register given through query with created schemas.
                     if (empty($result['registers']) === true) {
                         // Get created schema ids.
                         $createdSchemas = [];
@@ -1044,46 +1032,13 @@ class RegistersController extends Controller
      *
      * @param int $id The register ID
      *
-     * @return JSONResponse The register statistics
-     *
      * @throws DoesNotExistException When the register is not found
      *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<
-     *     200|404|500,
-     *     array{
-     *         error?: string,
-     *         register?: array{
-     *             id: int,
-     *             uuid: null|string,
-     *             slug: null|string,
-     *             title: null|string,
-     *             version: null|string,
-     *             description: null|string,
-     *             schemas: array<int|string>,
-     *             source: null|string,
-     *             tablePrefix: null|string,
-     *             folder: null|string,
-     *             updated: null|string,
-     *             created: null|string,
-     *             owner: null|string,
-     *             application: null|string,
-     *             organisation: null|string,
-     *             authorization: array|null,
-     *             groups: array<string, list<string>>,
-     *             quota: array{storage: null, bandwidth: null, requests: null, users: null, groups: null},
-     *             usage: array{storage: 0, bandwidth: 0, requests: 0, users: 0, groups: int<0, max>},
-     *             deleted: null|string,
-     *             published: null|string,
-     *             depublished: null|string
-     *         },
-     *         message?: 'Stats calculation not yet implemented'
-     *     },
-     *     array<never, never>
-     * >
+     * @psalm-return JSONResponse<200|404|500, array{error?: string, register?: array{id: int, uuid: null|string, slug: null|string, title: null|string, version: null|string, description: null|string, schemas: array<int|string>, source: null|string, tablePrefix: null|string, folder: null|string, updated: null|string, created: null|string, owner: null|string, application: null|string, organisation: null|string, authorization: array|null, groups: array<string, list<string>>, configuration: array|null, quota: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: 0, groups: int<0, max>}, deleted: null|string, published: null|string, depublished: null|string}, message?: 'Stats calculation not yet implemented'}, array<never, never>>
      */
     public function stats(int $id): JSONResponse
     {
@@ -1151,41 +1106,11 @@ class RegistersController extends Controller
      *
      * @param int $id The ID of the register to publish
      *
-     * @return JSONResponse A JSON response containing the published register
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<
-     *     200|400|404,
-     *     array{
-     *         error?: string,
-     *         id?: int,
-     *         uuid?: null|string,
-     *         slug?: null|string,
-     *         title?: null|string,
-     *         version?: null|string,
-     *         description?: null|string,
-     *         schemas?: array<int|string>,
-     *         source?: null|string,
-     *         tablePrefix?: null|string,
-     *         folder?: null|string,
-     *         updated?: null|string,
-     *         created?: null|string,
-     *         owner?: null|string,
-     *         application?: null|string,
-     *         organisation?: null|string,
-     *         authorization?: array|null,
-     *         groups?: array<string, list<string>>,
-     *         quota?: array{storage: null, bandwidth: null, requests: null, users: null, groups: null},
-     *         usage?: array{storage: 0, bandwidth: 0, requests: 0, users: 0, groups: int<0, max>},
-     *         deleted?: null|string,
-     *         published?: null|string,
-     *         depublished?: null|string
-     *     },
-     *     array<never, never>
-     * >
+     * @psalm-return JSONResponse<200|400|404, array{error?: string, id?: int, uuid?: null|string, slug?: null|string, title?: null|string, version?: null|string, description?: null|string, schemas?: array<int|string>, source?: null|string, tablePrefix?: null|string, folder?: null|string, updated?: null|string, created?: null|string, owner?: null|string, application?: null|string, organisation?: null|string, authorization?: array|null, groups?: array<string, list<string>>, configuration?: array|null, quota?: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage?: array{storage: 0, bandwidth: 0, requests: 0, users: 0, groups: int<0, max>}, deleted?: null|string, published?: null|string, depublished?: null|string}, array<never, never>>
      */
     public function publish(int $id): JSONResponse
     {
@@ -1238,41 +1163,11 @@ class RegistersController extends Controller
      *
      * @param int $id The ID of the register to depublish
      *
-     * @return JSONResponse A JSON response containing the depublished register
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<
-     *     200|400|404,
-     *     array{
-     *         error?: string,
-     *         id?: int,
-     *         uuid?: null|string,
-     *         slug?: null|string,
-     *         title?: null|string,
-     *         version?: null|string,
-     *         description?: null|string,
-     *         schemas?: array<int|string>,
-     *         source?: null|string,
-     *         tablePrefix?: null|string,
-     *         folder?: null|string,
-     *         updated?: null|string,
-     *         created?: null|string,
-     *         owner?: null|string,
-     *         application?: null|string,
-     *         organisation?: null|string,
-     *         authorization?: array|null,
-     *         groups?: array<string, list<string>>,
-     *         quota?: array{storage: null, bandwidth: null, requests: null, users: null, groups: null},
-     *         usage?: array{storage: 0, bandwidth: 0, requests: 0, users: 0, groups: int<0, max>},
-     *         deleted?: null|string,
-     *         published?: null|string,
-     *         depublished?: null|string
-     *     },
-     *     array<never, never>
-     * >
+     * @psalm-return JSONResponse<200|400|404, array{error?: string, id?: int, uuid?: null|string, slug?: null|string, title?: null|string, version?: null|string, description?: null|string, schemas?: array<int|string>, source?: null|string, tablePrefix?: null|string, folder?: null|string, updated?: null|string, created?: null|string, owner?: null|string, application?: null|string, organisation?: null|string, authorization?: array|null, groups?: array<string, list<string>>, configuration?: array|null, quota?: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage?: array{storage: 0, bandwidth: 0, requests: 0, users: 0, groups: int<0, max>}, deleted?: null|string, published?: null|string, depublished?: null|string}, array<never, never>>
      */
     public function depublish(int $id): JSONResponse
     {

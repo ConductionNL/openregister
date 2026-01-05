@@ -148,45 +148,7 @@ class DashboardController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response with dashboard data
-     *
-     * @psalm-return JSONResponse<200|500,
-     *     array{error?: string,
-     *     registers?: list{0: array{id: 'orphaned'|'totals'|int,
-     *     title: null|string, description: null|string,
-     *     stats: array{objects: array{total: int, size: int, invalid: int,
-     *     deleted: int, locked: int, published: int},
-     *     logs: array{total: int|mixed, size: int|mixed},
-     *     files: array{total: int, size: int},
-     *     webhookLogs?: array{total: int, size: int}}, schemas: list<mixed>,
-     *     uuid?: null|string, slug?: null|string, version?: null|string,
-     *     source?: null|string, tablePrefix?: null|string, folder?: null|string,
-     *     updated?: null|string, created?: null|string, owner?: null|string,
-     *     application?: null|string, organisation?: null|string,
-     *     authorization?: array|null, groups?: array<string, list<string>>,
-     *     quota?: array{storage: null, bandwidth: null, requests: null,
-     *     users: null, groups: null},
-     *     usage?: array{storage: 0, bandwidth: 0, requests: 0, users: 0,
-     *     groups: int<0, max>}, deleted?: null|string,
-     *     published?: null|string, depublished?: null|string},
-     *     1?: array{id: 'orphaned'|'totals'|int, uuid: null|string,
-     *     slug: null|string, title: null|string, version: null|string,
-     *     description: null|string, schemas: list<mixed>, source: null|string,
-     *     tablePrefix: null|string, folder: null|string, updated: null|string,
-     *     created: null|string, owner: null|string, application: null|string,
-     *     organisation: null|string, authorization: array|null,
-     *     groups: array<string, list<string>>,
-     *     quota: array{storage: null, bandwidth: null, requests: null,
-     *     users: null, groups: null},
-     *     usage: array{storage: 0, bandwidth: 0, requests: 0, users: 0,
-     *     groups: int<0, max>}, deleted: null|string, published: null|string,
-     *     depublished: null|string,
-     *     stats: array{objects: array{total: int, size: int, invalid: int,
-     *     deleted: int, locked: int, published: int},
-     *     logs: array{total: int|mixed, size: int|mixed},
-     *     files: array{total: int, size: int},
-     *     webhookLogs: array{total: int, size: int}}},...}},
-     *     array<never, never>>
+     * @psalm-return JSONResponse<200|500, array{error?: string, registers?: list{0: array{id: 'orphaned'|'totals'|int, title: null|string, description: null|string, stats: array{objects: array{total: int, size: int, invalid: int, deleted: int, locked: int, published: int}, logs: array{total: int|mixed, size: int|mixed}, files: array{total: int, size: int}, webhookLogs?: array{total: int, size: int}}, schemas: list<array{allOf: array|null, anyOf: array|null, application: null|string, archive: array|null, authorization: array|null, configuration: array|null|string, created: null|string, deleted: null|string, depublished: null|string, description: null|string, groups: array<string, list<string>>|null, hardValidation: bool, icon: null|string, id: int, immutable: bool, maxDepth: int, oneOf: array|null, organisation: null|string, owner: null|string, properties: array, published: null|string, required: array, searchable: bool, slug: null|string, source: null|string, stats: array{files: array{size: int, total: int}, logs: array{size: int, total: int}, objects: array{deleted: int, invalid: int, locked: int, published: int, size: int, total: int}, webhookLogs: array{size: int, total: int}}, summary: null|string, title: null|string, updated: null|string, uri: null|string, uuid: null|string, version: null|string}>, uuid?: null|string, slug?: null|string, version?: null|string, source?: null|string, tablePrefix?: null|string, folder?: null|string, updated?: null|string, created?: null|string, owner?: null|string, application?: null|string, organisation?: null|string, authorization?: array|null, groups?: array<string, list<string>>, configuration?: array|null, quota?: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage?: array{storage: 0, bandwidth: 0, requests: 0, users: 0, groups: int<0, max>}, deleted?: null|string, published?: null|string, depublished?: null|string}, 1?: array{id: 'orphaned'|'totals'|int, uuid: null|string, slug: null|string, title: null|string, version: null|string, description: null|string, schemas: list<array{allOf: array|null, anyOf: array|null, application: null|string, archive: array|null, authorization: array|null, configuration: array|null|string, created: null|string, deleted: null|string, depublished: null|string, description: null|string, groups: array<string, list<string>>|null, hardValidation: bool, icon: null|string, id: int, immutable: bool, maxDepth: int, oneOf: array|null, organisation: null|string, owner: null|string, properties: array, published: null|string, required: array, searchable: bool, slug: null|string, source: null|string, stats: array{files: array{size: int, total: int}, logs: array{size: int, total: int}, objects: array{deleted: int, invalid: int, locked: int, published: int, size: int, total: int}, webhookLogs: array{size: int, total: int}}, summary: null|string, title: null|string, updated: null|string, uri: null|string, uuid: null|string, version: null|string}>, source: null|string, tablePrefix: null|string, folder: null|string, updated: null|string, created: null|string, owner: null|string, application: null|string, organisation: null|string, authorization: array|null, groups: array<string, list<string>>, configuration: array|null, quota: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: 0, groups: int<0, max>}, deleted: null|string, published: null|string, depublished: null|string, stats: array{objects: array{total: int, size: int, invalid: int, deleted: int, locked: int, published: int}, logs: array{total: int|mixed, size: int|mixed}, files: array{total: int, size: int}, webhookLogs: array{total: int, size: int}}},...}}, array<never, never>>
      */
     public function index(): JSONResponse
     {
@@ -276,8 +238,12 @@ class DashboardController extends Controller
      *
      * @psalm-return JSONResponse<200|500, array, array<never, never>>
      */
-    public function getAuditTrailActionChart(?string $from=null, ?string $till=null, ?int $registerId=null, ?int $schemaId=null): JSONResponse
-    {
+    public function getAuditTrailActionChart(
+        ?string $from=null,
+        ?string $till=null,
+        ?int $registerId=null,
+        ?int $schemaId=null
+    ): JSONResponse {
         try {
             if ($from !== null) {
                 $fromDate = new DateTime($from);
@@ -393,7 +359,11 @@ class DashboardController extends Controller
     public function getAuditTrailStatistics(?int $registerId=null, ?int $schemaId=null, ?int $hours=24): JSONResponse
     {
         try {
-            $data = $this->dashboardService->getAuditTrailStatistics(registerId: $registerId, schemaId: $schemaId, hours: $hours);
+            $data = $this->dashboardService->getAuditTrailStatistics(
+                registerId: $registerId,
+                schemaId: $schemaId,
+                hours: $hours
+            );
             return new JSONResponse(data: $data);
         } catch (\Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
@@ -418,7 +388,11 @@ class DashboardController extends Controller
     public function getAuditTrailActionDistribution(?int $registerId=null, ?int $schemaId=null, ?int $hours=24): JSONResponse
     {
         try {
-            $data = $this->dashboardService->getAuditTrailActionDistribution(registerId: $registerId, schemaId: $schemaId, hours: $hours);
+            $data = $this->dashboardService->getAuditTrailActionDistribution(
+                registerId: $registerId,
+                schemaId: $schemaId,
+                hours: $hours
+            );
             return new JSONResponse(data: $data);
         } catch (\Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
@@ -441,10 +415,19 @@ class DashboardController extends Controller
      *
      * @psalm-return JSONResponse<200|500, array, array<never, never>>
      */
-    public function getMostActiveObjects(?int $registerId=null, ?int $schemaId=null, ?int $limit=10, ?int $hours=24): JSONResponse
-    {
+    public function getMostActiveObjects(
+        ?int $registerId=null,
+        ?int $schemaId=null,
+        ?int $limit=10,
+        ?int $hours=24
+    ): JSONResponse {
         try {
-            $data = $this->dashboardService->getMostActiveObjects(registerId: $registerId, schemaId: $schemaId, limit: $limit, hours: $hours);
+            $data = $this->dashboardService->getMostActiveObjects(
+                registerId: $registerId,
+                schemaId: $schemaId,
+                limit: $limit,
+                hours: $hours
+            );
             return new JSONResponse(data: $data);
         } catch (\Exception $e) {
             $this->logger->error(

@@ -64,10 +64,10 @@ class PublishHandler
      * Sets the publication date to make the object publicly available.
      * If no date is provided, uses current date/time.
      *
-     * @param string        $uuid         Object UUID
-     * @param DateTime|null $date         Optional publication date (null = now)
-     * @param bool          $rbac         Apply RBAC filters
-     * @param bool          $multitenancy Apply multitenancy filters
+     * @param string        $uuid          Object UUID
+     * @param DateTime|null $date          Optional publication date (null = now)
+     * @param bool          $_rbac         Apply RBAC filters
+     * @param bool          $_multitenancy Apply multitenancy filters
      *
      * @return ObjectEntity Published object
      *
@@ -112,11 +112,15 @@ class PublishHandler
 
             // Record publish action in audit trail (with before/after states).
             try {
-                error_log('[PublishHandler] About to create audit trail for publish action');
-                $auditTrail = $this->auditTrailMapper->createAuditTrail(old: $objectBeforeClone, new: $object, action: 'publish');
-                error_log('[PublishHandler] Audit trail created: '.$auditTrail->getId());
+                $this->logger->debug('[PublishHandler] About to create audit trail for publish action');
+                $auditTrail = $this->auditTrailMapper->createAuditTrail(
+                    old: $objectBeforeClone,
+                    new: $object,
+                    action: 'publish'
+                );
+                $this->logger->debug('[PublishHandler] Audit trail created: '.$auditTrail->getId());
             } catch (\Exception $auditError) {
-                error_log('[PublishHandler] Failed to create audit trail: '.$auditError->getMessage());
+                $this->logger->warning('[PublishHandler] Failed to create audit trail: '.$auditError->getMessage());
             }
 
             $this->logger->info(
@@ -146,10 +150,10 @@ class PublishHandler
      * Sets the depublication date to make the object unavailable.
      * If no date is provided, uses current date/time.
      *
-     * @param string        $uuid         Object UUID
-     * @param DateTime|null $date         Optional depublication date (null = now)
-     * @param bool          $rbac         Apply RBAC filters
-     * @param bool          $multitenancy Apply multitenancy filters
+     * @param string        $uuid          Object UUID
+     * @param DateTime|null $date          Optional depublication date (null = now)
+     * @param bool          $_rbac         Apply RBAC filters
+     * @param bool          $_multitenancy Apply multitenancy filters
      *
      * @return ObjectEntity Depublished object
      *

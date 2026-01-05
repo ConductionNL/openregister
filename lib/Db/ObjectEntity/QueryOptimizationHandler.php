@@ -173,7 +173,10 @@ class QueryOptimizationHandler
                 unset($parameters, $sql);
                 gc_collect_cycles();
             } catch (Exception $e) {
-                $this->logger->error('Error processing large object', ['index' => $index + 1, 'exception' => $e->getMessage()]);
+                $this->logger->error(
+                    'Error processing large object',
+                    ['index' => $index + 1, 'exception' => $e->getMessage()]
+                );
 
                 // If it's not a packet size error, re-throw.
                 if (strpos($e->getMessage(), 'max_allowed_packet') === false) {
@@ -200,8 +203,11 @@ class QueryOptimizationHandler
      *
      * @psalm-return array{endTime: DateTime, duration: string, ...}
      */
-    public function bulkOwnerDeclaration(?string $defaultOwner=null, ?string $defaultOrganisation=null, int $batchSize=1000): array
-    {
+    public function bulkOwnerDeclaration(
+        ?string $defaultOwner=null,
+        ?string $defaultOrganisation=null,
+        int $batchSize=1000
+    ): array {
         if ($defaultOwner === null && $defaultOrganisation === null) {
             throw new InvalidArgumentException('At least one of defaultOwner or defaultOrganisation must be provided');
         }
@@ -310,7 +316,10 @@ class QueryOptimizationHandler
                 ->set(
                     'expires',
                     $qb->createFunction(
-                        sprintf('DATE_ADD(JSON_UNQUOTE(JSON_EXTRACT(deleted, "$.deletedAt")), INTERVAL %d SECOND)', $retentionSeconds)
+                        sprintf(
+                            'DATE_ADD(JSON_UNQUOTE(JSON_EXTRACT(deleted, "$.deletedAt")), INTERVAL %d SECOND)',
+                            $retentionSeconds
+                        )
                     )
                 )
                 ->where($qb->expr()->isNull('expires'))
@@ -435,8 +444,11 @@ class QueryOptimizationHandler
      * @psalm-return array{ownersAssigned: 0|1|2,
      *     organisationsAssigned: 0|1|2, errors: list<non-falsy-string>}
      */
-    private function processBulkOwnerDeclarationBatch(array $objects, ?string $defaultOwner, ?string $defaultOrganisation): array
-    {
+    private function processBulkOwnerDeclarationBatch(
+        array $objects,
+        ?string $defaultOwner,
+        ?string $defaultOrganisation
+    ): array {
         $batchResults = [
             'ownersAssigned'        => 0,
             'organisationsAssigned' => 0,
@@ -456,7 +468,9 @@ class QueryOptimizationHandler
                 }
 
                 // Check if organization needs to be assigned.
-                if ($defaultOrganisation !== null && (empty($objectData['organisation']) === true || $objectData['organisation'] === null)) {
+                if ($defaultOrganisation !== null
+                    && (empty($objectData['organisation']) === true || $objectData['organisation'] === null)
+                ) {
                     $updateData['organisation'] = $defaultOrganisation;
                     $needsUpdate = true;
                     $batchResults['organisationsAssigned']++;
@@ -530,7 +544,7 @@ class QueryOptimizationHandler
             $size       = 0;
             $reflection = new ReflectionClass($object);
             foreach ($reflection->getProperties() as $property) {
-                $property->setAccessible(true);
+                // Note: setAccessible() is no longer needed in PHP 8.1+
                 $value = $property->getValue($object);
 
                 if (is_string($value) === true) {

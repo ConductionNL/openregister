@@ -128,18 +128,6 @@ class Conversation extends Entity implements JsonSerializable
     protected ?DateTime $deletedAt = null;
 
     /**
-     * Soft delete timestamp (snake_case for database compatibility).
-     *
-     * @var                                           DateTime|null
-     * @SuppressWarnings(PHPMD.CamelCaseVariableName)
-     * Reason: snake_case is required for database column mapping compatibility.
-     * The database column is named 'deleted_at' and must match exactly.
-     */
-    // phpcs:ignore Generic.NamingConventions.CamelCapsVariableName.NotCamelCaps -- DB column mapping
-    // phpcs:ignore Squiz.Commenting.VariableComment.Missing -- Doc comment present but not recognized due to suppression
-    protected ?DateTime $deleted_at = null;
-
-    /**
      * Creation timestamp
      *
      * @var DateTime|null Created timestamp

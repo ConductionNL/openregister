@@ -248,7 +248,9 @@ class ContextRetrievalHandler
                 $isObject = ($result['entity_type'] ?? '') === 'object';
 
                 // Check type filters.
-                if (($isFile === true && $includeFiles === false) === true || ($isObject === true && $includeObjects === false) === true) {
+                $skipFile   = $isFile === true && $includeFiles === false;
+                $skipObject = $isObject === true && $includeObjects === false;
+                if ($skipFile === true || $skipObject === true) {
                     continue;
                 }
 

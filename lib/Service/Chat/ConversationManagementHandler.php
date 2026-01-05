@@ -195,15 +195,15 @@ class ConversationManagementHandler
                     return $this->generateFallbackTitle($firstMessage);
                 }//end if
 
-                /*
-                 * @psalm-suppress UndefinedPropertyAssignment - LLPhant\OpenAIConfig has dynamic properties
+                /**
+                 * @psalm-suppress UndefinedPropertyAssignment LLPhant\OpenAIConfig has dynamic properties
                  */
-
                 $config->temperature = 0.7;
             }//end if
 
             // Generate title.
-            $prompt  = "Generate a short, descriptive title (max 60 characters) for a conversation that starts with this message:\n\n";
+            $prompt  = 'Generate a short, descriptive title (max 60 characters) for a conversation ';
+            $prompt .= "that starts with this message:\n\n";
             $prompt .= "\"{$firstMessage}\"\n\n";
             $prompt .= "Title:";
 
@@ -212,12 +212,10 @@ class ConversationManagementHandler
                 // Use ResponseGenerationHandler's Fireworks method.
                 $reflectionClass = new ReflectionClass($this->responseHandler);
                 $method          = $reflectionClass->getMethod('callFireworksChatAPI');
-                $method->setAccessible(true);
 
-                /*
-                 * @psalm-suppress UndefinedPropertyFetch - LLPhant\OllamaConfig has dynamic properties
+                /**
+                 * @psalm-suppress UndefinedPropertyFetch LLPhant\OpenAIConfig has dynamic properties
                  */
-
                 $title = $method->invoke(
                     $this->responseHandler,
                     $config->apiKey,
@@ -308,7 +306,11 @@ class ConversationManagementHandler
         // Find all existing titles that match this pattern.
         // Using LIKE with % to catch both exact matches and numbered variants.
         $pattern        = $baseTitle.'%';
-        $existingTitles = $this->conversationMapper->findTitlesByUserAgent(userId: $userId, agentId: $agentId, titlePattern: $pattern);
+        $existingTitles = $this->conversationMapper->findTitlesByUserAgent(
+            userId: $userId,
+            agentId: $agentId,
+            titlePattern: $pattern
+        );
 
         // If no matches, the base title is unique.
         if (empty($existingTitles) === true) {
@@ -502,7 +504,8 @@ class ConversationManagementHandler
         }//end if
 
         // Generate summary.
-        $prompt  = "Summarize the following conversation concisely. Focus on key topics, decisions, and information discussed:\n\n";
+        $prompt  = 'Summarize the following conversation concisely. ';
+        $prompt .= "Focus on key topics, decisions, and information discussed:\n\n";
         $prompt .= $conversationText;
         $prompt .= "\n\nSummary:";
 
@@ -511,12 +514,10 @@ class ConversationManagementHandler
             // Use ResponseGenerationHandler's Fireworks method via reflection.
             $reflectionClass = new ReflectionClass($this->responseHandler);
             $method          = $reflectionClass->getMethod('callFireworksChatAPI');
-            $method->setAccessible(true);
 
-            /*
-             * @psalm-suppress UndefinedPropertyFetch - LLPhant\OllamaConfig has dynamic properties
+            /**
+             * @psalm-suppress UndefinedPropertyFetch LLPhant\OpenAIConfig has dynamic properties
              */
-
             return $method->invoke(
                 $this->responseHandler,
                 $config->apiKey,

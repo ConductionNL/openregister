@@ -74,7 +74,9 @@ class Version1Date20251114130000 extends SimpleMigrationStep
     {
         $schema = $schemaClosure();
 
-        if ($schema->hasTable('openregister_schemas') === false || $schema->getTable('openregister_schemas')->hasColumn('extend') === false) {
+        $hasTable  = $schema->hasTable('openregister_schemas');
+        $hasColumn = $hasTable && $schema->getTable('openregister_schemas')->hasColumn('extend');
+        if ($hasTable === false || $hasColumn === false) {
             return;
         }
 

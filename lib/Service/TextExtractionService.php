@@ -266,7 +266,10 @@ class TextExtractionService
         );
         if ($forceReExtract === false && $isUpToDate === true) {
             // Object is up-to-date and all chunks are still valid.
-            $this->logger->info('[TextExtractionService] Object already processed and up-to-date', ['objectId' => $objectId]);
+            $this->logger->info(
+                '[TextExtractionService] Object already processed and up-to-date',
+                ['objectId' => $objectId]
+            );
             return;
         }
 
@@ -471,7 +474,10 @@ class TextExtractionService
      *
      * @return (float|null|string)[]
      *
-     * @psalm-return array{language: 'en'|'nl'|null, language_level: null, language_confidence: float|null, detection_method: 'heuristic'|'none'}
+     * @psalm-return array{
+     *     language: 'en'|'nl'|null, language_level: null, language_confidence: float|null,
+     *     detection_method: 'heuristic'|'none'
+     * }
      */
     private function detectLanguageSignals(string $text): array
     {
@@ -629,7 +635,12 @@ class TextExtractionService
                 $this->chunkMapper->insert($chunkEntity);
             }
 
-            $this->persistMetadataChunk(sourceType: $sourceType, sourceId: $sourceId, payload: $payload, sourceTimestamp: $sourceTimestamp);
+            $this->persistMetadataChunk(
+                sourceType: $sourceType,
+                sourceId: $sourceId,
+                payload: $payload,
+                sourceTimestamp: $sourceTimestamp
+            );
 
             $this->db->commit();
         } catch (Throwable $throwable) {
@@ -1192,7 +1203,9 @@ class TextExtractionService
                     'fileId' => $file->getId(),
                 ]
             );
-            throw new Exception("PDF parser library (smalot/pdfparser) is not installed. Run: composer require smalot/pdfparser");
+            $msg  = "PDF parser library (smalot/pdfparser) is not installed. ";
+            $msg .= "Run: composer require smalot/pdfparser";
+            throw new Exception($msg);
         }
 
         try {
@@ -1272,7 +1285,9 @@ class TextExtractionService
                     'fileId' => $file->getId(),
                 ]
             );
-            throw new Exception("PhpWord library (phpoffice/phpword) is not installed. Run: composer require phpoffice/phpword");
+            $msg  = "PhpWord library (phpoffice/phpword) is not installed. ";
+            $msg .= "Run: composer require phpoffice/phpword";
+            throw new Exception($msg);
         }
 
         try {
@@ -1367,7 +1382,9 @@ class TextExtractionService
                     'fileId' => $file->getId(),
                 ]
             );
-            throw new Exception("PhpSpreadsheet library (phpoffice/phpspreadsheet) is not installed. Run: composer require phpoffice/phpspreadsheet");
+            $msg  = "PhpSpreadsheet library (phpoffice/phpspreadsheet) is not installed. ";
+            $msg .= "Run: composer require phpoffice/phpspreadsheet";
+            throw new Exception($msg);
         }
 
         try {
@@ -1491,9 +1508,19 @@ class TextExtractionService
 
         // Choose chunking strategy.
         $chunks = match ($strategy) {
-            self::FIXED_SIZE => $this->chunkFixedSize(text: $text, chunkSize: $chunkSize, chunkOverlap: $chunkOverlap),
-            self::RECURSIVE_CHARACTER => $this->chunkRecursive(text: $text, chunkSize: $chunkSize, chunkOverlap: $chunkOverlap),
-            default => $this->chunkRecursive(text: $text, chunkSize: $chunkSize, chunkOverlap: $chunkOverlap)
+            self::FIXED_SIZE => $this->chunkFixedSize(
+                text: $text,
+                    chunkSize: $chunkSize, chunkOverlap: $chunkOverlap
+            ),
+            self::RECURSIVE_CHARACTER => $this->chunkRecursive(
+                text: $text,
+                    chunkSize: $chunkSize, chunkOverlap: $chunkOverlap
+            ),
+            default => $this->chunkRecursive(
+                text: $text,
+                    chunkSize: $chunkSize,
+                    chunkOverlap: $chunkOverlap
+            )
         };
 
         // Respect max chunks limit.
@@ -1657,7 +1684,12 @@ class TextExtractionService
         // Words.
         ];
 
-        return $this->recursiveSplit(text: $text, separators: $separators, chunkSize: $chunkSize, chunkOverlap: $chunkOverlap);
+        return $this->recursiveSplit(
+            text: $text,
+                separators: $separators,
+                chunkSize: $chunkSize,
+                chunkOverlap: $chunkOverlap
+        );
     }//end chunkRecursive()
 
     /**
@@ -1735,7 +1767,12 @@ class TextExtractionService
                 } else {
                     // Single split is too large, need to split it further.
                     if (strlen($split) > $chunkSize) {
-                        $subChunks = $this->recursiveSplit(text: $split, separators: $separators, chunkSize: $chunkSize, chunkOverlap: $chunkOverlap);
+                        $subChunks = $this->recursiveSplit(
+                            text: $split,
+                            separators: $separators,
+                            chunkSize: $chunkSize,
+                            chunkOverlap: $chunkOverlap
+                        );
 
                         // Adjust offsets.
                         foreach ($subChunks as $subChunk) {
@@ -1750,7 +1787,7 @@ class TextExtractionService
                         $currentChunk   = '';
                     } else {
                         $currentChunk = $split;
-                    }
+                    }//end if
                 }//end if
             }//end if
         }//end foreach

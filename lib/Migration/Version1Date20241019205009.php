@@ -79,7 +79,8 @@ class Version1Date20241019205009 extends SimpleMigrationStep
         }
 
         if ($table->hasColumn('version') === false) {
-            $table->addColumn(name: 'version', typeName: Types::STRING, options: ['notnull' => true, 'length' => 255, 'default' => '0.0.1']);
+            $versionOptions = ['notnull' => true, 'length' => 255, 'default' => '0.0.1'];
+            $table->addColumn(name: 'version', typeName: Types::STRING, options: $versionOptions);
         }
 
         // Update the openregister_schemas table.
@@ -97,13 +98,15 @@ class Version1Date20241019205009 extends SimpleMigrationStep
         }
 
         if ($table->hasColumn('version') === false) {
-            $table->addColumn(name: 'version', typeName: Types::STRING, options: ['notnull' => true, 'length' => 255, 'default' => '0.0.1']);
+            $versionOptions = ['notnull' => true, 'length' => 255, 'default' => '0.0.1'];
+            $table->addColumn(name: 'version', typeName: Types::STRING, options: $versionOptions);
         }
 
         // Update the openregister_objects table.
         $table = $schema->getTable('openregister_objects');
         if ($table->hasColumn('version') === false) {
-            $table->addColumn(name: 'version', typeName: Types::STRING, options: ['notnull' => true, 'length' => 255, 'default' => '0.0.1']);
+            $versionOptions = ['notnull' => true, 'length' => 255, 'default' => '0.0.1'];
+            $table->addColumn(name: 'version', typeName: Types::STRING, options: $versionOptions);
         }
 
         return $schema;

@@ -92,7 +92,8 @@ class Version1Date20250904170000 extends SimpleMigrationStep
 
         // **RELATIONSHIP TABLES OPTIMIZATION**: Disabled due to MySQL key length limitations.
         // Relationship table indexes are skipped to avoid key length issues with VARCHAR fields.
-        $output->info(message: 'ℹ️  Skipping relationship table optimizations (potential key length issues with text fields)');
+        $message = 'Skipping relationship table optimizations (potential key length issues with text fields)';
+        $output->info(message: 'ℹ️  '.$message);
 
         $output->info(message: '🎯 Database performance optimization completed successfully');
         $output->info('📈 Expected performance improvement: 60-80% reduction in query time');
@@ -129,11 +130,15 @@ class Version1Date20250904170000 extends SimpleMigrationStep
         }
 
         if ($tableName === 'openregister_schema_properties') {
-            if ($table->hasIndex('idx_schema_property') === false && $table->hasColumn('schema_id') === true && $table->hasColumn('name') === true) {
+            $hasIndex    = $table->hasIndex('idx_schema_property') === false;
+            $hasSchemaId = $table->hasColumn('schema_id') === true;
+            $hasName     = $table->hasColumn('name') === true;
+            if ($hasIndex === true && $hasSchemaId === true && $hasName === true) {
                 try {
                     // Skip name column in index due to potential key length issues with text fields.
                     $table->addIndex(['schema_id'], 'idx_schema_property');
-                    $output->info(message: "✅ Optimized {$tableName} with schema index (name column skipped due to key length limits)");
+                    $msg = "Optimized {$tableName} with schema index (name column skipped due to key length limits)";
+                    $output->info(message: "✅ ".$msg);
                 } catch (\Exception $e) {
                     $output->info("⚠️  Could not optimize {$tableName}: ".$e->getMessage());
                 }

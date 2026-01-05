@@ -51,7 +51,7 @@ class SetupHandler
     /**
      * SOLR connection configuration
      *
-     * @var array{host: string, port: int, scheme: string, path: string, username?: string, password?: string}
+     * @var array<string, mixed>
      */
     private array $solrConfig;
 
@@ -111,12 +111,14 @@ class SetupHandler
 
         // Get authenticated HTTP client and configuration from IndexService.
         $this->httpClient = $solrService->getHttpClient();
+        /** @psalm-var array<string, mixed> */
         $this->solrConfig = $solrService->getSolrConfig();
 
         $this->logger->info(
             'SOLR Setup: Using authenticated HTTP client from IndexService',
             [
-                'has_credentials' => empty($this->solrConfig['username']) === false && empty($this->solrConfig['password']) === false,
+                'has_credentials' => empty($this->solrConfig['username']) === false
+                    && empty($this->solrConfig['password']) === false,
                 'username'        => $this->solrConfig['username'] ?? 'not_set',
                 'password_set'    => empty($this->solrConfig['password']) === false,
                 'host'            => $this->solrConfig['host'] ?? 'unknown',
@@ -138,8 +140,13 @@ class SetupHandler
      *
      * @return void
      */
-    private function trackStep(int $stepNumber, string $stepName, string $status, string $description, array $details=[]): void
-    {
+    private function trackStep(
+        int $stepNumber,
+        string $stepName,
+        string $status,
+        string $description,
+        array $details=[]
+    ): void {
         $stepData = [
             'step_number' => $stepNumber,
             'step_name'   => $stepName,
@@ -182,6 +189,22 @@ class SetupHandler
     }//end buildSolrUrl()
 
     /**
+     * Extract API calls information from a propagation result.
+     *
+     * @param array $propagationResult The propagation result array.
+     *
+     * @return array The API calls array with configset_list_refresh and cluster_status_sync.
+     */
+    private function getApiCallsFromResult(array $propagationResult): array
+    {
+        $summary = $propagationResult['summary'] ?? [];
+        return [
+            'configset_list_refresh' => $summary['configset_list_refresh'] ?? 'unknown',
+            'cluster_status_sync'    => $summary['cluster_status_sync'] ?? 'unknown',
+        ];
+    }//end getApiCallsFromResult()
+
+    /**
      * Initialize all setup steps as pending to show complete progress view
      *
      * This ensures that users can see all steps in the setup modal,
@@ -195,7 +218,10 @@ class SetupHandler
             1 => ['step_name' => 'SOLR Connectivity', 'description' => 'Verify SOLR server connectivity and authentication'],
             2 => ['step_name' => 'EnsureTenantConfigSet', 'description' => 'Create or verify tenant-specific configSet'],
             3 => ['step_name' => 'Collection Creation', 'description' => 'Create or verify tenant-specific collection'],
-            4 => ['step_name' => 'Schema Configuration', 'description' => 'Configure schema fields for ObjectEntity metadata'],
+            4 => [
+                'step_name'   => 'Schema Configuration',
+                'description' => 'Configure schema fields for ObjectEntity metadata',
+            ],
             5 => ['step_name' => 'Setup Validation', 'description' => 'Validate complete SOLR setup and functionality'],
         ];
 
@@ -360,7 +386,12 @@ class SetupHandler
                     return false;
                 }//end if
 
-                $this->trackStep(stepNumber: 1, stepName: 'SOLR Connectivity', status: 'completed', description: 'SOLR server connectivity verified');
+                $this->trackStep(
+                    stepNumber: 1,
+                    stepName: 'SOLR Connectivity',
+                    status: 'completed',
+                    description: 'SOLR server connectivity verified'
+                );
                 $this->setupProgress['completed_steps']++;
             } catch (\Exception $e) {
                 $this->trackStep(
@@ -399,6 +430,8 @@ class SetupHandler
                 if ($this->ensureTenantConfigSet() === false) {
                     // Use detailed error information from createConfigSet if available.
                     $errorDetails = $this->lastErrorDetails ?? [];
+                    $defaultErr   = 'Failed to create tenant configSet "'.$tenantConfigSetName.'"';
+                    $actualError  = $errorDetails['error_message'] ?? $defaultErr;
 
                     $this->trackStep(
                         stepNumber: 2,
@@ -410,8 +443,7 @@ class SetupHandler
                             'template'               => '_default',
                             'error_type'             => $errorDetails['error_type'] ?? 'configset_creation_failure',
                             'url_attempted'          => $errorDetails['url_attempted'] ?? 'unknown',
-                            'actual_error'           => $errorDetails['error_message'] ?? // phpcs:ignore Generic.Files.LineLength.TooLong -- Error message
-                                'Failed to create tenant configSet "'.$tenantConfigSetName.'"',
+                            'actual_error'           => $actualError,
                             'guzzle_response_status' => $errorDetails['guzzle_response_status'] ?? null,
                             'guzzle_response_body'   => $errorDetails['guzzle_response_body'] ?? null,
                             'solr_error_code'        => $errorDetails['solr_error_code'] ?? null,
@@ -497,10 +529,7 @@ class SetupHandler
                                 'successful_operations' => $propagationResult['successful_operations'] ?? 0,
                                 'total_operations'      => $propagationResult['total_operations'] ?? 0,
                                 'operations_attempted'  => $propagationResult['operations'] ?? [],
-                                'api_calls'             => [
-                                    'configset_list_refresh' => $propagationResult['summary']['configset_list_refresh'] ?? 'unknown',
-                                    'cluster_status_sync'    => $propagationResult['summary']['cluster_status_sync'] ?? 'unknown',
-                                ],
+                                'api_calls'             => $this->getApiCallsFromResult($propagationResult),
                                 'detailed_operations'   => $propagationResult['operations'] ?? [],
                             ],
                         ]
@@ -530,10 +559,7 @@ class SetupHandler
                                 'operations_performed'  => $propagationResult['operations'] ?? [],
                                 'cluster_sync_status'   => $propagationResult['cluster_sync'] ?? 'unknown',
                                 'cache_refresh_status'  => $propagationResult['cache_refresh'] ?? 'unknown',
-                                'api_calls'             => [
-                                    'configset_list_refresh' => $propagationResult['summary']['configset_list_refresh'] ?? 'unknown',
-                                    'cluster_status_sync'    => $propagationResult['summary']['cluster_status_sync'] ?? 'unknown',
-                                ],
+                                'api_calls'             => $this->getApiCallsFromResult($propagationResult),
                                 'detailed_operations'   => $propagationResult['operations'] ?? [],
                             ],
                         ]
@@ -709,11 +735,21 @@ class SetupHandler
             }//end try
 
             // Step 6: Validate setup.
-            $this->trackStep(stepNumber: 6, stepName: 'Setup Validation', status: 'started', description: 'Validating SOLR setup completion');
+            $this->trackStep(
+                stepNumber: 6,
+                stepName: 'Setup Validation',
+                status: 'started',
+                description: 'Validating SOLR setup completion'
+            );
 
             try {
                 if ($this->validateSetup() === false) {
-                    $this->trackStep(stepNumber: 6, stepName: 'Setup Validation', status: 'failed', description: 'Setup validation failed');
+                    $this->trackStep(
+                        stepNumber: 6,
+                        stepName: 'Setup Validation',
+                        status: 'failed',
+                        description: 'Setup validation failed'
+                    );
 
                     $this->lastErrorDetails = [
                         'operation'       => 'validateSetup',
@@ -729,9 +765,14 @@ class SetupHandler
                         ],
                     ];
                     return false;
-                }
+                }//end if
 
-                $this->trackStep(stepNumber: 6, stepName: 'Setup Validation', status: 'completed', description: 'Setup validation passed');
+                $this->trackStep(
+                    stepNumber: 6,
+                    stepName: 'Setup Validation',
+                    status: 'completed',
+                    description: 'Setup validation passed'
+                );
                 $this->infrastructureCreated['multi_tenant_ready'] = true;
                 $this->infrastructureCreated['cloud_mode']         = true;
                 $this->setupProgress['completed_steps']++;
@@ -763,6 +804,9 @@ class SetupHandler
 
             $tenantCollectionName = $this->getTenantCollectionName();
             $tenantConfigSetName  = $this->getTenantConfigSetName();
+            $solrHost   = $this->solrConfig['host'] ?? 'localhost';
+            $solrPort   = $this->solrConfig['port'] ?? '8983';
+            $adminUiUrl = 'http://'.$solrHost.':'.$solrPort.'/solr/';
             $this->logger->info(
                 '✅ SOLR setup completed successfully (SolrCloud mode)',
                 [
@@ -772,10 +816,9 @@ class SetupHandler
                     'setup_validated'           => true,
                     'completed_steps'           => $this->setupProgress['completed_steps'],
                     'total_steps'               => $this->setupProgress['total_steps'],
-                    'solr_host'                 => $this->solrConfig['host'] ?? 'localhost',
-                    'solr_port'                 => $this->solrConfig['port'] ?? '8983',
-                    'admin_ui_url'              => 'http://'.($this->solrConfig['host'] ?? 'localhost').':'. // phpcs:ignore Generic.Files.LineLength.TooLong -- URL
-                        ($this->solrConfig['port'] ?? '8983').'/solr/',
+                    'solr_host'                 => $solrHost,
+                    'solr_port'                 => $solrPort,
+                    'admin_ui_url'              => $adminUiUrl,
                 ]
             );
 
@@ -1111,7 +1154,8 @@ class SetupHandler
                 'configSet'                 => $newConfigSetName,
                 'template'                  => $templateConfigSetName,
                 'url'                       => $url,
-                'authentication_configured' => empty($this->solrConfig['username']) === false && empty($this->solrConfig['password']) === false,
+                'authentication_configured' => empty($this->solrConfig['username']) === false
+                    && empty($this->solrConfig['password']) === false,
             ]
         );
 
@@ -1211,7 +1255,8 @@ class SetupHandler
             // Check for authentication issues.
             if (strpos($e->getMessage(), '401') !== false || strpos($e->getMessage(), 'Unauthorized') !== false) {
                 $logData['authentication_issue'] = true;
-                $logData['has_credentials']      = empty($this->solrConfig['username']) === false && empty($this->solrConfig['password']) === false;
+                $logData['has_credentials']      = empty($this->solrConfig['username']) === false
+                    && empty($this->solrConfig['password']) === false;
             }
 
             // Check for network connectivity issues.
@@ -1428,7 +1473,8 @@ class SetupHandler
             );
 
             // Track newly created collection.
-            if ($success === true && in_array($tenantCollectionName, $this->infrastructureCreated['collections_created']) === false) {
+            $alreadyCreated = in_array($tenantCollectionName, $this->infrastructureCreated['collections_created']);
+            if ($success === true && $alreadyCreated === false) {
                 $this->infrastructureCreated['collections_created'][] = $tenantCollectionName;
             }
 
@@ -1447,7 +1493,8 @@ class SetupHandler
             }
 
             // @psalm-suppress UndefinedInterfaceMethod - Methods exist on specific exception types
-            if (method_exists($e, 'hasResponse') === true && $e->hasResponse() === true && method_exists($e, 'getResponse') === true) {
+            $hasResponseMethod = method_exists($e, 'hasResponse') === true && $e->hasResponse() === true;
+            if ($hasResponseMethod === true && method_exists($e, 'getResponse') === true) {
                 $response = $e->getResponse();
                 if ($response !== null) {
                     $responseCode = $response->getStatusCode();
@@ -1492,7 +1539,9 @@ class SetupHandler
                     $errorCategory = 'solr_validation_error';
 
                     // Check if this is retry details from createCollectionWithRetry.
-                    if (($decodedResponse['attempts'] ?? null) !== null && (($decodedResponse['attempt_timestamps'] ?? null) !== null) === true) {
+                    $hasAttempts   = ($decodedResponse['attempts'] ?? null) !== null;
+                    $hasTimestamps = ($decodedResponse['attempt_timestamps'] ?? null) !== null;
+                    if ($hasAttempts === true && $hasTimestamps === true) {
                         $retryDetails = $decodedResponse;
                         $solrResponse = $decodedResponse['last_solr_response'] ?? null;
                     }
@@ -1592,7 +1641,7 @@ class SetupHandler
                 // Direct attempt to create collection.
                 $result  = $this->solrService->createCollection(
                     name: $collectionName,
-                    config: $configSetName
+                    config: ['configSet' => $configSetName]
                 );
                 $success = isset($result['success']) && $result['success'] === true;
 
@@ -1661,9 +1710,11 @@ class SetupHandler
                     $totalElapsed = time() - $startTime;
                     $retryDetails['total_elapsed_seconds'] = $totalElapsed;
 
-                    $message = "SOLR ConfigSet propagation timeout: The configSet was created successfully but is still propagating across the SOLR cluster. ".
-                        "This is normal in distributed SOLR environments. Attempted {$attempt} times over {$totalElapsed} seconds. ".
-                        "Please wait 2-5 minutes and try the setup again.";
+                    $msg1    = 'SOLR ConfigSet propagation timeout: ';
+                    $msg2    = 'The configSet was created successfully but is still propagating. ';
+                    $msg3    = "This is normal in distributed SOLR. Attempted {$attempt} times ";
+                    $msg4    = "over {$totalElapsed} seconds. Please wait 2-5 minutes and retry.";
+                    $message = $msg1.$msg2.$msg3.$msg4;
                     throw new Exception($message, 500, new Exception(json_encode($retryDetails)));
                 }
 
@@ -2356,7 +2407,8 @@ class SetupHandler
             if ($result['success'] !== true) {
                 $fieldResults['fields_failed']++;
                 $fieldResults['failed_fields'][] = $fieldName;
-                $this->logger->error('Failed to configure field', ['field' => $fieldName, 'error' => $result['error'] ?? 'Unknown error']);
+                $errorMsg = $result['error'] ?? 'Unknown error';
+                $this->logger->error('Failed to configure field', ['field' => $fieldName, 'error' => $errorMsg]);
                 $success = false;
                 continue;
             }
@@ -2600,7 +2652,9 @@ class SetupHandler
      * @return (bool|string)[][] Field definitions with SOLR type configuration
      *
      * @psalm-return array{
-     *     self_tenant: array{type: 'string', stored: true, indexed: true, multiValued: false, required: true, docValues: true},
+     *     self_tenant: array{
+     *         type: 'string', stored: true, indexed: true, multiValued: false, required: true, docValues: true
+     *     },
      *     self_object_id: array{type: 'pint', stored: true, indexed: true, multiValued: false, docValues: false},
      *     self_uuid: array{type: 'string', stored: true, indexed: true, multiValued: false, docValues: false},
      *     self_register: array{type: 'pint', stored: true, indexed: true, multiValued: false, docValues: true},

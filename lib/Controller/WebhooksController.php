@@ -1161,9 +1161,17 @@ class WebhooksController extends Controller
             // If webhook_id is provided and valid, use findByWebhook method.
             if ($webhookId !== null && $webhookId !== '' && $webhookId !== '0') {
                 $webhookIdInt = (int) $webhookId;
-                $logs         = $this->webhookLogMapper->findByWebhook(webhookId: $webhookIdInt, limit: $limit, offset: $offset);
+                $logs         = $this->webhookLogMapper->findByWebhook(
+                    webhookId: $webhookIdInt,
+                    limit: $limit,
+                    offset: $offset
+                );
                 // Get total count for this webhook.
-                $allLogsForWebhook = $this->webhookLogMapper->findByWebhook(webhookId: $webhookIdInt, limit: null, offset: null);
+                $allLogsForWebhook = $this->webhookLogMapper->findByWebhook(
+                    webhookId: $webhookIdInt,
+                    limit: null,
+                    offset: null
+                );
                 $total = count($allLogsForWebhook);
             } else {
                 // Get all logs.
@@ -1171,10 +1179,12 @@ class WebhooksController extends Controller
                 // Get total count for all logs.
                 $allLogs = $this->webhookLogMapper->findAll(limit: null, offset: null);
                 $total   = count($allLogs);
-            }
+            }//end if
 
             // Filter by success status if provided.
-            if ($success !== null && $success !== '' && ($success === 'true' || $success === '1' || $success === 'false' || $success === '0')) {
+            if ($success !== null && $success !== ''
+                && ($success === 'true' || $success === '1' || $success === 'false' || $success === '0')
+            ) {
                 $successBool  = $success === 'true' || $success === '1';
                 $filteredLogs = array_filter(
                     $logs,
@@ -1187,7 +1197,11 @@ class WebhooksController extends Controller
                 // Recalculate total if filtering by success.
                 if ($webhookId !== null && $webhookId !== '' && $webhookId !== '0') {
                     $webhookIdInt      = (int) $webhookId;
-                    $allLogsForWebhook = $this->webhookLogMapper->findByWebhook(webhookId: $webhookIdInt, limit: null, offset: null);
+                    $allLogsForWebhook = $this->webhookLogMapper->findByWebhook(
+                    webhookId: $webhookIdInt,
+                    limit: null,
+                    offset: null
+                    );
                     $total = count(
                         array_filter(
                             $allLogsForWebhook,
@@ -1244,10 +1258,7 @@ class WebhooksController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<int,
-     *     array{error?: string, success?: bool, message?: null|string,
-     *     error_details?: array{status_code: int|null,
-     *     response_body: null|string}}, array<never, never>>
+     * @return JSONResponse JSON response with retry result
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]

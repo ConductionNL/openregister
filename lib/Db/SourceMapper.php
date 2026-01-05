@@ -87,14 +87,28 @@ class SourceMapper extends QBMapper
     private IEventDispatcher $eventDispatcher;
 
     /**
+     * Organisation mapper for multi-tenancy
+     *
+     * @var OrganisationMapper
+     */
+    protected OrganisationMapper $organisationMapper;
+
+    /**
+     * App configuration for multitenancy settings
+     *
+     * @var IAppConfig
+     */
+    protected IAppConfig $appConfig;
+
+    /**
      * Constructor
      *
-     * @param IDBConnection    $db                 Database connection
+     * @param IDBConnection      $db                 Database connection
      * @param OrganisationMapper $organisationMapper Organisation mapper
-     * @param IUserSession     $userSession        User session
-     * @param IGroupManager    $groupManager       Group manager
-     * @param IEventDispatcher $eventDispatcher    Event dispatcher
-     * @param IAppConfig       $appConfig          App configuration
+     * @param IUserSession       $userSession        User session
+     * @param IGroupManager      $groupManager       Group manager
+     * @param IEventDispatcher   $eventDispatcher    Event dispatcher
+     * @param IAppConfig         $appConfig          App configuration
      */
     public function __construct(
         IDBConnection $db,
@@ -152,7 +166,7 @@ class SourceMapper extends QBMapper
      *
      * @throws \Exception If user doesn't have read permission
      *
-     * @psalm-return list<OCA\OpenRegister\Db\Source>
+     * @psalm-return list<Source>
      */
     public function findAll(
         ?int $limit=null,

@@ -214,12 +214,14 @@ class FacetHandler
 
         $executionTime = round((microtime(true) - $startTime) * 1000, 2);
 
+        $selfCount   = count($facetableFields['@self'] ?? []);
+        $objectCount = count($facetableFields['object_fields'] ?? []);
         $this->logger->debug(
             message: 'Facetable fields discovery completed',
             context: [
                 'executionTime'       => $executionTime.'ms',
                 'schemaCount'         => count($schemas),
-                'facetableFieldCount' => count($facetableFields['@self'] ?? []) + count($facetableFields['object_fields'] ?? []),
+                'facetableFieldCount' => $selfCount + $objectCount,
             ]
         );
 

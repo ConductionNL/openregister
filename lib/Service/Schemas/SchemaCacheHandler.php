@@ -304,7 +304,12 @@ class SchemaCacheHandler
     public function cacheSchemaConfiguration(Schema $schema, int $ttl=self::DEFAULT_TTL): void
     {
         $configuration = $schema->getConfiguration();
-        $this->setCachedData(schemaId: $schema->getId(), cacheKey: self::CACHE_KEY_CONFIGURATION, data: $configuration, ttl: $ttl);
+        $this->setCachedData(
+            schemaId: $schema->getId(),
+            cacheKey: self::CACHE_KEY_CONFIGURATION,
+            data: $configuration,
+            ttl: $ttl
+        );
     }//end cacheSchemaConfiguration()
 
     /**
@@ -692,11 +697,13 @@ class SchemaCacheHandler
             $schema->setOrganisation($cachedData['organisation']);
             $schema->setOwner($cachedData['owner']);
 
-            if (($cachedData['created'] ?? null) !== null && ($cachedData['created'] !== null) === true && ($cachedData['created'] !== '') === true) {
-                $schema->setCreated(new DateTime($cachedData['created']));
+            $createdValue = $cachedData['created'] ?? null;
+            if ($createdValue !== null && $createdValue !== '') {
+                $schema->setCreated(new DateTime($createdValue));
             }
 
-            if (($cachedData['updated'] ?? null) !== null && ($cachedData['updated'] !== null) === true && ($cachedData['updated'] !== '') === true) {
+            $updatedValue = $cachedData['updated'] ?? null;
+            if ($updatedValue !== null && $updatedValue !== '') {
                 $schema->setUpdated(new DateTime($cachedData['updated']));
             }
 

@@ -105,7 +105,7 @@ class SourcesController extends Controller
      *
      * @param string $id The ID of the source to retrieve
      *
-     * @return JSONResponse A JSON response containing the source details
+     * @return JSONResponse |JSONResponse<404, array{error: 'Not Found'}, array<never, never>>
      *
      * @NoAdminRequired
      *

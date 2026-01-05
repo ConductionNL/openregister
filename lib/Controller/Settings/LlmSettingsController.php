@@ -205,9 +205,10 @@ class LlmSettingsController extends Controller
     {
         try {
             // Get parameters from request.
-            $provider = (string) $this->request->getParam('provider');
-            $config   = $this->request->getParam('config', []);
-            $testText = (string) $this->request->getParam('testText', 'This is a test embedding to verify the LLM configuration.');
+            $provider        = (string) $this->request->getParam('provider');
+            $config          = $this->request->getParam('config', []);
+            $defaultTestText = 'This is a test embedding to verify the LLM configuration.';
+            $testText        = (string) $this->request->getParam('testText', $defaultTestText);
 
             // Validate input.
             if (empty($provider) === true) {

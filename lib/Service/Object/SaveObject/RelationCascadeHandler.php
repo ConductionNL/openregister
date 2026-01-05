@@ -511,11 +511,19 @@ class RelationCascadeHandler
 
             // Handle array of objects.
             if (isset($property['type']) === true && $property['type'] === 'array') {
-                $data[$propertyName] = $this->cascadeMultipleObjects(objectEntity: $objectEntity, property: $property, propData: $propData);
+                $data[$propertyName] = $this->cascadeMultipleObjects(
+                    objectEntity: $objectEntity,
+                    property: $property,
+                    propData: $propData
+                );
             } else {
                 // Handle single object.
                 if (is_array($propData) === true && $this->isArrayOfScalars($propData) === false) {
-                    $uuid = $this->cascadeSingleObject(objectEntity: $objectEntity, definition: $property, object: $propData);
+                    $uuid = $this->cascadeSingleObject(
+                        objectEntity: $objectEntity,
+                        definition: $property,
+                        object: $propData
+                    );
                     if ($uuid !== null) {
                         $data[$propertyName] = $uuid;
                     }

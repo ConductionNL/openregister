@@ -82,13 +82,13 @@ class ObjectsTool extends AbstractTool
     /**
      * Get tool description
      *
-     * @return string Tool description
-     *
      * @psalm-return 'Manage objects: search, view, create, update, or delete objects. Objects are data records conforming to schemas.'
      */
     public function getDescription(): string
     {
-        return 'Manage objects: search, view, create, update, or delete objects. Objects are data records conforming to schemas.';
+        $description  = 'Manage objects: search, view, create, update, or delete objects. ';
+        $description .= 'Objects are data records conforming to schemas.';
+        return $description;
     }//end getDescription()
 
     /**
@@ -272,8 +272,13 @@ class ObjectsTool extends AbstractTool
      *
      * @psalm-return array{success: true, message: string, data: mixed}
      */
-    public function searchObjects(int $limit=20, int $offset=0, ?string $register=null, ?string $schema=null, ?string $query=null): array
-    {
+    public function searchObjects(
+        int $limit=20,
+        int $offset=0,
+        ?string $register=null,
+        ?string $schema=null,
+        ?string $query=null
+    ): array {
         $filters = [];
         if ($register !== null) {
             $filters['register'] = $register;

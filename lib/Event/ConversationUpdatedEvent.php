@@ -33,8 +33,6 @@ class ConversationUpdatedEvent extends Event
      * The updated conversation state.
      *
      * @var Conversation The conversation after update.
-     *
-     * @psalm-suppress UnusedProperty
      */
     private Conversation $newConversation;
 
@@ -42,8 +40,6 @@ class ConversationUpdatedEvent extends Event
      * The previous conversation state.
      *
      * @var Conversation The conversation before update.
-     *
-     * @psalm-suppress UnusedProperty
      */
     private Conversation $oldConversation;
 

@@ -113,7 +113,10 @@ class Version1Date20250829120000 extends SimpleMigrationStep
             $organisation = $group['organisation'];
             $originalSlug = $group['slug'];
 
-            $output->info("Found {$group['duplicate_count']} duplicate {$entityType} with organisation '{$organisation}' and slug '{$originalSlug}'");
+            $count = $group['duplicate_count'];
+            $msg   = "Found {$count} duplicate {$entityType} with organisation ";
+            $msg  .= "'{$organisation}' and slug '{$originalSlug}'";
+            $output->info($msg);
 
             // Get all records in this duplicate group, ordered by ID (keep first, update others).
             $qb2 = $this->connection->getQueryBuilder();
@@ -142,8 +145,12 @@ class Version1Date20250829120000 extends SimpleMigrationStep
 
                 $updateQb->executeStatement();
 
-                $output->info("Updated {$entityType} '{$duplicate['title']}' (ID: {$duplicate['id']}) from slug '{$originalSlug}' to '{$newSlug}'");
-            }
+                $title = $duplicate['title'];
+                $id    = $duplicate['id'];
+                $msg   = "Updated {$entityType} '{$title}' (ID: {$id}) ";
+                $msg  .= "from slug '{$originalSlug}' to '{$newSlug}'";
+                $output->info($msg);
+            }//end foreach
         }//end foreach
     }//end cleanupTableDuplicates()
 
@@ -157,8 +164,12 @@ class Version1Date20250829120000 extends SimpleMigrationStep
      *
      * @return string The unique slug
      */
-    private function generateUniqueSlug(string $tableName, string $organisation, string $baseSlug, int $startNumber=2): string
-    {
+    private function generateUniqueSlug(
+        string $tableName,
+        string $organisation,
+        string $baseSlug,
+        int $startNumber=2
+    ): string {
         $counter = $startNumber;
         $newSlug = $baseSlug.'-'.$counter;
 

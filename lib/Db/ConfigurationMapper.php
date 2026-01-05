@@ -477,7 +477,7 @@ class ConfigurationMapper extends QBMapper
      *
      * @throws \Exception If user doesn't have read permission
      *
-     * @psalm-return list<OCA\OpenRegister\Db\Configuration>
+     * @psalm-return list<Configuration>
      */
     public function findAll(
         ?int $limit=null,

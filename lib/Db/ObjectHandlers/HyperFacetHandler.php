@@ -1,11 +1,9 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * OpenRegister Hyper-Performant Facet Handler
  *
- * **REVOLUTIONARY FACETING SYSTEM**: This handler implements a breakthrough
+ * REVOLUTIONARY FACETING SYSTEM: This handler implements a breakthrough
  * multi-layered approach to faceting that eliminates performance bottlenecks
  * through intelligent caching, statistical approximation, and parallel processing.
  *
@@ -18,6 +16,8 @@ declare(strict_types=1);
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db\ObjectHandlers;
 
@@ -255,26 +255,35 @@ class HyperFacetHandler
             );
 
         // **STEP 3**: Execute optimized facet calculation based on strategy.
+        // Initialize $results with default to avoid Psalm's ParadoxicalCondition warning
+        $results = [];
+
         switch ($optimizationStrategy) {
             case 'exact_parallel':
-                $results = $this->calculateExactFacetsParallel(facetConfig: $facetConfig, baseQuery: $baseQuery, _datasetStats: $datasetStats);
+                $results = $this->calculateExactFacetsParallel(
+                    facetConfig: $facetConfig,
+                    baseQuery: $baseQuery,
+                    _datasetStats: $datasetStats
+                );
                 break;
 
             case 'smart_sampling':
-                $results = $this->calculateSampledFacetsParallel(facetConfig: $facetConfig, baseQuery: $baseQuery, datasetStats: $datasetStats);
+                $results = $this->calculateSampledFacetsParallel(
+                    facetConfig: $facetConfig,
+                    baseQuery: $baseQuery,
+                    datasetStats: $datasetStats
+                );
                 break;
 
             case 'hyperloglog_estimation':
+            default:
+                // Use HyperLogLog estimation for large datasets or as default fallback
                 $results = $this->calculateApproximateFacetsHyperLogLog(
                     facetConfig: $facetConfig,
                         baseQuery: $baseQuery,
                     datasetStats: $datasetStats
                 );
                 break;
-
-            default:
-                // Fallback to exact calculation.
-                $results = $this->calculateExactFacetsParallel(facetConfig: $facetConfig, baseQuery: $baseQuery, _datasetStats: $datasetStats);
         }//end switch
 
         // **STEP 4**: Enhanced response with performance metadata.
@@ -428,15 +437,15 @@ class HyperFacetHandler
      * **EXACT CALCULATION**: For small datasets where we can afford exact counts
      * while still optimizing through parallel execution and efficient queries.
      *
-     * @param array $facetConfig  Facet configuration
-     * @param array $baseQuery    Base query filters
-     * @param array $datasetStats Dataset characteristics
+     * @param array $facetConfig   Facet configuration
+     * @param array $baseQuery     Base query filters
+     * @param array $_datasetStats Dataset characteristics
      *
      * @return array Exact facet results
      *
      * @phpstan-param  array<string, mixed> $facetConfig
      * @phpstan-param  array<string, mixed> $baseQuery
-     * @phpstan-param  array<string, mixed> $datasetStats
+     * @phpstan-param  array<string, mixed> $_datasetStats
      * @phpstan-return array<string, mixed>
      * @psalm-param    array<string, mixed> $facetConfig
      * @psalm-param    array<string, mixed> $baseQuery
@@ -471,10 +480,8 @@ class HyperFacetHandler
         /*
          * Execute all facet calculations in parallel.
          * Suppress undefined function check - React\Async\await is from external library
-         *
-         * @psalm-suppress UndefinedFunction - React\Async\await is from external library
          */
-
+        /** @psalm-suppress UndefinedFunction - React\Async\await is from external library */
         $results = \React\Async\await(\React\Promise\all($promises));
 
         // Combine results from different facet types.
@@ -538,7 +545,7 @@ class HyperFacetHandler
         $sampleFacets = $this->calculateExactFacetsParallel(
             facetConfig: $facetConfig,
             baseQuery: $sampleQuery,
-            options: [
+            _datasetStats: [
                 'estimated_size' => $sampleSize,
                 'size_category'  => 'small',
             // Treat sample as small dataset.
@@ -638,7 +645,7 @@ class HyperFacetHandler
      *
      * @phpstan-return PromiseInterface
      *
-     * @psalm-return Promise<T>
+     * @psalm-return Promise<array>
      */
     private function processMetadataFacetsParallel(array $metadataFacets, array $baseQuery): Promise
     {
@@ -650,14 +657,22 @@ class HyperFacetHandler
 
                     // **BATCH OPTIMIZATION**: Combine multiple metadata facets in minimal queries.
                     $batchableFields = ['register', 'schema', 'organisation', 'owner'];
-                    $batchResults    = $this->getBatchedMetadataFacets(fields: $batchableFields, facetConfig: $metadataFacets, baseQuery: $baseQuery);
+                    $batchResults    = $this->getBatchedMetadataFacets(
+                        fields: $batchableFields,
+                        facetConfig: $metadataFacets,
+                        baseQuery: $baseQuery
+                    );
 
                     $results = array_merge($results, $batchResults);
 
                     // Process remaining non-batchable facets (date histograms, ranges).
                     foreach ($metadataFacets as $field => $config) {
                         if (in_array($field, $batchableFields) === false) {
-                            $results[$field] = $this->calculateSingleMetadataFacet(_field: $field, _config: $config, _baseQuery: $baseQuery);
+                            $results[$field] = $this->calculateSingleMetadataFacet(
+                                _field: $field,
+                                _config: $config,
+                                _baseQuery: $baseQuery
+                            );
                         }
                     }
 
@@ -676,7 +691,7 @@ class HyperFacetHandler
                          *
                          * @var callable(mixed): void $resolve
                      */
-
+                    /** @psalm-suppress InvalidArgument - Promise expects mixed */
                     $resolve($results);
                 } catch (\Throwable $e) {
                     $reject($e);
@@ -898,8 +913,12 @@ class HyperFacetHandler
         $searchParam      = $queryBuilder->createNamedParameter('%'.strtolower($searchTerm).'%');
 
         // Search in indexed fields only (as per user requirement).
-        $searchConditions->add($queryBuilder->expr()->like($queryBuilder->createFunction('LOWER(name)'), $searchParam));
-        $searchConditions->add($queryBuilder->expr()->like($queryBuilder->createFunction('LOWER(description)'), $searchParam));
+        $searchConditions->add(
+            $queryBuilder->expr()->like($queryBuilder->createFunction('LOWER(name)'), $searchParam)
+        );
+        $searchConditions->add(
+            $queryBuilder->expr()->like($queryBuilder->createFunction('LOWER(description)'), $searchParam)
+        );
         $searchConditions->add($queryBuilder->expr()->like($queryBuilder->createFunction('LOWER(summary)'), $searchParam));
 
         if ($searchConditions->count() > 0) {
@@ -1154,9 +1173,12 @@ class HyperFacetHandler
     /**
      * Process JSON facets in parallel
      *
+     * @param array $_jsonFacets JSON facets to process
+     * @param array $_baseQuery  Base query filters
+     *
      * @return Promise
      *
-     * @psalm-return     Promise<T>
+     * @psalm-return     Promise<array>
      * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      */
     private function processJsonFacetsParallel(array $_jsonFacets, array $_baseQuery): Promise
@@ -1169,7 +1191,7 @@ class HyperFacetHandler
                      *
                      * @var callable(mixed): void $resolve
                  */
-
+                /** @psalm-suppress InvalidArgument - Promise expects mixed */
                 $resolve([]);
             }
         );
@@ -1283,8 +1305,8 @@ class HyperFacetHandler
     /**
      * Get human-readable label for a field value
      *
-     * @param string $field Field name
-     * @param mixed  $value Field value
+     * @param string $_field Field name
+     * @param mixed  $_value Field value
      *
      * @return string Human-readable label
      *

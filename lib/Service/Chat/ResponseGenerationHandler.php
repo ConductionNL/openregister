@@ -150,7 +150,10 @@ class ResponseGenerationHandler
         $chatProvider = $llmConfig['chatProvider'] ?? null;
 
         if (empty($chatProvider) === true) {
-            throw new Exception('Chat provider is not configured. Please configure OpenAI, Fireworks AI, or Ollama in settings.', 503);
+            throw new Exception(
+                'Chat provider is not configured. Please configure OpenAI, Fireworks AI, or Ollama in settings.',
+                503
+            );
         }
 
         $this->logger->info(
@@ -206,10 +209,9 @@ class ResponseGenerationHandler
                     }
 
                     if (empty($openaiConfig['organizationId']) === false) {
-                        /*
-                         * @psalm-suppress UndefinedPropertyAssignment - LLPhant\OpenAIConfig has dynamic properties
+                        /**
+                         * @psalm-suppress UndefinedPropertyAssignment LLPhant\OpenAIConfig has dynamic properties
                          */
-
                         $config->organizationId = $openaiConfig['organizationId'];
                     }
                 } else if ($chatProvider === 'fireworks') {
@@ -241,16 +243,16 @@ class ResponseGenerationHandler
 
                 // Set temperature from agent or default (OpenAI/Fireworks).
                 if ($agent?->getTemperature() !== null) {
-                    /*
-                     * @psalm-suppress UndefinedPropertyAssignment - LLPhant\OpenAIConfig has dynamic properties
+                    /**
+                     * @psalm-suppress UndefinedPropertyAssignment LLPhant\OpenAIConfig has dynamic properties
                      */
-
                     $config->temperature = $agent->getTemperature();
                 }
             }//end if
 
             // Build system prompt.
-            $systemPrompt = $agent?->getPrompt() ?? "You are a helpful AI assistant that helps users find and understand information in their data.";
+            $defaultPrompt = "You are a helpful AI assistant that helps users find and understand their data.";
+            $systemPrompt  = $agent?->getPrompt() ?? $defaultPrompt;
 
             if (empty($context['text']) === false) {
                 $systemPrompt .= "\n\nUse the following context to answer the user's question:\n\n";
@@ -293,7 +295,10 @@ class ResponseGenerationHandler
                 // Add functions if available - Ollama supports tools via LLPhant!
                 if (empty($functions) === false) {
                     // Convert array-based function definitions to FunctionInfo objects.
-                    $functionInfoObjects = $this->toolHandler->convertFunctionsToFunctionInfo(functions: $functions, tools: $tools);
+                    $functionInfoObjects = $this->toolHandler->convertFunctionsToFunctionInfo(
+                        functions: $functions,
+                        tools: $tools
+                    );
                     $chat->setTools($functionInfoObjects);
                 }
 
@@ -310,7 +315,10 @@ class ResponseGenerationHandler
                 // Add functions if available.
                 if (empty($functions) === false) {
                     // Convert array-based function definitions to FunctionInfo objects.
-                    $functionInfoObjects = $this->toolHandler->convertFunctionsToFunctionInfo(functions: $functions, tools: $tools);
+                    $functionInfoObjects = $this->toolHandler->convertFunctionsToFunctionInfo(
+                        functions: $functions,
+                        tools: $tools
+                    );
                     $chat->setTools($functionInfoObjects);
                 }
 

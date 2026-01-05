@@ -102,80 +102,41 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             return false;
         }
 
-        // Check register configuration for this schema.
+        // Check register configuration for magic mapping.
         $registerConfig = $register->getConfiguration() ?? [];
-        $schemaConfigs  = $registerConfig['schemas'] ?? [];
-        $schemaId       = $schema->getId();
-        $schemaConfig   = $schemaConfigs[$schemaId] ?? [];
 
-        $this->logger->debug(
-            '[UnifiedObjectMapper] Checking magic mapping configuration',
-            [
-                'registerId'   => $register->getId(),
-                'schemaId'     => $schemaId,
-                'schemaConfig' => $schemaConfig,
-            ]
-        );
-
-        // Check if magic mapping is enabled for this register+schema combo.
-        $magicMappingEnabled = ($schemaConfig['magicMapping'] ?? false) === true;
+        // Check if magic mapping is globally enabled for this register.
+        $magicMappingEnabled = ($registerConfig['enableMagicMapping'] ?? false) === true;
 
         if ($magicMappingEnabled === false) {
             $this->logger->debug(
-                '[UnifiedObjectMapper] Magic mapping disabled for this register+schema, using blob storage'
+                '[UnifiedObjectMapper] Magic mapping not enabled for register',
+                ['registerId' => $register->getId()]
             );
             return false;
         }
 
-        // Magic mapping is enabled - check if table exists.
-        $tableExists = $this->magicMapper->existsTableForRegisterSchema(register: $register, schema: $schema);
+        // Check if this specific schema is in the magic mapping schemas list.
+        $magicSchemas = $registerConfig['magicMappingSchemas'] ?? [];
+        $schemaId     = (string) $schema->getId();
+        $schemaSlug   = $schema->getSlug();
 
-        if ($tableExists === true) {
-            $this->logger->debug(
-                '[UnifiedObjectMapper] Magic table exists, using MagicMapper',
-                ['tableName' => $this->magicMapper->getTableNameForRegisterSchema(register: $register, schema: $schema)]
-            );
-            return true;
-        }
+        // Check both by ID and slug.
+        $isSchemaEnabled = in_array($schemaId, $magicSchemas, true) ||
+                          in_array($schemaSlug, $magicSchemas, true);
 
-        // Table doesn't exist - check if auto-create is enabled.
-        $autoCreateTable = ($schemaConfig['autoCreateTable'] ?? false) === true;
-
-        if ($autoCreateTable === true) {
-            $this->logger->info(
-                '[UnifiedObjectMapper] Magic table does not exist, auto-creating',
-                [
-                    'registerId' => $register->getId(),
-                    'schemaId'   => $schemaId,
-                ]
-            );
-
-            try {
-                // Create the table.
-                $this->magicMapper->ensureTableForRegisterSchema(register: $register, schema: $schema);
-                $this->logger->info(
-                    '[UnifiedObjectMapper] Magic table created successfully, using MagicMapper'
-                );
-                return true;
-            } catch (Exception $e) {
-                $this->logger->error(
-                    '[UnifiedObjectMapper] Failed to auto-create magic table, falling back to blob storage',
-                    [
-                        'error'      => $e->getMessage(),
-                        'registerId' => $register->getId(),
-                        'schemaId'   => $schemaId,
-                    ]
-                );
-                return false;
-            }//end try
-        }//end if
-
-        // Magic mapping enabled but table doesn't exist and auto-create is disabled.
-        $this->logger->warning(
-            '[UnifiedObjectMapper] Magic mapping enabled but table does not exist and autoCreate is disabled, using blob storage'
+        $this->logger->debug(
+            '[UnifiedObjectMapper] Magic mapping check',
+            [
+                'registerId'      => $register->getId(),
+                'schemaId'        => $schemaId,
+                'schemaSlug'      => $schemaSlug,
+                'magicSchemas'    => $magicSchemas,
+                'isSchemaEnabled' => $isSchemaEnabled,
+            ]
         );
 
-        return false;
+        return $isSchemaEnabled;
     }//end shouldUseMagicMapper()
 
     /**
@@ -260,11 +221,22 @@ class UnifiedObjectMapper extends AbstractObjectMapper
     ): ObjectEntity {
         if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
             $this->logger->debug('[UnifiedObjectMapper] Routing find() to MagicMapper');
-            return $this->magicMapper->findInRegisterSchemaTable(identifier: $identifier, register: $register, schema: $schema);
+            return $this->magicMapper->findInRegisterSchemaTable(
+                identifier: $identifier,
+                register: $register,
+                schema: $schema
+            );
         }
 
         $this->logger->debug('[UnifiedObjectMapper] Routing find() to ObjectEntityMapper (blob storage direct)');
-        return $this->objectEntityMapper->findDirectBlobStorage($identifier, $register, $schema, $includeDeleted, $rbac, $multitenancy);
+        return $this->objectEntityMapper->findDirectBlobStorage(
+            identifier: $identifier,
+            register: $register,
+            schema: $schema,
+            includeDeleted: $includeDeleted,
+            _rbac: $rbac,
+            _multitenancy: $multitenancy
+        );
     }//end find()
 
     /**
@@ -367,7 +339,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      */
     public function findBySchema(int $schemaId): array
     {
-        $this->logger->debug('[UnifiedObjectMapper] Routing findBySchema() to ObjectEntityMapper (cross-register operation)');
+        $msg = '[UnifiedObjectMapper] Routing findBySchema() to ObjectEntityMapper (cross-register)';
+        $this->logger->debug($msg);
         return $this->objectEntityMapper->findBySchema($schemaId);
     }//end findBySchema()
 
@@ -376,19 +349,24 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      *
      * Routes based on the entity's register and schema fields.
      *
-     * @param Entity $entity Entity to insert.
+     * @param Entity    $entity   Entity to insert.
+     * @param ?Register $register Optional register for magic mapper routing.
+     * @param ?Schema   $schema   Optional schema for magic mapper routing.
      *
      * @return Entity Inserted entity.
      *
      * @throws Exception If insertion fails.
      */
-    public function insert(Entity $entity): Entity
+    public function insert(Entity $entity, ?Register $register=null, ?Schema $schema=null): Entity
     {
         if ($entity instanceof ObjectEntity === false) {
             throw new Exception('Entity must be an instance of ObjectEntity');
         }
 
-        [$register, $schema] = $this->resolveRegisterAndSchema($entity);
+        // Use provided register/schema or resolve from entity.
+        if ($register === null || $schema === null) {
+            [$register, $schema] = $this->resolveRegisterAndSchema($entity);
+        }
 
         if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
             $this->logger->debug('[UnifiedObjectMapper] Routing insert() to MagicMapper');
@@ -407,19 +385,24 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      *
      * Routes based on the entity's register and schema fields.
      *
-     * @param Entity $entity Entity to update.
+     * @param Entity    $entity   Entity to update.
+     * @param ?Register $register Optional register for magic mapper routing.
+     * @param ?Schema   $schema   Optional schema for magic mapper routing.
      *
      * @return Entity Updated entity.
      *
      * @throws Exception If update fails.
      */
-    public function update(Entity $entity): Entity
+    public function update(Entity $entity, ?Register $register=null, ?Schema $schema=null): Entity
     {
         if ($entity instanceof ObjectEntity === false) {
             throw new Exception('Entity must be an instance of ObjectEntity');
         }
 
-        [$register, $schema] = $this->resolveRegisterAndSchema($entity);
+        // Use provided register/schema or resolve from entity.
+        if ($register === null || $schema === null) {
+            [$register, $schema] = $this->resolveRegisterAndSchema($entity);
+        }
 
         if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
             $this->logger->debug('[UnifiedObjectMapper] Routing update() to MagicMapper');
@@ -451,95 +434,360 @@ class UnifiedObjectMapper extends AbstractObjectMapper
 
         if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
             $this->logger->debug('[UnifiedObjectMapper] Routing delete() to MagicMapper');
-            return $this->magicMapper->deleteObjectEntity(entity: $entity, register: $register, schema: $schema, soft: false);
+            return $this->magicMapper->deleteObjectEntity(
+                entity: $entity,
+                register: $register,
+                schema: $schema,
+                hardDelete: true
+            );
         }
 
         $this->logger->debug('[UnifiedObjectMapper] Routing delete() to ObjectEntityMapper');
         return $this->objectEntityMapper->delete(entity: $entity);
     }//end delete()
 
-    // ==================================================================================
-    // LOCKING, BULK OPERATIONS, STATISTICS, FACETING, SEARCH
-    // All route to ObjectEntityMapper for now - magic mapper support to be added
-    // ==================================================================================
-
+    /**
+     * Lock an object.
+     *
+     * @param string   $uuid         The object UUID
+     * @param int|null $lockDuration Lock duration in seconds
+     *
+     * @return array{locked: mixed, uuid: string} Lock result
+     */
     public function lockObject(string $uuid, ?int $lockDuration=null): array
     {
-        return $this->objectEntityMapper->lockObject(uuid: $uuid, duration: $lockDuration);
-    }
+        return $this->objectEntityMapper->lockObject(uuid: $uuid, lockDuration: $lockDuration);
+    }//end lockObject()
 
+    /**
+     * Unlock an object.
+     *
+     * @param string $uuid The object UUID
+     *
+     * @return bool True on success
+     */
     public function unlockObject(string $uuid): bool
     {
         return $this->objectEntityMapper->unlockObject($uuid);
-    }
+    }//end unlockObject()
 
-    public function ultraFastBulkSave(array $insertObjects=[], array $updateObjects=[]): array
-    {
-        return $this->objectEntityMapper->ultraFastBulkSave(insertObjects: $insertObjects, updateObjects: $updateObjects);
-    }
+    /**
+     * Ultra-fast bulk save operation with automatic routing
+     *
+     * Routes to MagicMapper for magic-mapped schemas or ObjectEntityMapper for blob storage.
+     * Returns complete objects with database-computed classification (created/updated/unchanged).
+     *
+     * @param array         $insertObjects Objects to insert/upsert
+     * @param array         $updateObjects Objects to update (legacy parameter, not used with magic mapper)
+     * @param Register|null $register      Optional register context for routing decision
+     * @param Schema|null   $schema        Optional schema context for routing decision
+     *
+     * @return array Array of complete objects with object_status field
+     *
+     * @throws \OCP\DB\Exception If a database error occurs
+     */
+    public function ultraFastBulkSave(
+        array $insertObjects=[],
+        array $updateObjects=[],
+        ?Register $register=null,
+        ?Schema $schema=null
+    ): array {
+        $this->logger->info(
+                '[UnifiedObjectMapper] ultraFastBulkSave called',
+                [
+                    'insertCount' => count($insertObjects),
+                    'updateCount' => count($updateObjects),
+                    'hasRegister' => $register !== null,
+                    'hasSchema'   => $schema !== null,
+                ]
+                );
 
+        // Try to resolve register and schema from object data if not provided.
+        if ($register === null || $schema === null) {
+            $this->logger->info('[UnifiedObjectMapper] Resolving register/schema from object data');
+
+            // Extract register and schema IDs from first object.
+            $firstObject = $insertObjects[0] ?? [];
+            $registerId  = $firstObject['@self']['register'] ?? null;
+            $schemaId    = $firstObject['@self']['schema'] ?? null;
+
+            if ($registerId !== null && $register === null) {
+                try {
+                    $register = $this->registerMapper->find(id: $registerId, _multitenancy: false);
+                } catch (\Exception $e) {
+                    $this->logger->warning('[UnifiedObjectMapper] Failed to resolve register', ['id' => $registerId]);
+                }
+            }
+
+            if ($schemaId !== null && $schema === null) {
+                try {
+                    $schema = $this->schemaMapper->find(id: $schemaId, _multitenancy: false);
+                } catch (\Exception $e) {
+                    $this->logger->warning('[UnifiedObjectMapper] Failed to resolve schema', ['id' => $schemaId]);
+                }
+            }
+
+            $this->logger->info(
+                    '[UnifiedObjectMapper] Resolved',
+                    [
+                        'register' => $register?->getId(),
+                        'schema'   => $schema?->getId(),
+                    ]
+                    );
+        }//end if
+
+        // Check if magic mapping should be used.
+        $this->logger->info('[UnifiedObjectMapper] Checking if magic mapping should be used');
+
+        if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
+            $this->logger->info(
+                '[UnifiedObjectMapper] Routing bulk save to MagicMapper',
+                [
+                    'register'     => $register?->getId(),
+                    'schema'       => $schema?->getId(),
+                    'object_count' => count($insertObjects),
+                ]
+            );
+
+            // Build table name.
+            $tableName = 'oc_openregister_table_'.$register->getId().'_'.$schema->getId();
+
+            // Ensure table exists (create if needed).
+            $this->logger->info('[UnifiedObjectMapper] Ensuring table exists', ['table' => $tableName]);
+            $this->magicMapper->ensureTableForRegisterSchema(register: $register, schema: $schema);
+            $this->logger->info('[UnifiedObjectMapper] Table ready');
+
+            // Route to MagicBulkHandler via MagicMapper.
+            $this->logger->info('[UnifiedObjectMapper] Calling magicMapper->bulkUpsert');
+
+            $result = $this->magicMapper->bulkUpsert(
+                objects: $insertObjects,
+                register: $register,
+                schema: $schema,
+                tableName: $tableName
+            );
+            $this->logger->info('[UnifiedObjectMapper] bulkUpsert returned', ['resultCount' => count($result)]);
+
+            return $result;
+        }//end if
+
+        // Fallback to blob storage.
+        $this->logger->debug(
+            '[UnifiedObjectMapper] Routing bulk save to ObjectEntityMapper (blob storage)',
+            [
+                'register'     => $register?->getId(),
+                'schema'       => $schema?->getId(),
+                'object_count' => count($insertObjects),
+            ]
+        );
+
+        return $this->objectEntityMapper->ultraFastBulkSave(
+            insertObjects: $insertObjects,
+            updateObjects: $updateObjects
+        );
+    }//end ultraFastBulkSave()
+
+    /**
+     * Delete multiple objects.
+     *
+     * @param array $uuids      Object UUIDs to delete
+     * @param bool  $hardDelete Whether to hard delete
+     *
+     * @return array Delete results
+     */
     public function deleteObjects(array $uuids=[], bool $hardDelete=false): array
     {
         return $this->objectEntityMapper->deleteObjects(uuids: $uuids, hardDelete: $hardDelete);
-    }
+    }//end deleteObjects()
 
+    /**
+     * Publish multiple objects.
+     *
+     * @param array         $uuids    Object UUIDs to publish
+     * @param DateTime|bool $datetime Publish datetime or true for now
+     *
+     * @return array Publish results
+     */
     public function publishObjects(array $uuids=[], DateTime|bool $datetime=true): array
     {
         return $this->objectEntityMapper->publishObjects(uuids: $uuids, datetime: $datetime);
-    }
+    }//end publishObjects()
 
+    /**
+     * Depublish multiple objects.
+     *
+     * @param array         $uuids    Object UUIDs to depublish
+     * @param DateTime|bool $datetime Depublish datetime or true for now
+     *
+     * @return array Depublish results
+     */
     public function depublishObjects(array $uuids=[], DateTime|bool $datetime=true): array
     {
         return $this->objectEntityMapper->depublishObjects(uuids: $uuids, datetime: $datetime);
-    }
+    }//end depublishObjects()
 
-    public function getStatistics(int|array|null $registerId=null, int|array|null $schemaId=null, array $exclude=[]): array
-    {
-        return $this->objectEntityMapper->getStatistics(registerId: $registerId, schemaId: $schemaId, exclude: $exclude);
-    }
+    /**
+     * Get statistics.
+     *
+     * @param int|array|null $registerId Register ID filter
+     * @param int|array|null $schemaId   Schema ID filter
+     * @param array          $exclude    Exclusions
+     *
+     * @return array Statistics data
+     */
+    public function getStatistics(
+        int|array|null $registerId=null,
+        int|array|null $schemaId=null,
+        array $exclude=[]
+    ): array {
+        return $this->objectEntityMapper->getStatistics(
+            registerId: $registerId,
+            schemaId: $schemaId,
+            exclude: $exclude
+        );
+    }//end getStatistics()
 
+    /**
+     * Get register chart data.
+     *
+     * @param int|null $registerId Register ID filter
+     * @param int|null $schemaId   Schema ID filter
+     *
+     * @return array Chart data
+     */
     public function getRegisterChartData(?int $registerId=null, ?int $schemaId=null): array
     {
         return $this->objectEntityMapper->getRegisterChartData(registerId: $registerId, schemaId: $schemaId);
-    }
+    }//end getRegisterChartData()
 
+    /**
+     * Get schema chart data.
+     *
+     * @param int|null $registerId Register ID filter
+     * @param int|null $schemaId   Schema ID filter
+     *
+     * @return array Chart data
+     */
     public function getSchemaChartData(?int $registerId=null, ?int $schemaId=null): array
     {
         return $this->objectEntityMapper->getSchemaChartData(registerId: $registerId, schemaId: $schemaId);
-    }
+    }//end getSchemaChartData()
 
+    /**
+     * Get simple facets.
+     *
+     * @param array $query Search query
+     *
+     * @return array Facets data
+     */
     public function getSimpleFacets(array $query=[]): array
     {
         return $this->objectEntityMapper->getSimpleFacets($query);
-    }
+    }//end getSimpleFacets()
 
+    /**
+     * Get facetable fields from schemas.
+     *
+     * @param array $baseQuery Base query
+     *
+     * @return array Facetable fields
+     */
     public function getFacetableFieldsFromSchemas(array $baseQuery=[]): array
     {
         return $this->objectEntityMapper->getFacetableFieldsFromSchemas($baseQuery);
-    }
+    }//end getFacetableFieldsFromSchemas()
 
-    public function searchObjects(array $query=[], ?string $activeOrganisationUuid=null, bool $rbac=true, bool $multitenancy=true, ?array $ids=null, ?string $uses=null): array|int
-    {
-        return $this->objectEntityMapper->searchObjects(query: $query, _activeOrganisationUuid: $activeOrganisationUuid, _rbac: $rbac, _multitenancy: $multitenancy, ids: $ids, uses: $uses);
-    }
+    /**
+     * Search objects.
+     *
+     * @param array       $query                  Search query
+     * @param string|null $activeOrganisationUuid Organisation UUID
+     * @param bool        $rbac                   Apply RBAC
+     * @param bool        $multitenancy           Apply multitenancy
+     * @param array|null  $ids                    Specific IDs
+     * @param string|null $uses                   Uses filter
+     *
+     * @return int|list<ObjectEntity> Search results
+     */
+    public function searchObjects(
+        array $query=[],
+        ?string $activeOrganisationUuid=null,
+        bool $rbac=true,
+        bool $multitenancy=true,
+        ?array $ids=null,
+        ?string $uses=null
+    ): array|int {
+        return $this->objectEntityMapper->searchObjects(
+            query: $query,
+            _activeOrganisationUuid: $activeOrganisationUuid,
+            _rbac: $rbac,
+            _multitenancy: $multitenancy,
+            ids: $ids,
+            uses: $uses
+        );
+    }//end searchObjects()
 
-    public function countSearchObjects(array $query=[], ?string $activeOrganisationUuid=null, bool $rbac=true, bool $multitenancy=true, ?array $ids=null, ?string $uses=null): int
-    {
-        return $this->objectEntityMapper->countSearchObjects(query: $query, _activeOrganisationUuid: $activeOrganisationUuid, _rbac: $rbac, _multitenancy: $multitenancy, ids: $ids, uses: $uses);
-    }
+    /**
+     * Count search objects.
+     *
+     * @param array       $query                  Search query
+     * @param string|null $activeOrganisationUuid Organisation UUID
+     * @param bool        $rbac                   Apply RBAC
+     * @param bool        $multitenancy           Apply multitenancy
+     * @param array|null  $ids                    Specific IDs
+     * @param string|null $uses                   Uses filter
+     *
+     * @return int Object count
+     */
+    public function countSearchObjects(
+        array $query=[],
+        ?string $activeOrganisationUuid=null,
+        bool $rbac=true,
+        bool $multitenancy=true,
+        ?array $ids=null,
+        ?string $uses=null
+    ): int {
+        return $this->objectEntityMapper->countSearchObjects(
+            query: $query,
+            _activeOrganisationUuid: $activeOrganisationUuid,
+            _rbac: $rbac,
+            _multitenancy: $multitenancy,
+            ids: $ids,
+            uses: $uses
+        );
+    }//end countSearchObjects()
 
+    /**
+     * Count all objects.
+     *
+     * @param array|null    $filters  Filters
+     * @param Schema|null   $schema   Schema filter
+     * @param Register|null $register Register filter
+     *
+     * @return int Object count
+     */
     public function countAll(?array $filters=null, ?Schema $schema=null, ?Register $register=null): int
     {
         return $this->objectEntityMapper->countAll(filters: $filters, schema: $schema, register: $register);
-    }
+    }//end countAll()
 
+    /**
+     * Get query builder.
+     *
+     * @return IQueryBuilder Query builder instance
+     */
     public function getQueryBuilder(): IQueryBuilder
     {
         return $this->objectEntityMapper->getQueryBuilder();
-    }
+    }//end getQueryBuilder()
 
+    /**
+     * Get max allowed packet size.
+     *
+     * @return int Max packet size
+     */
     public function getMaxAllowedPacketSize(): int
     {
         return $this->objectEntityMapper->getMaxAllowedPacketSize();
-    }
+    }//end getMaxAllowedPacketSize()
 }//end class

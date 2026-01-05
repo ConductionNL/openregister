@@ -223,7 +223,12 @@ class EntityRecognitionHandler
         }
 
         // Extract entities using selected method.
-        $detectedEntities = $this->detectEntities(text: $text, method: $method, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold);
+        $detectedEntities = $this->detectEntities(
+            text: $text,
+            method: $method,
+            entityTypes: $entityTypes,
+            confidenceThreshold: $confidenceThreshold
+        );
 
         if (empty($detectedEntities) === true) {
             return [
@@ -320,12 +325,28 @@ class EntityRecognitionHandler
     private function detectEntities(string $text, string $method, ?array $entityTypes, float $confidenceThreshold): array
     {
         return match ($method) {
-            self::METHOD_REGEX => $this->detectWithRegex(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold),
-            self::METHOD_PRESIDIO => $this->detectWithPresidio(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold),
-            self::METHOD_LLM => $this->detectWithLLM(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold),
-            self::METHOD_HYBRID => $this->detectWithHybrid(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold),
+            self::METHOD_REGEX => $this->detectWithRegex(
+                text: $text,
+                entityTypes: $entityTypes,
+                confidenceThreshold: $confidenceThreshold
+            ),
+            self::METHOD_PRESIDIO => $this->detectWithPresidio(
+                text: $text,
+                entityTypes: $entityTypes,
+                confidenceThreshold: $confidenceThreshold
+            ),
+            self::METHOD_LLM => $this->detectWithLLM(
+                text: $text,
+                entityTypes: $entityTypes,
+                confidenceThreshold: $confidenceThreshold
+            ),
+            self::METHOD_HYBRID => $this->detectWithHybrid(
+                text: $text,
+                entityTypes: $entityTypes,
+                confidenceThreshold: $confidenceThreshold
+            ),
             default => throw new Exception("Unknown detection method: {$method}")
-        };
+        };//end match
     }//end detectEntities()
 
     /**
@@ -348,7 +369,8 @@ class EntityRecognitionHandler
 
         // Email detection.
         if ($entityTypes === null || in_array(self::ENTITY_TYPE_EMAIL, $entityTypes, true) === true) {
-            if (preg_match_all('/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/', $text, $matches, PREG_OFFSET_CAPTURE) === true) {
+            $pattern = '/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/';
+            if (preg_match_all($pattern, $text, $matches, PREG_OFFSET_CAPTURE) === true) {
                 foreach ($matches[0] as $match) {
                     $entities[] = [
                         'type'           => self::ENTITY_TYPE_EMAIL,
@@ -472,7 +494,11 @@ class EntityRecognitionHandler
     private function detectWithHybrid(string $text, ?array $entityTypes, float $confidenceThreshold): array
     {
         // Start with regex for fast detection.
-        $regexEntities = $this->detectWithRegex(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold);
+        $regexEntities = $this->detectWithRegex(
+            text: $text,
+            entityTypes: $entityTypes,
+            confidenceThreshold: $confidenceThreshold
+        );
 
         // TODO: Add Presidio validation for higher confidence.
         // TODO: Add LLM validation for ambiguous cases.
@@ -540,7 +566,10 @@ class EntityRecognitionHandler
     private function getCategoryForType(string $type): string
     {
         return match ($type) {
-            self::ENTITY_TYPE_PERSON, self::ENTITY_TYPE_EMAIL, self::ENTITY_TYPE_PHONE, self::ENTITY_TYPE_ADDRESS => self::CATEGORY_PERSONAL_DATA,
+            self::ENTITY_TYPE_PERSON,
+            self::ENTITY_TYPE_EMAIL,
+            self::ENTITY_TYPE_PHONE,
+            self::ENTITY_TYPE_ADDRESS => self::CATEGORY_PERSONAL_DATA,
             self::ENTITY_TYPE_IBAN, self::ENTITY_TYPE_SSN => self::CATEGORY_SENSITIVE_PII,
             self::ENTITY_TYPE_ORGANIZATION => self::CATEGORY_BUSINESS_DATA,
             self::ENTITY_TYPE_LOCATION => self::CATEGORY_CONTEXTUAL_DATA,

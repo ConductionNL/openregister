@@ -69,7 +69,7 @@ class FileTextExtractionJob extends QueuedJob
      *
      * @var TextExtractionService Text extraction service instance
      */
-    private readonly TextExtractionService $textExtractionService;
+    private readonly TextExtractionService $textExtractor;
 
     /**
      * Run the background job
@@ -87,8 +87,11 @@ class FileTextExtractionJob extends QueuedJob
     {
         // Step 1: Check if file text extraction is enabled in configuration.
         // Skip extraction if disabled to avoid unnecessary processing.
-        if ($this->config->hasKey(app: 'openregister', key: 'fileManagement') === false
-            || json_decode($this->config->getValueString(app: 'openregister', key: 'fileManagement'), true)['extractionScope'] === 'none'
+        $fileManagementKey   = 'fileManagement';
+        $fileManagementValue = $this->config->getValueString(app: 'openregister', key: $fileManagementKey);
+        $fileManagement      = json_decode($fileManagementValue, true);
+        if ($this->config->hasKey(app: 'openregister', key: $fileManagementKey) === false
+            || $fileManagement['extractionScope'] === 'none'
         ) {
             $this->logger->info('[FileTextExtractionJob] File extraction is disabled. Not extracting text from files.');
             return;
@@ -122,7 +125,7 @@ class FileTextExtractionJob extends QueuedJob
 
         try {
             // Extract text using TextExtractionService.
-            $this->textExtractionService->extractFile(fileId: $fileId, forceReExtract: false);
+            $this->textExtractor->extractFile(fileId: $fileId, forceReExtract: false);
 
             // Calculate processing time in milliseconds.
             $processingTime = round((microtime(true) - $startTime) * 1000, 2);

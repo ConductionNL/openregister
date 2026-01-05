@@ -228,7 +228,8 @@ class LockHandler
      *
      * @return (bool|mixed|null|string)[]|null Lock information or null if not locked
      *
-     * @psalm-return array{locked_at: mixed, process: mixed|null, duration: mixed|null, expires_at?: string, is_expired?: bool}|null
+     * @psalm-return array{locked_at: mixed, process: mixed|null, duration: mixed|null,
+     *               expires_at?: string, is_expired?: bool}|null
      */
     public function getLockInfo(string $identifier): array|null
     {

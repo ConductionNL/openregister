@@ -45,11 +45,9 @@ class FilePropertyHandler
     /**
      * Constructor for FilePropertyHandler.
      *
-     * @param FileService     $fileService File service for managing files
-     * @param LoggerInterface $logger      Logger for logging operations
+     * @param LoggerInterface $logger Logger for logging operations
      */
     public function __construct(
-        // REMOVED: private readonly.
         private readonly LoggerInterface $logger
     ) {
     }//end __construct()
@@ -63,9 +61,13 @@ class FilePropertyHandler
      * @param array $uploadedFiles The uploaded files array (from IRequest::getUploadedFile()).
      * @param array $data          The object data to inject files into.
      *
-     * @psalm-param   array<string, array{name: string, type: string, tmp_name: string, error: int, size: int}> $uploadedFiles
+     * @psalm-param   array<string, array{
+     *     name: string, type: string, tmp_name: string, error: int, size: int
+     * }> $uploadedFiles
      * @psalm-param   array<string, mixed> $data
-     * @phpstan-param array<string, array{name: string, type: string, tmp_name: string, error: int, size: int}> $uploadedFiles
+     * @phpstan-param array<string, array{
+     *     name: string, type: string, tmp_name: string, error: int, size: int
+     * }> $uploadedFiles
      * @phpstan-param array<string, mixed> $data
      *
      * @return array The modified object data with file content injected.
@@ -322,16 +324,16 @@ class FilePropertyHandler
      * - Supporting both single files and arrays of files
      *
      * @param ObjectEntity $objectEntity The object entity being saved.
-     * @param array        &$object      The object data (passed by reference to update with file IDs).
+     * @param array        $object       The object data (passed by reference to update with file IDs).
      * @param string       $propertyName The name of the file property.
      * @param Schema       $schema       The schema containing property configuration.
      *
      * @psalm-param   ObjectEntity $objectEntity
-     * @psalm-param   array<string, mixed> &$object
+     * @psalm-param   array<string, mixed> $object
      * @psalm-param   string $propertyName
      * @psalm-param   Schema $schema
      * @phpstan-param ObjectEntity $objectEntity
-     * @phpstan-param array<string, mixed> &$object
+     * @phpstan-param array<string, mixed> $object
      * @phpstan-param string $propertyName
      * @phpstan-param Schema $schema
      *
@@ -342,8 +344,12 @@ class FilePropertyHandler
      *
      * @throws Exception If file validation fails or file operations fail.
      */
-    public function handleFileProperty(ObjectEntity $objectEntity, array &$object, string $propertyName, Schema $schema): void
-    {
+    public function handleFileProperty(
+        ObjectEntity $objectEntity,
+        array &$object,
+        string $propertyName,
+        Schema $schema
+    ): void {
         $fileValue        = $object[$propertyName];
         $schemaProperties = $schema->getProperties() ?? [];
 
@@ -564,34 +570,41 @@ class FilePropertyHandler
             $fileData    = $this->parseFileDataFromUrl(url: $fileInput, content: $fileContent);
         }
 
-        if (is_string($fileInput) === false
-            || (filter_var($fileInput, FILTER_VALIDATE_URL) === false
-            && (str_starts_with($fileInput, 'http://') === false && str_starts_with($fileInput, 'https://') === false))
+        if (filter_var($fileInput, FILTER_VALIDATE_URL) === false
+            && str_starts_with($fileInput, 'http://') === false
+            && str_starts_with($fileInput, 'https://') === false
         ) {
             // Parse as base64 or data URI.
             $fileData = $this->parseFileData($fileInput);
         }
 
         // Validate file against property configuration.
-        $this->validateFileAgainstConfig(fileData: $fileData, fileConfig: $fileConfig, propertyName: $propertyName, index: $index);
+        $this->validateFileAgainstConfig(
+            fileData: $fileData,
+            fileConfig: $fileConfig,
+            propertyName: $propertyName,
+            index: $index
+        );
 
-        // Generate filename (currently unused - will be used when fileService is implemented).
-        // $filename = $this->generateFileName(propertyName: $propertyName, extension: $fileData['extension'], index: $index);
-        // Prepare auto tags (currently unused - will be used when fileService is implemented).
-        // $autoTags = $this->prepareAutoTags(fileConfig: $fileConfig, propertyName: $propertyName, index: $index);
-        // Check if auto-publish is enabled in the property configuration (currently unused).
-        // $autoPublish = $fileConfig['autoPublish'] ?? false;
-        // Create the file with validation and tagging.
-        $file = null;
         // TODO: Implement file creation when fileService is available.
+        // $filename = $this->generateFileName(
+        //     propertyName: $propertyName, extension: $fileData['extension'], index: $index
+        // );
+        // $autoTags = $this->prepareAutoTags(fileConfig: $fileConfig, propertyName: $propertyName, index: $index);
+        // $autoPublish = $fileConfig['autoPublish'] ?? false;
         // $file = $this->fileService->addFile(
-        // ObjectEntity: $objectEntity,
-        // FileName: $filename,
-        // Content: $fileData['content'],
-        // Share: $autoPublish,
-        // Tags: $autoTags
-        // );.
-        return $file->getId();
+        //     ObjectEntity: $objectEntity,
+        //     FileName: $filename,
+        //     Content: $fileData['content'],
+        //     Share: $autoPublish,
+        //     Tags: $autoTags
+        // );
+        // return $file->getId();
+
+        // Placeholder return until file service is implemented.
+        // Suppress unused variable warning for $objectEntity - needed for future file service.
+        unset($objectEntity);
+        throw new \RuntimeException('File creation not yet implemented - fileService not available');
     }//end processStringFileInput()
 
     /**
@@ -636,18 +649,26 @@ class FilePropertyHandler
             // Get file info to validate against config.
             try {
                 // TODO: Implement file retrieval when fileService is available.
-                // $existingFile = $this->fileService->getFile(object: $objectEntity, file: $fileId);
+                // $existingFile = $this->fileService->getFile(
+                // object: $objectEntity, file: $fileId
+                // );
                 // If ($existingFile !== null) {
                 // Validate the existing file against current config.
-                // $this->validateExistingFileAgainstConfig(file: $existingFile, fileConfig: $fileConfig, propertyName: $propertyName, index: $index);
+                // $this->validateExistingFileAgainstConfig(
+                // file: $existingFile, fileConfig: $fileConfig,
+                // propertyName: $propertyName, index: $index
+                // );
                 // Apply auto tags if needed (non-destructive - adds to existing tags).
-                // $this->applyAutoTagsToExistingFile(file: $existingFile, fileConfig: $fileConfig, propertyName: $propertyName, index: $index);
+                // $this->applyAutoTagsToExistingFile(
+                // file: $existingFile, fileConfig: $fileConfig,
+                // propertyName: $propertyName, index: $index
+                // );
                 // Return $fileId;
                 // }
                 // }.
             } catch (Exception $e) {
                 // Existing file not accessible, continue to create new one.
-            }
+            }//end try
         }//end if
 
         // If no ID or existing file not accessible, create a new file.
@@ -783,8 +804,12 @@ class FilePropertyHandler
      *
      * @throws Exception If validation fails.
      */
-    private function validateExistingFileAgainstConfig(File $file, array $fileConfig, string $propertyName, ?int $index=null): void
-    {
+    private function validateExistingFileAgainstConfig(
+        File $file,
+        array $fileConfig,
+        string $propertyName,
+        ?int $index=null
+    ): void {
         $errorPrefix = "Existing file at $propertyName";
         if ($index !== null) {
             $errorPrefix = "Existing file at $propertyName[$index]";
@@ -794,8 +819,9 @@ class FilePropertyHandler
         if (($fileConfig['allowedTypes'] ?? null) !== null && empty($fileConfig['allowedTypes']) === false) {
             $fileMimeType = $file->getMimeType();
             if (in_array($fileMimeType, $fileConfig['allowedTypes'], true) === false) {
+                $allowedStr = implode(', ', $fileConfig['allowedTypes']);
                 throw new Exception(
-                    "$errorPrefix has invalid type '$fileMimeType'. Allowed types: ".implode(', ', $fileConfig['allowedTypes'])
+                    "$errorPrefix has invalid type '$fileMimeType'. Allowed types: $allowedStr"
                 );
             }
         }
@@ -943,8 +969,12 @@ class FilePropertyHandler
      *
      * @throws Exception If validation fails.
      */
-    public function validateFileAgainstConfig(array $fileData, array $fileConfig, string $propertyName, ?int $index=null): void
-    {
+    public function validateFileAgainstConfig(
+        array $fileData,
+        array $fileConfig,
+        string $propertyName,
+        ?int $index=null
+    ): void {
         if ($index !== null) {
             $errorPrefix = "File at $propertyName[$index]";
         } else {
@@ -960,8 +990,10 @@ class FilePropertyHandler
         // Validate MIME type.
         if (($fileConfig['allowedTypes'] ?? null) !== null && empty($fileConfig['allowedTypes']) === false) {
             if (in_array($fileData['mimeType'], $fileConfig['allowedTypes'], true) === false) {
+                $allowedStr = implode(', ', $fileConfig['allowedTypes']);
+                $mimeType   = $fileData['mimeType'];
                 throw new Exception(
-                    "$errorPrefix has invalid type '{$fileData['mimeType']}'. Allowed types: ".implode(', ', $fileConfig['allowedTypes'])
+                    "$errorPrefix has invalid type '$mimeType'. Allowed types: $allowedStr"
                 );
             }
         }
@@ -969,8 +1001,10 @@ class FilePropertyHandler
         // Validate file size.
         if (($fileConfig['maxSize'] ?? null) !== null && $fileConfig['maxSize'] > 0) {
             if ($fileData['size'] > $fileConfig['maxSize']) {
+                $maxSize  = $fileConfig['maxSize'];
+                $fileSize = $fileData['size'];
                 throw new Exception(
-                    "$errorPrefix exceeds maximum size ({$fileConfig['maxSize']} bytes). File size: {$fileData['size']} bytes"
+                    "$errorPrefix exceeds maximum size ($maxSize bytes). File size: $fileSize bytes"
                 );
             }
         }
@@ -1015,9 +1049,10 @@ class FilePropertyHandler
                     ]
                 );
 
-                throw new Exception(
-                    "$errorPrefix is an executable file (.$extension). Executable files are blocked for security reasons. Allowed formats: documents, images, archives, data files."
-                );
+                $errorMsg  = "$errorPrefix is an executable file (.$extension). ";
+                $errorMsg .= "Executable files are blocked for security reasons. ";
+                $errorMsg .= "Allowed formats: documents, images, archives, data files.";
+                throw new Exception($errorMsg);
             }
         }
 
@@ -1029,17 +1064,18 @@ class FilePropertyHandler
         // Check MIME types for executables.
         $executableMimeTypes = $this->getExecutableMimeTypes();
 
-        if (($fileData['mimeType'] ?? null) !== null && in_array($fileData['mimeType'], $executableMimeTypes, true) === true) {
+        $mimeType = $fileData['mimeType'] ?? null;
+        if ($mimeType !== null && in_array($mimeType, $executableMimeTypes, true) === true) {
             $this->logger->warning(
                 'Executable MIME type blocked',
                 [
                     'app'      => 'openregister',
-                    'mimeType' => $fileData['mimeType'],
+                    'mimeType' => $mimeType,
                 ]
             );
 
             throw new Exception(
-                "$errorPrefix has executable MIME type '{$fileData['mimeType']}'. Executable files are blocked for security reasons."
+                "$errorPrefix has executable MIME type '$mimeType'. ".'Executable files are blocked for security reasons.'
             );
         }
     }//end blockExecutableFiles()
@@ -1096,9 +1132,8 @@ class FilePropertyHandler
                     ]
                 );
 
-                throw new Exception(
-                    "$errorPrefix contains executable code ($description). Executable files are blocked for security reasons."
-                );
+                $msg = "$errorPrefix contains executable code ($description). ";
+                throw new Exception($msg.'Executable files are blocked for security reasons.');
             }
         }//end foreach
 

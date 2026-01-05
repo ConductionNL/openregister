@@ -94,6 +94,9 @@ class ElasticsearchBackend implements SearchBackendInterface
     /**
      * Index an object.
      *
+     * @param ObjectEntity $object The object to index
+     * @param bool         $commit Whether to commit immediately
+     *
      * @return bool True on success, false on failure
      */
     public function indexObject(ObjectEntity $object, bool $commit=false): bool
@@ -103,6 +106,9 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     /**
      * Index multiple objects.
+     *
+     * @param array $objects The objects to index
+     * @param bool  $commit  Whether to commit immediately
      *
      * @return array Results of bulk indexing operation
      */
@@ -114,6 +120,9 @@ class ElasticsearchBackend implements SearchBackendInterface
     /**
      * Delete an object.
      *
+     * @param string|int $objectId The object ID to delete
+     * @param bool       $commit   Whether to commit immediately
+     *
      * @return bool True on success, false on failure
      */
     public function deleteObject(string|int $objectId, bool $commit=false): bool
@@ -123,6 +132,10 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     /**
      * Delete objects by query.
+     *
+     * @param string $query         The query string
+     * @param bool   $commit        Whether to commit immediately
+     * @param bool   $returnDetails Whether to return details
      *
      * @return int[]|true Array with details if $returnDetails is true, otherwise bool
      *
@@ -142,14 +155,20 @@ class ElasticsearchBackend implements SearchBackendInterface
     /**
      * Search with pagination.
      *
+     * @param array $query        The search query
+     * @param bool  $rbac         Whether to apply RBAC
+     * @param bool  $multitenancy Whether to apply multitenancy
+     * @param bool  $published    Whether to filter by published status
+     * @param bool  $deleted      Whether to include deleted objects
+     *
      * @return ((array|mixed)[]|int|mixed)[] Search results with pagination metadata
      *
      * @psalm-return array{total: 0|mixed, results: array<never, array<never, never>|mixed>, page: 1, limit: 10|mixed}
      */
     public function searchObjectsPaginated(
         array $query=[],
-        bool $rbac=true,
-        bool $multitenancy=true,
+        bool $_rbac=true,
+        bool $_multitenancy=true,
         bool $published=false,
         bool $deleted=false
     ): array {
@@ -194,6 +213,8 @@ class ElasticsearchBackend implements SearchBackendInterface
     /**
      * Search objects.
      *
+     * @param array $params The search parameters
+     *
      * @return array Search results
      */
     public function search(array $params): array
@@ -203,6 +224,10 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     /**
      * Reindex all objects.
+     *
+     * @param int         $maxObjects     Maximum number of objects to reindex
+     * @param int         $batchSize      Batch size for reindexing
+     * @param string|null $collectionName Collection name to reindex
      *
      * @return (int|string|true)[] Reindexing results
      *
@@ -221,6 +246,13 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     /**
      * Warmup index (ensure it exists).
+     *
+     * @param array  $schemas       Schemas to warmup
+     * @param int    $maxObjects    Maximum objects to process
+     * @param string $mode          Processing mode
+     * @param bool   $collectErrors Whether to collect errors
+     * @param int    $batchSize     Batch size for processing
+     * @param array  $schemaIds     Specific schema IDs to process
      *
      * @return (string|true)[] Warmup results
      *
@@ -247,6 +279,8 @@ class ElasticsearchBackend implements SearchBackendInterface
     /**
      * Check if backend is available.
      *
+     * @param bool $forceRefresh Whether to force refresh availability check
+     *
      * @return bool True if backend is available
      */
     public function isAvailable(bool $forceRefresh=false): bool
@@ -256,6 +290,8 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     /**
      * Test connection to backend.
+     *
+     * @param bool $includeCollectionTests Whether to include collection tests
      *
      * @return (bool|int|string)[] Connection test results
      *
@@ -290,6 +326,8 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     /**
      * Clear index.
+     *
+     * @param string|null $collectionName Collection name to clear
      *
      * @return int[] Clear operation results
      *
@@ -329,6 +367,9 @@ class ElasticsearchBackend implements SearchBackendInterface
     /**
      * Create collection/index.
      *
+     * @param string $name   Collection name to create
+     * @param array  $config Configuration for the collection
+     *
      * @return bool[] Creation results
      *
      * @psalm-return array{success: bool}
@@ -341,6 +382,8 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     /**
      * Delete collection/index.
+     *
+     * @param string|null $collectionName Collection name to delete
      *
      * @return bool[] Deletion results
      *
@@ -355,6 +398,8 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     /**
      * Check if collection exists.
+     *
+     * @param string $collectionName Collection name to check
      *
      * @return bool True if collection exists
      */
@@ -379,6 +424,8 @@ class ElasticsearchBackend implements SearchBackendInterface
     /**
      * Index generic documents.
      *
+     * @param array $documents Documents to index
+     *
      * @return true True on success
      */
     public function index(array $documents): bool
@@ -390,6 +437,8 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     /**
      * Get field types.
+     *
+     * @param string $collection Collection name
      *
      * @return array Field types
      *
@@ -403,6 +452,9 @@ class ElasticsearchBackend implements SearchBackendInterface
     /**
      * Add field type.
      *
+     * @param string $collection Collection name
+     * @param array  $fieldType  Field type configuration
+     *
      * @return true True on success
      */
     public function addFieldType(string $collection, array $fieldType): bool
@@ -412,6 +464,8 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     /**
      * Get fields.
+     *
+     * @param string $collection Collection name
      *
      * @return array Field definitions
      *
@@ -424,6 +478,9 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     /**
      * Add or update field.
+     *
+     * @param array $fieldConfig Field configuration
+     * @param bool  $force       Whether to force update
      *
      * @return string Status message
      *

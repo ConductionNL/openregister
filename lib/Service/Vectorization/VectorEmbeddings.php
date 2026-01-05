@@ -708,7 +708,8 @@ class VectorEmbeddings
      *
      * @param string|null $provider Override provider (null = use default from settings)
      *
-     * @return array{provider: string, model: string, dimensions: int, api_key: string|null, base_url: string|null} Configuration
+     * @return array{provider: string, model: string, dimensions: int,
+     *               api_key: string|null, base_url: string|null} Configuration
      */
     private function getEmbeddingConfig(?string $provider=null): array
     {

@@ -139,7 +139,8 @@ class FileSettingsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400|500, array{success: bool, error?: string, message?: 'Dolphin connection successful'}, array<never, never>>
+     * @psalm-return JSONResponse<200|400|500, array{success: bool, error?: string,
+     *     message?: 'Dolphin connection successful'}, array<never, never>>
      */
     public function testDolphinConnection(string $apiEndpoint, string $apiKey): JSONResponse
     {
@@ -219,7 +220,8 @@ class FileSettingsController extends Controller
      *
      * @return JSONResponse JSON response with file collection fields
      *
-     * @psalm-return JSONResponse<200|500, array{success: bool, message?: string, collection?: 'files', status?: mixed}, array<never, never>>
+     * @psalm-return JSONResponse<200|500, array{success: bool, message?: string, collection?: 'files', status?: mixed},
+     *     array<never, never>>
      */
     public function getFileCollectionFields(): JSONResponse
     {
@@ -254,7 +256,8 @@ class FileSettingsController extends Controller
      *
      * @return JSONResponse JSON response with field creation results
      *
-     * @psalm-return JSONResponse<200|400|500, array{success: false|mixed, message: string, collection?: 'files'}, array<never, never>>
+     * @psalm-return JSONResponse<200|400|500, array{success: false|mixed, message: string, collection?: 'files'},
+     *     array<never, never>>
      */
     public function createMissingFileFields(): JSONResponse
     {
@@ -435,7 +438,8 @@ class FileSettingsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|422|500, array{success: bool, message: mixed|string, file_id?: int}, array<never, never>>
+     * @psalm-return JSONResponse<200|422|500, array{success: bool, message: mixed|string, file_id?: int},
+     *     array<never, never>>
      */
     public function indexFile(int $fileId): JSONResponse
     {

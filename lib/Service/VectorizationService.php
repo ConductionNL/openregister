@@ -284,8 +284,16 @@ class VectorizationService
                     foreach ($batch as $index => $item) {
                         $embeddingData = $embeddings[$index] ?? null;
 
-                        if ($embeddingData !== null && (($embeddingData['embedding'] ?? null) !== null) && $embeddingData['embedding'] !== null) {
-                            $this->storeVector(entity: $entity, item: $item, embeddingData: $embeddingData, strategy: $strategy);
+                        $hasEmbedding = $embeddingData !== null
+                            && (($embeddingData['embedding'] ?? null) !== null)
+                            && $embeddingData['embedding'] !== null;
+                        if ($hasEmbedding === true) {
+                            $this->storeVector(
+                                entity: $entity,
+                                item: $item,
+                                embeddingData: $embeddingData,
+                                strategy: $strategy
+                            );
                             $vectorized++;
                         } else {
                             $failed++;
@@ -302,7 +310,7 @@ class VectorizationService
                                 'item_index' => $index,
                                 'error'      => $errorMsg,
                             ];
-                        }
+                        }//end if
                     }//end foreach
                 } catch (\Exception $e) {
                     $failed += count($batch);
@@ -458,7 +466,13 @@ class VectorizationService
         array $weights=['solr' => 0.5, 'vector' => 0.5],
         ?string $provider=null
     ): array {
-        return $this->vectorService->hybridSearch(query: $query, solrFilters: $solrFilters, limit: $limit, weights: $weights, provider: $provider);
+        return $this->vectorService->hybridSearch(
+            query: $query,
+            solrFilters: $solrFilters,
+            limit: $limit,
+            weights: $weights,
+            provider: $provider
+        );
     }//end hybridSearch()
 
     /**

@@ -197,6 +197,7 @@ class SchemasController extends Controller
 
         // Add extendedBy property to each schema showing UUIDs of schemas that extend it.
         foreach ($schemasArr as &$schema) {
+            /** @psalm-suppress InvalidArrayOffset */
             $schema['@self'] = $schema['@self'] ?? [];
             $schema['@self']['extendedBy'] = $this->schemaMapper->findExtendedBy($schema['id']);
         }
@@ -262,6 +263,7 @@ class SchemasController extends Controller
             $schemaArr = $schema->jsonSerialize();
 
             // Add extendedBy property showing UUIDs of schemas that extend this schema.
+            /** @psalm-suppress InvalidArrayOffset */
             $schemaArr['@self'] = $schemaArr['@self'] ?? [];
             $schemaArr['@self']['extendedBy'] = $this->schemaMapper->findExtendedBy($id);
 
@@ -297,10 +299,6 @@ class SchemasController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with created schema
-     *
-     * @psalm-return JSONResponse<201, Schema,
-     *     array<never, never>>|JSONResponse<int, array{error: string},
-     *     array<never, never>>
      */
     public function create(): JSONResponse
     {
@@ -349,10 +347,16 @@ class SchemasController extends Controller
         } catch (DBException $e) {
             // Handle database constraint violations with user-friendly messages.
             $constraintException = DatabaseConstraintException::fromDatabaseException(dbException: $e, entityType: 'schema');
-            return new JSONResponse(data: ['error' => $constraintException->getMessage()], statusCode: $constraintException->getHttpStatusCode());
+            return new JSONResponse(
+                data: ['error' => $constraintException->getMessage()],
+                statusCode: $constraintException->getHttpStatusCode()
+            );
         } catch (DatabaseConstraintException $e) {
             // Handle our custom database constraint exceptions.
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $e->getHttpStatusCode());
+            return new JSONResponse(
+                data: ['error' => $e->getMessage()],
+                statusCode: $e->getHttpStatusCode()
+            );
         } catch (Exception $e) {
             // Log the actual error for debugging.
             $this->logger->error(
@@ -401,10 +405,6 @@ class SchemasController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with updated schema
-     *
-     * @psalm-return JSONResponse<200, Schema,
-     *     array<never, never>>|JSONResponse<int, array{error: string},
-     *     array<never, never>>
      */
     public function update(int $id): JSONResponse
     {
@@ -430,16 +430,28 @@ class SchemasController extends Controller
 
             // **CACHE INVALIDATION**: Clear all schema-related caches when schema is updated.
             $this->schemaCacheService->invalidateForSchemaChange(schemaId: $updatedSchema->getId(), operation: 'update');
-            $this->schemaFacetCacheService->invalidateForSchemaChange(schemaId: $updatedSchema->getId(), operation: 'update');
+            $this->schemaFacetCacheService->invalidateForSchemaChange(
+                schemaId: $updatedSchema->getId(),
+                operation: 'update'
+            );
 
             return new JSONResponse(data: $updatedSchema);
         } catch (DBException $e) {
             // Handle database constraint violations with user-friendly messages.
-            $constraintException = DatabaseConstraintException::fromDatabaseException(dbException: $e, entityType: 'schema');
-            return new JSONResponse(data: ['error' => $constraintException->getMessage()], statusCode: $constraintException->getHttpStatusCode());
+            $constraintException = DatabaseConstraintException::fromDatabaseException(
+                dbException: $e,
+                entityType: 'schema'
+            );
+            return new JSONResponse(
+                data: ['error' => $constraintException->getMessage()],
+                statusCode: $constraintException->getHttpStatusCode()
+            );
         } catch (DatabaseConstraintException $e) {
             // Handle our custom database constraint exceptions.
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $e->getHttpStatusCode());
+            return new JSONResponse(
+                data: ['error' => $e->getMessage()],
+                statusCode: $e->getHttpStatusCode()
+            );
         } catch (Exception $e) {
             // Log the actual error for debugging.
             $this->logger->error(
@@ -488,9 +500,7 @@ class SchemasController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200, Schema,
-     *     array<never, never>>|JSONResponse<int, array{error: string},
-     *     array<never, never>>
+     * @return JSONResponse JSON response with patched schema
      */
     public function patch(int $id): JSONResponse
     {
@@ -522,8 +532,14 @@ class SchemasController extends Controller
             $this->schemaMapper->delete($schemaToDelete);
 
             // **CACHE INVALIDATION**: Clear all schema-related caches when schema is deleted.
-            $this->schemaCacheService->invalidateForSchemaChange(schemaId: $schemaToDelete->getId(), operation: 'delete');
-            $this->schemaFacetCacheService->invalidateForSchemaChange(schemaId: $schemaToDelete->getId(), operation: 'delete');
+            $this->schemaCacheService->invalidateForSchemaChange(
+                schemaId: $schemaToDelete->getId(),
+                operation: 'delete'
+            );
+            $this->schemaFacetCacheService->invalidateForSchemaChange(
+                schemaId: $schemaToDelete->getId(),
+                operation: 'delete'
+            );
 
             // Return an empty response.
             return new JSONResponse(data: []);
@@ -533,7 +549,7 @@ class SchemasController extends Controller
         } catch (\Exception $e) {
             // Return 500 for other errors.
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
-        }
+        }//end try
     }//end destroy()
 
     /**
@@ -622,14 +638,23 @@ class SchemasController extends Controller
 
                 // **CACHE INVALIDATION**: Clear all schema-related caches when schema is updated.
                 $this->schemaCacheService->invalidateForSchemaChange(schemaId: $schema->getId(), operation: 'update');
-                $this->schemaFacetCacheService->invalidateForSchemaChange(schemaId: $schema->getId(), operation: 'update');
+                $this->schemaFacetCacheService->invalidateForSchemaChange(
+                    schemaId: $schema->getId(),
+                    operation: 'update'
+                );
             }//end if
 
             return new JSONResponse(data: $schema);
         } catch (DBException $e) {
             // Handle database constraint violations with user-friendly messages.
-            $constraintException = DatabaseConstraintException::fromDatabaseException(dbException: $e, entityType: 'schema');
-            return new JSONResponse(data: ['error' => $constraintException->getMessage()], statusCode: $constraintException->getHttpStatusCode());
+            $constraintException = DatabaseConstraintException::fromDatabaseException(
+                dbException: $e,
+                entityType: 'schema'
+            );
+            return new JSONResponse(
+                data: ['error' => $constraintException->getMessage()],
+                statusCode: $constraintException->getHttpStatusCode()
+            );
         } catch (DatabaseConstraintException $e) {
             // Handle our custom database constraint exceptions.
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $e->getHttpStatusCode());
@@ -937,9 +962,13 @@ class SchemasController extends Controller
                 return new JSONResponse(data: ['error' => 'No property updates provided'], statusCode: 400);
             }
 
-            $this->logger->info('Updating schema '.$id.' with '.count($propertyUpdates).' property updates');
+            $updateCount = count($propertyUpdates);
+            $this->logger->info("Updating schema {$id} with {$updateCount} property updates");
 
-            $updatedSchema = $this->schemaService->updateSchemaFromExploration(schemaId: $id, propertyUpdates: $propertyUpdates);
+            $updatedSchema = $this->schemaService->updateSchemaFromExploration(
+                schemaId: $id,
+                propertyUpdates: $propertyUpdates
+            );
 
             // Clear schema cache to ensure fresh data.
             $this->schemaCacheService->clearSchemaCache($id);
@@ -1009,8 +1038,14 @@ class SchemasController extends Controller
             $updatedSchema = $this->schemaMapper->update($schema);
 
             // **CACHE INVALIDATION**: Clear schema cache when publication status changes
-            $this->schemaCacheService->invalidateForSchemaChange(schemaId: $updatedSchema->getId(), operation: 'publish');
-            $this->schemaFacetCacheService->invalidateForSchemaChange(schemaId: $updatedSchema->getId(), operation: 'publish');
+            $this->schemaCacheService->invalidateForSchemaChange(
+                schemaId: $updatedSchema->getId(),
+                operation: 'publish'
+            );
+            $this->schemaFacetCacheService->invalidateForSchemaChange(
+                schemaId: $updatedSchema->getId(),
+                operation: 'publish'
+            );
 
             $this->logger->info(
                 'Schema published',
@@ -1084,8 +1119,14 @@ class SchemasController extends Controller
             $updatedSchema = $this->schemaMapper->update($schema);
 
             // **CACHE INVALIDATION**: Clear schema cache when publication status changes
-            $this->schemaCacheService->invalidateForSchemaChange(schemaId: $updatedSchema->getId(), operation: 'depublish');
-            $this->schemaFacetCacheService->invalidateForSchemaChange(schemaId: $updatedSchema->getId(), operation: 'depublish');
+            $this->schemaCacheService->invalidateForSchemaChange(
+                schemaId: $updatedSchema->getId(),
+                operation: 'depublish'
+            );
+            $this->schemaFacetCacheService->invalidateForSchemaChange(
+                schemaId: $updatedSchema->getId(),
+                operation: 'depublish'
+            );
 
             $this->logger->info(
                 'Schema depublished',

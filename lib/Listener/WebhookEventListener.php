@@ -136,69 +136,7 @@ class WebhookEventListener implements IEventListener
      *
      * @param Event $event The event
      *
-     * @return (((int|mixed|null|string[])[]|mixed|null|scalar)[]|\DateTime|mixed|null|string)[]|null
-     *
-     * @psalm-return array{objectType: string, action: string,
-     *     object?: array{'@self': array{name: mixed|null|string,...},...},
-     *     register?: array{id: int, uuid: null|string, slug: null|string,
-     *     title: null|string, version: null|string, description: null|string,
-     *     schemas: array<int|string>, source: null|string,
-     *     tablePrefix: null|string, folder: null|string, updated: null|string,
-     *     created: null|string, owner: null|string, application: null|string,
-     *     organisation: null|string, authorization: array|null,
-     *     groups: array<string, list<string>>, quota: array{storage: null,
-     *     bandwidth: null, requests: null, users: null, groups: null},
-     *     usage: array{storage: 0, bandwidth: 0, requests: 0, users: 0,
-     *     groups: int<0, max>}, deleted: null|string, published: null|string,
-     *     depublished: null|string}|null|string,
-     *     schema?: array{id: int, uuid: null|string, uri: null|string,
-     *     slug: null|string, title: null|string, description: null|string,
-     *     version: null|string, summary: null|string, icon: null|string,
-     *     required: array, properties: array, archive: array|null,
-     *     source: null|string, hardValidation: bool, immutable: bool,
-     *     searchable: bool, updated: null|string, created: null|string,
-     *     maxDepth: int, owner: null|string, application: null|string,
-     *     organisation: null|string, groups: array<string, list<string>>|null,
-     *     authorization: array|null, deleted: null|string,
-     *     published: null|string, depublished: null|string,
-     *     configuration: array|null|string, allOf: array|null, oneOf: array|null,
-     *     anyOf: array|null}|null|string,
-     *     newObject?: array{'@self': array{name: mixed|null|string,...},...},
-     *     oldObject?: array{'@self': array{name: mixed|null|string,...},...},
-     *     revertPoint?: \DateTime|null|string,
-     *     application?: array{id: int, uuid: null|string, name: null|string,
-     *     description: null|string, version: null|string,
-     *     organisation: null|string, configurations: array|null,
-     *     registers: array|null, schemas: array|null, owner: null|string,
-     *     active: bool|null, groups: array|null, quota: array{storage: int|null,
-     *     bandwidth: int|null, requests: int|null, users: null, groups: null},
-     *     usage: array{storage: 0, bandwidth: 0, requests: 0, users: 0,
-     *     groups: int<0, max>}, authorization: array, created: null|string,
-     *     updated: null|string, managedByConfiguration: array{id: int,
-     *     uuid: null|string, title: null|string}|null},
-     *     agent?: array{id: int, uuid: null|string, name: null|string,
-     *     description: null|string, type: null|string, provider: null|string,
-     *     model: null|string, prompt: null|string, temperature: float|null,
-     *     maxTokens: int|null, configuration: array|null,
-     *     organisation: null|string, owner: null|string, active: bool,
-     *     enableRag: bool, ragSearchMode: null|string, ragNumSources: int|null,
-     *     ragIncludeFiles: bool, ragIncludeObjects: bool,
-     *     requestQuota: int|null, tokenQuota: int|null, views: array|null,
-     *     searchFiles: bool|null, searchObjects: bool|null, isPrivate: bool|null,
-     *     invitedUsers: array|null, groups: array|null, tools: array|null,
-     *     user: null|string, created: null|string, updated: null|string,
-     *     managedByConfiguration: array{id: int, uuid: null|string,
-     *     title: null|string}|null},
-     *     source?: array{id: int, uuid: null|string, title: null|string,
-     *     version: null|string, description: null|string,
-     *     databaseUrl: null|string, type: null|string, organisation: null|string,
-     *     updated: null|string, created: null|string,
-     *     managedByConfiguration: array{id: int, uuid: null|string,
-     *     title: null|string}|null}, configuration?: mixed, view?: mixed,
-     *     conversation?: array{id: int, uuid: null|string, title: null|string,
-     *     userId: null|string, organisation: null|string, agentId: int|null,
-     *     metadata: array|null, deletedAt: null|string, created: null|string,
-     *     updated: null|string}, organisation?: mixed}|null
+     * @return array<string, mixed>|null
      */
     private function extractPayload(Event $event): array|null
     {
@@ -291,103 +229,127 @@ class WebhookEventListener implements IEventListener
         }
 
         // Register events.
-        if ($event instanceof RegisterCreatedEvent || $event instanceof RegisterUpdatedEvent || $event instanceof RegisterDeletedEvent) {
-            // Get the register based on event type.
-            if ($event instanceof RegisterCreatedEvent || $event instanceof RegisterDeletedEvent) {
-                $register = $event->getRegister();
-            } else {
-                // RegisterUpdatedEvent has newRegister and oldRegister.
-                $register = $event->getNewRegister();
-            }
-
-            $action = match (true) {
-                $event instanceof RegisterCreatedEvent => 'created',
-                $event instanceof RegisterUpdatedEvent => 'updated',
-                $event instanceof RegisterDeletedEvent => 'deleted',
-            };
-
+        if ($event instanceof RegisterCreatedEvent) {
             return [
                 'objectType' => 'register',
-                'action'     => $action,
-                'register'   => $register->jsonSerialize(),
+                'action'     => 'created',
+                'register'   => $event->getRegister()->jsonSerialize(),
             ];
-        }//end if
+        }
+
+        if ($event instanceof RegisterUpdatedEvent) {
+            return [
+                'objectType' => 'register',
+                'action'     => 'updated',
+                'register'   => $event->getNewRegister()->jsonSerialize(),
+            ];
+        }
+
+        if ($event instanceof RegisterDeletedEvent) {
+            return [
+                'objectType' => 'register',
+                'action'     => 'deleted',
+                'register'   => $event->getRegister()->jsonSerialize(),
+            ];
+        }
 
         // Schema events.
-        if ($event instanceof SchemaCreatedEvent || $event instanceof SchemaUpdatedEvent || $event instanceof SchemaDeletedEvent) {
-            // Get the schema based on event type.
-            if ($event instanceof SchemaCreatedEvent || $event instanceof SchemaDeletedEvent) {
-                $schema = $event->getSchema();
-            } else {
-                // SchemaUpdatedEvent has newSchema and oldSchema.
-                $schema = $event->getNewSchema();
-            }
-
-            $action = match (true) {
-                $event instanceof SchemaCreatedEvent => 'created',
-                $event instanceof SchemaUpdatedEvent => 'updated',
-                $event instanceof SchemaDeletedEvent => 'deleted',
-            };
-
+        if ($event instanceof SchemaCreatedEvent) {
             return [
                 'objectType' => 'schema',
-                'action'     => $action,
-                'schema'     => $schema->jsonSerialize(),
+                'action'     => 'created',
+                'schema'     => $event->getSchema()->jsonSerialize(),
             ];
-        }//end if
+        }
+
+        if ($event instanceof SchemaUpdatedEvent) {
+            return [
+                'objectType' => 'schema',
+                'action'     => 'updated',
+                'schema'     => $event->getNewSchema()->jsonSerialize(),
+            ];
+        }
+
+        if ($event instanceof SchemaDeletedEvent) {
+            return [
+                'objectType' => 'schema',
+                'action'     => 'deleted',
+                'schema'     => $event->getSchema()->jsonSerialize(),
+            ];
+        }
 
         // Application events.
-        if ($event instanceof ApplicationCreatedEvent || $event instanceof ApplicationUpdatedEvent || $event instanceof ApplicationDeletedEvent) {
-            // Get the application based on event type.
-            if ($event instanceof ApplicationCreatedEvent || $event instanceof ApplicationDeletedEvent) {
-                $application = $event->getApplication();
-            } else {
-                // ApplicationUpdatedEvent has newApplication and oldApplication.
-                $application = $event->getNewApplication();
-            }
-
-            $action = match (true) {
-                $event instanceof ApplicationCreatedEvent => 'created',
-                $event instanceof ApplicationUpdatedEvent => 'updated',
-                $event instanceof ApplicationDeletedEvent => 'deleted',
-            };
-
+        if ($event instanceof ApplicationCreatedEvent) {
             return [
                 'objectType'  => 'application',
-                'action'      => $action,
-                'application' => $application->jsonSerialize(),
+                'action'      => 'created',
+                'application' => $event->getApplication()->jsonSerialize(),
             ];
-        }//end if
+        }
+
+        if ($event instanceof ApplicationUpdatedEvent) {
+            return [
+                'objectType'  => 'application',
+                'action'      => 'updated',
+                'application' => $event->getNewApplication()->jsonSerialize(),
+            ];
+        }
+
+        if ($event instanceof ApplicationDeletedEvent) {
+            return [
+                'objectType'  => 'application',
+                'action'      => 'deleted',
+                'application' => $event->getApplication()->jsonSerialize(),
+            ];
+        }
 
         // Agent events.
-        if ($event instanceof AgentCreatedEvent || $event instanceof AgentUpdatedEvent || $event instanceof AgentDeletedEvent) {
-            $agent  = $event->getAgent();
-            $action = match (true) {
-                $event instanceof AgentCreatedEvent => 'created',
-                $event instanceof AgentUpdatedEvent => 'updated',
-                $event instanceof AgentDeletedEvent => 'deleted',
-            };
-
+        if ($event instanceof AgentCreatedEvent) {
             return [
                 'objectType' => 'agent',
-                'action'     => $action,
-                'agent'      => $agent->jsonSerialize(),
+                'action'     => 'created',
+                'agent'      => $event->getAgent()->jsonSerialize(),
+            ];
+        }
+
+        if ($event instanceof AgentUpdatedEvent) {
+            return [
+                'objectType' => 'agent',
+                'action'     => 'updated',
+                'agent'      => $event->getAgent()->jsonSerialize(),
+            ];
+        }
+
+        if ($event instanceof AgentDeletedEvent) {
+            return [
+                'objectType' => 'agent',
+                'action'     => 'deleted',
+                'agent'      => $event->getAgent()->jsonSerialize(),
             ];
         }
 
         // Source events.
-        if ($event instanceof SourceCreatedEvent || $event instanceof SourceUpdatedEvent || $event instanceof SourceDeletedEvent) {
-            $source = $event->getSource();
-            $action = match (true) {
-                $event instanceof SourceCreatedEvent => 'created',
-                $event instanceof SourceUpdatedEvent => 'updated',
-                $event instanceof SourceDeletedEvent => 'deleted',
-            };
-
+        if ($event instanceof SourceCreatedEvent) {
             return [
                 'objectType' => 'source',
-                'action'     => $action,
-                'source'     => $source->jsonSerialize(),
+                'action'     => 'created',
+                'source'     => $event->getSource()->jsonSerialize(),
+            ];
+        }
+
+        if ($event instanceof SourceUpdatedEvent) {
+            return [
+                'objectType' => 'source',
+                'action'     => 'updated',
+                'source'     => $event->getSource()->jsonSerialize(),
+            ];
+        }
+
+        if ($event instanceof SourceDeletedEvent) {
+            return [
+                'objectType' => 'source',
+                'action'     => 'deleted',
+                'source'     => $event->getSource()->jsonSerialize(),
             ];
         }
 
@@ -427,36 +389,54 @@ class WebhookEventListener implements IEventListener
         }
 
         // Conversation events.
-        if ($event instanceof ConversationCreatedEvent || $event instanceof ConversationUpdatedEvent || $event instanceof ConversationDeletedEvent) {
-            $conversation = $event->getConversation();
-            $action       = match (true) {
-                $event instanceof ConversationCreatedEvent => 'created',
-                $event instanceof ConversationUpdatedEvent => 'updated',
-                $event instanceof ConversationDeletedEvent => 'deleted',
-            };
-
+        if ($event instanceof ConversationCreatedEvent) {
             return [
                 'objectType'   => 'conversation',
-                'action'       => $action,
-                'conversation' => $conversation->jsonSerialize(),
+                'action'       => 'created',
+                'conversation' => $event->getConversation()->jsonSerialize(),
+            ];
+        }
+
+        if ($event instanceof ConversationUpdatedEvent) {
+            return [
+                'objectType'   => 'conversation',
+                'action'       => 'updated',
+                'conversation' => $event->getConversation()->jsonSerialize(),
+            ];
+        }
+
+        if ($event instanceof ConversationDeletedEvent) {
+            return [
+                'objectType'   => 'conversation',
+                'action'       => 'deleted',
+                'conversation' => $event->getConversation()->jsonSerialize(),
             ];
         }
 
         // Organisation events.
-        if ($event instanceof OrganisationCreatedEvent || $event instanceof OrganisationUpdatedEvent || $event instanceof OrganisationDeletedEvent) {
-            $organisation = $event->getOrganisation();
-            $action       = match (true) {
-                $event instanceof OrganisationCreatedEvent => 'created',
-                $event instanceof OrganisationUpdatedEvent => 'updated',
-                $event instanceof OrganisationDeletedEvent => 'deleted',
-            };
-
+        if ($event instanceof OrganisationCreatedEvent) {
             return [
                 'objectType'   => 'organisation',
-                'action'       => $action,
-                'organisation' => $organisation->jsonSerialize(),
+                'action'       => 'created',
+                'organisation' => $event->getOrganisation()->jsonSerialize(),
             ];
-        }//end if
+        }
+
+        if ($event instanceof OrganisationUpdatedEvent) {
+            return [
+                'objectType'   => 'organisation',
+                'action'       => 'updated',
+                'organisation' => $event->getOrganisation()->jsonSerialize(),
+            ];
+        }
+
+        if ($event instanceof OrganisationDeletedEvent) {
+            return [
+                'objectType'   => 'organisation',
+                'action'       => 'deleted',
+                'organisation' => $event->getOrganisation()->jsonSerialize(),
+            ];
+        }
 
         return null;
     }//end extractPayload()

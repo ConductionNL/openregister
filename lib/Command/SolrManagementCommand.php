@@ -79,7 +79,7 @@ class SolrManagementCommand extends Command
             ->addArgument(
                 name: 'action',
                 mode: InputArgument::REQUIRED,
-                description: 'Action to perform: setup, optimize, warm, health, schema-check, clear, stats, configure-vectors'
+                description: 'Action: setup, optimize, warm, health, schema-check, clear, stats, configure-vectors'
             )
             ->addOption(
                 name: 'tenant-collection',
@@ -201,7 +201,8 @@ class SolrManagementCommand extends Command
             }
 
             $output->writeln('✅ SOLR connection successful');
-            $output->writeln('   Version: <comment>'.($connectionResult['details']['solr_version'] ?? 'unknown').'</comment>');
+            $version = $connectionResult['details']['solr_version'] ?? 'unknown';
+            $output->writeln('   Version: <comment>'.$version.'</comment>');
             $output->writeln('   Mode: <comment>'.($connectionResult['details']['mode'] ?? 'unknown').'</comment>');
             $output->writeln('');
 
@@ -227,13 +228,13 @@ class SolrManagementCommand extends Command
 
                 // Ensure tenant collection.
                 $output->writeln('🏠 Verifying tenant-specific collection...');
-                $tenantResult = $this->solrService->ensureTenantCollection();
-                if (empty($tenantResult) === true) {
-                    $output->writeln('<error>❌ Failed to create tenant collection</error>');
+                try {
+                    $this->solrService->ensureTenantCollection();
+                    $output->writeln('✅ Tenant collection ready with proper schema');
+                } catch (\Exception $e) {
+                    $output->writeln('<error>❌ Failed to create tenant collection: '.$e->getMessage().'</error>');
                     return self::FAILURE;
                 }
-
-                $output->writeln('✅ Tenant collection ready with proper schema');
                 $docCount = $this->solrService->getDocumentCount();
                 $output->writeln('   Document count: <comment>'.$docCount.'</comment>');
             }//end if
@@ -321,7 +322,13 @@ class SolrManagementCommand extends Command
             $warmQueries = [
                 ['q' => '*:*', 'rows' => 10, 'description' => 'All documents sample'],
                 ['q' => 'published:[* TO *]', 'rows' => 10, 'description' => 'Published objects'],
-                ['q' => '*:*', 'rows' => 0, 'facet' => 'true', 'facet.field' => ['register_id', 'schema_id'], 'description' => 'Facet warming'],
+                [
+                    'q'           => '*:*',
+                    'rows'        => 0,
+                    'facet'       => 'true',
+                    'facet.field' => ['register_id', 'schema_id'],
+                    'description' => 'Facet warming',
+                ],
             ];
 
             $successCount = 0;
@@ -346,7 +353,8 @@ class SolrManagementCommand extends Command
                 return self::SUCCESS;
             }
 
-            $output->writeln('<error>⚠️  Some warming queries failed ('.$successCount.'/'.count($warmQueries).' successful)</error>');
+            $total = count($warmQueries);
+            $output->writeln("<error>Some warming queries failed ({$successCount}/{$total} successful)</error>");
             return self::FAILURE;
         } catch (\Exception $e) {
             $output->writeln('<error>❌ Cache warming failed: '.$e->getMessage().'</error>');
@@ -388,16 +396,14 @@ class SolrManagementCommand extends Command
             // Collection test.
             $output->writeln('');
             $output->writeln('🏠 <info>Testing tenant collection...</info>');
-            $tenantResult = $this->solrService->ensureTenantCollection();
-            if (empty($tenantResult) === false) {
+            try {
+                $this->solrService->ensureTenantCollection();
                 $output->writeln('   ✅ Tenant collection accessible');
 
                 $docCount = $this->solrService->getDocumentCount();
                 $output->writeln('   📊 Document count: <comment>'.$docCount.'</comment>');
-            }
-
-            if (empty($tenantResult) === true) {
-                $output->writeln('   <error>❌ Tenant collection not accessible</error>');
+            } catch (\Exception $e) {
+                $output->writeln('   <error>❌ Tenant collection not accessible: '.$e->getMessage().'</error>');
                 $issues++;
             }
 
@@ -500,7 +506,8 @@ class SolrManagementCommand extends Command
                 }
 
                 if (empty($extraFields) === false) {
-                    $output->writeln('ℹ️  Additional fields: <comment>'.implode(', ', array_slice($extraFields, 0, 10)).'</comment>');
+                    $extra = implode(', ', array_slice($extraFields, 0, 10));
+                    $output->writeln('Additional fields: <comment>'.$extra.'</comment>');
                 }
             }//end if
 
@@ -575,26 +582,51 @@ class SolrManagementCommand extends Command
             $dashboardStats = $this->solrService->getDashboardStats();
 
             if ($dashboardStats['available'] === true) {
-                $output->writeln('🏠 <info>Collection Information</info>');
-                $output->writeln('   Collection: <comment>'.$dashboardStats['collection'].'</comment>');
-                $output->writeln('   Tenant ID: <comment>'.$dashboardStats['tenant_id'].'</comment>');
-                $output->writeln('   Documents: <comment>'.$dashboardStats['document_count'].'</comment>');
-                $output->writeln('   Shards: <comment>'.$dashboardStats['shards'].'</comment>');
-                $output->writeln('   Health: <comment>'.$dashboardStats['health'].'</comment>');
+                $output->writeln('🏠 <info>Index Information</info>');
+                $output->writeln('   Status: <comment>Available</comment>');
 
-                $output->writeln('');
-                $output->writeln('⚡ <info>Performance Statistics</info>');
-                $serviceStats = $dashboardStats['service_stats'];
-                $output->writeln('   Searches: <comment>'.$serviceStats['searches'].'</comment>');
-                $output->writeln('   Indexes: <comment>'.$serviceStats['indexes'].'</comment>');
-                $output->writeln('   Deletes: <comment>'.$serviceStats['deletes'].'</comment>');
-                $output->writeln('   Errors: <comment>'.$serviceStats['errors'].'</comment>');
-                $output->writeln('   Total search time: <comment>'.round($serviceStats['search_time'] * 1000, 2).'ms</comment>');
-                $output->writeln('   Total index time: <comment>'.round($serviceStats['index_time'] * 1000, 2).'ms</comment>');
+                // Display backend stats if available.
+                if (isset($dashboardStats['backend']) === true && is_array($dashboardStats['backend']) === true) {
+                    $backendStats = $dashboardStats['backend'];
+                    $output->writeln('');
+                    $output->writeln('⚡ <info>Backend Statistics</info>');
+                    $output->writeln('   Searches: <comment>'.($backendStats['searches'] ?? 0).'</comment>');
+                    $output->writeln('   Indexes: <comment>'.($backendStats['indexes'] ?? 0).'</comment>');
+                    $output->writeln('   Deletes: <comment>'.($backendStats['deletes'] ?? 0).'</comment>');
+                    $output->writeln('   Errors: <comment>'.($backendStats['errors'] ?? 0).'</comment>');
+                    if (isset($backendStats['search_time']) === true) {
+                        $searchTime = round((float) $backendStats['search_time'] * 1000, 2);
+                        $output->writeln('   Total search time: <comment>'.$searchTime.'ms</comment>');
+                    }
+
+                    if (isset($backendStats['index_time']) === true) {
+                        $indexTime = round((float) $backendStats['index_time'] * 1000, 2);
+                        $output->writeln('   Total index time: <comment>'.$indexTime.'ms</comment>');
+                    }
+                }
+
+                // Display file stats if available.
+                if (isset($dashboardStats['files']) === true && is_array($dashboardStats['files']) === true) {
+                    $output->writeln('');
+                    $output->writeln('📁 <info>File Statistics</info>');
+                    foreach ($dashboardStats['files'] as $key => $value) {
+                        $output->writeln('   '.ucfirst((string) $key).': <comment>'.$value.'</comment>');
+                    }
+                }
+
+                // Display chunk stats if available.
+                if (isset($dashboardStats['chunks']) === true && is_array($dashboardStats['chunks']) === true) {
+                    $output->writeln('');
+                    $output->writeln('📦 <info>Chunk Statistics</info>');
+                    foreach ($dashboardStats['chunks'] as $key => $value) {
+                        $output->writeln('   '.ucfirst((string) $key).': <comment>'.$value.'</comment>');
+                    }
+                }
             }//end if
 
             if ($dashboardStats['available'] === false) {
-                $output->writeln('<error>❌ SOLR statistics unavailable: '.($dashboardStats['error'] ?? 'Unknown error').'</error>');
+                $errMsg = $dashboardStats['error'] ?? 'Unknown error';
+                $output->writeln('<error>SOLR statistics unavailable: '.$errMsg.'</error>');
                 return self::FAILURE;
             }//end if
 

@@ -214,7 +214,12 @@ class CacheSettingsHandler
                     'enabled'    => false,
                 ],
                 'distributed' => ['type' => 'none', 'backend' => 'Unknown', 'available' => false],
-                'performance' => ['averageHitTime' => 0, 'averageMissTime' => 0, 'performanceGain' => 0, 'optimalHitRate' => 85.0],
+                'performance' => [
+                    'averageHitTime'  => 0,
+                    'averageMissTime' => 0,
+                    'performanceGain' => 0,
+                    'optimalHitRate'  => 85.0,
+                ],
                 'lastUpdated' => (new DateTime())->format('c'),
                 'error'       => 'Cache statistics unavailable: '.$e->getMessage(),
             ];
@@ -294,7 +299,8 @@ class CacheSettingsHandler
       *
       * @return (bool|string)[] Distributed cache statistics
       *
-      * @psalm-return array{type: 'distributed'|'none', backend: string, available: bool, error?: string, keyCount?: 'Unknown', size?: 'Unknown'}
+      * @psalm-return array{type: 'distributed'|'none', backend: string,
+      *     available: bool, error?: string, keyCount?: 'Unknown', size?: 'Unknown'}
       */
     private function getDistributedCacheStats(): array
     {
@@ -324,7 +330,8 @@ class CacheSettingsHandler
       *
       * @return (float|string)[]
       *
-      * @psalm-return array{averageHitTime: float, averageMissTime: float, performanceGain: float, optimalHitRate: float, currentTrend: 'improving'}
+      * @psalm-return array{averageHitTime: float, averageMissTime: float,
+      *     performanceGain: float, optimalHitRate: float, currentTrend: 'improving'}
       */
     private function getCachePerformanceMetrics(): array
     {

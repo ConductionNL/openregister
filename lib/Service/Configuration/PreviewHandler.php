@@ -134,22 +134,6 @@ class PreviewHandler
      *     synchronizations: array,
      *     rules: array
      * }|JSONResponse
-     *
-     * @psalm-return JSONResponse<int,
-     *     \JsonSerializable|\stdClass|array|null|scalar,
-     *     array<string, mixed>>|array{registers: list<array{action: string,
-     *     changes: array, current: array|null, proposed: array,
-     *     slug: string, title: string, type: string}>,
-     *     schemas: list<array{action: string, changes: array,
-     *     current: array|null, proposed: array, slug: string,
-     *     title: string, type: string}>, objects: list<array>,
-     *     endpoints: array<never, never>, sources: array<never, never>,
-     *     mappings: array<never, never>, jobs: array<never, never>,
-     *     synchronizations: array<never, never>, rules: array<never, never>,
-     *     metadata: array{configurationId: int,
-     *     configurationTitle: null|string, sourceUrl: null|string,
-     *     remoteVersion: mixed|null, localVersion: null|string,
-     *     previewedAt: string, totalChanges: int<0, max>}}
      */
     public function previewConfigurationChanges(Configuration $configuration): array|JSONResponse
     {
@@ -178,21 +162,27 @@ class PreviewHandler
         ];
 
         // Preview registers.
-        if (($remoteData['components']['registers'] ?? null) !== null && is_array($remoteData['components']['registers']) === true) {
+        if (($remoteData['components']['registers'] ?? null) !== null
+            && is_array($remoteData['components']['registers']) === true
+        ) {
             foreach ($remoteData['components']['registers'] as $slug => $registerData) {
                 $preview['registers'][] = $this->previewRegisterChange(slug: $slug, registerData: $registerData);
             }
         }
 
         // Preview schemas.
-        if (($remoteData['components']['schemas'] ?? null) !== null && is_array($remoteData['components']['schemas']) === true) {
+        if (($remoteData['components']['schemas'] ?? null) !== null
+            && is_array($remoteData['components']['schemas']) === true
+        ) {
             foreach ($remoteData['components']['schemas'] as $slug => $schemaData) {
                 $preview['schemas'][] = $this->previewSchemaChange(slug: $slug, schemaData: $schemaData);
             }
         }
 
         // Preview objects.
-        if (($remoteData['components']['objects'] ?? null) !== null && is_array($remoteData['components']['objects']) === true) {
+        if (($remoteData['components']['objects'] ?? null) !== null
+            && is_array($remoteData['components']['objects']) === true
+        ) {
             // Build register and schema slug to ID maps.
             $registerSlugToId = [];
             $schemaSlugToId   = [];
@@ -254,7 +244,7 @@ class PreviewHandler
      *     changes: array
      * }
      */
-    private function previewRegisterChange(string $slug, array $registerData): array
+    public function previewRegisterChange(string $slug, array $registerData): array
     {
         $slug = strtolower($slug);
 
@@ -294,7 +284,11 @@ class PreviewHandler
 
             if (version_compare($proposedVersion, $currentVersion, '<=') === true) {
                 $preview['action'] = 'skip';
-                $preview['reason'] = "Remote version ({$proposedVersion}) is not newer than current version ({$currentVersion})";
+                $preview['reason'] = sprintf(
+                    'Remote version (%s) is not newer than current version (%s)',
+                    $proposedVersion,
+                    $currentVersion
+                );
             } else {
                 // Build list of changed fields.
                 $preview['changes'] = $this->compareArrays(current: $currentData, proposed: $registerData);
@@ -365,7 +359,11 @@ class PreviewHandler
 
             if (version_compare($proposedVersion, $currentVersion, '<=') === true) {
                 $preview['action'] = 'skip';
-                $preview['reason'] = "Remote version ({$proposedVersion}) is not newer than current version ({$currentVersion})";
+                $preview['reason'] = sprintf(
+                    'Remote version (%s) is not newer than current version (%s)',
+                    $proposedVersion,
+                    $currentVersion
+                );
             } else {
                 // Build list of changed fields.
                 $preview['changes'] = $this->compareArrays(current: $currentData, proposed: $schemaData);
@@ -385,10 +383,14 @@ class PreviewHandler
      * @return array Preview information.
      *
      * @psalm-return array<never, never>
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function previewObjectChange(array $objectData, array $registerSlugToId, array $schemaSlugToId): array
     {
         // Method body will be extracted from ConfigurationService.
+        // Parameters are intentionally unused in this placeholder implementation.
+        unset($objectData, $registerSlugToId, $schemaSlugToId);
         return [];
     }//end previewObjectChange()
 

@@ -370,11 +370,13 @@ class SolrManagementController extends Controller
             $fieldsInfo     = $guzzleSolrService->getFieldsConfiguration();
 
             if (($fieldsInfo['success'] === false)) {
+                /** @psalm-suppress InvalidArrayOffset - message key may exist on error responses */
+                $errorMessage = $fieldsInfo['message'] ?? 'Unknown error';
                 return new JSONResponse(
                     data: [
                         'success' => false,
                         'message' => 'Failed to get SOLR field configuration',
-                        'details' => ['error' => $fieldsInfo['message'] ?? 'Unknown error'],
+                        'details' => ['error' => $errorMessage],
                     ],
                     statusCode: 422
                 );
@@ -424,12 +426,12 @@ class SolrManagementController extends Controller
     /**
      * Delete a SOLR field
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @param string $fieldName Name of the field to delete
      *
      * @return JSONResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      */
     public function deleteSolrField(string $fieldName): JSONResponse
     {
@@ -627,14 +629,13 @@ class SolrManagementController extends Controller
     /**
      * Create a new SOLR ConfigSet by copying an existing one
      *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
      * @param string $name          Name for the new ConfigSet
      * @param string $baseConfigSet Base ConfigSet to copy from (default: _default)
      *
      * @return JSONResponse Creation result
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<
      *     200,
@@ -663,13 +664,12 @@ class SolrManagementController extends Controller
     /**
      * Delete a SOLR ConfigSet
      *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
      * @param string $name Name of the ConfigSet to delete
      *
      * @return JSONResponse Deletion result
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<
      *     200,
@@ -698,10 +698,6 @@ class SolrManagementController extends Controller
     /**
      * Create a new SOLR collection from a ConfigSet
      *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
      * @param string $collectionName    Name for the new collection
      * @param string $configName        ConfigSet to use
      * @param int    $numShards         Number of shards (default: 1)
@@ -709,6 +705,9 @@ class SolrManagementController extends Controller
      * @param int    $maxShardsPerNode  Maximum shards per node (default: 1)
      *
      * @return JSONResponse Creation result
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<
      *     200,
@@ -749,15 +748,14 @@ class SolrManagementController extends Controller
     /**
      * Copy a SOLR collection
      *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
      * @param string $sourceCollection Source collection name
      * @param string $targetCollection Target collection name
      * @param bool   $copyData         Whether to copy data (default: false)
      *
      * @return JSONResponse Copy operation result
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<
      *     200,
@@ -765,8 +763,11 @@ class SolrManagementController extends Controller
      *     array<never, never>
      * >|JSONResponse<500, array{success: false, error: string, trace: string}, array<never, never>>
      */
-    public function copySolrCollection(string $sourceCollection, string $targetCollection, bool $copyData=false): JSONResponse
-    {
+    public function copySolrCollection(
+        string $sourceCollection,
+        string $targetCollection,
+        bool $copyData=false
+    ): JSONResponse {
         try {
             $guzzleSolrService = $this->container->get(IndexService::class);
             $result            = $guzzleSolrService->copyCollection(
@@ -791,12 +792,12 @@ class SolrManagementController extends Controller
     /**
      * Delete a specific SOLR collection by name
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @param string $name The name of the collection to delete
      *
      * @return JSONResponse The deletion result
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      */
     public function deleteSpecificSolrCollection(string $name): JSONResponse
     {
@@ -883,14 +884,13 @@ class SolrManagementController extends Controller
     /**
      * Update SOLR collection assignments (Object Collection and File Collection)
      *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
      * @param string|null $objectCollection Collection name for objects
      * @param string|null $fileCollection   Collection name for files
      *
      * @return JSONResponse Update result
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<
      *     200|500,
@@ -906,8 +906,10 @@ class SolrManagementController extends Controller
      *     array<never, never>
      * >
      */
-    public function updateSolrCollectionAssignments(?string $objectCollection=null, ?string $fileCollection=null): JSONResponse
-    {
+    public function updateSolrCollectionAssignments(
+        ?string $objectCollection=null,
+        ?string $fileCollection=null
+    ): JSONResponse {
         try {
             // Get current SOLR settings.
             $solrSettings = $this->settingsService->getSolrSettingsOnly();

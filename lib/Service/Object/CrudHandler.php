@@ -160,31 +160,16 @@ class CrudHandler
 
         try {
             // TODO: Implement proper find logic.
-            $object = null;
-            // $this->objectEntityMapper->find(
+            // $object = $this->objectEntityMapper->find(
             // Id: $objectId,
             // _rbac: $rbac,
             // _multitenancy: $multi
             // );
-            if ($object === null) {
-                $this->logger->warning(
-                    message: '[CrudHandler] Object not found',
-                    context: ['object_id' => $objectId]
-                );
-                return null;
-            }
-
-            // This code is unreachable until TODO is implemented.
-            // @psalm-suppress NoValue - Dead code until find logic is implemented.
-            $this->logger->debug(
-                message: '[CrudHandler] Object retrieved',
-                context: [
-                    'object_id' => $objectId,
-                    'uuid'      => $object->getUuid(),
-                ]
+            $this->logger->warning(
+                message: '[CrudHandler] Object not found (TODO: implement find logic)',
+                context: ['object_id' => $objectId]
             );
-
-            return $object;
+            return null;
         } catch (\Exception $e) {
             $this->logger->error(
                 message: '[CrudHandler] Failed to get object',
@@ -221,22 +206,20 @@ class CrudHandler
 
         try {
             // TODO: Implement proper save logic.
-            $object = null;
-            // $this->objectEntityMapper->saveObject(
+            // $object = $this->objectEntityMapper->saveObject(
             // ObjectId: null,
             // Object: $data,
             // _rbac: $rbac,
             // _multitenancy: $multi
             // );
             $this->logger->info(
-                message: '[CrudHandler] Object created',
+                message: '[CrudHandler] Object creation not implemented (TODO)',
                 context: [
-                    'object_id' => $object->getId(),
-                    'uuid'      => $object->getUuid(),
+                    'data_keys' => array_keys($data),
                 ]
             );
 
-            return $object;
+            return null;
         } catch (\Exception $e) {
             $this->logger->error(
                 message: '[CrudHandler] Failed to create object',
@@ -279,22 +262,21 @@ class CrudHandler
 
         try {
             // TODO: Implement proper save logic.
-            $object = null;
-            // $this->objectEntityMapper->saveObject(
+            // $object = $this->objectEntityMapper->saveObject(
             // ObjectId: $objectId,
             // Object: $data,
             // _rbac: $rbac,
             // _multitenancy: $multi
             // );
             $this->logger->info(
-                message: '[CrudHandler] Object updated',
+                message: '[CrudHandler] Object update not implemented (TODO)',
                 context: [
                     'object_id' => $objectId,
-                    'uuid'      => $object->getUuid(),
+                    'data_keys' => array_keys($data),
                 ]
             );
 
-            return $object;
+            return null;
         } catch (\Exception $e) {
             $this->logger->error(
                 message: '[CrudHandler] Failed to update object',
@@ -348,12 +330,11 @@ class CrudHandler
             $mergedData   = array_merge($existingData, $data);
 
             // Save merged data.
-            // Note: $multi (multitenancy) parameter currently unused but kept for API consistency.
             $updatedObject = $this->objectService->saveObject(
-                objectId: $objectId,
                 object: $mergedData,
+                uuid: $objectId,
                 _rbac: $rbac,
-                _multitenancy: $multi
+                _multitenancy: $_multitenancy
             );
 
             $this->logger->info(

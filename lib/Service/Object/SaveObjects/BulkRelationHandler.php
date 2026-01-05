@@ -133,7 +133,8 @@ class BulkRelationHandler
                 } else if (($propertyInfo['isArray'] === true) && is_array($value) === true) {
                     // Handle array of object relations.
                     foreach ($value as $relatedUuid) {
-                        if (is_string($relatedUuid) === true && \Symfony\Component\Uid\Uuid::isValid($relatedUuid) === true) {
+                        $isValidUuid = \Symfony\Component\Uid\Uuid::isValid($relatedUuid);
+                        if (is_string($relatedUuid) === true && $isValidUuid === true) {
                             if (isset($objectsByUuid[$relatedUuid]) === true) {
                                 // @psalm-suppress EmptyArrayAccess - Already checked isset above.
                                 $targetObject = &$objectsByUuid[$relatedUuid];
@@ -180,8 +181,11 @@ class BulkRelationHandler
      * @psalm-return   void
      * @phpstan-return void
      */
-    public function handlePostSaveInverseRelations(array $savedObjects, array $schemaCache, callable $getSchemaAnalysisCallback): void
-    {
+    public function handlePostSaveInverseRelations(
+        array $savedObjects,
+        array $schemaCache,
+        callable $getSchemaAnalysisCallback
+    ): void {
         if (empty($savedObjects) === true) {
             return;
         }

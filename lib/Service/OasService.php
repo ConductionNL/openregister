@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * OpenAPI Specification (OAS) Service
  *
@@ -16,6 +14,8 @@ declare(strict_types=1);
  * @version   GIT: <git_id>
  * @link      https://www.OpenRegister.app
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
@@ -32,17 +32,6 @@ use Psr\Log\LoggerInterface;
  * Service for generating OpenAPI Specification (OAS) documentation for registers and schemas.
  * Creates comprehensive API documentation including endpoints, schemas, parameters,
  * and examples based on register and schema definitions.
- *
- * @category Service
- * @package  OCA\OpenRegister\Service
- *
- * @author    Conduction Development Team <info@conduction.nl>
- * @copyright 2024 Conduction B.V.
- * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * @version GIT: <git_id>
- *
- * @link https://www.OpenRegister.app
  */
 class OasService
 {
@@ -149,7 +138,8 @@ class OasService
             // Build enhanced description from register description or generate default.
             $description = $register->getDescription();
             if (empty($description) === true) {
-                $description = 'API for '.$register->getTitle().' register providing CRUD operations, filtering, and search capabilities.';
+                $description  = 'API for '.$register->getTitle().' register providing CRUD ';
+                $description .= 'operations, filtering, and search capabilities.';
             }
 
             // Update info section while preserving base contact and license information.
@@ -417,12 +407,16 @@ class OasService
 
         // Remove invalid/empty values that violate OpenAPI spec.
         // OneOf must have at least 1 item, remove if empty.
-        if (($cleanDef['oneOf'] ?? null) !== null && (empty($cleanDef['oneOf']) === true || is_array($cleanDef['oneOf']) === false) === true) {
+        $hasOneOf     = ($cleanDef['oneOf'] ?? null) !== null;
+        $oneOfIsEmpty = empty($cleanDef['oneOf']) === true || is_array($cleanDef['oneOf']) === false;
+        if ($hasOneOf === true && $oneOfIsEmpty === true) {
             unset($cleanDef['oneOf']);
         }//end if
 
         // AnyOf must have at least 1 item, remove if empty.
-        if (($cleanDef['anyOf'] ?? null) !== null && (empty($cleanDef['anyOf']) === true || is_array($cleanDef['anyOf']) === false) === true) {
+        $hasAnyOf     = ($cleanDef['anyOf'] ?? null) !== null;
+        $anyOfIsEmpty = empty($cleanDef['anyOf']) === true || is_array($cleanDef['anyOf']) === false;
+        if ($hasAnyOf === true && $anyOfIsEmpty === true) {
             unset($cleanDef['anyOf']);
         }//end if
 
@@ -454,12 +448,16 @@ class OasService
         }//end if
 
         // $ref must be a non-empty string, remove if empty.
-        if (($cleanDef['$ref'] ?? null) !== null && (empty($cleanDef['$ref']) === true || is_string($cleanDef['$ref']) === false) === true) {
+        $hasRef     = ($cleanDef['$ref'] ?? null) !== null;
+        $refIsEmpty = empty($cleanDef['$ref']) === true || is_string($cleanDef['$ref']) === false;
+        if ($hasRef === true && $refIsEmpty === true) {
             unset($cleanDef['$ref']);
         }//end if
 
         // Enum must have at least 1 item, remove if empty.
-        if (($cleanDef['enum'] ?? null) !== null && (empty($cleanDef['enum']) === true || is_array($cleanDef['enum']) === false) === true) {
+        $hasEnum     = ($cleanDef['enum'] ?? null) !== null;
+        $enumIsEmpty = empty($cleanDef['enum']) === true || is_array($cleanDef['enum']) === false;
+        if ($hasEnum === true && $enumIsEmpty === true) {
             unset($cleanDef['enum']);
         }//end if
 
@@ -556,7 +554,8 @@ class OasService
      * Create common query parameters for object operations
      *
      * @param bool   $isCollection Whether this is for a collection endpoint
-     * @param object $schema       The schema object for generating dynamic filter parameters (only used for collection endpoints)
+     * @param object $schema       The schema object for generating dynamic filter parameters
+     *                             (only used for collection endpoints)
      *
      * @return ((array|string)[]|false|mixed|string)[][]
      *
@@ -1510,8 +1509,8 @@ class OasService
     /**
      * Validate schema references recursively
      *
-     * @param array  &$schema The schema to validate (passed by reference for modifications)
-     * @param string $context Context information for debugging
+     * @param array<string, mixed> $schema  The schema to validate (passed by reference for modifications)
+     * @param string               $context Context information for debugging
      *
      * @return void
      */
@@ -1533,7 +1532,10 @@ class OasService
                     }
 
                     // Validate each allOf item has required structure.
-                    if (($item['$ref'] ?? null) !== null && empty($item['$ref']) === false && is_string($item['$ref']) === true) {
+                    $hasValidRef = ($item['$ref'] ?? null) !== null
+                        && empty($item['$ref']) === false
+                        && is_string($item['$ref']) === true;
+                    if ($hasValidRef === true) {
                         $validAllOfItems[] = $item;
                         continue;
                     }

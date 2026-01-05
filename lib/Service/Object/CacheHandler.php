@@ -96,7 +96,8 @@ class CacheHandler
     /**
      * Cache hit statistics
      *
-     * @var array{hits: int, misses: int, preloads: int, query_hits: int, query_misses: int, name_hits: int, name_misses: int, name_warmups: int}
+     * @var array{hits: int, misses: int, preloads: int, query_hits: int,
+     *            query_misses: int, name_hits: int, name_misses: int, name_warmups: int}
      */
     private array $stats = [
         'hits'         => 0,
@@ -522,7 +523,7 @@ class CacheHandler
      *
      * @param array $identifiers Array of object IDs/UUIDs to preload
      *
-     * @return (ObjectEntity|\OCA\OpenRegister\Db\OCA\OpenRegister\Db\ObjectEntity)[]
+     * @return ObjectEntity[]
      *
      * @phpstan-param array<int|string> $identifiers
      *
@@ -530,7 +531,7 @@ class CacheHandler
      *
      * @psalm-param array<int|string> $identifiers
      *
-     * @psalm-return array<ObjectEntity|\OCA\OpenRegister\Db\OCA\OpenRegister\Db\ObjectEntity>
+     * @psalm-return array<ObjectEntity>
      */
     public function preloadObjects(array $identifiers): array
     {
@@ -875,9 +876,6 @@ class CacheHandler
         // Remove by ID. Ensure ID is string for array key.
         $objectId    = $object->getId();
         $objectIdKey = (string) $objectId;
-        if (is_string($objectId) === true) {
-            $objectIdKey = $objectId;
-        }
 
         unset($this->objectCache[$objectIdKey]);
 
@@ -908,8 +906,12 @@ class CacheHandler
      *
      * @return string The generated cache key
      */
-    private function generateSearchCacheKey(array $query, ?string $activeOrganisationUuid, bool $_rbac, bool $_multitenancy): string
-    {
+    private function generateSearchCacheKey(
+        array $query,
+        ?string $activeOrganisationUuid,
+        bool $_rbac,
+        bool $_multitenancy
+    ): string {
         $user   = $this->userSession->getUser();
         $userId = 'anonymous';
         if ($user === true) {
@@ -965,12 +967,6 @@ class CacheHandler
         $startTime = microtime(true);
 
         $this->objectCache = [];
-
-        /*
-         * @psalm-suppress UndefinedThisPropertyAssignment - relationshipCache property doesn't exist, not used)
-         */
-
-        $this->relationshipCache  = [];
         $this->inMemoryQueryCache = [];
         $this->nameCache          = [];
         $this->stats = [
@@ -1360,7 +1356,7 @@ class CacheHandler
                 $name = $organisation->getName() ?? $organisation->getUuid();
 
                 // Cache by UUID only (not by database ID).
-                if ($organisation->getUuid() !== null) {
+                if ($organisation->getUuid() !== null && $name !== null) {
                     $this->nameCache[$organisation->getUuid()] = $name;
                     $loadedCount++;
                 }
@@ -1373,8 +1369,9 @@ class CacheHandler
 
                 // Cache by UUID only (not by database ID).
                 // Note: If an organisation has the same UUID, it will remain (organisations loaded first).
-                if ($object->getUuid() !== null && (($this->nameCache[$object->getUuid()] ?? null) === null) === true) {
-                    $this->nameCache[$object->getUuid()] = $name;
+                $uuid = $object->getUuid();
+                if ($uuid !== null && $name !== null && (($this->nameCache[$uuid] ?? null) === null) === true) {
+                    $this->nameCache[$uuid] = $name;
                     $loadedCount++;
                 }
             }
@@ -1493,7 +1490,8 @@ class CacheHandler
      *
      * @return (bool|string)[] Optimize operation results
      *
-     * @psalm-return array{success: bool, error?: string, timestamp?: string, message?: 'Optimization failed'|'Optimization successful'}
+     * @psalm-return array{success: bool, error?: string, timestamp?: string,
+     *               message?: 'Optimization failed'|'Optimization successful'}
      */
     public function optimizeSolr(): array
     {

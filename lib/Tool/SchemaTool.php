@@ -81,13 +81,13 @@ class SchemaTool extends AbstractTool
     /**
      * Get tool description
      *
-     * @return string Tool description
-     *
      * @psalm-return 'Manage schemas: list, view, create, update, or delete schemas. Schemas define structure and validation rules.'
      */
     public function getDescription(): string
     {
-        return 'Manage schemas: list, view, create, update, or delete schemas. Schemas define structure and validation rules.';
+        $description  = 'Manage schemas: list, view, create, update, or delete schemas. ';
+        $description .= 'Schemas define structure and validation rules.';
+        return $description;
     }//end getDescription()
 
     /**
@@ -395,8 +395,13 @@ class SchemaTool extends AbstractTool
      *
      * @psalm-return array{success: true, message: string, data: mixed}
      */
-    public function updateSchema(string $id, ?string $title=null, ?string $description=null, ?array $properties=null, ?array $required=null): array
-    {
+    public function updateSchema(
+        string $id,
+        ?string $title=null,
+        ?string $description=null,
+        ?array $properties=null,
+        ?array $required=null
+    ): array {
         $schema = $this->schemaMapper->find(id: $id);
 
         if ($title !== null) {

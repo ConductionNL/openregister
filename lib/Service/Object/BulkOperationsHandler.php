@@ -174,9 +174,11 @@ class BulkOperationsHandler
     /**
      * Bulk delete operations with cache invalidation.
      *
-     * @param array $uuids         Array of UUIDs to delete.
-     * @param bool  $_rbac         Whether to apply RBAC filtering.
-     * @param bool  $_multitenancy Whether to apply multitenancy filtering.
+     * @param array         $uuids         Array of UUIDs to delete.
+     * @param bool          $_rbac         Whether to apply RBAC filtering.
+     * @param bool          $_multitenancy Whether to apply multitenancy filtering.
+     * @param Register|null $register      Optional register to filter by.
+     * @param Schema|null   $schema        Optional schema to filter by.
      *
      * @return array Array of deleted object IDs.
      *
@@ -264,6 +266,8 @@ class BulkOperationsHandler
      * @param DateTime|bool $datetime      Optional datetime for publishing (false to unset).
      * @param bool          $_rbac         Whether to apply RBAC filtering.
      * @param bool          $_multitenancy Whether to apply multi-organization filtering.
+     * @param Register|null $register      Optional register to filter by.
+     * @param Schema|null   $schema        Optional schema to filter by.
      *
      * @return array Array of UUIDs of published objects.
      *
@@ -352,6 +356,8 @@ class BulkOperationsHandler
      * @param DateTime|bool $datetime      Optional datetime for depublishing (false to unset).
      * @param bool          $_rbac         Whether to apply RBAC filtering.
      * @param bool          $_multitenancy Whether to apply multi-organization filtering.
+     * @param Register|null $register      Optional register to filter by.
+     * @param Schema|null   $schema        Optional schema to filter by.
      *
      * @return array Array of UUIDs of depublished objects.
      *

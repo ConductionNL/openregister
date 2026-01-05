@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectHandlers\OptimizedBulkOperations;
 use OCP\DB\Exception as OcpDbException;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
@@ -89,23 +90,33 @@ class BulkOperationsHandler
     private QueryBuilderHandler $queryBuilderHandler;
 
     /**
+     * Event dispatcher for business logic hooks (optional).
+     *
+     * @var IEventDispatcher|null
+     */
+    private ?IEventDispatcher $eventDispatcher = null;
+
+    /**
      * Constructor.
      *
      * @param IDBConnection       $db                  Database connection.
      * @param LoggerInterface     $logger              Logger instance.
      * @param QueryBuilderHandler $queryBuilderHandler Query builder handler.
      * @param string              $tableName           Table name for objects.
+     * @param IEventDispatcher    $eventDispatcher     Event dispatcher for business logic hooks.
      */
     public function __construct(
         IDBConnection $db,
         LoggerInterface $logger,
         QueryBuilderHandler $queryBuilderHandler,
-        string $tableName='openregister_objects'
+        string $tableName='openregister_objects',
+        IEventDispatcher $eventDispatcher=null
     ) {
-        $this->db     = $db;
-        $this->logger = $logger;
+        $this->db                  = $db;
+        $this->logger              = $logger;
         $this->queryBuilderHandler = $queryBuilderHandler;
         $this->tableName           = $tableName;
+        $this->eventDispatcher     = $eventDispatcher;
     }//end __construct()
 
     /**
@@ -121,10 +132,22 @@ class BulkOperationsHandler
      */
     public function ultraFastBulkSave(array $insertObjects=[], array $updateObjects=[]): array
     {
-        $optimizedHandler = new OptimizedBulkOperations(
-            db: $this->db,
-            logger: $this->logger
-        );
+        // Only create OptimizedBulkOperations if we have an eventDispatcher.
+        // This maintains backward compatibility.
+        if ($this->eventDispatcher !== null) {
+            $optimizedHandler = new OptimizedBulkOperations(
+                db: $this->db,
+                logger: $this->logger,
+                eventDispatcher: $this->eventDispatcher
+            );
+        } else {
+            // Fallback without event dispatcher (legacy mode).
+            $optimizedHandler = new OptimizedBulkOperations(
+                db: $this->db,
+                logger: $this->logger,
+                eventDispatcher: \OC::$server->get(IEventDispatcher::class)
+            );
+        }
 
         return $optimizedHandler->ultraFastUnifiedBulkSave(
             insertObjects: $insertObjects,
@@ -601,7 +624,7 @@ class BulkOperationsHandler
             $size       = 0;
             $reflection = new ReflectionClass($object);
             foreach ($reflection->getProperties() as $property) {
-                $property->setAccessible(true);
+                // Note: setAccessible() is no longer needed in PHP 8.1+
                 $value = $property->getValue($object);
 
                 if (is_string($value) === true) {
@@ -771,14 +794,17 @@ class BulkOperationsHandler
                     $batchSuccess = true;
                 } catch (Exception $e) {
                     $batchRetryCount++;
-                    $this->logger->error('Error executing batch', ['attempt' => $batchRetryCount, 'error' => $e->getMessage()]);
+                    $this->logger->error(
+                        'Error executing batch',
+                        ['attempt' => $batchRetryCount, 'error' => $e->getMessage()]
+                    );
 
                     if ($batchRetryCount > $maxBatchRetries) {
                         throw $e;
                     }
 
                     sleep(2);
-                }
+                }//end try
             }//end while
 
             // Collect UUIDs from the inserted objects for return.
@@ -896,7 +922,12 @@ class BulkOperationsHandler
             $qb = $this->db->getQueryBuilder();
             $qb->select('id', 'uuid', 'deleted')
                 ->from($this->tableName)
-                ->where($qb->expr()->in('uuid', $qb->createNamedParameter($uuidChunk, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+                ->where(
+                    $qb->expr()->in(
+                        'uuid',
+                        $qb->createNamedParameter($uuidChunk, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)
+                    )
+                );
 
             $objects = $qb->executeQuery()->fetchAll();
 
@@ -936,16 +967,26 @@ class BulkOperationsHandler
                             )
                         )
                     )
-                    ->where($qb->expr()->in('id', $qb->createNamedParameter($softDeleteIds, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY)));
+                    ->where(
+                        $qb->expr()->in(
+                            'id',
+                            $qb->createNamedParameter($softDeleteIds, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY)
+                        )
+                    );
 
                 $qb->executeStatement();
-            }
+            }//end if
 
             // Perform hard deletes.
             if (empty($hardDeleteIds) === false) {
                 $qb = $this->db->getQueryBuilder();
                 $qb->delete($this->tableName)
-                    ->where($qb->expr()->in('id', $qb->createNamedParameter($hardDeleteIds, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY)));
+                    ->where(
+                        $qb->expr()->in(
+                            'id',
+                            $qb->createNamedParameter($hardDeleteIds, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY)
+                        )
+                    );
 
                 $qb->executeStatement();
             }
@@ -999,7 +1040,12 @@ class BulkOperationsHandler
             $qb = $this->db->getQueryBuilder();
             $qb->select('id', 'uuid')
                 ->from($this->tableName)
-                ->where($qb->expr()->in('uuid', $qb->createNamedParameter($uuidChunk, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+                ->where(
+                    $qb->expr()->in(
+                        'uuid',
+                        $qb->createNamedParameter($uuidChunk, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)
+                    )
+                );
 
             $objects           = $qb->executeQuery()->fetchAll();
             $objectIds         = array_column($objects, 'id');
@@ -1015,7 +1061,12 @@ class BulkOperationsHandler
                     $qb->set('published', $qb->createNamedParameter(null));
                 }
 
-                $qb->where($qb->expr()->in('id', $qb->createNamedParameter($objectIds, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY)));
+                $qb->where(
+                    $qb->expr()->in(
+                        'id',
+                        $qb->createNamedParameter($objectIds, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY)
+                    )
+                );
 
                 $qb->executeStatement();
             }
@@ -1071,7 +1122,12 @@ class BulkOperationsHandler
             $qb = $this->db->getQueryBuilder();
             $qb->select('id', 'uuid')
                 ->from($this->tableName)
-                ->where($qb->expr()->in('uuid', $qb->createNamedParameter($uuidChunk, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+                ->where(
+                    $qb->expr()->in(
+                        'uuid',
+                        $qb->createNamedParameter($uuidChunk, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)
+                    )
+                );
 
             $objects   = $qb->executeQuery()->fetchAll();
             $objectIds = array_column($objects, 'id');
@@ -1087,7 +1143,12 @@ class BulkOperationsHandler
                     $qb->set('depublished', $qb->createNamedParameter(null));
                 }
 
-                $qb->where($qb->expr()->in('id', $qb->createNamedParameter($objectIds, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY)));
+                $qb->where(
+                    $qb->expr()->in(
+                        'id',
+                        $qb->createNamedParameter($objectIds, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY)
+                    )
+                );
 
                 $qb->executeStatement();
             }
@@ -1143,7 +1204,7 @@ class BulkOperationsHandler
 
         try {
             $property = $reflection->getProperty($column);
-            $property->setAccessible(true);
+            // Note: setAccessible() is no longer needed in PHP 8.1+
             $value = $property->getValue($entity);
         } catch (\ReflectionException $e) {
             // Try getter method.

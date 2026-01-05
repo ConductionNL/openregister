@@ -371,32 +371,28 @@ abstract class AbstractTool implements ToolInterface
                     if ($type !== null && $type instanceof \ReflectionNamedType) {
                         $typeName = $type->getName();
 
-                        // Cast to integer type.
                         if ($typeName === 'int') {
+                            // Cast to integer type.
                             $value = (int) $value;
-                        }
-                        // Cast to float type.
-                        else if ($typeName === 'float') {
+                        } else if ($typeName === 'float') {
+                            // Cast to float type.
                             $value = (float) $value;
-                        }
-                        // Cast to boolean type using filter_var for proper conversion.
-                        // Handles 'true', 'false', '1', '0', etc.
-                        else if ($typeName === 'bool') {
+                        } else if ($typeName === 'bool') {
+                            // Cast to boolean type using filter_var for proper conversion.
+                            // Handles 'true', 'false', '1', '0', etc.
                             $value = filter_var($value, FILTER_VALIDATE_BOOLEAN);
-                        }
-                        // Cast to string type.
-                        else if ($typeName === 'string') {
+                        } else if ($typeName === 'string') {
+                            // Cast to string type.
                             $value = (string) $value;
-                        }
-                        // Cast to array type.
-                        // If already array, keep it; otherwise convert to empty array.
-                        else if ($typeName === 'array') {
+                        } else if ($typeName === 'array') {
+                            // Cast to array type.
+                            // If already array, keep it; otherwise convert to empty array.
                             if (is_array($value) === true) {
                                 $value = $value;
                             } else {
                                 $value = [];
                             }
-                        }
+                        }//end if
                     }//end if
                 }//end if
 

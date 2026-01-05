@@ -421,13 +421,12 @@ class SettingsController extends Controller
     /**
      * Reindex a specific SOLR collection by name
      *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
      * @param string $name The name of the collection to reindex
      *
      * @return JSONResponse The reindex result
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|400|422,
      *     array{success: bool, message: mixed|string, collection: string,
@@ -630,7 +629,9 @@ class SettingsController extends Controller
                 // MariaDB/MySQL do not support native vector operations.
                 $vectorSupport     = false;
                 $recommendedPlugin = 'pgvector for PostgreSQL';
-                $performanceNote   = 'Current: Similarity calculated in PHP (slow). Recommended: Migrate to PostgreSQL + pgvector for 10-100x speedup.';
+                $phpNote           = 'Current: Similarity calculated in PHP (slow).';
+                $pgNote            = 'Recommended: Migrate to PostgreSQL + pgvector for 10-100x speedup.';
+                $performanceNote   = $phpNote.' '.$pgNote;
             } else if (strpos($platformName, 'postgres') !== false) {
                 $dbType = 'PostgreSQL';
 
@@ -794,9 +795,7 @@ class SettingsController extends Controller
     {
         try {
             // Get services.
-            $objectService = null;
-            // CIRCULAR FIX.
-            $connection = $this->container->get(\OCP\IDBConnection::class);
+            $objectService = $this->container->get(\OCA\OpenRegister\Service\ObjectService::class);
 
             // Set register and schema context.
             $objectService->setRegister('voorzieningen');
@@ -814,12 +813,7 @@ class SettingsController extends Controller
             $results['all_organizations'] = [
                 'count'         => count($result1['results']),
                 'organizations' => array_map(
-                        /*
-                         * @return (array|int|mixed|null|string)[]
-                         *
-                         * @psalm-return array{id: int, name: null|string, type: 'NO TYPE'|mixed, object_data: array|null}
-                         */
-
+                    // Maps ObjectEntity to simplified array.
                     function (\OCA\OpenRegister\Db\ObjectEntity $org): array {
                         $objectData = $org->getObject();
                         return [
@@ -844,12 +838,7 @@ class SettingsController extends Controller
             $results['type_samenwerking'] = [
                 'count'         => count($result2['results']),
                 'organizations' => array_map(
-                        /*
-                         * @return (int|mixed|null|string)[]
-                         *
-                         * @psalm-return array{id: int, name: null|string, type: 'NO TYPE'|mixed}
-                         */
-
+                    // Maps ObjectEntity to simplified array with type.
                     function (\OCA\OpenRegister\Db\ObjectEntity $org): array {
                         $objectData = $org->getObject();
                         return [
@@ -873,12 +862,7 @@ class SettingsController extends Controller
             $results['type_community'] = [
                 'count'         => count($result3['results']),
                 'organizations' => array_map(
-                        /*
-                         * @return (int|mixed|null|string)[]
-                         *
-                         * @psalm-return array{id: int, name: null|string, type: 'NO TYPE'|mixed}
-                         */
-
+                    // Maps ObjectEntity to simplified array with type.
                     function (\OCA\OpenRegister\Db\ObjectEntity $org): array {
                         $objectData = $org->getObject();
                         return [
@@ -902,12 +886,7 @@ class SettingsController extends Controller
             $results['type_both'] = [
                 'count'         => count($result4['results']),
                 'organizations' => array_map(
-                        /*
-                         * @return (int|mixed|null|string)[]
-                         *
-                         * @psalm-return array{id: int, name: null|string, type: 'NO TYPE'|mixed}
-                         */
-
+                    // Maps ObjectEntity to simplified array with type.
                     function (\OCA\OpenRegister\Db\ObjectEntity $org): array {
                         $objectData = $org->getObject();
                         return [
@@ -921,6 +900,7 @@ class SettingsController extends Controller
             ];
 
             // Test 5: Direct database query to check type field.
+            $connection = $this->container->get(\OCP\IDBConnection::class);
             $qb = $connection->getQueryBuilder();
             $qb->select('o.id', 'o.name', 'o.object')
                 ->from('openregister_objects', 'o')
@@ -933,12 +913,7 @@ class SettingsController extends Controller
             $results['direct_database_query'] = [
                 'count'         => count($rows),
                 'organizations' => array_map(
-                        /*
-                         * @return (mixed|string)[]
-                         *
-                         * @psalm-return array{id: mixed, name: mixed, type: 'NO TYPE'|mixed, object_json: mixed}
-                         */
-
+                    // Maps row to simplified array with type from JSON.
                     function (array $row): array {
                         $objectData = json_decode($row['object'], true);
                         return [
@@ -967,16 +942,15 @@ class SettingsController extends Controller
     /**
      * Perform semantic search using vector embeddings
      *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
      * @param string      $query    Search query text
      * @param int         $limit    Maximum number of results (default: 10)
      * @param array       $filters  Optional filters (entity_type, entity_id, etc.)
      * @param string|null $provider Embedding provider override
      *
      * @return JSONResponse JSON response with semantic search results
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|400|500,
      *     array{success: bool, error?: string, trace?: string, query?: string,
@@ -1029,10 +1003,6 @@ class SettingsController extends Controller
     /**
      * Perform hybrid search combining SOLR keyword and vector semantic search
      *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
      * @param string      $query       Search query text
      * @param int         $limit       Maximum number of results (default: 20)
      * @param array       $solrFilters SOLR-specific filters
@@ -1040,6 +1010,9 @@ class SettingsController extends Controller
      * @param string|null $provider    Embedding provider override
      *
      * @return JSONResponse Combined search results
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|400|500,
      *     array{success: bool|mixed, error?: mixed|string, trace?: mixed|string,
@@ -1067,7 +1040,13 @@ class SettingsController extends Controller
             $vectorService = $this->vectorizationService;
 
             // Perform hybrid search.
-            $result = $vectorService->hybridSearch(query: $query, solrFilters: $solrFilters, limit: $limit, weights: $weights, provider: $provider);
+            $result = $vectorService->hybridSearch(
+                query: $query,
+                solrFilters: $solrFilters,
+                limit: $limit,
+                weights: $weights,
+                provider: $provider
+            );
 
             // Ensure result is an array for spread operator.
             if (is_array($result) === true) {

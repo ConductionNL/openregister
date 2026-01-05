@@ -443,7 +443,11 @@ class AuditTrailController extends Controller
                 data: [
                     'success' => true,
                     'results' => $result,
-                    'message' => sprintf('Deleted %d audit trails successfully. %d failed.', $result['deleted'], $result['failed']),
+                    'message' => sprintf(
+                        'Deleted %d audit trails successfully. %d failed.',
+                        $result['deleted'],
+                        $result['failed']
+                    ),
                 ]
             );
         } catch (\Exception $e) {

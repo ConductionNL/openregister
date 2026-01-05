@@ -92,11 +92,15 @@ class ReadFileHandler
      * If $file is an integer or a string that is an integer (e.g. '23234234'), the file will be fetched by ID
      * and the $object parameter will be ignored. Otherwise, the file will be fetched by name/path within the object folder.
      *
-     * See https://nextcloud-server.netlify.app/classes/ocp-files-file for the Nextcloud documentation on the File class.
-     * See https://nextcloud-server.netlify.app/classes/ocp-files-node for the Nextcloud documentation on the Node superclass.
+     * See https://nextcloud-server.netlify.app/classes/ocp-files-file for the Nextcloud documentation
+     * on the File class.
+     * See https://nextcloud-server.netlify.app/classes/ocp-files-node for the Nextcloud documentation
+     * on the Node superclass.
      *
-     * @param ObjectEntity|string|null $object The object or object ID to fetch files for (ignored if $file is an ID).
-     * @param string|int               $file   The file name/path within the object folder, or the file ID (int or numeric string).
+     * @param ObjectEntity|string|null $object The object or object ID to fetch files for
+     *                                         (ignored if $file is an ID).
+     * @param string|int               $file   The file name/path within the object folder,
+     *                                         or the file ID (int or numeric string).
      *
      * @psalm-param   ObjectEntity|string|null $object
      * @psalm-param   string|int $file

@@ -75,8 +75,6 @@ class LogService
      * Reserved for future use in log filtering and validation.
      *
      * @var RegisterMapper Register mapper instance
-     *
-     * @psalm-suppress UnusedProperty
      */
     private readonly RegisterMapper $registerMapper;
 
@@ -86,8 +84,6 @@ class LogService
      * Reserved for future use in log filtering and validation.
      *
      * @var SchemaMapper Schema mapper instance
-     *
-     * @psalm-suppress UnusedProperty
      */
     private readonly SchemaMapper $schemaMapper;
 
@@ -127,11 +123,11 @@ class LogService
      * @param string               $schema   The schema identifier (slug or ID)
      * @param string               $id       The object ID to retrieve logs for
      * @param array<string, mixed> $config   Configuration array containing:
-     *                                       - limit: (int) Maximum number of items per page (default: 20)
-     *                                       - offset: (int|null) Number of items to skip for pagination
-     *                                       - page: (int|null) Current page number (alternative to offset)
-     *                                       - filters: (array) Filter parameters (e.g., ['action' => 'create'])
-     *                                       - sort: (array) Sort parameters ['field' => 'ASC|DESC'] (default: ['created' => 'DESC'])
+     *                                       - limit: (int) Max items per page (default: 20)
+     *                                       - offset: (int|null) Items to skip for pagination
+     *                                       - page: (int|null) Page number (alternative to offset)
+     *                                       - filters: (array) Filter params (['action' => 'create'])
+     *                                       - sort: (array) Sort params (default: ['created' => 'DESC'])
      *                                       - search: (string|null) Search term for log content
      *
      * @return \OCA\OpenRegister\Db\AuditTrail[] Array of audit trail log entries
@@ -156,7 +152,9 @@ class LogService
             $registerEntity = $this->registerMapper->find($register, _multitenancy: false, _rbac: false);
             $schemaEntity   = $this->schemaMapper->find($schema, _multitenancy: false, _rbac: false);
 
-            if ($object->getRegister() !== (string) $registerEntity->getId() || $object->getSchema() !== (string) $schemaEntity->getId()) {
+            $registerMismatch = $object->getRegister() !== (string) $registerEntity->getId();
+            $schemaMismatch   = $object->getSchema() !== (string) $schemaEntity->getId();
+            if ($registerMismatch === true || $schemaMismatch === true) {
                 throw new InvalidArgumentException('Object does not belong to specified register/schema');
             }
         } catch (\Exception $e) {
@@ -212,7 +210,9 @@ class LogService
             $registerEntity = $this->registerMapper->find($register, _multitenancy: false, _rbac: false);
             $schemaEntity   = $this->schemaMapper->find($schema, _multitenancy: false, _rbac: false);
 
-            if ($object->getRegister() !== (string) $registerEntity->getId() || $object->getSchema() !== (string) $schemaEntity->getId()) {
+            $registerMismatch = $object->getRegister() !== (string) $registerEntity->getId();
+            $schemaMismatch   = $object->getSchema() !== (string) $schemaEntity->getId();
+            if ($registerMismatch === true || $schemaMismatch === true) {
                 throw new InvalidArgumentException('Object does not belong to specified register/schema');
             }
         } catch (\Exception $e) {
@@ -358,7 +358,9 @@ class LogService
      *                      - search: (string|null) Search term
      *                      - ids: (array|null) Specific IDs to delete
      *
-     * @return int[] Array containing: - deleted: (int) Number of logs deleted - failed: (int) Number of logs that failed to delete
+     * @return int[] Array containing:
+     *               - deleted: (int) Number of logs deleted
+     *               - failed: (int) Number of logs that failed to delete
      *
      * @throws \Exception If mass deletion fails
      *
@@ -552,7 +554,7 @@ class LogService
             foreach ($logData as $key => $value) {
                 // Handle special characters and ensure valid XML.
                 $cleanKey = preg_replace('/[^a-zA-Z0-9_]/', '_', $key);
-                $logElement->addChild(name: $cleanKey, value: htmlspecialchars($value ?? ''));
+                $logElement->addChild($cleanKey, htmlspecialchars($value ?? ''));
             }
         }
 

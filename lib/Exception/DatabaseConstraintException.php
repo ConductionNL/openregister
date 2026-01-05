@@ -93,8 +93,10 @@ class DatabaseConstraintException extends Exception
      *
      * @return DatabaseConstraintException The user-friendly exception with parsed message
      */
-    public static function fromDatabaseException(Exception $dbException, string $entityType='item'): DatabaseConstraintException
-    {
+    public static function fromDatabaseException(
+        Exception $dbException,
+        string $entityType='item'
+    ): DatabaseConstraintException {
         // Extract original database error message.
         $message = $dbException->getMessage();
 
@@ -126,12 +128,14 @@ class DatabaseConstraintException extends Exception
             // Check for specific constraint names to provide more detailed messages.
             // Schema slug uniqueness violation.
             if (str_contains($dbMessage, 'schemas_organisation_slug_unique') === true) {
-                return "A schema with this slug already exists in your organization. Please choose a different slug or title.";
+                $msg = 'A schema with this slug already exists in your organization. ';
+                return $msg.'Please choose a different slug or title.';
             }
 
             // Register slug uniqueness violation.
             if (str_contains($dbMessage, 'registers_organisation_slug_unique') === true) {
-                return "A register with this slug already exists in your organization. Please choose a different slug or title.";
+                $msg = 'A register with this slug already exists in your organization. ';
+                return $msg.'Please choose a different slug or title.';
             }
 
             // Generic unique constraint violation.
@@ -145,8 +149,11 @@ class DatabaseConstraintException extends Exception
 
         // Handle foreign key constraint violations.
         // Occurs when referencing non-existent records in related tables.
-        if (str_contains($dbMessage, 'foreign key constraint') === true || str_contains($dbMessage, 'FOREIGN KEY') === true) {
-            return "This {$entityType} cannot be saved because it references data that doesn't exist. Please check your configuration and try again.";
+        $isForeignKeyViolation = str_contains($dbMessage, 'foreign key constraint') === true
+            || str_contains($dbMessage, 'FOREIGN KEY') === true;
+        if ($isForeignKeyViolation === true) {
+            $msg = "This {$entityType} cannot be saved because it references data that doesn't exist. ";
+            return $msg.'Please check your configuration and try again.';
         }
 
         // Handle NOT NULL constraint violations.
@@ -157,8 +164,11 @@ class DatabaseConstraintException extends Exception
 
         // Handle CHECK constraint violations.
         // Occurs when data doesn't meet validation rules defined in database.
-        if (str_contains($dbMessage, 'check constraint') === true || str_contains($dbMessage, 'CHECK') === true) {
-            return "The provided data doesn't meet the required format or constraints. Please check your input and try again.";
+        $isCheckViolation = str_contains($dbMessage, 'check constraint') === true
+            || str_contains($dbMessage, 'CHECK') === true;
+        if ($isCheckViolation === true) {
+            $msg = "The provided data doesn't meet the required format or constraints. ";
+            return $msg.'Please check your input and try again.';
         }
 
         // Handle data too long errors.
@@ -175,6 +185,7 @@ class DatabaseConstraintException extends Exception
 
         // Generic database error fallback.
         // Used when error message doesn't match any known patterns.
-        return "There was a database error while saving your {$entityType}. Please try again or contact support if the problem persists.";
+        $msg = "There was a database error while saving your {$entityType}. ";
+        return $msg.'Please try again or contact support if the problem persists.';
     }//end parseConstraintError()
 }//end class

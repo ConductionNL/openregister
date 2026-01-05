@@ -279,16 +279,20 @@ class SettingsService
     private string $appName;
 
     /**
-     * This constant represents the unique identifier for the OpenRegister application, used to check its installation and status.
+     * Unique identifier for the OpenRegister application.
+     *
+     * Used to check its installation and status.
      *
      * @var string $openRegisterAppId The ID of the OpenRegister app.
      */
     private const OPENREGISTER_APP_ID = 'openregister';
 
     /**
-     * This constant defines the minimum version of the OpenRegister application that is required for compatibility and functionality.
+     * Minimum required version of the OpenRegister application.
      *
-     * @var string $minOpenRegisterVersion The minimum required version of OpenRegister.
+     * Required for compatibility and functionality.
+     *
+     * @var string $minOpenRegisterVersion Minimum required version of OpenRegister.
      */
     private const MIN_OPENREGISTER_VERSION = '0.1.7';
 
@@ -302,28 +306,29 @@ class SettingsService
     /**
      * Constructor for SettingsService
      *
-     * @param IConfig                      $config                       Configuration service
-     * @param AuditTrailMapper             $auditTrailMapper             Audit trail mapper
-     * @param ICacheFactory                $cacheFactory                 Cache factory
-     * @param IGroupManager                $groupManager                 Group manager
-     * @param LoggerInterface              $logger                       Logger
-     * @param OrganisationMapper           $organisationMapper           Organisation mapper
-     * @param SchemaCacheHandler           $schemaCacheService           Schema cache handler
-     * @param FacetCacheHandler            $schemaFacetCacheService      Schema facet cache service
-     * @param SearchTrailMapper            $searchTrailMapper            Search trail mapper
-     * @param IUserManager                 $userManager                  User manager
-     * @param IDBConnection                $db                           Database connection
-     * @param CacheHandler|null            $objectCacheService           Object cache service (optional, lazy-loaded)
-     * @param IAppContainer|null           $container                    Container for lazy loading (optional)
-     * @param string                       $appName                      Application name
-     * @param ValidationOperationsHandler  $validationOperationsHandler  Validation operations handler
-     * @param SearchBackendHandler         $searchBackendHandler         Search backend handler
-     * @param LlmSettingsHandler           $llmSettingsHandler           LLM settings handler
-     * @param FileSettingsHandler          $fileSettingsHandler          File settings handler
-     * @param ObjectRetentionHandler       $objectRetentionHandler       Object retention handler
-     * @param CacheSettingsHandler         $cacheSettingsHandler         Cache settings handler
-     * @param SolrSettingsHandler          $solrSettingsHandler          SOLR settings handler
-     * @param ConfigurationSettingsHandler $configurationSettingsHandler Configuration settings handler
+     * @param IConfig                           $config                       Configuration service
+     * @param AuditTrailMapper                  $auditTrailMapper             Audit trail mapper
+     * @param ICacheFactory                     $cacheFactory                 Cache factory
+     * @param IGroupManager                     $groupManager                 Group manager
+     * @param LoggerInterface                   $logger                       Logger
+     * @param OrganisationMapper                $organisationMapper           Organisation mapper
+     * @param SchemaCacheHandler                $schemaCacheService           Schema cache handler
+     * @param FacetCacheHandler                 $schemaFacetCacheService      Schema facet cache service
+     * @param SearchTrailMapper                 $searchTrailMapper            Search trail mapper
+     * @param IUserManager                      $userManager                  User manager
+     * @param IDBConnection                     $db                           Database connection
+     * @param SetupHandler|null                 $setupHandler                 Setup handler (optional)
+     * @param CacheHandler|null                 $objectCacheService           Object cache service (optional)
+     * @param IAppContainer|null                $container                    Container for lazy loading (optional)
+     * @param string                            $appName                      Application name
+     * @param ValidationOperationsHandler|null  $validationOperationsHandler  Validation operations handler
+     * @param SearchBackendHandler|null         $searchBackendHandler         Search backend handler
+     * @param LlmSettingsHandler|null           $llmSettingsHandler           LLM settings handler
+     * @param FileSettingsHandler|null          $fileSettingsHandler          File settings handler
+     * @param ObjectRetentionHandler|null       $objectRetentionHandler       Object retention handler
+     * @param CacheSettingsHandler|null         $cacheSettingsHandler         Cache settings handler
+     * @param SolrSettingsHandler|null          $solrSettingsHandler          SOLR settings handler
+     * @param ConfigurationSettingsHandler|null $configurationSettingsHandler Configuration settings handler
      *
      * @return void
      */
@@ -700,21 +705,10 @@ class SettingsService
         bool $collectErrors=false,
         int $batchSize=1000,
         array $schemaIds=[]
-    ) {
-        /*
-         * NOTE: This method calls a deprecated method that always throws.
-         * TODO: Refactor to use IndexService->warmupIndex() directly.
-         * @psalm-suppress NoValue - Method always throws, return is unreachable
-         */
-
-        return $this->solrSettingsHandler->warmupSolrIndex(
-            $schemas,
-            $maxObjects,
-            $mode,
-            $collectErrors,
-            $batchSize,
-            $schemaIds
-        );
+    ): never {
+        // NOTE: This method calls a deprecated method that always throws.
+        // TODO: Refactor to use IndexService->warmupIndex() directly.
+        $this->solrSettingsHandler->warmupSolrIndex();
     }//end warmupSolrIndex()
 
     // ConfigurationSettingsHandler methods (15 main ones).
@@ -722,32 +716,9 @@ class SettingsService
     /**
      * Get settings
      *
-     * @return array[] Application settings
+     * @return (bool|int|mixed|null|string)[][]
      *
-     * @psalm-return array{version: array{appName: 'Open Register',
-     *     appVersion: '0.2.3'}, rbac: array{enabled: false|mixed,
-     *     anonymousGroup: 'public'|mixed, defaultNewUserGroup: 'viewer'|mixed,
-     *     defaultObjectOwner: ''|mixed, adminOverride: mixed|true},
-     *     multitenancy: array{enabled: false|mixed, defaultUserTenant: ''|mixed,
-     *     defaultObjectTenant: ''|mixed,
-     *     publishedObjectsBypassMultiTenancy: false|mixed,
-     *     adminOverride: mixed|true}, availableGroups: array,
-     *     availableTenants: array, availableUsers: array,
-     *     retention: array{objectArchiveRetention: 31536000000|mixed,
-     *     objectDeleteRetention: 63072000000|mixed,
-     *     searchTrailRetention: 2592000000|mixed,
-     *     createLogRetention: 2592000000|mixed, readLogRetention: 86400000|mixed,
-     *     updateLogRetention: 604800000|mixed,
-     *     deleteLogRetention: 2592000000|mixed, auditTrailsEnabled: mixed|true,
-     *     searchTrailsEnabled: mixed|true}, solr: array{enabled: false|mixed,
-     *     host: 'solr'|mixed, port: 8983|mixed, path: '/solr'|mixed,
-     *     core: 'openregister'|mixed, configSet: '_default'|mixed,
-     *     scheme: 'http'|mixed, username: 'solr'|mixed, password: 'SolrRocks'|mixed,
-     *     timeout: 30|mixed, autoCommit: mixed|true, commitWithin: 1000|mixed,
-     *     enableLogging: mixed|true, zookeeperHosts: 'zookeeper:2181'|mixed,
-     *     zookeeperUsername: ''|mixed, zookeeperPassword: ''|mixed,
-     *     collection: 'openregister'|mixed, useCloud: mixed|true,
-     *     objectCollection: mixed|null, fileCollection: mixed|null}}
+     * @psalm-return array{version: array{appName: 'Open Register', appVersion: '0.2.3'}, rbac?: array{enabled: mixed|true, anonymousGroup: 'public'|mixed, defaultNewUserGroup: 'viewer'|mixed, defaultObjectOwner: ''|mixed, adminOverride: mixed|true}, multitenancy?: array{enabled: mixed|true, defaultUserTenant: ''|mixed, defaultObjectTenant: ''|mixed, publishedObjectsBypassMultiTenancy: false|mixed, adminOverride: mixed|true}, availableGroups: array<string, string>, availableTenants: array<string, null|string>, availableUsers: array<string, string>, retention?: array{objectArchiveRetention: 31536000000|mixed, objectDeleteRetention: 63072000000|mixed, searchTrailRetention: 2592000000|mixed, createLogRetention: 2592000000|mixed, readLogRetention: 86400000|mixed, updateLogRetention: 604800000|mixed, deleteLogRetention: 2592000000|mixed, auditTrailsEnabled: mixed|true, searchTrailsEnabled: mixed|true}, solr?: array{enabled: false|mixed, host: 'solr'|mixed, port: 8983|mixed, path: '/solr'|mixed, core: 'openregister'|mixed, configSet: '_default'|mixed, scheme: 'http'|mixed, username: 'solr'|mixed, password: 'SolrRocks'|mixed, timeout: 30|mixed, autoCommit: mixed|true, commitWithin: 1000|mixed, enableLogging: mixed|true, zookeeperHosts: 'zookeeper:2181'|mixed, zookeeperUsername: ''|mixed, zookeeperPassword: ''|mixed, collection: 'openregister'|mixed, useCloud: mixed|true, objectCollection: mixed|null, fileCollection: mixed|null}}
      */
     public function getSettings(): array
     {
@@ -773,7 +744,8 @@ class SettingsService
      *
      * @return bool[] Updated settings
      *
-     * @psalm-return array{use_old_style_publishing_view?: bool, auto_publish_objects?: bool, auto_publish_attachments?: bool}
+     * @psalm-return array{use_old_style_publishing_view?: bool,
+     *               auto_publish_objects?: bool, auto_publish_attachments?: bool}
      */
     public function updatePublishingOptions(array $data): array
     {
@@ -827,7 +799,8 @@ class SettingsService
      *
      * @return (mixed|null|true)[][] Organisation settings
      *
-     * @psalm-return array{organisation: array{default_organisation: mixed|null, auto_create_default_organisation: mixed|true}}
+     * @psalm-return array{organisation: array{default_organisation: mixed|null,
+     *               auto_create_default_organisation: mixed|true}}
      */
     public function getOrganisationSettingsOnly(): array
     {
@@ -841,7 +814,8 @@ class SettingsService
      *
      * @return (mixed|null|true)[][] Updated organisation settings
      *
-     * @psalm-return array{organisation: array{default_organisation: mixed|null, auto_create_default_organisation: mixed|true}}
+     * @psalm-return array{organisation: array{default_organisation: mixed|null,
+     *               auto_create_default_organisation: mixed|true}}
      */
     public function updateOrganisationSettingsOnly(array $data): array
     {
@@ -1107,14 +1081,13 @@ class SettingsService
             ],
         ];
 
-        /*
-         * Determine overall success.
-         * @psalm-suppress TypeDoesNotContainType - failed_saves can be incremented in processJobsParallel/processJobsSerial
-         */
-
+        // Determine overall success.
+        // Note: failed_saves can be incremented in processJobsParallel/processJobsSerial.
+        /** @psalm-suppress TypeDoesNotContainType */
         if ($results['stats']['failed_saves'] > 0) {
             if ($collectErrors === true) {
                 $results['success'] = $results['stats']['successful_saves'] > 0;
+                /** @psalm-suppress NoValue */
                 $results['message'] = sprintf(
                     'Mass validation completed with %d errors out of %d objects (%d successful)',
                     $results['stats']['failed_saves'],
@@ -1123,6 +1096,7 @@ class SettingsService
                 );
             } else {
                 $results['success'] = false;
+                /** @psalm-suppress NoValue */
                 $results['message'] = sprintf(
                     'Mass validation stopped after %d errors (processed %d out of %d objects)',
                     $results['stats']['failed_saves'],
@@ -1179,18 +1153,18 @@ class SettingsService
     /**
      * Process batch jobs in serial mode
      *
-     * @param array                                   $batchJobs     Array of batch job definitions.
-     * @param \OCA\OpenRegister\Db\ObjectEntityMapper $objectMapper  The object entity mapper.
-     * @param \OCA\OpenRegister\Service\ObjectService $objectService The object service instance.
-     * @param array                                   $results       Results array to update.
-     * @param bool                                    $collectErrors Whether to collect all errors.
+     * @param array                                        $batchJobs     Array of batch job definitions.
+     * @param \OCA\OpenRegister\Db\ObjectEntityMapper      $objectMapper  The object entity mapper.
+     * @param \OCA\OpenRegister\Service\ObjectService|null $objectService The object service instance (nullable due to circular dependency).
+     * @param array                                        $results       Results array to update.
+     * @param bool                                         $collectErrors Whether to collect all errors.
      *
      * @return void
      */
     private function processJobsSerial(
         array $batchJobs,
         \OCA\OpenRegister\Db\ObjectEntityMapper $objectMapper,
-        \OCA\OpenRegister\Service\ObjectService $objectService,
+        ?\OCA\OpenRegister\Service\ObjectService $objectService,
         array &$results,
         bool $collectErrors
     ): void {
@@ -1310,19 +1284,19 @@ class SettingsService
     /**
      * Process batch jobs in parallel mode
      *
-     * @param array                                   $batchJobs       Array of batch job definitions.
-     * @param \OCA\OpenRegister\Db\ObjectEntityMapper $objectMapper    The object entity mapper.
-     * @param \OCA\OpenRegister\Service\ObjectService $objectService   The object service instance.
-     * @param array                                   $results         Results array to update.
-     * @param bool                                    $collectErrors   Whether to collect all errors.
-     * @param int                                     $parallelBatches Number of parallel batches.
+     * @param array                                        $batchJobs       Array of batch job definitions.
+     * @param \OCA\OpenRegister\Db\ObjectEntityMapper      $objectMapper    The object entity mapper.
+     * @param \OCA\OpenRegister\Service\ObjectService|null $objectService   The object service instance (nullable due to circular dependency).
+     * @param array                                        $results         Results array to update.
+     * @param bool                                         $collectErrors   Whether to collect all errors.
+     * @param int                                          $parallelBatches Number of parallel batches.
      *
      * @return void
      */
     private function processJobsParallel(
         array $batchJobs,
         \OCA\OpenRegister\Db\ObjectEntityMapper $objectMapper,
-        \OCA\OpenRegister\Service\ObjectService $objectService,
+        ?\OCA\OpenRegister\Service\ObjectService $objectService,
         array &$results,
         bool $collectErrors,
         int $parallelBatches

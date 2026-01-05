@@ -89,7 +89,7 @@ class Version1Date20251111000000 extends SimpleMigrationStep
                         'notnull' => false,
                         'length'  => 255,
                         'default' => null,
-                        'comment' => 'Embedding model used to generate this vector (e.g., text-embedding-ada-002, nomic-embed-text)',
+                        'comment' => 'Embedding model used to generate this vector',
                     ]
                 );
 

@@ -84,10 +84,10 @@ class GitHubHandler
     /**
      * GitHubHandler constructor
      *
-     * @param IClient         $client       HTTP client
-     * @param IConfig         $config       Configuration service
-     * @param ICacheFactory   $cacheFactory Cache factory for creating cache instances
-     * @param LoggerInterface $logger       Logger instance
+     * @param IClientService  $clientService HTTP client service
+     * @param IConfig         $config        Configuration service
+     * @param ICacheFactory   $cacheFactory  Cache factory for creating cache instances
+     * @param LoggerInterface $logger        Logger instance
      */
     public function __construct(
         IClientService $clientService,
@@ -106,7 +106,11 @@ class GitHubHandler
      *
      * @return string[]
      *
-     * @psalm-return array{Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', Authorization?: string}
+     * @psalm-return array{
+     *     Accept: 'application/vnd.github+json',
+     *     'X-GitHub-Api-Version': '2022-11-28',
+     *     Authorization?: string
+     * }
      */
     private function getHeaders(): array
     {
@@ -127,7 +131,9 @@ class GitHubHandler
                 ]
             );
         } else {
-            $this->logger->warning(message: 'No GitHub API token configured - using unauthenticated access (60 requests/hour limit)');
+            $this->logger->warning(
+                message: 'No GitHub API token configured - unauthenticated access (60 requests/hour limit)'
+            );
         }
 
         return $headers;
@@ -234,7 +240,13 @@ class GitHubHandler
 
                 // Get enriched config details (from cache or by fetching from raw.githubusercontent.com).
                 // This doesn't count against API rate limit.
-                $configDetails = $this->getEnrichedConfigDetails(owner: $owner, repo: $repo, path: $path, branch: $defaultBranch, fileSha: $fileSha);
+                $configDetails = $this->getEnrichedConfigDetails(
+                    owner: $owner,
+                    repo: $repo,
+                    path: $path,
+                    branch: $defaultBranch,
+                    fileSha: $fileSha
+                );
 
                 $allResults[] = [
                     'repository'   => $item['repository']['full_name'],
@@ -318,15 +330,23 @@ class GitHubHandler
                 if (stripos($rawError, 'rate limit') !== false) {
                     $token = $this->config->getAppValue('openregister', 'github_api_token', '');
                     if (empty($token) === true) {
-                        return 'GitHub API rate limit exceeded (60 requests/hour for unauthenticated). Please configure a GitHub API token in Settings to increase to 5,000 requests/hour (30/minute for Code Search).';
+                        $message  = 'GitHub API rate limit exceeded (60 requests/hour for ';
+                        $message .= 'unauthenticated). Please configure a GitHub API token in ';
+                        $message .= 'Settings to increase to 5,000 requests/hour (30/minute for Code Search).';
+                        return $message;
                     } else {
-                        return 'GitHub Code Search API rate limit exceeded (30 requests per minute). Please wait a few minutes before trying again. The discovery search makes multiple API calls to find configurations.';
+                        $message  = 'GitHub Code Search API rate limit exceeded (30 requests per ';
+                        $message .= 'minute). Please wait a few minutes before trying again. The ';
+                        $message .= 'discovery search makes multiple API calls to find configurations.';
+                        return $message;
                     }
                 }
                 return 'Access forbidden. Please check your GitHub API token permissions in Settings.';
 
             case 401:
-                return 'GitHub API authentication failed. Please check your API token in Settings or remove it to use unauthenticated access (60 requests/hour limit).';
+                $message  = 'GitHub API authentication failed. Please check your API token in ';
+                $message .= 'Settings or remove it to use unauthenticated access (60 requests/hour limit).';
+                return $message;
 
             case 404:
                 return 'Repository or resource not found on GitHub. Please check the repository exists and is public.';
@@ -341,7 +361,9 @@ class GitHubHandler
             default:
                 // Return a generic message but don't expose the full raw error.
                 if (stripos($rawError, 'rate limit') !== false) {
-                    return 'GitHub API rate limit exceeded. Please wait a few minutes or configure an API token in Settings.';
+                    $msg  = 'GitHub API rate limit exceeded. ';
+                    $msg .= 'Please wait a few minutes or configure an API token in Settings.';
+                    return $msg;
                 }
                 return 'GitHub API request failed. Please try again or check your API token configuration in Settings.';
         }//end switch
@@ -363,8 +385,13 @@ class GitHubHandler
      *
      * @since 0.2.11
      */
-    private function getEnrichedConfigDetails(string $owner, string $repo, string $path, string $branch, ?string $fileSha): array
-    {
+    private function getEnrichedConfigDetails(
+        string $owner,
+        string $repo,
+        string $path,
+        string $branch,
+        ?string $fileSha
+    ): array {
         // Default fallback config.
         $fallbackConfig = [
             'title'       => basename($path, '.json'),
@@ -523,13 +550,8 @@ class GitHubHandler
 
             $branches = json_decode($response->getBody(), true);
 
+            // Format branch data for return.
             return array_map(
-                /*
-                 * @return (false|mixed|null)[]
-                 *
-                 * @psalm-return array{name: mixed, commit: mixed|null, protected: false|mixed}
-                 */
-
                 function (array $branch): array {
                     return [
                         'name'      => $branch['name'],
@@ -672,23 +694,30 @@ class GitHubHandler
 
             $files = [];
             foreach ($data['items'] ?? [] as $item) {
-                $configData = $this->parseConfigurationFile(owner: $owner, repo: $repo, path: $item['path'], branch: $branch);
+                $configData = $this->parseConfigurationFile(
+                    owner: $owner,
+                    repo: $repo,
+                    path: $item['path'],
+                    branch: $branch
+                );
 
                 if ($configData !== null) {
+                    $info    = $configData['info'] ?? [];
+                    $xReg    = $configData['x-openregister'] ?? [];
                     $files[] = [
                         'path'   => $item['path'],
                         'sha'    => $item['sha'] ?? null,
                         'url'    => $item['html_url'] ?? null,
                         'config' => [
-                            'title'       => $configData['info']['title'] ?? $configData['x-openregister']['title'] ?? basename($item['path']),
-                            'description' => $configData['info']['description'] ?? $configData['x-openregister']['description'] ?? '',
-                            'version'     => $configData['info']['version'] ?? $configData['x-openregister']['version'] ?? '1.0.0',
-                            'app'         => $configData['x-openregister']['app'] ?? null,
-                            'type'        => $configData['x-openregister']['type'] ?? 'manual',
+                            'title'       => $info['title'] ?? $xReg['title'] ?? basename($item['path']),
+                            'description' => $info['description'] ?? $xReg['description'] ?? '',
+                            'version'     => $info['version'] ?? $xReg['version'] ?? '1.0.0',
+                            'app'         => $xReg['app'] ?? null,
+                            'type'        => $xReg['type'] ?? 'manual',
                         ],
                     ];
                 }
-            }
+            }//end foreach
 
             return $files;
         } catch (GuzzleException $e) {
@@ -810,16 +839,8 @@ class GitHubHandler
 
             $repos = json_decode($response->getBody(), true);
 
+            // Format repository data for return.
             return array_map(
-                /*
-                 * @return (mixed|string)[]
-                 *
-                 * @psalm-return array{id: mixed, name: mixed, full_name: mixed,
-                 *     owner: mixed, owner_type: mixed, private: mixed,
-                 *     description: ''|mixed, default_branch: 'main'|mixed,
-                 *     url: mixed, api_url: mixed}
-                 */
-
                 function (array $repo): array {
                     return [
                         'id'             => $repo['id'],
@@ -943,7 +964,10 @@ class GitHubHandler
      *
      * @throws \Exception If publish fails
      *
-     * @psalm-return array{success: true, commit_sha: mixed|null, file_sha: mixed|null, commit_url: mixed|null, file_url: mixed|null}
+     * @psalm-return array{
+     *     success: true, commit_sha: mixed|null, file_sha: mixed|null,
+     *     commit_url: mixed|null, file_url: mixed|null
+     * }
      */
     public function publishConfiguration(
         string $owner,
@@ -1039,11 +1063,16 @@ class GitHubHandler
 
                     // Provide more context for common errors.
                     if ($statusCode === 404) {
-                        $errorMessage = "Not Found - Repository '{$owner}/{$repo}', branch '{$branch}', or path '{$path}' may not exist or you may not have access";
+                        $repoPath      = "{$owner}/{$repo}";
+                        $errorMessage  = "Not Found - Repository '{$repoPath}', branch ";
+                        $errorMessage .= "'{$branch}', or path '{$path}' may not exist or you may not have access";
                     } else if ($statusCode === 403) {
-                        $errorMessage = "Forbidden - You may not have write access to repository '{$owner}/{$repo}' or the branch '{$branch}' is protected";
+                        $repoPath      = "{$owner}/{$repo}";
+                        $errorMessage  = "Forbidden - You may not have write access to repository ";
+                        $errorMessage .= "'{$repoPath}' or the branch '{$branch}' is protected";
                     } else if ($statusCode === 422) {
-                        $errorMessage = "Validation Error - {$errorMessage}. Check that the branch '{$branch}' exists and the path '{$path}' is valid";
+                        $errorMessage  = "Validation Error - {$errorMessage}. Check that the branch ";
+                        $errorMessage .= "'{$branch}' exists and the path '{$path}' is valid";
                     }
                 }
             }//end if

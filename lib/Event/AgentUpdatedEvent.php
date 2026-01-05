@@ -33,8 +33,6 @@ class AgentUpdatedEvent extends Event
      * The updated agent state.
      *
      * @var Agent The agent after update.
-     *
-     * @psalm-suppress UnusedProperty
      */
     private Agent $newAgent;
 
@@ -42,8 +40,6 @@ class AgentUpdatedEvent extends Event
      * The previous agent state.
      *
      * @var Agent The agent before update.
-     *
-     * @psalm-suppress UnusedProperty
      */
     private Agent $oldAgent;
 

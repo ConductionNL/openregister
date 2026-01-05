@@ -69,13 +69,15 @@ class Version1Date20251202000000 extends SimpleMigrationStep
 
             // Add published field (datetime) - publication timestamp.
             if ($schemasTable->hasColumn('published') === false) {
+                $comment  = 'Publication timestamp. When set, schema becomes publicly accessible ';
+                $comment .= 'regardless of organisation restrictions.';
                 $schemasTable->addColumn(
                     'published',
                     Types::DATETIME,
                     [
                         'notnull' => false,
                         'default' => null,
-                        'comment' => 'Publication timestamp. When set, schema becomes publicly accessible regardless of organisation restrictions.',
+                        'comment' => $comment,
                     ]
                 );
 
@@ -110,13 +112,15 @@ class Version1Date20251202000000 extends SimpleMigrationStep
 
             // Add published field (datetime) - publication timestamp.
             if ($registersTable->hasColumn('published') === false) {
+                $comment  = 'Publication timestamp. When set, register becomes publicly accessible ';
+                $comment .= 'regardless of organisation restrictions.';
                 $registersTable->addColumn(
                     'published',
                     Types::DATETIME,
                     [
                         'notnull' => false,
                         'default' => null,
-                        'comment' => 'Publication timestamp. When set, register becomes publicly accessible regardless of organisation restrictions.',
+                        'comment' => $comment,
                     ]
                 );
 
@@ -127,13 +131,15 @@ class Version1Date20251202000000 extends SimpleMigrationStep
 
             // Add depublished field (datetime) - depublication timestamp.
             if ($registersTable->hasColumn('depublished') === false) {
+                $comment  = 'Depublication timestamp. When set, register becomes inaccessible ';
+                $comment .= 'after this date/time.';
                 $registersTable->addColumn(
                     'depublished',
                     Types::DATETIME,
                     [
                         'notnull' => false,
                         'default' => null,
-                        'comment' => 'Depublication timestamp. When set, register becomes inaccessible after this date/time.',
+                        'comment' => $comment,
                     ]
                 );
 

@@ -251,7 +251,7 @@ class SearchQueryHandler
      * Supports multiple views - their filters are combined (OR logic for same field, AND for different fields).
      *
      * @param array<string, mixed> $query   Base query parameters.
-     * @param array<int>           $viewIds View IDs to apply.
+     * @param array<int|string>    $viewIds View IDs to apply (can be int or string IDs).
      *
      * @return array<string, mixed> Query with view filters applied
      */

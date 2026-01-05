@@ -60,7 +60,7 @@ class RelationHandler
     /**
      * Apply inversedBy filter to find objects by their inverse relations.
      *
-     * @param array    &$filters        The filters array (passed by reference).
+     * @param array    $filters         The filters array (passed by reference).
      * @param callable $findAllCallback Callback to findAll method.
      *
      * @psalm-param array<string, mixed> &$filters
@@ -296,13 +296,13 @@ class RelationHandler
      *
      * @param array $relationshipIds Array of all relationship IDs to load.
      *
-     * @return array[][][][][][][][]
+     * @return array<int|string, ObjectEntity>
      *
      * @psalm-param array<string> $relationshipIds
      *
      * @phpstan-param array<string> $relationshipIds
      *
-     * @psalm-return   array<array<array<array<array<array<array<array<array<never, never>>>>>>>>>
+     * @psalm-return array<int|string, ObjectEntity>
      * @phpstan-return array<string, ObjectEntity>
      */
     public function bulkLoadRelationshipsBatched(array $relationshipIds): array
@@ -402,7 +402,7 @@ class RelationHandler
      *
      * @phpstan-param array<string> $relationshipIds
      *
-     * @psalm-return   list<OCA\OpenRegister\Db\ObjectEntity>
+     * @psalm-return list<ObjectEntity>
      * @phpstan-return array<int, ObjectEntity>
      */
     public function loadRelationshipChunkOptimized(array $relationshipIds): array
@@ -490,24 +490,24 @@ class RelationHandler
      *
      * This method finds all objects that are referenced by the given object.
      *
-     * @param string $objectId Object ID or UUID.
-     * @param array  $query    Search query parameters.
-     * @param bool   $rbac     Apply RBAC filters.
-     * @param bool   $multi    Apply multitenancy filters.
+     * @param string $objectId      Object ID or UUID.
+     * @param array  $query         Search query parameters.
+     * @param bool   $rbac          Apply RBAC filters.
+     * @param bool   $_multitenancy Apply multitenancy filters.
      *
-     * @return (\OCA\OpenRegister\Db\OCA\OpenRegister\Db\ObjectEntity[]|int|mixed)[]
+     * @return array{results: ObjectEntity[], total: int, limit: int|mixed, offset: int|mixed}
      *
-     * @psalm-return array{results: list<OCA\OpenRegister\Db\OCA\OpenRegister\Db\ObjectEntity>, total: int<0, max>, limit: 30|mixed, offset: 0|mixed}
+     * @psalm-return array{results: list<ObjectEntity>, total: int<0, max>, limit: 30|mixed, offset: 0|mixed}
      */
     public function getUses(string $objectId, array $query=[], bool $rbac=true, bool $_multitenancy=true): array
     {
         try {
             // Find the object.
-            $object     = $this->objectEntityMapper->find(identifier: $objectId);
-            $objectData = $object->getObject();
+            $object = $this->objectEntityMapper->find(identifier: $objectId);
 
             // Extract all relationship IDs from the object.
-            $relationshipIds = $this->extractAllRelationshipIds(objects: [$objectData], _extend: []);
+            // Note: extractAllRelationshipIds expects ObjectEntity[], not raw array data.
+            $relationshipIds = $this->extractAllRelationshipIds(objects: [$object], _extend: []);
 
             if (empty($relationshipIds) === true) {
                 return [
@@ -556,10 +556,10 @@ class RelationHandler
      *
      * This method finds all objects that reference the given object.
      *
-     * @param string $objectId Object ID or UUID.
-     * @param array  $query    Search query parameters.
-     * @param bool   $rbac     Apply RBAC filters.
-     * @param bool   $multi    Apply multitenancy filters.
+     * @param string $objectId      Object ID or UUID.
+     * @param array  $query         Search query parameters.
+     * @param bool   $rbac          Apply RBAC filters.
+     * @param bool   $_multitenancy Apply multitenancy filters.
      *
      * @return (array|int|mixed|string)[] Paginated results with referencing objects.
      *

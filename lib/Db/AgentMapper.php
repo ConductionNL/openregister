@@ -62,6 +62,7 @@ class AgentMapper extends QBMapper
      *
      * @var OrganisationService
      */
+
     /**
      * Organisation mapper for organisation-related operations.
      *
@@ -93,11 +94,11 @@ class AgentMapper extends QBMapper
     /**
      * Constructor
      *
-     * @param IDBConnection       $db                  Database connection
-     * @param OrganisationMapper  $organisationMapper  Organisation mapper
-     * @param IUserSession        $userSession         User session
-     * @param IGroupManager       $groupManager        Group manager
-     * @param IEventDispatcher    $eventDispatcher     Event dispatcher
+     * @param IDBConnection      $db                 Database connection
+     * @param OrganisationMapper $organisationMapper Organisation mapper
+     * @param IUserSession       $userSession        User session
+     * @param IGroupManager      $groupManager       Group manager
+     * @param IEventDispatcher   $eventDispatcher    Event dispatcher
      */
     public function __construct(
         IDBConnection $db,
@@ -318,7 +319,7 @@ class AgentMapper extends QBMapper
      *
      * @throws \Exception If user doesn't have read permission
      *
-     * @psalm-return list<OCA\OpenRegister\Db\Agent>
+     * @psalm-return list<Agent>
      */
     public function findAll(?int $limit=null, ?int $offset=null, ?array $filters=[], ?array $order=[]): array
     {
@@ -338,9 +339,13 @@ class AgentMapper extends QBMapper
             foreach ($filters as $field => $value) {
                 if ($value !== null && $field !== '_route') {
                     if ($field === 'active') {
-                        $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter((bool) $value, IQueryBuilder::PARAM_BOOL)));
+                        $qb->andWhere(
+                            $qb->expr()->eq($field, $qb->createNamedParameter((bool) $value, IQueryBuilder::PARAM_BOOL))
+                        );
                     } else if (is_array($value) === true) {
-                        $qb->andWhere($qb->expr()->in($field, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY)));
+                        $qb->andWhere(
+                            $qb->expr()->in($field, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY))
+                        );
                     } else {
                         $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR)));
                     }
@@ -527,9 +532,13 @@ class AgentMapper extends QBMapper
             foreach ($filters as $field => $value) {
                 if ($value !== null && $field !== '_route') {
                     if ($field === 'active') {
-                        $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter((bool) $value, IQueryBuilder::PARAM_BOOL)));
+                        $qb->andWhere(
+                            $qb->expr()->eq($field, $qb->createNamedParameter((bool) $value, IQueryBuilder::PARAM_BOOL))
+                        );
                     } else if (is_array($value) === true) {
-                        $qb->andWhere($qb->expr()->in($field, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY)));
+                        $qb->andWhere(
+                            $qb->expr()->in($field, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY))
+                        );
                     } else {
                         $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR)));
                     }

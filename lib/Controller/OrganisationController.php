@@ -297,7 +297,12 @@ class OrganisationController extends Controller
             $requestData = $this->request->getParams();
             $uuid        = $requestData['uuid'] ?? '';
 
-            $organisation = $this->organisationService->createOrganisation(name: $name, description: $description, addCurrentUser: true, uuid: $uuid);
+            $organisation = $this->organisationService->createOrganisation(
+                name: $name,
+                description: $description,
+                addCurrentUser: true,
+                uuid: $uuid
+            );
 
             return new JSONResponse(
                 data: [
@@ -519,22 +524,11 @@ class OrganisationController extends Controller
      *
      * @param string $uuid Organisation UUID.
      *
-     * @return JSONResponse Updated organisation data.
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400|403,
-     *     array{error?: string, id?: int, uuid?: null|string,
-     *     slug?: null|string, name?: null|string, description?: null|string,
-     *     users?: array, groups?: array|null, owner?: null|string,
-     *     active?: bool|null, parent?: null|string, children?: array,
-     *     quota?: array{storage: int|null, bandwidth: int|null,
-     *     requests: int|null, users: null, groups: null},
-     *     usage?: array{storage: 0, bandwidth: 0, requests: 0,
-     *     users: int<0, max>, groups: int<0, max>}, authorization?: array,
-     *     created?: null|string, updated?: null|string}, array<never, never>>
+     * @return JSONResponse JSON response with updated organisation or error
      */
     public function update(string $uuid): JSONResponse
     {
@@ -579,22 +573,11 @@ class OrganisationController extends Controller
      *
      * @param string $uuid Organisation UUID.
      *
-     * @return JSONResponse Updated organisation data.
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400|403,
-     *     array{error?: string, id?: int, uuid?: null|string,
-     *     slug?: null|string, name?: null|string, description?: null|string,
-     *     users?: array, groups?: array|null, owner?: null|string,
-     *     active?: bool|null, parent?: null|string, children?: array,
-     *     quota?: array{storage: int|null, bandwidth: int|null,
-     *     requests: int|null, users: null, groups: null},
-     *     usage?: array{storage: 0, bandwidth: 0, requests: 0,
-     *     users: int<0, max>, groups: int<0, max>}, authorization?: array,
-     *     created?: null|string, updated?: null|string}, array<never, never>>
+     * @return JSONResponse JSON response with patched organisation or error
      */
     public function patch(string $uuid): JSONResponse
     {
@@ -695,7 +678,9 @@ class OrganisationController extends Controller
      *
      * @return JSONResponse Success response
      *
-     * @psalm-return JSONResponse<200|500, array{error?: 'Failed to clear cache', message?: 'Cache cleared successfully'}, array<never, never>>
+     * @psalm-return JSONResponse<200|500,
+     *     array{error?: 'Failed to clear cache', message?: 'Cache cleared successfully'},
+     *     array<never, never>>
      */
     public function clearCache(): JSONResponse
     {
@@ -734,7 +719,9 @@ class OrganisationController extends Controller
      *
      * @return JSONResponse JSON response with organisation statistics
      *
-     * @psalm-return JSONResponse<200|500, array{error?: 'Failed to retrieve statistics', statistics?: array{total: int}}, array<never, never>>
+     * @psalm-return JSONResponse<200|500,
+     *     array{error?: 'Failed to retrieve statistics', statistics?: array{total: int}},
+     *     array<never, never>>
      */
     public function stats(): JSONResponse
     {

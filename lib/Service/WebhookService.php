@@ -208,7 +208,12 @@ class WebhookService
             return false;
         }
 
-        $webhookPayload = $this->buildPayload(webhook: $webhook, eventName: $eventName, payload: $payload, attempt: $attempt);
+        $webhookPayload = $this->buildPayload(
+            webhook: $webhook,
+            eventName: $eventName,
+            payload: $payload,
+            attempt: $attempt
+        );
 
         // Create webhook log entry.
         $webhookLog = new WebhookLog();

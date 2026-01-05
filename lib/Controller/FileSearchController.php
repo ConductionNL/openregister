@@ -116,7 +116,7 @@ class FileSearchController extends Controller
             }
 
             // Execute search.
-            $queryUrl   = $this->indexService->getEndpointUrl($fileCollection);
+            $queryUrl   = $this->indexService->getEndpointUrl().'/'.$fileCollection.'/select';
             $solrConfig = $this->settingsService->getSettings()['solr'] ?? [];
 
             $requestOptions = [
@@ -256,19 +256,9 @@ class FileSearchController extends Controller
      *
      * @NoAdminRequired
      *
-     * @return JSONResponse JSON response containing hybrid search results
-     *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400|500,
-     *     array{success: bool, message?: string, query?: string, total?: 5,
-     *     results?: array{results: array, total: int<0, max>,
-     *     search_time_ms: float,
-     *     source_breakdown: array{vector_only: int<0, max>,
-     *     solr_only: int<0, max>, both: int<0, max>},
-     *     weights: array{solr: float, vector: float}},
-     *     search_type?: 'hybrid', weights?: array{keyword: float,
-     *     semantic: float}}, array<never, never>>
+     * @return JSONResponse JSON response containing hybrid search results
      */
     public function hybridSearch(): JSONResponse
     {

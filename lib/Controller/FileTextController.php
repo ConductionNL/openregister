@@ -49,7 +49,7 @@ class FileTextController extends Controller
      *
      * @param string                $appName               App name
      * @param IRequest              $request               Request object
-     * @param TextExtractionService $textExtractionService Text extraction service
+     * @param TextExtractionService $textExtractor Text extraction service
      * @param IndexService          $indexService          Index service for file operations
      * @param LoggerInterface       $logger                Logger
      * @param IAppConfig            $config                Application configuration
@@ -57,7 +57,7 @@ class FileTextController extends Controller
     public function __construct(
         string $appName,
         IRequest $request,
-        private readonly TextExtractionService $textExtractionService,
+        private readonly TextExtractionService $textExtractor,
         private readonly IndexService $indexService,
         private readonly LoggerInterface $logger,
         private readonly IAppConfig $config
@@ -126,16 +126,24 @@ class FileTextController extends Controller
      */
     public function extractFileText(int $fileId): JSONResponse
     {
-        if ($this->config->hasKey(app: 'openregister', key: 'fileManagement') === false
-            || json_decode($this->config->getValueString(app: 'openregister', key: 'fileManagement'), true)['extractionScope'] === 'none'
-        ) {
-            $this->logger->info(message: '[FileTextController] File extraction is disabled. Not extracting text from files.');
-            return new JSONResponse(data: ['success' => false, 'message' => 'Text extraction disabled'], statusCode: Http::STATUS_NOT_IMPLEMENTED);
+        $hasFileManagement    = $this->config->hasKey(app: 'openregister', key: 'fileManagement');
+        $fileManagementConfig = json_decode(
+            $this->config->getValueString(app: 'openregister', key: 'fileManagement'),
+            true
+        );
+        $extractionScope      = $fileManagementConfig['extractionScope'] ?? null;
+        if ($hasFileManagement === false || $extractionScope === 'none') {
+            $logMsg = '[FileTextController] File extraction is disabled. Not extracting text from files.';
+            $this->logger->info(message: $logMsg);
+            return new JSONResponse(
+                data: ['success' => false, 'message' => 'Text extraction disabled'],
+                statusCode: Http::STATUS_NOT_IMPLEMENTED
+            );
         }
 
         try {
             // Force re-extraction.
-            $this->textExtractionService->extractFile(fileId: $fileId, forceReExtract: true);
+            $this->textExtractor->extractFile(fileId: $fileId, forceReExtract: true);
 
             return new JSONResponse(
                 data: [
@@ -181,7 +189,7 @@ class FileTextController extends Controller
             $limit = (int) $this->request->getParam('limit', 100);
             $limit = min($limit, 500);
             // Max 500 files at once.
-            $result = $this->textExtractionService->extractPendingFiles($limit);
+            $result = $this->textExtractor->extractPendingFiles($limit);
 
             return new JSONResponse(
                 data: [
@@ -226,7 +234,7 @@ class FileTextController extends Controller
     public function getStats(): JSONResponse
     {
         try {
-            $stats = $this->textExtractionService->getStats();
+            $stats = $this->textExtractor->getStats();
 
             return new JSONResponse(
                 data: [
@@ -354,11 +362,13 @@ class FileTextController extends Controller
      *
      * @param int      $fileId       File ID
      * @param int|null $chunkSize    Chunk size in characters
-     * @param int|null $chunkOverlap Overlap between chunks in characters
+     * @param int|null $chunkOverlap Overlap between chunks in characters (reserved for future use)
      *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) $chunkOverlap reserved for future implementation
      *
      * @return JSONResponse Processing result
      *

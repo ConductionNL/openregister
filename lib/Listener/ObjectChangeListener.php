@@ -93,8 +93,8 @@ class ObjectChangeListener implements IEventListener
 
         // Get extraction mode and process accordingly.
         try {
-            $objectSettings = $this->settingsService->getObjectSettingsOnly();
-            $extractionMode = $objectSettings['objectExtractionMode'] ?? 'background';
+            $fileSettings   = $this->settingsService->getFileSettingsOnly();
+            $extractionMode = $fileSettings['extractionMode'] ?? 'background';
 
             $this->processExtractionMode(mode: $extractionMode, objectId: $objectId, objectUuid: $object->getUuid());
         } catch (\Exception $e) {

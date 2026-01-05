@@ -209,9 +209,8 @@ class FileValidationHandler
                     ]
                 );
 
-                throw new Exception(
-                    "File '$fileName' contains executable code ($description). Executable files are blocked for security reasons."
-                );
+                $execMsg = "File '$fileName' contains executable code ($description). ";
+                throw new Exception($execMsg.'Executable files are blocked for security.');
             }
         }
 
@@ -264,12 +263,12 @@ class FileValidationHandler
 
             // If we get here, the file is accessible.
             $this->logger->debug(
-                message: "checkOwnership: File {$file->getName()} (ID: {$file->getId()}) is accessible, no ownership fix needed"
+                message: "checkOwnership: File {$file->getName()} (ID: {$file->getId()}) is accessible"
             );
         } catch (NotFoundException $e) {
             // File exists but we can't access it - likely an ownership issue.
             $this->logger->warning(
-                message: "checkOwnership: File {$file->getName()} (ID: {$file->getId()}) exists but not accessible, checking ownership"
+                message: "checkOwnership: File {$file->getName()} (ID: {$file->getId()}) not accessible"
             );
 
             try {
@@ -278,7 +277,7 @@ class FileValidationHandler
 
                 if ($fileOwner === null || $fileOwner->getUID() !== $openRegisterUser->getUID()) {
                     $this->logger->info(
-                        message: "checkOwnership: File {$file->getName()} (ID: {$file->getId()}) has incorrect owner, attempting to fix"
+                        message: "checkOwnership: File {$file->getName()} (ID: {$file->getId()}) has wrong owner"
                     );
 
                     // Try to fix the ownership.
@@ -286,42 +285,42 @@ class FileValidationHandler
 
                     if ($ownershipFixed === true) {
                         $this->logger->info(
-                            message: "checkOwnership: Successfully fixed ownership for file {$file->getName()} (ID: {$file->getId()})"
+                            message: "checkOwnership: Fixed ownership for file {$file->getName()}"
                         );
                     } else {
                         $this->logger->error(
-                            message: "checkOwnership: Failed to fix ownership for file {$file->getName()} (ID: {$file->getId()})"
+                            message: "checkOwnership: Failed to fix ownership for file {$file->getName()}"
                         );
                         throw new Exception("Failed to fix file ownership for file: ".$file->getName());
                     }
                 } else {
                     $this->logger->info(
-                        message: "checkOwnership: File {$file->getName()} (ID: {$file->getId()}) already has correct owner, but still not accessible"
+                        message: "checkOwnership: File {$file->getName()} has correct owner but not accessible"
                     );
                 }//end if
             } catch (Exception $ownershipException) {
                 $this->logger->error(
-                    message: "checkOwnership: Error checking/fixing ownership for file {$file->getName()}: ".$ownershipException->getMessage()
+                    message: "checkOwnership: Error for file {$file->getName()}: ".$ownershipException->getMessage()
                 );
                 throw new Exception("Ownership check failed for file: ".$file->getName());
             }//end try
         } catch (NotPermittedException $e) {
             // Permission denied - likely an ownership issue.
             $this->logger->warning(
-                message: "checkOwnership: Permission denied for file {$file->getName()} (ID: {$file->getId()}), attempting ownership fix"
+                message: "checkOwnership: Permission denied for file {$file->getName()}, attempting ownership fix"
             );
 
             try {
                 // Try to fix the ownership.
                 $this->ownFile($file);
                 $this->logger->info(
-                    message: "checkOwnership: Fixed ownership for file {$file->getName()} (ID: {$file->getId()}) after permission error"
+                    message: "checkOwnership: Fixed ownership for file {$file->getName()} after permission error"
                 );
             } catch (Exception $ownershipException) {
                 $fileName = $file->getName();
-                $errorMsg = "checkOwnership: Failed to fix ownership after permission error for file {$fileName}: ".$ownershipException->getMessage();
-                $this->logger->error(message: $errorMsg);
-                throw new Exception("Ownership fix failed after permission error for file: ".$file->getName());
+                $errMsg   = "checkOwnership: Failed to fix for file {$fileName}: ".$ownershipException->getMessage();
+                $this->logger->error(message: $errMsg);
+                throw new Exception("Ownership fix failed for file: ".$file->getName());
             }
         }//end try
     }//end checkOwnership()

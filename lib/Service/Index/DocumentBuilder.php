@@ -59,7 +59,6 @@ class DocumentBuilder
     /**
      * DocumentBuilder constructor
      *
-     * @param SolrBackend         $solrBackend    The backend implementation
      * @param LoggerInterface     $logger         Logger
      * @param SchemaMapper|null   $schemaMapper   Schema mapper
      * @param RegisterMapper|null $registerMapper Register mapper
@@ -399,7 +398,8 @@ class DocumentBuilder
     public function mapFieldToSolrType(string $fieldName, string $_fieldType, $_fieldValue): ?string
     {
         // Avoid conflicts with core SOLR fields and self_ metadata fields.
-        if (in_array($fieldName, ['id', 'tenant_id', '_version_']) === true || str_starts_with($fieldName, 'self_') === true) {
+        $reservedFields = ['id', 'tenant_id', '_version_'];
+        if (in_array($fieldName, $reservedFields) === true || str_starts_with($fieldName, 'self_') === true) {
             return null;
         }
 

@@ -102,9 +102,9 @@ class VectorizationHandler
             $this->logger->info(
                 message: '[VectorizationHandler] Batch vectorization completed',
                 context: [
-                    'processed' => $result['processed'] ?? 0,
-                    'success'   => $result['success'] ?? 0,
-                    'failed'    => $result['failed'] ?? 0,
+                    'vectorized' => $result['vectorized'] ?? 0,
+                    'success'    => $result['success'] ?? false,
+                    'failed'     => $result['failed'] ?? 0,
                 ]
             );
 

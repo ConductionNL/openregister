@@ -48,6 +48,13 @@ class ConfigurationSettingsHandler
 {
 
     /**
+     * Default Fireworks API URL
+     *
+     * @var string
+     */
+    private const FIREWORKS_API_URL = 'https://api.fireworks.ai/inference/v1';
+
+    /**
      * Configuration service
      *
      * @var IConfig
@@ -140,33 +147,7 @@ class ConfigurationSettingsHandler
      *
      * @throws \RuntimeException If settings retrieval fails.
      *
-     * @psalm-return array{version: array{appName: 'Open Register',
-     *     appVersion: '0.2.3'}, rbac: array{enabled: mixed|true,
-     *     anonymousGroup: 'public'|mixed, defaultNewUserGroup: 'viewer'|mixed,
-     *     defaultObjectOwner: ''|mixed, adminOverride: mixed|true},
-     *     multitenancy: array{enabled: false|mixed,
-     *     defaultUserTenant: ''|mixed, defaultObjectTenant: ''|mixed,
-     *     publishedObjectsBypassMultiTenancy: false|mixed,
-     *     adminOverride: mixed|true}, availableGroups: array<string, string>,
-     *     availableTenants: array, availableUsers: array<string, string>,
-     *     retention: array{objectArchiveRetention: 31536000000|mixed,
-     *     objectDeleteRetention: 63072000000|mixed,
-     *     searchTrailRetention: 2592000000|mixed,
-     *     createLogRetention: 2592000000|mixed,
-     *     readLogRetention: 86400000|mixed,
-     *     updateLogRetention: 604800000|mixed,
-     *     deleteLogRetention: 2592000000|mixed,
-     *     auditTrailsEnabled: mixed|true, searchTrailsEnabled: mixed|true},
-     *     solr: array{enabled: false|mixed, host: 'solr'|mixed, port: 8983|mixed,
-     *     path: '/solr'|mixed, core: 'openregister'|mixed,
-     *     configSet: '_default'|mixed, scheme: 'http'|mixed,
-     *     username: 'solr'|mixed, password: 'SolrRocks'|mixed,
-     *     timeout: 30|mixed, autoCommit: mixed|true,
-     *     commitWithin: 1000|mixed, enableLogging: mixed|true,
-     *     zookeeperHosts: 'zookeeper:2181'|mixed,
-     *     zookeeperUsername: ''|mixed, zookeeperPassword: ''|mixed,
-     *     collection: 'openregister'|mixed, useCloud: mixed|true,
-     *     objectCollection: mixed|null, fileCollection: mixed|null}}
+     * @psalm-return array{version: array{appName: 'Open Register', appVersion: '0.2.3'}, rbac?: array{enabled: mixed|true, anonymousGroup: 'public'|mixed, defaultNewUserGroup: 'viewer'|mixed, defaultObjectOwner: ''|mixed, adminOverride: mixed|true}, multitenancy?: array{enabled: mixed|true, defaultUserTenant: ''|mixed, defaultObjectTenant: ''|mixed, publishedObjectsBypassMultiTenancy: false|mixed, adminOverride: mixed|true}, availableGroups: array<string, string>, availableTenants: array<string, null|string>, availableUsers: array<string, string>, retention?: array{objectArchiveRetention: 31536000000|mixed, objectDeleteRetention: 63072000000|mixed, searchTrailRetention: 2592000000|mixed, createLogRetention: 2592000000|mixed, readLogRetention: 86400000|mixed, updateLogRetention: 604800000|mixed, deleteLogRetention: 2592000000|mixed, auditTrailsEnabled: mixed|true, searchTrailsEnabled: mixed|true}, solr?: array{enabled: false|mixed, host: 'solr'|mixed, port: 8983|mixed, path: '/solr'|mixed, core: 'openregister'|mixed, configSet: '_default'|mixed, scheme: 'http'|mixed, username: 'solr'|mixed, password: 'SolrRocks'|mixed, timeout: 30|mixed, autoCommit: mixed|true, commitWithin: 1000|mixed, enableLogging: mixed|true, zookeeperHosts: 'zookeeper:2181'|mixed, zookeeperUsername: ''|mixed, zookeeperPassword: ''|mixed, collection: 'openregister'|mixed, useCloud: mixed|true, objectCollection: mixed|null, fileCollection: mixed|null}}
      */
     public function getSettings(): array
     {
@@ -409,37 +390,11 @@ class ConfigurationSettingsHandler
      *
      * @param array $data The settings data to update.
      *
-     * @return array[] The updated settings configuration.
+     * @return (bool|int|mixed|null|string)[][]
      *
      * @throws \RuntimeException If settings update fails.
      *
-     * @psalm-return array{version: array{appName: 'Open Register',
-     *     appVersion: '0.2.3'}, rbac: array{enabled: false|mixed,
-     *     anonymousGroup: 'public'|mixed, defaultNewUserGroup: 'viewer'|mixed,
-     *     defaultObjectOwner: ''|mixed, adminOverride: mixed|true},
-     *     multitenancy: array{enabled: false|mixed,
-     *     defaultUserTenant: ''|mixed, defaultObjectTenant: ''|mixed,
-     *     publishedObjectsBypassMultiTenancy: false|mixed,
-     *     adminOverride: mixed|true}, availableGroups: array,
-     *     availableTenants: array, availableUsers: array,
-     *     retention: array{objectArchiveRetention: 31536000000|mixed,
-     *     objectDeleteRetention: 63072000000|mixed,
-     *     searchTrailRetention: 2592000000|mixed,
-     *     createLogRetention: 2592000000|mixed,
-     *     readLogRetention: 86400000|mixed,
-     *     updateLogRetention: 604800000|mixed,
-     *     deleteLogRetention: 2592000000|mixed,
-     *     auditTrailsEnabled: mixed|true, searchTrailsEnabled: mixed|true},
-     *     solr: array{enabled: false|mixed, host: 'solr'|mixed, port: 8983|mixed,
-     *     path: '/solr'|mixed, core: 'openregister'|mixed,
-     *     configSet: '_default'|mixed, scheme: 'http'|mixed,
-     *     username: 'solr'|mixed, password: 'SolrRocks'|mixed,
-     *     timeout: 30|mixed, autoCommit: mixed|true,
-     *     commitWithin: 1000|mixed, enableLogging: mixed|true,
-     *     zookeeperHosts: 'zookeeper:2181'|mixed,
-     *     zookeeperUsername: ''|mixed, zookeeperPassword: ''|mixed,
-     *     collection: 'openregister'|mixed, useCloud: mixed|true,
-     *     objectCollection: mixed|null, fileCollection: mixed|null}}
+     * @psalm-return array{version: array{appName: 'Open Register', appVersion: '0.2.3'}, rbac?: array{enabled: mixed|true, anonymousGroup: 'public'|mixed, defaultNewUserGroup: 'viewer'|mixed, defaultObjectOwner: ''|mixed, adminOverride: mixed|true}, multitenancy?: array{enabled: mixed|true, defaultUserTenant: ''|mixed, defaultObjectTenant: ''|mixed, publishedObjectsBypassMultiTenancy: false|mixed, adminOverride: mixed|true}, availableGroups: array<string, string>, availableTenants: array<string, null|string>, availableUsers: array<string, string>, retention?: array{objectArchiveRetention: 31536000000|mixed, objectDeleteRetention: 63072000000|mixed, searchTrailRetention: 2592000000|mixed, createLogRetention: 2592000000|mixed, readLogRetention: 86400000|mixed, updateLogRetention: 604800000|mixed, deleteLogRetention: 2592000000|mixed, auditTrailsEnabled: mixed|true, searchTrailsEnabled: mixed|true}, solr?: array{enabled: false|mixed, host: 'solr'|mixed, port: 8983|mixed, path: '/solr'|mixed, core: 'openregister'|mixed, configSet: '_default'|mixed, scheme: 'http'|mixed, username: 'solr'|mixed, password: 'SolrRocks'|mixed, timeout: 30|mixed, autoCommit: mixed|true, commitWithin: 1000|mixed, enableLogging: mixed|true, zookeeperHosts: 'zookeeper:2181'|mixed, zookeeperUsername: ''|mixed, zookeeperPassword: ''|mixed, collection: 'openregister'|mixed, useCloud: mixed|true, objectCollection: mixed|null, fileCollection: mixed|null}}
      */
     public function updateSettings(array $data): array
     {
@@ -533,7 +488,11 @@ class ConfigurationSettingsHandler
      *
      * @throws \RuntimeException If publishing options update fails.
      *
-     * @psalm-return array{use_old_style_publishing_view?: bool, auto_publish_objects?: bool, auto_publish_attachments?: bool}
+     * @psalm-return array{
+     *     use_old_style_publishing_view?: bool,
+     *     auto_publish_objects?: bool,
+     *     auto_publish_attachments?: bool
+     * }
      */
     public function updatePublishingOptions(array $options): array
     {
@@ -665,7 +624,10 @@ class ConfigurationSettingsHandler
      *
      * @throws \RuntimeException If Organisation settings retrieval fails
      *
-     * @psalm-return array{organisation: array{default_organisation: mixed|null, auto_create_default_organisation: mixed|true}}
+     * @psalm-return array{organisation: array{
+     *     default_organisation: mixed|null,
+     *     auto_create_default_organisation: mixed|true
+     * }}
      */
     public function getOrganisationSettingsOnly(): array
     {
@@ -705,7 +667,10 @@ class ConfigurationSettingsHandler
      *
      * @throws \RuntimeException If Organisation settings update fails
      *
-     * @psalm-return array{organisation: array{default_organisation: mixed|null, auto_create_default_organisation: mixed|true}}
+     * @psalm-return array{organisation: array{
+     *     default_organisation: mixed|null,
+     *     auto_create_default_organisation: mixed|true
+     * }}
      */
     public function updateOrganisationSettingsOnly(array $organisationData): array
     {
@@ -976,32 +941,41 @@ class ConfigurationSettingsHandler
             $existingConfig = $this->getLLMSettingsOnly();
 
             // Merge with existing config (PATCH behavior).
+            $n  = $llmData;
+            $o  = $existingConfig;
+            $nO = $n['openaiConfig'] ?? [];
+            $oO = $o['openaiConfig'] ?? [];
+            $nL = $n['ollamaConfig'] ?? [];
+            $oL = $o['ollamaConfig'] ?? [];
+            $nF = $n['fireworksConfig'] ?? [];
+            $oF = $o['fireworksConfig'] ?? [];
+            $nV = $n['vectorConfig'] ?? [];
+            $oV = $o['vectorConfig'] ?? [];
+
             $llmConfig = [
-                'enabled'           => $llmData['enabled'] ?? $existingConfig['enabled'] ?? false,
-                'embeddingProvider' => $llmData['embeddingProvider'] ?? $existingConfig['embeddingProvider'] ?? null,
-                'chatProvider'      => $llmData['chatProvider'] ?? $existingConfig['chatProvider'] ?? null,
+                'enabled'           => $n['enabled'] ?? $o['enabled'] ?? false,
+                'embeddingProvider' => $n['embeddingProvider'] ?? $o['embeddingProvider'] ?? null,
+                'chatProvider'      => $n['chatProvider'] ?? $o['chatProvider'] ?? null,
                 'openaiConfig'      => [
-                    'apiKey'         => $llmData['openaiConfig']['apiKey'] ?? $existingConfig['openaiConfig']['apiKey'] ?? '',
-                    'model'          => $llmData['openaiConfig']['model'] ?? $existingConfig['openaiConfig']['model'] ?? null,
-                    'chatModel'      => $llmData['openaiConfig']['chatModel'] ?? $existingConfig['openaiConfig']['chatModel'] ?? null,
-                    'organizationId' => $llmData['openaiConfig']['organizationId'] ?? $existingConfig['openaiConfig']['organizationId'] ?? '',
+                    'apiKey'         => $nO['apiKey'] ?? $oO['apiKey'] ?? '',
+                    'model'          => $nO['model'] ?? $oO['model'] ?? null,
+                    'chatModel'      => $nO['chatModel'] ?? $oO['chatModel'] ?? null,
+                    'organizationId' => $nO['organizationId'] ?? $oO['organizationId'] ?? '',
                 ],
                 'ollamaConfig'      => [
-                    'url'       => $llmData['ollamaConfig']['url'] ?? $existingConfig['ollamaConfig']['url'] ?? 'http://localhost:11434',
-                    'model'     => $llmData['ollamaConfig']['model'] ?? $existingConfig['ollamaConfig']['model'] ?? null,
-                    'chatModel' => $llmData['ollamaConfig']['chatModel'] ?? $existingConfig['ollamaConfig']['chatModel'] ?? null,
+                    'url'       => $nL['url'] ?? $oL['url'] ?? 'http://localhost:11434',
+                    'model'     => $nL['model'] ?? $oL['model'] ?? null,
+                    'chatModel' => $nL['chatModel'] ?? $oL['chatModel'] ?? null,
                 ],
                 'fireworksConfig'   => [
-                    'apiKey'         => $llmData['fireworksConfig']['apiKey'] ?? $existingConfig['fireworksConfig']['apiKey'] ?? '',
-                    'embeddingModel' => $llmData['fireworksConfig']['embeddingModel'] ?? $existingConfig['fireworksConfig']['embeddingModel'] ?? null,
-                    'chatModel'      => $llmData['fireworksConfig']['chatModel'] ?? $existingConfig['fireworksConfig']['chatModel'] ?? null,
-                    'baseUrl'        => $llmData['fireworksConfig']['baseUrl'] ?? // phpcs:ignore Generic.Files.LineLength.TooLong -- URL
-                        $existingConfig['fireworksConfig']['baseUrl'] ??
-                        'https://api.fireworks.ai/inference/v1',
+                    'apiKey'         => $nF['apiKey'] ?? $oF['apiKey'] ?? '',
+                    'embeddingModel' => $nF['embeddingModel'] ?? $oF['embeddingModel'] ?? null,
+                    'chatModel'      => $nF['chatModel'] ?? $oF['chatModel'] ?? null,
+                    'baseUrl'        => $nF['baseUrl'] ?? $oF['baseUrl'] ?? self::FIREWORKS_API_URL,
                 ],
                 'vectorConfig'      => [
-                    'backend'   => $llmData['vectorConfig']['backend'] ?? $existingConfig['vectorConfig']['backend'] ?? 'php',
-                    'solrField' => $llmData['vectorConfig']['solrField'] ?? $existingConfig['vectorConfig']['solrField'] ?? '_embedding_',
+                    'backend'   => $nV['backend'] ?? $oV['backend'] ?? 'php',
+                    'solrField' => $nV['solrField'] ?? $oV['solrField'] ?? '_embedding_',
                 ],
             ];
 
@@ -1032,7 +1006,19 @@ class ConfigurationSettingsHandler
                     'chunkSize'            => 1000,
                     'chunkOverlap'         => 200,
                 // LLPhant-friendly defaults: native PHP support + common library-based formats.
-                    'enabledFileTypes'     => ['txt', 'md', 'html', 'json', 'xml', 'csv', 'pdf', 'docx', 'doc', 'xlsx', 'xls'],
+                    'enabledFileTypes'     => [
+                        'txt',
+                        'md',
+                        'html',
+                        'json',
+                        'xml',
+                        'csv',
+                        'pdf',
+                        'docx',
+                        'doc',
+                        'xlsx',
+                        'xls',
+                    ],
                     'ocrEnabled'           => false,
                     'maxFileSizeMB'        => 100,
                 // Text extraction settings (for FileConfiguration component).

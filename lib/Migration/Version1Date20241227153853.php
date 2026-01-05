@@ -76,7 +76,8 @@ class Version1Date20241227153853 extends SimpleMigrationStep
         // Update the openregister_schemas table.
         $table = $schema->getTable('openregister_schemas');
         if ($table->hasColumn('max_depth') === false) {
-            $table->addColumn(name: 'max_depth', typeName: Types::INTEGER, options: ['notnull' => true])->setDefault(default: 0);
+            $column = $table->addColumn(name: 'max_depth', typeName: Types::INTEGER, options: ['notnull' => true]);
+            $column->setDefault(default: 0);
         }
 
         return $schema;

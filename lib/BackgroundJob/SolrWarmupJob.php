@@ -165,7 +165,10 @@ class SolrWarmupJob extends QueuedJob
                         'triggered_by'           => $triggeredBy,
                         'performance_metrics'    => [
                             'total_time_ms'      => $result['execution_time_ms'] ?? 0,
-                            'objects_per_second' => $this->calculateObjectsPerSecond(result: $result, executionTime: $executionTime),
+                            'objects_per_second' => $this->calculateObjectsPerSecond(
+                                result: $result,
+                                executionTime: $executionTime
+                            ),
                         ],
                     ]
                 );

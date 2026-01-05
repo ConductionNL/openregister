@@ -273,7 +273,9 @@ class RegisterService
                     // Save the entity with the new folder ID.
                     $this->registerMapper->update($entity);
 
-                    $this->logger->info(message: "Created folder with ID {$folderNode->getId()} for register {$entity->getId()}");
+                    $folderId   = $folderNode->getId();
+                    $registerId = $entity->getId();
+                    $this->logger->info(message: "Created folder with ID {$folderId} for register {$registerId}");
                 } else {
                     $this->logger->warning(message: "Failed to create folder for register {$entity->getId()}");
                 }
@@ -281,7 +283,7 @@ class RegisterService
                 // Log the error but don't fail the register creation/update.
                 // The register can still function without a folder.
                 $this->logger->error(message: "Failed to create folder for register {$entity->getId()}: ".$e->getMessage());
-            }
+            }//end try
         }//end if
     }//end ensureRegisterFolderExists()
 }//end class

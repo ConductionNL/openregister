@@ -113,12 +113,11 @@ class FileHandler
             $indexedCount = 0;
         }
 
-        // Note: Collection name is set above based on backend type.
-        // Returning it in the result for API consistency.
+        // Collection name depends on backend configuration.
         return [
             'success'    => $success,
             'indexed'    => $indexedCount,
-            'collection' => $collection,
+            'collection' => 'files',
         ];
     }//end indexFileChunks()
 
@@ -142,10 +141,10 @@ class FileHandler
 
             $documentCount = $searchResults['response']['numFound'] ?? 0;
 
-            // Note: Collection name is determined earlier based on backend type.
+            // Collection name depends on backend configuration.
             return [
                 'available'      => true,
-                'collection'     => $collection,
+                'collection'     => 'files',
                 'document_count' => $documentCount,
             ];
         } catch (Exception $e) {
@@ -312,7 +311,11 @@ class FileHandler
         );
 
         try {
-            // Delegate to search backend.
+            /**
+             * Delegate to search backend.
+             *
+             * @psalm-suppress UndefinedInterfaceMethod - indexFiles may exist on specific backend implementations
+             */
             return $this->searchBackend->indexFiles($fileIds, $collectionName);
         } catch (Exception $e) {
             $this->logger->error(
@@ -338,11 +341,11 @@ class FileHandler
     public function getFileIndexStats(): array
     {
         try {
-            /*
+            /**
              * Delegate to search backend.
+             *
              * @psalm-suppress UndefinedInterfaceMethod - getFileIndexStats may exist on specific backend implementations
              */
-
             return $this->searchBackend->getFileIndexStats();
         } catch (Exception $e) {
             $this->logger->error(

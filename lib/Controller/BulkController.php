@@ -134,11 +134,11 @@ class BulkController extends Controller
      *
      * @return JSONResponse JSON response with bulk delete operation results
      *
-     * @psalm-return JSONResponse<int,
+     * @psalm-return JSONResponse<200|400|403|404|500,
      *     array{error?: string, success?: true,
      *     message?: 'Bulk delete operation completed successfully',
      *     deleted_count?: int<0, max>, deleted_uuids?: array<int, int>,
-     *     requested_count?: int<0, max>, skipped_count?: int<min, max>},
+     *     requested_count?: int<0, max>, skipped_count?: int},
      *     array<never, never>>
      */
     public function delete(string $register, string $schema): JSONResponse
@@ -146,12 +146,19 @@ class BulkController extends Controller
         try {
             // Check if user is admin.
             if ($this->isCurrentUserAdmin() === false) {
-                return new JSONResponse(data: ['error' => 'Insufficient permissions. Admin access required.'], statusCode: Http::STATUS_FORBIDDEN);
+                return new JSONResponse(
+                    data: ['error' => 'Insufficient permissions. Admin access required.'],
+                    statusCode: Http::STATUS_FORBIDDEN
+                );
             }
 
             // Resolve slugs to numeric IDs.
             try {
-                $resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $this->objectService);
+                $resolved = $this->resolveRegisterSchemaIds(
+                    register: $register,
+                    schema: $schema,
+                    objectService: $this->objectService
+                );
             } catch (RegisterNotFoundException | SchemaNotFoundException $e) {
                 return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_NOT_FOUND);
             }
@@ -162,7 +169,10 @@ class BulkController extends Controller
 
             // Validate input.
             if (empty($uuids) === true || is_array($uuids) === false) {
-                return new JSONResponse(data: ['error' => 'Invalid input. "uuids" array is required.'], statusCode: Http::STATUS_BAD_REQUEST);
+                return new JSONResponse(
+                    data: ['error' => 'Invalid input. "uuids" array is required.'],
+                    statusCode: Http::STATUS_BAD_REQUEST
+                );
             }
 
             // Set register and schema context using resolved IDs.
@@ -200,11 +210,11 @@ class BulkController extends Controller
      *
      * @return JSONResponse JSON response with bulk publish operation results
      *
-     * @psalm-return JSONResponse<int,
+     * @psalm-return JSONResponse<200|400|403|500,
      *     array{error?: string, success?: true,
      *     message?: 'Bulk publish operation completed successfully',
      *     published_count?: int<0, max>, published_uuids?: array<int, string>,
-     *     requested_count?: int<0, max>, skipped_count?: int<min, max>,
+     *     requested_count?: int<0, max>, skipped_count?: int,
      *     datetime_used?: bool|null|string}, array<never, never>>
      */
     public function publish(string $register, string $schema): JSONResponse
@@ -212,7 +222,10 @@ class BulkController extends Controller
         try {
             // Check if user is admin.
             if ($this->isCurrentUserAdmin() === false) {
-                return new JSONResponse(data: ['error' => 'Insufficient permissions. Admin access required.'], statusCode: Http::STATUS_FORBIDDEN);
+                return new JSONResponse(
+                    data: ['error' => 'Insufficient permissions. Admin access required.'],
+                    statusCode: Http::STATUS_FORBIDDEN
+                );
             }
 
             // Get request data.
@@ -222,7 +235,10 @@ class BulkController extends Controller
 
             // Validate input.
             if (empty($uuids) === true || is_array($uuids) === false) {
-                return new JSONResponse(data: ['error' => 'Invalid input. "uuids" array is required.'], statusCode: Http::STATUS_BAD_REQUEST);
+                return new JSONResponse(
+                    data: ['error' => 'Invalid input. "uuids" array is required.'],
+                    statusCode: Http::STATUS_BAD_REQUEST
+                );
             }
 
             // Parse datetime if provided.
@@ -273,18 +289,20 @@ class BulkController extends Controller
     /**
      * Perform bulk depublish operations on objects
      *
-     * @param string $register The register identifier
-     * @param string $schema   The schema identifier
+     * @param string $register The register identifier (used by routing)
+     * @param string $schema   The schema identifier (used by routing)
      *
      * @NoCSRFRequired
      *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) Parameters used by route resolver
+     *
      * @return JSONResponse JSON response with bulk depublish operation results
      *
-     * @psalm-return JSONResponse<int,
+     * @psalm-return JSONResponse<200|400|403|500,
      *     array{error?: string, success?: true,
      *     message?: 'Bulk depublish operation completed successfully',
      *     depublished_count?: int<0, max>, depublished_uuids?: array<int, string>,
-     *     requested_count?: int<0, max>, skipped_count?: int<min, max>,
+     *     requested_count?: int<0, max>, skipped_count?: int,
      *     datetime_used?: bool|null|string}, array<never, never>>
      */
     public function depublish(string $register, string $schema): JSONResponse
@@ -292,7 +310,10 @@ class BulkController extends Controller
         try {
             // Check if user is admin.
             if ($this->isCurrentUserAdmin() === false) {
-                return new JSONResponse(data: ['error' => 'Insufficient permissions. Admin access required.'], statusCode: Http::STATUS_FORBIDDEN);
+                return new JSONResponse(
+                    data: ['error' => 'Insufficient permissions. Admin access required.'],
+                    statusCode: Http::STATUS_FORBIDDEN
+                );
             }
 
             // Get request data.
@@ -302,7 +323,10 @@ class BulkController extends Controller
 
             // Validate input.
             if (empty($uuids) === true || is_array($uuids) === false) {
-                return new JSONResponse(data: ['error' => 'Invalid input. "uuids" array is required.'], statusCode: Http::STATUS_BAD_REQUEST);
+                return new JSONResponse(
+                    data: ['error' => 'Invalid input. "uuids" array is required.'],
+                    statusCode: Http::STATUS_BAD_REQUEST
+                );
             }
 
             // Parse datetime if provided.
@@ -356,7 +380,7 @@ class BulkController extends Controller
      *
      * @return JSONResponse JSON response with bulk save operation results
      *
-     * @psalm-return JSONResponse<int,
+     * @psalm-return JSONResponse<200|400|403|404|500,
      *     array{error?: string, success?: true,
      *     message?: 'Bulk save operation completed successfully',
      *     saved_count?: mixed, saved_objects?: array<string, mixed>,
@@ -367,12 +391,19 @@ class BulkController extends Controller
         try {
             // Check if user is admin.
             if ($this->isCurrentUserAdmin() === false) {
-                return new JSONResponse(data: ['error' => 'Insufficient permissions. Admin access required.'], statusCode: Http::STATUS_FORBIDDEN);
+                return new JSONResponse(
+                    data: ['error' => 'Insufficient permissions. Admin access required.'],
+                    statusCode: Http::STATUS_FORBIDDEN
+                );
             }
 
             // Resolve slugs to numeric IDs.
             try {
-                $resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $this->objectService);
+                $resolved = $this->resolveRegisterSchemaIds(
+                    register: $register,
+                    schema: $schema,
+                    objectService: $this->objectService
+                );
             } catch (RegisterNotFoundException | SchemaNotFoundException $e) {
                 return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_NOT_FOUND);
             }
@@ -383,14 +414,17 @@ class BulkController extends Controller
 
             // Validate input.
             if (empty($objects) === true || is_array($objects) === false) {
-                return new JSONResponse(data: ['error' => 'Invalid input. "objects" array is required.'], statusCode: Http::STATUS_BAD_REQUEST);
+                return new JSONResponse(
+                    data: ['error' => 'Invalid input. "objects" array is required.'],
+                    statusCode: Http::STATUS_BAD_REQUEST
+                );
             }
 
             // FLEXIBLE SCHEMA HANDLING: Support both single-schema and mixed-schema operations.
             // Use schema=0 to indicate mixed-schema operations where objects specify their own schemas.
-            $isMixedSchemaOperation = ($resolved['schema'] === 0);
+            $isMixedSchema = ($resolved['schema'] === 0);
 
-            if ($isMixedSchemaOperation === true) {
+            if ($isMixedSchema === true) {
                 // Mixed-schema operation - use resolved register ID.
                 $savedObjects = $this->objectService->saveObjects(
                     objects: $objects,
@@ -414,11 +448,13 @@ class BulkController extends Controller
                 );
             }//end if
 
+            $savedCount = ($savedObjects['statistics']['saved'] ?? 0) + ($savedObjects['statistics']['updated'] ?? 0);
+
             return new JSONResponse(
                 data: [
                     'success'         => true,
                     'message'         => 'Bulk save operation completed successfully',
-                    'saved_count'     => ($savedObjects['statistics']['saved'] ?? 0) + ($savedObjects['statistics']['updated'] ?? 0),
+                    'saved_count'     => $savedCount,
                     'saved_objects'   => $savedObjects,
                     'requested_count' => count($objects),
                 ]
@@ -441,7 +477,7 @@ class BulkController extends Controller
      *
      * @return JSONResponse JSON response with schema objects publishing results
      *
-     * @psalm-return JSONResponse<int,
+     * @psalm-return JSONResponse<200|400|403|500,
      *     array{error?: string, success?: true,
      *     message?: 'Schema objects publishing completed successfully',
      *     published_count?: int, published_uuids?: array<int, string>,
@@ -452,12 +488,18 @@ class BulkController extends Controller
         try {
             // Check if user is admin.
             if ($this->isCurrentUserAdmin() === false) {
-                return new JSONResponse(data: ['error' => 'Insufficient permissions. Admin access required.'], statusCode: Http::STATUS_FORBIDDEN);
+                return new JSONResponse(
+                    data: ['error' => 'Insufficient permissions. Admin access required.'],
+                    statusCode: Http::STATUS_FORBIDDEN
+                );
             }
 
             // Validate input.
             if (is_numeric($schema) === false) {
-                return new JSONResponse(data: ['error' => 'Invalid schema ID. Must be numeric.'], statusCode: Http::STATUS_BAD_REQUEST);
+                return new JSONResponse(
+                    data: ['error' => 'Invalid schema ID. Must be numeric.'],
+                    statusCode: Http::STATUS_BAD_REQUEST
+                );
             }
 
             // Get request data.
@@ -499,7 +541,7 @@ class BulkController extends Controller
      *
      * @return JSONResponse JSON response with schema objects deletion results
      *
-     * @psalm-return JSONResponse<int,
+     * @psalm-return JSONResponse<200|400|403|500,
      *     array{error?: string, success?: true,
      *     message?: 'Schema objects deletion completed successfully',
      *     deleted_count?: int, deleted_uuids?: array<int, string>,
@@ -510,12 +552,18 @@ class BulkController extends Controller
         try {
             // Check if user is admin.
             if ($this->isCurrentUserAdmin() === false) {
-                return new JSONResponse(data: ['error' => 'Insufficient permissions. Admin access required.'], statusCode: Http::STATUS_FORBIDDEN);
+                return new JSONResponse(
+                    data: ['error' => 'Insufficient permissions. Admin access required.'],
+                    statusCode: Http::STATUS_FORBIDDEN
+                );
             }
 
             // Validate input.
             if (is_numeric($schema) === false) {
-                return new JSONResponse(data: ['error' => 'Invalid schema ID. Must be numeric.'], statusCode: Http::STATUS_BAD_REQUEST);
+                return new JSONResponse(
+                    data: ['error' => 'Invalid schema ID. Must be numeric.'],
+                    statusCode: Http::STATUS_BAD_REQUEST
+                );
             }
 
             // Get request data.
@@ -556,7 +604,7 @@ class BulkController extends Controller
      *
      * @return JSONResponse JSON response with register objects deletion results
      *
-     * @psalm-return JSONResponse<int,
+     * @psalm-return JSONResponse<200|400|403|500,
      *     array{error?: string, success?: true,
      *     message?: 'Register objects deletion completed successfully',
      *     deleted_count?: int, deleted_uuids?: array<int, string>,
@@ -567,12 +615,18 @@ class BulkController extends Controller
         try {
             // Check if user is admin.
             if ($this->isCurrentUserAdmin() === false) {
-                return new JSONResponse(data: ['error' => 'Insufficient permissions. Admin access required.'], statusCode: Http::STATUS_FORBIDDEN);
+                return new JSONResponse(
+                    data: ['error' => 'Insufficient permissions. Admin access required.'],
+                    statusCode: Http::STATUS_FORBIDDEN
+                );
             }
 
             // Validate input.
             if (is_numeric($register) === false) {
-                return new JSONResponse(data: ['error' => 'Invalid register ID. Must be numeric.'], statusCode: Http::STATUS_BAD_REQUEST);
+                return new JSONResponse(
+                    data: ['error' => 'Invalid register ID. Must be numeric.'],
+                    statusCode: Http::STATUS_BAD_REQUEST
+                );
             }
 
             // Set register context.
@@ -639,12 +693,18 @@ class BulkController extends Controller
         try {
             // Check if user is admin.
             if ($this->isCurrentUserAdmin() === false) {
-                return new JSONResponse(data: ['error' => 'Insufficient permissions. Admin access required.'], statusCode: Http::STATUS_FORBIDDEN);
+                return new JSONResponse(
+                    data: ['error' => 'Insufficient permissions. Admin access required.'],
+                    statusCode: Http::STATUS_FORBIDDEN
+                );
             }
 
             // Validate input.
             if (is_numeric($schema) === false) {
-                return new JSONResponse(data: ['error' => 'Invalid schema ID. Must be numeric.'], statusCode: Http::STATUS_BAD_REQUEST);
+                return new JSONResponse(
+                    data: ['error' => 'Invalid schema ID. Must be numeric.'],
+                    statusCode: Http::STATUS_BAD_REQUEST
+                );
             }
 
             // Perform schema validation operation and return service result directly.
@@ -652,7 +712,11 @@ class BulkController extends Controller
 
             return new JSONResponse(data: $result);
         } catch (Exception $e) {
-            return new JSONResponse(data: ['error' => 'Schema validation failed: '.$e->getMessage()], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
+            $errorMsg = 'Schema validation failed: '.$e->getMessage();
+            return new JSONResponse(
+                data: ['error' => $errorMsg],
+                statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+            );
         }//end try
     }//end validateSchema()
 }//end class

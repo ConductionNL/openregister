@@ -1,50 +1,11 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * Bulk Object Save Operations Handler
  *
- * SPECIALIZED BULK HANDLER OVERVIEW:
- * This handler is responsible for high-performance bulk saving operations for multiple objects.
- * It implements advanced performance optimizations including schema analysis caching, memory
- * optimization, single-pass processing, and batch database operations.
- *
- * KEY RESPONSIBILITIES:
- * - High-performance bulk object creation and updates
- * - Comprehensive schema analysis and caching for batch operations
- * - Memory-optimized object preparation with in-place transformations
- * - Single-pass inverse relations processing
- * - Batch writeBack operations for bidirectional relations
- * - Bulk metadata hydration with cached schema analysis
- * - Optimized validation with minimal copying
- * - Optimized bulk processing for all dataset sizes
- *
- * PERFORMANCE OPTIMIZATIONS:
- * ✅ 1. Eliminate redundant object fetch after save - reconstructed from existing data
- * ✅ 2. Consolidate schema cache - single persistent cache across operations
- * ✅ 3. Batch writeBack operations - bulk UPDATEs instead of individual calls
- * ✅ 4. Single-pass inverse relations - combined scanning and applying
- * ✅ 5. Optimize object transformation - in-place operations, minimal copying
- * ✅ 6. Comprehensive schema analysis - single pass for all requirements
- * ✅ 7. Memory optimization - pass-by-reference, selective updates
- *
- * INTEGRATION WITH OTHER HANDLERS:
- * - Uses SaveObject for complex individual object cascading operations
- * - Leverages ObjectEntityMapper for actual database bulk operations
- * - Integrates with ValidateObject for bulk validation when enabled
- * - Called by ObjectService for bulk operations orchestration
- *
- * ⚠️ IMPORTANT: Do NOT confuse with SaveObject or ObjectService!
- * - SaveObjects = High-performance bulk operations with optimizations
- * - SaveObject = Individual object detailed business logic and relations
- * - ObjectService = High-level orchestration, context management, RBAC
- *
- * PERFORMANCE GAINS:
- * - Database calls: ~60-70% reduction
- * - Memory usage: ~40% reduction
- * - Time complexity: O(N*M*P) → O(N*M)
- * - Processing speed: 2-3x faster for large datasets
+ * High-performance bulk saving operations for multiple objects.
+ * Implements performance optimizations including schema analysis caching,
+ * memory optimization, single-pass processing, and batch database operations.
  *
  * @category  Handler
  * @package   OCA\OpenRegister\Service\Objects
@@ -55,6 +16,8 @@ declare(strict_types=1);
  * @link      https://www.OpenRegister.app
  * @since     2.0.0 Initial SaveObjects implementation with performance optimizations
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
@@ -306,7 +269,9 @@ class SaveObjects
             _rbac: $_rbac,
             _multitenancy: $_multitenancy,
             validation: $validation,
-            events: $events
+            events: $events,
+            register: $register,
+            schema: $schema
         );
 
         // Add performance metrics.
@@ -427,7 +392,7 @@ class SaveObjects
         $result = $this->createEmptyResult(totalObjects: $totalObjects);
 
         // Add preparation failures to result.
-        foreach ($invalidObjects ?? [] as $invalidObj) {
+        foreach ($invalidObjects as $invalidObj) {
             $result['invalid'][] = $invalidObj;
             $result['statistics']['invalid']++;
             $result['statistics']['errors']++;
@@ -439,13 +404,15 @@ class SaveObjects
     /**
      * Process objects in optimized chunks.
      *
-     * @param array $processedObjects Prepared objects to process
-     * @param array $schemaCache      Schema cache
-     * @param array $result           Result array to update
-     * @param bool  $_rbac            Apply RBAC
-     * @param bool  $_multitenancy    Apply multitenancy
-     * @param bool  $validation       Enable validation
-     * @param bool  $events           Enable events
+     * @param array                    $processedObjects Prepared objects to process
+     * @param array                    $schemaCache      Schema cache
+     * @param array                    $result           Result array to update
+     * @param bool                     $_rbac            Apply RBAC
+     * @param bool                     $_multitenancy    Apply multitenancy
+     * @param bool                     $validation       Enable validation
+     * @param bool                     $events           Enable events
+     * @param Register|string|int|null $register         Register to use
+     * @param Schema|string|int|null   $schema           Schema to use
      *
      * @return array Updated result array
      */
@@ -456,7 +423,9 @@ class SaveObjects
         bool $_rbac,
         bool $_multitenancy,
         bool $validation,
-        bool $events
+        bool $events,
+        Register|string|int|null $register=null,
+        Schema|string|int|null $schema=null
     ): array {
         $chunkSize = $this->calculateOptimalChunkSize(count($processedObjects));
         $chunks    = array_chunk($processedObjects, $chunkSize);
@@ -469,7 +438,9 @@ class SaveObjects
                 _rbac: $_rbac,
                 _multitenancy: $_multitenancy,
                 _validation: $validation,
-                _events: $events
+                _events: $events,
+                register: $register,
+                schema: $schema
             );
 
             // Merge chunk results.
@@ -479,7 +450,7 @@ class SaveObjects
                 chunkIndex: $chunkIndex,
                 chunkCount: count($objectsChunk)
             );
-        }
+        }//end foreach
 
         return $result;
     }//end processObjectsInChunks()
@@ -617,8 +588,12 @@ class SaveObjects
      * @psalm-return   string|null
      * @phpstan-return string|null
      */
-    private function resolveObjectReference(array $object, string $fieldPath, array $propertyConfig, string $metadataType): ?string
-    {
+    private function resolveObjectReference(
+        array $object,
+        string $fieldPath,
+        array $propertyConfig,
+        string $metadataType
+    ): ?string {
         try {
             // Extract the object reference data.
             $referenceData = $this->getObjectReferenceData(object: $object, fieldPath: $fieldPath);
@@ -721,15 +696,7 @@ class SaveObjects
             // Try to find the object using the ObjectEntityMapper.
             $referencedObject = $this->objectEntityMapper->find($uuid);
 
-            /*
-             * Suppress null check - find() throws DoesNotExistException, never returns null
-             *
-             * @psalm-suppress TypeDoesNotContainNull - find() throws DoesNotExistException, never returns null
-             */
-
-            if ($referencedObject === null) {
-                return null;
-            }
+            // Note: find() throws DoesNotExistException if not found, never returns null.
 
             // Try to get the name from the object's data.
             $objectData = $referencedObject->getObject();
@@ -911,7 +878,9 @@ class SaveObjects
                 $selfDataForHydration = $object['@self'];
 
                 // Convert published/depublished strings to DateTime objects.
-                if (($selfDataForHydration['published'] ?? null) !== null && is_string($selfDataForHydration['published']) === true) {
+                $hasPublished   = ($selfDataForHydration['published'] ?? null) !== null;
+                $isPublishedStr = is_string($selfDataForHydration['published'] ?? null);
+                if ($hasPublished === true && $isPublishedStr === true) {
                     try {
                         $selfDataForHydration['published'] = new DateTime($selfDataForHydration['published']);
                     } catch (Exception $e) {
@@ -919,7 +888,9 @@ class SaveObjects
                     }
                 }
 
-                if (($selfDataForHydration['depublished'] ?? null) !== null && is_string($selfDataForHydration['depublished']) === true) {
+                $hasDepublished = ($selfDataForHydration['depublished'] ?? null) !== null;
+                $isDepubStr     = is_string($selfDataForHydration['depublished'] ?? null);
+                if ($hasDepublished === true && $isDepubStr === true) {
                     try {
                         $selfDataForHydration['depublished'] = new DateTime($selfDataForHydration['depublished']);
                     } catch (Exception $e) {
@@ -1045,8 +1016,11 @@ class SaveObjects
      *
      * @psalm-return list{array, array<int|string, Schema>, array<never, never>}
      */
-    private function prepareSingleSchemaObjectsOptimized(array $objects, Register|string|int $register, Schema|string|int $schema): array
-    {
+    private function prepareSingleSchemaObjectsOptimized(
+        array $objects,
+        Register|string|int $register,
+        Schema|string|int $schema
+    ): array {
         $startTime = microtime(true);
 
         // PERFORMANCE OPTIMIZATION: Single cached register and schema load instead of per-object loading.
@@ -1134,7 +1108,9 @@ class SaveObjects
                 $selfDataForHydration = $object['@self'];
 
                 // Convert published/depublished strings to DateTime objects.
-                if (($selfDataForHydration['published'] ?? null) !== null && is_string($selfDataForHydration['published']) === true) {
+                $hasPublished      = ($selfDataForHydration['published'] ?? null) !== null;
+                $isPublishedString = is_string($selfDataForHydration['published'] ?? null);
+                if ($hasPublished === true && $isPublishedString === true) {
                     try {
                         $selfDataForHydration['published'] = new DateTime($selfDataForHydration['published']);
                     } catch (Exception $e) {
@@ -1149,7 +1125,9 @@ class SaveObjects
                     }
                 }
 
-                if (($selfDataForHydration['depublished'] ?? null) !== null && is_string($selfDataForHydration['depublished']) === true) {
+                $hasDepublished = ($selfDataForHydration['depublished'] ?? null) !== null;
+                $isDepubString  = is_string($selfDataForHydration['depublished'] ?? null);
+                if ($hasDepublished === true && $isDepubString === true) {
                     try {
                         $selfDataForHydration['depublished'] = new DateTime($selfDataForHydration['depublished']);
                     } catch (Exception $e) {
@@ -1315,7 +1293,10 @@ class SaveObjects
         }//end foreach
 
         // INVERSE RELATIONS PROCESSING - Handle bulk inverse relations.
-            $this->handleBulkInverseRelationsWithAnalysis(preparedObjects: $preparedObjects, schemaAnalysis: $schemaAnalysis);
+        $this->handleBulkInverseRelationsWithAnalysis(
+            preparedObjects: $preparedObjects,
+            schemaAnalysis: $schemaAnalysis
+        );
 
         $endTime  = microtime(true);
         $duration = round(($endTime - $startTime) * 1000, 2);
@@ -1386,7 +1367,10 @@ class SaveObjects
         ];
 
         // STEP 1: Transform objects for database format with metadata hydration.
-        $transformationResult = $this->transformationHandler->transformObjectsToDatabaseFormatInPlace(objects: $objects, schemaCache: $schemaCache);
+        $transformationResult = $this->transformationHandler->transformObjectsToDatabaseFormatInPlace(
+            objects: $objects,
+            schemaCache: $schemaCache
+        );
         $transformedObjects   = $transformationResult['valid'];
 
         /*
@@ -1491,12 +1475,16 @@ class SaveObjects
         // Update statistics for unchanged objects (skipped because content was unchanged).
         $result['statistics']['unchanged'] = count($unchangedObjects);
         $result['unchanged'] = array_map(
-            function ($obj) {
+            /**
+             * @param ObjectEntity|array<string, mixed> $obj
+             * @return array<string, mixed>
+             */
+            function ($obj): array {
                 if (is_array($obj) === true) {
                     return $obj;
-                } else {
-                    return $obj->jsonSerialize();
                 }
+
+                return $obj->jsonSerialize();
             },
             $unchangedObjects
         );
@@ -1520,7 +1508,9 @@ class SaveObjects
             // Check if we got complete objects (new approach) or just UUIDs (fallback).
             $firstItem = reset($bulkResult);
 
-            if (is_array($firstItem) === true && (($firstItem['created'] ?? null) !== null) && (($firstItem['updated'] ?? null) !== null)) {
+            $hasCreated = ($firstItem['created'] ?? null) !== null;
+            $hasUpdated = ($firstItem['updated'] ?? null) !== null;
+            if (is_array($firstItem) === true && $hasCreated === true && $hasUpdated === true) {
                 // NEW APPROACH: Complete objects with database-computed classification returned.
                 $this->logger->info("[SaveObjects] Processing complete objects with database-computed classification");
 
@@ -1580,21 +1570,22 @@ class SaveObjects
                 );
             }//end if
 
-            if (is_array($bulkResult) === false || empty($bulkResult['created']) === true) {
+            if (empty($bulkResult['created']) === true) {
                 // FALLBACK: UUID array returned (legacy behavior).
                 $this->logger->info("[SaveObjects] Processing UUID array (legacy mode)");
+                /** @var array<int, string> $bulkResult */
                 $savedObjectIds = $bulkResult;
 
                 // Fallback counting (less precise).
                 foreach ($transformedObjects as $objData) {
-                    if (in_array($objData['uuid'], $bulkResult) === true) {
+                    if (in_array($objData['uuid'], $savedObjectIds, true) === true) {
                         $result['statistics']['saved']++;
                     }
                 }
             }//end if
         }//end if
 
-        if (is_array($bulkResult) === false || empty($bulkResult['created']) === true) {
+        if (empty($bulkResult['created']) === true && empty($savedObjectIds) === true) {
             // Fallback for unexpected return format.
             $this->logger->warning("[SaveObjects] Unexpected bulk result format, using fallback");
             foreach ($transformedObjects as $objData) {
@@ -1702,8 +1693,8 @@ class SaveObjects
      * PERFORMANCE OPTIMIZATION: This method uses pre-analyzed inverse relation properties
      * to process relations without re-analyzing schema properties for each object.
      *
-     * @param array &$preparedObjects Prepared objects to process
-     * @param array $schemaAnalysis   Pre-analyzed schema information indexed by schema ID
+     * @param array $preparedObjects Prepared objects to process (passed by reference)
+     * @param array $schemaAnalysis  Pre-analyzed schema information indexed by schema ID
      *
      * @return void
      */
@@ -1770,7 +1761,8 @@ class SaveObjects
                 } else if (($propertyInfo['isArray'] === true) && is_array($value) === true) {
                     // Handle array of object relations.
                     foreach ($value as $relatedUuid) {
-                        if (is_string($relatedUuid) === true && \Symfony\Component\Uid\Uuid::isValid($relatedUuid) === true) {
+                        $isValidUuid = \Symfony\Component\Uid\Uuid::isValid($relatedUuid);
+                        if (is_string($relatedUuid) === true && $isValidUuid === true) {
                             if (isset($objectsByUuid[$relatedUuid]) === true) {
                                 // @psalm-suppress EmptyArrayAccess - Already checked isset above.
                                 $targetObject = &$objectsByUuid[$relatedUuid];
@@ -1806,7 +1798,6 @@ class SaveObjects
      * SaveObject.cascadeObjects() method or implementing bulk-optimized cascading.
      *
      * @param array       $object The object data to process
-     * @param Schema      $schema The schema containing property definitions
      * @param string|null $uuid   The UUID of the parent object
      *
      * @return (array|string)[] Array containing [processedObject, parentUuid]
@@ -1827,7 +1818,7 @@ class SaveObjects
      * PERFORMANCE OPTIMIZATION: Uses in-place transformation and metadata hydration
      * to minimize memory allocation and data copying.
      *
-     * @param array &$objects    Objects to transform (modified in-place)
+     * @param array $objects     Objects to transform (modified in-place, passed by reference)
      * @param array $schemaCache Schema cache for metadata field resolution
      *
      * @return (((int|string)|mixed)[]|mixed)[][]
@@ -2055,13 +2046,15 @@ class SaveObjects
         }
 
         // Check slug from @self metadata.
-        if (empty($incomingData['@self']['slug']) === false && (($existingObjects[$incomingData['@self']['slug']] ?? null) !== null)) {
-            return $existingObjects[$incomingData['@self']['slug']];
+        $slug = $incomingData['@self']['slug'] ?? null;
+        if (empty($slug) === false && (($existingObjects[$slug] ?? null) !== null)) {
+            return $existingObjects[$slug];
         }
 
         // Check URI from @self metadata.
-        if (empty($incomingData['@self']['uri']) === false && (($existingObjects[$incomingData['@self']['uri']] ?? null) !== null)) {
-            return $existingObjects[$incomingData['@self']['uri']];
+        $uri = $incomingData['@self']['uri'] ?? null;
+        if (empty($uri) === false && (($existingObjects[$uri] ?? null) !== null)) {
+            return $existingObjects[$uri];
         }
 
         // Check custom ID fields.
@@ -2092,8 +2085,12 @@ class SaveObjects
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    private function reconstructSavedObjects(array $insertObjects, array $updateObjects, array $_savedObjectIds, array $_existingObjects): array
-    {
+    private function reconstructSavedObjects(
+        array $insertObjects,
+        array $updateObjects,
+        array $_savedObjectIds,
+        array $_existingObjects
+    ): array {
         $savedObjects = [];
 
         // CRITICAL FIX: Don't use createFromArray() - it tries to insert objects that already exist!
@@ -2498,7 +2495,7 @@ class SaveObjects
             // AND must not contain spaces or common text words.
             if ((strpos($value, '-') !== false || strpos($value, '_') !== false)
                 && preg_match('/\s/', $value) === false
-                && in_array(strtolower($value), ['applicatie', 'systeemsoftware', 'open-source', 'closed-source'], true) === false
+                && $this->isCommonTextWord($value) === false
             ) {
                 return true;
             }
@@ -2506,4 +2503,17 @@ class SaveObjects
 
         return false;
     }//end isReference()
+
+    /**
+     * Check if a value is a common text word that should not be treated as a reference.
+     *
+     * @param string $value The value to check.
+     *
+     * @return bool True if the value is a common text word.
+     */
+    private function isCommonTextWord(string $value): bool
+    {
+        $commonWords = ['applicatie', 'systeemsoftware', 'open-source', 'closed-source'];
+        return in_array(strtolower($value), $commonWords, true);
+    }//end isCommonTextWord()
 }//end class

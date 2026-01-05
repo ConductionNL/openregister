@@ -252,7 +252,7 @@ class ConversationController extends Controller
      *
      * @return JSONResponse JSON response with conversation details
      *
-     * @psalm-return JSONResponse<int,
+     * @psalm-return JSONResponse<200|403|404|500,
      *     array{error?: 'Access denied'|'Conversation not found'|
      *     'Failed to fetch conversation', message?: string, id?: int,
      *     uuid?: null|string, title?: null|string, userId?: null|string,
@@ -333,7 +333,7 @@ class ConversationController extends Controller
      *
      * @return JSONResponse JSON response with conversation messages
      *
-     * @psalm-return JSONResponse<int,
+     * @psalm-return JSONResponse<200|403|404|500,
      *     array{error?: 'Access denied'|'Conversation not found'|
      *     'Failed to fetch messages', message?: string,
      *     results?: list<array{content: null|string, conversationId: int|null,
@@ -542,7 +542,7 @@ class ConversationController extends Controller
      *
      * @return JSONResponse JSON response with updated conversation
      *
-     * @psalm-return JSONResponse<int,
+     * @psalm-return JSONResponse<200|403|404|500,
      *     array{error?: 'Access denied'|'Conversation not found'|
      *     'Failed to update conversation', message?: string, id?: int,
      *     uuid?: null|string, title?: null|string, userId?: null|string,
@@ -557,7 +557,11 @@ class ConversationController extends Controller
             $conversation = $this->conversationMapper->findByUuid($uuid);
 
             // Check modify rights using mapper method.
-            if ($this->conversationMapper->canUserModifyConversation(conversation: $conversation, userId: $this->userId) === false) {
+            $canModify = $this->conversationMapper->canUserModifyConversation(
+                conversation: $conversation,
+                userId: $this->userId
+            );
+            if ($canModify === false) {
                 return new JSONResponse(
                     data: [
                         'error'   => 'Access denied',
@@ -634,7 +638,7 @@ class ConversationController extends Controller
      *
      * @return JSONResponse JSON response confirming conversation deletion
      *
-     * @psalm-return JSONResponse<int,
+     * @psalm-return JSONResponse<200|403|404|500,
      *     array{error?: 'Access denied'|'Conversation not found'|
      *     'Failed to delete conversation', message: string, uuid?: string,
      *     archived?: true}, array<never, never>>
@@ -646,7 +650,11 @@ class ConversationController extends Controller
             $conversation = $this->conversationMapper->findByUuid($uuid);
 
             // Check modify rights using mapper method.
-            if ($this->conversationMapper->canUserModifyConversation(conversation: $conversation, userId: $this->userId) === false) {
+            $canModify = $this->conversationMapper->canUserModifyConversation(
+                conversation: $conversation,
+                userId: $this->userId
+            );
+            if ($canModify === false) {
                 return new JSONResponse(
                     data: [
                         'error'   => 'Access denied',
@@ -750,7 +758,7 @@ class ConversationController extends Controller
      *
      * @return JSONResponse JSON response with restored conversation
      *
-     * @psalm-return JSONResponse<int,
+     * @psalm-return JSONResponse<200|403|404|500,
      *     array{error?: 'Access denied'|'Conversation not found'|
      *     'Failed to restore conversation', message?: string, id?: int,
      *     uuid?: null|string, title?: null|string, userId?: null|string,
@@ -765,7 +773,11 @@ class ConversationController extends Controller
             $conversation = $this->conversationMapper->findByUuid($uuid);
 
             // Check modify rights using mapper method.
-            if ($this->conversationMapper->canUserModifyConversation(conversation: $conversation, userId: $this->userId) === false) {
+            $canModify = $this->conversationMapper->canUserModifyConversation(
+                conversation: $conversation,
+                userId: $this->userId
+            );
+            if ($canModify === false) {
                 return new JSONResponse(
                     data: [
                         'error'   => 'Access denied',
@@ -827,7 +839,7 @@ class ConversationController extends Controller
      *
      * @return JSONResponse JSON response confirming permanent deletion
      *
-     * @psalm-return JSONResponse<int,
+     * @psalm-return JSONResponse<200|403|404|500,
      *     array{error?: 'Access denied'|'Conversation not found'|
      *     'Failed to permanently delete conversation', message: string,
      *     uuid?: string}, array<never, never>>
@@ -839,7 +851,11 @@ class ConversationController extends Controller
             $conversation = $this->conversationMapper->findByUuid($uuid);
 
             // Check modify rights using mapper method.
-            if ($this->conversationMapper->canUserModifyConversation(conversation: $conversation, userId: $this->userId) === false) {
+            $canModify = $this->conversationMapper->canUserModifyConversation(
+                conversation: $conversation,
+                userId: $this->userId
+            );
+            if ($canModify === false) {
                 return new JSONResponse(
                     data: [
                         'error'   => 'Access denied',

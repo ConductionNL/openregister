@@ -37,16 +37,14 @@ class ViewHandler
     /**
      * View mapper instance.
      *
-     * @var                                        ViewMapper The view mapper instance.
-     * @SuppressWarnings(PHPMD.UnusedPrivateField)
+     * @var ViewMapper The view mapper instance.
      */
     private ViewMapper $viewMapper;
 
     /**
      * Logger instance.
      *
-     * @var                                        LoggerInterface The logger instance.
-     * @SuppressWarnings(PHPMD.UnusedPrivateField)
+     * @var LoggerInterface The logger instance.
      */
     private LoggerInterface $logger;
 }//end class

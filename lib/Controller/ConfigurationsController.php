@@ -135,11 +135,9 @@ class ConfigurationsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response with created configuration
+     * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4() is a standard utility pattern
      *
-     * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Configuration,
-     *     array<never, never>>|JSONResponse<400, array{error: string},
-     *     array<never, never>>
+     * @psalm-return JSONResponse<201, \OCA\OpenRegister\Db\Configuration, array<never, never>>|JSONResponse<400, array{error: string}, array<never, never>>
      */
     public function create(): JSONResponse
     {
@@ -264,7 +262,7 @@ class ConfigurationsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response confirming deletion
+     * @return JSONResponse |JSONResponse<400, array{error: string}, array<never, never>>
      *
      * @psalm-return JSONResponse<204, null, array<never, never>>|JSONResponse<400, array{error: string}, array<never, never>>
      */
@@ -349,7 +347,8 @@ class ConfigurationsController extends Controller
             }
 
             // Get the uploaded JSON data.
-            $jsonData = $this->configurationService->getUploadedJson(data: $this->request->getParams(), uploadedFiles: $uploadedFiles);
+            $params   = $this->request->getParams();
+            $jsonData = $this->configurationService->getUploadedJson(data: $params, uploadedFiles: $uploadedFiles);
             if ($jsonData instanceof JSONResponse) {
                 return $jsonData;
             }

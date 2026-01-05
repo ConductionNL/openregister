@@ -238,7 +238,8 @@ class MetricsService
      *                                  - estimated_cost_usd: Estimated cost in USD
      *                                  - period_days: Number of days analyzed
      *
-     * @psalm-return array{total: int, successful: int, failed: int, success_rate: float, estimated_cost_usd: float, period_days: int}
+     * @psalm-return array{total: int, successful: int, failed: int,
+     *               success_rate: float, estimated_cost_usd: float, period_days: int}
      */
     public function getEmbeddingStats(int $days=30): array
     {
@@ -575,8 +576,6 @@ class MetricsService
      * @param array<string, int> $growthData Growth data array with [date => count] format
      *
      * @return float Average vectors per day, rounded to 2 decimal places
-     *
-     * @psalm-suppress TypeDoesNotContainType
      */
     private function calculateAverageVectorsPerDay(array $growthData): float
     {
@@ -592,28 +591,14 @@ class MetricsService
         $days = count($growthData);
 
         // Sum all vector counts from growth data.
-        // Note: $growthData is [date => count], so $dayData is the count value.
+        // Note: $growthData is [date => count], where dayData is the count int value.
         foreach ($growthData as $dayData) {
-            // Cast to int for type safety (handles null values).
-            $totalVectors += $dayData['count'] ?? 0;
+            // dayData is already an int representing the count.
+            $totalVectors += (int) $dayData;
         }
 
-        /*
-         * Safety check: prevent division by zero.
-         * This should never happen due to empty() check above, but included for safety.
-         * @psalm-suppress TypeDoesNotContainType
-         */
-
-        if ($days <= 0) {
-            return 0.0;
-        }
-
-        /*
-         * Calculate average: total vectors / number of days.
-         * Round to 2 decimal places for readability.
-         * @psalm-suppress TypeDoesNotContainType
-         */
-
+        // Calculate average: total vectors / number of days.
+        // Round to 2 decimal places for readability.
         return round($totalVectors / $days, 2);
     }//end calculateAverageVectorsPerDay()
 }//end class

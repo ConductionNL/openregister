@@ -63,7 +63,7 @@ class ObjectTextExtractionJob extends QueuedJob
      *
      * @var TextExtractionService
      */
-    private TextExtractionService $textExtractionService;
+    private TextExtractionService $textExtractor;
 
     /**
      * Constructor
@@ -72,18 +72,18 @@ class ObjectTextExtractionJob extends QueuedJob
      *
      * @param IAppConfig            $config                Configuration service
      * @param LoggerInterface       $logger                Logger service
-     * @param TextExtractionService $textExtractionService Text extraction service
+     * @param TextExtractionService $textExtractor Text extraction service
      *
      * @return void
      */
     public function __construct(
         IAppConfig $config,
         LoggerInterface $logger,
-        TextExtractionService $textExtractionService
+        TextExtractionService $textExtractor
     ) {
         $this->config = $config;
         $this->logger = $logger;
-        $this->textExtractionService = $textExtractionService;
+        $this->textExtractor = $textExtractor;
     }//end __construct()
 
     /**
@@ -99,9 +99,15 @@ class ObjectTextExtractionJob extends QueuedJob
     protected function run($argument): void
     {
         // Check if object extraction is enabled.
-        $objectSettings = json_decode($this->config->getValueString(app: 'openregister', key: 'objectManagement', default: '{}'), true);
+        $objMgmtValue = $this->config->getValueString(
+            app: 'openregister',
+            key: 'objectManagement',
+            default: '{}'
+        );
+        $objectSettings        = json_decode($objMgmtValue, true);
         if (($objectSettings['objectExtractionMode'] ?? 'background') === 'none') {
-            $this->logger->info('[ObjectTextExtractionJob] Object extraction is disabled. Not extracting text from objects.');
+            $message = '[ObjectTextExtractionJob] Object extraction is disabled. Not extracting text from objects.';
+            $this->logger->info($message);
             return;
         }
 
@@ -130,7 +136,7 @@ class ObjectTextExtractionJob extends QueuedJob
 
         try {
             // Extract text using TextExtractionService.
-            $this->textExtractionService->extractObject(objectId: $objectId, forceReExtract: false);
+            $this->textExtractor->extractObject(objectId: $objectId, forceReExtract: false);
 
             $processingTime = round((microtime(true) - $startTime) * 1000, 2);
 

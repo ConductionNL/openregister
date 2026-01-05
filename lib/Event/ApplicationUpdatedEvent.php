@@ -33,8 +33,6 @@ class ApplicationUpdatedEvent extends Event
      * The updated application state.
      *
      * @var Application The application after update.
-     *
-     * @psalm-suppress UnusedProperty
      */
     private Application $newApplication;
 
@@ -42,8 +40,6 @@ class ApplicationUpdatedEvent extends Event
      * The previous application state.
      *
      * @var Application The application before update.
-     *
-     * @psalm-suppress UnusedProperty
      */
     private Application $oldApplication;
 

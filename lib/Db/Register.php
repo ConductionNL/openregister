@@ -191,9 +191,7 @@ class Register extends Entity implements JsonSerializable
      *   'delete' => ['group-admin']
      * ]
      *
-     * @var         array|null
-     * @phpstan-var array<string, array<string>>|null
-     * @psalm-var   array<string, list<string>>|null
+     * @var array<string, array<string>>|null
      */
     protected ?array $groups = [];
 
@@ -294,11 +292,12 @@ class Register extends Entity implements JsonSerializable
      */
     public function setSchemas($schemas): static
     {
-        $schemas = [];
         if (is_string($schemas) === true) {
             $decoded = json_decode($schemas, true);
             if ($decoded !== null) {
                 $schemas = $decoded;
+            } else {
+                $schemas = [];
             }
         }
 
@@ -653,14 +652,12 @@ class Register extends Entity implements JsonSerializable
      *
      * @param array|null $configuration Configuration settings.
      *
-     * @return static Returns self for method chaining.
+     * @return void
      */
-    public function setConfiguration(?array $configuration): static
+    public function setConfiguration(?array $configuration): void
     {
         $this->configuration = $configuration;
         $this->markFieldUpdated('configuration');
-
-        return $this;
     }//end setConfiguration()
 
     /**

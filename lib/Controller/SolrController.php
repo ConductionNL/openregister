@@ -239,7 +239,13 @@ class SolrController extends Controller
             $vectorService = $this->container->get(VectorizationService::class);
 
             // Perform hybrid search.
-            $result = $vectorService->hybridSearch(query: $query, solrFilters: $solrFilters, limit: $limit, weights: $weights, provider: $provider);
+            $result = $vectorService->hybridSearch(
+                query: $query,
+                solrFilters: $solrFilters,
+                limit: $limit,
+                weights: $weights,
+                provider: $provider
+            );
 
             // Ensure result is an array for spread operator.
             if (is_array($result) === true) {
@@ -292,7 +298,9 @@ class SolrController extends Controller
      *
      * @return JSONResponse Vector statistics
      *
-     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, stats?: mixed, timestamp?: string}, array<never, never>>
+     * @psalm-return JSONResponse<200|500,
+     *     array{success: bool, error?: string, stats?: mixed, timestamp?: string},
+     *     array<never, never>>
      */
     public function getVectorStats(): JSONResponse
     {
@@ -828,7 +836,10 @@ class SolrController extends Controller
         try {
             $guzzleSolrService = $this->container->get(IndexService::class);
 
-            $result = $guzzleSolrService->copyCollection(sourceCollection: $sourceCollection, targetCollection: $targetCollection);
+            $result = $guzzleSolrService->copyCollection(
+                sourceCollection: $sourceCollection,
+                targetCollection: $targetCollection
+            );
 
             return new JSONResponse(
                 data: [

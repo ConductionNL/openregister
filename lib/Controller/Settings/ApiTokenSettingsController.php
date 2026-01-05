@@ -225,9 +225,10 @@ class ApiTokenSettingsController extends Controller
     public function testGitLabToken(): JSONResponse
     {
         try {
-            $data   = $this->request->getParams();
-            $token  = $data['token'] ?? $this->config->getValueString('openregister', 'gitlab_api_token', '');
-            $apiUrl = $data['url'] ?? $this->config->getValueString('openregister', 'gitlab_api_url', 'https://gitlab.com/api/v4');
+            $data          = $this->request->getParams();
+            $token         = $data['token'] ?? $this->config->getValueString('openregister', 'gitlab_api_token', '');
+            $defaultApiUrl = 'https://gitlab.com/api/v4';
+            $apiUrl        = $data['url'] ?? $this->config->getValueString('openregister', 'gitlab_api_url', $defaultApiUrl);
 
             if (empty($token) === true) {
                 return new JSONResponse(

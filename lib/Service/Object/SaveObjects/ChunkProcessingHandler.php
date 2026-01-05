@@ -16,6 +16,9 @@ namespace OCA\OpenRegister\Service\Object\SaveObjects;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Schema;
 use Psr\Log\LoggerInterface;
 
@@ -42,12 +45,18 @@ class ChunkProcessingHandler
      * Constructor for ChunkProcessingHandler.
      *
      * @param TransformationHandler $transformationHandler Handler for object transformation.
-     * @param ObjectEntityMapper    $objectEntityMapper    Mapper for database operations.
+     * @param ObjectEntityMapper    $objectEntityMapper    Mapper for database operations (blob storage).
+     * @param UnifiedObjectMapper   $unifiedObjectMapper   Mapper for routing to magic/blob storage.
+     * @param RegisterMapper        $registerMapper        Mapper for register operations.
+     * @param SchemaMapper          $schemaMapper          Mapper for schema operations.
      * @param LoggerInterface       $logger                Logger for logging operations.
      */
     public function __construct(
         private readonly TransformationHandler $transformationHandler,
         private readonly ObjectEntityMapper $objectEntityMapper,
+        private readonly UnifiedObjectMapper $unifiedObjectMapper,
+        private readonly RegisterMapper $registerMapper,
+        private readonly SchemaMapper $schemaMapper,
         private readonly LoggerInterface $logger
     ) {
     }//end __construct()
@@ -63,12 +72,14 @@ class ChunkProcessingHandler
      * 5. Reconstruct objects for response
      * 6. Return aggregated results and statistics
      *
-     * @param array $objects       Objects to process.
-     * @param array $schemaCache   Schema cache for metadata field resolution.
-     * @param bool  $_rbac         RBAC flag (reserved for future use).
-     * @param bool  $_multitenancy Multitenancy flag (reserved for future use).
-     * @param bool  $_validation   Validation flag (reserved for future use).
-     * @param bool  $_events       Events flag (reserved for future use).
+     * @param array                                         $objects       Objects to process.
+     * @param array                                         $schemaCache   Schema cache for metadata.
+     * @param bool                                          $_rbac         RBAC flag (reserved).
+     * @param bool                                          $_multitenancy Multitenancy flag (reserved).
+     * @param bool                                          $_validation   Validation flag (reserved).
+     * @param bool                                          $_events       Events flag (reserved).
+     * @param \OCA\OpenRegister\Db\Register|string|int|null $register      The register.
+     * @param \OCA\OpenRegister\Db\Schema|string|int|null   $schema        The schema.
      *
      * @psalm-param   array<int, array<string, mixed>> $objects
      * @psalm-param   array<int|string, Schema> $schemaCache
@@ -97,9 +108,32 @@ class ChunkProcessingHandler
         bool $_rbac,
         bool $_multitenancy,
         bool $_validation,
-        bool $_events
+        bool $_events,
+        \OCA\OpenRegister\Db\Register|string|int|null $register=null,
+        \OCA\OpenRegister\Db\Schema|string|int|null $schema=null
     ): array {
         $startTime = microtime(true);
+
+        // Resolve register/schema if they are IDs.
+        if (is_int($register) === true || is_string($register) === true) {
+            try {
+                $registerMapper = \OC::$server->get(\OCA\OpenRegister\Db\RegisterMapper::class);
+                $register       = $registerMapper->find((int) $register, _multitenancy: false);
+            } catch (\Exception $e) {
+                $this->logger->warning('[ChunkProcessingHandler] Failed to resolve register', ['id' => $register]);
+                $register = null;
+            }
+        }
+
+        if (is_int($schema) === true || is_string($schema) === true) {
+            try {
+                $schemaMapper = \OC::$server->get(\OCA\OpenRegister\Db\SchemaMapper::class);
+                $schema       = $schemaMapper->find((int) $schema, _multitenancy: false);
+            } catch (\Exception $e) {
+                $this->logger->warning('[ChunkProcessingHandler] Failed to resolve schema', ['id' => $schema]);
+                $schema = null;
+            }
+        }
 
         $result = [
             'saved'      => [],
@@ -169,9 +203,13 @@ class ChunkProcessingHandler
         );
 
         // STEP 3: ULTRA-FAST BULK DATABASE OPERATIONS.
-        $bulkResult = $this->objectEntityMapper->ultraFastBulkSave(
+        // Register & schema are now passed as parameters (already resolved in function entry).
+        // Route through UnifiedObjectMapper for automatic magic/blob routing.
+        $bulkResult = $this->unifiedObjectMapper->ultraFastBulkSave(
             insertObjects: $transformedObjects,
-            updateObjects: []
+            updateObjects: [],
+            register: $register,
+            schema: $schema
         );
 
         // STEP 4: ENHANCED PROCESSING - Handle complete objects with timestamp-based classification.

@@ -213,7 +213,12 @@ class MagicSearchHandler
             } else if ($value === 'IS NULL') {
                 $qb->andWhere($qb->expr()->isNull("t.{$columnName}"));
             } else if (is_array($value) === true) {
-                $qb->andWhere($qb->expr()->in("t.{$columnName}", $qb->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+                $qb->andWhere(
+                    $qb->expr()->in(
+                        "t.{$columnName}",
+                        $qb->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)
+                    )
+                );
             } else {
                 $qb->andWhere($qb->expr()->eq("t.{$columnName}", $qb->createNamedParameter($value)));
             }
@@ -243,12 +248,17 @@ class MagicSearchHandler
                 } else if ($value === 'IS NULL') {
                     $qb->andWhere($qb->expr()->isNull("t.{$columnName}"));
                 } else if (is_array($value) === true) {
-                    $qb->andWhere($qb->expr()->in("t.{$columnName}", $qb->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+                    $qb->andWhere(
+                        $qb->expr()->in(
+                            "t.{$columnName}",
+                            $qb->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)
+                        )
+                    );
                 } else {
                     $qb->andWhere($qb->expr()->eq("t.{$columnName}", $qb->createNamedParameter($value)));
                 }
             }
-        }
+        }//end foreach
     }//end applyObjectFilters()
 
     /**
@@ -351,7 +361,12 @@ class MagicSearchHandler
         $objects = [];
 
         foreach ($rows as $row) {
-            $objectEntity = $this->convertRowToObjectEntity(row: $row, register: $register, schema: $schema, tableName: $tableName);
+            $objectEntity = $this->convertRowToObjectEntity(
+                row: $row,
+                register: $register,
+                schema: $schema,
+                tableName: $tableName
+            );
             if ($objectEntity !== null) {
                 $objects[] = $objectEntity;
             }
@@ -370,8 +385,12 @@ class MagicSearchHandler
      *
      * @return ObjectEntity|null ObjectEntity object or null if conversion fails
      */
-    private function convertRowToObjectEntity(array $row, Register $register, Schema $schema, string $tableName=''): ?ObjectEntity
-    {
+    private function convertRowToObjectEntity(
+        array $row,
+        Register $register,
+        Schema $schema,
+        string $tableName=''
+    ): ?ObjectEntity {
         try {
             $objectEntity = new ObjectEntity();
 

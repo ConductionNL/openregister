@@ -172,7 +172,8 @@ class AgentsController extends Controller
      *
      * @return JSONResponse List of agents
      *
-     * @psalm-return JSONResponse<200|500, array{error?: 'Failed to retrieve agents', results?: array<Agent>}, array<never, never>>
+     * @psalm-return JSONResponse<200|500, array{error?: 'Failed to retrieve agents',
+     *     results?: array<Agent>}, array<never, never>>
      */
     public function index(): JSONResponse
     {
@@ -299,7 +300,7 @@ class AgentsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response with created agent
+     * @return JSONResponse |JSONResponse<400, array{error: string}, array<never, never>>
      *
      * @psalm-return JSONResponse<201, Agent, array<never, never>>|JSONResponse<400, array{error: string}, array<never, never>>
      */
@@ -383,7 +384,7 @@ class AgentsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response with updated agent
+     * @return JSONResponse |JSONResponse<400|403, array{error: string}, array<never, never>>
      *
      * @psalm-return JSONResponse<200, Agent, array<never, never>>|JSONResponse<400|403, array{error: string}, array<never, never>>
      */
@@ -394,7 +395,10 @@ class AgentsController extends Controller
 
             // Check if user can modify this agent using mapper method.
             if ($this->agentMapper->canUserModifyAgent(agent: $agent, userId: $this->userId ?? '') === false) {
-                return new JSONResponse(data: ['error' => 'You do not have permission to modify this agent'], statusCode: Http::STATUS_FORBIDDEN);
+                return new JSONResponse(
+                    data: ['error' => 'You do not have permission to modify this agent'],
+                    statusCode: Http::STATUS_FORBIDDEN
+                );
             }
 
             $data = $this->request->getParams();
@@ -460,7 +464,7 @@ class AgentsController extends Controller
      *
      * @NoAdminRequired
      *
-     * @return JSONResponse JSON response containing patched agent
+     * @return JSONResponse |JSONResponse<400|403, array{error: string}, array<never, never>>
      *
      * @NoCSRFRequired
      *
@@ -502,7 +506,10 @@ class AgentsController extends Controller
             }
 
             if ($this->agentMapper->canUserModifyAgent(agent: $agent, userId: $this->userId) === false) {
-                return new JSONResponse(data: ['error' => 'You do not have permission to delete this agent'], statusCode: Http::STATUS_FORBIDDEN);
+                return new JSONResponse(
+                    data: ['error' => 'You do not have permission to delete this agent'],
+                    statusCode: Http::STATUS_FORBIDDEN
+                );
             }
 
             // Delete agent using mapper (handles RBAC, events).
@@ -572,7 +579,10 @@ class AgentsController extends Controller
                 ]
             );
 
-            return new JSONResponse(data: ['error' => 'Failed to retrieve statistics'], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
+            return new JSONResponse(
+                data: ['error' => 'Failed to retrieve statistics'],
+                statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+            );
         }//end try
     }//end stats()
 

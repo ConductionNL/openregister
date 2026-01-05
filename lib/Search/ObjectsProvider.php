@@ -119,15 +119,15 @@ class ObjectsProvider implements IFilteringProvider
      *
      * Lower values appear first in search results
      *
-     * @param string $_route           The route/context for which to get the order
-     * @param array  $_routeParameters Parameters for the route
+     * @param string $route           The route/context for which to get the order
+     * @param array  $routeParameters Parameters for the route
      *
      * @return int
      *
      * @psalm-return     10
      * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      */
-    public function getOrder(string $_route, array $_routeParameters): ?int
+    public function getOrder(string $route, array $routeParameters): ?int
     {
         return 10;
     }//end getOrder()
@@ -190,7 +190,7 @@ class ObjectsProvider implements IFilteringProvider
      * search query filters to OpenRegister's advanced search parameters and
      * using the optimized searchObjectsPaginated method for best performance.
      *
-     * @param IUser        $_user The user performing the search
+     * @param IUser        $user  The user performing the search
      * @param ISearchQuery $query The search query from Nextcloud
      *
      * @return SearchResult The search results formatted for Nextcloud's search interface
@@ -199,7 +199,7 @@ class ObjectsProvider implements IFilteringProvider
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    public function search(IUser $_user, ISearchQuery $query): SearchResult
+    public function search(IUser $user, ISearchQuery $query): SearchResult
     {
         // Initialize filters array.
         $filters = [];

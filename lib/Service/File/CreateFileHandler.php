@@ -154,7 +154,8 @@ class CreateFileHandler
 
             // Check if the file name is empty.
             if (empty($fileName) === true) {
-                throw new Exception("Failed to create file because no filename has been provided for object ".$objectEntity->getId());
+                $objectId = $objectEntity->getId();
+                throw new Exception("Failed to create file because no filename has been provided for object ".$objectId);
             }
 
             // Security: Block executable files.
@@ -239,9 +240,10 @@ class CreateFileHandler
                 file: $fileName
             );
 
+            $objectId = $objectEntity->getId();
             if ($existingFile !== null) {
                 // File exists, update it.
-                $this->logger->info(message: "File $fileName already exists for object {$objectEntity->getId()}, updating...");
+                $this->logger->info(message: "File $fileName already exists for object {$objectId}, updating...");
 
                 // Update the existing file - pass the object so updateFile can find it in the object folder.
                 return $this->fileService->updateFile(
@@ -252,7 +254,7 @@ class CreateFileHandler
                 );
             } else {
                 // File doesn't exist, create it.
-                $this->logger->info(message: "File $fileName doesn't exist for object {$objectEntity->getId()}, creating...");
+                $this->logger->info(message: "File $fileName doesn't exist for object {$objectId}, creating...");
 
                 return $this->addFile(
                     objectEntity: $objectEntity,

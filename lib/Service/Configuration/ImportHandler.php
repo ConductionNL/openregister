@@ -370,8 +370,13 @@ class ImportHandler
      *
      * @throws Exception If import fails.
      */
-    public function importRegister(array $data, ?string $owner=null, ?string $appId=null, ?string $version=null, bool $force=false): Register
-    {
+    public function importRegister(
+        array $data,
+        ?string $owner=null,
+        ?string $appId=null,
+        ?string $version=null,
+        bool $force=false
+    ): Register {
         try {
             // Ensure data is consistently an array by converting any stdClass objects.
             $data = $this->ensureArrayStructure($data);
@@ -386,15 +391,21 @@ class ImportHandler
                 $existingRegister = $this->registerMapper->find(strtolower($data['slug']));
             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                 // Register doesn't exist in current organisation context, we'll create a new one.
-                $this->logger->info(message: "Register '{$data['slug']}' not found in current organisation context, will create new one");
+                $msg = "Register '{$data['slug']}' not found in current organisation context, will create new one";
+                $this->logger->info(message: $msg);
             } catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
                 // Multiple registers found with the same identifier.
-                $this->handleDuplicateRegisterError(slug: $data['slug'], appId: $appId ?? 'unknown', version: $version ?? 'unknown');
+                $this->handleDuplicateRegisterError(
+                    slug: $data['slug'],
+                    appId: $appId ?? 'unknown',
+                    version: $version ?? 'unknown'
+                );
             }
 
             if ($existingRegister !== null) {
                 // Compare versions using version_compare for proper semver comparison.
-                if ($force === false && version_compare($data['version'], $existingRegister->getVersion() ?? '0.0.0', '<=') === true) {
+                $existingVersion = $existingRegister->getVersion() ?? '0.0.0';
+                if ($force === false && version_compare($data['version'], $existingVersion, '<=') === true) {
                     $this->logger->info(message: 'Skipping register import as existing version is newer or equal.');
                     // Even though we're skipping the update, we still need to add it to the map.
                     return $existingRegister;
@@ -439,13 +450,13 @@ class ImportHandler
         // Get details about the duplicate registers.
         $duplicateInfo = $this->getDuplicateRegisterInfo($slug);
 
-        $errorMessage = sprintf(
-            "Duplicate register detected during import from app '%s' (version %s). Register with slug '%s' has multiple entries in the database: %s. Please resolve this by removing duplicate entries or updating the register slugs to be unique. You can identify duplicates by checking registers with the same slug, uuid, or id.",
-            $appId,
-            $version,
-            $slug,
-            $duplicateInfo
-        );
+        $formatStr  = "Duplicate register detected during import from app '%s' (version %s). ";
+        $formatStr .= "Register with slug '%s' has multiple entries in the database: %s. ";
+        $formatStr .= "Please resolve this by removing duplicate entries or updating the register ";
+        $formatStr .= "slugs to be unique. You can identify duplicates by checking registers with ";
+        $formatStr .= "the same slug, uuid, or id.";
+
+        $errorMessage = sprintf($formatStr, $appId, $version, $slug, $duplicateInfo);
 
         $this->logger->error(message: $errorMessage);
         throw new Exception($errorMessage);
@@ -513,13 +524,13 @@ class ImportHandler
         // Get details about the duplicate schemas.
         $duplicateInfo = $this->getDuplicateSchemaInfo($slug);
 
-        $errorMessage = sprintf(
-            "Duplicate schema detected during import from app '%s' (version %s). Schema with slug '%s' has multiple entries in the database: %s. Please resolve this by removing duplicate entries or updating the schema slugs to be unique. You can identify duplicates by checking schemas with the same slug, uuid, or id.",
-            $appId,
-            $version,
-            $slug,
-            $duplicateInfo
-        );
+        $formatStr  = "Duplicate schema detected during import from app '%s' (version %s). ";
+        $formatStr .= "Schema with slug '%s' has multiple entries in the database: %s. ";
+        $formatStr .= "Please resolve this by removing duplicate entries or updating the schema ";
+        $formatStr .= "slugs to be unique. You can identify duplicates by checking schemas with ";
+        $formatStr .= "the same slug, uuid, or id.";
+
+        $errorMessage = sprintf($formatStr, $appId, $version, $slug, $duplicateInfo);
 
         $this->logger->error(message: $errorMessage);
         throw new Exception($errorMessage);
@@ -630,13 +641,15 @@ class ImportHandler
                         }
 
                         if (($property['items']['objectConfiguration'] ?? null) !== null) {
-                            if (is_array($property['items']['objectConfiguration']) === true && $property['items']['objectConfiguration'] === []) {
+                            $itemsObjConfig = $property['items']['objectConfiguration'];
+                            if (is_array($itemsObjConfig) === true && $itemsObjConfig === []) {
                                 $property['items']['objectConfiguration'] = new stdClass();
                             }
                         }
 
                         if (($property['items']['fileConfiguration'] ?? null) !== null) {
-                            if (is_array($property['items']['fileConfiguration']) === true && $property['items']['fileConfiguration'] === []) {
+                            $itemsFileConfig = $property['items']['fileConfiguration'];
+                            if (is_array($itemsFileConfig) === true && $itemsFileConfig === []) {
                                 $property['items']['fileConfiguration'] = new stdClass();
                             }
                         }
@@ -680,7 +693,8 @@ class ImportHandler
                     }
 
                     // Ensure objectConfiguration is an array for consistent access before any checks.
-                    if (($property['objectConfiguration'] ?? null) !== null && is_object($property['objectConfiguration']) === true) {
+                    $objConfig = $property['objectConfiguration'] ?? null;
+                    if ($objConfig !== null && is_object($objConfig) === true) {
                         $property['objectConfiguration'] = (array) $property['objectConfiguration'];
                     }
 
@@ -688,22 +702,20 @@ class ImportHandler
                     if (is_array($property['objectConfiguration'] ?? null) === true
                         && ($property['objectConfiguration']['register'] ?? null) !== null
                     ) {
-                        $registerSlug = $property['objectConfiguration']['register'];
+                        $registerSlug = (string) $property['objectConfiguration']['register'];
                         if (($this->registersMap[$registerSlug] ?? null) !== null) {
                             $property['objectConfiguration']['register'] = $this->registersMap[$registerSlug]->getId();
-                        } else if ($registerSlug !== null) {
+                        } else if ($registerSlug !== '') {
                             // Try to find existing register in database.
                             try {
                                 $existingRegister = $this->registerMapper->find($registerSlug);
                                 $property['objectConfiguration']['register'] = $existingRegister->getId();
                                 $this->registersMap[$registerSlug]           = $existingRegister;
                             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-                                $this->logger->info(
-                                    sprintf(
-                                        'Register with slug %s not found in current organisation context during schema property import (will be resolved after registers are imported).',
-                                        $registerSlug
-                                    )
-                                );
+                                $msg  = 'Register with slug %s not found in current ';
+                                $msg .= 'organisation context during schema property import ';
+                                $msg .= '(will be resolved after registers are imported).';
+                                $this->logger->info(sprintf($msg, $registerSlug));
                                 unset($property['objectConfiguration']['register']);
                             }
                         }//end if
@@ -713,8 +725,8 @@ class ImportHandler
                     if (is_array($property['objectConfiguration'] ?? null) === true
                         && ($property['objectConfiguration']['schema'] ?? null) !== null
                     ) {
-                        $schemaSlug = $property['objectConfiguration']['schema'];
-                        if (empty($schemaSlug) === false) {
+                        $schemaSlug = (string) $property['objectConfiguration']['schema'];
+                        if ($schemaSlug !== '') {
                             if (($this->schemasMap[$schemaSlug] ?? null) !== null) {
                                 $property['objectConfiguration']['schema'] = $this->schemasMap[$schemaSlug]->getId();
                             }
@@ -726,12 +738,10 @@ class ImportHandler
                                     $property['objectConfiguration']['schema'] = $existingSchema->getId();
                                     $this->schemasMap[$schemaSlug] = $existingSchema;
                                 } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-                                    $this->logger->info(
-                                        sprintf(
-                                            'Schema with slug %s not found in current organisation context during schema property import (will be resolved after schemas are imported).',
-                                            $schemaSlug
-                                        )
-                                    );
+                                    $msg  = 'Schema with slug %s not found in current ';
+                                    $msg .= 'organisation context during schema property import ';
+                                    $msg .= '(will be resolved after schemas are imported).';
+                                    $this->logger->info(sprintf($msg, $schemaSlug));
                                     unset($property['objectConfiguration']['schema']);
                                 }
                             }
@@ -757,22 +767,21 @@ class ImportHandler
                         && is_array($property['items']['objectConfiguration'] ?? []) === true
                         && isset($property['items']['objectConfiguration']['register']) === true
                     ) {
-                        $registerSlug = $property['items']['objectConfiguration']['register'];
+                        $registerSlug = (string) $property['items']['objectConfiguration']['register'];
                         if (($this->registersMap[$registerSlug] ?? null) !== null) {
-                            $property['items']['objectConfiguration']['register'] = $this->registersMap[$registerSlug]->getId();
-                        } else if ($registerSlug !== null) {
+                            $mappedRegister = $this->registersMap[$registerSlug];
+                            $property['items']['objectConfiguration']['register'] = $mappedRegister->getId();
+                        } else if ($registerSlug !== '') {
                             // Try to find existing register in database.
                             try {
                                 $existingRegister = $this->registerMapper->find($registerSlug);
                                 $property['items']['objectConfiguration']['register'] = $existingRegister->getId();
                                 $this->registersMap[$registerSlug] = $existingRegister;
                             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-                                $this->logger->info(
-                                    sprintf(
-                                        'Register with slug %s not found in current organisation context during array items schema property import (will be resolved after registers are imported).',
-                                        $registerSlug
-                                    )
-                                );
+                                $msg  = 'Register with slug %s not found in current ';
+                                $msg .= 'organisation context during array items schema property ';
+                                $msg .= 'import (will be resolved after registers are imported).';
+                                $this->logger->info(sprintf($msg, $registerSlug));
                                 unset($property['items']['objectConfiguration']['register']);
                             }
                         }//end if
@@ -783,25 +792,25 @@ class ImportHandler
                         && is_array($property['items']['objectConfiguration'] ?? []) === true
                         && isset($property['items']['objectConfiguration']['schema']) === true
                     ) {
-                        $schemaSlug = $property['items']['objectConfiguration']['schema'];
-                        if (empty($schemaSlug) === false) {
+                        $schemaSlug = (string) $property['items']['objectConfiguration']['schema'];
+                        if ($schemaSlug !== '') {
                             if (($this->schemasMap[$schemaSlug] ?? null) !== null) {
-                                $property['items']['objectConfiguration']['schema'] = $this->schemasMap[$schemaSlug]->getId();
+                                $schemaId = $this->schemasMap[$schemaSlug]->getId();
+                                $property['items']['objectConfiguration']['schema'] = $schemaId;
                             }
 
                             if (($this->schemasMap[$schemaSlug] ?? null) === null) {
                                 // Try to find existing schema in database.
                                 try {
                                     $existingSchema = $this->schemaMapper->find($schemaSlug);
-                                    $property['items']['objectConfiguration']['schema'] = $existingSchema->getId();
+                                    $schemaId       = $existingSchema->getId();
+                                    $property['items']['objectConfiguration']['schema'] = $schemaId;
                                     $this->schemasMap[$schemaSlug] = $existingSchema;
                                 } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-                                    $this->logger->info(
-                                            sprintf(
-                                                'Schema with slug %s not found in current organisation context during array items schema property import (will be resolved after schemas are imported).',
-                                                $schemaSlug
-                                            )
-                                    );
+                                    $msg  = 'Schema with slug %s not found in current ';
+                                    $msg .= 'organisation context during array items schema ';
+                                    $msg .= 'property import (will be resolved after schemas are imported).';
+                                    $this->logger->info(sprintf($msg, $schemaSlug));
                                     unset($property['items']['objectConfiguration']['schema']);
                                 }
                             }
@@ -832,16 +841,23 @@ class ImportHandler
             try {
                 $existingSchema = $this->schemaMapper->find(strtolower($data['slug']));
             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-                $this->logger->info(message: "Schema '{$data['slug']}' not found in current organisation context, will create new one");
+                $msg = "Schema '{$data['slug']}' not found in current organisation context, will create new one";
+                $this->logger->info(message: $msg);
             } catch (\OCA\OpenRegister\Exception\ValidationException $e) {
-                $this->logger->info(message: "Schema '{$data['slug']}' not found (ValidationException), will create new one");
+                $msg = "Schema '{$data['slug']}' not found (ValidationException), will create new one";
+                $this->logger->info(message: $msg);
             } catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
-                $this->handleDuplicateSchemaError(slug: $data['slug'], appId: $appId ?? 'unknown', version: $version ?? 'unknown');
+                $this->handleDuplicateSchemaError(
+                    slug: $data['slug'],
+                    appId: $appId ?? 'unknown',
+                    version: $version ?? 'unknown'
+                );
             }
 
             if ($existingSchema !== null) {
                 // Compare versions using version_compare for proper semver comparison.
-                if ($force === false && version_compare($data['version'], $existingSchema->getVersion() ?? '0.0.0', '<=') === true) {
+                $existingVersion = $existingSchema->getVersion() ?? '0.0.0';
+                if ($force === false && version_compare($data['version'], $existingVersion, '<=') === true) {
                     $this->logger->info(message: 'Skipping schema import as existing version is newer or equal.');
                     return $existingSchema;
                 }
@@ -907,11 +923,12 @@ class ImportHandler
         ?string $version=null,
         bool $force=false
     ): array {
-        // ⚠️ CRITICAL: Configuration entity is required for proper tracking.
+        // CRITICAL: Configuration entity is required for proper tracking.
         if ($configuration === null) {
-            throw new Exception(
-                'importFromJson must be called with a Configuration entity. Direct imports without a Configuration are not allowed to ensure proper entity tracking. Please create a Configuration entity first before importing.'
-            );
+            $errorMsg  = 'importFromJson must be called with a Configuration entity. ';
+            $errorMsg .= 'Direct imports without a Configuration are not allowed to ensure ';
+            $errorMsg .= 'proper entity tracking. Please create a Configuration entity first before importing.';
+            throw new Exception($errorMsg);
         }
 
         // Ensure data is consistently an array by converting any stdClass objects.
@@ -933,7 +950,7 @@ class ImportHandler
             // If we have a stored version, compare it with the current version.
             if ($storedVersion !== '' && version_compare($version, $storedVersion, '<=') === true) {
                 $this->logger->info(
-                    message: "Skipping import for app {$appId} - current version {$version} is not newer than stored version {$storedVersion}"
+                    message: "Skipping import for app {$appId} - version {$version} is not newer than {$storedVersion}"
                 );
 
                 // Return empty result to indicate no import was performed.
@@ -953,7 +970,8 @@ class ImportHandler
 
         // Log force import if enabled.
         if ($force === true && $appId !== null && $version !== null) {
-            $this->logger->info(message: "Force import enabled for app {$appId} version {$version} - bypassing version check");
+            $msg = "Force import enabled for app {$appId} version {$version} - bypassing version check";
+            $this->logger->info(message: $msg);
         }
 
         // Reset the maps for this import.
@@ -1006,29 +1024,17 @@ class ImportHandler
                         version: $version,
                         force: $force
                     );
-                    if ($schema === null) {
-                        $this->logger->warning(
-                            'Schema import returned null',
-                            [
-                                'schemaKey'  => $key,
-                                'schemaData' => array_keys($schemaData),
-                            ]
-                        );
-                    }
-
-                    if ($schema !== null) {
-                        // Store schema in map by slug for reference.
-                        $this->schemasMap[$schema->getSlug()] = $schema;
-                        $result['schemas'][] = $schema;
-                        $this->logger->info(
-                            'Successfully imported schema',
-                            [
-                                'schemaKey'  => $key,
-                                'schemaSlug' => $schema->getSlug(),
-                                'schemaId'   => $schema->getId(),
-                            ]
-                        );
-                    }//end if
+                    // Store schema in map by slug for reference.
+                    $this->schemasMap[$schema->getSlug()] = $schema;
+                    $result['schemas'][] = $schema;
+                    $this->logger->info(
+                        'Successfully imported schema',
+                        [
+                            'schemaKey'  => $key,
+                            'schemaSlug' => $schema->getSlug(),
+                            'schemaId'   => $schema->getId(),
+                        ]
+                    );
                 } catch (Exception $e) {
                     $this->logger->error(
                         'Failed to import schema',
@@ -1073,12 +1079,9 @@ class ImportHandler
                                 // Add to map for object processing.
                                 $this->schemasMap[$schemaSlug] = $existingSchema;
                             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-                                $this->logger->info(
-                                    sprintf(
-                                        'Schema with slug %s not found in current organisation context during register import (will be created if defined in import).',
-                                        $schemaSlug
-                                    )
-                                );
+                                $msg  = 'Schema with slug %s not found in current organisation ';
+                                $msg .= 'context during register import (will be created if defined in import).';
+                                $this->logger->info(sprintf($msg, $schemaSlug));
                             }
                         }//end if
                     }//end foreach
@@ -1086,7 +1089,13 @@ class ImportHandler
                     $registerData['schemas'] = $schemaIds;
                 }//end if
 
-                $register = $this->importRegister(data: $registerData, owner: $owner, appId: $appId, version: $version, force: $force);
+                $register = $this->importRegister(
+                    data: $registerData,
+                    owner: $owner,
+                    appId: $appId,
+                    version: $version,
+                    force: $force
+                );
                 if ($register !== null) {
                     // Store register in map by slug for reference.
                     $this->registersMap[$slug] = $register;
@@ -1168,9 +1177,13 @@ class ImportHandler
                 $objectData['@self']['schema']   = (int) $schemaId;
 
                 if ($existingObject !== null) {
-                    $existingObjectData = $existingObject->jsonSerialize();
+                    // Handle both ObjectEntity instances and array results from searchObjects.
+                    // searchObjects can return either ObjectEntity objects or arrays depending on configuration.
+                    /** @var ObjectEntity|array $existingObject */
                     if (is_array($existingObject) === true) {
                         $existingObjectData = $existingObject;
+                    } else {
+                        $existingObjectData = $existingObject->jsonSerialize();
                     }
 
                     $importedVersion = $objectData['@self']['version'] ?? $objectData['version'] ?? '1.0.0';
@@ -1234,7 +1247,13 @@ class ImportHandler
             || count($result['schemas']) > 0
             || count($result['objects']) > 0)
         ) {
-            $this->createOrUpdateConfiguration(data: $data, appId: $appId, version: $version, result: $result, owner: $owner);
+            $this->createOrUpdateConfiguration(
+                data: $data,
+                appId: $appId,
+                version: $version,
+                result: $result,
+                owner: $owner
+            );
         }
 
         // Store the version information if appId and version are available.
@@ -1335,8 +1354,11 @@ class ImportHandler
                 $xOpenregister = $data['x-openregister'] ?? [];
 
                 // Standard OAS properties from info section.
-                $title       = $info['title'] ?? $xOpenregister['title'] ?? $data['title'] ?? "Configuration for {$appId}";
-                $description = $info['description'] ?? $xOpenregister['description'] ?? $data['description'] ?? "Configuration imported by application {$appId}";
+                $defaultTitle = "Configuration for {$appId}";
+                $defaultDesc  = "Configuration imported by application {$appId}";
+                $title        = $info['title'] ?? $xOpenregister['title'] ?? $data['title'] ?? $defaultTitle;
+                $desc         = $info['description'] ?? $xOpenregister['description'] ?? $data['description'];
+                $description  = $desc ?? $defaultDesc;
 
                 // OpenRegister-specific properties.
                 $type = $xOpenregister['type'] ?? $data['type'] ?? 'app';
@@ -1433,7 +1455,9 @@ class ImportHandler
                 $existingObjectIds   = $configuration->getObjects();
 
                 foreach ($result['registers'] as $register) {
-                    if ($register instanceof Register && in_array($register->getId(), $existingRegisterIds, true) === false) {
+                    $isRegister    = $register instanceof Register;
+                    $alreadyExists = in_array($register->getId(), $existingRegisterIds, true);
+                    if ($isRegister === true && $alreadyExists === false) {
                         $existingRegisterIds[] = $register->getId();
                     }
                 }
@@ -1636,8 +1660,13 @@ class ImportHandler
      *
      * @throws Exception If configuration creation/update fails.
      */
-    public function createOrUpdateConfiguration(array $data, string $appId, string $version, array $result, ?string $owner=null): Configuration
-    {
+    public function createOrUpdateConfiguration(
+        array $data,
+        string $appId,
+        string $version,
+        array $result,
+        ?string $owner=null
+    ): Configuration {
         try {
             // Ensure data is consistently an array by converting any stdClass objects.
             $data = $this->ensureArrayStructure($data);
@@ -1658,8 +1687,10 @@ class ImportHandler
             $xOpenregister = $data['x-openregister'] ?? [];
 
             // Standard OAS properties from info section.
-            $title       = $info['title'] ?? $xOpenregister['title'] ?? $data['title'] ?? "Configuration for {$appId}";
-            $description = $info['description'] ?? $xOpenregister['description'] ?? $data['description'] ?? "Imported configuration for application {$appId}";
+            $defaultTitle = "Configuration for {$appId}";
+            $defaultDesc  = "Imported configuration for application {$appId}";
+            $title        = $info['title'] ?? $xOpenregister['title'] ?? $data['title'] ?? $defaultTitle;
+            $description  = $info['description'] ?? $xOpenregister['description'] ?? $data['description'] ?? $defaultDesc;
 
             // OpenRegister-specific properties.
             $type = $xOpenregister['type'] ?? $data['type'] ?? 'imported';

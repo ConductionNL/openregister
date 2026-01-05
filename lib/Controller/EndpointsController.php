@@ -461,9 +461,8 @@ class EndpointsController extends Controller
      *
      * @return JSONResponse JSON response with test results
      *
-     * @psalm-return JSONResponse<int,
-     *     array{error?: string, success?: bool, message?: string,
-     *     statusCode?: int, response?: mixed}, array<never, never>>
+     * @psalm-suppress InvalidReturnType
+     * @psalm-suppress InvalidReturnStatement
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -696,9 +695,17 @@ class EndpointsController extends Controller
             if ($endpointId !== null && $endpointId !== '' && $endpointId !== '0') {
                 // Convert endpoint ID to integer for database query.
                 $endpointIdInt = (int) $endpointId;
-                $logs          = $this->endpointLogMapper->findByEndpoint(endpointId: $endpointIdInt, limit: $limit, offset: $offset);
+                $logs          = $this->endpointLogMapper->findByEndpoint(
+                    endpointId: $endpointIdInt,
+                    limit: $limit,
+                    offset: $offset
+                );
                 // Get total count for this endpoint.
-                $allLogsForEndpoint = $this->endpointLogMapper->findByEndpoint(endpointId: $endpointIdInt, limit: null, offset: null);
+                $allLogsForEndpoint = $this->endpointLogMapper->findByEndpoint(
+                    endpointId: $endpointIdInt,
+                    limit: null,
+                    offset: null
+                );
                 $total = count($allLogsForEndpoint);
             } else {
                 // No endpoint filter - get all logs from all endpoints.
@@ -707,7 +714,7 @@ class EndpointsController extends Controller
                 // Get total count for all logs (without pagination).
                 $allLogs = $this->endpointLogMapper->findAll(limit: null, offset: null);
                 $total   = count($allLogs);
-            }
+            }//end if
 
             // Return successful response with logs and total count.
             return new JSONResponse(

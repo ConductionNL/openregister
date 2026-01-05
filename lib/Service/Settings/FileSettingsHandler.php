@@ -94,16 +94,28 @@ class FileSettingsHandler
                     'chunkSize'            => 1000,
                     'chunkOverlap'         => 200,
                 // LLPhant-friendly defaults: native PHP support + common library-based formats.
-                    'enabledFileTypes'     => ['txt', 'md', 'html', 'json', 'xml', 'csv', 'pdf', 'docx', 'doc', 'xlsx', 'xls'],
+                    'enabledFileTypes'     => [
+                        'txt',
+                        'md',
+                        'html',
+                        'json',
+                        'xml',
+                        'csv',
+                        'pdf',
+                        'docx',
+                        'doc',
+                        'xlsx',
+                        'xls',
+                    ],
                     'ocrEnabled'           => false,
                     'maxFileSizeMB'        => 100,
-                // Text extraction settings (for FileConfiguration component).
+                    // Text extraction settings (for FileConfiguration component).
                     'extractionScope'      => 'objects',
-                // None, all, folders, objects.
+                    // None, all, folders, objects.
                     'textExtractor'        => 'llphant',
-                // Llphant, dolphin.
+                    // Llphant, dolphin.
                     'extractionMode'       => 'background',
-                // Background, immediate, manual.
+                    // Background, immediate, manual.
                     'maxFileSize'          => 100,
                     'batchSize'            => 10,
                     'dolphinApiEndpoint'   => '',

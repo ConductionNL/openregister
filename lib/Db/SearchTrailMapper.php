@@ -104,7 +104,7 @@ class SearchTrailMapper extends QBMapper
      *
      * @return SearchTrail[]
      *
-     * @psalm-return list<OCA\OpenRegister\Db\SearchTrail>
+     * @psalm-return list<SearchTrail>
      */
     public function findAll(
         ?int $limit=null,
@@ -276,13 +276,17 @@ class SearchTrailMapper extends QBMapper
         $qb = $this->db->getQueryBuilder();
 
         // Base query for time period.
+        // phpcs:ignore Generic.Files.LineLength.TooLong
+        $totalResultsSql = 'COALESCE(SUM(CASE WHEN total_results IS NOT NULL THEN total_results ELSE 0 END), 0) AS total_results';
+        // phpcs:ignore Generic.Files.LineLength.TooLong
+        $avgResultsSql = 'AVG(CASE WHEN total_results IS NOT NULL THEN total_results END) AS avg_results_per_search';
         $qb->select(
             [
                 $qb->func()->count('*', 'total_searches'),
-                $qb->createFunction('COALESCE(SUM(CASE WHEN total_results IS NOT NULL THEN total_results ELSE 0 END), 0) AS total_results'),
+                $qb->createFunction($totalResultsSql),
             ]
         )
-            ->addSelect($qb->createFunction('AVG(CASE WHEN total_results IS NOT NULL THEN total_results END) AS avg_results_per_search'))
+            ->addSelect($qb->createFunction($avgResultsSql))
             ->addSelect($qb->createFunction('AVG(response_time) AS avg_response_time'))
             ->addSelect($qb->createFunction('COUNT(CASE WHEN total_results > 0 THEN 1 END) AS non_empty_searches'))
             ->from($this->getTableName());
@@ -737,8 +741,9 @@ class SearchTrailMapper extends QBMapper
     /**
      * Clear expired search trail logs from the database
      *
-     * This method deletes all search trail logs that have expired (i.e., their 'expires' date is earlier than the current date and time)
-     * and have the 'expires' column set. This helps maintain database performance by removing old log entries that are no longer needed.
+     * This method deletes all search trail logs that have expired (i.e., their 'expires' date is
+     * earlier than the current date and time) and have the 'expires' column set. This helps maintain
+     * database performance by removing old log entries that are no longer needed.
      *
      * @return bool True if any logs were deleted, false otherwise
      *

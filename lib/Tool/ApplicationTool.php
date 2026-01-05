@@ -78,13 +78,11 @@ class ApplicationTool extends AbstractTool implements ToolInterface
     /**
      * Get the tool description
      *
-     * @return string Tool description for LLM
-     *
-     * @psalm-return 'Manage applications: list, view, create, update, or delete applications with RBAC permissions and organisation boundaries.'
+     * @psalm-return 'Manage applications: list, view, create, update, or delete with RBAC permissions.'
      */
     public function getDescription(): string
     {
-        return 'Manage applications: list, view, create, update, or delete applications with RBAC permissions and organisation boundaries.';
+        return 'Manage applications: list, view, create, update, or delete with RBAC permissions.';
     }//end getDescription()
 
     /**
@@ -133,7 +131,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface
         return [
             [
                 'name'        => 'list_applications',
-                'description' => 'List all accessible applications. Returns basic information. Use filters to narrow results.',
+                'description' => 'List all accessible applications with basic information.',
                 'parameters'  => [
                     'type'       => 'object',
                     'properties' => [
@@ -151,7 +149,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface
             ],
             [
                 'name'        => 'get_application',
-                'description' => 'Get detailed application information by UUID. Returns name, description, metadata, and configuration.',
+                'description' => 'Get detailed application information by UUID.',
                 'parameters'  => [
                     'type'       => 'object',
                     'properties' => [
@@ -165,7 +163,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface
             ],
             [
                 'name'        => 'create_application',
-                'description' => 'Create a new application. Requires unique name. Can include description, metadata, and configuration.',
+                'description' => 'Create a new application with unique name.',
                 'parameters'  => [
                     'type'       => 'object',
                     'properties' => [

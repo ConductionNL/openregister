@@ -99,8 +99,6 @@ class Chunk extends Entity implements JsonSerializable
      * Text content.
      *
      * @var string|null
-     *
-     * @psalm-suppress PossiblyUnusedProperty
      */
     protected ?string $textContent = null;
 
@@ -157,8 +155,6 @@ class Chunk extends Entity implements JsonSerializable
      * Detection method.
      *
      * @var string|null
-     *
-     * @psalm-suppress PossiblyUnusedProperty
      */
     protected ?string $detectionMethod = null;
 

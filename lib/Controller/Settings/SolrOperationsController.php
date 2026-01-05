@@ -108,7 +108,8 @@ class SolrOperationsController extends Controller
                     'enabled'         => $solrSettings['enabled'] ?? false,
                     'host'            => $solrSettings['host'] ?? 'not_set',
                     'port'            => $solrSettings['port'] ?? 'not_set',
-                    'has_credentials' => empty($solrSettings['username']) === false && empty($solrSettings['password']) === false,
+                    'has_credentials' => empty($solrSettings['username']) === false
+                        && empty($solrSettings['password']) === false,
                 ]
             );
 
@@ -169,6 +170,15 @@ class SolrOperationsController extends Controller
                     // Get infrastructure info even on failure to show partial progress.
                     $infrastructureCreated = $setup->getInfrastructureCreated();
 
+                    // Build troubleshooting steps from error details.
+                    $troubleshooting      = $errorDetails['troubleshooting'] ?? $errorDetails['troubleshooting_tips'];
+                    $defaultSteps         = [
+                        'Check SOLR server connectivity',
+                        'Verify SOLR configuration',
+                        'Check SOLR server logs',
+                    ];
+                    $troubleshootingSteps = $troubleshooting ?? $defaultSteps;
+
                     // Use the detailed error information from SolrSetup.
                     return new JSONResponse(
                         data: [
@@ -205,11 +215,7 @@ class SolrOperationsController extends Controller
                                     'path'   => $solrSettings['path'],
                                 ],
                             ],
-                            'troubleshooting_steps' => $errorDetails['troubleshooting'] ?? $errorDetails['troubleshooting_tips'] ?? [
-                                'Check SOLR server connectivity',
-                                'Verify SOLR configuration',
-                                'Check SOLR server logs',
-                            ],
+                            'troubleshooting_steps' => $troubleshootingSteps,
                         ],
                         statusCode: 422
                     );

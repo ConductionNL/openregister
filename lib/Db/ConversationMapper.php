@@ -256,7 +256,9 @@ class ConversationMapper extends QBMapper
 
         // Filter by organisation if provided.
         if ($organisation !== null) {
-            $qb->andWhere($qb->expr()->eq('organisation', $qb->createNamedParameter($organisation, IQueryBuilder::PARAM_STR)));
+            $qb->andWhere(
+                $qb->expr()->eq('organisation', $qb->createNamedParameter($organisation, IQueryBuilder::PARAM_STR))
+            );
         }
 
         // Exclude soft-deleted conversations unless requested.
@@ -298,7 +300,9 @@ class ConversationMapper extends QBMapper
 
         // Filter by organisation if provided.
         if ($organisation !== null) {
-            $qb->andWhere($qb->expr()->eq('organisation', $qb->createNamedParameter($organisation, IQueryBuilder::PARAM_STR)));
+            $qb->andWhere(
+                $qb->expr()->eq('organisation', $qb->createNamedParameter($organisation, IQueryBuilder::PARAM_STR))
+            );
         }
 
         $qb->orderBy('deleted_at', 'DESC')
@@ -371,7 +375,9 @@ class ConversationMapper extends QBMapper
 
         // Filter by organisation if provided.
         if ($organisation !== null) {
-            $qb->andWhere($qb->expr()->eq('organisation', $qb->createNamedParameter($organisation, IQueryBuilder::PARAM_STR)));
+            $qb->andWhere(
+                $qb->expr()->eq('organisation', $qb->createNamedParameter($organisation, IQueryBuilder::PARAM_STR))
+            );
         }
 
         // Exclude soft-deleted conversations unless requested.
@@ -407,7 +413,9 @@ class ConversationMapper extends QBMapper
 
         // Filter by organisation if provided.
         if ($organisation !== null) {
-            $qb->andWhere($qb->expr()->eq('organisation', $qb->createNamedParameter($organisation, IQueryBuilder::PARAM_STR)));
+            $qb->andWhere(
+                $qb->expr()->eq('organisation', $qb->createNamedParameter($organisation, IQueryBuilder::PARAM_STR))
+            );
         }
 
         $result = $qb->executeQuery();
@@ -470,8 +478,11 @@ class ConversationMapper extends QBMapper
      *
      * @return bool True if user can access
      */
-    public function canUserAccessConversation(Conversation $conversation, string $userId, ?string $organisationUuid=null): bool
-    {
+    public function canUserAccessConversation(
+        Conversation $conversation,
+        string $userId,
+        ?string $organisationUuid=null
+    ): bool {
         // User must be the owner.
         if ($conversation->getUserId() !== $userId) {
             return false;

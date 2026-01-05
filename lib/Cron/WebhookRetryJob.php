@@ -113,13 +113,13 @@ class WebhookRetryJob extends TimedJob
      *
      * Finds failed webhook logs that are ready for retry and processes them.
      *
-     * @param mixed $_argument Job arguments (unused)
+     * @param mixed $argument Job arguments (unused)
      *
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    protected function run($_argument): void
+    protected function run($argument): void
     {
         $now = new DateTime();
 

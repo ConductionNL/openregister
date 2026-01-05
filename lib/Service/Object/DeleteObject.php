@@ -83,15 +83,12 @@ class DeleteObject
     /**
      * Constructor for DeleteObject handler.
      *
-     * @param ObjectEntityMapper $objectEntityMapper      Object entity data mapper.
-     * @param FileService        $fileService             File service for managing files.
-     * @param CacheHandler       $cacheHandler            Object cache service for entity and query caching
-     * @param SchemaCacheHandler $schemaCacheService      Schema cache handler for schema entity caching
-     * @param FacetCacheHandler  $schemaFacetCacheService Schema facet cache service for facet caching
-     * @param IUserSession       $userSession             User session service for tracking who deletes
-     * @param AuditTrailMapper   $auditTrailMapper        Audit trail mapper for logs
-     * @param SettingsService    $settingsService         Settings service for accessing trail settings
-     * @param LoggerInterface    $logger                  Logger for error handling
+     * @param ObjectEntityMapper $objectEntityMapper Object entity data mapper.
+     * @param CacheHandler       $cacheHandler       Object cache service for entity and query caching
+     * @param IUserSession       $userSession        User session service for tracking who deletes
+     * @param AuditTrailMapper   $auditTrailMapper   Audit trail mapper for logs
+     * @param SettingsService    $settingsService    Settings service for accessing trail settings
+     * @param LoggerInterface    $logger             Logger for error handling
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
@@ -217,8 +214,8 @@ class DeleteObject
      * @param Schema|int|string   $schema           The schema of the object.
      * @param string              $uuid             The UUID of the object to delete.
      * @param string|null         $originalObjectId The ID of original object for cascading.
-     * @param bool                $rbac             Whether to apply RBAC checks (default: true).
-     * @param bool                $multi            Whether to apply multitenancy filtering (default: true).
+     * @param bool                $_rbac            Whether to apply RBAC checks (default: true).
+     * @param bool                $_multitenancy    Whether to apply multitenancy filtering (default: true).
      *
      * @return bool Whether the deletion was successful.
      *
@@ -275,12 +272,22 @@ class DeleteObject
 
             if (is_array($value) === true) {
                 foreach ($value as $id) {
-                    $this->deleteObject(register: $register, schema: $schema, uuid: $id, originalObjectId: $originalObjectId);
+                    $this->deleteObject(
+                        register: $register,
+                        schema: $schema,
+                        uuid: $id,
+                        originalObjectId: $originalObjectId
+                    );
                 }
             } else {
-                $this->deleteObject(register: $register, schema: $schema, uuid: $value, originalObjectId: $originalObjectId);
+                $this->deleteObject(
+                    register: $register,
+                    schema: $schema,
+                    uuid: $value,
+                    originalObjectId: $originalObjectId
+                );
             }
-        }
+        }//end foreach
     }//end cascadeDeleteObjects()
 
     /**
@@ -301,7 +308,9 @@ class DeleteObject
             // }.
         } catch (\Exception $e) {
             // Log error but don't fail the deletion process.
-            $this->logger->warning('Failed to delete object folder for object '.$objectEntity->getId().': '.$e->getMessage());
+            $objectId     = $objectEntity->getId();
+            $errorMessage = $e->getMessage();
+            $this->logger->warning('Failed to delete object folder for object '.$objectId.': '.$errorMessage);
         }
     }//end deleteObjectFolder()
 
@@ -317,7 +326,10 @@ class DeleteObject
             return $retentionSettings['auditTrailsEnabled'] ?? true;
         } catch (\Exception $e) {
             // If we can't get settings, default to enabled for safety.
-            $this->logger->warning('Failed to check audit trails setting, defaulting to enabled', ['error' => $e->getMessage()]);
+            $this->logger->warning(
+                'Failed to check audit trails setting, defaulting to enabled',
+                ['error' => $e->getMessage()]
+            );
             return true;
         }
     }//end isAuditTrailsEnabled()

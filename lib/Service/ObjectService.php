@@ -277,8 +277,8 @@ class ObjectService
         // Temporarily disabled until full architectural refactoring is complete.
         // See DEBUGGING_REGISTER_CREATION_TIMEOUT.md for details.
     ) {
-        // REFACTORED: Removed ExportHandler and VectorizationHandler dependencies to break circular dependencies.
-        // Handlers should not depend on services - now calling ExportService, ImportService, and VectorizationService directly.
+        // REFACTORED: Removed ExportHandler and VectorizationHandler to break circular deps.
+        // Handlers should not depend on services - using ExportService, ImportService, VectorizationService.
         // **REMOVED**: Cache initialization removed since SOLR is now our index.
         $this->logger->debug('ObjectService constructor completed.');
     }//end __construct()
@@ -299,8 +299,13 @@ class ObjectService
      *
      * @throws \Exception If permission is not granted
      */
-    private function checkPermission(Schema $schema, string $action, ?string $userId=null, ?string $objectOwner=null, bool $_rbac=true): void
-    {
+    private function checkPermission(
+        Schema $schema,
+        string $action,
+        ?string $userId=null,
+        ?string $objectOwner=null,
+        bool $_rbac=true
+    ): void {
         $this->permissionHandler->checkPermission(
             schema: $schema,
             action: $action,
@@ -370,21 +375,38 @@ class ObjectService
                 $registers          = $this->performanceHandler->getCachedEntities(
                     [$register],
                     function ($ids) {
-                        return [$this->registerMapper->find(id: $ids[0], published: null, _rbac: false, _multitenancy: false)];
+                        return [$this->registerMapper->find(
+                            id: $ids[0],
+                            published: null,
+                            _rbac: false,
+                            _multitenancy: false
+                        )
+                        ];
                     }
                 );
                 $registerExists     = isset($registers[0]) === true;
-                $isRegisterInstance = $registerExists === true && $registers[0] instanceof Register;
+                $isRegisterInstance = $registerExists
+                    && $registers[0] instanceof Register;
                 if ($isRegisterInstance === true) {
                     $register = $registers[0];
                 } else {
                     // Fallback to direct database lookup if cache fails.
-                    $register = $this->registerMapper->find(id: $register, published: null, _rbac: false, _multitenancy: false);
+                    $register = $this->registerMapper->find(
+                        id: $register,
+                        published: null,
+                        _rbac: false,
+                        _multitenancy: false
+                    );
                 }
             } else {
                 // It's a slug string - find() already supports slugs via orX(id, uuid, slug).
-                $register = $this->registerMapper->find(id: $register, published: null, _rbac: false, _multitenancy: false);
-            }
+                $register = $this->registerMapper->find(
+                    id: $register,
+                    published: null,
+                    _rbac: false,
+                    _multitenancy: false
+                );
+            }//end if
         }//end if
 
         $this->currentRegister = $register;
@@ -408,21 +430,37 @@ class ObjectService
                     $schemas          = $this->performanceHandler->getCachedEntities(
                         [$schema],
                         function ($ids) {
-                            return [$this->schemaMapper->find(id: $ids[0], published: null, _rbac: false, _multitenancy: false)];
+                            return [$this->schemaMapper->find(
+                                id: $ids[0],
+                                published: null,
+                                _rbac: false,
+                                _multitenancy: false
+                            )
+                            ];
                         }
                     );
                     $schemaExists     = isset($schemas[0]) === true;
-                    $isSchemaInstance = $schemaExists === true && $schemas[0] instanceof Schema;
+                    $isSchemaInstance = $schemaExists && $schemas[0] instanceof Schema;
                     if ($isSchemaInstance === true) {
                         $schema = $schemas[0];
                     } else {
                         // Fallback to direct database lookup if cache fails.
-                        $schema = $this->schemaMapper->find(id: $schema, published: null, _rbac: false, _multitenancy: false);
+                        $schema = $this->schemaMapper->find(
+                            id: $schema,
+                            published: null,
+                            _rbac: false,
+                            _multitenancy: false
+                        );
                     }
                 } else {
-                    // It's a slug string - find() already supports slugs via orX(id, uuid, slug).
-                    $schema = $this->schemaMapper->find(id: $schema, published: null, _rbac: false, _multitenancy: false);
-                }
+                    // It's a slug string - find() supports slugs via orX(id, uuid, slug).
+                    $schema = $this->schemaMapper->find(
+                        id: $schema,
+                        published: null,
+                        _rbac: false,
+                        _multitenancy: false
+                    );
+                }//end if
             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                 // Debug logging to understand WHY schema lookup fails.
                 $this->logger->error(
@@ -517,13 +555,8 @@ class ObjectService
             _multitenancy: $_multitenancy
         );
 
-        /*
-         * If the object is not found, return null.
-         * Suppress type check - GetObject::find() may return null
-         *
-         * @psalm-suppress TypeDoesNotContainNull - GetObject::find() may return null
-         */
-
+        // If the object is not found, return null.
+        /** @psalm-suppress TypeDoesNotContainNull - GetObject::find() may return null */
         if ($object === null) {
             return null;
         }
@@ -744,16 +777,41 @@ class ObjectService
 
         // Check if '@self.schema' or '@self.register' is in extend but not in filters.
         // This handles cases where we need to load schemas/registers for rendering.
-        if (isset($config['extend']) === true && in_array('@self.schema', (array) $config['extend'], true) === true && $schemas === null) {
-            $schemaIds = array_unique(array_filter(array_map(fn($object) => $object->getSchema() ?? null, $objects)));
-            $schemas   = $this->performanceHandler->getCachedEntities(ids: $schemaIds, fallbackFunc: [$this->schemaMapper, 'findMultiple']);
-            $schemas   = array_combine(array_map(fn($schema) => $schema->getId(), $schemas), $schemas);
+        $hasExtend     = isset($config['extend']) === true;
+        $extendArray   = (array) ($config['extend'] ?? []);
+        $needsSchema   = $hasExtend
+            && in_array('@self.schema', $extendArray, true) === true
+            && $schemas === null;
+        $needsRegister = $hasExtend
+            && in_array('@self.register', $extendArray, true) === true
+            && $registers === null;
+
+        if ($needsSchema === true) {
+            $schemaIds = array_unique(
+                array_filter(array_map(fn($object) => $object->getSchema() ?? null, $objects))
+            );
+            $schemas   = $this->performanceHandler->getCachedEntities(
+                ids: $schemaIds,
+                fallbackFunc: [$this->schemaMapper, 'findMultiple']
+            );
+            $schemas   = array_combine(
+                array_map(fn($schema) => $schema->getId(), $schemas),
+                $schemas
+            );
         }
 
-        if (isset($config['extend']) === true && in_array('@self.register', (array) $config['extend'], true) === true && $registers === null) {
-            $registerIds = array_unique(array_filter(array_map(fn($object) => $object->getRegister() ?? null, $objects)));
-            $registers   = $this->performanceHandler->getCachedEntities(ids: $registerIds, fallbackFunc: [$this->registerMapper, 'findMultiple']);
-            $registers   = array_combine(array_map(fn($register) => $register->getId(), $registers), $registers);
+        if ($needsRegister === true) {
+            $registerIds = array_unique(
+                array_filter(array_map(fn($object) => $object->getRegister() ?? null, $objects))
+            );
+            $registers   = $this->performanceHandler->getCachedEntities(
+                ids: $registerIds,
+                fallbackFunc: [$this->registerMapper, 'findMultiple']
+            );
+            $registers   = array_combine(
+                array_map(fn($register) => $register->getId(), $registers),
+                $registers
+            );
         }
 
         return [$registers, $schemas];
@@ -783,6 +841,7 @@ class ObjectService
         $promises = [];
         foreach ($objects as $key => $object) {
             $promises[$key] = new Promise(
+                /** @psalm-suppress InvalidArgument - Promise resolve accepts mixed */
                 function ($resolve, $reject) use ($object, $config, $registers, $schemas, $_rbac, $_multitenancy) {
                     try {
                         $renderedObject = $this->renderHandler->renderEntity(
@@ -796,12 +855,6 @@ class ObjectService
                             _multitenancy: $_multitenancy
                         );
 
-                        /*
-                         * Type annotation for resolve callback
-                         *
-                         * @var callable(mixed): void $resolve
-                         */
-
                         $resolve($renderedObject);
                     } catch (\Throwable $e) {
                         $reject($e);
@@ -810,12 +863,7 @@ class ObjectService
             );
         }//end foreach
 
-        /*
-         * Suppress undefined function check - React\Async\await is from external library
-         *
-         * @psalm-suppress UndefinedFunction - React\Async\await is from external library
-         */
-
+        /** @psalm-suppress UndefinedFunction - React\Async\await is from external library */
         return Async\await(all($promises));
     }//end renderObjectsAsync()
 
@@ -870,9 +918,9 @@ class ObjectService
      * @param string $search       The URI or UUID to search for in relations
      * @param bool   $partialMatch Whether to search for partial matches (default: true)
      *
-     * @return \OCA\OpenRegister\Db\OCA\OpenRegister\Db\ObjectEntity[]
+     * @return \OCA\OpenRegister\Db\ObjectEntity[]
      *
-     * @psalm-return list<OCA\OpenRegister\Db\OCA\OpenRegister\Db\ObjectEntity>
+     * @psalm-return list<\OCA\OpenRegister\Db\ObjectEntity>
      */
     public function findByRelations(string $search, bool $partialMatch=true): array
     {
@@ -1243,7 +1291,12 @@ class ObjectService
     {
         // Find the object to get its owner for permission check (include soft-deleted objects).
         try {
-            $objectToDelete = $this->objectEntityMapper->find(identifier: $uuid, register: null, schema: null, includeDeleted: true);
+            $objectToDelete = $this->objectEntityMapper->find(
+                identifier: $uuid,
+                register: null,
+                schema: null,
+                includeDeleted: true
+            );
 
             // If no schema was provided but we have an object, derive the schema from the object.
             if ($this->currentSchema === null) {
@@ -1259,9 +1312,15 @@ class ObjectService
                 _rbac: $_rbac
             );
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            // Object doesn't exist, no permission check needed but let the deleteHandler handle this.
+            // Object doesn't exist, no permission check needed but let deleteHandler handle.
             if ($this->currentSchema !== null) {
-                $this->checkPermission(schema: $this->currentSchema, action: 'delete', userId: null, objectOwner: null, _rbac: $_rbac);
+                $this->checkPermission(
+                    schema: $this->currentSchema,
+                    action: 'delete',
+                    userId: null,
+                    objectOwner: null,
+                    _rbac: $_rbac
+                );
             }
         }//end try
 
@@ -1388,12 +1447,15 @@ class ObjectService
      * @param string|null $uses          Optional filter by object usage
      * @param array|null  $views         Optional view IDs to apply
      *
-     * @psalm-param   array<string, mixed> $query
+     * @psalm-param array<string, mixed> $query
+     *
      * @phpstan-param array<string, mixed> $query
      *
-     * @return array<int, ObjectEntity>|int An array of ObjectEntity objects matching the criteria, or integer count if _count is true
+     * @return \OCA\OpenRegister\Db\ObjectEntity[]|int
      *
      * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @psalm-return int<0, max>|list<\OCA\OpenRegister\Db\ObjectEntity>
      */
     public function searchObjects(
         array $query=[],
@@ -1442,8 +1504,13 @@ class ObjectService
      *
      * @throws \OCP\DB\Exception If a database error occurs
      */
-    public function countSearchObjects(array $query=[], bool $_rbac=true, bool $_multitenancy=true, ?array $ids=null, ?string $uses=null): int
-    {
+    public function countSearchObjects(
+        array $query=[],
+        bool $_rbac=true,
+        bool $_multitenancy=true,
+        ?array $ids=null,
+        ?string $uses=null
+    ): int {
         // Get active organization context for multi-tenancy (only if multi is enabled).
         $activeOrganisationUuid = null;
         if ($_multitenancy === true) {
@@ -1841,15 +1908,14 @@ class ObjectService
         /*
          * Use React's await functionality to get the result synchronously.
          * Note: The async version already logs the search trail, so we don't need to log again.
-         * Suppress undefined function check - React\Async\await is from external library
-         *
-         * @psalm-suppress UndefinedFunction - React\Async\await is from external library
          */
 
+        /** @psalm-suppress UndefinedFunction - React\Async\await is from external library */
         return \React\Async\await($promise);
     }//end searchObjectsPaginatedSync()
 
-    // From this point on only deprecated functions for backwards compatibility with OpenConnector. To remove after OpenConnector refactor.
+    // From this point on only deprecated functions for backwards compatibility with OpenConnector.
+    // To remove after OpenConnector refactor.
 
     /**
      * Returns the current schema
@@ -1937,8 +2003,9 @@ class ObjectService
      *     errors: list{0?: array<array|mixed|null|string>|string,...}>,
      *     array<never, never>>
      */
-    public function handleValidationException(ValidationException|CustomValidationException $exception): \OCP\AppFramework\Http\JSONResponse
-    {
+    public function handleValidationException(
+        ValidationException|CustomValidationException $exception
+    ): \OCP\AppFramework\Http\JSONResponse {
         return $this->validateHandler->handleValidationException($exception);
     }//end handleValidationException()
 
@@ -1956,8 +2023,12 @@ class ObjectService
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    public function publish(string $uuid=null, ?\DateTime $date=null, bool $_rbac=true, bool $_multitenancy=true): ObjectEntity
-    {
+    public function publish(
+        string $uuid=null,
+        ?\DateTime $date=null,
+        bool $_rbac=true,
+        bool $_multitenancy=true
+    ): ObjectEntity {
 
         // Use the publish handler to publish the object.
         return $this->publishHandler->publish(
@@ -1982,8 +2053,12 @@ class ObjectService
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    public function depublish(string $uuid=null, ?\DateTime $date=null, bool $_rbac=true, bool $_multitenancy=true): ObjectEntity
-    {
+    public function depublish(
+        string $uuid=null,
+        ?\DateTime $date=null,
+        bool $_rbac=true,
+        bool $_multitenancy=true
+    ): ObjectEntity {
         // Use the publish handler to depublish the object.
         return $this->publishHandler->depublish(
             uuid: $uuid,
@@ -2259,8 +2334,12 @@ class ObjectService
      * @psalm-return   array<int, string>
      * @phpstan-return array<int, string>
      */
-    public function publishObjects(array $uuids=[], \DateTime|bool $datetime=true, bool $_rbac=true, bool $_multitenancy=true): array
-    {
+    public function publishObjects(
+        array $uuids=[],
+        \DateTime|bool $datetime=true,
+        bool $_rbac=true,
+        bool $_multitenancy=true
+    ): array {
         // ARCHITECTURAL DELEGATION: Delegate to BulkOperationsHandler for all bulk publish logic.
         // Pass register and schema context for magic mapper support.
         return $this->bulkOperationsHandler->publishObjects(
@@ -2293,8 +2372,12 @@ class ObjectService
      * @psalm-return   array<int, string>
      * @phpstan-return array<int, string>
      */
-    public function depublishObjects(array $uuids=[], \DateTime|bool $datetime=true, bool $_rbac=true, bool $_multitenancy=true): array
-    {
+    public function depublishObjects(
+        array $uuids=[],
+        \DateTime|bool $datetime=true,
+        bool $_rbac=true,
+        bool $_multitenancy=true
+    ): array {
         // ARCHITECTURAL DELEGATION: Delegate to BulkOperationsHandler for all bulk depublish logic.
         // Pass register and schema context for magic mapper support.
         return $this->bulkOperationsHandler->depublishObjects(
@@ -2412,9 +2495,18 @@ class ObjectService
      *
      * @throws \Exception If retrieval fails
      */
-    public function getObjectUses(string $objectId, array $query=[], bool $rbac=true, bool $_multitenancy=true): array
-    {
-        return $this->relationHandler->getUses(objectId: $objectId, query: $query, rbac: $rbac, _multitenancy: $_multitenancy);
+    public function getObjectUses(
+        string $objectId,
+        array $query=[],
+        bool $rbac=true,
+        bool $_multitenancy=true
+    ): array {
+        return $this->relationHandler->getUses(
+            objectId: $objectId,
+            query: $query,
+            rbac: $rbac,
+            _multitenancy: $_multitenancy
+        );
     }//end getObjectUses()
 
     /**
@@ -2429,9 +2521,18 @@ class ObjectService
      *
      * @throws \Exception If retrieval fails
      */
-    public function getObjectUsedBy(string $objectId, array $query=[], bool $rbac=true, bool $_multitenancy=true): array
-    {
-        return $this->relationHandler->getUsedBy(objectId: $objectId, query: $query, rbac: $rbac, _multitenancy: $_multitenancy);
+    public function getObjectUsedBy(
+        string $objectId,
+        array $query=[],
+        bool $rbac=true,
+        bool $_multitenancy=true
+    ): array {
+        return $this->relationHandler->getUsedBy(
+            objectId: $objectId,
+            query: $query,
+            rbac: $rbac,
+            _multitenancy: $_multitenancy
+        );
     }//end getObjectUsedBy()
 
     /**
@@ -2497,11 +2598,11 @@ class ObjectService
      * @param string|null $uses          Optional object ID that results must use
      * @param array|null  $views         Optional view filters
      *
-     * @return ObjectEntity[]|int Paginated results with objects
+     * @return \OCA\OpenRegister\Db\ObjectEntity[]|int
      *
      * @throws \Exception If listing fails
      *
-     * @psalm-return array<int, ObjectEntity>|int
+     * @psalm-return int<0, max>|list<\OCA\OpenRegister\Db\ObjectEntity>
      */
     public function listObjects(
         array $query=[],

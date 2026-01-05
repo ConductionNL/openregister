@@ -83,15 +83,14 @@ trait MultiTenancyTrait
 
         // Use OrganisationMapper to get active org with automatic fallback to default.
         if (isset($this->organisationMapper) === true) {
-            /*
-             * @var \OCA\OpenRegister\Db\OrganisationMapper $organisationMapper
-             */
-
             $organisationMapper = $this->organisationMapper;
             if (isset($this->logger) === true) {
-                $this->logger->info('🔹 MultiTenancyTrait: Calling getActiveOrganisationWithFallback for user: '.$user->getUID());
+                $this->logger->info(
+                    'MultiTenancyTrait: Calling getActiveOrganisationWithFallback for user: '.$user->getUID()
+                );
             }
 
+            /** @psalm-suppress UndefinedMethod - method exists on OrganisationMapper */
             return $organisationMapper->getActiveOrganisationWithFallback($user->getUID());
         }
 
@@ -111,11 +110,8 @@ trait MultiTenancyTrait
     {
         // Prefer using OrganisationMapper if available.
         if (isset($this->organisationMapper) === true) {
-            /*
-             * @var \OCA\OpenRegister\Db\OrganisationMapper $organisationMapper
-             */
-
             $organisationMapper = $this->organisationMapper;
+            /** @psalm-suppress UndefinedMethod - method exists on OrganisationMapper */
             return $organisationMapper->getDefaultOrganisationFromConfig();
         }
 
@@ -164,11 +160,8 @@ trait MultiTenancyTrait
         // If we have OrganisationMapper, get the full hierarchy (active + parents).
         if (isset($this->organisationMapper) === true) {
             try {
-                /*
-                 * @var \OCA\OpenRegister\Db\OrganisationMapper $organisationMapper
-                 */
-
                 $organisationMapper = $this->organisationMapper;
+                /** @psalm-suppress UndefinedMethod - method exists on OrganisationMapper */
                 $uuids = $organisationMapper->getOrganisationHierarchy($activeOrgUuid);
                 if (empty($uuids) === false) {
                     return $uuids;
@@ -277,10 +270,10 @@ trait MultiTenancyTrait
      * When C is active, entities from A, B, and C are visible.
      *
      * @param IQueryBuilder $qb                  The query builder
-     * @param string        $columnName          The column name for organisation (default: 'organisation')
+     * @param string        $columnName          The column name for organisation
      * @param bool          $allowNullOrg        Whether admins can see NULL organisation entities
-     * @param string        $tableAlias          Optional table alias for published/depublished columns
-     * @param bool          $enablePublished     Whether to enable published entity bypass (works for any table with published/depublished columns)
+     * @param string        $tableAlias          Optional table alias for published/depublished
+     * @param bool          $enablePublished     Whether to enable published entity bypass
      * @param bool          $multiTenancyEnabled Whether multitenancy is enabled (default: true)
      *
      * @return void
@@ -486,7 +479,10 @@ trait MultiTenancyTrait
         if ($directActiveOrgUuid !== null) {
             // Condition 1: Entity from direct active organization (allows depublished from own org).
             $orgConditions->add(
-                $qb->expr()->eq($organisationColumn, $qb->createNamedParameter($directActiveOrgUuid, IQueryBuilder::PARAM_STR))
+                $qb->expr()->eq(
+                    $organisationColumn,
+                    $qb->createNamedParameter($directActiveOrgUuid, IQueryBuilder::PARAM_STR)
+                )
             );
 
             // Condition 2: Entity from parent organizations (children can see all parent objects, including depublished).
@@ -499,15 +495,21 @@ trait MultiTenancyTrait
             );
             if (count($parentOrgs) > 0) {
                 $orgConditions->add(
-                    $qb->expr()->in($organisationColumn, $qb->createNamedParameter($parentOrgs, IQueryBuilder::PARAM_STR_ARRAY))
+                    $qb->expr()->in(
+                        $organisationColumn,
+                        $qb->createNamedParameter($parentOrgs, IQueryBuilder::PARAM_STR_ARRAY)
+                    )
                 );
             }
-        }
+        }//end if
 
         if ($directActiveOrgUuid === null) {
             // No direct active org, just match active orgs (children can see all parent items).
             $orgConditions->add(
-                $qb->expr()->in($organisationColumn, $qb->createNamedParameter($activeOrganisationUuids, IQueryBuilder::PARAM_STR_ARRAY))
+                $qb->expr()->in(
+                    $organisationColumn,
+                    $qb->createNamedParameter($activeOrganisationUuids, IQueryBuilder::PARAM_STR_ARRAY)
+                )
             );
         }//end if
 

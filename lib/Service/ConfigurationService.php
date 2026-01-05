@@ -314,7 +314,8 @@ class ConfigurationService
         if (in_array(needle: 'openconnector', haystack: $this->appManager->getInstalledApps()) === true) {
             try {
                 // Attempt to get the OpenConnector service from the container.
-                $this->openConnectorConfigurationService = $this->container->get('OCA\OpenConnector\Service\ConfigurationService');
+                $serviceName = 'OCA\OpenConnector\Service\ConfigurationService';
+                $this->openConnectorConfigurationService = $this->container->get($serviceName);
                 return true;
             } catch (Exception $e) {
                 // If the service is not available, return false.
@@ -328,7 +329,8 @@ class ConfigurationService
     /**
      * Build OpenAPI Specification from configuration or register
      *
-     * @param array|Configuration|Register $input          The configuration array, Configuration object, or Register object to build the OAS from.
+     * @param array|Configuration|Register $input          The configuration array, Configuration object,
+     *                                                     or Register object to build the OAS from.
      * @param bool                         $includeObjects Whether to include objects in the registers.
      *
      * @psalm-param   array<string, mixed>|Configuration|Register $input
@@ -410,8 +412,6 @@ class ConfigurationService
      * @param array       $uploadedFile The uploaded file.
      * @param string|null $_type        If the uploaded file should be a specific type of object (unused).
      *
-     * @psalm-return JSONResponse<int, \JsonSerializable|array|null|scalar|stdClass, array<string, mixed>>|array
-     *
      * @return JSONResponse|array A PHP array with the uploaded json data or a JSONResponse in case of an error.
      *
      * @SuppressWarnings (PHPMD.UnusedFormalParameter)
@@ -431,8 +431,7 @@ class ConfigurationService
      *
      * @throws GuzzleException
      *
-     * @psalm-return JSONResponse<int, \JsonSerializable|array|null|scalar|stdClass, array<string, mixed>>|array
-     * @return       JSONResponse|array
+     * @return JSONResponse|array
      */
     private function getJSONfromURL(string $url): array|JSONResponse
     {
@@ -443,8 +442,6 @@ class ConfigurationService
      * Get JSON data from request body (DELEGATED).
      *
      * @param array|string $phpArray The PHP array or string to process.
-     *
-     * @psalm-return JSONResponse<int, \JsonSerializable|array|null|scalar|stdClass, array<string, mixed>>|array
      *
      * @return JSONResponse|array A PHP array with the uploaded json data or a JSONResponse in case of an error.
      */
@@ -524,8 +521,13 @@ class ConfigurationService
      *
      * @psalm-suppress UnusedReturnValue
      */
-    private function createOrUpdateConfiguration(array $data, string $appId, string $version, array $result, ?string $owner=null): Configuration
-    {
+    private function createOrUpdateConfiguration(
+        array $data,
+        string $appId,
+        string $version,
+        array $result,
+        ?string $owner=null
+    ): Configuration {
         return $this->importHandler->createOrUpdateConfiguration(
             data: $data,
             appId: $appId,
@@ -546,8 +548,13 @@ class ConfigurationService
      *
      * @return Register The imported register or null if skipped.
      */
-    private function importRegister(array $data, ?string $owner=null, ?string $appId=null, ?string $version=null, bool $force=false): Register
-    {
+    private function importRegister(
+        array $data,
+        ?string $owner=null,
+        ?string $appId=null,
+        ?string $version=null,
+        bool $force=false
+    ): Register {
         return $this->importHandler->importRegister(
             data: $data,
             owner: $owner,
@@ -594,7 +601,8 @@ class ConfigurationService
      * It's designed to be used by apps that store their configurations as JSON files
      * and want OpenRegister to handle the file reading and import process.
      *
-     * The file path should be relative to the Nextcloud root (e.g., 'apps-extra/opencatalogi/lib/Settings/publication_register.json')
+     * The file path should be relative to the Nextcloud root
+     * (e.g., 'apps-extra/opencatalogi/lib/Settings/publication_register.json')
      * This enables the cron job to later check if the configuration file has been updated.
      *
      * @param string $appId    The application ID (e.g. 'opencatalogi')
@@ -701,7 +709,10 @@ class ConfigurationService
             $remoteData = $this->getJSONfromURL($sourceUrl);
 
             if ($remoteData instanceof JSONResponse) {
-                $this->logger->error(message: 'Failed to fetch remote configuration', context: ['error' => $remoteData->getData()]);
+                $this->logger->error(
+                    message: 'Failed to fetch remote configuration',
+                    context: ['error' => $remoteData->getData()]
+                );
                 return null;
             }
 
@@ -718,11 +729,18 @@ class ConfigurationService
             $configuration->setLastChecked(new DateTime());
             $this->configurationMapper->update($configuration);
 
-            $this->logger->info(message: "Checked remote version for configuration {$configuration->getId()}: {$remoteVersion}");
+            $configId = $configuration->getId();
+            $this->logger->info(
+                message: "Checked remote version for configuration {$configId}: {$remoteVersion}"
+            );
 
             return $remoteVersion;
         } catch (GuzzleException $e) {
-            $this->logger->error(message: "Failed to check remote version for configuration {$configuration->getId()}: ".$e->getMessage());
+            $configId = $configuration->getId();
+            $errorMsg = $e->getMessage();
+            $this->logger->error(
+                message: "Failed to check remote version for configuration {$configId}: {$errorMsg}"
+            );
             throw $e;
         } catch (Exception $e) {
             $this->logger->error(message: "Unexpected error checking remote version: ".$e->getMessage());
@@ -811,11 +829,6 @@ class ConfigurationService
      * @return JSONResponse|array
      *
      * @throws GuzzleException If HTTP request fails
-     *
-     * @psalm-return JSONResponse<400|500, array{error: string},
-     *     array<never, never>>|JSONResponse<int,
-     *     \JsonSerializable|array|null|scalar|stdClass,
-     *     array<string, mixed>>|array
      */
     public function fetchRemoteConfiguration(Configuration $configuration): array|JSONResponse
     {
@@ -845,8 +858,10 @@ class ConfigurationService
                 return $remoteData;
             }
 
+            $schemaCount   = count($remoteData['components']['schemas'] ?? []);
+            $registerCount = count($remoteData['components']['registers'] ?? []);
             $this->logger->info(
-                "Successfully fetched remote configuration with ".count($remoteData['components']['schemas'] ?? [])." schemas and ".count($remoteData['components']['registers'] ?? [])." registers"
+                "Successfully fetched remote configuration with {$schemaCount} schemas and {$registerCount} registers"
             );
 
             return $remoteData;
@@ -869,53 +884,9 @@ class ConfigurationService
      *
      * @param Configuration $configuration The configuration to preview
      *
-     * @return ((array|null|string)[]|int|mixed|null|string)[][]|JSONResponse
+     * @return array|JSONResponse
      *
      * @throws GuzzleException If fetching remote configuration fails
-     *
-     * @phpstan-return array{
-     *     registers: array,
-     *     schemas: array,
-     *     objects: array,
-     *     endpoints: array,
-     *     sources: array,
-     *     mappings: array,
-     *     jobs: array,
-     *     synchronizations: array,
-     *     rules: array,
-     *     metadata?: array
-     * }|JSONResponse
-     *
-     * @psalm-return JSONResponse<int, \JsonSerializable|\stdClass|array|null|scalar, array<string, mixed>>|array{
-     *     registers: list<array{action: string, changes: array, current: array|null, proposed: array, slug: string, title: string, type: string}>,
-     *     schemas: list<array{action: string, changes: array, current: array|null, proposed: array, slug: string, title: string, type: string}>,
-     *     objects: list<array{
-     *         action: string,
-     *         changes: array,
-     *         current: array|null,
-     *         proposed: array,
-     *         register: string,
-     *         schema: string,
-     *         slug: string,
-     *         title: string,
-     *         type: string
-     *     }>,
-     *     endpoints: array<never, never>,
-     *     sources: array<never, never>,
-     *     mappings: array<never, never>,
-     *     jobs: array<never, never>,
-     *     synchronizations: array<never, never>,
-     *     rules: array<never, never>,
-     *     metadata: array{
-     *         configurationId: int,
-     *         configurationTitle: null|string,
-     *         sourceUrl: null|string,
-     *         remoteVersion: mixed|null,
-     *         localVersion: null|string,
-     *         previewedAt: string,
-     *         totalChanges: int<0, max>
-     *     }
-     * }
      */
     public function previewConfigurationChanges(Configuration $configuration): array|JSONResponse
     {
@@ -975,37 +946,11 @@ class ConfigurationService
     }//end previewRegisterChange()
 
     /**
-     * Preview changes for a single object
-     *
-     * @param array  $objectData       The object data from remote configuration
-     * @param array  $registerSlugToId Map of register slugs to IDs
-     * @param array  $schemaSlugToId   Map of schema slugs to IDs
-     *
-     * @return array Preview information for this object
-     *
-     * @phpstan-return array{
-     *     type: string,
-     *     action: string,
-     *     slug: string,
-     *     title: string,
-        return $this->previewHandler->previewObjectChange($objectData, $registerSlugToId, $schemaSlugToId);
-                $preview['action'] = 'update';
-                // Build list of changed fields.
-                $preview['changes'] = $this->compareArrays(current: $existingObjectData, proposed: $objectData);
-            }
-        }//end if
-
-        return $preview;
-
-    }//end previewObjectChange()
-
-
-    /**
      * Compare two arrays and return a list of differences
      *
-     * @param array  $current          The current data
-     * @param array  $proposed         The proposed data
-     * @param string $prefix           Field name prefix for nested comparison
+     * @param array  $current  The current data
+     * @param array  $proposed The proposed data
+     * @param string $prefix   Field name prefix for nested comparison
      *
      * @return array List of differences
      */
@@ -1034,43 +979,6 @@ class ConfigurationService
         }
 
         return true;
-
-        // Legacy code below - no longer executed (unreachable after return).
-        // $configuration->setRegisters($existingRegisterIds);
-        // Update schema IDs.
-        $existingSchemaIds = $configuration->getSchemas();
-        foreach ($result['schemas'] as $schema) {
-            if (in_array($schema->getId(), $existingSchemaIds, true) === false) {
-                $existingSchemaIds[] = $schema->getId();
-            }
-        }
-
-        $configuration->setSchemas($existingSchemaIds);
-
-        // Update object IDs.
-        $existingObjectIds = $configuration->getObjects();
-        foreach ($result['objects'] as $object) {
-            if (in_array($object->getId(), $existingObjectIds, true) === false) {
-                $existingObjectIds[] = $object->getId();
-            }
-        }
-
-        $configuration->setObjects($existingObjectIds);
-
-        // Save the updated configuration.
-        $this->configurationMapper->update($configuration);
-
-        $this->logger->info(
-            "Selective import completed",
-            [
-                'configurationId'   => $configuration->getId(),
-                'registersImported' => count($result['registers']),
-                'schemasImported'   => count($result['schemas']),
-                'objectsImported'   => count($result['objects']),
-            ]
-        );
-
-        return $result;
     }//end isSimpleArray()
 
     /**

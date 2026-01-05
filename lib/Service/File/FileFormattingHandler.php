@@ -182,7 +182,8 @@ class FileFormattingHandler
      * @psalm-return   array{results: list<array<string, mixed>>,
      *     total: int<0, max>, page: int<1, max>, pages: int,
      *     limit: int<1, 100>, offset: int<0, max>}
-     * @phpstan-return array{results: array<int, array<string, mixed>>, total: int, page: int, pages: int, limit: int, offset: int}
+     * @phpstan-return array{results: array<int, array<string, mixed>>,
+     *     total: int, page: int, pages: int, limit: int, offset: int}
      *
      * @throws InvalidPathException If any file path is invalid.
      * @throws NotFoundException    If files are not found.

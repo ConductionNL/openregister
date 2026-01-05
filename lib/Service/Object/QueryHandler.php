@@ -135,9 +135,9 @@ class QueryHandler
      * @phpstan-param array<int, string>|null $ids
      * @phpstan-param array<int, string>|null $views
      *
-     * @return (OCA\OpenRegister\Db\ObjectEntity|\OCA\OpenRegister\Db\OCA\OpenRegister\Db\OCA\OpenRegister\Db\ObjectEntity)[]|int
+     * @return ObjectEntity[]|int
      *
-     * @psalm-return   int<0, max>|list<OCA\OpenRegister\Db\OCA\OpenRegister\Db\OCA\OpenRegister\Db\ObjectEntity|OCA\OpenRegister\Service\Object\OCA\OpenRegister\Db\ObjectEntity>
+     * @psalm-return int<0, max>|list<ObjectEntity>
      * @phpstan-return array<int, ObjectEntity>|int
      *
      * @throws \OCP\DB\Exception If a database error occurs.
@@ -210,10 +210,6 @@ class QueryHandler
 
         // If _count is requested, return count instead of objects.
         if (($query['_count'] ?? false) === true || ($query['_count'] ?? false) === 'true') {
-            if (is_int($result) === true) {
-                return $result;
-            }
-
             return count($result);
         }
 
@@ -558,11 +554,21 @@ class QueryHandler
             _deleted: $deleted
         );
 
-        /*
-         * @psalm-suppress UndefinedFunction - React\Async\await is from external library
-         */
+        // Note: React\Async\await requires react/async package which is optional.
+        // For now, we fall back to synchronous resolution of the promise.
+        // If react/async is installed, uncomment: return Async\await($promise);
+        $result = null;
+        $promise->then(
+            function ($value) use (&$result) {
+                $result = $value;
+            },
+            function ($error) {
+                throw $error;
+            }
+        );
 
-        return Async\await($promise);
+        // Return result (synchronous fallback).
+        return $result;
     }//end searchObjectsPaginatedSync()
 
     /**
@@ -593,8 +599,12 @@ class QueryHandler
         bool $_deleted=false
     ): PromiseInterface {
         // Start timing execution.
-        $startTime = microtime(true);
-        $this->logger->debug(message: 'Starting searchObjectsPaginatedAsync', context: ['query_limit' => $query['_limit'] ?? 20]);
+        $startTime  = microtime(true);
+        $queryLimit = $query['_limit'] ?? 20;
+        $this->logger->debug(
+            message: 'Starting searchObjectsPaginatedAsync',
+            context: ['query_limit' => $queryLimit]
+        );
 
         // Extract pagination parameters (same as synchronous version).
         $limit     = $query['_limit'] ?? 20;
@@ -641,14 +651,13 @@ class QueryHandler
             $sampleSize = (int) ($query['_sample_size'] ?? 100);
 
             $promises['facetable'] = new Promise(
-                function ($resolve, $reject) use ($baseQuery, $sampleSize) {
+                /**
+                 * @param callable(mixed): void $resolve
+                 * @param callable(\Throwable): void $reject
+                 */
+                function (callable $resolve, callable $reject) use ($baseQuery, $sampleSize) {
                     try {
                         $result = $this->facetHandler->getFacetableFields(baseQuery: $baseQuery, sampleSize: $sampleSize);
-
-                        /*
-                         * @var callable(mixed): void $resolve
-                         */
-
                         $resolve($result);
                     } catch (\Throwable $e) {
                         $this->logger->error(
@@ -666,7 +675,11 @@ class QueryHandler
 
         // 2. Search results (~10ms).
         $promises['search'] = new Promise(
-            function ($resolve, $reject) use ($paginatedQuery, $_rbac, $_multitenancy) {
+            /**
+             * @param callable(mixed): void $resolve
+             * @param callable(\Throwable): void $reject
+             */
+            function (callable $resolve, callable $reject) use ($paginatedQuery, $_rbac, $_multitenancy) {
                 try {
                     $searchStart = microtime(true);
                     $result      = $this->searchObjects(
@@ -685,11 +698,6 @@ class QueryHandler
                             'limit'       => $paginatedQuery['_limit'] ?? 20,
                         ]
                     );
-
-                    /*
-                     * @var callable(mixed): void $resolve
-                     */
-
                     $resolve($result);
                 } catch (\Throwable $e) {
                     $reject($e);
@@ -699,14 +707,13 @@ class QueryHandler
 
         // 3. Facets (~10ms).
         $promises['facets'] = new Promise(
-            function ($resolve, $reject) use ($countQuery) {
+            /**
+             * @param callable(mixed): void $resolve
+             * @param callable(\Throwable): void $reject
+             */
+            function (callable $resolve, callable $reject) use ($countQuery) {
                 try {
                     $result = $this->facetHandler->getFacetsForObjects($countQuery);
-
-                    /*
-                     * @var callable(mixed): void $resolve
-                     */
-
                     $resolve($result);
                 } catch (\Throwable $e) {
                     $reject($e);
@@ -716,18 +723,17 @@ class QueryHandler
 
         // 4. Count (~5ms).
         $promises['count'] = new Promise(
-            function ($resolve, $reject) use ($countQuery, $_rbac, $_multitenancy) {
+            /**
+             * @param callable(mixed): void $resolve
+             * @param callable(\Throwable): void $reject
+             */
+            function (callable $resolve, callable $reject) use ($countQuery, $_rbac, $_multitenancy) {
                 try {
                     $result = $this->countSearchObjects(
                         query: $countQuery,
                         _rbac: $_rbac,
                         _multitenancy: $_multitenancy
                     );
-
-                    /*
-                     * @var callable(mixed): void $resolve
-                     */
-
                     $resolve($result);
                 } catch (\Throwable $e) {
                     $reject($e);

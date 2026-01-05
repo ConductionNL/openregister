@@ -254,7 +254,8 @@ class FileSharingHandler
             $this->logger->info(message: "Successfully shared folder '{$folder->getName()}' with user '$userId'");
             return $share;
         } catch (Exception $e) {
-            $this->logger->error(message: "Failed to share folder '{$folder->getName()}' with user '$userId': ".$e->getMessage());
+            $msg = "Failed to share folder '{$folder->getName()}' with user '$userId': ".$e->getMessage();
+            $this->logger->error(message: $msg);
             return null;
         }//end try
     }//end shareFolderWithUser()

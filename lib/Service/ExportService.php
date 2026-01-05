@@ -127,8 +127,12 @@ class ExportService
      *
      * @return Spreadsheet
      */
-    public function exportToExcel(?Register $register=null, ?Schema $schema=null, array $filters=[], ?IUser $currentUser=null): Spreadsheet
-    {
+    public function exportToExcel(
+        ?Register $register=null,
+        ?Schema $schema=null,
+        array $filters=[],
+        ?IUser $currentUser=null
+    ): Spreadsheet {
         // Create new spreadsheet.
         $spreadsheet = new Spreadsheet();
 
@@ -139,12 +143,24 @@ class ExportService
             // Export all schemas in register.
             $schemas = $this->getSchemasForRegister($register);
             foreach ($schemas as $schema) {
-                $this->populateSheet(spreadsheet: $spreadsheet, register: $register, schema: $schema, filters: $filters, currentUser: $currentUser);
+                $this->populateSheet(
+                    spreadsheet: $spreadsheet,
+                    register: $register,
+                    schema: $schema,
+                    filters: $filters,
+                    currentUser: $currentUser
+                );
             }
         } else {
             // Export single schema.
-            $this->populateSheet(spreadsheet: $spreadsheet, register: $register, schema: $schema, filters: $filters, currentUser: $currentUser);
-        }
+            $this->populateSheet(
+                spreadsheet: $spreadsheet,
+                register: $register,
+                schema: $schema,
+                filters: $filters,
+                currentUser: $currentUser
+            );
+        }//end if
 
         return $spreadsheet;
     }//end exportToExcel()
@@ -161,13 +177,22 @@ class ExportService
      *
      * @throws \InvalidArgumentException If trying to export multiple schemas to CSV
      */
-    public function exportToCsv(?Register $register=null, ?Schema $schema=null, array $filters=[], ?IUser $currentUser=null): string
-    {
+    public function exportToCsv(
+        ?Register $register=null,
+        ?Schema $schema=null,
+        array $filters=[],
+        ?IUser $currentUser=null
+    ): string {
         if ($register !== null && $schema === null) {
             throw new InvalidArgumentException('Cannot export multiple schemas to CSV format.');
         }
 
-        $spreadsheet = $this->exportToExcel(register: $register, schema: $schema, filters: $filters, currentUser: $currentUser);
+        $spreadsheet = $this->exportToExcel(
+            register: $register,
+            schema: $schema,
+            filters: $filters,
+            currentUser: $currentUser
+        );
         $writer      = new Csv($spreadsheet);
 
         ob_start();
@@ -496,7 +521,7 @@ class ExportService
      *
      * @return Schema[]
      *
-     * @psalm-return list<OCA\OpenRegister\Db\Schema>
+     * @psalm-return list<\OCA\OpenRegister\Db\Schema>
      */
     private function getSchemasForRegister(Register $register): array
     {

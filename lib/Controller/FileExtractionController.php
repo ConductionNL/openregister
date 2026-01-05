@@ -50,14 +50,14 @@ class FileExtractionController extends Controller
      *
      * @param string                $appName               Application name
      * @param IRequest              $request               HTTP request
-     * @param TextExtractionService $textExtractionService Text extraction service
+     * @param TextExtractionService $textExtractor Text extraction service
      * @param VectorizationService  $vectorizationService  Unified vectorization service
      * @param ChunkMapper           $chunkMapper           Chunk mapper for text chunks
      */
     public function __construct(
         string $appName,
         IRequest $request,
-        private readonly TextExtractionService $textExtractionService,
+        private readonly TextExtractionService $textExtractor,
         private readonly VectorizationService $vectorizationService,
         private readonly ChunkMapper $chunkMapper
     ) {
@@ -194,7 +194,7 @@ class FileExtractionController extends Controller
     {
         try {
             // ExtractFile returns void, not an object.
-            $this->textExtractionService->extractFile(fileId: $id, forceReExtract: $forceReExtract);
+            $this->textExtractor->extractFile(fileId: $id, forceReExtract: $forceReExtract);
 
             return new JSONResponse(
                 data: [
@@ -256,7 +256,7 @@ class FileExtractionController extends Controller
     public function discover(int $limit=100): JSONResponse
     {
         try {
-            $stats = $this->textExtractionService->discoverUntrackedFiles($limit);
+            $stats = $this->textExtractor->discoverUntrackedFiles($limit);
 
             return new JSONResponse(
                 data: [
@@ -305,7 +305,7 @@ class FileExtractionController extends Controller
     public function extractAll(int $limit=100): JSONResponse
     {
         try {
-            $stats = $this->textExtractionService->extractPendingFiles($limit);
+            $stats = $this->textExtractor->extractPendingFiles($limit);
 
             return new JSONResponse(
                 data: [
@@ -351,7 +351,7 @@ class FileExtractionController extends Controller
     public function retryFailed(int $limit=50): JSONResponse
     {
         try {
-            $stats = $this->textExtractionService->retryFailedExtractions($limit);
+            $stats = $this->textExtractor->retryFailedExtractions($limit);
 
             return new JSONResponse(
                 data: [
@@ -401,7 +401,7 @@ class FileExtractionController extends Controller
     public function stats(): JSONResponse
     {
         try {
-            $stats = $this->textExtractionService->getStats();
+            $stats = $this->textExtractor->getStats();
 
             return new JSONResponse(
                 data: [

@@ -113,15 +113,22 @@ class MetaDataFacetHandler
     private function mapMetadataFieldToColumn(string $field): string
     {
         // Map @self metadata fields to database columns.
+        // @self.register -> register column (stores register ID)
+        // @self.schema -> schema column (stores schema ID)
+        // @self.organisation -> organisation column (stores org UUID)
+        // @self.created -> created column
+        // @self.updated -> updated column
+        // @self.published -> published column
+        // @self.owner -> owner column
+        // Add more mappings as needed for other @self metadata fields.
         $fieldMappings = [
-            'register'     => 'register',         // @self.register -> register column (stores register ID)
-            'schema'       => 'schema',             // @self.schema -> schema column (stores schema ID)
-            'organisation' => 'organisation', // @self.organisation -> organisation column (stores org UUID)
-            'created'      => 'created',           // @self.created -> created column
-            'updated'      => 'updated',           // @self.updated -> updated column
-            'published'    => 'published',       // @self.published -> published column
-            'owner'        => 'owner',               // @self.owner -> owner column
-            // Add more mappings as needed for other @self metadata fields.
+            'register'     => 'register',
+            'schema'       => 'schema',
+            'organisation' => 'organisation',
+            'created'      => 'created',
+            'updated'      => 'updated',
+            'published'    => 'published',
+            'owner'        => 'owner',
         ];
 
         // Return the mapped column name or original field name if no mapping exists.
@@ -227,11 +234,13 @@ class MetaDataFacetHandler
 
             // Apply range conditions.
             if (($range['from'] ?? null) !== null) {
-                $queryBuilder->andWhere($queryBuilder->expr()->gte($field, $queryBuilder->createNamedParameter($range['from'])));
+                $fromParam = $queryBuilder->createNamedParameter($range['from']);
+                $queryBuilder->andWhere($queryBuilder->expr()->gte($field, $fromParam));
             }
 
             if (($range['to'] ?? null) !== null) {
-                $queryBuilder->andWhere($queryBuilder->expr()->lt($field, $queryBuilder->createNamedParameter($range['to'])));
+                $toParam = $queryBuilder->createNamedParameter($range['to']);
+                $queryBuilder->andWhere($queryBuilder->expr()->lt($field, $toParam));
             }
 
             // Apply base filters.
@@ -386,14 +395,15 @@ class MetaDataFacetHandler
 
             // Use case-insensitive JSON_SEARCH with partial matching.
             // This ensures the search is case-insensitive and supports partial matches.
-            $searchFunction = "JSON_SEARCH(LOWER(`object`), 'all', ".$queryBuilder->createNamedParameter('%'.$cleanTerm.'%').")";
+            $searchParam    = $queryBuilder->createNamedParameter('%'.$cleanTerm.'%');
+            $searchFunction = "JSON_SEARCH(LOWER(`object`), 'all', ".$searchParam.")";
 
             $orConditions->add(
                 $queryBuilder->expr()->isNotNull(
                     $queryBuilder->createFunction($searchFunction)
                 )
             );
-        }
+        }//end foreach
 
         // Add the OR conditions to the query if we have any valid terms.
         if ($orConditions->count() > 0) {
@@ -516,37 +526,41 @@ class MetaDataFacetHandler
 
             // Handle operator-based filters.
             foreach ($value as $operator => $operatorValue) {
+                $opParam = $queryBuilder->createNamedParameter($operatorValue);
                 switch ($operator) {
                     case 'gt':
-                        $queryBuilder->andWhere($queryBuilder->expr()->gt($field, $queryBuilder->createNamedParameter($operatorValue)));
+                        $queryBuilder->andWhere($queryBuilder->expr()->gt($field, $opParam));
                         break;
                     case 'lt':
-                        $queryBuilder->andWhere($queryBuilder->expr()->lt($field, $queryBuilder->createNamedParameter($operatorValue)));
+                        $queryBuilder->andWhere($queryBuilder->expr()->lt($field, $opParam));
                         break;
                     case 'gte':
-                        $queryBuilder->andWhere($queryBuilder->expr()->gte($field, $queryBuilder->createNamedParameter($operatorValue)));
+                        $queryBuilder->andWhere($queryBuilder->expr()->gte($field, $opParam));
                         break;
                     case 'lte':
-                        $queryBuilder->andWhere($queryBuilder->expr()->lte($field, $queryBuilder->createNamedParameter($operatorValue)));
+                        $queryBuilder->andWhere($queryBuilder->expr()->lte($field, $opParam));
                         break;
                     case 'ne':
-                        $queryBuilder->andWhere($queryBuilder->expr()->neq($field, $queryBuilder->createNamedParameter($operatorValue)));
+                        $queryBuilder->andWhere($queryBuilder->expr()->neq($field, $opParam));
                         break;
                     case '~':
                         // Contains (case insensitive).
-                        $queryBuilder->andWhere($queryBuilder->expr()->like($field, $queryBuilder->createNamedParameter('%'.$operatorValue.'%')));
+                        $likeParam = $queryBuilder->createNamedParameter('%'.$operatorValue.'%');
+                        $queryBuilder->andWhere($queryBuilder->expr()->like($field, $likeParam));
                         break;
                     case '^':
                         // Starts with (case insensitive).
-                        $queryBuilder->andWhere($queryBuilder->expr()->like($field, $queryBuilder->createNamedParameter($operatorValue.'%')));
+                        $startsParam = $queryBuilder->createNamedParameter($operatorValue.'%');
+                        $queryBuilder->andWhere($queryBuilder->expr()->like($field, $startsParam));
                         break;
                     case '$':
                         // Ends with (case insensitive).
-                        $queryBuilder->andWhere($queryBuilder->expr()->like($field, $queryBuilder->createNamedParameter('%'.$operatorValue)));
+                        $endsParam = $queryBuilder->createNamedParameter('%'.$operatorValue);
+                        $queryBuilder->andWhere($queryBuilder->expr()->like($field, $endsParam));
                         break;
                     case '===':
                         // Exact match (case sensitive).
-                        $queryBuilder->andWhere($queryBuilder->expr()->eq($field, $queryBuilder->createNamedParameter($operatorValue)));
+                        $queryBuilder->andWhere($queryBuilder->expr()->eq($field, $opParam));
                         break;
                     case 'exists':
                         if ($operatorValue !== true && $operatorValue !== 'true') {
@@ -600,7 +614,8 @@ class MetaDataFacetHandler
                         break;
                     default:
                         // Default to equals for unknown operators.
-                        $queryBuilder->andWhere($queryBuilder->expr()->eq($field, $queryBuilder->createNamedParameter($operatorValue)));
+                        $defaultParam = $queryBuilder->createNamedParameter($operatorValue);
+                        $queryBuilder->andWhere($queryBuilder->expr()->eq($field, $defaultParam));
                         break;
                 }//end switch
             }//end foreach
@@ -627,14 +642,16 @@ class MetaDataFacetHandler
     private function applyObjectFieldFilters(IQueryBuilder $queryBuilder, array $objectFilters): void
     {
         foreach ($objectFilters as $field => $value) {
-            $jsonPath = '$.'.$field;
+            $jsonPath      = '$.'.$field;
+            $jsonPathParam = $queryBuilder->createNamedParameter($jsonPath);
+            $extractSql    = "JSON_EXTRACT(object, ".$jsonPathParam.")";
 
             // Handle simple values (backwards compatibility).
             if (is_array($value) === false) {
                 if ($value === 'IS NOT NULL') {
                     $queryBuilder->andWhere(
                         $queryBuilder->expr()->isNotNull(
-                            $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
+                            $queryBuilder->createFunction($extractSql)
                         )
                     );
                     continue;
@@ -643,14 +660,18 @@ class MetaDataFacetHandler
                 if ($value === 'IS NULL') {
                     $queryBuilder->andWhere(
                         $queryBuilder->expr()->isNull(
-                            $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
+                            $queryBuilder->createFunction($extractSql)
                         )
                     );
                     continue;
                 }
 
                 // Simple equals with both exact match and array containment.
-                $this->applySimpleObjectFieldFilter(queryBuilder: $queryBuilder, jsonPath: $jsonPath, value: $value);
+                $this->applySimpleObjectFieldFilter(
+                    queryBuilder: $queryBuilder,
+                    jsonPath: $jsonPath,
+                    value: $value
+                );
                 continue;
             }//end if
 
@@ -659,7 +680,12 @@ class MetaDataFacetHandler
                 // This is an array of values, not operators.
                 $orConditions = $queryBuilder->expr()->orX();
                 foreach ($value as $val) {
-                    $this->addObjectFieldValueCondition(queryBuilder: $queryBuilder, conditions: $orConditions, jsonPath: $jsonPath, value: $val);
+                    $this->addObjectFieldValueCondition(
+                        queryBuilder: $queryBuilder,
+                        conditions: $orConditions,
+                        jsonPath: $jsonPath,
+                        value: $val
+                    );
                 }
 
                 $queryBuilder->andWhere($orConditions);
@@ -668,7 +694,12 @@ class MetaDataFacetHandler
 
             // Handle operator-based filters.
             foreach ($value as $operator => $operatorValue) {
-                $this->applyObjectFieldOperator(queryBuilder: $queryBuilder, jsonPath: $jsonPath, operator: $operator, operatorValue: $operatorValue);
+                $this->applyObjectFieldOperator(
+                    queryBuilder: $queryBuilder,
+                    jsonPath: $jsonPath,
+                    operator: $operator,
+                    operatorValue: $operatorValue
+                );
             }
         }//end foreach
     }//end applyObjectFieldFilters()
@@ -693,7 +724,12 @@ class MetaDataFacetHandler
     private function applySimpleObjectFieldFilter(IQueryBuilder $queryBuilder, string $jsonPath, mixed $value): void
     {
         $singleValueConditions = $queryBuilder->expr()->orX();
-        $this->addObjectFieldValueCondition(queryBuilder: $queryBuilder, conditions: $singleValueConditions, jsonPath: $jsonPath, value: $value);
+        $this->addObjectFieldValueCondition(
+            queryBuilder: $queryBuilder,
+            conditions: $singleValueConditions,
+            jsonPath: $jsonPath,
+            value: $value
+        );
         $queryBuilder->andWhere($singleValueConditions);
     }//end applySimpleObjectFieldFilter()
 
@@ -717,24 +753,31 @@ class MetaDataFacetHandler
      *
      * @return void
      */
-    private function addObjectFieldValueCondition(IQueryBuilder $queryBuilder, mixed $conditions, string $jsonPath, mixed $value): void
-    {
+    private function addObjectFieldValueCondition(
+        IQueryBuilder $queryBuilder,
+        mixed $conditions,
+        string $jsonPath,
+        mixed $value
+    ): void {
+        $jsonPathParam = $queryBuilder->createNamedParameter($jsonPath);
+        $valueParam    = $queryBuilder->createNamedParameter($value);
+        $unquoteSql    = "JSON_UNQUOTE(JSON_EXTRACT(object, ".$jsonPathParam."))";
+
         // Check for exact match (single value).
         $conditions->add(
             $queryBuilder->expr()->eq(
-                $queryBuilder->createFunction("JSON_UNQUOTE(JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath)."))"),
-                $queryBuilder->createNamedParameter($value)
+                $queryBuilder->createFunction($unquoteSql),
+                $valueParam
             )
         );
 
         // Check if the value exists within an array using JSON_CONTAINS.
+        $extractSql       = "JSON_EXTRACT(object, ".$jsonPathParam.")";
+        $jsonEncodedValue = $queryBuilder->createNamedParameter(json_encode($value));
+        $containsSql      = "JSON_CONTAINS(".$extractSql.", ".$jsonEncodedValue.")";
         $conditions->add(
             $queryBuilder->expr()->eq(
-                $queryBuilder->createFunction(
-                    "JSON_CONTAINS(JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath)."), ".$queryBuilder->createNamedParameter(
-                        json_encode($value)
-                    ).")"
-                ),
+                $queryBuilder->createFunction($containsSql),
                 $queryBuilder->createNamedParameter(1)
             )
         );
@@ -760,66 +803,74 @@ class MetaDataFacetHandler
      *
      * @return void
      */
-    private function applyObjectFieldOperator(IQueryBuilder $queryBuilder, string $jsonPath, string $operator, mixed $operatorValue): void
-    {
-        $jsonExtract = $queryBuilder->createFunction("JSON_UNQUOTE(JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath)."))");
+    private function applyObjectFieldOperator(
+        IQueryBuilder $queryBuilder,
+        string $jsonPath,
+        string $operator,
+        mixed $operatorValue
+    ): void {
+        $jsonPathParam = $queryBuilder->createNamedParameter($jsonPath);
+        $extractSql    = "JSON_EXTRACT(object, ".$jsonPathParam.")";
+        $unquoteSql    = "JSON_UNQUOTE(".$extractSql.")";
+        $jsonExtract   = $queryBuilder->createFunction($unquoteSql);
+        $opParam       = $queryBuilder->createNamedParameter($operatorValue);
 
         switch ($operator) {
             case 'gt':
-                $queryBuilder->andWhere($queryBuilder->expr()->gt($jsonExtract, $queryBuilder->createNamedParameter($operatorValue)));
+                $queryBuilder->andWhere($queryBuilder->expr()->gt($jsonExtract, $opParam));
                 break;
             case 'lt':
-                $queryBuilder->andWhere($queryBuilder->expr()->lt($jsonExtract, $queryBuilder->createNamedParameter($operatorValue)));
+                $queryBuilder->andWhere($queryBuilder->expr()->lt($jsonExtract, $opParam));
                 break;
             case 'gte':
-                $queryBuilder->andWhere($queryBuilder->expr()->gte($jsonExtract, $queryBuilder->createNamedParameter($operatorValue)));
+                $queryBuilder->andWhere($queryBuilder->expr()->gte($jsonExtract, $opParam));
                 break;
             case 'lte':
-                $queryBuilder->andWhere($queryBuilder->expr()->lte($jsonExtract, $queryBuilder->createNamedParameter($operatorValue)));
+                $queryBuilder->andWhere($queryBuilder->expr()->lte($jsonExtract, $opParam));
                 break;
             case 'ne':
-                $queryBuilder->andWhere($queryBuilder->expr()->neq($jsonExtract, $queryBuilder->createNamedParameter($operatorValue)));
+                $queryBuilder->andWhere($queryBuilder->expr()->neq($jsonExtract, $opParam));
                 break;
             case '~':
                 // Contains (case insensitive).
-                $queryBuilder->andWhere($queryBuilder->expr()->like($jsonExtract, $queryBuilder->createNamedParameter('%'.$operatorValue.'%')));
+                $likeParam = $queryBuilder->createNamedParameter('%'.$operatorValue.'%');
+                $queryBuilder->andWhere($queryBuilder->expr()->like($jsonExtract, $likeParam));
                 break;
             case '^':
                 // Starts with (case insensitive).
-                $queryBuilder->andWhere($queryBuilder->expr()->like($jsonExtract, $queryBuilder->createNamedParameter($operatorValue.'%')));
+                $startsParam = $queryBuilder->createNamedParameter($operatorValue.'%');
+                $queryBuilder->andWhere($queryBuilder->expr()->like($jsonExtract, $startsParam));
                 break;
             case '$':
                 // Ends with (case insensitive).
-                $queryBuilder->andWhere($queryBuilder->expr()->like($jsonExtract, $queryBuilder->createNamedParameter('%'.$operatorValue)));
+                $endsParam = $queryBuilder->createNamedParameter('%'.$operatorValue);
+                $queryBuilder->andWhere($queryBuilder->expr()->like($jsonExtract, $endsParam));
                 break;
             case '===':
                 // Exact match (case sensitive).
-                $queryBuilder->andWhere($queryBuilder->expr()->eq($jsonExtract, $queryBuilder->createNamedParameter($operatorValue)));
+                $queryBuilder->andWhere($queryBuilder->expr()->eq($jsonExtract, $opParam));
                 break;
             case 'exists':
+                $extractFunc = $queryBuilder->createFunction($extractSql);
                 if ($operatorValue !== true && $operatorValue !== 'true') {
                     $queryBuilder->andWhere(
-                        $queryBuilder->expr()->isNull(
-                            $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
-                        )
+                        $queryBuilder->expr()->isNull($extractFunc)
                     );
                     break;
                 }
 
                 $queryBuilder->andWhere(
-                    $queryBuilder->expr()->isNotNull(
-                        $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
-                    )
+                    $queryBuilder->expr()->isNotNull($extractFunc)
                 );
                 break;
             case 'empty':
+                $extractFunc = $queryBuilder->createFunction($extractSql);
+                $emptyParam  = $queryBuilder->createNamedParameter('');
                 if ($operatorValue !== true && $operatorValue !== 'true') {
                     $queryBuilder->andWhere(
                         $queryBuilder->expr()->andX(
-                            $queryBuilder->expr()->isNotNull(
-                                $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
-                            ),
-                            $queryBuilder->expr()->neq($jsonExtract, $queryBuilder->createNamedParameter(''))
+                            $queryBuilder->expr()->isNotNull($extractFunc),
+                            $queryBuilder->expr()->neq($jsonExtract, $emptyParam)
                         )
                     );
                     break;
@@ -827,32 +878,31 @@ class MetaDataFacetHandler
 
                 $queryBuilder->andWhere(
                     $queryBuilder->expr()->orX(
-                        $queryBuilder->expr()->isNull(
-                            $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
-                        ),
-                        $queryBuilder->expr()->eq($jsonExtract, $queryBuilder->createNamedParameter(''))
+                        $queryBuilder->expr()->isNull($extractFunc),
+                        $queryBuilder->expr()->eq($jsonExtract, $emptyParam)
                     )
                 );
                 break;
             case 'null':
+                $extractFunc = $queryBuilder->createFunction($extractSql);
                 if ($operatorValue !== true && $operatorValue !== 'true') {
                     $queryBuilder->andWhere(
-                        $queryBuilder->expr()->isNotNull(
-                            $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
-                        )
+                        $queryBuilder->expr()->isNotNull($extractFunc)
                     );
                     break;
                 }
 
                 $queryBuilder->andWhere(
-                    $queryBuilder->expr()->isNull(
-                        $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
-                    )
+                    $queryBuilder->expr()->isNull($extractFunc)
                 );
                 break;
             default:
                 // Default to simple filter for unknown operators.
-                $this->applySimpleObjectFieldFilter(queryBuilder: $queryBuilder, jsonPath: $jsonPath, value: $operatorValue);
+                $this->applySimpleObjectFieldFilter(
+                    queryBuilder: $queryBuilder,
+                    jsonPath: $jsonPath,
+                    value: $operatorValue
+                );
                 break;
         }//end switch
     }//end applyObjectFieldOperator()

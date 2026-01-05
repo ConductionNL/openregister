@@ -256,7 +256,8 @@ class ValidationSettingsController extends Controller
                 $recommendationMessage = 'Warning: Memory usage may exceed available memory';
             }
 
-            $prediction = [
+            $noteMessage = 'Fast prediction mode - actual object count will be determined during processing';
+            $prediction  = [
                 'success'                  => true,
                 'prediction_safe'          => $predictionSafe,
                 'objects_to_process'       => $estimatedObjectCount,
@@ -277,7 +278,7 @@ class ValidationSettingsController extends Controller
                 ],
                 // Get recommendation message based on prediction safety.
                 'recommendation'           => $recommendationMessage,
-                'note'                     => 'Fast prediction mode - actual object count will be determined during processing',
+                'note'                     => $noteMessage,
             ];
 
             return new JSONResponse(data: $prediction);

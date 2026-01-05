@@ -45,11 +45,10 @@ class SchemaHandler
     /**
      * Constructor
      *
-     * @param SchemaMapper           $schemaMapper    Schema mapper for OpenRegister schemas
-     * @param SettingsService        $settingsService Settings service for config
-     * @param LoggerInterface        $logger          Logger
-     * @param IConfig                $config          Nextcloud config
-     * @param SearchBackendInterface $searchBackend   Search backend
+     * @param SchemaMapper           $schemaMapper  Schema mapper for OpenRegister schemas
+     * @param LoggerInterface        $logger        Logger
+     * @param IConfig                $config        Nextcloud config
+     * @param SearchBackendInterface $searchBackend Search backend
      */
     public function __construct(
         private readonly SchemaMapper $schemaMapper,
@@ -178,7 +177,11 @@ class SchemaHandler
                     $stats['schemas_processed']++;
 
                     // Generate Solr fields from schema.
-                    $solrFields = $this->generateSolrFieldsFromSchema(schema: $schema, resolvedTypes: $conflictAnalysis['resolved']);
+                    $resolved   = $conflictAnalysis['resolved'];
+                    $solrFields = $this->generateSolrFieldsFromSchema(
+                        schema: $schema,
+                        resolvedTypes: $resolved
+                    );
 
                     // Apply fields to Solr.
                     $applied = $this->applySolrFields(solrFields: $solrFields, force: $force);
@@ -669,11 +672,11 @@ class SchemaHandler
         );
 
         try {
-            /*
+            /**
              * Delegate to search backend.
+             *
              * @psalm-suppress UndefinedInterfaceMethod - fixMismatchedFields may exist on specific backend implementations
              */
-
             return $this->searchBackend->fixMismatchedFields($mismatchedFields, $dryRun);
         } catch (Exception $e) {
             $this->logger->error(

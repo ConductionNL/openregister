@@ -302,9 +302,7 @@ class Schema extends Entity implements JsonSerializable
      *   'delete' => ['group-admin']
      * ]
      *
-     * @var         array|null
-     * @phpstan-var array<string, array<string>>|null
-     * @psalm-var   array<string, list<string>>|null
+     * @var array<string, array<string>>|null
      */
     protected ?array $groups = [];
 
@@ -487,7 +485,8 @@ class Schema extends Entity implements JsonSerializable
         }
 
         // Validate and normalize inversedBy properties to ensure they are strings.
-                        // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property.
+        // TODO: Move writeBack, removeAfterWriteBack, and inversedBy
+        // from items property to configuration property.
         $this->normalizeInversedByProperties();
 
         return $validator->validateProperties($this->properties);
@@ -522,7 +521,9 @@ class Schema extends Entity implements JsonSerializable
         foreach ($this->authorization as $action => $groups) {
             // Validate action is a valid CRUD operation.
             if (in_array($action, $validActions) === false) {
-                throw new InvalidArgumentException("Invalid authorization action: '{$action}'. Must be one of: ".implode(', ', $validActions));
+                $validList = implode(', ', $validActions);
+                $msg       = "Invalid authorization action: '{$action}'. Must be one of: ".$validList;
+                throw new InvalidArgumentException($msg);
             }
 
             // Validate groups is an array.
@@ -533,10 +534,11 @@ class Schema extends Entity implements JsonSerializable
             // Validate each group ID is a non-empty string.
             foreach ($groups as $groupId) {
                 if (is_string($groupId) === false || trim($groupId) === '') {
-                    throw new InvalidArgumentException("Group ID in authorization for action '{$action}' must be a non-empty string");
+                    $msg = "Group ID in authorization for action '{$action}' must be a non-empty string";
+                    throw new InvalidArgumentException($msg);
                 }
             }
-        }
+        }//end foreach
 
         return true;
     }//end validateAuthorization()
@@ -563,8 +565,13 @@ class Schema extends Entity implements JsonSerializable
      *
      * @return bool True if the group has permission for the action
      */
-    public function hasPermission(string $groupId, string $action, ?string $userId=null, ?string $userGroup=null, ?string $objectOwner=null): bool
-    {
+    public function hasPermission(
+        string $groupId,
+        string $action,
+        ?string $userId=null,
+        ?string $userGroup=null,
+        ?string $objectOwner=null
+    ): bool {
         // Admin group always has all permissions.
         if ($groupId === 'admin' || $userGroup === 'admin') {
             return true;
@@ -627,9 +634,11 @@ class Schema extends Entity implements JsonSerializable
 
         foreach ($this->properties as $propertyName => $property) {
             // Handle regular object properties.
-                        // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property.
+            // TODO: Move writeBack, removeAfterWriteBack, and inversedBy
+            // from items property to configuration property.
             if (($property['inversedBy'] ?? null) !== null) {
-                if (is_array($property['inversedBy']) === true && (($property['inversedBy']['id'] ?? null) !== null)) {
+                $inversedById = ($property['inversedBy']['id'] ?? null);
+                if (is_array($property['inversedBy']) === true && $inversedById !== null) {
                     $this->properties[$propertyName]['inversedBy'] = $property['inversedBy']['id'];
                     continue;
                 }
@@ -641,9 +650,11 @@ class Schema extends Entity implements JsonSerializable
             }
 
             // Handle array items with inversedBy.
-                        // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property.
+            // TODO: Move writeBack, removeAfterWriteBack, and inversedBy
+            // from items property to configuration property.
             if (($property['items']['inversedBy'] ?? null) !== null) {
-                if (is_array($property['items']['inversedBy']) === true && (($property['items']['inversedBy']['id'] ?? null) !== null)) {
+                $itemsInversedById = ($property['items']['inversedBy']['id'] ?? null);
+                if (is_array($property['items']['inversedBy']) === true && $itemsInversedById !== null) {
                     $this->properties[$propertyName]['items']['inversedBy'] = $property['items']['inversedBy']['id'];
                     continue;
                 }
@@ -889,7 +900,8 @@ class Schema extends Entity implements JsonSerializable
 
                 if (($property['properties'] ?? null) !== null) {
                     foreach ($property['properties'] as $subName => $subProperty) {
-                        if ((($subProperty['required'] ?? null) !== null) === true && ($subProperty['required'] === true) === true) {
+                        $isRequired = (($subProperty['required'] ?? null) !== null);
+                        if ($isRequired === true && ($subProperty['required'] === true) === true) {
                             $nestedProperty->required[] = $subName;
                         }
 
@@ -1008,7 +1020,7 @@ class Schema extends Entity implements JsonSerializable
      * - 'allowFiles': (bool) Whether this schema allows file attachments
      * - 'allowedTags': (array) Array of allowed file tags/types for file filtering
      *
-     * @param array|null $configuration The configuration array to validate and set
+     * @param array|string|null $configuration The configuration array/string to validate and set
      *
      * @throws \InvalidArgumentException If configuration contains invalid values
      *
@@ -1387,7 +1399,8 @@ class Schema extends Entity implements JsonSerializable
         }
 
         // Auto-detect enum properties (good for faceting).
-        if (($property['enum'] ?? null) !== null && is_array($property['enum']) === true && (count($property['enum']) > 0) === true) {
+        $hasEnum = ($property['enum'] ?? null) !== null && is_array($property['enum']) === true;
+        if ($hasEnum === true && (count($property['enum']) > 0) === true) {
             return 'terms';
         }
 

@@ -78,13 +78,12 @@ class AgentTool extends AbstractTool implements ToolInterface
     /**
      * Get the tool description
      *
-     * @return string Tool description for LLM
-     *
      * @psalm-return 'Manage AI agents: list, view, create, update, or delete agents with RBAC permissions and organisation boundaries.'
      */
     public function getDescription(): string
     {
-        return 'Manage AI agents: list, view, create, update, or delete agents with RBAC permissions and organisation boundaries.';
+        $desc = 'Manage AI agents: list, view, create, update, or delete agents ';
+        return $desc.'with RBAC permissions and organisation boundaries.';
     }//end getDescription()
 
     /**
@@ -133,10 +132,21 @@ class AgentTool extends AbstractTool implements ToolInterface
      */
     public function getFunctions(): array
     {
+        $listDesc    = 'List all agents accessible to current user. ';
+        $listDesc   .= 'Returns name, type, status with privacy settings respected.';
+        $getDesc     = 'Get detailed agent information by UUID. ';
+        $getDesc    .= 'Returns configuration, system prompt, model settings, and tools.';
+        $createDesc  = 'Create a new AI agent. Requires name and system prompt. ';
+        $createDesc .= 'Configure model, temperature, tools, and privacy.';
+        $updateDesc  = 'Update an existing agent. Only the owner can modify agents. ';
+        $updateDesc .= 'Provide the UUID and fields to update.';
+        $deleteDesc  = 'Permanently delete agent (owner only). ';
+        $deleteDesc .= 'Deletes all associated conversations. Cannot be undone.';
+
         return [
             [
                 'name'        => 'list_agents',
-                'description' => 'List all agents accessible to current user. Returns name, type, status with privacy settings respected.',
+                'description' => $listDesc,
                 'parameters'  => [
                     'type'       => 'object',
                     'properties' => [
@@ -154,7 +164,7 @@ class AgentTool extends AbstractTool implements ToolInterface
             ],
             [
                 'name'        => 'get_agent',
-                'description' => 'Get detailed agent information by UUID. Returns configuration, system prompt, model settings, and tools.',
+                'description' => $getDesc,
                 'parameters'  => [
                     'type'       => 'object',
                     'properties' => [
@@ -168,7 +178,7 @@ class AgentTool extends AbstractTool implements ToolInterface
             ],
             [
                 'name'        => 'create_agent',
-                'description' => 'Create a new AI agent. Requires name and system prompt. Configure model, temperature, tools, and privacy.',
+                'description' => $createDesc,
                 'parameters'  => [
                     'type'       => 'object',
                     'properties' => [
@@ -194,7 +204,7 @@ class AgentTool extends AbstractTool implements ToolInterface
             ],
             [
                 'name'        => 'update_agent',
-                'description' => 'Update an existing agent. Only the owner can modify agents. Provide the UUID and fields to update.',
+                'description' => $updateDesc,
                 'parameters'  => [
                     'type'       => 'object',
                     'properties' => [
@@ -220,7 +230,7 @@ class AgentTool extends AbstractTool implements ToolInterface
             ],
             [
                 'name'        => 'delete_agent',
-                'description' => 'Permanently delete agent (owner only). Deletes all associated conversations. Cannot be undone.',
+                'description' => $deleteDesc,
                 'parameters'  => [
                     'type'       => 'object',
                     'properties' => [

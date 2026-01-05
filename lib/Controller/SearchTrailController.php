@@ -318,10 +318,16 @@ class SearchTrailController extends Controller
             $total   = $serviceResult['total'] ?? 0;
             $limit   = $serviceResult['limit'] ?? 20;
             $offset  = $serviceResult['offset'] ?? 0;
-            $page    = $serviceResult['page'] ?? 1;
+            $page    = (int) ($serviceResult['page'] ?? 1);
 
             // Use the paginate method to ensure consistent format with ObjectsController.
-            $paginatedResult = $this->paginate(results: $results, total: $total, limit: $limit, offset: $offset, page: $page);
+            $paginatedResult = $this->paginate(
+                results: $results,
+                    total: $total,
+                    limit: $limit,
+                    offset: $offset,
+                    page: $page
+            );
 
             return new JSONResponse(data: $paginatedResult);
         } catch (\Exception $e) {
@@ -358,7 +364,8 @@ class SearchTrailController extends Controller
                 statusCode: 404
             );
         } catch (\Exception $e) {
-            return new JSONResponse(data: ['error' => 'Failed to retrieve search trail: '.$e->getMessage()], statusCode: 500);
+            $errorMsg = 'Failed to retrieve search trail: '.$e->getMessage();
+            return new JSONResponse(data: ['error' => $errorMsg], statusCode: 500);
         }
     }//end show()
 
@@ -404,7 +411,8 @@ class SearchTrailController extends Controller
 
             return new JSONResponse(data: $statistics);
         } catch (\Exception $e) {
-            return new JSONResponse(data: ['error' => 'Failed to get search statistics: '.$e->getMessage()], statusCode: 500);
+            $errorMsg = 'Failed to get search statistics: '.$e->getMessage();
+            return new JSONResponse(data: ['error' => $errorMsg], statusCode: 500);
         }
     }//end statistics()
 
@@ -448,7 +456,13 @@ class SearchTrailController extends Controller
             // Use pagination format for the terms array.
             $page           = $params['page'] ?? 1;
             $offset         = $params['offset'] ?? 0;
-            $paginatedTerms = $this->paginate(results: $terms, total: $totalUniqueTerms, limit: $limit, offset: $offset, page: $page);
+            $paginatedTerms = $this->paginate(
+                results: $terms,
+                    total: $totalUniqueTerms,
+                    limit: $limit,
+                    offset: $offset,
+                    page: $page
+            );
 
             // Add the additional metadata from the service.
             $paginatedTerms['total_searches'] = $totalSearches;
@@ -456,7 +470,8 @@ class SearchTrailController extends Controller
 
             return new JSONResponse(data: $paginatedTerms);
         } catch (\Exception $e) {
-            return new JSONResponse(data: ['error' => 'Failed to get popular search terms: '.$e->getMessage()], statusCode: 500);
+            $errorMsg = 'Failed to get popular search terms: '.$e->getMessage();
+            return new JSONResponse(data: ['error' => $errorMsg], statusCode: 500);
         }//end try
     }//end popularTerms()
 
@@ -537,7 +552,13 @@ class SearchTrailController extends Controller
             $limit          = $this->request->getParam('_limit', $defaultLimit);
             $page           = $params['page'] ?? 1;
             $offset         = $params['offset'] ?? 0;
-            $paginatedStats = $this->paginate(results: $statistics, total: $totalCombinations, limit: $limit, offset: $offset, page: $page);
+            $paginatedStats = $this->paginate(
+                results: $statistics,
+                    total: $totalCombinations,
+                    limit: $limit,
+                    offset: $offset,
+                    page: $page
+            );
 
             // Add the additional metadata from the service.
             $paginatedStats['total_searches'] = $totalSearches;
@@ -545,7 +566,8 @@ class SearchTrailController extends Controller
 
             return new JSONResponse(data: $paginatedStats);
         } catch (\Exception $e) {
-            return new JSONResponse(data: ['error' => 'Failed to get register/schema statistics: '.$e->getMessage()], statusCode: 500);
+            $errorMsg = 'Failed to get register/schema statistics: '.$e->getMessage();
+            return new JSONResponse(data: ['error' => $errorMsg], statusCode: 500);
         }//end try
     }//end registerSchemaStats()
 
@@ -602,7 +624,13 @@ class SearchTrailController extends Controller
                 // Use pagination format for the user agents array.
                 $page   = $params['page'] ?? 1;
                 $offset = $params['offset'] ?? 0;
-                $paginatedUserAgents = $this->paginate(results: $userAgents, total: $totalUniqueAgents, limit: $limit, offset: $offset, page: $page);
+                $paginatedUserAgents = $this->paginate(
+                    results: $userAgents,
+                        total: $totalUniqueAgents,
+                        limit: $limit,
+                        offset: $offset,
+                        page: $page
+                );
 
                 // Add the additional metadata from the service.
                 $paginatedUserAgents['total_searches'] = $totalSearches;
@@ -624,12 +652,19 @@ class SearchTrailController extends Controller
                 // Use pagination format for the user agents array.
                 $page   = $params['page'] ?? 1;
                 $offset = $params['offset'] ?? 0;
-                $paginatedUserAgents = $this->paginate(results: $userAgents, total: $totalUniqueAgents, limit: $limit, offset: $offset, page: $page);
+                $paginatedUserAgents = $this->paginate(
+                    results: $userAgents,
+                        total: $totalUniqueAgents,
+                        limit: $limit,
+                        offset: $offset,
+                        page: $page
+                );
 
                 return new JSONResponse(data: $paginatedUserAgents);
             }//end if
         } catch (\Exception $e) {
-            return new JSONResponse(data: ['error' => 'Failed to get user agent statistics: '.$e->getMessage()], statusCode: 500);
+            $errorMsg = 'Failed to get user agent statistics: '.$e->getMessage();
+            return new JSONResponse(data: ['error' => $errorMsg], statusCode: 500);
         }//end try
     }//end userAgentStats()
 
@@ -648,7 +683,8 @@ class SearchTrailController extends Controller
      *         error?: string,
      *         success?: bool,
      *         deleted?: 0|1,
-     *         message?: 'Cleanup operation failed'|'No expired entries to delete'|'Successfully deleted expired search trail entries',
+     *         message?: 'Cleanup operation failed'|'No expired entries to delete'
+     *             |'Successfully deleted expired search trail entries',
      *         cleanup_date?: string
      *     },
      *     array<never, never>

@@ -52,11 +52,10 @@ class ObjectHandler
     /**
      * Constructor
      *
-     * @param SettingsService        $settingsService Settings service for config
-     * @param SchemaMapper           $schemaMapper    Schema mapper
-     * @param RegisterMapper         $registerMapper  Register mapper
-     * @param LoggerInterface        $logger          Logger
-     * @param SearchBackendInterface $searchBackend   Search backend
+     * @param SchemaMapper           $schemaMapper   Schema mapper
+     * @param RegisterMapper         $registerMapper Register mapper
+     * @param LoggerInterface        $logger         Logger
+     * @param SearchBackendInterface $searchBackend  Search backend
      */
     public function __construct(
         private readonly SchemaMapper $schemaMapper,
@@ -96,7 +95,13 @@ class ObjectHandler
         );
 
         // Build Solr query from OpenRegister query.
-        $solrQuery = $this->buildSolrQuery(query: $query, rbac: $rbac, multitenancy: $multitenancy, published: $published, deleted: $deleted);
+        $solrQuery = $this->buildSolrQuery(
+            query: $query,
+            rbac: $rbac,
+            multitenancy: $multitenancy,
+            published: $published,
+            deleted: $deleted
+        );
 
         // Execute search via backend (backend handles collection selection).
         $results = $this->searchBackend->search($solrQuery);
@@ -116,7 +121,8 @@ class ObjectHandler
      *
      * @return (int|mixed|string[])[] Solr query parameters
      *
-     * @psalm-return array{q: '*:*'|mixed, start: 0|mixed, rows: 10|mixed, fq?: list{0: '-deleted:true'|'published:true', 1?: '-deleted:true'}}
+     * @psalm-return array{q: '*:*'|mixed, start: 0|mixed, rows: 10|mixed,
+     *     fq?: list{0: '-deleted:true'|'published:true', 1?: '-deleted:true'}}
      */
     private function buildSolrQuery(array $query, bool $rbac, bool $multitenancy, bool $published, bool $deleted): array
     {

@@ -186,7 +186,10 @@ class FileOwnershipHandler
 
             // Check if current user is the owner and is not OpenRegister.
             if ($fileOwnerId === $currentUserId && $currentUserId !== $openRegisterUserId) {
-                $this->logger->info(message: "Transferring ownership of file {$file->getName()} from {$currentUserId} to {$openRegisterUserId}");
+                $fileName = $file->getName();
+                $this->logger->info(
+                    message: "Transferring file {$fileName} from {$currentUserId} to {$openRegisterUserId}"
+                );
 
                 // Change file ownership to OpenRegister user.
                 $storage = $file->getStorage();
@@ -199,7 +202,9 @@ class FileOwnershipHandler
                     $fileSharingHandler->shareFileWithUser(file: $file, userId: $currentUserId);
                 }
 
-                $this->logger->info(message: "Successfully transferred ownership and shared file {$file->getName()} with {$currentUserId}");
+                $this->logger->info(
+                    message: "Successfully transferred and shared file {$fileName} with {$currentUserId}"
+                );
             }//end if
         } catch (Exception $e) {
             $this->logger->error(message: "Failed to transfer file ownership for {$file->getName()}: ".$e->getMessage());
@@ -260,7 +265,10 @@ class FileOwnershipHandler
 
             // Check if current user is the owner and is not OpenRegister.
             if ($folderOwnerId === $currentUserId && $currentUserId !== $openRegisterUserId) {
-                $this->logger->info(message: "Transferring ownership of folder {$folder->getName()} from {$currentUserId} to {$openRegisterUserId}");
+                $folderName = $folder->getName();
+                $this->logger->info(
+                    message: "Transferring folder {$folderName} from {$currentUserId} to {$openRegisterUserId}"
+                );
 
                 // Change folder ownership to OpenRegister user.
                 $storage = $folder->getStorage();
@@ -273,7 +281,9 @@ class FileOwnershipHandler
                     $fileSharingHandler->shareFolderWithUser(folder: $folder, userId: $currentUserId);
                 }
 
-                $this->logger->info(message: "Successfully transferred ownership and shared folder {$folder->getName()} with {$currentUserId}");
+                $this->logger->info(
+                    message: "Successfully transferred and shared folder {$folderName} with {$currentUserId}"
+                );
             }//end if
         } catch (Exception $e) {
             $this->logger->error(message: "Failed to transfer folder ownership for {$folder->getName()}: ".$e->getMessage());

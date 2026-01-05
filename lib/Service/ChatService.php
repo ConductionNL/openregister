@@ -261,7 +261,8 @@ class ChatService
             // Generate title if this is first exchange.
             $messageCount        = $this->messageMapper->countByConversation($conversationId);
             $currentTitle        = $conversation->getTitle();
-            $shouldGenerateTitle = $messageCount <= 2 && ($currentTitle === null || strpos($currentTitle, 'New Conversation') === 0);
+            $isNewConversation   = $currentTitle === null || strpos($currentTitle, 'New Conversation') === 0;
+            $shouldGenerateTitle = $messageCount <= 2 && $isNewConversation;
 
             if ($shouldGenerateTitle === true) {
                 $title   = $this->conversationHandler->generateConversationTitle($userMessage);
@@ -352,8 +353,11 @@ class ChatService
      *     note?: 'Full testChat implementation preserved in '.
      *     'ChatService_ORIGINAL_2156.php backup.'}
      */
-    public function testChat(string $provider, array $config, string $testMessage='Hello! Please respond with a brief greeting.'): array
-    {
+    public function testChat(
+        string $provider,
+        array $config,
+        string $testMessage='Hello! Please respond with a brief greeting.'
+    ): array {
         $this->logger->info(
             message: '[ChatService] Testing chat functionality',
             context: [

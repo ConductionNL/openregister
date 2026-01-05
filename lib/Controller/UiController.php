@@ -116,8 +116,6 @@ class UiController extends Controller
      *
      * @phpstan-return TemplateResponse
      *
-     * @return TemplateResponse The SPA template response
-     *
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      */
     public function registers(): TemplateResponse
@@ -139,8 +137,6 @@ class UiController extends Controller
      * @return TemplateResponse The SPA template response
      *
      * @phpstan-return TemplateResponse
-     *
-     * @return TemplateResponse The SPA template response
      *
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      */

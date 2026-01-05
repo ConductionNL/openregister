@@ -37,16 +37,14 @@ class SourceHandler
     /**
      * Source mapper instance.
      *
-     * @var                                        SourceMapper The source mapper instance.
-     * @SuppressWarnings(PHPMD.UnusedPrivateField)
+     * @var SourceMapper The source mapper instance.
      */
     private SourceMapper $sourceMapper;
 
     /**
      * Logger instance.
      *
-     * @var                                        LoggerInterface The logger instance.
-     * @SuppressWarnings(PHPMD.UnusedPrivateField)
+     * @var LoggerInterface The logger instance.
      */
     private LoggerInterface $logger;
 }//end class

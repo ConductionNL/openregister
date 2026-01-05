@@ -379,9 +379,6 @@ class DeletedController extends Controller
                 ->where($qb->expr()->eq('uuid', $qb->createNamedParameter($id)))
                 ->executeStatement();
 
-            // Reload the object to get the updated state.
-            $restoredObject = $this->objectEntityMapper->find($id, null, null, false);
-
             return new JSONResponse(
                 data: [
                     'success' => true,

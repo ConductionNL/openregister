@@ -258,7 +258,8 @@ class SchemaService
                 }
 
                 // Merge type analysis.
-                $this->mergePropertyAnalysis(existingAnalysis: $discoveredProperties[$propertyName], newAnalysis: $propertyAnalysis);
+                $existingAnalysis = &$discoveredProperties[$propertyName];
+                $this->mergePropertyAnalysis(existingAnalysis: $existingAnalysis, newAnalysis: $propertyAnalysis);
 
                 // Track total usage for percentage calculation.
                 $discoveredProperties[$propertyName]['usage_count']++;
@@ -960,8 +961,11 @@ class SchemaService
      *     type_variations: mixed|null, usage_count: mixed,
      *     usage_percentage: 0|mixed}>
      */
-    private function analyzeExistingProperties(array $existingProperties, array $discoveredProperties, array $_usageStats): array
-    {
+    private function analyzeExistingProperties(
+        array $existingProperties,
+        array $discoveredProperties,
+        array $_usageStats
+    ): array {
         $improvements = [];
 
         foreach ($existingProperties as $propertyName => $propertyConfig) {
@@ -1208,15 +1212,17 @@ class SchemaService
                     'description' => "Objects have max length of {$analysis['max_length']} characters",
                 ];
             } else if ($currentMaxLength < $analysis['max_length']) {
-                $issues[]      = "max_length_too_small";
-                $suggestions[] = [
+                $issues[]        = "max_length_too_small";
+                $observedMax     = $analysis['max_length'];
+                $descriptionText = "Schema maxLength ({$currentMaxLength}) is smaller than observed max ({$observedMax})";
+                $suggestions[]   = [
                     'type'        => 'constraint',
                     'field'       => 'maxLength',
                     'current'     => $currentMaxLength,
-                    'recommended' => $analysis['max_length'],
-                    'description' => "Schema maxLength ({$currentMaxLength}) is smaller than observed max ({$analysis['max_length']})",
+                    'recommended' => $observedMax,
+                    'description' => $descriptionText,
                 ];
-            }
+            }//end if
         }//end if
 
         // Check for missing format.
@@ -1751,17 +1757,15 @@ class SchemaService
                 return ['type' => 'string'];
             }
 
-            switch ($primaryType) {
+            // Cast to string for type safety - array_key_first returns string|int|null.
+            /** @psalm-suppress InvalidCast - $primaryType is array key which can be cast to string */
+            $typeString = (string) $primaryType;
+
+            switch ($typeString) {
                 case 'string':
                     return ['type' => 'string'];
                 case 'integer':
                     return ['type' => 'integer'];
-
-                /*
-                 * @psalm-suppress TypeDoesNotContainType
-                 * array_key_first returns string|int|null, but item_types keys are type names (strings).
-                 */
-
                 case 'double':
                 case 'float':
                     return ['type' => 'number'];

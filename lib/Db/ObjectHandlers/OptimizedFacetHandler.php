@@ -280,15 +280,18 @@ class OptimizedFacetHandler
         }
 
         // Use optimized JSON query with limits.
+        $jsonPathParam        = $queryBuilder->createNamedParameter($jsonPath);
+        $jsonExtractFunc      = "JSON_UNQUOTE(JSON_EXTRACT(object, ".$jsonPathParam."))";
+        $jsonExtractIsNotNull = "JSON_EXTRACT(object, ".$jsonPathParam.")";
         $queryBuilder->selectAlias(
-            $queryBuilder->createFunction("JSON_UNQUOTE(JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath)."))"),
+            $queryBuilder->createFunction($jsonExtractFunc),
             'field_value'
         )
             ->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'doc_count')
             ->from('openregister_objects')
             ->where(
                 $queryBuilder->expr()->isNotNull(
-                    $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
+                    $queryBuilder->createFunction($jsonExtractIsNotNull)
                 )
             )
             ->groupBy('field_value')
@@ -339,9 +342,16 @@ class OptimizedFacetHandler
     {
         // Apply filters in order of index selectivity (most selective first).
         // 1. Most selective: ID-based filters.
-        if (($baseQuery['_ids'] ?? null) !== null && is_array($baseQuery['_ids']) === true && empty($baseQuery['_ids']) === false) {
+        $hasIds = ($baseQuery['_ids'] ?? null) !== null
+            && is_array($baseQuery['_ids']) === true
+            && empty($baseQuery['_ids']) === false;
+        if ($hasIds === true) {
+            $idsParam = $queryBuilder->createNamedParameter(
+                $baseQuery['_ids'],
+                \Doctrine\DBAL\Connection::PARAM_INT_ARRAY
+            );
             $queryBuilder->andWhere(
-                $queryBuilder->expr()->in('id', $queryBuilder->createNamedParameter($baseQuery['_ids'], \Doctrine\DBAL\Connection::PARAM_INT_ARRAY))
+                $queryBuilder->expr()->in('id', $idsParam)
             );
         }
 

@@ -220,7 +220,11 @@ class BulkIndexer
 
                 // Fetch batch of searchable objects from DB.
                 $fetchStart   = microtime(true);
-                $objects      = $this->fetchSearchableObjects(limit: $currentBatchSize, offset: $offset, schemaIds: $schemaIds);
+                $objects      = $this->fetchSearchableObjects(
+                    limit: $currentBatchSize,
+                    offset: $offset,
+                    schemaIds: $schemaIds
+                );
                 $objectsCount = count($objects);
 
                 $fetchDuration = round((microtime(true) - $fetchStart) * 1000, 2);
@@ -241,7 +245,10 @@ class BulkIndexer
                 $documents = [];
                 foreach ($objects as $object) {
                     try {
-                        $document    = $this->documentBuilder->createDocument(object: $object, solrFieldTypes: $solrFieldTypes);
+                        $document    = $this->documentBuilder->createDocument(
+                            object: $object,
+                            solrFieldTypes: $solrFieldTypes
+                        );
                         $documents[] = $document;
                     } catch (\RuntimeException $e) {
                         if (str_contains($e->getMessage(), 'Schema is not searchable') === true) {
@@ -308,11 +315,10 @@ class BulkIndexer
             ];
         } catch (\Exception $e) {
             $this->logger->error('[BulkIndexer] Bulk indexing failed', ['error' => $e->getMessage()]);
-            throw new RuntimeException(
-                'Bulk indexing failed: '.$e->getMessage().' (Indexed: '.($totalIndexed ?? 0).', Batches: '.($batchCount ?? 0).')',
-                0,
-                $e
-            );
+            $indexed = ($totalIndexed ?? 0);
+            $batches = ($batchCount ?? 0);
+            $msg     = 'Bulk indexing failed: '.$e->getMessage().' (Indexed: '.$indexed.', Batches: '.$batches.')';
+            throw new RuntimeException($msg, 0, $e);
         }//end try
     }//end bulkIndexFromDatabase()
 
@@ -343,9 +349,9 @@ class BulkIndexer
      * @param int   $offset    Offset for pagination
      * @param array $schemaIds Schema IDs to filter
      *
-     * @return \OCA\OpenRegister\Db\OCA\OpenRegister\Db\ObjectEntity[]
+     * @return ObjectEntity[]
      *
-     * @psalm-return list<OCA\OpenRegister\Db\OCA\OpenRegister\Db\ObjectEntity>
+     * @psalm-return list<ObjectEntity>
      */
     private function fetchSearchableObjects(int $limit, int $offset, array $schemaIds=[]): array
     {

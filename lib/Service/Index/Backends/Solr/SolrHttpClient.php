@@ -246,7 +246,7 @@ class SolrHttpClient
         $settings = $this->settingsService->getSettings();
 
         if (($settings['multitenancy']['enabled'] ?? false) === true) {
-            $tenant = $settings['multitenancy']['tenant'] ?? 'default';
+            $tenant = $settings['multitenancy']['defaultUserTenant'] ?? 'default';
             return "{$tenant}_{$baseCollectionName}";
         }
 

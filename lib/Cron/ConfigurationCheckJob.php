@@ -121,13 +121,13 @@ class ConfigurationCheckJob extends TimedJob
      * Checks all remote configurations for updates.
      * If auto-update is enabled for a configuration, automatically imports the updates.
      *
-     * @param mixed $_argument Job arguments (not used)
+     * @param mixed $argument Job arguments (not used)
      *
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    protected function run($_argument): void
+    protected function run($argument): void
     {
         $this->logger->info('Starting configuration check job');
 
@@ -147,8 +147,11 @@ class ConfigurationCheckJob extends TimedJob
                 $this->checkSingleConfiguration(configuration: $configuration, stats: $stats);
             }
 
+            $checked = $stats['checked'];
+            $updated = $stats['updated'];
+            $failed  = $stats['failed'];
             $this->logger->info(
-                "Configuration check job completed: {$stats['checked']} checked, {$stats['updated']} updated, {$stats['failed']} failed"
+                "Configuration check job completed: {$checked} checked, {$updated} updated, {$failed} failed"
             );
         } catch (Exception $e) {
             $this->logger->error('Configuration check job failed: '.$e->getMessage());
@@ -204,7 +207,9 @@ class ConfigurationCheckJob extends TimedJob
                 return;
             }
 
-            $this->logger->info("Update available for {$configuration->getTitle()}: {$configuration->getLocalVersion()} → {$remoteVersion}");
+            $title        = $configuration->getTitle();
+            $localVersion = $configuration->getLocalVersion();
+            $this->logger->info("Update available for {$title}: {$localVersion} → {$remoteVersion}");
 
             // Handle the update based on auto-update setting.
             if ($configuration->getAutoUpdate() === true) {
@@ -262,7 +267,8 @@ class ConfigurationCheckJob extends TimedJob
             $notificationCount = $this->notificationService->notifyConfigurationUpdate(configuration: $configuration);
             $this->logger->info("Sent {$notificationCount} notifications for configuration {$configuration->getTitle()}");
         } catch (Exception $e) {
-            $this->logger->error("Failed to send notifications for configuration {$configuration->getTitle()}: ".$e->getMessage());
+            $title = $configuration->getTitle();
+            $this->logger->error("Failed to send notifications for configuration {$title}: ".$e->getMessage());
         }
     }//end sendUpdateNotification()
 }//end class

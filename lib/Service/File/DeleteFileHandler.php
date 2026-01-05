@@ -114,7 +114,7 @@ class DeleteFileHandler
      *
      * @return (Node|bool|int|mixed|string)[][] Array of deletion results.
      *
-     * @psalm-return list<array{error?: string, file: OCP\Files\Node|int|mixed|string, success: bool}>
+     * @psalm-return list<array{error?: string, file: Node|int|mixed|string, success: bool}>
      */
     public function deleteFiles(array $files, ?ObjectEntity $object=null): array
     {

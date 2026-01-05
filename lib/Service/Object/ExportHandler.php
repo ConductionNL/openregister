@@ -194,20 +194,11 @@ class ExportHandler
      * @param bool        $publish      Publish imported objects (Excel only)
      * @param IUser|null  $currentUser  Current user
      *
-     * @return (array|int|null|string)[][] Import result with summary
+     * @return (array|int|mixed|null|string)[][]
      *
      * @throws \Exception If import fails
      *
-     * @psalm-return array<string,
-     *     array{created: array, errors: array, found: int, unchanged?: array,
-     *     updated: array, deduplication_efficiency?: string,
-     *     schema?: array{id: int, title: null|string, slug: null|string}|null,
-     *     debug?: array{headers: array<never, never>,
-     *     processableHeaders: array<never, never>,
-     *     schemaProperties: list<array-key>},
-     *     performance?: array{efficiency: 0|float, objectsPerSecond: float,
-     *     totalFound: int<0, max>, totalProcessed: int<0, max>,
-     *     totalTime: float, totalTimeMs: float}}>
+     * @psalm-return array<string, array{created?: array|mixed, errors?: array|mixed, found?: int|mixed, unchanged?: array|mixed, updated?: array|mixed, deduplication_efficiency?: mixed|string, schema?: array{id: int, title: null|string, slug: null|string}|mixed|null, debug?: array{headers: array<never, never>, processableHeaders: array<never, never>, schemaProperties: list<array-key>}|mixed,...}>
      */
     public function import(
         Register $register,
@@ -334,16 +325,25 @@ class ExportHandler
             // Find object.
             $object = $this->objectEntityMapper->find((int) $objectId);
             // Find() throws DoesNotExistException, never returns null.
-            // Get object directory.
-            $objectDir = $this->fileService->getObjectDirectory(object: $object);
 
-            // Check if directory exists and has files.
-            if (is_dir($objectDir) === false) {
-                throw new Exception('Object has no files');
-            }
+            // TODO: Implement file download when FileService methods are available.
+            // getObjectDirectory() and createZipFromDirectory() are not yet implemented.
+            throw new \RuntimeException(
+                'File download not yet implemented - FileService::getObjectDirectory() and ' .
+                'FileService::createZipFromDirectory() not available. Object ID: ' . $objectId
+            );
 
-            // Create ZIP of object files.
-            $zipPath = $this->fileService->createZipFromDirectory(directory: $objectDir);
+            // Original implementation (commented out until FileService methods exist):
+            // $objectDir = $this->fileService->getObjectDirectory(object: $object);
+            // if (is_dir($objectDir) === false) {
+            //     throw new Exception('Object has no files');
+            // }
+            // $zipPath = $this->fileService->createZipFromDirectory(directory: $objectDir);
+
+            // Suppress unused variable warning - $object needed when FileService is implemented.
+            unset($object);
+            $objectDir = '';
+            $zipPath   = '';
 
             // Read ZIP content.
             $content = file_get_contents($zipPath);

@@ -140,7 +140,8 @@ class SolrBackend implements SearchBackendInterface
      *
      * @return (bool|null|string)[] Test results
      *
-     * @psalm-return array{success: bool, configured?: true, collection?: null|string, collection_exists?: bool, error?: 'Solr is not configured'}
+     * @psalm-return array{success: bool, configured?: true,
+     *     collection?: null|string, collection_exists?: bool, error?: 'Solr is not configured'}
      */
     public function testConnection(bool $includeCollectionTests=true): array
     {
@@ -244,15 +245,15 @@ class SolrBackend implements SearchBackendInterface
      */
     public function searchObjectsPaginated(
         array $query=[],
-        bool $rbac=true,
-        bool $multitenancy=true,
+        bool $_rbac=true,
+        bool $_multitenancy=true,
         bool $published=false,
         bool $deleted=false
     ): array {
         return $this->queryExecutor->searchPaginated(
             query: $query,
-            rbac: $rbac,
-            multitenancy: $multitenancy,
+            rbac: $_rbac,
+            multitenancy: $_multitenancy,
             published: $published,
             deleted: $deleted
         );

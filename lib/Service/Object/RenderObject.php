@@ -470,14 +470,14 @@ class RenderObject
      *
      * @param mixed  $propertyValue  The property value (file ID or array of file IDs).
      * @param array  $propertyConfig The property configuration from schema.
-     * @param string $propertyName   The property name (for error reporting).
+     * @param string $_propertyName  The property name (for error reporting).
      *
      * @psalm-param   mixed $propertyValue
      * @psalm-param   array<string, mixed> $propertyConfig
-     * @psalm-param   string $propertyName
+     * @psalm-param   string $_propertyName
      * @phpstan-param mixed $propertyValue
      * @phpstan-param array<string, mixed> $propertyConfig
-     * @phpstan-param string $propertyName
+     * @phpstan-param string $_propertyName
      *
      * @return mixed The hydrated property value (file object or array of file objects).
      *
@@ -509,7 +509,8 @@ class RenderObject
         }
 
         // Handle single file.
-        if (is_numeric($propertyValue) === true || (is_string($propertyValue) === true && ctype_digit($propertyValue) === true) === true) {
+        $isDigitString = is_string($propertyValue) === true && ctype_digit($propertyValue) === true;
+        if (is_numeric($propertyValue) === true || $isDigitString === true) {
             return $this->getFileObject($propertyValue);
         }
 
@@ -547,7 +548,9 @@ class RenderObject
                 $value = $this->getValueFromPath(data: $objectData, path: $imageField);
 
                 // Check if the value is a file object (has downloadUrl or accessUrl).
-                if (is_array($value) === false || ((($value['downloadUrl'] ?? null) === null) && (($value['accessUrl'] ?? null) === null))) {
+                $hasNoDownloadUrl = ($value['downloadUrl'] ?? null) === null;
+                $hasNoAccessUrl   = ($value['accessUrl'] ?? null) === null;
+                if (is_array($value) === false || ($hasNoDownloadUrl === true && $hasNoAccessUrl === true)) {
                     // If the file property is null/empty, set image to null.
                     $entity->setImage(null);
                 } else {
@@ -656,18 +659,18 @@ class RenderObject
      * and filtering based on the provided parameters. Additionally, it accepts
      * preloaded registers, schemas, and objects to enhance rendering performance.
      *
-     * @param ObjectEntity      $entity     The entity to render
-     * @param array|string|null $extend     Properties to extend the entity with
-     * @param int               $depth      The depth level for nested rendering
-     * @param array|null        $filter     Filters to apply to the rendered entity
-     * @param array|null        $fields     Specific fields to include in the output
-     * @param array|null        $unset      Properties to remove from the rendered entity
-     * @param array|null        $registers  Preloaded registers to use
-     * @param array|null        $schemas    Preloaded schemas to use
-     * @param array|null        $objects    Preloaded objects to use
-     * @param array|null        $visitedIds All ids we already handled
-     * @param bool              $rbac       Whether to apply RBAC checks (default: true).
-     * @param bool              $multi      Whether to apply multitenancy filtering (default: true).
+     * @param ObjectEntity      $entity        The entity to render
+     * @param array|string|null $_extend       Properties to extend the entity with
+     * @param int               $depth         The depth level for nested rendering
+     * @param array|null        $filter        Filters to apply to the rendered entity
+     * @param array|null        $fields        Specific fields to include in the output
+     * @param array|null        $unset         Properties to remove from the rendered entity
+     * @param array|null        $registers     Preloaded registers to use
+     * @param array|null        $schemas       Preloaded schemas to use
+     * @param array|null        $objects       Preloaded objects to use
+     * @param array|null        $visitedIds    All ids we already handled
+     * @param bool              $_rbac         Whether to apply RBAC checks (default: true).
+     * @param bool              $_multitenancy Whether to apply multitenancy filtering (default: true).
      *
      * @return ObjectEntity The rendered entity with applied extensions and filters
      *
@@ -877,7 +880,7 @@ class RenderObject
      * Handle extends on a dot array
      *
      * @param array $data       The data to extend.
-     * @param array $extend     The fields to extend.
+     * @param array $_extend    The fields to extend.
      * @param int   $depth      The current depth.
      * @param bool  $allFlag    If we extend all or not.
      * @param array $visitedIds All ids we already handled.
@@ -886,8 +889,13 @@ class RenderObject
      *
      * @throws \OCP\DB\Exception
      */
-    private function handleExtendDot(array $data, array &$_extend, int $depth, bool $allFlag=false, array $visitedIds=[]): array
-    {
+    private function handleExtendDot(
+        array $data,
+        array &$_extend,
+        int $depth,
+        bool $allFlag=false,
+        array $visitedIds=[]
+    ): array {
         $data = $this->handleWildcardExtends(objectData: $data, _extend: $_extend, depth: $depth + 1);
 
         $dataDot = new Dot($data);
@@ -929,7 +937,8 @@ class RenderObject
                 // Filter out null values and values starting with '@' before mapping.
                 $value         = array_filter(
                     $value,
-                    fn($v) => $v !== null && (is_string($v) === false || str_starts_with(haystack: $v, needle: '@') === false)
+                    fn($v) => $v !== null
+                        && (is_string($v) === false || str_starts_with(haystack: $v, needle: '@') === false)
                 );
                 $renderedValue = array_map(
                     function ($identifier) use ($depth, $keyExtends, $allFlag, $visitedIds) {
@@ -1050,12 +1059,12 @@ class RenderObject
      * Extends an object with additional data based on the extension configuration
      *
      * @param ObjectEntity $entity     The entity to extend
-     * @param array        $extend     Extension configuration
+     * @param array        $_extend    Extension configuration
      * @param array        $objectData Current object data
      * @param int          $depth      Current depth level
-     * @param array|null   $filter     Filters to apply
-     * @param array|null   $fields     Fields to include
-     * @param array|null   $unset      Properties to remove from the rendered entity
+     * @param array|null   $_filter    Filters to apply
+     * @param array|null   $_fields    Fields to include
+     * @param array|null   $_unset     Properties to remove from the rendered entity
      * @param array|null   $visitedIds ids of objects already handled
      *
      * @return array The extended object data
@@ -1118,7 +1127,8 @@ class RenderObject
         $properties = $schema->getProperties();
 
         // Use array_filter to get properties with inversedBy configurations.
-                        // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property.
+        // TODO: Move writeBack, removeAfterWriteBack, and inversedBy
+        // from items property to configuration property.
         $inversedProperties = array_filter(
             $properties,
             function ($property) {
@@ -1210,9 +1220,8 @@ class RenderObject
                 $inversedByProperty = $propertyConfig['items']['inversedBy'];
                 $targetSchema       = $propertyConfig['items']['$ref'] ?? null;
                 $isArray            = true;
-            }
-            // Check if this is a direct object property with inversedBy.
-            else if (($propertyConfig['inversedBy'] ?? null) !== null) {
+            } else if (($propertyConfig['inversedBy'] ?? null) !== null) {
+                // Check if this is a direct object property with inversedBy.
                 $inversedByProperty = $propertyConfig['inversedBy'];
                 $targetSchema       = $propertyConfig['$ref'] ?? null;
                 $isArray            = false;
@@ -1221,9 +1230,8 @@ class RenderObject
                 if ($propertyConfig['type'] === 'array') {
                     $isArray = true;
                 }
-            }
-            // Skip if no inversedBy configuration found.
-            else {
+            } else {
+                // Skip if no inversedBy configuration found.
                 continue;
             }
 
@@ -1253,7 +1261,8 @@ class RenderObject
                             return in_array($entity->getUuid(), $referenceValue, true) && $object->getSchema() === $schemaId;
                         } else {
                             // Check if the reference value matches the current entity's UUID.
-                            return str_ends_with(haystack: $referenceValue, needle: $entity->getUuid()) && $object->getSchema() === $schemaId;
+                            $matchesUuid = str_ends_with(haystack: $referenceValue, needle: $entity->getUuid());
+                            return $matchesUuid && $object->getSchema() === $schemaId;
                         }
                     }
                 )
@@ -1372,7 +1381,7 @@ class RenderObject
      *
      * @return ObjectEntity[]
      *
-     * @psalm-return list<OCA\OpenRegister\Db\ObjectEntity>
+     * @psalm-return list<ObjectEntity>
      */
     public function renderEntities(
         array $entities,

@@ -104,8 +104,11 @@ class SolrFacetProcessor
 
             foreach ($fields as $field) {
                 // Fields with _s, _ss, _i suffixes are typically facetable.
-                $name = $field['name'] ?? '';
-                if (str_ends_with($name, '_s') === true || str_ends_with($name, '_ss') === true || str_ends_with($name, '_i') === true) {
+                $name        = $field['name'] ?? '';
+                $isFacetable = str_ends_with($name, '_s') === true
+                    || str_ends_with($name, '_ss') === true
+                    || str_ends_with($name, '_i') === true;
+                if ($isFacetable === true) {
                     $facetable[] = [
                         'name' => $name,
                         'type' => $field['type'] ?? 'unknown',

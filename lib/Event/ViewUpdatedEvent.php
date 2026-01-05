@@ -33,8 +33,6 @@ class ViewUpdatedEvent extends Event
      * The updated view state.
      *
      * @var View The view after update.
-     *
-     * @psalm-suppress UnusedProperty
      */
     private View $newView;
 
@@ -42,8 +40,6 @@ class ViewUpdatedEvent extends Event
      * The previous view state.
      *
      * @var View The view before update.
-     *
-     * @psalm-suppress UnusedProperty
      */
     private View $oldView;
 

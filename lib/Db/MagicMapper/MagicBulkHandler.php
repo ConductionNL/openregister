@@ -42,6 +42,9 @@ use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Event\ObjectCreatedEvent;
+use OCA\OpenRegister\Event\ObjectUpdatedEvent;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -65,14 +68,23 @@ class MagicBulkHandler
     private float $maxPacketSizeBuffer = 0.5;
 
     /**
+     * Cache for table columns to avoid repeated database queries
+     *
+     * @var array<string, array<string>>
+     */
+    private array $tableColumnsCache = [];
+
+    /**
      * Constructor for MagicBulkHandler
      *
-     * @param IDBConnection   $db     Database connection for operations
-     * @param LoggerInterface $logger Logger for debugging and error reporting
+     * @param IDBConnection     $db              Database connection for operations
+     * @param LoggerInterface   $logger          Logger for debugging and error reporting
+     * @param IEventDispatcher  $eventDispatcher Event dispatcher for business logic hooks
      */
     public function __construct(
         private readonly IDBConnection $db,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly IEventDispatcher $eventDispatcher
     ) {
         // Try to get max_allowed_packet from database configuration.
         $this->initializeMaxPacketSize();
@@ -118,10 +130,17 @@ class MagicBulkHandler
             $preparedObject['_slug']         = $selfData['slug'] ?? null;
             $preparedObject['_uri']          = $selfData['uri'] ?? null;
 
-            // Map schema properties to columns.
-            foreach (array_keys($properties) as $propertyName) {
+            // Map ALL object properties to columns (camelCase → snake_case).
+            // Properties can be at top level OR in 'object' key (structured format).
+            $propertySource = $object['object'] ?? $object;
+
+            foreach ($propertySource as $propertyName => $value) {
+                // Skip metadata (already handled) and @self.
+                if ($propertyName === '@self' || str_starts_with($propertyName, '_') === true) {
+                    continue;
+                }
+
                 $columnName = $this->sanitizeColumnName($propertyName);
-                $value      = $object[$propertyName] ?? null;
 
                 // Convert complex values for database storage.
                 if (is_array($value) === true || is_object($value) === true) {
@@ -160,7 +179,12 @@ class MagicBulkHandler
         $qb = $this->db->getQueryBuilder();
         $qb->select('_uuid')
             ->from($tableName, 't')
-            ->where($qb->expr()->in('t._uuid', $qb->createNamedParameter($uuids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+            ->where(
+                    $qb->expr()->in(
+                't._uuid',
+                $qb->createNamedParameter($uuids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)
+            )
+                    );
 
         $result        = $qb->executeQuery();
         $existingUuids = array_column($result->fetchAll(), '_uuid');
@@ -433,15 +457,419 @@ class MagicBulkHandler
      */
     private function sanitizeColumnName(string $name): string
     {
-        // Convert to lowercase and replace non-alphanumeric with underscores.
-        $sanitized = strtolower(preg_replace('/[^a-zA-Z0-9_]/', '_', $name));
+        // Convert camelCase to snake_case.
+        // Insert underscore before uppercase letters, then lowercase everything.
+        $name = preg_replace('/([a-z0-9])([A-Z])/', '$1_$2', $name);
+        $name = strtolower($name);
+
+        // Replace any remaining invalid characters with underscore.
+        $name = preg_replace('/[^a-z0-9_]/', '_', $name);
 
         // Ensure it starts with a letter or underscore.
-        if (preg_match('/^[a-zA-Z_]/', $sanitized) === 0) {
-            $sanitized = 'col_'.$sanitized;
+        if (preg_match('/^[a-z_]/', $name) === false) {
+            $name = 'col_'.$name;
         }
 
-        // Limit length to 64 characters (MySQL limit).
-        return substr($sanitized, 0, 64);
+        // Remove consecutive underscores.
+        $name = preg_replace('/_+/', '_', $name);
+
+        // Remove trailing underscores.
+        $name = rtrim($name, '_');
+
+        return $name;
     }//end sanitizeColumnName()
+
+    /**
+     * Perform bulk upsert operation on dynamic table
+     *
+     * This method provides high-performance INSERT...ON CONFLICT DO UPDATE (PostgreSQL)
+     * or INSERT...ON DUPLICATE KEY UPDATE (MySQL/MariaDB) operations for dynamic tables.
+     * It returns complete objects with database-computed classification (created/updated/unchanged).
+     *
+     * @param array    $objects   Array of object data in standard format
+     * @param Register $register  Register context
+     * @param Schema   $schema    Schema context
+     * @param string   $tableName Target table name
+     *
+     * @return array Array of complete objects with object_status field
+     *
+     * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @psalm-return list<array<string, mixed>>
+     */
+    public function bulkUpsert(array $objects, Register $register, Schema $schema, string $tableName): array
+    {
+        if ($objects === []) {
+            return [];
+        }
+
+        // Prepare objects for dynamic table structure.
+        $preparedObjects = $this->prepareObjectsForDynamicTable(
+            objects: $objects,
+            register: $register,
+            schema: $schema
+        );
+
+        if ($preparedObjects === []) {
+            return [];
+        }
+
+        // Determine optimal chunk size.
+        $chunkSize = $this->calculateOptimalChunkSize($preparedObjects);
+        $chunks    = array_chunk($preparedObjects, $chunkSize);
+
+        $allResults = [];
+
+        // Process each chunk.
+        foreach ($chunks as $chunkIndex => $chunk) {
+            $chunkResults = $this->executeUpsertChunk(
+                chunk: $chunk,
+                tableName: $tableName,
+                chunkNumber: ($chunkIndex + 1)
+            );
+
+            $allResults = array_merge($allResults, $chunkResults);
+        }
+
+        // CRITICAL: Dispatch events for business logic hooks.
+        // This ensures software catalog and other apps can react to bulk changes.
+        $this->dispatchBulkEvents(results: $allResults, register: $register, schema: $schema);
+
+        return $allResults;
+    }//end bulkUpsert()
+
+    /**
+     * Execute upsert operation for a single chunk
+     *
+     * @param array  $chunk       Chunk of prepared objects
+     * @param string $tableName   Target table name
+     * @param int    $chunkNumber Chunk number for logging
+     *
+     * @return array Array of complete objects with object_status
+     *
+     * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @psalm-return list<array<string, mixed>>
+     */
+    private function executeUpsertChunk(array $chunk, string $tableName, int $chunkNumber): array
+    {
+        if ($chunk === []) {
+            return [];
+        }
+
+        // Record operation start time for precise created/updated detection.
+        $operationStartTime = (new DateTime())->format('Y-m-d H:i:s');
+
+        // Get table columns to filter out non-existent columns.
+        $tableColumns = $this->getTableColumns($tableName);
+
+        // Filter chunk data to only include columns that exist in the table.
+        $filteredChunk = [];
+        foreach ($chunk as $objectData) {
+            $filteredObject = [];
+            foreach ($objectData as $columnName => $value) {
+                if (in_array($columnName, $tableColumns, true) === true) {
+                    $filteredObject[$columnName] = $value;
+                } else {
+                    // Log dropped columns for debugging purposes.
+                    $this->logger->debug(
+                        '[MagicBulkHandler] Dropping column not in table',
+                        ['column' => $columnName, 'table' => $tableName]
+                    );
+                }
+            }
+
+            if (empty($filteredObject) === false) {
+                $filteredChunk[] = $filteredObject;
+            }
+        }
+
+        if (empty($filteredChunk) === true) {
+            return [];
+        }
+
+        // Get columns from first filtered object.
+        $columns    = array_keys($filteredChunk[0]);
+        $uuids      = array_column($filteredChunk, '_uuid');
+        $platform   = $this->db->getDatabasePlatform();
+        $isPostgres = $platform->getName() === 'postgresql';
+
+        // Build column list with proper quoting.
+        if ($isPostgres === true) {
+            $columnList = '"'.implode('", "', $columns).'"';
+        } else {
+            $columnList = '`'.implode('`, `', $columns).'`';
+        }
+
+        // Build VALUES clause with parameters.
+        $valuesClause = [];
+        $parameters   = [];
+        $paramIndex   = 0;
+
+        foreach ($filteredChunk as $objectData) {
+            $rowValues = [];
+            foreach ($columns as $column) {
+                $paramName   = 'p'.$paramIndex;
+                $rowValues[] = ':'.$paramName;
+                $parameters[$paramName] = $objectData[$column] ?? null;
+                $paramIndex++;
+            }
+
+            $valuesClause[] = '('.implode(',', $rowValues).')';
+        }
+
+        // Build UPSERT SQL.
+        $sql = '';
+
+        if ($isPostgres === true) {
+            // PostgreSQL: INSERT...ON CONFLICT DO UPDATE.
+            $sql  = "INSERT INTO \"{$tableName}\" ({$columnList}) VALUES ".implode(',', $valuesClause);
+            $sql .= ' ON CONFLICT (_uuid) DO UPDATE SET ';
+        } else {
+            // MySQL/MariaDB: INSERT...ON DUPLICATE KEY UPDATE.
+            $sql  = "INSERT INTO `{$tableName}` ({$columnList}) VALUES ".implode(',', $valuesClause);
+            $sql .= ' ON DUPLICATE KEY UPDATE ';
+        }
+
+        // Build UPDATE clauses.
+        $updateClauses = [];
+
+        foreach ($columns as $column) {
+            if ($column !== '_uuid' && $column !== '_created') {
+                // Never update UUID or created timestamp.
+                if ($column === '_updated') {
+                    // Always update the updated timestamp.
+                    if ($isPostgres === true) {
+                        $updateClauses[] = '"_updated" = NOW()';
+                    } else {
+                        $updateClauses[] = '`_updated` = NOW()';
+                    }
+                } else {
+                    // Update all other columns.
+                    if ($isPostgres === true) {
+                        $updateClauses[] = "\"{$column}\" = EXCLUDED.\"{$column}\"";
+                    } else {
+                        $updateClauses[] = "`{$column}` = VALUES(`{$column}`)";
+                    }
+                }
+            }
+        }
+
+        $sql .= implode(', ', $updateClauses);
+
+        // Execute UPSERT.
+        try {
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($parameters);
+
+            $this->logger->info(
+                '[MagicBulkHandler] Executed UPSERT chunk',
+                [
+                    'chunk'       => $chunkNumber,
+                    'objects'     => count($chunk),
+                    'table'       => $tableName,
+                    'sql_size_kb' => round(strlen($sql) / 1024, 2),
+                    'sql_preview' => substr($sql, 0, 150),
+                ]
+            );
+        } catch (\Exception $e) {
+            $this->logger->error(
+                '[MagicBulkHandler] UPSERT chunk failed',
+                [
+                    'chunk' => $chunkNumber,
+                    'table' => $tableName,
+                    'error' => $e->getMessage(),
+                ]
+            );
+            throw $e;
+        }//end try
+
+        // Query back complete objects with classification.
+        $completeObjects = [];
+
+        if (empty($uuids) === false) {
+            $placeholders = implode(',', array_fill(0, count($uuids), '?'));
+
+            // Build SELECT query with object_status classification.
+            if ($isPostgres === true) {
+                $selectSql = "
+                    SELECT *,
+                           '{$operationStartTime}' as operation_start_time,
+                           CASE
+                               WHEN \"_created\" >= '{$operationStartTime}' THEN 'created'
+                               WHEN \"_updated\" >= '{$operationStartTime}' THEN 'updated'
+                               ELSE 'unchanged'
+                           END as object_status
+                    FROM \"{$tableName}\"
+                    WHERE \"_uuid\" IN ({$placeholders})
+                ";
+            } else {
+                $selectSql = "
+                    SELECT *,
+                           '{$operationStartTime}' as operation_start_time,
+                           CASE
+                               WHEN `_created` >= '{$operationStartTime}' THEN 'created'
+                               WHEN `_updated` >= '{$operationStartTime}' THEN 'updated'
+                               ELSE 'unchanged'
+                           END as object_status
+                    FROM `{$tableName}`
+                    WHERE `_uuid` IN ({$placeholders})
+                ";
+            }//end if
+
+            $stmt = $this->db->prepare($selectSql);
+            $stmt->execute(array_values($uuids));
+            $completeObjects = $stmt->fetchAll();
+
+            $this->logger->info(
+                '[MagicBulkHandler] Retrieved complete objects for classification',
+                [
+                    'chunk'            => $chunkNumber,
+                    'uuids_requested'  => count($uuids),
+                    'objects_returned' => count($completeObjects),
+                ]
+            );
+        }//end if
+
+        return $completeObjects;
+    }//end executeUpsertChunk()
+
+    /**
+     * Get list of columns that exist in a table
+     *
+     * @param string $tableName The table name
+     *
+     * @return array List of column names
+     */
+    private function getTableColumns(string $tableName): array
+    {
+        try {
+            $platform   = $this->db->getDatabasePlatform();
+            $isPostgres = $platform->getName() === 'postgresql';
+
+            if ($isPostgres === true) {
+                // PostgreSQL: query information_schema.
+                $sql = "SELECT column_name 
+                        FROM information_schema.columns 
+                        WHERE table_name = ? AND table_schema = 'public'";
+            } else {
+                // MySQL/MariaDB: use SHOW COLUMNS.
+                $sql = "SHOW COLUMNS FROM `$tableName`";
+            }
+
+            $stmt = $this->db->prepare($sql);
+            if ($isPostgres === true) {
+                $stmt->execute([$tableName]);
+            } else {
+                $stmt->execute();
+            }
+
+            $columns = [];
+            $row     = $stmt->fetch();
+            while ($row !== false) {
+                if ($isPostgres === true) {
+                    $columns[] = $row['column_name'];
+                } else {
+                    $columns[] = $row['Field'];
+                }
+
+                $row = $stmt->fetch();
+            }
+
+            $this->logger->debug(
+                '[MagicBulkHandler] Retrieved columns',
+                ['table' => $tableName, 'columns' => $columns]
+            );
+            $this->tableColumnsCache[$tableName] = $columns;
+
+            return $columns;
+        } catch (\Exception $e) {
+            $this->logger->error(
+                '[MagicBulkHandler] Failed to get table columns',
+                ['table' => $tableName, 'error' => $e->getMessage()]
+            );
+            return [];
+        }//end try
+    }//end getTableColumns()
+
+    /**
+     * Dispatch events for bulk operation results.
+     *
+     * This method ensures that business logic hooks (listeners) are triggered
+     * for each object that was created or updated during a bulk operation.
+     * This is CRITICAL for software catalog and other apps that depend on
+     * object lifecycle events.
+     *
+     * @param array    $results  Array of objects with 'object_status' field
+     * @param Register $register The register context
+     * @param Schema   $schema   The schema context
+     *
+     * @return void
+     *
+     * @psalm-suppress UnusedParam - params are used in named arguments to convertRowToObjectEntity
+     */
+    private function dispatchBulkEvents(array $results, Register $register, Schema $schema): void
+    {
+        $createdCount = 0;
+        $updatedCount = 0;
+
+        // Convert MagicMapper to use proper ObjectEntityMapper for event conversion.
+        $magicMapper = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
+
+        foreach ($results as $row) {
+            $status = $row['object_status'] ?? 'unchanged';
+
+            // Only dispatch events for created/updated objects.
+            if ($status === 'created' || $status === 'updated') {
+                try {
+                    // Convert row to ObjectEntity for event dispatching.
+                    $entity = $magicMapper->convertRowToObjectEntity(
+                        row: $row,
+                        register: $register,
+                        schema: $schema
+                    );
+
+                    if ($entity === null) {
+                        continue;
+                    }
+
+                    // Dispatch appropriate event.
+                    if ($status === 'created') {
+                        $this->eventDispatcher->dispatch(
+                            ObjectCreatedEvent::class,
+                            new ObjectCreatedEvent(object: $entity)
+                        );
+                        $createdCount++;
+                    } else if ($status === 'updated') {
+                        // For bulk updates, we don't have the old object.
+                        // Pass the entity as both old and new (best approximation for bulk context).
+                        $this->eventDispatcher->dispatch(
+                            ObjectUpdatedEvent::class,
+                            new ObjectUpdatedEvent(newObject: $entity, oldObject: $entity)
+                        );
+                        $updatedCount++;
+                    }
+                } catch (\Exception $e) {
+                    // Log but don't fail the entire bulk operation if one event fails.
+                    $this->logger->warning(
+                        '[MagicBulkHandler] Failed to dispatch event for object',
+                        [
+                            'uuid'   => $row['_uuid'] ?? 'unknown',
+                            'status' => $status,
+                            'error'  => $e->getMessage(),
+                        ]
+                    );
+                }//end try
+            }//end if
+        }//end foreach
+
+        $this->logger->info(
+            '[MagicBulkHandler] Dispatched bulk events',
+            [
+                'created' => $createdCount,
+                'updated' => $updatedCount,
+                'total'   => count($results),
+            ]
+        );
+    }//end dispatchBulkEvents()
 }//end class

@@ -125,13 +125,13 @@ class SyncConfigurationsJob extends TimedJob
      *
      * Synchronizes all external configurations that have sync enabled and are due for sync.
      *
-     * @param mixed $_argument Job arguments (not used)
+     * @param mixed $argument Job arguments (not used)
      *
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    protected function run($_argument): void
+    protected function run($argument): void
     {
         $this->logger->info('Starting configuration sync job');
 
@@ -152,7 +152,9 @@ class SyncConfigurationsJob extends TimedJob
                         continue;
                     }
 
-                    $this->logger->info("Syncing configuration: {$configuration->getTitle()} (ID: {$configuration->getId()})");
+                    $title = $configuration->getTitle();
+                    $id    = $configuration->getId();
+                    $this->logger->info("Syncing configuration: {$title} (ID: {$id})");
 
                     // Sync the configuration based on source type.
                     $this->syncConfiguration($configuration);
@@ -269,7 +271,12 @@ class SyncConfigurationsJob extends TimedJob
         list($owner, $repo) = explode('/', $githubRepo);
 
         // Fetch file content.
-        $configData = $this->githubService->getFileContent(owner: $owner, repo: $repo, path: $githubPath, branch: $githubBranch);
+        $configData = $this->githubService->getFileContent(
+            owner: $owner,
+            repo: $repo,
+            path: $githubPath,
+            branch: $githubBranch
+        );
 
         // Get app ID and version.
         $appId   = $configData['x-openregister']['app'] ?? $configuration->getApp() ?? 'unknown';

@@ -97,10 +97,10 @@ class UpdateFileHandler
      * This method updates the content and/or tags of an existing file. When updating tags,
      * it preserves any existing 'object:' tags while replacing other user-defined tags.
      *
-     * @param string|int        $filePath The path (from root) where to save the file, including filename and extension, or file ID.
-     * @param mixed             $content  Optional content of the file. If null, only metadata like tags will be updated.
-     * @param array             $tags     Optional array of tags to attach to the file (excluding object tags which are preserved).
-     * @param ObjectEntity|null $object   Optional object entity to search in object folder first.
+     * @param string|int        $filePath The path or file ID.
+     * @param mixed             $content  Optional content of the file.
+     * @param array             $tags     Optional array of tags.
+     * @param ObjectEntity|null $object   Optional object entity.
      *
      * @return File The updated file.
      *
@@ -129,7 +129,9 @@ class UpdateFileHandler
                 // Try to find the file in the object's folder by ID.
                 $file = $this->readFileHandler->getFile(object: $object, file: $filePath);
                 if ($file !== null) {
-                    $this->logger->info(message: "updateFile: Found file by ID in object folder: ".$file->getName()." (ID: ".$file->getId().")");
+                    $fileName = $file->getName();
+                    $fileId   = $file->getId();
+                    $this->logger->info(message: "updateFile: Found file by ID in object folder: $fileName (ID: $fileId)");
                 }
             }
 
@@ -139,8 +141,10 @@ class UpdateFileHandler
                     $userFolder = $this->folderManagementHandler->getOpenRegisterUserFolder();
                     $nodes      = $userFolder->getById($filePath);
                     if (empty($nodes) === false) {
-                        $file = $nodes[0];
-                        $this->logger->info(message: "updateFile: Found file by ID in user folder: ".$file->getName()." (ID: ".$file->getId().")");
+                        $file  = $nodes[0];
+                        $fname = $file->getName();
+                        $fid   = $file->getId();
+                        $this->logger->info(message: "updateFile: Found file by ID in user folder: $fname (ID: $fid)");
                     } else {
                         $this->logger->error(message: "updateFile: No file found with ID: $filePath");
                         throw new Exception("File with ID $filePath does not exist");
@@ -186,20 +190,24 @@ class UpdateFileHandler
                         // Try to get the file from object folder using just the filename.
                         try {
                             $file = $objectFolder->get($fileName);
-                            $this->logger->info(message: "updateFile: Found file in object folder: ".$file->getName()." (ID: ".$file->getId().")");
+                            $msg  = "updateFile: Found file in object folder: ".$file->getName()." (ID: ".$file->getId().")";
+                            $this->logger->info(message: $msg);
                         } catch (NotFoundException) {
                             $this->logger->warning(message: "updateFile: File '$fileName' not found in object folder.");
 
                             // Also try with the full path in case it's nested.
                             try {
                                 $file = $objectFolder->get($filePath);
-                                $this->logger->info(message: "updateFile: Found file using full path in object folder: ".$file->getName());
+                                $msg  = "updateFile: Found file using full path in object folder: ".$file->getName();
+                                $this->logger->info(message: $msg);
                             } catch (NotFoundException) {
-                                $this->logger->warning(message: "updateFile: File '$filePath' also not found with full path in object folder.");
+                                $msg = "updateFile: File '$filePath' also not found with full path in object folder.";
+                                $this->logger->warning(message: $msg);
                             }
                         }
                     } else {
-                        $this->logger->warning(message: "updateFile: Could not get object folder for object ID: ".$object->getId());
+                        $msg = "updateFile: Could not get object folder for object ID: ".$object->getId();
+                        $this->logger->warning(message: $msg);
                     }//end if
                 } catch (Exception $e) {
                     $this->logger->error(message: "updateFile: Error accessing object folder: ".$e->getMessage());
@@ -214,7 +222,8 @@ class UpdateFileHandler
                 try {
                     $userFolder = $this->folderManagementHandler->getOpenRegisterUserFolder();
                     $file       = $userFolder->get(path: $filePath);
-                    $this->logger->info(message: "updateFile: Found file in user folder at path: $filePath (ID: ".$file->getId().")");
+                    $msg        = "updateFile: Found file in user folder at path: $filePath (ID: ".$file->getId().")";
+                    $this->logger->info(message: $msg);
                 } catch (NotFoundException $e) {
                     $this->logger->error(message: "updateFile: File $filePath not found in user folder either.");
 
@@ -226,8 +235,11 @@ class UpdateFileHandler
                         try {
                             $nodes = $userFolder->getById($fileId);
                             if (empty($nodes) === false) {
-                                $file = $nodes[0];
-                                $this->logger->info(message: "updateFile: Found file by ID $fileId: ".$file->getName()." at path: ".$file->getPath());
+                                $file     = $nodes[0];
+                                $fileName = $file->getName();
+                                $path     = $file->getPath();
+                                $msg      = "updateFile: Found file by ID $fileId: $fileName at path: $path";
+                                $this->logger->info(message: $msg);
                             } else {
                                 $this->logger->warning(message: "updateFile: No file found with ID: $fileId");
                             }

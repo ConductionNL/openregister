@@ -33,6 +33,7 @@ use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
+use Exception;
 
 /**
  * ChatController handles AI chat API endpoints
@@ -212,19 +213,17 @@ class ChatController extends Controller
         $message          = (string) $this->request->getParam('message');
 
         // Extract selectedViews array.
-        $viewsParam = $this->request->getParam('views');
+        $viewsParam    = $this->request->getParam('views');
+        $selectedViews = [];
         if ($viewsParam !== null && is_array($viewsParam) === true) {
             $selectedViews = $viewsParam;
-        } else {
-            $selectedViews = [];
         }
 
         // Extract selectedTools array.
-        $toolsParam = $this->request->getParam('tools');
+        $toolsParam    = $this->request->getParam('tools');
+        $selectedTools = [];
         if ($toolsParam !== null && is_array($toolsParam) === true) {
             $selectedTools = $toolsParam;
-        } else {
-            $selectedTools = [];
         }
 
         // Extract RAG configuration settings.
@@ -252,14 +251,14 @@ class ChatController extends Controller
      *
      * @return Conversation The conversation entity
      *
-     * @throws \Exception If conversation not found
+     * @throws Exception If conversation not found
      */
     private function loadExistingConversation(string $uuid): Conversation
     {
         try {
             return $this->conversationMapper->findByUuid($uuid);
-        } catch (\Exception $e) {
-            throw new \Exception('The conversation with UUID '.$uuid.' does not exist', 404);
+        } catch (Exception $e) {
+            throw new Exception('The conversation with UUID '.$uuid.' does not exist', 404);
         }
     }//end loadExistingConversation()
 
@@ -270,7 +269,7 @@ class ChatController extends Controller
      *
      * @return Conversation The newly created conversation
      *
-     * @throws \Exception If agent not found
+     * @throws Exception If agent not found
      */
     private function createNewConversation(string $agentUuid): Conversation
     {
@@ -280,8 +279,8 @@ class ChatController extends Controller
         // Look up agent by UUID.
         try {
             $agent = $this->agentMapper->findByUuid($agentUuid);
-        } catch (\Exception $e) {
-            throw new \Exception('The agent with UUID '.$agentUuid.' does not exist', 404);
+        } catch (Exception $e) {
+            throw new Exception('The agent with UUID '.$agentUuid.' does not exist', 404);
         }
 
         // Generate unique default title.
@@ -321,7 +320,7 @@ class ChatController extends Controller
      *
      * @return Conversation The resolved or created conversation
      *
-     * @throws \Exception If both parameters are empty or if entities not found
+     * @throws Exception If both parameters are empty or if entities not found
      */
     private function resolveConversation(string $conversationUuid, string $agentUuid): Conversation
     {
@@ -336,7 +335,7 @@ class ChatController extends Controller
         }
 
         // Neither parameter provided.
-        throw new \Exception('Either conversation or agentUuid is required', 400);
+        throw new Exception('Either conversation or agentUuid is required', 400);
     }//end resolveConversation()
 
     /**
@@ -346,12 +345,12 @@ class ChatController extends Controller
      *
      * @return void
      *
-     * @throws \Exception If user does not have access (403)
+     * @throws Exception If user does not have access (403)
      */
     private function verifyConversationAccess(Conversation $conversation): void
     {
         if ($conversation->getUserId() !== $this->userId) {
-            throw new \Exception('You do not have access to this conversation', 403);
+            throw new Exception('You do not have access to this conversation', 403);
         }
     }//end verifyConversationAccess()
 
@@ -386,10 +385,10 @@ class ChatController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return       JSONResponse A JSON response with the chat response or error
-     * @psalm-return JSONResponse<int,
-     *     array{error?: string, message: string, sources?: list<array>,
-     *     timings?: array, conversation?: null|string}, array<never, never>>
+     * @return JSONResponse A JSON response with the chat response or error
+     *
+     * @psalm-suppress InvalidReturnStatement
+     * @psalm-suppress InvalidReturnType
      */
     public function sendMessage(): JSONResponse
     {
@@ -441,7 +440,7 @@ class ChatController extends Controller
             $result['conversation'] = $conversation->getUuid();
 
             return new JSONResponse(data: $result, statusCode: 200);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Determine status code from exception or default to 500.
             $statusCode = (int) $e->getCode();
             if ($statusCode < 400 || $statusCode >= 600) {
@@ -466,6 +465,7 @@ class ChatController extends Controller
                 default => 'Failed to process message',
             };
 
+            /** @psalm-suppress InvalidArgument */
             return new JSONResponse(
                 data: [
                     'error'   => $errorType,
@@ -484,7 +484,7 @@ class ChatController extends Controller
      * @NoCSRFRequired
      *
      * @return       JSONResponse A JSON response with conversation history or error
-     * @psalm-return JSONResponse<int,
+     * @psalm-return JSONResponse<200|400|403|500,
      *     array{error?: 'Access denied'|'Failed to fetch conversation history'|
      *     'Missing conversationId', message?: string,
      *     messages?: list<array{content: null|string, conversationId: int|null,
@@ -547,7 +547,7 @@ class ChatController extends Controller
                 ],
                 statusCode: 200
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                 '[ChatController] Failed to get history',
                 [
@@ -574,7 +574,7 @@ class ChatController extends Controller
      * @NoCSRFRequired
      *
      * @return       JSONResponse A JSON response confirming conversation clearing or error
-     * @psalm-return JSONResponse<int,
+     * @psalm-return JSONResponse<200|400|403|500,
      *     array{error?: 'Access denied'|'Failed to clear conversation'|
      *     'Missing conversationId', message: string, conversationId?: int},
      *     array<never, never>>
@@ -627,7 +627,7 @@ class ChatController extends Controller
                 ],
                 statusCode: 200
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                 '[ChatController] Failed to clear history',
                 [
@@ -659,7 +659,7 @@ class ChatController extends Controller
      * @NoCSRFRequired
      *
      * @return       JSONResponse A JSON response with the conversation list or error
-     * @psalm-return JSONResponse<int,
+     * @psalm-return JSONResponse<200|400|403|404|500,
      *     array{error?: string, message?: string, id?: int, uuid?: string,
      *     messageId?: int, conversationId?: int, agentId?: int, userId?: string,
      *     organisation?: null|string, type?: string, comment?: null|string,
@@ -758,7 +758,7 @@ class ChatController extends Controller
             }//end if
 
             return new JSONResponse(data: $feedback->jsonSerialize(), statusCode: 200);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                 '[ChatController] Failed to save feedback',
                 [
@@ -822,7 +822,7 @@ class ChatController extends Controller
                 ],
                 statusCode: 200
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                 '[ChatController] Failed to get chat stats',
                 [

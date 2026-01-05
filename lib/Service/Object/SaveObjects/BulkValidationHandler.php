@@ -122,7 +122,9 @@ class BulkValidationHandler
             // Schema analysis: process writeBack boolean casting.
             // Check for inversedBy in array items (array of object relations).
             // CRITICAL FIX: Preserve property-level writeBack if it's true.
-            if (($inversedBy === false || $inversedBy === null) === true && (($items['inversedBy'] ?? null) !== null) === true) {
+            $noInversedBy       = ($inversedBy === false || $inversedBy === null);
+            $itemsHasInversedBy = (($items['inversedBy'] ?? null) !== null);
+            if ($noInversedBy === true && $itemsHasInversedBy === true) {
                 $inversedBy        = $items['inversedBy'];
                 $rawItemsWriteBack = $items['writeBack'] ?? false;
                 $itemsWriteBack    = $this->castToBoolean($rawItemsWriteBack);

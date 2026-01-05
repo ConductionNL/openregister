@@ -279,7 +279,11 @@ class DashboardService
             $objectStats = $this->objectMapper->getStatistics(registerId: null, schemaId: null, exclude: $validCombinations);
 
             // Get orphaned audit trail statistics using the same exclusions.
-            $auditStats = $this->auditTrailMapper->getStatistics(registerId: null, schemaId: null, exclude: $validCombinations);
+            $auditStats = $this->auditTrailMapper->getStatistics(
+                registerId: null,
+                    schemaId: null,
+                    exclude: $validCombinations
+            );
 
             return [
                 'objects' => [
@@ -332,77 +336,7 @@ class DashboardService
      *
      * @throws \Exception If there is an error getting the registers with schemas
      *
-     * @psalm-return list{0: array{id: 'orphaned'|'totals'|int,
-     *     title: null|string, description: null|string,
-     *     stats: array{objects: array{total: int, size: int, invalid: int,
-     *     deleted: int, locked: int, published: int},
-     *     logs: array{total: int|mixed, size: int|mixed},
-     *     files: array{total: int, size: int},
-     *     webhookLogs?: array{total: int, size: int}},
-     *     schemas: list<array{allOf: array|null, anyOf: array|null,
-     *     application: null|string, archive: array|null,
-     *     authorization: array|null, configuration: array|null|string,
-     *     created: null|string, deleted: null|string,
-     *     depublished: null|string, description: null|string,
-     *     groups: array<string, list<string>>|null, hardValidation: bool,
-     *     icon: null|string, id: int, immutable: bool, maxDepth: int,
-     *     oneOf: array|null, organisation: null|string, owner: null|string,
-     *     properties: array, published: null|string, required: array,
-     *     searchable: bool, slug: null|string, source: null|string,
-     *     stats: array{files: array{size: int, total: int},
-     *     logs: array{size: int, total: int},
-     *     objects: array{deleted: int, invalid: int, locked: int,
-     *     published: int, size: int, total: int},
-     *     webhookLogs: array{size: int, total: int}},
-     *     summary: null|string, title: null|string, updated: null|string,
-     *     uri: null|string, uuid: null|string, version: null|string}>,
-     *     uuid?: null|string, slug?: null|string, version?: null|string,
-     *     source?: null|string, tablePrefix?: null|string,
-     *     folder?: null|string, updated?: null|string,
-     *     created?: null|string, owner?: null|string,
-     *     application?: null|string, organisation?: null|string,
-     *     authorization?: array|null,
-     *     groups?: array<string, list<string>>,
-     *     quota?: array{storage: null, bandwidth: null, requests: null,
-     *     users: null, groups: null},
-     *     usage?: array{storage: 0, bandwidth: 0, requests: 0, users: 0,
-     *     groups: int<0, max>}, deleted?: null|string,
-     *     published?: null|string, depublished?: null|string},
-     *     1?: array{id: 'orphaned'|'totals'|int, uuid: null|string,
-     *     slug: null|string, title: null|string, version: null|string,
-     *     description: null|string,
-     *     schemas: list<array{allOf: array|null, anyOf: array|null,
-     *     application: null|string, archive: array|null,
-     *     authorization: array|null, configuration: array|null|string,
-     *     created: null|string, deleted: null|string,
-     *     depublished: null|string, description: null|string,
-     *     groups: array<string, list<string>>|null, hardValidation: bool,
-     *     icon: null|string, id: int, immutable: bool, maxDepth: int,
-     *     oneOf: array|null, organisation: null|string, owner: null|string,
-     *     properties: array, published: null|string, required: array,
-     *     searchable: bool, slug: null|string, source: null|string,
-     *     stats: array{files: array{size: int, total: int},
-     *     logs: array{size: int, total: int},
-     *     objects: array{deleted: int, invalid: int, locked: int,
-     *     published: int, size: int, total: int},
-     *     webhookLogs: array{size: int, total: int}},
-     *     summary: null|string, title: null|string, updated: null|string,
-     *     uri: null|string, uuid: null|string, version: null|string}>,
-     *     source: null|string, tablePrefix: null|string,
-     *     folder: null|string, updated: null|string, created: null|string,
-     *     owner: null|string, application: null|string,
-     *     organisation: null|string, authorization: array|null,
-     *     groups: array<string, list<string>>,
-     *     quota: array{storage: null, bandwidth: null, requests: null,
-     *     users: null, groups: null},
-     *     usage: array{storage: 0, bandwidth: 0, requests: 0, users: 0,
-     *     groups: int<0, max>}, deleted: null|string,
-     *     published: null|string, depublished: null|string,
-     *     stats: array{objects: array{total: int, size: int, invalid: int,
-     *     deleted: int, locked: int, published: int},
-     *     logs: array{total: int|mixed, size: int|mixed},
-     *     files: array{total: int, size: int},
-     *     webhookLogs: array{total: int, size: int}}},...}
+     * @psalm-return list{0: array{id: 'orphaned'|'totals'|int, title: null|string, description: null|string, stats: array{objects: array{total: int, size: int, invalid: int, deleted: int, locked: int, published: int}, logs: array{total: int|mixed, size: int|mixed}, files: array{total: int, size: int}, webhookLogs?: array{total: int, size: int}}, schemas: list<array{allOf: array|null, anyOf: array|null, application: null|string, archive: array|null, authorization: array|null, configuration: array|null|string, created: null|string, deleted: null|string, depublished: null|string, description: null|string, groups: array<string, list<string>>|null, hardValidation: bool, icon: null|string, id: int, immutable: bool, maxDepth: int, oneOf: array|null, organisation: null|string, owner: null|string, properties: array, published: null|string, required: array, searchable: bool, slug: null|string, source: null|string, stats: array{files: array{size: int, total: int}, logs: array{size: int, total: int}, objects: array{deleted: int, invalid: int, locked: int, published: int, size: int, total: int}, webhookLogs: array{size: int, total: int}}, summary: null|string, title: null|string, updated: null|string, uri: null|string, uuid: null|string, version: null|string}>, uuid?: null|string, slug?: null|string, version?: null|string, source?: null|string, tablePrefix?: null|string, folder?: null|string, updated?: null|string, created?: null|string, owner?: null|string, application?: null|string, organisation?: null|string, authorization?: array|null, groups?: array<string, list<string>>, configuration?: array|null, quota?: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage?: array{storage: 0, bandwidth: 0, requests: 0, users: 0, groups: int<0, max>}, deleted?: null|string, published?: null|string, depublished?: null|string}, 1?: array{id: 'orphaned'|'totals'|int, uuid: null|string, slug: null|string, title: null|string, version: null|string, description: null|string, schemas: list<array{allOf: array|null, anyOf: array|null, application: null|string, archive: array|null, authorization: array|null, configuration: array|null|string, created: null|string, deleted: null|string, depublished: null|string, description: null|string, groups: array<string, list<string>>|null, hardValidation: bool, icon: null|string, id: int, immutable: bool, maxDepth: int, oneOf: array|null, organisation: null|string, owner: null|string, properties: array, published: null|string, required: array, searchable: bool, slug: null|string, source: null|string, stats: array{files: array{size: int, total: int}, logs: array{size: int, total: int}, objects: array{deleted: int, invalid: int, locked: int, published: int, size: int, total: int}, webhookLogs: array{size: int, total: int}}, summary: null|string, title: null|string, updated: null|string, uri: null|string, uuid: null|string, version: null|string}>, source: null|string, tablePrefix: null|string, folder: null|string, updated: null|string, created: null|string, owner: null|string, application: null|string, organisation: null|string, authorization: array|null, groups: array<string, list<string>>, configuration: array|null, quota: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: 0, groups: int<0, max>}, deleted: null|string, published: null|string, depublished: null|string, stats: array{objects: array{total: int, size: int, invalid: int, deleted: int, locked: int, published: int}, logs: array{total: int|mixed, size: int|mixed}, files: array{total: int, size: int}, webhookLogs: array{total: int, size: int}}},...}
      */
     public function getRegistersWithSchemas(
         ?int $registerId=null,
@@ -467,7 +401,7 @@ class DashboardService
             $result[]      = [
                 'id'          => 'orphaned',
                 'title'       => 'Orphaned Items',
-                'description' => 'Items that reference non-existent registers, schemas, or invalid register-schema combinations',
+                'description' => 'Items referencing non-existent registers/schemas or invalid combinations',
                 'stats'       => $orphanedStats,
                 'schemas'     => [],
             ];
@@ -716,8 +650,10 @@ class DashboardService
      *
      * @return array<string, array{id: int, title: string}|null> Scope object with register and schema info.
      */
-    private function buildResponseScope(?\OCA\OpenRegister\Db\Register $register, ?\OCA\OpenRegister\Db\Schema $schema): array
-    {
+    private function buildResponseScope(
+        ?\OCA\OpenRegister\Db\Register $register,
+        ?\OCA\OpenRegister\Db\Schema $schema
+    ): array {
         $registerScope = null;
         if ($register !== null) {
             $registerScope = [
@@ -750,7 +686,9 @@ class DashboardService
     private function calculateSuccessRate(array $results): float
     {
         if ($results['total']['processed'] > 0) {
-            return round(($results['total']['processed'] - $results['total']['failed']) / $results['total']['processed'] * 100, 2);
+            $processed = $results['total']['processed'];
+            $failed    = $results['total']['failed'];
+            return round(($processed - $failed) / $processed * 100, 2);
         }
 
         return 0.0;
@@ -768,10 +706,19 @@ class DashboardService
      *
      * @psalm-return array{labels: list<array-key>, series: list{0?: array{name: string, data: list<int>},...}}
      */
-    public function getAuditTrailActionChartData(?\DateTime $from=null, ?\DateTime $till=null, ?int $registerId=null, ?int $schemaId=null): array
-    {
+    public function getAuditTrailActionChartData(
+        ?\DateTime $from=null,
+        ?\DateTime $till=null,
+        ?int $registerId=null,
+        ?int $schemaId=null
+    ): array {
         try {
-            return $this->auditTrailMapper->getActionChartData(from: $from, till: $till, registerId: $registerId, schemaId: $schemaId);
+            return $this->auditTrailMapper->getActionChartData(
+                from: $from,
+                    till: $till,
+                    registerId: $registerId,
+                    schemaId: $schemaId
+            );
         } catch (Exception $e) {
             $this->logger->error(message: 'Failed to get audit trail action chart data: '.$e->getMessage());
             return [
@@ -863,7 +810,11 @@ class DashboardService
     public function getAuditTrailStatistics(?int $registerId=null, ?int $schemaId=null, ?int $hours=24): array
     {
         try {
-            return $this->auditTrailMapper->getDetailedStatistics(registerId: $registerId, schemaId: $schemaId, hours: $hours);
+            return $this->auditTrailMapper->getDetailedStatistics(
+                registerId: $registerId,
+                    schemaId: $schemaId,
+                    hours: $hours
+            );
         } catch (Exception $e) {
             $this->logger->error(message: 'Failed to get audit trail statistics: '.$e->getMessage());
             return [
@@ -883,14 +834,19 @@ class DashboardService
      * @param int|null $schemaId   Optional schema ID to filter by
      * @param int|null $hours      Optional number of hours to look back (default: 24)
      *
-     * @return ((int|mixed)[]|mixed)[][] Array containing action distribution data: - actions: Array of action data with name, count, and percentage
+     * @return ((int|mixed)[]|mixed)[][] Array containing action distribution data:
+     *                                    - actions: Array of action data with name, count, and percentage
      *
      * @psalm-return array{actions: list{0?: array{name: mixed, count: int},...}}
      */
     public function getAuditTrailActionDistribution(?int $registerId=null, ?int $schemaId=null, ?int $hours=24): array
     {
         try {
-            return $this->auditTrailMapper->getActionDistribution(registerId: $registerId, schemaId: $schemaId, hours: $hours);
+            return $this->auditTrailMapper->getActionDistribution(
+                registerId: $registerId,
+                    schemaId: $schemaId,
+                    hours: $hours
+            );
         } catch (Exception $e) {
             $this->logger->error(message: 'Failed to get audit trail action distribution: '.$e->getMessage());
             return [
@@ -907,14 +863,20 @@ class DashboardService
      * @param int|null $limit      Optional limit for number of results (default: 10)
      * @param int|null $hours      Optional number of hours to look back (default: 24)
      *
-     * @return ((int|mixed|string)[]|mixed)[][] Array containing most active objects: - objects: Array of object data with name, id, and count
+     * @return ((int|mixed|string)[]|mixed)[][] Array containing most active objects:
+     *                                          - objects: Array of object data with name, id, and count
      *
      * @psalm-return array{objects: list{0?: array{id: mixed, name: string, count: int},...}}
      */
     public function getMostActiveObjects(?int $registerId=null, ?int $schemaId=null, ?int $limit=10, ?int $hours=24): array
     {
         try {
-            return $this->auditTrailMapper->getMostActiveObjects(registerId: $registerId, schemaId: $schemaId, limit: $limit, hours: $hours);
+            return $this->auditTrailMapper->getMostActiveObjects(
+                registerId: $registerId,
+                    schemaId: $schemaId,
+                    limit: $limit,
+                    hours: $hours
+            );
         } catch (Exception $e) {
             $this->logger->error(message: 'Failed to get most active objects: '.$e->getMessage());
             return [

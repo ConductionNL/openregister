@@ -165,18 +165,13 @@ class SolrSettingsHandler
     /**
      * Complete search index warmup: mirror schemas and index objects from the database
      *
-     * @deprecated This method is deprecated. Use IndexService->warmupIndex() directly via controller.
-     * This method is kept for backward compatibility but should not be used.
-     * The controller now uses IndexService directly to avoid circular dependencies.
-     *
-     * @param int    $_batchSize    Number of objects to process per batch
-     * @param int    $maxObjects    Maximum number of objects to index
-     * @param string $mode          Processing mode
-     * @param bool   $collectErrors Whether to collect errors
-     *
      * @return never Warmup operation results with statistics and status
      *
      * @throws \RuntimeException Always throws exception indicating method is deprecated
+     *
+     * @deprecated This method is deprecated. Use IndexService->warmupIndex() directly via controller.
+     * This method is kept for backward compatibility but should not be used.
+     * The controller now uses IndexService directly to avoid circular dependencies.
      */
     public function warmupSolrIndex()
     {
@@ -194,7 +189,7 @@ class SolrSettingsHandler
      * Provides detailed metrics for the SOLR Search Management dashboard
      * including core statistics, performance metrics, and health indicators.
      *
-     * @return (((bool|int|mixed|null|string)[]|bool|float|int|mixed|null|string)[]|mixed|string)[] SOLR dashboard metrics and statistics
+     * @return array SOLR dashboard metrics and statistics
      *
      * @throws \RuntimeException If SOLR statistics retrieval fails
      *
@@ -289,7 +284,7 @@ class SolrSettingsHandler
      *
      * @param array $rawStats Raw statistics from SOLR service
      *
-     * @return (((bool|int|mixed|null|string)[]|bool|float|int|mixed|null|string)[]|mixed|string)[] Transformed dashboard statistics
+     * @return array Transformed dashboard statistics
      *
      * @psalm-return array{overview: array{available: bool,
      *     connection_status: 'unavailable'|'unknown'|mixed, response_time_ms: 0,
@@ -439,7 +434,11 @@ class SolrSettingsHandler
             'operations'   => [
                 'recent_activity'     => [],
                 'queue_status'        => ['pending_operations' => 0, 'processing' => false, 'last_processed' => null],
-                'commit_frequency'    => ['auto_commit' => true, 'commit_within' => 1000, 'last_commit' => $rawStats['last_modified'] ?? null],
+                'commit_frequency'    => [
+                    'auto_commit'   => true,
+                    'commit_within' => 1000,
+                    'last_commit'   => $rawStats['last_modified'] ?? null,
+                ],
                 'optimization_needed' => false,
             ],
             'generated_at' => date('c'),

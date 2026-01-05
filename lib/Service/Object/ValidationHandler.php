@@ -118,12 +118,13 @@ class ValidationHandler
      * without actually saving. It returns arrays of valid and invalid objects.
      *
      * @param int      $schemaId     The schema ID to validate objects for.
-     * @param callable $saveCallback Callback function to save/validate objects (receives: object, register, schema, uuid, rbac, multi, silent).
+     * @param callable $saveCallback Callback function to save/validate objects
+     *                               (receives: object, extend, register, schema, uuid, rbac, multi, silent).
      *
      * @psalm-param   int $schemaId
-     * @psalm-param   callable(array, int, int, string, bool, bool, bool): void $saveCallback
+     * @psalm-param   callable(array, array, int|string|null, int, string|null, bool, bool, bool): void $saveCallback
      * @phpstan-param int $schemaId
-     * @phpstan-param callable(array, int, int, string, bool, bool, bool): void $saveCallback
+     * @phpstan-param callable(array, array, int|string|null, int, string|null, bool, bool, bool): void $saveCallback
      *
      * @return array Array containing 'valid' and 'invalid' objects with details.
      *

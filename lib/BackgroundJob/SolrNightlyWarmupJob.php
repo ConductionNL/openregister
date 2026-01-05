@@ -112,7 +112,12 @@ class SolrNightlyWarmupJob extends TimedJob
             $schemaMapper = \OC::$server->get(SchemaMapper::class);
 
             // Check if SOLR is enabled and available.
-            if ($this->isSolrEnabledAndAvailable(solrService: $solrService, settingsService: $settingsService, logger: $logger) === false) {
+            $isSolrAvailable = $this->isSolrEnabledAndAvailable(
+                solrService: $solrService,
+                settingsService: $settingsService,
+                logger: $logger
+            );
+            if ($isSolrAvailable === false) {
                 $logger->info(message: 'SOLR Nightly Warmup Job skipped - SOLR not enabled or available');
                 return;
             }
@@ -155,7 +160,10 @@ class SolrNightlyWarmupJob extends TimedJob
                         'conflicts_resolved'     => $result['operations']['conflicts_resolved'] ?? 0,
                         'performance_metrics'    => [
                             'total_time_ms'      => $result['execution_time_ms'] ?? 0,
-                            'objects_per_second' => $this->calculateObjectsPerSecond(result: $result, executionTime: $executionTime),
+                            'objects_per_second' => $this->calculateObjectsPerSecond(
+                                result: $result,
+                                executionTime: $executionTime
+                            ),
                             'next_run'           => date('Y-m-d H:i:s', time() + self::DEFAULT_INTERVAL),
                         ],
                         'operations_summary'     => $this->summarizeOperations($result['operations'] ?? []),
@@ -316,15 +324,18 @@ class SolrNightlyWarmupJob extends TimedJob
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    private function getWarmupConfiguration(SettingsService $_settingsService, LoggerInterface $_logger): array
-    {
+    private function getWarmupConfiguration(
+        SettingsService $_settingsService,
+        LoggerInterface $_logger
+    ): array {
         /*
          * @var \OCP\IConfig $config
          */
 
         $config = \OC::$server->get(\OCP\IConfig::class);
 
-        $maxObjects    = $config->getAppValue('openregister', 'solr_nightly_max_objects', (string) self::DEFAULT_NIGHTLY_MAX_OBJECTS);
+        $defaultMaxObjects = (string) self::DEFAULT_NIGHTLY_MAX_OBJECTS;
+        $maxObjects        = $config->getAppValue('openregister', 'solr_nightly_max_objects', $defaultMaxObjects);
         $mode          = $config->getAppValue('openregister', 'solr_nightly_mode', self::DEFAULT_NIGHTLY_MODE);
         $collectErrors = $config->getAppValue('openregister', 'solr_nightly_collect_errors', 'false') === 'true';
 

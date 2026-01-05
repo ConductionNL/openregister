@@ -179,9 +179,10 @@ class MessageMapper extends QBMapper
     {
         $qb = $this->db->getQueryBuilder();
 
+        $conversationIdParam = $qb->createNamedParameter($conversationId, IQueryBuilder::PARAM_INT);
         $qb->select($qb->func()->count('*', 'count'))
             ->from($this->tableName)
-            ->where($qb->expr()->eq('conversation_id', $qb->createNamedParameter($conversationId, IQueryBuilder::PARAM_INT)));
+            ->where($qb->expr()->eq('conversation_id', $conversationIdParam));
 
         $result = $qb->executeQuery();
         $count  = (int) $result->fetchOne();
@@ -205,8 +206,9 @@ class MessageMapper extends QBMapper
     {
         $qb = $this->db->getQueryBuilder();
 
+        $conversationIdParam = $qb->createNamedParameter($conversationId, IQueryBuilder::PARAM_INT);
         $qb->delete($this->tableName)
-            ->where($qb->expr()->eq('conversation_id', $qb->createNamedParameter($conversationId, IQueryBuilder::PARAM_INT)));
+            ->where($qb->expr()->eq('conversation_id', $conversationIdParam));
 
         return $qb->executeStatement();
     }//end deleteByConversation()

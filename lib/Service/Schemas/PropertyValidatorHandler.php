@@ -131,14 +131,15 @@ class PropertyValidatorHandler
         // Validate string format if present.
         if ($property['type'] === 'string' && (($property['format'] ?? null) !== null)) {
             if (in_array($property['format'], $this->validStringFormats) === false) {
-                throw new Exception(
-                    "Invalid string format '{$property['format']}' at '$path'. Must be one of: ".implode(', ', $this->validStringFormats)
-                );
+                $validFormats = implode(', ', $this->validStringFormats);
+                $message      = "Invalid string format '{$property['format']}' at '$path'. Must be one of: $validFormats";
+                throw new Exception($message);
             }
         }
 
         // Validate array items if type is array.
-        if ($property['type'] === 'array' && (($property['items'] ?? null) !== null) && isset($property['items']['$ref']) === false) {
+        $hasItems = ($property['items'] ?? null) !== null;
+        if ($property['type'] === 'array' && $hasItems === true && isset($property['items']['$ref']) === false) {
             $this->validateProperty(property: $property['items'], path: $path.'/items');
         }
 

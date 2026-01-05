@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Controller;
@@ -418,7 +419,7 @@ class FilesController extends Controller
             // Format and return results.
             $formattedFiles = $this->fileService->formatFiles(
                 files: $results,
-                params: $this->request->getParams()
+                requestParams: $this->request->getParams()
             );
 
             return new JSONResponse($formattedFiles['results']);
@@ -517,7 +518,7 @@ class FilesController extends Controller
      * @param array<string, array<int, string>|string|int> $files Files from $_FILES
      * @param array                                        $data  Request parameters
      *
-     * @return array{name: string, type: string, tmp_name: string, error: int, size: int, share: bool, tags: array<int, string>} Normalized file data
+     * @return array Normalized file data
      */
     private function normalizeSingleFile(array $files, array $data): array
     {
@@ -642,8 +643,8 @@ class FilesController extends Controller
 
             // Create file entity.
             $results[] = $this->fileService->addFile(
-                object: $object,
-                name: $file['name'],
+                objectEntity: $object,
+                fileName: $file['name'],
                 content: $content,
                 share: $file['share'],
                 tags: $file['tags']
@@ -697,7 +698,7 @@ class FilesController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400, array<string, mixed>, array<never, never>>
+     * @psalm-return JSONResponse<200|400|404, array{error?: mixed|string, labels?: list<string>|mixed,...}, array<never, never>>
      */
     public function update(
         string $register,
@@ -749,7 +750,7 @@ class FilesController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400, array{error?: string, success?: bool}, array<never, never>>
+     * @psalm-return JSONResponse<200|400|404, array{error?: string, success?: bool}, array<never, never>>
      */
     public function delete(
         string $register,

@@ -134,7 +134,9 @@ class SolrCollectionManager
      *
      * @throws Exception If creation fails
      *
-     * @psalm-return array{success: true, message: 'Collection created successfully', collection: string, configSet: 'openregister_configset'|mixed}
+     * @psalm-return array{success: true,
+     *     message: 'Collection created successfully', collection: string,
+     *     configSet: 'openregister_configset'|mixed}
      */
     public function createCollection(string $name, array $config=[]): array
     {
@@ -334,8 +336,9 @@ class SolrCollectionManager
                 ]
             );
 
-            $url  = $this->httpClient->buildSolrBaseUrl().'/admin/configs?action=CREATE&name='.$name.'&baseConfigSet='.$baseConfigSet.'&wt=json';
-            $data = $this->httpClient->get($url);
+            $baseUrl = $this->httpClient->buildSolrBaseUrl();
+            $url     = $baseUrl.'/admin/configs?action=CREATE&name='.$name.'&baseConfigSet='.$baseConfigSet.'&wt=json';
+            $data    = $this->httpClient->get($url);
 
             if (($data['responseHeader']['status'] ?? -1) === 0) {
                 return [

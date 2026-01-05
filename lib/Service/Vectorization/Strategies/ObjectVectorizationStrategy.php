@@ -81,9 +81,7 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      *
      * @param array $options Options: views, batch_size
      *
-     * @return \OCA\OpenRegister\Db\ObjectEntity[] Array of ObjectEntity objects
-     *
-     * @psalm-return array<int, \OCA\OpenRegister\Db\ObjectEntity>
+     * @return array Array of entities (ObjectEntity instances or arrays)
      */
     public function fetchEntities(array $options): array
     {
@@ -112,6 +110,7 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
         );
 
         // SearchObjects can return array|int, but we need array for vectorization.
+        /** @var array $objects */
         $objects = [];
         if (is_array($result) === true) {
             $objects = $result;
@@ -236,30 +235,31 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
         // Extract @self keys for logging.
         $this->extractSelfKeys($objectData);
 
+        // Extract register and schema IDs from multiple possible locations.
+        $selfData   = $objectData['@self'] ?? [];
+        $registerId = $objectData['_register'] ?? $objectData['register'] ?? $selfData['register'] ?? null;
+        $schemaId   = $objectData['_schema'] ?? $objectData['schema'] ?? $selfData['schema'] ?? null;
+        $uuid       = $objectData['uuid'] ?? $objectData['_uuid'] ?? $selfData['id'] ?? null;
+        $uri        = $objectData['uri'] ?? $objectData['_uri'] ?? $selfData['uri'] ?? null;
+
         return [
             'entity_type'         => 'object',
             'entity_id'           => (string) $objectId,
             'chunk_index'         => 0,
             'total_chunks'        => 1,
             'chunk_text'          => substr($item['text'], 0, 500),
-        // Preview.
             'additional_metadata' => [
                 'object_id'    => $objectId,
                 'object_title' => $title,
-        // ADDED for display.
                 'title'        => $title,
-        // ADDED for backward compatibility.
                 'name'         => $title,
-        // ADDED for alternative lookup.
                 'description'  => $description,
-        // ADDED for context.
-                // Check both direct fields and @self metadata.
-                'register'     => $objectData['_register'] ?? $objectData['register'] ?? $objectData['@self']['register'] ?? null,
-                'register_id'  => $objectData['_register'] ?? $objectData['register'] ?? $objectData['@self']['register'] ?? null,
-                'schema'       => $objectData['_schema'] ?? $objectData['schema'] ?? $objectData['@self']['schema'] ?? null,
-                'schema_id'    => $objectData['_schema'] ?? $objectData['schema'] ?? $objectData['@self']['schema'] ?? null,
-                'uuid'         => $objectData['uuid'] ?? $objectData['_uuid'] ?? $objectData['@self']['id'] ?? null,
-                'uri'          => $objectData['uri'] ?? $objectData['_uri'] ?? $objectData['@self']['uri'] ?? null,
+                'register'     => $registerId,
+                'register_id'  => $registerId,
+                'schema'       => $schemaId,
+                'schema_id'    => $schemaId,
+                'uuid'         => $uuid,
+                'uri'          => $uri,
             ],
         ];
     }//end prepareVectorMetadata()

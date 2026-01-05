@@ -82,8 +82,6 @@ class RegisterTool extends AbstractTool
     /**
      * Get tool description
      *
-     * @return string Tool description
-     *
      * @psalm-return 'Manage registers: list, view, create, update, or delete registers. Registers organize schemas and objects.'
      */
     public function getDescription(): string

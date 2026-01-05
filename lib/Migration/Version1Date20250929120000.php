@@ -118,7 +118,8 @@ class Version1Date20250929120000 extends SimpleMigrationStep
             $totalSchemas = $row['total'] ?? 0;
 
             if ($totalSchemas > 0) {
-                $output->info(message: "✅ Found {$totalSchemas} existing schemas - all automatically set to searchable=true");
+                $schemaMsg = "Found {$totalSchemas} existing schemas - all automatically set to searchable=true";
+                $output->info(message: $schemaMsg);
             } else {
                 $output->info(message: 'ℹ️  No existing schemas found - ready for new schemas with searchable control');
             }

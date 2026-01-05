@@ -56,7 +56,7 @@ class PreparationHandler
     /**
      * Static cache for schemas to avoid repeated DB queries.
      *
-     * @var array<int, Schema>
+     * @var array<int|string, Schema>
      */
     private static array $schemaCache = [];
 
@@ -64,11 +64,10 @@ class PreparationHandler
      * Constructor for PreparationHandler.
      *
      * @param SaveObject            $saveHandler           Handler for save operations.
-     * @param SchemaMapper          $schemaMapper          Mapper for schema operations
-     * @param BulkValidationHandler $bulkValidationHandler Handler for schema analysis
-     * @param OrganisationService   $organisationService   Service for organisation operations
-     * @param IUserSession          $userSession           User session for owner assignment
-     * @param LoggerInterface       $logger                Logger for logging operations
+     * @param SchemaMapper          $schemaMapper          Mapper for schema operations.
+     * @param BulkValidationHandler $bulkValidationHandler Handler for schema analysis.
+     * @param IUserSession          $userSession           User session for owner assignment.
+     * @param LoggerInterface       $logger                Logger for logging operations.
      */
     public function __construct(
         private readonly SaveObject $saveHandler,
@@ -98,8 +97,10 @@ class PreparationHandler
      *
      * @psalm-param    array<int, array<string, mixed>> $objects
      * @phpstan-param  array<int, array<string, mixed>> $objects
-     * @psalm-return   array{0: array<int, array<string, mixed>>, 1: array<int|string, Schema>, 2: array<int, array<string, mixed>>}
-     * @phpstan-return array{0: array<int, array<string, mixed>>, 1: array<int|string, Schema>, 2: array<int, array<string, mixed>>}
+     * @psalm-return   array{0: array<int, array<string, mixed>>,
+     *     1: array<int|string, Schema>, 2: array<int, array<string, mixed>>}
+     * @phpstan-return array{0: array<int, array<string, mixed>>,
+     *     1: array<int|string, Schema>, 2: array<int, array<string, mixed>>}
      */
     public function prepareObjectsForBulkSave(array $objects): array
     {
@@ -170,7 +171,9 @@ class PreparationHandler
                 $selfDataForHydration = $object['@self'];
 
                 // Convert published/depublished strings to DateTime objects.
-                if (($selfDataForHydration['published'] ?? null) !== null && is_string($selfDataForHydration['published']) === true) {
+                if (($selfDataForHydration['published'] ?? null) !== null
+                    && is_string($selfDataForHydration['published']) === true
+                ) {
                     try {
                         $selfDataForHydration['published'] = new DateTime($selfDataForHydration['published']);
                     } catch (Exception $e) {
@@ -178,7 +181,9 @@ class PreparationHandler
                     }
                 }
 
-                if (($selfDataForHydration['depublished'] ?? null) !== null && is_string($selfDataForHydration['depublished']) === true) {
+                if (($selfDataForHydration['depublished'] ?? null) !== null
+                    && is_string($selfDataForHydration['depublished']) === true
+                ) {
                     try {
                         $selfDataForHydration['depublished'] = new DateTime($selfDataForHydration['depublished']);
                     } catch (Exception $e) {
@@ -317,7 +322,10 @@ class PreparationHandler
     private function handlePreValidationCascading(array $object, string $uuid): array
     {
         // Delegate to BulkValidationHandler for pre-validation cascading.
-        [$processedObject, $processedUuid] = $this->bulkValidationHandler->handlePreValidationCascading(object: $object, uuid: $uuid);
+        [$processedObject, $processedUuid] = $this->bulkValidationHandler->handlePreValidationCascading(
+            object: $object,
+            uuid: $uuid
+        );
         // Suppress unused variable warning for $processedUuid - it's part of the tuple return.
         unset($processedUuid);
         return $processedObject;
@@ -326,14 +334,18 @@ class PreparationHandler
     /**
      * Handle bulk inverse relations with analysis.
      *
-     * @param array &$preparedObjects The prepared objects.
-     * @param array $schemaAnalysis   The schema analysis.
+     * @param array $preparedObjects The prepared objects.
+     * @param array $schemaAnalysis  The schema analysis.
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function handleBulkInverseRelationsWithAnalysis(array &$preparedObjects, array $schemaAnalysis): void
     {
         // This method is handled internally by SaveObjects for performance.
         // For now, we skip it in the handler to avoid circular dependencies.
+        // Params are kept for API consistency when method is implemented.
+        unset($preparedObjects, $schemaAnalysis);
     }//end handleBulkInverseRelationsWithAnalysis()
 }//end class

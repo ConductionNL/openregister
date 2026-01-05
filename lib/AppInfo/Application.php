@@ -265,7 +265,7 @@ class Application extends App implements IBootstrap
         // Table existence checks are handled in mapper methods to gracefully handle missing tables.
         // ✅ AUTOWIRED: OrganisationMapper (only type-hinted: IDBConnection, LoggerInterface, IEventDispatcher).
         // Register OrganisationService without SettingsService to break circular dependency.
-        // OrganisationService → SettingsService → AuditTrailMapper → ObjectEntityMapper → SchemaMapper → OrganisationService (LOOP!).
+        // OrganisationService -> SettingsService -> AuditTrailMapper -> ... (LOOP!).
         $context->registerService(
             OrganisationService::class,
             function ($container) {
@@ -644,14 +644,13 @@ class Application extends App implements IBootstrap
         // ✅ AUTOWIRED: DocumentBuilder, BulkIndexer, WarmupHandler, FacetBuilder, SolrDebugCommand.
         // NOTE: IndexService and handlers can be autowired.
         // Removed manual registration - Nextcloud will autowire them automatically.
-        // NOTE: VectorEmbeddings and all handlers (EmbeddingGeneratorHandler, VectorStorageHandler,
-        // VectorSearchHandler, VectorStatsHandler) can be autowired (only type-hinted parameters).
+        // NOTE: VectorEmbeddings and handlers can be autowired (only type-hinted params).
         // Removed manual registration - Nextcloud will autowire them automatically.
-        // NOTE: EntityRecognitionHandler (moved from NamedEntityRecognitionService) can be autowired (only type-hinted parameters).
+        // NOTE: EntityRecognitionHandler can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
         // NOTE: FileVectorizationStrategy can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
-        // NOTE: ObjectVectorizationStrategy can be autowired (only type-hinted parameters).
+        // NOTE: ObjectVectorizationStrategy can be autowired (only type-hinted params).
         // Removed manual registration - Nextcloud will autowire it automatically.
         // Register unified VectorizationService with strategies.
         $context->registerService(
@@ -663,8 +662,10 @@ class Application extends App implements IBootstrap
                 );
 
                 // Register strategies.
-                $service->registerStrategy(entityType: 'file', strategy: $container->get(FileVectorizationStrategy::class));
-                $service->registerStrategy(entityType: 'object', strategy: $container->get(ObjectVectorizationStrategy::class));
+                $fileStrategy   = $container->get(FileVectorizationStrategy::class);
+                $objectStrategy = $container->get(ObjectVectorizationStrategy::class);
+                $service->registerStrategy('file', $fileStrategy);
+                $service->registerStrategy('object', $objectStrategy);
 
                 return $service;
             }

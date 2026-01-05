@@ -248,7 +248,8 @@ class IndexService
      *
      * @return (array|bool|float|mixed|string)[] Result with statistics
      *
-     * @psalm-return array{success: bool, error?: string, stats: array, execution_time_ms?: float, resolved_conflicts?: mixed}
+     * @psalm-return array{success: bool, error?: string,
+     *     stats: array, execution_time_ms?: float, resolved_conflicts?: mixed}
      */
     public function mirrorSchemas(bool $force=false): array
     {
@@ -818,7 +819,8 @@ class IndexService
      *
      * @throws Exception If backend is not Solr
      *
-     * @psalm-return array{endpoint: ''|mixed, collection: 'openregister'|mixed, username: ''|mixed, password: ''|mixed, timeout: 30|mixed}
+     * @psalm-return array{endpoint: ''|mixed, collection: 'openregister'|mixed, username: ''|mixed,
+     *     password: ''|mixed, timeout: 30|mixed}
      */
     public function getSolrConfig(): array
     {

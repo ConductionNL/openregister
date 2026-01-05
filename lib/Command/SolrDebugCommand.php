@@ -145,8 +145,11 @@ class SolrDebugCommand extends Command
         $hasCheckCores     = $input->getOption('check-cores') === true;
         $hasTenantInfo     = $input->getOption('tenant-info') === true;
 
-        if ($runAll === false && $hasSetup === false && $hasTestConnection === false && $hasCheckCores === false && $hasTenantInfo === false) {
-            $output->writeln('<comment>No options specified. Use --all or specific options like --setup, --test-connection, --check-cores</comment>');
+        $noOptions = $hasSetup === false && $hasTestConnection === false;
+        $noOptions = $noOptions && $hasCheckCores === false && $hasTenantInfo === false;
+        if ($runAll === false && $noOptions === true) {
+            $msg = 'No options specified. Use --all or specific options like --setup, --test-connection, --check-cores';
+            $output->writeln('<comment>'.$msg.'</comment>');
             return Command::SUCCESS;
         }
 
@@ -169,17 +172,15 @@ class SolrDebugCommand extends Command
         $overwriteHost = $this->config->getSystemValue(key: 'overwrite.cli.url', default: '');
 
         // Use overwrite host for tenant ID if set, otherwise use instance ID.
+        $tenantId = 'nc_'.substr($instanceId, 0, 8);
         if (empty($overwriteHost) === false) {
             $tenantId = 'nc_'.hash('crc32', $overwriteHost);
-        } else {
-            $tenantId = 'nc_'.substr($instanceId, 0, 8);
         }
 
         // Display overwrite host value or 'not set'.
+        $overwriteHostDisplay = 'not set';
         if ($overwriteHost !== '' && $overwriteHost !== null) {
             $overwriteHostDisplay = $overwriteHost;
-        } else {
-            $overwriteHostDisplay = 'not set';
         }
 
         $output->writeln("  Instance ID: <comment>$instanceId</comment>");
@@ -223,20 +224,12 @@ class SolrDebugCommand extends Command
             $output->writeln("    Scheme: <comment>{$solrSettings['scheme']}</comment>");
 
             // Create IndexService from settings.
-            // NOTE: This requires proper dependency injection - IndexService needs FileHandler, ObjectHandler, SchemaHandler, SearchBackendInterface
+            // NOTE: This requires proper dependency injection - IndexService needs
+            // FileHandler, ObjectHandler, SchemaHandler, SearchBackendInterface
             // For now, this will fail at runtime and needs to be fixed with proper DI.
-            // TODO: Inject these dependencies via constructor instead of using getContainer().
+            // TODO: Inject these dependencies via constructor.
             // Command classes don't have getContainer() method - this needs to be fixed.
             $output->writeln('<error>IndexService creation requires dependency injection - not yet implemented</error>');
-            return;
-            // Test setup.
-            // $setup  = new SetupHandler($solrService, $this->logger);
-            // $result = $setup->setupSolr();.
-            if ($result === true) {
-                $output->writeln('<info>✅ SOLR setup completed successfully</info>');
-            } else {
-                $output->writeln('<error>❌ SOLR setup failed</error>');
-            }
         } catch (\Exception $e) {
             $output->writeln("<error>❌ Setup failed: {$e->getMessage()}</error>");
         }//end try
@@ -272,26 +265,28 @@ class SolrDebugCommand extends Command
 
             $connectionResult = $solrService->testConnection();
 
-            if ($connectionResult['success'] === true) {
-                $output->writeln('<info>✅ SOLR connection successful (Guzzle HTTP)</info>');
-                $output->writeln("  Response time: <comment>{$connectionResult['details']['response_time_ms']}ms</comment>");
-                $output->writeln("  SOLR version: <comment>{$connectionResult['details']['solr_version']}</comment>");
-                $output->writeln("  Tenant ID: <comment>{$connectionResult['details']['tenant_id']}</comment>");
-                $output->writeln("  Mode: <comment>{$connectionResult['details']['mode']}</comment>");
-
-                // Test tenant collection creation.
-                $output->writeln('');
-                $output->writeln('<info>🏗️ Testing tenant collection creation...</info>');
-                if ($solrService->ensureTenantCollection() === true) {
-                    $output->writeln('<info>✅ Tenant collection ready</info>');
-                    $docCount = $solrService->getDocumentCount();
-                    $output->writeln("  Document count: <comment>$docCount</comment>");
-                } else {
-                    $output->writeln('<error>❌ Failed to create tenant collection</error>');
-                }
-            } else {
+            if ($connectionResult['success'] !== true) {
                 $output->writeln("<error>❌ Connection failed: {$connectionResult['message']}</error>");
+                return;
             }
+
+            $output->writeln('<info>✅ SOLR connection successful (Guzzle HTTP)</info>');
+            $output->writeln("  Response time: <comment>{$connectionResult['details']['response_time_ms']}ms</comment>");
+            $output->writeln("  SOLR version: <comment>{$connectionResult['details']['solr_version']}</comment>");
+            $output->writeln("  Tenant ID: <comment>{$connectionResult['details']['tenant_id']}</comment>");
+            $output->writeln("  Mode: <comment>{$connectionResult['details']['mode']}</comment>");
+
+            // Test tenant collection creation.
+            $output->writeln('');
+            $output->writeln('<info>🏗️ Testing tenant collection creation...</info>');
+            if ($solrService->ensureTenantCollection() !== true) {
+                $output->writeln('<error>❌ Failed to create tenant collection</error>');
+                return;
+            }
+
+            $output->writeln('<info>✅ Tenant collection ready</info>');
+            $docCount = $solrService->getDocumentCount();
+            $output->writeln("  Document count: <comment>$docCount</comment>");
         } catch (\Exception $e) {
             $output->writeln("<error>❌ Connection test failed: {$e->getMessage()}</error>");
         }//end try
@@ -333,6 +328,8 @@ class SolrDebugCommand extends Command
      * @param OutputInterface $output       Output interface
      * @param array           $solrSettings SOLR configuration
      *
+     * @SuppressWarnings(PHPMD.ElseExpression) Else clauses needed for API availability checks
+     *
      * @return void
      */
     private function testSolrAdminAPI(OutputInterface $output, array $solrSettings): void
@@ -349,9 +346,11 @@ class SolrDebugCommand extends Command
         $output->writeln("  Testing cores API: <comment>$coresUrl</comment>");
 
         $coresResponse = file_get_contents($coresUrl);
-        if ($coresResponse !== false && $coresResponse !== '' && $coresResponse !== null) {
+        if ($coresResponse === false || $coresResponse === '') {
+            $output->writeln('  <comment>❓ Cores API not available (might be SolrCloud)</comment>');
+        } else {
             $coresData = json_decode($coresResponse, true);
-            if (($coresData['status'] ?? null) !== null) {
+            if ($coresData !== null && ($coresData['status'] ?? null) !== null) {
                 $coreCount = count($coresData['status']);
                 $output->writeln("  <info>✅ Found $coreCount cores (standalone mode)</info>");
                 foreach ($coresData['status'] as $coreName => $coreInfo) {
@@ -359,8 +358,6 @@ class SolrDebugCommand extends Command
                     $output->writeln("    - <comment>$coreName</comment> ($docCount documents)");
                 }
             }
-        } else {
-            $output->writeln('  <comment>❓ Cores API not available (might be SolrCloud)</comment>');
         }
 
         // Test collections listing (SolrCloud).
@@ -375,23 +372,17 @@ class SolrDebugCommand extends Command
         $output->writeln("  Testing collections API: <comment>$collectionsUrl</comment>");
 
         $collectionsResponse = file_get_contents($collectionsUrl);
-        if ($collectionsResponse !== false && $collectionsResponse !== '' && $collectionsResponse !== null) {
+        if ($collectionsResponse === false || $collectionsResponse === '') {
+            $output->writeln('  <comment>❓ Collections API not available (might be standalone)</comment>');
+        } else {
             $collectionsData = json_decode($collectionsResponse, true);
-            if (($collectionsData['cluster']['collections'] ?? null) !== null) {
+            if ($collectionsData !== null && ($collectionsData['cluster']['collections'] ?? null) !== null) {
                 $collectionCount = count($collectionsData['cluster']['collections']);
                 $output->writeln("  <info>✅ Found $collectionCount collections (SolrCloud mode)</info>");
-                // Iterate over collections directly to get string keys.
-                // Collection names in Solr are always strings.
-                foreach ($collectionsData['cluster']['collections'] as $collectionName => $collectionData) {
-                    // $collectionName is guaranteed to be a string when iterating over array.
-                    // $collectionData contains collection metadata but we only display the name.
-                    unset($collectionData);
-                    // Suppress unused variable warning.
+                foreach (array_keys($collectionsData['cluster']['collections']) as $collectionName) {
                     $output->writeln("    - <comment>".$collectionName."</comment>");
                 }
             }
-        } else {
-            $output->writeln('  <comment>❓ Collections API not available (might be standalone)</comment>');
         }
 
         // Test configSets listing.
@@ -406,17 +397,17 @@ class SolrDebugCommand extends Command
         $output->writeln("  Testing configSets API: <comment>$configSetsUrl</comment>");
 
         $configSetsResponse = file_get_contents($configSetsUrl);
-        if ($configSetsResponse !== false && $configSetsResponse !== '' && $configSetsResponse !== null) {
+        if ($configSetsResponse === false || $configSetsResponse === '') {
+            $output->writeln('  <comment>❓ ConfigSets API not available</comment>');
+        } else {
             $configSetsData = json_decode($configSetsResponse, true);
-            if (($configSetsData['configSets'] ?? null) !== null) {
+            if ($configSetsData !== null && ($configSetsData['configSets'] ?? null) !== null) {
                 $configSetCount = count($configSetsData['configSets']);
                 $output->writeln("  <info>✅ Found $configSetCount configSets</info>");
                 foreach ($configSetsData['configSets'] as $configSetName) {
                     $output->writeln("    - <comment>$configSetName</comment>");
                 }
             }
-        } else {
-            $output->writeln('  <comment>❓ ConfigSets API not available</comment>');
         }
     }//end testSolrAdminAPI()
 }//end class

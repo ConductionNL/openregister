@@ -249,7 +249,8 @@ class ImportService
      *     updated: array,
      *     deduplication_efficiency?: string,
      *     schema?: array{id: int, title: null|string, slug: null|string}|null,
-     *     debug?: array{headers: array<never, never>, processableHeaders: array<never, never>, schemaProperties: list<array-key>}
+     *     debug?: array{headers: array<never, never>, processableHeaders: array<never, never>,
+     *             schemaProperties: list<array-key>}
      * }>
      */
     public function importFromExcel(
@@ -328,7 +329,7 @@ class ImportService
      * @param bool          $publish       Whether to publish objects immediately (default: false).
      * @param IUser|null    $currentUser   Current user for RBAC checks (default: null).
      *
-     * @return (((array|int|mixed|string)[]|float|int|mixed|null|string)[]|int|string)[][]
+     * @return ((int|null|string)[]|mixed)[][]
      *
      * @phpstan-return array<string, array{
      *     created: array<mixed>,
@@ -341,19 +342,7 @@ class ImportService
      *     performance?: array
      * }>
      *
-     * @psalm-return array<string,
-     *     array{found: int<0, max>, created: array<never, mixed|null>,
-     *     updated: array<never, mixed|null>,
-     *     unchanged: array<never, mixed|null>,
-     *     errors: list{0?: array{object: array<never, never>|mixed,
-     *     error: 'No data rows found in CSV file'|
-     *     'No valid headers found in CSV file'|'Validation failed'|mixed,
-     *     type?: 'ValidationException'|mixed, row?: 1},...},
-     *     deduplication_efficiency?: string,
-     *     performance?: array{totalTime: float, totalTimeMs: float,
-     *     objectsPerSecond: float, totalProcessed: int<0, max>,
-     *     totalFound: int<0, max>, efficiency: 0|float},
-     *     schema: array{id: int, title: null|string, slug: null|string}}>
+     * @psalm-return array<string, array{schema: array{id: int, title: null|string, slug: null|string},...}>
      */
     public function importFromCsv(
         string $filePath,
@@ -645,12 +634,17 @@ class ImportService
             }
 
             // Transform row data to object format.
-            $object = $this->transformExcelRowToObject(rowData: $rowData, register: $register, schema: $schema, currentUser: $currentUser);
+            $object = $this->transformExcelRowToObject(
+                rowData: $rowData,
+                register: $register,
+                schema: $schema,
+                currentUser: $currentUser
+            );
 
             if ($object !== null) {
                 $allObjects[] = $object;
             }
-        }
+        }//end for
 
         $summary['found'] = count($allObjects);
 
@@ -692,9 +686,13 @@ class ImportService
             );
 
             // Add efficiency metrics from smart deduplication.
-            $totalProcessed = count($summary['created']) + count($summary['updated']) + count($summary['unchanged']);
-            if ($totalProcessed > 0 && count($summary['unchanged']) > 0) {
-                $summary['deduplication_efficiency'] = round((count($summary['unchanged']) / $totalProcessed) * 100, 1).'% operations avoided';
+            $createdCount   = count($summary['created']);
+            $updatedCount   = count($summary['updated']);
+            $unchangedCount = count($summary['unchanged']);
+            $totalProcessed = $createdCount + $updatedCount + $unchangedCount;
+            if ($totalProcessed > 0 && $unchangedCount > 0) {
+                $efficiency = round(($unchangedCount / $totalProcessed) * 100, 1);
+                $summary['deduplication_efficiency'] = $efficiency.'% operations avoided';
             }
 
             // Handle validation errors if validation was enabled.
@@ -722,10 +720,10 @@ class ImportService
      * @param \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet         The worksheet to process
      * @param Register                                      $register      The register to associate with imported objects
      * @param Schema                                        $schema        The schema to associate with imported objects
-     * @param bool                                          $validation    Whether to validate objects against schema definitions
-     * @param bool                                          $events        Whether to dispatch object lifecycle events
-     * @param bool                                          $_rbac         Whether to apply RBAC permissions
-     * @param bool                                          $_multitenancy Whether to apply multi-tenancy filtering
+     * @param bool                                          $validation    Whether to validate objects
+     * @param bool                                          $events        Whether to dispatch events
+     * @param bool                                          $_rbac         Whether to apply RBAC
+     * @param bool                                          $_multitenancy Multi-tenancy filtering
      * @param bool                                          $publish       Whether to publish objects after import
      * @param IUser|null                                    $currentUser   The current user performing the import
      *
@@ -820,12 +818,17 @@ class ImportService
             }
 
             // Transform row data to object format.
-            $object = $this->transformCsvRowToObject(rowData: $rowData, register: $register, schema: $schema, currentUser: $currentUser);
+            $object = $this->transformCsvRowToObject(
+                rowData: $rowData,
+                register: $register,
+                schema: $schema,
+                currentUser: $currentUser
+            );
 
             if ($object !== null) {
                 $allObjects[] = $object;
             }
-        }
+        }//end for
 
         $summary['found'] = count($allObjects);
 
@@ -897,9 +900,13 @@ class ImportService
             );
 
             // Add efficiency metrics from smart deduplication.
-            $totalProcessed = count($summary['created']) + count($summary['updated']) + count($summary['unchanged']);
-            if ($totalProcessed > 0 && count($summary['unchanged']) > 0) {
-                $summary['deduplication_efficiency'] = round((count($summary['unchanged']) / $totalProcessed) * 100, 1).'% operations avoided';
+            $createdCount   = count($summary['created']);
+            $updatedCount   = count($summary['updated']);
+            $unchangedCount = count($summary['unchanged']);
+            $totalProcessed = $createdCount + $updatedCount + $unchangedCount;
+            if ($totalProcessed > 0 && $unchangedCount > 0) {
+                $efficiency = round(($unchangedCount / $totalProcessed) * 100, 1);
+                $summary['deduplication_efficiency'] = $efficiency.'% operations avoided';
             }
 
             // Handle validation errors if validation was enabled.
@@ -949,22 +956,20 @@ class ImportService
      *
      * @psalm-return array{'@self': array<string, int|mixed|string>,...}
      */
-    private function transformCsvRowToObject(array $rowData, Register $register, Schema $schema, ?IUser $currentUser=null): array
-    {
+    private function transformCsvRowToObject(
+        array $rowData,
+        Register $register,
+        Schema $schema,
+        ?IUser $currentUser=null
+    ): array {
         // Use instance cache instead of static to prevent issues between requests.
         $schemaId = $schema->getId();
         // Ensure schemaId is string for array key.
         $schemaIdKey = (string) $schemaId;
-        if (is_string($schemaId) === true) {
-            $schemaIdKey = $schemaId;
-        }
 
         if (isset($this->schemaPropertiesCache[$schemaIdKey]) === false) {
-            /*
-             * @psalm-suppress InvalidPropertyAssignmentValue - getProperties() returns array compatible with array<string, array>
-             */
-
-            $this->schemaPropertiesCache[$schemaIdKey] = $schema->getProperties();
+            $properties = $schema->getProperties();
+            $this->schemaPropertiesCache[$schemaIdKey] = $properties ?? [];
         }
 
         $schemaProperties = $this->schemaPropertiesCache[$schemaIdKey];
@@ -1008,7 +1013,10 @@ class ImportService
                     $selfPropertyName = substr($key, 6);
 
                     // Transform special @self properties.
-                    $selfData[$selfPropertyName] = $this->transformSelfProperty(propertyName: $selfPropertyName, value: $value);
+                    $selfData[$selfPropertyName] = $this->transformSelfProperty(
+                        propertyName: $selfPropertyName,
+                        value: $value
+                    );
                 }
 
                 // Note: Other @ columns that don't start with @self. are ignored.
@@ -1016,8 +1024,9 @@ class ImportService
             }//end if
 
             // Regular properties - transform based on schema if needed.
-            $objectData[$key] = $value;
-            if (is_array($schemaProperties) === true && ($schemaProperties[$key] ?? null) !== null) {
+            $objectData[$key]  = $value;
+            $hasSchemaProperty = ($schemaProperties[$key] ?? null) !== null;
+            if (is_array($schemaProperties) === true && $hasSchemaProperty === true) {
                 $objectData[$key] = $this->transformValueByType(value: $value, propertyDef: $schemaProperties[$key]);
             }
         }//end foreach
@@ -1162,8 +1171,12 @@ class ImportService
      *
      * @return array<string, mixed>|null Object data or null if transformation fails
      */
-    private function transformExcelRowToObject(array $rowData, ?Register $register, ?Schema $schema, ?IUser $currentUser=null): ?array
-    {
+    private function transformExcelRowToObject(
+        array $rowData,
+        ?Register $register,
+        ?Schema $schema,
+        ?IUser $currentUser=null
+    ): ?array {
         // Separate regular properties from system properties.
         $objectData = [];
         $selfData   = [];
@@ -1192,7 +1205,10 @@ class ImportService
                     $selfPropertyName = substr($key, 6);
 
                     // Transform special @self properties.
-                    $selfData[$selfPropertyName] = $this->transformSelfProperty(propertyName: $selfPropertyName, value: $value);
+                    $selfData[$selfPropertyName] = $this->transformSelfProperty(
+                        propertyName: $selfPropertyName,
+                        value: $value
+                    );
                 }
 
                 // Note: Other @ columns that don't start with @self. are ignored.
@@ -1319,18 +1335,27 @@ class ImportService
 
             foreach ($processedRows as $index => $rowData) {
                 $promises[] = new Promise(
-                    function (callable $resolve, callable $_reject) use ($rowData, $index, $register, $schema, $startRow) {
+                    /** @psalm-suppress InvalidArgument - Promise resolve accepts mixed */
+                    function (callable $resolve, callable $_reject) use (
+                        $rowData,
+                        $index,
+                        $register,
+                        $schema,
+                        $startRow
+                    ) {
                         // NO ERROR SUPPRESSION: Let processRow errors bubble up immediately!
-                        $result = $this->processRow(rowData: $rowData, register: $register, schema: $schema, _rowIndex: $startRow + $index);
-
-                        /*
-                         * @var callable(mixed): void $resolve
-                         */
+                        $rowIndex = $startRow + $index;
+                        $result   = $this->processRow(
+                            rowData: $rowData,
+                            register: $register,
+                            schema: $schema,
+                            _rowIndex: $rowIndex
+                        );
 
                         $resolve($result);
                     }
                 );
-            }
+            }//end foreach
 
             // Process promises in batches to limit concurrency.
             $batchSize    = self::MAX_CONCURRENT;
@@ -1338,10 +1363,7 @@ class ImportService
             for ($i = 0; $i < $promiseCount; $i += $batchSize) {
                 $batch = array_slice($promises, $i, $batchSize);
 
-                /*
-                 * @psalm-suppress UndefinedFunction - React\Async\await is from external library
-                 */
-
+                /** @psalm-suppress UndefinedFunction - React\Async\await is from external library */
                 $results = \React\Async\await(\React\Promise\all($batch));
 
                 foreach ($results as $result) {
@@ -1374,8 +1396,11 @@ class ImportService
      *
      * @psalm-return array<string, string>
      */
-    private function extractRowData(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet, array $columnMapping, int $row): array
-    {
+    private function extractRowData(
+        \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet,
+        array $columnMapping,
+        int $row
+    ): array {
         $rowData = [];
         // Name -> value.
         $hasData = false;
@@ -1908,6 +1933,11 @@ class ImportService
             ]
         );
 
-        return $this->scheduleSolrWarmup(importSummary: $importSummary, delaySeconds: $delay, mode: $mode, maxObjects: $maxObjects);
+        return $this->scheduleSolrWarmup(
+            importSummary: $importSummary,
+            delaySeconds: $delay,
+            mode: $mode,
+            maxObjects: $maxObjects
+        );
     }//end scheduleSmartSolrWarmup()
 }//end class

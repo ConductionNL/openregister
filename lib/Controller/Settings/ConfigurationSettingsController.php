@@ -335,7 +335,8 @@ class ConfigurationSettingsController extends Controller
      *
      * @return JSONResponse JSON response with object collection fields
      *
-     * @psalm-return JSONResponse<200|500, array{success: bool, message?: string, collection?: 'objects', status?: array}, array<never, never>>
+     * @psalm-return JSONResponse<200|500, array{success: bool, message?: string, collection?: 'objects', status?: array},
+     *     array<never, never>>
      */
     public function getObjectCollectionFields(): JSONResponse
     {
@@ -370,7 +371,8 @@ class ConfigurationSettingsController extends Controller
      *
      * @return JSONResponse JSON response with object field creation results
      *
-     * @psalm-return JSONResponse<200|400|500, array{success: bool, message: string, collection?: 'objects', result?: array}, array<never, never>>
+     * @psalm-return JSONResponse<200|400|500, array{success: bool, message: string, collection?: 'objects',
+     *     result?: array}, array<never, never>>
      */
     public function createMissingObjectFields(): JSONResponse
     {

@@ -78,7 +78,9 @@ class MigrationHandler
      * @param array      $objectIds      Array of object IDs to migrate.
      * @param array      $mapping        Simple mapping where keys are target properties, values are source properties.
      *
-     * @return (((bool|mixed|null|string)[]|int|string)[]|bool)[] Migration report with success status, statistics, details, warnings, and errors.
+     * @return (((bool|mixed|null|string)[]|int|string)[]|bool)[] Migration report with success
+     *                                                            status, statistics, details,
+     *                                                            warnings, and errors.
      *
      * @throws OcpDoesNotExistException If register or schema not found.
      * @throws InvalidArgumentException If invalid parameters provided.
@@ -116,13 +118,29 @@ class MigrationHandler
 
         try {
             // Load source and target registers/schemas.
-            $sourceRegisterEntity = $this->utilityHandler->normalizeEntity(entity: $sourceRegister, type: 'register');
-            $sourceSchemaEntity   = $this->utilityHandler->normalizeEntity(entity: $sourceSchema, type: 'schema');
-            $targetRegisterEntity = $this->utilityHandler->normalizeEntity(entity: $targetRegister, type: 'register');
-            $targetSchemaEntity   = $this->utilityHandler->normalizeEntity(entity: $targetSchema, type: 'schema');
+            $sourceRegisterEntity = $this->utilityHandler->normalizeEntity(
+                entity: $sourceRegister,
+                type: 'register'
+            );
+            $sourceSchemaEntity   = $this->utilityHandler->normalizeEntity(
+                entity: $sourceSchema,
+                type: 'schema'
+            );
+            $targetRegisterEntity = $this->utilityHandler->normalizeEntity(
+                entity: $targetRegister,
+                type: 'register'
+            );
+            $targetSchemaEntity   = $this->utilityHandler->normalizeEntity(
+                entity: $targetSchema,
+                type: 'schema'
+            );
 
             // Validate entities exist.
-            if ($sourceRegisterEntity === null || $sourceSchemaEntity === null || $targetRegisterEntity === null || $targetSchemaEntity === null) {
+            $anyEntityMissing = $sourceRegisterEntity === null
+                || $sourceSchemaEntity === null
+                || $targetRegisterEntity === null
+                || $targetSchemaEntity === null;
+            if ($anyEntityMissing === true) {
                 throw new OcpDoesNotExistException('One or more registers/schemas not found');
             }
 
@@ -174,7 +192,10 @@ class MigrationHandler
                     $sourceData = $sourceObject->getObject();
 
                     // Map properties according to mapping configuration.
-                    $mappedData = $this->dataManipulationHandler->mapObjectProperties(sourceData: $sourceData, mapping: $mapping);
+                    $mappedData = $this->dataManipulationHandler->mapObjectProperties(
+                        sourceData: $sourceData,
+                        mapping: $mapping
+                    );
                     $migrationReport['statistics']['propertiesMapped']    += count($mappedData);
                     $migrationReport['statistics']['propertiesDiscarded'] += (count($sourceData) - count($mappedData));
 

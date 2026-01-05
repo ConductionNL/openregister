@@ -76,15 +76,21 @@ class Version1Date20241030131427 extends SimpleMigrationStep
         // Update the openregister_schemas table.
         $table = $schema->getTable('openregister_schemas');
         if ($table->hasColumn('hard_validation') === false) {
-            $table->addColumn(name: 'hard_validation', typeName: Types::BOOLEAN, options: ['notnull' => true])->setDefault(default: false);
+            $options = ['notnull' => true];
+            $table->addColumn(name: 'hard_validation', typeName: Types::BOOLEAN, options: $options)
+                ->setDefault(default: false);
         }
 
         if ($table->hasColumn('archive') === false) {
-            $table->addColumn(name: 'archive', typeName: Types::JSON, options: ['notnull' => false])->setDefault(default: '{}');
+            $options = ['notnull' => false];
+            $table->addColumn(name: 'archive', typeName: Types::JSON, options: $options)
+                ->setDefault(default: '{}');
         }
 
         if ($table->hasColumn('source') === false) {
-            $table->addColumn(name: 'source', typeName: Types::STRING, options: ['notnull' => false])->setDefault(default: '');
+            $options = ['notnull' => false];
+            $table->addColumn(name: 'source', typeName: Types::STRING, options: $options)
+                ->setDefault(default: '');
         }
 
         // Update the openregister_registers table.

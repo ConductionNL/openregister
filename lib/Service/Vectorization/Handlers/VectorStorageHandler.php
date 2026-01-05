@@ -26,6 +26,7 @@ use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\IndexService;
+use OCA\OpenRegister\Service\Index\Backends\SolrBackend;
 
 /**
  * VectorStorageHandler
@@ -252,13 +253,15 @@ class VectorStorageHandler
      * @param string      $model        Model used to generate embedding
      * @param int         $dimensions   Number of dimensions
      * @param int         $chunkIndex   Chunk index (0 for objects, N for file chunks)
-     * @param int         $_totalChunks Total number of chunks
-     * @param string|null $_chunkText   The text that was embedded
-     * @param array       $_metadata    Additional metadata as associative array
+     * @param int         $totalChunks  Total number of chunks (reserved for future use)
+     * @param string|null $chunkText    The text that was embedded (reserved for future use)
+     * @param array       $metadata     Additional metadata (reserved for future use)
      *
      * @return string The Solr document ID
      *
      * @throws \Exception If storage fails or Solr is not configured
+     *
+     * @psalm-suppress UnusedParam Parameters reserved for future atomic update enhancements
      */
     private function storeVectorInSolr(
         string $entityType,
@@ -267,9 +270,9 @@ class VectorStorageHandler
         string $model,
         int $dimensions,
         int $chunkIndex=0,
-        int $_totalChunks=1,
-        ?string $_chunkText=null,
-        array $_metadata=[]
+        int $totalChunks=1,
+        ?string $chunkText=null,
+        array $metadata=[]
     ): string {
         $this->logger->debug(
             message: '[VectorStorageHandler] Storing vector in Solr',
@@ -323,18 +326,15 @@ class VectorStorageHandler
                 ]
             );
 
-            /*
-             * Perform atomic update in Solr.
-             * @psalm-suppress UndefinedInterfaceMethod - buildSolrBaseUrl and getHttpClient exist on Solr backend implementation
-             */
+            // Perform atomic update in Solr.
+            // Cast to SolrBackend to access Solr-specific methods.
+            if ($solrBackend instanceof SolrBackend === false) {
+                throw new Exception('Vector storage requires SolrBackend');
+            }
 
-            $solrUrl = $solrBackend->buildSolrBaseUrl()."/{$collection}/update?commit=true";
+            $solrUrl = $solrBackend->getHttpClient()->buildSolrBaseUrl()."/{$collection}/update?commit=true";
 
-            /*
-             * @psalm-suppress UndefinedInterfaceMethod
-             */
-
-            $response = $solrBackend->getHttpClient()->post(
+            $response = $solrBackend->getHttpClient()->getHttpClient()->post(
                 $solrUrl,
                 [
                     'json'    => [$updateDocument],
@@ -344,7 +344,9 @@ class VectorStorageHandler
 
             $responseData = json_decode((string) $response->getBody(), true);
 
-            if (isset($responseData['responseHeader']['status']) === false || $responseData['responseHeader']['status'] !== 0) {
+            $statusMissing = isset($responseData['responseHeader']['status']) === false;
+            $statusNotZero = ($responseData['responseHeader']['status'] ?? null) !== 0;
+            if ($statusMissing === true || $statusNotZero === true) {
                 throw new Exception('Solr atomic update failed: '.json_encode($responseData));
             }
 
@@ -426,11 +428,8 @@ class VectorStorageHandler
         try {
             $settings = $this->settingsService->getSettings();
 
-            /*
-             * Get vector field from LLM configuration, default to '_embedding_'.
-             * @psalm-suppress InvalidArrayOffset
-             */
-
+            // Get vector field from LLM configuration, default to '_embedding_'.
+            /** @var array{llm?: array{vectorConfig?: array{solrField?: string}}} $settings */
             return $settings['llm']['vectorConfig']['solrField'] ?? '_embedding_';
         } catch (Exception $e) {
             $this->logger->warning(

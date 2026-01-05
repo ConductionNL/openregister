@@ -120,9 +120,12 @@ class StatisticsHandler
                 if (is_array($registerId) === true) {
                     // Convert array of integers to array of strings.
                     $stringIds = array_map('strval', $registerId);
-                    $qb->andWhere($qb->expr()->in('register', $qb->createNamedParameter($stringIds, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+                    $paramType = \Doctrine\DBAL\Connection::PARAM_STR_ARRAY;
+                    $param     = $qb->createNamedParameter($stringIds, $paramType);
+                    $qb->andWhere($qb->expr()->in('register', $param));
                 } else {
-                    $qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter((string) $registerId, IQueryBuilder::PARAM_STR)));
+                    $param = $qb->createNamedParameter((string) $registerId, IQueryBuilder::PARAM_STR);
+                    $qb->andWhere($qb->expr()->eq('register', $param));
                 }
             }
 
@@ -132,9 +135,12 @@ class StatisticsHandler
                 if (is_array($schemaId) === true) {
                     // Convert array of integers to array of strings.
                     $stringIds = array_map('strval', $schemaId);
-                    $qb->andWhere($qb->expr()->in('schema', $qb->createNamedParameter($stringIds, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+                    $paramType = \Doctrine\DBAL\Connection::PARAM_STR_ARRAY;
+                    $param     = $qb->createNamedParameter($stringIds, $paramType);
+                    $qb->andWhere($qb->expr()->in('schema', $param));
                 } else {
-                    $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter((string) $schemaId, IQueryBuilder::PARAM_STR)));
+                    $param = $qb->createNamedParameter((string) $schemaId, IQueryBuilder::PARAM_STR);
+                    $qb->andWhere($qb->expr()->eq('schema', $param));
                 }
             }
 
@@ -160,7 +166,8 @@ class StatisticsHandler
                     // Handle schema exclusion.
                     if (($combination['schema'] ?? null) !== null) {
                         $orConditions->add($qb->expr()->isNull('schema'));
-                        $orConditions->add($qb->expr()->neq('schema', $qb->createNamedParameter($combination['schema'], IQueryBuilder::PARAM_INT)));
+                        $schemaParam = $qb->createNamedParameter($combination['schema'], IQueryBuilder::PARAM_INT);
+                        $orConditions->add($qb->expr()->neq('schema', $schemaParam));
                     }
 
                     // Add the OR conditions to the main query.
@@ -228,17 +235,18 @@ class StatisticsHandler
                 $qb->leftJoin('o', 'openregister_registers', 'r', 'o.register = r.id');
             }
 
-            $qb->groupBy('r.id', 'r.title')
-                ->orderBy('count', 'DESC');
+            $qb->groupBy('r.id', 'r.title')->orderBy('count', 'DESC');
 
             // Add register filter if provided.
             if ($registerId !== null) {
-                $qb->andWhere($qb->expr()->eq('o.register', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)));
+                $registerParam = $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT);
+                $qb->andWhere($qb->expr()->eq('o.register', $registerParam));
             }
 
             // Add schema filter if provided.
             if ($schemaId !== null) {
-                $qb->andWhere($qb->expr()->eq('o.schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
+                $schemaParam = $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT);
+                $qb->andWhere($qb->expr()->eq('o.schema', $schemaParam));
             }
 
             $results = $qb->executeQuery()->fetchAll();
@@ -301,17 +309,18 @@ class StatisticsHandler
                 $qb->leftJoin('o', 'openregister_schemas', 's', 'o.schema = s.id');
             }
 
-            $qb->groupBy('s.id', 's.title')
-                ->orderBy('count', 'DESC');
+            $qb->groupBy('s.id', 's.title')->orderBy('count', 'DESC');
 
             // Add register filter if provided.
             if ($registerId !== null) {
-                $qb->andWhere($qb->expr()->eq('o.register', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)));
+                $registerParam = $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT);
+                $qb->andWhere($qb->expr()->eq('o.register', $registerParam));
             }
 
             // Add schema filter if provided.
             if ($schemaId !== null) {
-                $qb->andWhere($qb->expr()->eq('o.schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
+                $schemaParam = $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT);
+                $qb->andWhere($qb->expr()->eq('o.schema', $schemaParam));
             }
 
             $results = $qb->executeQuery()->fetchAll();
@@ -365,28 +374,31 @@ class StatisticsHandler
             $results = [];
             foreach ($ranges as $range) {
                 $qb = $this->db->getQueryBuilder();
-                $qb->select($qb->createFunction('COUNT(*) as count'))
-                    ->from($this->tableName);
+                $qb->select($qb->createFunction('COUNT(*) as count'))->from($this->tableName);
 
                 // Add size range conditions.
                 if ($range['min'] !== null) {
-                    $qb->andWhere($qb->expr()->gte('size', $qb->createNamedParameter($range['min'], IQueryBuilder::PARAM_INT)));
+                    $minParam = $qb->createNamedParameter($range['min'], IQueryBuilder::PARAM_INT);
+                    $qb->andWhere($qb->expr()->gte('size', $minParam));
                 }
 
                 if ($range['max'] !== null) {
-                    $qb->andWhere($qb->expr()->lt('size', $qb->createNamedParameter($range['max'], IQueryBuilder::PARAM_INT)));
+                    $maxParam = $qb->createNamedParameter($range['max'], IQueryBuilder::PARAM_INT);
+                    $qb->andWhere($qb->expr()->lt('size', $maxParam));
                 }
 
                 // Add register filter if provided.
-                // Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
+                // Register/schema columns are VARCHAR(255) - they store ID values as strings.
                 if ($registerId !== null) {
-                    $qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter((string) $registerId, IQueryBuilder::PARAM_STR)));
+                    $regParam = $qb->createNamedParameter((string) $registerId, IQueryBuilder::PARAM_STR);
+                    $qb->andWhere($qb->expr()->eq('register', $regParam));
                 }
 
                 // Add schema filter if provided.
-                // Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
+                // Register/schema columns are VARCHAR(255) - they store ID values as strings.
                 if ($schemaId !== null) {
-                    $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter((string) $schemaId, IQueryBuilder::PARAM_STR)));
+                    $schemaParam = $qb->createNamedParameter((string) $schemaId, IQueryBuilder::PARAM_STR);
+                    $qb->andWhere($qb->expr()->eq('schema', $schemaParam));
                 }
 
                 $count     = $qb->executeQuery()->fetchOne();

@@ -354,8 +354,8 @@ class ObjectsController extends Controller
      * @throws \OCA\OpenRegister\Exception\RegisterNotFoundException
      * @throws \OCA\OpenRegister\Exception\SchemaNotFoundException
      *
-     * @psalm-return   array{register: int, schema: int}
-     * @phpstan-return array{register: int, schema: int}
+     * @psalm-return   array{register: int, schema: int, registerEntity: mixed, schemaEntity: mixed}
+     * @phpstan-return array{register: int, schema: int, registerEntity: mixed, schemaEntity: mixed}
      */
     private function resolveRegisterSchemaIds(string $register, string $schema, ObjectService $objectService): array
     {
@@ -378,9 +378,29 @@ class ObjectsController extends Controller
         $resolvedRegisterId = $objectService->getRegister();
         $resolvedSchemaId   = $objectService->getSchema();
 
+        // STEP 3: Fetch entities for magic mapper support.
+        $registerEntity = null;
+        $schemaEntity   = null;
+
+        try {
+            $registerMapper = \OC::$server->get(\OCA\OpenRegister\Db\RegisterMapper::class);
+            $registerEntity = $registerMapper->find(id: $resolvedRegisterId, _multitenancy: false);
+        } catch (\Exception $e) {
+            // Log but don't fail - entities are optional.
+        }
+
+        try {
+            $schemaMapper = \OC::$server->get(\OCA\OpenRegister\Db\SchemaMapper::class);
+            $schemaEntity = $schemaMapper->find(id: $resolvedSchemaId, _multitenancy: false);
+        } catch (\Exception $e) {
+            // Log but don't fail - entities are optional.
+        }
+
         return [
-            'register' => $resolvedRegisterId,
-            'schema'   => $resolvedSchemaId,
+            'register'       => $resolvedRegisterId,
+            'schema'         => $resolvedSchemaId,
+            'registerEntity' => $registerEntity,
+            'schemaEntity'   => $schemaEntity,
         ];
     }//end resolveRegisterSchemaIds()
 
@@ -419,17 +439,10 @@ class ObjectsController extends Controller
         try {
             // Resolve slugs to numeric IDs consistently (validation only).
             $resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
-        } catch (\OCA\OpenRegister\Exception\RegisterNotFoundException | \OCA\OpenRegister\Exception\SchemaNotFoundException $e) {
+        } catch (RegisterNotFoundException | SchemaNotFoundException $e) {
             // Return 404 with clear error message if register or schema not found.
             return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
         }
-
-        // Build search query with resolved numeric IDs.
-        $query = $objectService->buildSearchQuery(
-            requestParams: $this->request->getParams(),
-            register: $resolved['register'],
-            schema: $resolved['schema']
-        );
 
         // Extract filtering parameters from request.
         $params    = $this->request->getParams();
@@ -437,6 +450,96 @@ class ObjectsController extends Controller
         $multi     = filter_var($params['multi'] ?? true, FILTER_VALIDATE_BOOLEAN);
         $published = filter_var($params['_published'] ?? false, FILTER_VALIDATE_BOOLEAN);
         $deleted   = filter_var($params['deleted'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
+        // Check if magic mapping is enabled for this register+schema.
+        $registerEntity = $resolved['registerEntity'] ?? null;
+        $schemaEntity   = $resolved['schemaEntity'] ?? null;
+
+        if ($registerEntity !== null && $schemaEntity !== null) {
+            // Get register configuration.
+            $registerConfig      = $registerEntity->getConfiguration() ?? [];
+            $enableMagicMapping  = ($registerConfig['enableMagicMapping'] ?? false) === true;
+            $magicMappingSchemas = $registerConfig['magicMappingSchemas'] ?? [];
+            $schemaId            = (string) $schemaEntity->getId();
+            $schemaSlug          = $schemaEntity->getSlug();
+
+            // Check if this specific schema is magic-mapped.
+            if ($enableMagicMapping === true
+                && (in_array($schemaId, $magicMappingSchemas, true) === true
+                || in_array($schemaSlug, $magicMappingSchemas, true) === true)
+            ) {
+                // Use MagicMapper for magic-mapped schemas.
+                $magicMapper = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
+
+                // Build search query with resolved numeric IDs.
+                $query = $objectService->buildSearchQuery(
+                    requestParams: $this->request->getParams(),
+                    register: $resolved['register'],
+                    schema: $resolved['schema']
+                );
+
+                // Use MagicMapper search directly.
+                $results = $magicMapper->searchObjectsInRegisterSchemaTable(
+                    query: $query,
+                    register: $registerEntity,
+                    schema: $schemaEntity
+                );
+
+                // Convert ObjectEntity array to JSON-serializable format.
+                $serializedResults = [];
+                foreach ($results as $entity) {
+                    $serializedResults[] = $entity->jsonSerialize();
+                }
+
+                // Calculate pagination (MagicMapper returns all matching, we need to paginate in response).
+                $limit  = $query['_limit'] ?? 20;
+                $offset = $query['_offset'] ?? 0;
+                $total  = count($serializedResults);
+                if ($limit > 0) {
+                    $pages = (int) ceil($total / $limit);
+                    $page  = (int) floor($offset / $limit) + 1;
+                } else {
+                    $pages = 1;
+                    $page  = 1;
+                }
+
+                // Return in expected format.
+                $response = new JSONResponse(
+                        data: [
+                            'results' => $serializedResults,
+                            'total'   => $total,
+                            'pages'   => $pages,
+                            'page'    => $page,
+                            'limit'   => $limit,
+                            '@self'   => [
+                                'source'    => 'magic_mapper',
+                                'register'  => $register,
+                                'schema'    => $schema,
+                                'query'     => $query,
+                                'rbac'      => $rbac,
+                                'multi'     => $multi,
+                                'published' => $published,
+                                'deleted'   => $deleted,
+                            ],
+                        ]
+                        );
+
+                // Enable gzip compression for large payloads.
+                if (count($serializedResults) > 10) {
+                    $response->addHeader('Content-Encoding', 'gzip');
+                    $response->addHeader('Vary', 'Accept-Encoding');
+                }
+
+                return $response;
+            }//end if
+        }//end if
+
+        // Build search query with resolved numeric IDs.
+        $query = $objectService->buildSearchQuery(
+            requestParams: $this->request->getParams(),
+            register: $resolved['register'],
+            schema: $resolved['schema']
+        );
 
         // **INTELLIGENT SOURCE SELECTION**: ObjectService automatically chooses optimal source.
         $result = $objectService->searchObjectsPaginated(
@@ -531,7 +634,7 @@ class ObjectsController extends Controller
         try {
             // Resolve slugs to numeric IDs consistently (validation only).
             $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
-        } catch (\OCA\OpenRegister\Exception\RegisterNotFoundException | \OCA\OpenRegister\Exception\SchemaNotFoundException $e) {
+        } catch (RegisterNotFoundException | SchemaNotFoundException $e) {
             // Return 404 with clear error message if register or schema not found.
             return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
         }
@@ -583,7 +686,8 @@ class ObjectsController extends Controller
                 _multitenancy: $multi
             );
             if ($objectEntity === null) {
-                return new JSONResponse(data: ['error' => "Object with id {$id} not found"], statusCode: Http::STATUS_NOT_FOUND);
+                $errorMsg = "Object with id {$id} not found";
+                return new JSONResponse(data: ['error' => $errorMsg], statusCode: Http::STATUS_NOT_FOUND);
             }
 
             // Render the object with requested extensions, filters, fields, and unset parameters.
@@ -614,16 +718,19 @@ class ObjectsController extends Controller
      * @param string        $schema        The schema slug or identifier
      * @param ObjectService $objectService The object service
      *
+     * @return JSONResponse JSON response with created object
+     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response with created object
      *
      * @psalm-return JSONResponse<201|403|404,
      *     array{'@self'?: array{name: mixed|null|string,...}|mixed,
      *     message?: mixed|string, error?: mixed|string,...},
      *     array<never, never>>|JSONResponse<400, string, array<never, never>>
+     *
+     * @psalm-suppress TypeDoesNotContainType
+     * @psalm-suppress NoValue
      */
     public function create(
         string $register,
@@ -633,7 +740,7 @@ class ObjectsController extends Controller
         try {
             // Resolve slugs to numeric IDs consistently.
             $resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
-        } catch (\OCA\OpenRegister\Exception\RegisterNotFoundException | \OCA\OpenRegister\Exception\SchemaNotFoundException $e) {
+        } catch (RegisterNotFoundException | SchemaNotFoundException $e) {
             // Return 404 with clear error message if register or schema not found.
             return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
         }
@@ -851,6 +958,9 @@ class ObjectsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @psalm-suppress TypeDoesNotContainType
+     * @psalm-suppress NoValue
      */
     public function update(
         string $register,
@@ -859,9 +969,9 @@ class ObjectsController extends Controller
         ObjectService $objectService
     ): JSONResponse {
         try {
-            // Resolve slugs to numeric IDs consistently (validation only).
-            $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
-        } catch (\OCA\OpenRegister\Exception\RegisterNotFoundException | \OCA\OpenRegister\Exception\SchemaNotFoundException $e) {
+            // Resolve slugs to numeric IDs consistently.
+            $resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
+        } catch (RegisterNotFoundException | SchemaNotFoundException $e) {
             // Return 404 with clear error message if register or schema not found.
             return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
         }
@@ -1118,17 +1228,38 @@ class ObjectsController extends Controller
         try {
             // Resolve slugs to numeric IDs consistently.
             $resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
-        } catch (\OCA\OpenRegister\Exception\RegisterNotFoundException | \OCA\OpenRegister\Exception\SchemaNotFoundException $e) {
+        } catch (RegisterNotFoundException | SchemaNotFoundException $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 404);
         }
 
         // Get patch data from request and filter parameters.
-        $patchData     = $this->filterRequestParameters($this->request->getParams());
-        $accessControl = $this->determineAccessControl();
+        $patchData = $this->request->getParams();
+
+        // Filter out special parameters and reserved fields.
+        $patchData = array_filter(
+            $patchData,
+            fn ($key) => str_starts_with($key, '_') === false
+                && !($key !== '@self' && str_starts_with($key, '@'))
+                && in_array($key, ['uuid', 'register', 'schema']) === false,
+            ARRAY_FILTER_USE_KEY
+        );
+
+        // Determine RBAC and multitenancy settings based on admin status.
+        $isAdmin = $this->isCurrentUserAdmin();
+        $rbac    = $isAdmin === false;
+        $multi   = $isAdmin === false;
 
         // Check if the object exists and can be updated.
         try {
-            $existingObject = $this->objectService->find(id: $id);
+            $existingObject = $this->objectService->find(
+                id: $id,
+                _extend: [],
+                files: false,
+                register: null,
+                schema: null,
+                _rbac: $rbac,
+                _multitenancy: $multi
+            );
             if ($existingObject === null) {
                 return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
             }
@@ -1172,7 +1303,14 @@ class ObjectsController extends Controller
         // Update the object with merged data.
         try {
             // Use the object service to validate and update the object.
-            $objectEntity = $objectService->saveObject($existingObject);
+            $objectEntity = $objectService->saveObject(
+                register: $resolved['register'],
+                schema: $resolved['schema'],
+                object: $mergedData,
+                _rbac: $rbac,
+                _multitenancy: $multi,
+                uuid: $id
+            );
 
             // Unlock the object after saving.
             try {
@@ -1189,7 +1327,7 @@ class ObjectsController extends Controller
         } catch (\Exception $exception) {
             // Handle all other exceptions (including RBAC permission errors).
             return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
-        }
+        }//end try
     }//end patch()
 
     /**
@@ -1198,11 +1336,13 @@ class ObjectsController extends Controller
      * This method deletes an object based on its ID.
      *
      * @param string        $id            The ID/UUID of the object to delete
+     * @param string        $register      The register ID
+     * @param string        $schema        The schema ID
      * @param ObjectService $objectService The object service
      *
      * @throws Exception
      *
-     * @return JSONResponse An empty JSON response
+     * @return JSONResponse JSONResponse<403|500, array{error: string}, array<never, never>>
      *
      * @NoAdminRequired
      *
@@ -1223,7 +1363,8 @@ class ObjectsController extends Controller
             // If admin, _rbac: disable RBAC.
             $multi = !$isAdmin;
             // If admin, _multitenancy: disable multitenancy.
-            // Use ObjectService to delete the object (includes RBAC permission checks, persist: audit trail, silent: and soft delete).
+            // Use ObjectService to delete the object (includes RBAC permission checks,
+            // persist: audit trail, silent: and soft delete).
             $deleteResult = $objectService->deleteObject(uuid: $id, _rbac: $rbac, _multitenancy: $multi);
 
             if ($deleteResult === false) {
@@ -1249,11 +1390,11 @@ class ObjectsController extends Controller
      * @param string        $schema        The schema slug or identifier
      * @param ObjectService $objectService The object service
      *
+     * @return JSONResponse JSON response with object contracts
+     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response with object contracts
      *
      * @todo Implement contract functionality to handle object contracts and their relationships
      *
@@ -1320,7 +1461,8 @@ class ObjectsController extends Controller
     /**
      * Retrieves all objects that this object references
      *
-     * This method returns all objects that this object uses/references. A -> B means that A (This object) references B (Another object).
+     * This method returns all objects that this object uses/references.
+     * A -> B means that A (This object) references B (Another object).
      *
      * @param string        $id            The ID of the object to retrieve relations for
      * @param string        $register      The register slug or identifier
@@ -1363,7 +1505,8 @@ class ObjectsController extends Controller
     /**
      * Retrieves all objects that use a object
      *
-     * This method returns all objects that reference (use) this object. B -> A means that B (Another object) references A (This object).
+     * This method returns all objects that reference (use) this object.
+     * B -> A means that B (Another object) references A (This object).
      *
      * @param string        $id            The ID of the object to retrieve uses for
      * @param string        $register      The register slug or identifier
@@ -1413,11 +1556,11 @@ class ObjectsController extends Controller
      * @param string        $schema        The schema slug or identifier
      * @param ObjectService $objectService The object service
      *
+     * @return JSONResponse JSON response with object audit logs
+     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response with object audit logs
      *
      * @psalm-return JSONResponse<200|404,
      *     array{results?: array<int, mixed>, total?: int<0, max>,
@@ -1491,7 +1634,8 @@ class ObjectsController extends Controller
         $registerMatch         = ($objectRegisterNorm === $requestedRegisterNorm);
 
         if ($schemaMatch === false || $registerMatch === false) {
-            return new JSONResponse(data: ['message' => 'Object does not belong to specified register/schema'], statusCode: 404);
+            $msg = 'Object does not belong to specified register/schema';
+            return new JSONResponse(data: ['message' => $msg], statusCode: 404);
         }
 
         // Get config and fetch logs.
@@ -1516,7 +1660,10 @@ class ObjectsController extends Controller
     /**
      * Lock an object
      *
-     * @param string $id The ID/UUID of the object to lock
+     * @param string        $id            The ID/UUID of the object to lock
+     * @param string        $register      The register ID
+     * @param string        $schema        The schema ID
+     * @param ObjectService $objectService The object service
      *
      * @return JSONResponse A JSON response containing the locked object
      *
@@ -1563,7 +1710,9 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200, array{message: 'Object unlocked successfully', locked: false, uuid: string}, array<never, never>>
+     * @psalm-return JSONResponse<200, array{
+     *     message: 'Object unlocked successfully', locked: false, uuid: string
+     * }, array<never, never>>
      */
     public function unlock(string $register, string $schema, string $id): JSONResponse
     {
@@ -1594,7 +1743,11 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return DataDownloadResponse<200, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'|'text/csv', array<never, never>>
+     * @psalm-return DataDownloadResponse<200,
+     *     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'|'text/csv',
+     *     array<never, never>>
+     *
+     * @psalm-suppress NoValue
      */
     public function export(string $register, string $schema, ObjectService $objectService): DataDownloadResponse
     {
@@ -1639,33 +1792,7 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<
-     *     200|400|500,
-     *     array{
-     *         error?: string,
-     *         message?: 'Import successful',
-     *         summary?: array<
-     *             array{
-     *                 created: array,
-     *                 errors: array,
-     *                 found: int,
-     *                 unchanged: array,
-     *                 updated: array,
-     *                 schema: array{id: int, slug: null|string, title: null|string},
-     *                 deduplication_efficiency?: string,
-     *                 performance?: array{
-     *                     efficiency: 0|float,
-     *                     objectsPerSecond: float,
-     *                     totalFound: int<0, max>,
-     *                     totalProcessed: int<0, max>,
-     *                     totalTime: float,
-     *                     totalTimeMs: float
-     *                 }
-     *             }|mixed
-     *         >
-     *     },
-     *     array<never, never>
-     * >
+     * @psalm-suppress NoValue
      */
     public function import(int $register): JSONResponse
     {
@@ -1728,11 +1855,11 @@ class ObjectsController extends Controller
      * @param string        $schema        The schema slug or identifier
      * @param ObjectService $objectService The object service
      *
+     * @return JSONResponse JSON response with published object
+     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response with published object
      *
      * @psalm-return JSONResponse<200|400,
      *     array{error?: mixed|string, name?: mixed|null|string,
@@ -1783,11 +1910,11 @@ class ObjectsController extends Controller
      * @param string        $schema        The schema slug or identifier
      * @param ObjectService $objectService The object service
      *
+     * @return JSONResponse JSON response with depublished object
+     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response with depublished object
      *
      * @psalm-return JSONResponse<200|400,
      *     array{error?: mixed|string, name?: mixed|null|string,
@@ -1839,9 +1966,9 @@ class ObjectsController extends Controller
      * @param string        $schema        The schema slug or identifier
      * @param ObjectService $objectService The object service
      *
-     * @NoAdminRequired
-     *
      * @return JSONResponse JSON response containing merge operation result
+     *
+     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
@@ -1921,9 +2048,9 @@ class ObjectsController extends Controller
      *
      * @param ObjectService $objectService The object service
      *
-     * @NoAdminRequired
-     *
      * @return JSONResponse JSON response containing migration operation result
+     *
+     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
@@ -2020,7 +2147,7 @@ class ObjectsController extends Controller
      * @param string        $schema        The schema (identifier or slug) to search within
      * @param ObjectService $objectService The object service for handling object operations
      *
-     * @return DataDownloadResponse|JSONResponse ZIP file download response or error response
+     * @return DataDownloadResponse|JSONResponse JSONResponse<404|500, array{error: string}, array<never, never>>
      *
      * @throws ContainerExceptionInterface If there's an issue with dependency injection
      * @throws NotFoundExceptionInterface If the FileService dependency is not found
@@ -2095,13 +2222,13 @@ class ObjectsController extends Controller
     /**
      * Start batch vectorization of objects
      *
+     * @return JSONResponse JSON response with batch vectorization results
+     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response with batch vectorization results
-     *
-     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, data?: array}, array<never, never>>
+     * @psalm-suppress NoValue
      */
     public function vectorizeBatch(): JSONResponse
     {
@@ -2136,13 +2263,13 @@ class ObjectsController extends Controller
     /**
      * Get object vectorization statistics
      *
+     * @return JSONResponse Vectorization statistics
+     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse Vectorization statistics
-     *
-     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, stats?: array<array-key, mixed>}, array<never, never>>
+     * @psalm-suppress NoValue
      */
     public function getObjectVectorizationStats(): JSONResponse
     {
@@ -2176,13 +2303,13 @@ class ObjectsController extends Controller
     /**
      * Get count of objects for vectorization
      *
+     * @return JSONResponse Object count
+     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse Object count
-     *
-     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, count?: 0}, array<never, never>>
+     * @psalm-suppress NoValue
      */
     public function getObjectVectorizationCount(): JSONResponse
     {

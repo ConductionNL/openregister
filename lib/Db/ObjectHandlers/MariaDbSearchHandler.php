@@ -102,41 +102,47 @@ class MariaDbSearchHandler
                         switch ($operator) {
                             case '~':
                                 // Contains.
+                                $param = $queryBuilder->createNamedParameter('%'.$operatorValue.'%');
                                 $queryBuilder->andWhere(
-                                    $queryBuilder->expr()->like($qualifiedField, $queryBuilder->createNamedParameter('%'.$operatorValue.'%'))
+                                    $queryBuilder->expr()->like($qualifiedField, $param)
                                 );
                                 break;
                             case '^':
                                 // Starts with.
+                                $param = $queryBuilder->createNamedParameter($operatorValue.'%');
                                 $queryBuilder->andWhere(
-                                    $queryBuilder->expr()->like($qualifiedField, $queryBuilder->createNamedParameter($operatorValue.'%'))
+                                    $queryBuilder->expr()->like($qualifiedField, $param)
                                 );
                                 break;
                             case '$':
                                 // Ends with.
+                                $param = $queryBuilder->createNamedParameter('%'.$operatorValue);
                                 $queryBuilder->andWhere(
-                                    $queryBuilder->expr()->like($qualifiedField, $queryBuilder->createNamedParameter('%'.$operatorValue))
+                                    $queryBuilder->expr()->like($qualifiedField, $param)
                                 );
                                 break;
                             case 'ne':
                                 // Not equals.
+                                $param = $queryBuilder->createNamedParameter($operatorValue);
                                 $queryBuilder->andWhere(
-                                    $queryBuilder->expr()->neq($qualifiedField, $queryBuilder->createNamedParameter($operatorValue))
+                                    $queryBuilder->expr()->neq($qualifiedField, $param)
                                 );
                                 break;
                             case '===':
                                 // Case sensitive equals.
+                                $param = $queryBuilder->createNamedParameter($operatorValue);
                                 $queryBuilder->andWhere(
-                                    $queryBuilder->expr()->eq($qualifiedField, $queryBuilder->createNamedParameter($operatorValue))
+                                    $queryBuilder->expr()->eq($qualifiedField, $param)
                                 );
                                 break;
                             case 'exists':
                                 // Field exists (not null and not empty).
                                 if ($operatorValue !== 'true' && $operatorValue !== true) {
+                                    $emptyParam = $queryBuilder->createNamedParameter('');
                                     $queryBuilder->andWhere(
                                         $queryBuilder->expr()->orX(
                                             $queryBuilder->expr()->isNull($qualifiedField),
-                                            $queryBuilder->expr()->eq($qualifiedField, $queryBuilder->createNamedParameter(''))
+                                            $queryBuilder->expr()->eq($qualifiedField, $emptyParam)
                                         )
                                     );
                                     break;
@@ -182,8 +188,9 @@ class MariaDbSearchHandler
                                     $orConditions = $queryBuilder->expr()->orX();
                                     foreach ($values as $val) {
                                         if (in_array($field, $textFields) === false) {
+                                            $param = $queryBuilder->createNamedParameter($val);
                                             $orConditions->add(
-                                                $queryBuilder->expr()->eq($qualifiedField, $queryBuilder->createNamedParameter($val))
+                                                $queryBuilder->expr()->eq($qualifiedField, $param)
                                             );
                                             continue;
                                         }
@@ -197,7 +204,7 @@ class MariaDbSearchHandler
                                     }
 
                                     $queryBuilder->andWhere($orConditions);
-                                }
+                                }//end if
                                 break 2;
                             case 'and':
                                 // AND logic: field must match ALL values (multiple andWhere calls).
@@ -208,8 +215,9 @@ class MariaDbSearchHandler
 
                                 foreach ($values as $val) {
                                     if (in_array($field, $textFields) === false) {
+                                        $param = $queryBuilder->createNamedParameter($val);
                                         $queryBuilder->andWhere(
-                                            $queryBuilder->expr()->eq($qualifiedField, $queryBuilder->createNamedParameter($val))
+                                            $queryBuilder->expr()->eq($qualifiedField, $param)
                                         );
                                         continue;
                                     }
@@ -226,11 +234,12 @@ class MariaDbSearchHandler
                                 // For non-text operators or unsupported operators, treat as regular array (IN clause).
                                 if (is_numeric($operator) === true) {
                                     // This is a regular array, not an operator array.
+                                    $param = $queryBuilder->createNamedParameter(
+                                        $value,
+                                        \Doctrine\DBAL\Connection::PARAM_STR_ARRAY
+                                    );
                                     $queryBuilder->andWhere(
-                                        $queryBuilder->expr()->in(
-                                            $qualifiedField,
-                                            $queryBuilder->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)
-                                        )
+                                        $queryBuilder->expr()->in($qualifiedField, $param)
                                     );
                                     break 2;
                                     // Break out of both switch and foreach.
@@ -284,8 +293,9 @@ class MariaDbSearchHandler
                                     $valueToUse = $normalizedValue;
                                 }
 
+                                $param = $queryBuilder->createNamedParameter($valueToUse);
                                 $queryBuilder->andWhere(
-                                    $queryBuilder->expr()->gte($qualifiedField, $queryBuilder->createNamedParameter($valueToUse))
+                                    $queryBuilder->expr()->gte($qualifiedField, $param)
                                 );
                                 break;
                             case '<=':
@@ -295,8 +305,9 @@ class MariaDbSearchHandler
                                     $valueToUse = $normalizedValue;
                                 }
 
+                                $param = $queryBuilder->createNamedParameter($valueToUse);
                                 $queryBuilder->andWhere(
-                                    $queryBuilder->expr()->lte($qualifiedField, $queryBuilder->createNamedParameter($valueToUse))
+                                    $queryBuilder->expr()->lte($qualifiedField, $param)
                                 );
                                 break;
                             case '>':
@@ -306,8 +317,9 @@ class MariaDbSearchHandler
                                     $valueToUse = $normalizedValue;
                                 }
 
+                                $param = $queryBuilder->createNamedParameter($valueToUse);
                                 $queryBuilder->andWhere(
-                                    $queryBuilder->expr()->gt($qualifiedField, $queryBuilder->createNamedParameter($valueToUse))
+                                    $queryBuilder->expr()->gt($qualifiedField, $param)
                                 );
                                 break;
                             case '<':
@@ -317,8 +329,9 @@ class MariaDbSearchHandler
                                     $valueToUse = $normalizedValue;
                                 }
 
+                                $param = $queryBuilder->createNamedParameter($valueToUse);
                                 $queryBuilder->andWhere(
-                                    $queryBuilder->expr()->lt($qualifiedField, $queryBuilder->createNamedParameter($valueToUse))
+                                    $queryBuilder->expr()->lt($qualifiedField, $param)
                                 );
                                 break;
                             case '=':
@@ -328,8 +341,9 @@ class MariaDbSearchHandler
                                     $valueToUse = $normalizedValue;
                                 }
 
+                                $param = $queryBuilder->createNamedParameter($valueToUse);
                                 $queryBuilder->andWhere(
-                                    $queryBuilder->expr()->eq($qualifiedField, $queryBuilder->createNamedParameter($valueToUse))
+                                    $queryBuilder->expr()->eq($qualifiedField, $param)
                                 );
                                 break;
                             case 'or':
@@ -342,8 +356,9 @@ class MariaDbSearchHandler
                                 if (empty($values) === false) {
                                     $orConditions = $queryBuilder->expr()->orX();
                                     foreach ($values as $val) {
+                                        $param = $queryBuilder->createNamedParameter($val);
                                         $orConditions->add(
-                                            $queryBuilder->expr()->eq($qualifiedField, $queryBuilder->createNamedParameter($val))
+                                            $queryBuilder->expr()->eq($qualifiedField, $param)
                                         );
                                     }
 
@@ -367,11 +382,12 @@ class MariaDbSearchHandler
                                 // For non-date operators or unsupported operators, treat as regular array (IN clause).
                                 if (is_numeric($operator) === true) {
                                     // This is a regular array, not an operator array.
+                                    $param = $queryBuilder->createNamedParameter(
+                                        $value,
+                                        \Doctrine\DBAL\Connection::PARAM_STR_ARRAY
+                                    );
                                     $queryBuilder->andWhere(
-                                        $queryBuilder->expr()->in(
-                                            $qualifiedField,
-                                            $queryBuilder->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)
-                                        )
+                                        $queryBuilder->expr()->in($qualifiedField, $param)
                                     );
                                     break 2;
                                     // Break out of both switch and foreach.
@@ -564,13 +580,12 @@ class MariaDbSearchHandler
                     );
 
                     // Check if the value exists within an array using JSON_CONTAINS.
+                    $jsonPathParam    = $queryBuilder->createNamedParameter($jsonPath);
+                    $valueParam       = $queryBuilder->createNamedParameter(json_encode($arrayValue));
+                    $jsonContainsFunc = "JSON_CONTAINS(JSON_EXTRACT(`object`, ".$jsonPathParam."), ".$valueParam.")";
                     $orConditions->add(
                         $queryBuilder->expr()->eq(
-                            $queryBuilder->createFunction(
-                                "JSON_CONTAINS(JSON_EXTRACT(`object`, ".$queryBuilder->createNamedParameter($jsonPath)."), ".$queryBuilder->createNamedParameter(
-                                    json_encode($arrayValue)
-                                ).")"
-                            ),
+                            $queryBuilder->createFunction($jsonContainsFunc),
                             $queryBuilder->createNamedParameter(1)
                         )
                     );
@@ -588,13 +603,13 @@ class MariaDbSearchHandler
                 );
 
                 // Check if the value exists within an array using JSON_CONTAINS (case-insensitive).
+                $pathParam  = $queryBuilder->createNamedParameter($jsonPath);
+                $valParam   = $queryBuilder->createNamedParameter(json_encode(strtolower($arrayValue)));
+                $funcString = "JSON_CONTAINS(LOWER(JSON_EXTRACT(`object`, ".$pathParam.")), ".$valParam.")";
+                $jsonContainsCaseInsensitive = $funcString;
                 $orConditions->add(
                     $queryBuilder->expr()->eq(
-                        $queryBuilder->createFunction(
-                            "JSON_CONTAINS(LOWER(JSON_EXTRACT(`object`, ".$queryBuilder->createNamedParameter($jsonPath).")), ".$queryBuilder->createNamedParameter(
-                                json_encode(strtolower($arrayValue))
-                            ).")"
-                        ),
+                        $queryBuilder->createFunction($jsonContainsCaseInsensitive),
                         $queryBuilder->createNamedParameter(1)
                     )
                 );
@@ -620,13 +635,12 @@ class MariaDbSearchHandler
             );
 
             // Check if the value exists within an array using JSON_CONTAINS.
+            $pathP = $queryBuilder->createNamedParameter($jsonPath);
+            $valP  = $queryBuilder->createNamedParameter(json_encode($value));
+            $jsonContainsExact = "JSON_CONTAINS(JSON_EXTRACT(`object`, ".$pathP."), ".$valP.")";
             $singleValueConditions->add(
                 $queryBuilder->expr()->eq(
-                            $queryBuilder->createFunction(
-                                "JSON_CONTAINS(JSON_EXTRACT(`object`, ".$queryBuilder->createNamedParameter($jsonPath)."), ".$queryBuilder->createNamedParameter(
-                                    json_encode($value)
-                                ).")"
-                            ),
+                    $queryBuilder->createFunction($jsonContainsExact),
                     $queryBuilder->createNamedParameter(1)
                 )
             );
@@ -646,13 +660,12 @@ class MariaDbSearchHandler
         );
 
         // Check if the value exists within an array using JSON_CONTAINS (case-insensitive).
+        $jsonPathP           = $queryBuilder->createNamedParameter($jsonPath);
+        $jsonValP            = $queryBuilder->createNamedParameter(json_encode(strtolower($value)));
+        $jsonContainsCaseIns = "JSON_CONTAINS(LOWER(JSON_EXTRACT(`object`, ".$jsonPathP.")), ".$jsonValP.")";
         $singleValueConditions->add(
             $queryBuilder->expr()->eq(
-                $queryBuilder->createFunction(
-                    "JSON_CONTAINS(LOWER(JSON_EXTRACT(`object`, ".$queryBuilder->createNamedParameter($jsonPath).")), ".$queryBuilder->createNamedParameter(
-                        json_encode(strtolower($value))
-                    ).")"
-                ),
+                $queryBuilder->createFunction($jsonContainsCaseIns),
                 $queryBuilder->createNamedParameter(1)
             )
         );
