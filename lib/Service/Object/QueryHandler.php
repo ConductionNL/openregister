@@ -65,6 +65,7 @@ class QueryHandler
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
+        private readonly \OCA\OpenRegister\Db\UnifiedObjectMapper $unifiedObjectMapper,
         private readonly GetObject $getHandler,
         private readonly RenderObject $renderHandler,
         private readonly SearchQueryHandler $searchQueryHandler,
@@ -185,11 +186,11 @@ class QueryHandler
 
         // **MAPPER CALL TIMING**: Track how long the mapper takes.
         $mapperStart = microtime(true);
-        $result      = $this->objectEntityMapper->searchObjects(
+        $result      = $this->unifiedObjectMapper->searchObjects(
             query: $query,
-            _activeOrganisationUuid: $activeOrganisationUuid,
-            _rbac: $_rbac,
-            _multitenancy: $_multitenancy,
+            activeOrganisationUuid: $activeOrganisationUuid,
+            rbac: $_rbac,
+            multitenancy: $_multitenancy,
             ids: $ids,
             uses: $uses
         );

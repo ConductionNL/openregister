@@ -96,6 +96,12 @@ class ObjectChangeListener implements IEventListener
             $fileSettings   = $this->settingsService->getFileSettingsOnly();
             $extractionMode = $fileSettings['extractionMode'] ?? 'background';
 
+            // Skip extraction if no object ID (e.g., magic mapper objects use UUID only).
+            if ($objectId === null) {
+                $this->logger->debug('[ObjectChangeListener] Skipping extraction for object without ID (magic mapper?)');
+                return;
+            }
+
             $this->processExtractionMode(mode: $extractionMode, objectId: $objectId, objectUuid: $object->getUuid());
         } catch (\Exception $e) {
             $this->logger->error(

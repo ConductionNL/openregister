@@ -1715,6 +1715,15 @@ class ObjectService
         ?string $uses=null,
         ?array $views=null
     ): array {
+        // Add register and schema context to query for magic mapper routing.
+        if ($this->register !== null && isset($query['_register']) === false) {
+            $query['_register'] = $this->register->getId();
+        }
+
+        if ($this->schema !== null && isset($query['_schema']) === false) {
+            $query['_schema'] = $this->schema->getId();
+        }
+
         // Apply view filters if provided.
         if ($views !== null && empty($views) === false) {
             $query = $this->applyViewsToQuery(query: $query, viewIds: $views);

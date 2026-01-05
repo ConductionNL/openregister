@@ -458,11 +458,19 @@ class ObjectsController extends Controller
             );
         }
 
-        // Build search query.
-        $query = $objectService->buildSearchQuery(
-            requestParams: $this->request->getParams(),
-            register: (int) $pairs[0]['register']->getId(),
-            schema: (int) $pairs[0]['schema']->getId()
+        // Build search query WITHOUT register/schema to avoid filtering.
+        // Cross-table search handles multiple register+schema pairs internally.
+        $query = $objectService->buildSearchQuery(requestParams: $this->request->getParams());
+
+        // Remove all register/schema context from query to prevent filtering.
+        unset(
+            $query['_register'],
+            $query['_schema'],
+            $query['register'],
+            $query['schema'],
+            $query['schemas'],
+            $query['registers'],
+            $query['@self']
         );
 
         // Perform cross-table search.
@@ -792,7 +800,123 @@ class ObjectsController extends Controller
      */
     public function objects(ObjectService $objectService): JSONResponse
     {
-        // Build search query without register/schema constraints.
+        // Check for register/schema in query parameters for magic mapper routing.
+        $params         = $this->request->getParams();
+        $registerParam  = $params['register'] ?? $params['_register'] ?? null;
+        $schemaParam    = $params['schema'] ?? $params['_schema'] ?? null;
+        $schemasParam   = $params['schemas'] ?? null;
+        $registersParam = $params['registers'] ?? null;
+
+        // If multiple schemas or registers specified, use cross-table search.
+        $schemasList   = [];
+        $registersList = [];
+
+        if ($schemasParam !== null) {
+            $schemasList = $this->parseMultiValue(param: $schemasParam, defaultValue: $schemaParam ?? '');
+        } else if ($schemaParam !== null) {
+            $schemasList = [$schemaParam];
+        }
+
+        if ($registersParam !== null) {
+            $registersList = $this->parseMultiValue(param: $registersParam, defaultValue: $registerParam ?? '');
+        } else if ($registerParam !== null) {
+            $registersList = [$registerParam];
+        }
+
+        // Multi-table search: multiple schemas or registers.
+        if ((count($schemasList) > 1) || (count($registersList) > 1)) {
+            return $this->crossTableSearch(
+                registers: $registersList,
+                schemas: $schemasList,
+                objectService: $objectService
+            );
+        }
+
+        // Single register+schema: check if magic mapping is enabled.
+        if ($registerParam !== null && $schemaParam !== null) {
+            try {
+                $resolved = $this->resolveRegisterSchemaIds(
+                    register: $registerParam,
+                    schema: $schemaParam,
+                    objectService: $objectService
+                );
+
+                // Check if magic mapping is enabled for this register+schema.
+                $registerEntity = $resolved['registerEntity'] ?? null;
+                $schemaEntity   = $resolved['schemaEntity'] ?? null;
+
+                if ($registerEntity !== null && $schemaEntity !== null) {
+                    // Get register configuration.
+                    $registerConfig      = $registerEntity->getConfiguration() ?? [];
+                    $enableMagicMapping  = ($registerConfig['enableMagicMapping'] ?? false) === true;
+                    $magicMappingSchemas = $registerConfig['magicMappingSchemas'] ?? [];
+                    $schemaId            = (string) $schemaEntity->getId();
+                    $schemaSlug          = $schemaEntity->getSlug();
+
+                    // Check if this specific schema is magic-mapped.
+                    if ($enableMagicMapping === true
+                        && (in_array($schemaId, $magicMappingSchemas, true) === true
+                        || in_array($schemaSlug, $magicMappingSchemas, true) === true)
+                    ) {
+                        // Use MagicMapper for magic-mapped schemas.
+                        $magicMapper = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
+
+                        // Build search query with resolved numeric IDs.
+                        $query = $objectService->buildSearchQuery(
+                            requestParams: $this->request->getParams(),
+                            register: $resolved['register'],
+                            schema: $resolved['schema']
+                        );
+
+                        // Use MagicMapper search directly.
+                        $results = $magicMapper->searchObjectsInRegisterSchemaTable(
+                            query: $query,
+                            register: $registerEntity,
+                            schema: $schemaEntity
+                        );
+
+                        // Convert ObjectEntity array to JSON-serializable format.
+                        $serializedResults = [];
+                        foreach ($results as $entity) {
+                            $serializedResults[] = $entity->jsonSerialize();
+                        }
+
+                        // Calculate pagination.
+                        $limit  = $query['_limit'] ?? 20;
+                        $offset = $query['_offset'] ?? 0;
+                        $total  = count($serializedResults);
+                        $pages  = 1;
+                        $page   = 1;
+                        if ($limit > 0) {
+                            $pages = (int) ceil($total / $limit);
+                            $page  = (int) floor($offset / $limit) + 1;
+                        }
+
+                        // Return in expected format with magic_mapper source indicator.
+                        return new JSONResponse(
+                            data: [
+                                'results' => $serializedResults,
+                                'total'   => $total,
+                                'pages'   => $pages,
+                                'page'    => $page,
+                                'limit'   => $limit,
+                                '@self'   => [
+                                    'source'   => 'magic_mapper',
+                                    'register' => $registerParam,
+                                    'schema'   => $schemaParam,
+                                ],
+                            ]
+                        );
+                    }//end if
+                }//end if
+
+                // If not magic-mapped, context is set in ObjectService for normal routing.
+            } catch (RegisterNotFoundException | SchemaNotFoundException $e) {
+                return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
+            }//end try
+        }//end if
+
+        // Build search query and execute via normal route (blob storage or SOLR).
         $query = $objectService->buildSearchQuery($this->request->getParams());
 
         // **INTELLIGENT SOURCE SELECTION**: ObjectService automatically chooses optimal source.

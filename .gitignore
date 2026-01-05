@@ -68,3 +68,7 @@ phpqa/
 
 # Docker AI models (too large for git)
 docker/dolphin/models/
+
+# Issues folder should be tracked
+!issues/
+!issues/**

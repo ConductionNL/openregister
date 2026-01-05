@@ -555,8 +555,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                 ]
             );
 
-            // Build table name.
-            $tableName = 'oc_openregister_table_'.$register->getId().'_'.$schema->getId();
+            // Build table name (without prefix - MagicMapper adds it).
+            $tableName = 'openregister_table_'.$register->getId().'_'.$schema->getId();
 
             // Ensure table exists (create if needed).
             $this->logger->info('[UnifiedObjectMapper] Ensuring table exists', ['table' => $tableName]);
@@ -747,6 +747,34 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         ?array $ids=null,
         ?string $uses=null
     ): array|int {
+        // Check if register and schema are specified in query for magic mapper routing.
+        $registerId = $query['_register'] ?? $query['register'] ?? null;
+        $schemaId   = $query['_schema'] ?? $query['schema'] ?? null;
+
+        if ($registerId !== null && $schemaId !== null) {
+            try {
+                // Disable multitenancy for register/schema resolution (they're system-level).
+                $register = $this->registerMapper->find((int) $registerId, _multitenancy: false, _rbac: false);
+                $schema   = $this->schemaMapper->find((int) $schemaId, _multitenancy: false, _rbac: false);
+
+                if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
+                    $this->logger->info('[UnifiedObjectMapper] Routing searchObjects() to MagicMapper');
+                    return $this->magicMapper->searchObjectsInRegisterSchemaTable(
+                        query: $query,
+                        register: $register,
+                        schema: $schema
+                    );
+                }
+            } catch (\Exception $e) {
+                $this->logger->warning(
+                    '[UnifiedObjectMapper] Failed to resolve register/schema for magic mapper',
+                    ['error' => $e->getMessage()]
+                );
+                // Fall through to blob storage.
+            }
+        }
+
+        $this->logger->debug('[UnifiedObjectMapper] Routing searchObjects() to blob storage (ObjectEntityMapper)');
         return $this->objectEntityMapper->searchObjects(
             query: $query,
             _activeOrganisationUuid: $activeOrganisationUuid,

@@ -800,8 +800,8 @@ class MagicBulkHandler
 
             $stmt = $this->db->prepare($sql);
             if ($isPostgres === true) {
-                // PostgreSQL information_schema expects table name WITHOUT prefix.
-                $stmt->execute([$tableName]);
+                // PostgreSQL information_schema expects table name WITH prefix.
+                $stmt->execute([$fullTableName]);
             } else {
                 // MySQL/MariaDB: SHOW COLUMNS doesn't need parameters.
                 $stmt->execute();
@@ -810,9 +810,10 @@ class MagicBulkHandler
             $columns = [];
             $row     = $stmt->fetch();
             while ($row !== false) {
-                $columns[] = $row['Field'];
                 if ($isPostgres === true) {
-                    $columns[count($columns) - 1] = $row['column_name'];
+                    $columns[] = $row['column_name'];
+                } else {
+                    $columns[] = $row['Field'];
                 }
 
                 $row = $stmt->fetch();
