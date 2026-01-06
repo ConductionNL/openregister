@@ -443,7 +443,6 @@ services:
       - nextcloud:/var/www/html:rw
       - ./custom_apps:/var/www/html/custom_apps
       - .:/var/www/html/custom_apps/openregister
-      - ../opencatalogi:/var/www/html/custom_apps/opencatalogi
     environment:
       # Database configuration (PostgreSQL)
       - POSTGRES_DB=nextcloud
@@ -479,7 +478,6 @@ services:
       - nextcloud:/var/www/html:rw
       - ./custom_apps:/var/www/html/custom_apps
       - .:/var/www/html/custom_apps/openregister
-      - ../opencatalogi:/var/www/html/custom_apps/opencatalogi
     environment:
       # Database configuration (MariaDB)
       - MYSQL_DATABASE=nextcloud

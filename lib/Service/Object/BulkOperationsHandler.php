@@ -91,7 +91,8 @@ class BulkOperationsHandler
         bool $_rbac=true,
         bool $_multitenancy=true,
         bool $validation=false,
-        bool $events=false
+        bool $events=false,
+        bool $deduplicateIds=true
     ): array {
 
         // ARCHITECTURAL DELEGATION: Use specialized SaveObjects handler for bulk operations.
@@ -103,7 +104,8 @@ class BulkOperationsHandler
             _rbac: $_rbac,
             _multitenancy: $_multitenancy,
             validation: $validation,
-            events: $events
+            events: $events,
+            deduplicateIds: $deduplicateIds
         );
 
         // **BULK CACHE INVALIDATION**: Clear collection caches after successful bulk operations.

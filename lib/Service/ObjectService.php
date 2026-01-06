@@ -2189,7 +2189,8 @@ class ObjectService
         bool $_rbac=true,
         bool $_multitenancy=true,
         bool $validation=false,
-        bool $events=false
+        bool $events=false,
+        bool $deduplicateIds=true
     ): array {
 
         // Set register and schema context if provided.
@@ -2209,7 +2210,8 @@ class ObjectService
             _rbac: $_rbac,
             _multitenancy: $_multitenancy,
             validation: $validation,
-            events: $events
+            events: $events,
+            deduplicateIds: $deduplicateIds
         );
     }//end saveObjects()
 

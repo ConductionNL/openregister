@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\UploadService;
@@ -339,7 +340,16 @@ class ConfigurationsController extends Controller
     }//end export()
 
     /**
-     * Import a configuration
+     * Import a configuration from uploaded file or JSON data
+     *
+     * Accepts either:
+     * - A file upload via 'file' parameter
+     * - Raw JSON data in the request body
+     *
+     * Additional parameters:
+     * - appId: Application ID for the configuration
+     * - owner: Owner of the configuration (defaults to current user)
+     * - force: Force import even if version is older
      *
      * @return JSONResponse The import result.
      *
@@ -366,11 +376,23 @@ class ConfigurationsController extends Controller
                 return $jsonData;
             }
 
+            // Create a Configuration entity from the JSON data.
+            // This is required for proper entity tracking in ImportHandler.
+            $configuration = new Configuration();
+            $configuration->setTitle($jsonData['info']['title'] ?? 'Imported Configuration');
+            $configuration->setDescription($jsonData['info']['description'] ?? '');
+            $configuration->setVersion($jsonData['info']['version'] ?? '1.0.0');
+            $configuration->setSourceType('upload');
+            $configuration->setApp($this->request->getParam('appId') ?? ($jsonData['x-openregister']['app'] ?? 'unknown'));
+            $configuration->setOwner($this->request->getParam('owner') ?? $this->userId);
+            $configuration->setCreated(new \DateTime());
+            $configuration->setUpdated(new \DateTime());
+
             // Import the data.
             $force  = $this->request->getParam('force') === 'true' || $this->request->getParam('force') === true;
             $result = $this->configurationService->importFromJson(
                 data: $jsonData,
-                configuration: null,
+                configuration: $configuration,
                 owner: $this->request->getParam('owner'),
                 appId: $this->request->getParam('appId'),
                 version: $this->request->getParam('version'),

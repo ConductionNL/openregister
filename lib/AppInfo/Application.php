@@ -251,6 +251,21 @@ class Application extends App implements IBootstrap
      */
     private function registerMappersWithCircularDependencies(IRegistrationContext $context): void
     {
+        // Register UserService for UserController.
+        $context->registerService(
+            \OCA\OpenRegister\Service\UserService::class,
+            function ($container) {
+                return new \OCA\OpenRegister\Service\UserService(
+                    userManager: $container->get('OCP\IUserManager'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    config: $container->get('OCP\IConfig'),
+                    groupManager: $container->get('OCP\IGroupManager'),
+                    accountManager: $container->get('OCP\Accounts\IAccountManager'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
         // Register OrganisationService without SettingsService to break circular dependency.
         $context->registerService(
             OrganisationService::class,
@@ -411,24 +426,34 @@ class Application extends App implements IBootstrap
             }
         );
 
-        $context->registerService(
-            ConfigurationImportHandler::class,
-            function ($container) {
-                $dataDir     = $container->get('OCP\IConfig')->getSystemValue('datadirectory', '');
-                $appDataPath = $dataDir.'/appdata_openregister';
+        // Register ImportHandler (with both alias and real name to prevent auto-wiring conflicts).
+        $importHandlerFactory = function ($container) {
+            $dataDir     = $container->get('OCP\IConfig')->getSystemValue('datadirectory', '');
+            $appDataPath = $dataDir.'/appdata_openregister';
 
-                return new ConfigurationImportHandler(
-                    schemaMapper: $container->get(SchemaMapper::class),
-                    registerMapper: $container->get(RegisterMapper::class),
-                    objectEntityMapper: $container->get(ObjectEntityMapper::class),
-                    configurationMapper: $container->get('OCA\OpenRegister\Db\ConfigurationMapper'),
-                    client: new Client(),
-                    appConfig: $container->get('OCP\IAppConfig'),
-                    logger: $container->get('Psr\Log\LoggerInterface'),
-                    appDataPath: $appDataPath,
-                    uploadHandler: $container->get(ConfigurationUploadHandler::class)
-                );
-            }
+            $logger = $container->get('Psr\Log\LoggerInterface');
+
+            return new ConfigurationImportHandler(
+                schemaMapper: $container->get(SchemaMapper::class),
+                registerMapper: $container->get(RegisterMapper::class),
+                objectEntityMapper: $container->get(ObjectEntityMapper::class),
+                configurationMapper: $container->get('OCA\OpenRegister\Db\ConfigurationMapper'),
+                client: new Client(),
+                appConfig: $container->get('OCP\IAppConfig'),
+                logger: $logger,
+                appDataPath: $appDataPath,
+                uploadHandler: $container->get(ConfigurationUploadHandler::class),
+                objectService: $container->get(ObjectService::class)
+            );
+        };
+
+        // Register under alias.
+        $context->registerService(ConfigurationImportHandler::class, $importHandlerFactory);
+        
+        // Register under real class name (pointing to same factory).
+        $context->registerService(
+            'OCA\OpenRegister\Service\Configuration\ImportHandler',
+            $importHandlerFactory
         );
 
         $context->registerService(
@@ -453,7 +478,7 @@ class Application extends App implements IBootstrap
                     cacheHandler: $container->get(ConfigurationCacheHandler::class),
                     previewHandler: $container->get(PreviewHandler::class),
                     exportHandler: $container->get(ConfigurationExportHandler::class),
-                    importHandler: $container->get(ConfigurationImportHandler::class),
+                    // NOTE: ImportHandler is lazy-loaded in ConfigurationService to prevent circular dependency.
                     uploadHandler: $container->get(ConfigurationUploadHandler::class),
                     appDataPath: $appDataPath
                 );

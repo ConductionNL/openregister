@@ -799,8 +799,10 @@ class ImportService
 
         $summary['found'] = count($allObjects);
 
-        // Call saveObjects ONCE with all objects - NO ERROR SUPPRESSION!
-        // This will reveal the real bulk save problem immediately.
+        // NOTE: Deduplication is now handled by SaveObjects::saveObjects() (deduplicateIds=true by default).
+        // This ensures consistent deduplication across ALL bulk save operations (CSV, Excel, API, etc.).
+
+        // Call saveObjects ONCE with all objects - deduplication happens automatically.
         if (empty($allObjects) === false) {
             // Log publish processing for debugging.
             $this->logger->debug(
@@ -1700,4 +1702,8 @@ class ImportService
             maxObjects: $maxObjects
         );
     }//end scheduleSmartSolrWarmup()
+
+
+
+
 }//end class

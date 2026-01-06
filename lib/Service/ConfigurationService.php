@@ -257,7 +257,7 @@ class ConfigurationService
         CacheHandler $cacheHandler,
         PreviewHandler $previewHandler,
         ExportHandler $exportHandler,
-        ImportHandler $importHandler,
+        // NOTE: ImportHandler is lazy-loaded via getImportHandler() to prevent circular dependency.
         UploadHandler $uploadHandler,
         string $appDataPath
     ) {
@@ -280,21 +280,35 @@ class ConfigurationService
         $this->cacheHandler   = $cacheHandler;
         $this->previewHandler = $previewHandler;
         $this->exportHandler  = $exportHandler;
-        $this->importHandler  = $importHandler;
+        // NOTE: ImportHandler is lazy-loaded via getImportHandler().
         $this->uploadHandler  = $uploadHandler;
         $this->appDataPath    = $appDataPath;
-
-        // Wire dependencies into ImportHandler to avoid circular dependency issues.
-        $this->importHandler->setObjectService($this->objectService);
-
-        // Wire OpenConnectorConfigurationService if available.
-        if ($this->getOpenConnector() === true) {
-            $this->importHandler->setOpenConnectorConfigurationService($this->openConnectorConfigurationService);
-        }
 
         // Wire PreviewHandler with ConfigurationService reference.
         $this->previewHandler->setConfigurationService($this);
     }//end __construct()
+
+    /**
+     * Lazy load ImportHandler to break circular dependency.
+     *
+     * ImportHandler is not injected in constructor because it would create a circular dependency:
+     * ConfigurationService → ImportHandler → (various mappers) → ConfigurationService
+     *
+     * Instead, we load it on-demand when needed.
+     *
+     * @return ImportHandler The import handler instance.
+     */
+    private function getImportHandler(): ImportHandler
+    {
+        if ($this->importHandler === null) {
+            // Use the alias registered in Application.php
+            $this->importHandler = $this->container->get('OCA\OpenRegister\Service\Configuration\ImportHandler');
+            // Wire ObjectService after loading.
+            $this->importHandler->setObjectService($this->objectService);
+        }
+
+        return $this->importHandler;
+    }//end getImportHandler()
 
     /**
      * Attempts to retrieve the OpenConnector service from the container.
@@ -389,7 +403,7 @@ class ConfigurationService
      */
     private function getJSONfromURL(string $url): array|JSONResponse
     {
-        return $this->importHandler->getJSONfromURL($url);
+        return $this->getImportHandler()->getJSONfromURL($url);
     }//end getJSONfromURL()
 
     /**
@@ -438,7 +452,7 @@ class ConfigurationService
         ?string $version=null,
         bool $force=false
     ): array {
-        return $this->importHandler->importFromJson(
+        return $this->getImportHandler()->importFromJson(
             data: $data,
             configuration: $configuration,
             owner: $owner,
@@ -488,7 +502,7 @@ class ConfigurationService
      */
     public function importFromFilePath(string $appId, string $filePath, string $version, bool $force=false): array
     {
-        return $this->importHandler->importFromFilePath(
+        return $this->getImportHandler()->importFromFilePath(
             appId: $appId,
             filePath: $filePath,
             version: $version,
@@ -529,7 +543,7 @@ class ConfigurationService
      */
     public function importFromApp(string $appId, array $data, string $version, bool $force=false): array
     {
-        return $this->importHandler->importFromApp(
+        return $this->getImportHandler()->importFromApp(
             appId: $appId,
             data: $data,
             version: $version,

@@ -9,6 +9,7 @@ return [
         'Applications' => ['url' => 'api/applications'],
         'Agents' => ['url' => 'api/agents'],
         'Endpoints' => ['url' => 'api/endpoints'],
+        'Mappings' => ['url' => 'api/mappings'],
     ],
     'routes' => [
         // PATCH routes for resources (partial updates).
@@ -19,7 +20,11 @@ return [
         ['name' => 'applications#patch', 'url' => '/api/applications/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'agents#patch', 'url' => '/api/agents/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'endpoints#patch', 'url' => '/api/endpoints/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
-        
+        ['name' => 'mappings#patch', 'url' => '/api/mappings/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
+
+        // Mappings - Custom routes.
+        ['name' => 'mappings#test', 'url' => '/api/mappings/test', 'verb' => 'POST'],
+
         // Endpoints - Custom routes.
         ['name' => 'endpoints#test', 'url' => '/api/endpoints/{id}/test', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
         ['name' => 'endpoints#logs', 'url' => '/api/endpoints/{id}/logs', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
@@ -311,6 +316,7 @@ return [
         ['name' => 'configuration#getGitLabConfigurations', 'url' => '/api/configurations/gitlab/files', 'verb' => 'GET'],
         
         // Configuration import endpoints.
+        ['name' => 'configurations#import', 'url' => '/api/configurations/import', 'verb' => 'POST'],
         ['name' => 'configuration#importFromGitHub', 'url' => '/api/configurations/import/github', 'verb' => 'POST'],
         ['name' => 'configuration#importFromGitLab', 'url' => '/api/configurations/import/gitlab', 'verb' => 'POST'],
         ['name' => 'configuration#importFromUrl', 'url' => '/api/configurations/import/url', 'verb' => 'POST'],
@@ -417,6 +423,10 @@ return [
 		['name' => 'ui#endpointLogs', 'url' => '/endpoints/logs', 'verb' => 'GET'],
 		['name' => 'ui#entities', 'url' => '/entities', 'verb' => 'GET'],
 	['name' => 'files#page', 'url' => '/files', 'verb' => 'GET'],
+
+		// User - Profile management.
+		['name' => 'user#me', 'url' => '/api/user/me', 'verb' => 'GET'],
+		['name' => 'user#updateMe', 'url' => '/api/user/me', 'verb' => 'PUT'],
 
 		// Webhooks.
 		['name' => 'webhooks#index', 'url' => '/api/webhooks', 'verb' => 'GET'],

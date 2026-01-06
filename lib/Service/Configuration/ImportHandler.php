@@ -53,6 +53,16 @@ class ImportHandler
 {
 
     /**
+     * Guard flag to prevent recursive dependency checking.
+     *
+     * When an app is enabled as a dependency, it may boot and load its own configuration,
+     * which could trigger another dependency check. This flag prevents infinite recursion.
+     *
+     * @var bool
+     */
+    private static bool $isDependencyCheckActive = false;
+
+    /**
      * Schema mapper instance for handling schema operations.
      *
      * @var SchemaMapper The schema mapper instance.
@@ -158,7 +168,8 @@ class ImportHandler
         IAppConfig $appConfig,
         LoggerInterface $logger,
         string $appDataPath,
-        UploadHandler $uploadHandler
+        UploadHandler $uploadHandler,
+        ObjectService $objectService
     ) {
         $this->schemaMapper        = $schemaMapper;
         $this->registerMapper      = $registerMapper;
@@ -169,6 +180,7 @@ class ImportHandler
         $this->logger        = $logger;
         $this->appDataPath   = $appDataPath;
         $this->uploadHandler = $uploadHandler;
+        $this->objectService = $objectService;
     }//end __construct()
 
     /**
@@ -875,6 +887,10 @@ class ImportHandler
                 if ($owner !== null) {
                     $existingSchema->setOwner($owner);
                 }
+                
+                if ($appId !== null) {
+                    $existingSchema->setApplication($appId);
+                }
 
                 return $this->schemaMapper->update($existingSchema);
             }
@@ -883,8 +899,13 @@ class ImportHandler
             $schema = $this->schemaMapper->createFromArray($data);
             if ($owner !== null) {
                 $schema->setOwner($owner);
-                $schema = $this->schemaMapper->update($schema);
             }
+            
+            if ($appId !== null) {
+                $schema->setApplication($appId);
+            }
+            
+            $schema = $this->schemaMapper->update($schema);
 
             return $schema;
         } catch (Exception $e) {
@@ -1327,13 +1348,15 @@ class ImportHandler
         }
 
         // Create or update configuration entity to track imported data.
-        if ($appId !== null
+        // ONLY create/update if configuration was NOT provided by caller (e.g. importFromApp already created it).
+        if ($configuration === null
+            && $appId !== null
             && $version !== null
             && (count($result['registers']) > 0
             || count($result['schemas']) > 0
             || count($result['objects']) > 0)
         ) {
-            $this->createOrUpdateConfiguration(
+            $configuration = $this->createOrUpdateConfiguration(
                 data: $data,
                 appId: $appId,
                 version: $version,
@@ -1346,6 +1369,19 @@ class ImportHandler
         if ($appId !== null && $version !== null) {
             $this->appConfig->setValueString('openregister', "imported_config_{$appId}_version", $version);
             $this->logger->info(message: "Stored version {$version} for app {$appId} after successful import");
+        }
+
+        // Import seed data objects if present (only if configuration was created/updated).
+        if ($configuration !== null) {
+            $this->importSeedData(
+                configData: $data,
+                owner: $owner,
+                appId: $appId,
+                configuration: $configuration,
+                result: $result
+            );
+        } else {
+            $this->logger->debug('Skipping seedData import - no configuration entity available');
         }
 
         return $result;
@@ -1913,4 +1949,234 @@ class ImportHandler
             throw new Exception("Failed to create or update configuration: ".$e->getMessage());
         }//end try
     }//end createOrUpdateConfiguration()
+
+    /**
+     * Import seed data objects from configuration.
+     *
+     * Processes the x-openregister.seedData section and creates initial objects
+     * using the ObjectService for proper validation and handling.
+     *
+     * @param array         $configData   The configuration data containing seedData.
+     * @param string|null   $owner        The owner of the objects.
+     * @param string|null   $appId        The application ID.
+     * @param Configuration $configuration The configuration entity.
+     * @param array         $result       The result array to append object IDs to.
+     *
+     * @return void
+     */
+    private function importSeedData(
+        array $configData,
+        ?string $owner,
+        ?string $appId,
+        Configuration $configuration,
+        array &$result
+    ): void {
+        $seedData = $configData['x-openregister']['seedData'] ?? null;
+        if ($seedData === null || empty($seedData['objects']) === true) {
+            $this->logger->debug('No seed data found for configuration', ['appId' => $appId]);
+            return;
+        }
+
+        $this->logger->info('Importing seed data objects', [
+            'config_title' => $configData['info']['title'] ?? 'unknown',
+            'description'  => $seedData['description'] ?? 'no description',
+            'object_types' => array_keys($seedData['objects']),
+        ]);
+
+        // Ensure dependencies are met before importing seedData.
+        // This is checked here (lazy) rather than at start of import to avoid circular dependency issues.
+        // TEMPORARILY DISABLED: Causes hanging due to circular dependency when apps try to load configs at boot.
+        // $this->ensureDependenciesForSeedData($configData);
+
+        foreach ($seedData['objects'] as $schemaSlug => $objects) {
+            // Find schema by slug - first check schemasMap, then database.
+            $schema = $this->schemasMap[$schemaSlug] ?? null;
+            
+            if ($schema === null) {
+                // Try to find schema in database (may be from another app/config).
+                // Disable multitenancy to allow cross-app schema lookup.
+                try {
+                    $schema = $this->schemaMapper->find(
+                        id: $schemaSlug,
+                        _extend: [],
+                        published: null,
+                        _rbac: false,
+                        _multitenancy: false
+                    );
+                    $this->logger->info(
+                        "Found schema '{$schemaSlug}' in database for seedData",
+                        ['schemaId' => $schema->getId(), 'schemaApp' => $schema->getApplication()]
+                    );
+                } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+                    $this->logger->warning(
+                        "Skipping seed data for schema '{$schemaSlug}' - schema not found",
+                        ['appId' => $appId, 'availableSchemasInMap' => array_keys($this->schemasMap)]
+                    );
+                    continue;
+                }
+            }
+
+            $this->logger->info("Importing seed objects for schema '{$schemaSlug}'", ['count' => count($objects)]);
+
+            foreach ($objects as $objectData) {
+                $objectSlug = $objectData['slug'] ?? $objectData['title'] ?? null;
+                if ($objectSlug === null) {
+                    $this->logger->error(
+                        "Seed object for schema '{$schemaSlug}' is missing both 'slug' and 'title' properties - skipping",
+                        ['objectData' => $objectData]
+                    );
+                    continue;
+                }
+
+                try {
+                    // Use ObjectService to create the object.
+                    $createdObject = $this->objectService->saveObject(
+                        register: null,
+                        schema: $schema->getId(),
+                        data: $objectData,
+                        _rbac: false,
+                        _multitenancy: false,
+                        validation: true,
+                        events: false
+                    );
+
+                    $result['objects'][] = $createdObject->getId();
+                    $this->logger->debug(
+                        "Seed object imported",
+                        ['schema' => $schemaSlug, 'object_id' => $createdObject->getId(), 'slug' => $objectSlug]
+                    );
+                } catch (Exception $e) {
+                    $this->logger->error(
+                        "Failed to import seed object for schema '{$schemaSlug}': ".$e->getMessage(),
+                        ['objectData' => $objectData, 'error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]
+                    );
+                }//end try
+            }//end foreach
+        }//end foreach
+
+        $this->logger->info('Seed data import complete', [
+            'config_title' => $configData['info']['title'] ?? 'unknown',
+            'imported'     => count($result['objects']),
+        ]);
+    }//end importSeedData()
+
+    /**
+     * Ensure Nextcloud app dependencies are met for seedData import.
+     *
+     * This method is called ONLY when importing seedData (lazy resolution) to avoid
+     * circular dependency issues. It uses a guard flag to prevent recursive calls
+     * when enabled apps load their own configurations.
+     *
+     * @param array $configData The configuration data.
+     *
+     * @return void
+     */
+    private function ensureDependenciesForSeedData(array $configData): void
+    {
+        // GUARD: Prevent recursive dependency checking.
+        // When we enable an app, it may boot and load its own config, which would
+        // trigger this method again. The guard prevents infinite recursion.
+        if (self::$isDependencyCheckActive === true) {
+            $this->logger->debug('Skipping recursive dependency check (guard flag active)');
+            return;
+        }
+
+        $dependencies = $configData['x-openregister']['dependencies'] ?? [];
+        if (empty($dependencies) === true) {
+            return;
+        }
+
+        $this->logger->info('Ensuring Nextcloud app dependencies for seedData', [
+            'count' => count($dependencies),
+        ]);
+
+        // Set guard flag before processing
+        self::$isDependencyCheckActive = true;
+
+        try {
+            foreach ($dependencies as $dependency) {
+                $type = $dependency['type'] ?? null;
+
+                // Only handle Nextcloud app dependencies.
+                if ($type !== 'nextcloud-app') {
+                    continue;
+                }
+
+                $appId = $dependency['app'] ?? null;
+                $required = $dependency['required'] ?? false;
+                $reason = $dependency['reason'] ?? 'Required for seedData import';
+
+                if ($appId === null) {
+                    $this->logger->warning('Nextcloud app dependency missing app ID - skipping');
+                    continue;
+                }
+
+                $this->logger->info("Checking Nextcloud app dependency: {$appId}", [
+                    'required' => $required,
+                    'reason' => $reason,
+                ]);
+
+                try {
+                    $appManager = \OC::$server->get(\OCP\App\IAppManager::class);
+
+                    // First check if app is installed.
+                    if ($appManager->isInstalled($appId) === false) {
+                        $msg = "Nextcloud app '{$appId}' is not installed";
+                        $this->logger->warning($msg);
+
+                        if ($required === true) {
+                            throw new Exception($msg . " - cannot enable required app for seedData");
+                        }
+                        continue;
+                    }
+
+                    if ($appManager->isEnabledForUser($appId) === false) {
+                        $this->logger->info("Nextcloud app '{$appId}' is not enabled - enabling now");
+
+                        try {
+                            $appManager->enableApp($appId);
+                            $this->logger->info("Successfully enabled Nextcloud app '{$appId}'");
+
+                            // Load the app to ensure its services are available.
+                            \OC_App::loadApp($appId);
+                            $this->logger->info("Successfully loaded Nextcloud app '{$appId}'");
+                        } catch (Exception $e) {
+                            $msg = "Failed to enable Nextcloud app '{$appId}': {$e->getMessage()}";
+                            if ($required === true) {
+                                throw new Exception($msg);
+                            } else {
+                                $this->logger->warning($msg);
+                            }
+                        }
+                    } else {
+                        $this->logger->info("Nextcloud app '{$appId}' is already enabled");
+                    }
+                } catch (Exception $e) {
+                    $msg = "Error checking/enabling Nextcloud app '{$appId}': {$e->getMessage()}";
+                    if ($required === true) {
+                        throw new Exception($msg);
+                    } else {
+                        $this->logger->warning($msg);
+                    }
+                }//end try
+            }//end foreach
+        } finally {
+            // Always reset guard flag, even if exception occurred
+            self::$isDependencyCheckActive = false;
+        }//end try
+    }//end ensureDependenciesForSeedData()
+
+    /**
+     * Handle Nextcloud app dependencies.
+     *
+     * @deprecated Use ensureDependenciesForSeedData() instead. This method is kept for backwards compatibility.
+     *
+     * @param array $configData The configuration data.
+     *
+     * @return void
+     */
+    private function handleNextcloudAppDependencies(array $configData): void
+    {
+        $this->ensureDependenciesForSeedData($configData);
+    }//end handleNextcloudAppDependencies()
 }//end class
