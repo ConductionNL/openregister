@@ -1398,8 +1398,10 @@ class MagicMapper
             ],
             self::METADATA_PREFIX.'summary'        => [
                 'name'     => self::METADATA_PREFIX.'summary',
-                'type'     => 'text',
+                'type'     => 'string',
+                'length'   => 500,
                 'nullable' => true,
+                'index'    => true,
             ],
             self::METADATA_PREFIX.'image'          => [
                 'name'     => self::METADATA_PREFIX.'image',

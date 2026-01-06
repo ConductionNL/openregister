@@ -22,13 +22,6 @@
 
 namespace OCA\OpenRegister\Service;
 
-use Exception;
-use InvalidArgumentException;
-use JetBrains\PhpStorm\NoReturn;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCP\IURLGenerator;
-
 /**
  * DownloadService handles download requests for database entities
  *
@@ -48,26 +41,10 @@ use OCP\IURLGenerator;
  *
  * @link https://www.OpenRegister.app
  *
- * @SuppressWarnings(PHPMD.UnusedPrivateField) Reserved for future implementation
+ * @psalm-suppress UnusedClass
+ *
+ * @todo Implement download functionality for registers, schemas, and objects
  */
 class DownloadService
 {
-
-    /**
-     * Register mapper
-     *
-     * Handles database operations for register entities.
-     *
-     * @var RegisterMapper Register mapper instance
-     */
-    private readonly RegisterMapper $registerMapper;
-
-    /**
-     * Schema mapper
-     *
-     * Handles database operations for schema entities.
-     *
-     * @var SchemaMapper Schema mapper instance
-     */
-    private readonly SchemaMapper $schemaMapper;
 }//end class

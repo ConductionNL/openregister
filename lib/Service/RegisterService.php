@@ -260,7 +260,6 @@ class RegisterService
      * @phpstan-return void
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple folder state checks and error handling
-     * @SuppressWarnings(PHPMD.ElseExpression)       Alternative handling for failed folder creation
      */
     private function ensureRegisterFolderExists(Register $entity): void
     {
@@ -272,19 +271,20 @@ class RegisterService
                 // Create folder and get the folder node.
                 $folderNode = $this->fileService->createEntityFolder($entity);
 
-                if ($folderNode !== null) {
-                    // Update the entity with the folder ID.
-                    $entity->setFolder((string) $folderNode->getId());
-
-                    // Save the entity with the new folder ID.
-                    $this->registerMapper->update($entity);
-
-                    $folderId   = $folderNode->getId();
-                    $registerId = $entity->getId();
-                    $this->logger->info(message: "Created folder with ID {$folderId} for register {$registerId}");
-                } else {
+                if ($folderNode === null) {
                     $this->logger->warning(message: "Failed to create folder for register {$entity->getId()}");
+                    return;
                 }
+
+                // Update the entity with the folder ID.
+                $entity->setFolder((string) $folderNode->getId());
+
+                // Save the entity with the new folder ID.
+                $this->registerMapper->update($entity);
+
+                $folderId   = $folderNode->getId();
+                $registerId = $entity->getId();
+                $this->logger->info(message: "Created folder with ID {$folderId} for register {$registerId}");
             } catch (Exception $e) {
                 // Log the error but don't fail the register creation/update.
                 // The register can still function without a folder.

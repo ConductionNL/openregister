@@ -121,7 +121,6 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Requires coordination with many specialized settings handlers
  * @SuppressWarnings(PHPMD.ExcessivePublicCount)     Public API facade requires many public entry points
  * @SuppressWarnings(PHPMD.TooManyFields)            Settings service coordinates many specialized handlers
- * @SuppressWarnings(PHPMD.UnusedPrivateField)       Fields used for future extensibility or lazy-loaded handlers
  * @SuppressWarnings(PHPMD.LongVariable)             Descriptive variable names improve code readability
  */
 class SettingsService
@@ -170,14 +169,7 @@ class SettingsService
     private IGroupManager $groupManager;
 
     /**
-     * Validation operations handler (short name for DI)
-     *
-     * @var ValidationOperationsHandler|null
-     */
-    private ?ValidationOperationsHandler $validOpsHandler = null;
-
-    /**
-     * Validation operations handler (full name for internal use)
+     * Validation operations handler
      *
      * @var ValidationOperationsHandler|null
      */
@@ -205,14 +197,7 @@ class SettingsService
     private FileSettingsHandler $fileSettingsHandler;
 
     /**
-     * Object and retention settings handler (short name for DI)
-     *
-     * @var ObjectRetentionHandler|null
-     */
-    private ?ObjectRetentionHandler $objRetentionHandler = null;
-
-    /**
-     * Object and retention settings handler (full name for internal use)
+     * Object and retention settings handler
      *
      * @var ObjectRetentionHandler|null
      */
@@ -233,14 +218,7 @@ class SettingsService
     private SolrSettingsHandler $solrSettingsHandler;
 
     /**
-     * Configuration settings handler (short name for DI)
-     *
-     * @var ConfigurationSettingsHandler|null
-     */
-    private ?ConfigurationSettingsHandler $cfgSettingsHandler = null;
-
-    /**
-     * Configuration settings handler (full name for internal use)
+     * Configuration settings handler
      *
      * @var ConfigurationSettingsHandler|null
      */
@@ -282,14 +260,7 @@ class SettingsService
     private SchemaCacheHandler $schemaCacheService;
 
     /**
-     * Schema facet cache service (short name for DI)
-     *
-     * @var FacetCacheHandler|null
-     */
-    private ?FacetCacheHandler $facetCacheSvc = null;
-
-    /**
-     * Schema facet cache service (full name for internal use)
+     * Schema facet cache service
      *
      * @var FacetCacheHandler|null
      */

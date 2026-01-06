@@ -71,8 +71,6 @@ class SolrManagementController extends Controller
     /**
      * Get SOLR field configuration and schema information
      *
-     * @NoAdminRequired
-     *
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with SOLR field configuration
@@ -183,8 +181,6 @@ class SolrManagementController extends Controller
 
     /**
      * Create missing SOLR fields based on schema analysis
-     *
-     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
@@ -307,8 +303,6 @@ class SolrManagementController extends Controller
     /**
      * Fix mismatched SOLR field configurations
      *
-     * @NoAdminRequired
-     *
      * @NoCSRFRequired
      *
      * @return JSONResponse The field fix results
@@ -417,7 +411,6 @@ class SolrManagementController extends Controller
      *
      * @return JSONResponse
      *
-     * @NoAdminRequired
      * @NoCSRFRequired
      */
     public function deleteSolrField(string $fieldName): JSONResponse
@@ -520,8 +513,6 @@ class SolrManagementController extends Controller
     /**
      * List all SOLR collections with statistics
      *
-     * @NoAdminRequired
-     *
      * @NoCSRFRequired
      *
      * @return JSONResponse List of collections with metadata
@@ -567,8 +558,6 @@ class SolrManagementController extends Controller
 
     /**
      * List all SOLR ConfigSets
-     *
-     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
@@ -621,7 +610,6 @@ class SolrManagementController extends Controller
      *
      * @return JSONResponse Creation result
      *
-     * @NoAdminRequired
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<
@@ -655,7 +643,6 @@ class SolrManagementController extends Controller
      *
      * @return JSONResponse Deletion result
      *
-     * @NoAdminRequired
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<
@@ -693,7 +680,6 @@ class SolrManagementController extends Controller
      *
      * @return JSONResponse Creation result
      *
-     * @NoAdminRequired
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<
@@ -741,7 +727,6 @@ class SolrManagementController extends Controller
      *
      * @return JSONResponse Copy operation result
      *
-     * @NoAdminRequired
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<
@@ -785,7 +770,6 @@ class SolrManagementController extends Controller
      *
      * @return JSONResponse The deletion result
      *
-     * @NoAdminRequired
      * @NoCSRFRequired
      */
     public function deleteSpecificSolrCollection(string $name): JSONResponse
@@ -878,7 +862,6 @@ class SolrManagementController extends Controller
      *
      * @return JSONResponse Update result
      *
-     * @NoAdminRequired
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<

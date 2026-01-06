@@ -812,8 +812,6 @@ class OrganisationService
      * Get user organisation statistics
      *
      * @return array Statistics with total count, active organisation, and results list.
-     *
-     * @SuppressWarnings(PHPMD.ElseExpression) Else clause provides clear null handling for JSON serialization
      */
     public function getUserOrganisationStats(): array
     {
@@ -825,15 +823,9 @@ class OrganisationService
         $organisations = $this->getUserOrganisations();
         $activeOrg     = $this->getActiveOrganisation();
 
-        if ($activeOrg !== null) {
-            $activeOrgData = $activeOrg->jsonSerialize();
-        } else {
-            $activeOrgData = null;
-        }
-
         return [
             'total'   => count($organisations),
-            'active'  => $activeOrgData,
+            'active'  => $activeOrg?->jsonSerialize(),
             'results' => array_map(
                 function ($org) {
                     return $org->jsonSerialize();

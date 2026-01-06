@@ -70,7 +70,6 @@ class SolrOperationsController extends Controller
     /**
      * Run SOLR setup to prepare for multi-tenant architecture
      *
-     * @NoAdminRequired
      * @NoCSRFRequired
      *
      * @return JSONResponse The SOLR setup results
@@ -327,8 +326,6 @@ class SolrOperationsController extends Controller
     /**
      * Test SOLR connection with provided settings (basic connectivity and authentication only)
      *
-     * @NoAdminRequired
-     *
      * @NoCSRFRequired
      *
      * @return JSONResponse The test results
@@ -362,7 +359,6 @@ class SolrOperationsController extends Controller
     /**
      * Warmup SOLR index
      *
-     * @NoAdminRequired
      * @NoCSRFRequired
      *
      * @return JSONResponse Warmup operation results
@@ -452,7 +448,6 @@ class SolrOperationsController extends Controller
     /**
      * Inspect SOLR index documents
      *
-     * @NoAdminRequired
      * @NoCSRFRequired
      *
      * @return JSONResponse
@@ -524,8 +519,6 @@ class SolrOperationsController extends Controller
     /**
      * Get memory usage prediction for SOLR warmup
      *
-     * @NoAdminRequired
-     *
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with memory prediction
@@ -586,8 +579,6 @@ class SolrOperationsController extends Controller
      * @param string $operation Operation to perform (commit, optimize, clear)
      *
      * @return JSONResponse Operation results
-     *
-     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *

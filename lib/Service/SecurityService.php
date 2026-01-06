@@ -41,7 +41,6 @@ use Psr\Log\LoggerInterface;
  * @package  OCA\OpenRegister\Service
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
- * @SuppressWarnings(PHPMD.ShortVariable)
  */
 class SecurityService
 {
@@ -415,11 +414,13 @@ class SecurityService
         foreach ($forwardedHeaders as $header) {
             $headerValue = $request->getHeader($header);
             if (empty($headerValue) === false) {
-                $ips = explode(',', $headerValue);
-                $ip  = trim($ips[0]);
+                $ipList   = explode(',', $headerValue);
+                $clientIp = trim($ipList[0]);
 
-                if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) !== false) {
-                    $ipAddress = $ip;
+                $flags    = FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE;
+                $isPublic = filter_var($clientIp, FILTER_VALIDATE_IP, $flags);
+                if ($isPublic !== false) {
+                    $ipAddress = $clientIp;
                     break;
                 }
             }

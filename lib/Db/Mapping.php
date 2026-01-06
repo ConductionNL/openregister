@@ -43,7 +43,6 @@ use OCP\AppFramework\Db\Entity;
  * @psalm-suppress UnusedClass
  *
  * @SuppressWarnings(PHPMD.StaticAccess)         Transliterator::create is the correct pattern for ICU transliteration
- * @SuppressWarnings(PHPMD.ElseExpression)       Else improves readability in getSlug method
  * @SuppressWarnings(PHPMD.ErrorControlOperator) @ suppression needed for Transliterator which may not be available
  */
 class Mapping extends Entity implements JsonSerializable
@@ -272,21 +271,22 @@ class Mapping extends Entity implements JsonSerializable
         $generatedSlug = preg_replace('/[^a-z0-9]+/', '-', $generatedSlug ?? '');
         $generatedSlug = trim((string) $generatedSlug, '-');
 
-        // Safe fallback if empty.
-        if ($generatedSlug === '') {
-            $prefix = 'mapping';
-            if (isset($this->id) === true && (string) $this->id !== '') {
-                $generatedSlug = $prefix.'-'.(string) $this->id;
-            } else {
-                try {
-                    $generatedSlug = $prefix.'-'.bin2hex(random_bytes(4));
-                } catch (\Exception $e) {
-                    $generatedSlug = $prefix.'-'.substr(md5((string) $name), 0, 8);
-                }
-            }
+        // Return slug if not empty.
+        if ($generatedSlug !== '') {
+            return $generatedSlug;
         }
 
-        return $generatedSlug;
+        // Safe fallback if empty.
+        $prefix = 'mapping';
+        if (isset($this->id) === true && (string) $this->id !== '') {
+            return $prefix.'-'.(string) $this->id;
+        }
+
+        try {
+            return $prefix.'-'.bin2hex(random_bytes(4));
+        } catch (\Exception $e) {
+            return $prefix.'-'.substr(md5((string) $name), 0, 8);
+        }
     }//end getSlug()
 
     /**

@@ -356,16 +356,14 @@ class Application extends Entity implements JsonSerializable
     }//end setSchemas()
 
     /**
-     * Get whether this application is active
+     * Check whether this application is active
      *
      * @return bool Whether this application is active
-     *
-     * @SuppressWarnings(PHPMD.BooleanGetMethodName) Kept as getActive() for API compatibility
      */
-    public function getActive(): bool
+    public function isActive(): bool
     {
         return $this->active ?? true;
-    }//end getActive()
+    }//end isActive()
 
     /**
      * Set whether this application is active
@@ -540,7 +538,7 @@ class Application extends Entity implements JsonSerializable
             'registers'              => $this->getRegisters(),
             'schemas'                => $this->getSchemas(),
             'owner'                  => $this->owner,
-            'active'                 => $this->getActive(),
+            'active'                 => $this->isActive(),
             'groups'                 => $groups,
             'quota'                  => [
                 'storage'   => $this->storageQuota,

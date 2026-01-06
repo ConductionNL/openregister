@@ -73,7 +73,7 @@ class CascadingHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex cascading logic with multiple relationship types
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple paths for handling different relationship configurations
      */
-    public function handlePreValidationCascading(array $object, Schema $schema, ?string $uuid, int $currentRegister): array
+    public function handlePreValidationCascading(array $object, Schema $schema, ?string $uuid, ?int $currentRegister): array
     {
         // Pre-validation cascading to handle nested objects.
         try {
@@ -177,10 +177,10 @@ class CascadingHandler
      * This method creates a nested object with an inverse relationship to the parent.
      * It resolves the schema from the property definition and sets the inversedBy field.
      *
-     * @param array  $objectData      Object data to create.
-     * @param array  $definition      Property definition containing schema reference.
-     * @param string $parentUuid      UUID of the parent object.
-     * @param int    $currentRegister Current register ID.
+     * @param array       $objectData      Object data to create.
+     * @param array       $definition      Property definition containing schema reference.
+     * @param string      $parentUuid      UUID of the parent object.
+     * @param int|null    $currentRegister Current register ID (nullable for seedData).
      *
      * @return string|null UUID of created object or null if creation failed.
      *
@@ -191,7 +191,7 @@ class CascadingHandler
         array $objectData,
         array $definition,
         string $parentUuid,
-        int $currentRegister
+        ?int $currentRegister
     ): ?string {
         try {
             // Resolve schema reference to actual schema ID.

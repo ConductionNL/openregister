@@ -1755,10 +1755,13 @@ class SaveObject
             }
 
             $register = $this->registerMapper->find(id: $registerId);
-        } else if (is_int($register) === true || $register === null) {
-            // It's an integer ID or null.
+        } else if (is_int($register) === true) {
+            // It's an integer ID - fetch the register.
             $registerId = $register;
             $register   = $this->registerMapper->find(id: $register);
+        } else if ($register === null) {
+            // Register is NULL (e.g., for seedData objects) - leave as NULL.
+            $registerId = null;
         }
 
         return [$schema, $schemaId, $register, $registerId];

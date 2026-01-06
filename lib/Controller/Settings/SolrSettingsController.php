@@ -63,8 +63,6 @@ class SolrSettingsController extends Controller
     /**
      * Get SOLR settings only
      *
-     * @NoAdminRequired
-     *
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with SOLR settings
@@ -81,8 +79,6 @@ class SolrSettingsController extends Controller
 
     /**
      * Update SOLR settings only
-     *
-     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
@@ -103,8 +99,6 @@ class SolrSettingsController extends Controller
      * Get Solr information and vector search capabilities
      *
      * Returns information about Solr availability, version, and vector search support.
-     *
-     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
@@ -198,8 +192,6 @@ class SolrSettingsController extends Controller
     /**
      * Get comprehensive SOLR dashboard statistics
      *
-     * @NoAdminRequired
-     *
      * @NoCSRFRequired
      *
      * @return JSONResponse SOLR dashboard metrics and statistics
@@ -223,8 +215,6 @@ class SolrSettingsController extends Controller
     /**
      * Get SOLR facet configuration
      *
-     * @NoAdminRequired
-     *
      * @NoCSRFRequired
      *
      * @return JSONResponse SOLR facet configuration
@@ -244,8 +234,6 @@ class SolrSettingsController extends Controller
     /**
      * Update SOLR facet configuration
      *
-     * @NoAdminRequired
-     *
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with updated facet configuration
@@ -263,8 +251,6 @@ class SolrSettingsController extends Controller
 
     /**
      * Discover available SOLR facets
-     *
-     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
@@ -312,8 +298,6 @@ class SolrSettingsController extends Controller
 
     /**
      * Get SOLR facet configuration with discovery
-     *
-     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
@@ -458,8 +442,6 @@ class SolrSettingsController extends Controller
 
     /**
      * Update SOLR facet configuration with discovery
-     *
-     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *

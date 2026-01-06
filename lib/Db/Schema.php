@@ -686,7 +686,6 @@ class Schema extends Entity implements JsonSerializable
      * @return static Returns $this for method chaining
      *
      * @SuppressWarnings(PHPMD.NPathComplexity)      Hydration requires handling many optional fields
-     * @SuppressWarnings(PHPMD.ElseExpression)       Else needed for JSON decode fallback handling
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function hydrate(array $object, ?PropertyValidatorHandler $validator=null): static
@@ -739,11 +738,10 @@ class Schema extends Entity implements JsonSerializable
                     // If it's a JSON string, decode it first.
                     if (is_string($value) === true) {
                         $decoded = json_decode($value, true);
-                        // Only use decoded value if JSON was valid, otherwise set to null.
+                        // Default to null, only use decoded if valid JSON.
+                        $value = null;
                         if (json_last_error() === JSON_ERROR_NONE) {
                             $value = $decoded;
-                        } else {
-                            $value = null;
                         }
                     }
 
@@ -1194,16 +1192,14 @@ class Schema extends Entity implements JsonSerializable
     }//end validateAllowedTagsValue()
 
     /**
-     * Get whether this schema should be searchable in SOLR
+     * Check whether this schema should be searchable in SOLR
      *
      * @return bool True if schema objects should be indexed in SOLR
-     *
-     * @SuppressWarnings(PHPMD.BooleanGetMethodName) Kept as getSearchable() for API compatibility
      */
-    public function getSearchable(): bool
+    public function isSearchable(): bool
     {
         return $this->searchable;
-    }//end getSearchable()
+    }//end isSearchable()
 
     /**
      * Set whether this schema should be searchable in SOLR

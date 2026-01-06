@@ -62,8 +62,6 @@ class FileSettingsController extends Controller
     /**
      * Get File Management settings
      *
-     * @NoAdminRequired
-     *
      * @NoCSRFRequired
      *
      * @return JSONResponse File settings
@@ -82,8 +80,6 @@ class FileSettingsController extends Controller
 
     /**
      * Update File Management settings
-     *
-     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
@@ -129,8 +125,6 @@ class FileSettingsController extends Controller
      * @param string $apiKey      Dolphin API key
      *
      * @return JSONResponse
-     *
-     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
@@ -209,8 +203,6 @@ class FileSettingsController extends Controller
     /**
      * Get file collection field status
      *
-     * @NoAdminRequired
-     *
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with file collection fields
@@ -241,8 +233,6 @@ class FileSettingsController extends Controller
 
     /**
      * Create missing fields in file collection
-     *
-     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
@@ -304,8 +294,6 @@ class FileSettingsController extends Controller
 
     /**
      * Warmup files - Extract text and index in SOLR file collection
-     *
-     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
@@ -418,8 +406,6 @@ class FileSettingsController extends Controller
      *
      * @return JSONResponse Indexing result
      *
-     * @NoAdminRequired
-     *
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|422|500, array{success: bool, message: mixed|string, file_id?: int},
@@ -471,8 +457,6 @@ class FileSettingsController extends Controller
 
     /**
      * Reindex all files
-     *
-     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
@@ -545,8 +529,6 @@ class FileSettingsController extends Controller
     /**
      * Get file index statistics
      *
-     * @NoAdminRequired
-     *
      * @NoCSRFRequired
      *
      * @return JSONResponse File index statistics
@@ -589,8 +571,6 @@ class FileSettingsController extends Controller
      * - IndexService: Chunk statistics (from SOLR index)
      *
      * This provides accurate statistics without dealing with Nextcloud's extensive rights logic.
-     *
-     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *

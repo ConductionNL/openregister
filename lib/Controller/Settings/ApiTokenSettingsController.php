@@ -59,8 +59,6 @@ class ApiTokenSettingsController extends Controller
     /**
      * Get API tokens for GitHub and GitLab
      *
-     * @NoAdminRequired
-     *
      * @NoCSRFRequired
      *
      * @return JSONResponse The API tokens
@@ -106,8 +104,6 @@ class ApiTokenSettingsController extends Controller
 
     /**
      * Save API tokens for GitHub and GitLab
-     *
-     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
@@ -155,7 +151,6 @@ class ApiTokenSettingsController extends Controller
     /**
      * Test GitHub API token
      *
-     * @NoAdminRequired
      * @NoCSRFRequired
      *
      * @return JSONResponse Test result
@@ -213,7 +208,6 @@ class ApiTokenSettingsController extends Controller
     /**
      * Test GitLab API token
      *
-     * @NoAdminRequired
      * @NoCSRFRequired
      *
      * @return JSONResponse Test result

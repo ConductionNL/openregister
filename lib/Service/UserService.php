@@ -44,7 +44,6 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
- * @SuppressWarnings(PHPMD.ElseExpression)
  */
 class UserService
 {
@@ -265,10 +264,10 @@ class UserService
             $userId = $user->getUID();
 
             try {
+                // Default to memory-safe method, override if native method exists.
+                $usedSpace = $this->getUsedSpaceMemorySafe($userId);
                 if (method_exists($user, 'getUsedSpace') === true) {
                     $usedSpace = $user->getUsedSpace();
-                } else {
-                    $usedSpace = $this->getUsedSpaceMemorySafe($userId);
                 }
             } catch (\Exception $quotaException) {
                 $this->logger->debug(
@@ -388,10 +387,10 @@ class UserService
         if (method_exists($user, 'getLocale') === true) {
             $locale = $user->getLocale();
             if (empty($locale) === true && empty($language) === false) {
+                // Default to language_LANGUAGE format, override for English.
+                $locale = $language.'_'.strtoupper($language);
                 if ($language === 'en') {
                     $locale = 'en_US';
-                } else {
-                    $locale = $language.'_'.strtoupper($language);
                 }
             }
         }
@@ -570,28 +569,33 @@ class UserService
             ];
 
             foreach ($standardFields as $apiField => $accountProperty) {
-                if (isset($data[$apiField]) === true) {
-                    $value = (string) $data[$apiField];
+                if (isset($data[$apiField]) === false) {
+                    continue;
+                }
 
-                    if ($account->getProperty($accountProperty) !== null) {
-                        $property = $account->getProperty($accountProperty);
-                        if ($property->getValue() !== $value) {
-                            $property->setValue($value);
-                            $accountUpdated = true;
-                        }
-                    } else {
-                        $scope    = $this->getDefaultPropertyScope($accountProperty);
-                        $verified = IAccountManager::NOT_VERIFIED;
+                $value = (string) $data[$apiField];
 
-                        $account->setProperty(
-                            property: $accountProperty,
-                            value: $value,
-                            scope: $scope,
-                            verified: $verified
-                        );
+                if ($account->getProperty($accountProperty) !== null) {
+                    $property = $account->getProperty($accountProperty);
+                    if ($property->getValue() !== $value) {
+                        $property->setValue($value);
                         $accountUpdated = true;
                     }
-                }//end if
+
+                    continue;
+                }
+
+                // Property doesn't exist, create it.
+                $scope    = $this->getDefaultPropertyScope($accountProperty);
+                $verified = IAccountManager::NOT_VERIFIED;
+
+                $account->setProperty(
+                    property: $accountProperty,
+                    value: $value,
+                    scope: $scope,
+                    verified: $verified
+                );
+                $accountUpdated = true;
             }//end foreach
 
             if ($accountUpdated === true) {

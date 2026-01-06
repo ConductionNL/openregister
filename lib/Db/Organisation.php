@@ -53,7 +53,6 @@ use Symfony\Component\Uid\Uuid;
  * @method void setCreated(?DateTime $created)
  * @method DateTime|null getUpdated()
  * @method void setUpdated(?DateTime $updated)
- * @method bool|null getActive()
  * @method static setActive(mixed $active)
  * @method int|null getStorageQuota()
  * @method void setStorageQuota(?int $storageQuota)
@@ -373,16 +372,14 @@ class Organisation extends Entity implements JsonSerializable
     }//end setGroups()
 
     /**
-     * Get whether this organisation is active
+     * Check whether this organisation is active
      *
      * @return bool Whether this organisation is active
-     *
-     * @SuppressWarnings(PHPMD.BooleanGetMethodName) Kept as getActive() for API compatibility
      */
-    public function getActive(): bool
+    public function isActive(): bool
     {
         return $this->active ?? true;
-    }//end getActive()
+    }//end isActive()
 
     /**
      * Set whether this organisation is active
@@ -629,7 +626,7 @@ class Organisation extends Entity implements JsonSerializable
             'users'         => $users,
             'groups'        => $groups,
             'owner'         => $this->owner,
-            'active'        => $this->getActive(),
+            'active'        => $this->isActive(),
             'parent'        => $this->parent,
             'children'      => $this->children ?? [],
             'quota'         => [

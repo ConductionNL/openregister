@@ -66,8 +66,6 @@ class LlmSettingsController extends Controller
     /**
      * Get LLM (Large Language Model) settings
      *
-     * @NoAdminRequired
-     *
      * @NoCSRFRequired
      *
      * @return JSONResponse LLM settings
@@ -86,8 +84,6 @@ class LlmSettingsController extends Controller
 
     /**
      * Update LLM (Large Language Model) settings
-     *
-     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
@@ -164,8 +160,6 @@ class LlmSettingsController extends Controller
      * It provides the same functionality but is registered under a different route name
      * to ensure PATCH verb is properly registered in Nextcloud routing.
      *
-     * @NoAdminRequired
-     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Updated LLM settings
@@ -187,8 +181,6 @@ class LlmSettingsController extends Controller
      * by generating a test embedding vector.
      * Accepts provider and config from the request to allow testing
      * before saving the configuration.
-     *
-     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
@@ -257,8 +249,6 @@ class LlmSettingsController extends Controller
      * Accepts provider and config from the request to allow testing
      * before saving the configuration.
      *
-     * @NoAdminRequired
-     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Test result with chat response
@@ -324,8 +314,6 @@ class LlmSettingsController extends Controller
 
     /**
      * Get available Ollama models from the configured Ollama instance
-     *
-     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
@@ -462,8 +450,6 @@ class LlmSettingsController extends Controller
     /**
      * Check if embedding model has changed and vectors need regeneration
      *
-     * @NoAdminRequired
-     *
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with mismatch check result
@@ -488,8 +474,6 @@ class LlmSettingsController extends Controller
 
     /**
      * Clear all embeddings from the database
-     *
-     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
@@ -522,8 +506,6 @@ class LlmSettingsController extends Controller
 
     /**
      * Get vector embedding statistics
-     *
-     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *

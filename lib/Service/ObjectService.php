@@ -1223,11 +1223,14 @@ class ObjectService
 
         // Pre-validation cascading: Handle inversedBy properties BEFORE validation.
         // This creates related objects and replaces them with UUIDs so validation sees UUIDs, not objects.
+        // Note: If currentRegister is NULL (e.g., for seedData objects), pass NULL as registerId.
+        $currentRegisterId = $this->currentRegister !== null ? $this->currentRegister->getId() : null;
+        
         [$object, $uuid] = $this->cascadingHandler->handlePreValidationCascading(
             object: $object,
             schema: $parentSchema,
             uuid: $uuid,
-            currentRegister: $this->currentRegister->getId()
+            currentRegister: $currentRegisterId
         );
 
         // Restore the parent object's register and schema context after cascading.

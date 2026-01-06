@@ -16,7 +16,8 @@
       "Bash(xargs -I {} sh -c 'echo \"\"$\\(grep -c \"\"@SuppressWarnings\\(PHPMD\"\" {} 2>/dev/null\\) {}\"\"')",
       "Bash(docker ps:*)",
       "Bash(docker exec:*)",
-      "Bash(./run-tests.sh:*)"
+      "Bash(./run-tests.sh:*)",
+      "Bash(grep:*)"
     ]
   }
 }

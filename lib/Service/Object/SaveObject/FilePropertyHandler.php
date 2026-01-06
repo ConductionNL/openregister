@@ -645,8 +645,6 @@ class FilePropertyHandler
      * @phpstan-return int
      *
      * @throws Exception If file processing fails.
-     *
-     * @SuppressWarnings(PHPMD.UnusedLocalVariable) $fileId is prepared for future file service implementation
      */
     private function processFileObjectInput(
         ObjectEntity $objectEntity,
@@ -656,34 +654,12 @@ class FilePropertyHandler
         ?int $index=null
     ): int {
         // If file object has an ID, try to use the existing file.
-        if (($fileObject['id'] ?? null) !== null) {
-            $fileId = (int) $fileObject['id'];
-
-            // Validate that the existing file meets the property configuration.
-            // Get file info to validate against config.
-            try {
-                // TODO: Implement file retrieval when fileService is available.
-                // $existingFile = $this->fileService->getFile(
-                // object: $objectEntity, file: $fileId
-                // );
-                // If ($existingFile !== null) {
-                // Validate the existing file against current config.
-                // $this->validateExistingFileAgainstConfig(
-                // file: $existingFile, fileConfig: $fileConfig,
-                // propertyName: $propertyName, index: $index
-                // );
-                // Apply auto tags if needed (non-destructive - adds to existing tags).
-                // $this->applyAutoTagsToExistingFile(
-                // file: $existingFile, fileConfig: $fileConfig,
-                // propertyName: $propertyName, index: $index
-                // );
-                // Return $fileId;
-                // }
-                // }.
-            } catch (Exception $e) {
-                // Existing file not accessible, continue to create new one.
-            }//end try
-        }//end if
+        // TODO: Implement file retrieval when fileService is available.
+        // When implemented, this block should:
+        // 1. Retrieve the file using $fileObject['id']
+        // 2. Validate it against current config
+        // 3. Apply auto tags if needed
+        // 4. Return the file ID if valid
 
         // If no ID or existing file not accessible, create a new file.
         // This requires downloadUrl or accessUrl to fetch content.

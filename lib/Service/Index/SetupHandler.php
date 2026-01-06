@@ -40,7 +40,6 @@ use OCA\OpenRegister\Service\IndexService;
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Solr setup requires comprehensive configuration methods
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex Solr setup logic with many configuration scenarios
- * @SuppressWarnings(PHPMD.UnusedPrivateField)       Reserved for future infrastructure tracking features
  * @SuppressWarnings(PHPMD.LongVariable)             Descriptive variable names improve code readability
  */
 class SetupHandler

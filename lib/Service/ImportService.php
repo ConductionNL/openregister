@@ -59,7 +59,6 @@ use React\EventLoop\Loop;
  * @SuppressWarnings(PHPMD.TooManyMethods)           Many methods required for multi-format import support
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex import logic with multiple data formats
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Requires many dependencies for import operations
- * @SuppressWarnings(PHPMD.UnusedPrivateField)       schemaPropsCache reserved for future schema property caching
  * @SuppressWarnings(PHPMD.LongVariable)             Descriptive variable names improve code readability
  */
 
@@ -114,13 +113,6 @@ class ImportService
      * @var int
      */
     private const MIN_CONCURRENT_CHUNK_SIZE = 5;
-
-    /**
-     * Instance cache for schema properties to avoid static cache issues
-     *
-     * @var array<string, array>
-     */
-    private array $schemaPropsCache = [];
 
     /**
      * Cache for schema properties during import operations

@@ -62,8 +62,6 @@ class CacheSettingsController extends Controller
      * This method provides detailed insights into cache usage, performance, memory consumption,
      * hit/miss rates, and object name cache statistics for admin monitoring.
      *
-     * @NoAdminRequired
-     *
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with cache statistics or error
@@ -83,8 +81,6 @@ class CacheSettingsController extends Controller
      *
      * This method supports clearing different types of caches: 'all', 'object', 'schema', 'facet', 'distributed', 'names'.
      * It accepts a JSON body with 'type' parameter to specify which cache to clear.
-     *
-     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
@@ -109,8 +105,6 @@ class CacheSettingsController extends Controller
      * This method triggers manual cache warmup for object names to improve performance
      * after system maintenance or during off-peak hours.
      *
-     * @NoAdminRequired
-     *
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with warmup result or error
@@ -131,8 +125,6 @@ class CacheSettingsController extends Controller
      * @param string $name The name of the collection to clear
      *
      * @return JSONResponse The clear result
-     *
-     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *

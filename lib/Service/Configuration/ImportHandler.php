@@ -401,13 +401,31 @@ class ImportHandler
             unset($data['id'], $data['uuid'], $data['organisation']);
 
             // Check if register already exists by slug.
+            // CRITICAL: Disable RBAC and multitenancy to find registers from any app/tenant
+            // during import. This prevents duplicate creation when importing configurations.
             $existingRegister = null;
             try {
-                $existingRegister = $this->registerMapper->find(strtolower($data['slug']));
+                $existingRegister = $this->registerMapper->find(
+                    id: strtolower($data['slug']),
+                    _extend: [],
+                    published: null,
+                    _rbac: false,
+                    _multitenancy: false
+                );
+                $this->logger->info(
+                    "Found existing register during import",
+                    [
+                        'slug'        => $data['slug'],
+                        'registerId'  => $existingRegister->getId(),
+                        'application' => $existingRegister->getApplication(),
+                    ]
+                );
             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-                // Register doesn't exist in current organisation context, we'll create a new one.
-                $msg = "Register '{$data['slug']}' not found in current organisation context, will create new one";
-                $this->logger->info(message: $msg);
+                // Register doesn't exist, we'll create a new one.
+                $this->logger->info(
+                    "Register '{$data['slug']}' not found, will create new one",
+                    ['appId' => $appId]
+                );
             } catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
                 // Multiple registers found with the same identifier.
                 $this->handleDuplicateRegisterError(
@@ -432,13 +450,34 @@ class ImportHandler
                     $existingRegister->setOwner($owner);
                 }
 
+                // Set application if provided.
+                if ($appId !== null) {
+                    $existingRegister->setApplication($appId);
+                }
+
                 return $this->registerMapper->update($existingRegister);
             }
 
             // Create new register.
+            // NOTE: createFromArray already calls insert(), so we get a register with an ID.
             $register = $this->registerMapper->createFromArray($data);
+            
+            // Set owner and application if provided.
+            // These must be set AFTER creation because createFromArray doesn't handle them.
+            $needsUpdate = false;
+            
             if ($owner !== null) {
                 $register->setOwner($owner);
+                $needsUpdate = true;
+            }
+
+            if ($appId !== null) {
+                $register->setApplication($appId);
+                $needsUpdate = true;
+            }
+
+            // If we set owner or application, update the register.
+            if ($needsUpdate === true) {
                 $register = $this->registerMapper->update($register);
             }
 
@@ -1465,6 +1504,22 @@ class ImportHandler
                                 'currentVersion'  => $configuration->getVersion(),
                             ]
                         );
+
+                        // Check version and decide if we should update or skip.
+                        $existingVersion = $configuration->getVersion() ?? '0.0.0';
+                        $newVersion      = $version ?? '0.0.0';
+
+                        // Only skip if not forced AND version is not newer.
+                        // Note: We deliberately do NOT early-return here, even when skipping,
+                        // because we still want to check for seedData changes.
+                        // The importFromJson method will handle version checks for schemas/registers.
+                        if ($force === false && version_compare($newVersion, $existingVersion, '<=') === true) {
+                            $this->logger->info(
+                                "Configuration version ({$existingVersion}) is up-to-date, will skip schema/register import but check for seedData",
+                                ['app' => $appId, 'force' => $force]
+                            );
+                            // Continue to importFromJson, which will skip schemas/registers but may import seedData.
+                        }
                     }
                 } catch (Exception $e) {
                     // No existing configuration found, we'll create a new one.
@@ -1971,12 +2026,15 @@ class ImportHandler
         Configuration $configuration,
         array &$result
     ): void {
+        
         $seedData = $configData['x-openregister']['seedData'] ?? null;
+        
         if ($seedData === null || empty($seedData['objects']) === true) {
             $this->logger->debug('No seed data found for configuration', ['appId' => $appId]);
             return;
         }
 
+        
         $this->logger->info('Importing seed data objects', [
             'config_title' => $configData['info']['title'] ?? 'unknown',
             'description'  => $seedData['description'] ?? 'no description',
@@ -1989,6 +2047,7 @@ class ImportHandler
         // $this->ensureDependenciesForSeedData($configData);
 
         foreach ($seedData['objects'] as $schemaSlug => $objects) {
+            
             // Find schema by slug - first check schemasMap, then database.
             $schema = $this->schemasMap[$schemaSlug] ?? null;
             
@@ -2014,11 +2073,13 @@ class ImportHandler
                     );
                     continue;
                 }
+            } else {
             }
 
             $this->logger->info("Importing seed objects for schema '{$schemaSlug}'", ['count' => count($objects)]);
 
             foreach ($objects as $objectData) {
+                
                 $objectSlug = $objectData['slug'] ?? $objectData['title'] ?? null;
                 if ($objectSlug === null) {
                     $this->logger->error(
@@ -2028,17 +2089,33 @@ class ImportHandler
                     continue;
                 }
 
+
                 try {
-                    // Use ObjectService to create the object.
-                    $createdObject = $this->objectService->saveObject(
-                        register: null,
-                        schema: $schema->getId(),
-                        data: $objectData,
-                        _rbac: false,
-                        _multitenancy: false,
-                        validation: true,
-                        events: false
-                    );
+                    // Use ObjectEntityMapper directly for seedData objects to avoid complex ObjectService dependencies.
+                    // SeedData objects are simple and don't require cascading or complex validation.
+                    $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
+                    
+                    // Generate UUID if not provided.
+                    $uuid = $objectData['uuid'] ?? \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
+                    $objectEntity->setUuid($uuid);
+                    
+                    // Set schema reference.
+                    $objectEntity->setSchema($schema->getId());
+                    
+                    // NOTE: Do NOT set register to null - it has a NOT NULL constraint in database.
+                    // For seedData objects, we use a special register ID (0) to indicate "no register".
+                    $objectEntity->setRegister(0);
+                    
+                    // Store object data.
+                    $objectEntity->setObject($objectData);
+                    
+                    // Set timestamps.
+                    $now = new \DateTime();
+                    $objectEntity->setCreated($now);
+                    $objectEntity->setUpdated($now);
+                    
+                    // Insert into database.
+                    $createdObject = $this->objectEntityMapper->insert($objectEntity);
 
                     $result['objects'][] = $createdObject->getId();
                     $this->logger->debug(
@@ -2048,7 +2125,7 @@ class ImportHandler
                 } catch (Exception $e) {
                     $this->logger->error(
                         "Failed to import seed object for schema '{$schemaSlug}': ".$e->getMessage(),
-                        ['objectData' => $objectData, 'error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]
+                        ['objectData' => $objectData, 'error' => $e->getMessage()]
                     );
                 }//end try
             }//end foreach

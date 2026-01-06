@@ -232,8 +232,6 @@ class ToolRegistry
      * @param array $ids Array of tool IDs
      *
      * @return array Array of ToolInterface instances (key: id, value: tool)
-     *
-     * @SuppressWarnings(PHPMD.ElseExpression) Alternative path for tool not found logging
      */
     public function getTools(array $ids): array
     {
@@ -241,11 +239,12 @@ class ToolRegistry
 
         $result = [];
         foreach ($ids as $id) {
-            if (($this->tools[$id] ?? null) !== null) {
-                $result[$id] = $this->tools[$id]['tool'];
-            } else {
+            if (($this->tools[$id] ?? null) === null) {
                 $this->logger->warning('[ToolRegistry] Tool not found', ['id' => $id]);
+                continue;
             }
+
+            $result[$id] = $this->tools[$id]['tool'];
         }
 
         return $result;

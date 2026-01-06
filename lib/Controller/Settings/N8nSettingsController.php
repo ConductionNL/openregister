@@ -100,8 +100,6 @@ class N8nSettingsController extends Controller
      *
      * Retrieves the current n8n workflow integration configuration.
      *
-     * @NoAdminRequired
-     *
      * @NoCSRFRequired
      *
      * @return JSONResponse The n8n settings.
@@ -132,8 +130,6 @@ class N8nSettingsController extends Controller
      * Update n8n settings.
      *
      * Updates the n8n workflow integration configuration.
-     *
-     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
@@ -178,8 +174,6 @@ class N8nSettingsController extends Controller
      * Test n8n connection.
      *
      * Tests the connection to the n8n instance using the provided credentials.
-     *
-     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
@@ -257,8 +251,6 @@ class N8nSettingsController extends Controller
      * Initialize n8n project.
      *
      * Creates a project in n8n for OpenRegister workflows.
-     *
-     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
@@ -397,8 +389,6 @@ class N8nSettingsController extends Controller
      * Get workflows from n8n.
      *
      * Retrieves the list of workflows in the configured project.
-     *
-     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *

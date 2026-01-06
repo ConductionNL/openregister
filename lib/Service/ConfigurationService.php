@@ -151,13 +151,6 @@ class ConfigurationService
     private readonly UploadHandler $uploadHandler;
 
     /**
-     * Import handler for configuration import operations.
-     *
-     * @var ImportHandler The import handler instance.
-     */
-    private readonly ImportHandler $importHandler;
-
-    /**
      * HTTP Client for making external requests.
      *
      * @var Client The HTTP client instance.
@@ -233,7 +226,6 @@ class ConfigurationService
      * @param CacheHandler        $cacheHandler        Cache handler for configuration caching
      * @param PreviewHandler      $previewHandler      Preview handler for preview operations
      * @param ExportHandler       $exportHandler       Export handler for export operations
-     * @param ImportHandler       $importHandler       Import handler for import operations
      * @param UploadHandler       $uploadHandler       Upload handler for file upload operations
      * @param string              $appDataPath         Application data path
      *
@@ -261,8 +253,6 @@ class ConfigurationService
         UploadHandler $uploadHandler,
         string $appDataPath
     ) {
-        $this->logger = $logger;
-        $this->logger->debug('ConfigurationService constructor started.');
         // Store dependencies for use in service methods.
         $this->schemaMapper        = $schemaMapper;
         $this->registerMapper      = $registerMapper;
@@ -271,21 +261,20 @@ class ConfigurationService
         $this->appManager          = $appManager;
         $this->container           = $container;
         $this->appConfig           = $appConfig;
-        $this->client = $client;
-        $this->logger->debug('ConfigurationService about to assign objectService.');
-        $this->objectService = $objectService;
-        $this->logger->debug('ConfigurationService assigned objectService.');
+        $this->logger         = $logger;
+        $this->client         = $client;
+        $this->objectService  = $objectService;
         $this->githubHandler  = $githubHandler;
         $this->gitlabHandler  = $gitlabHandler;
         $this->cacheHandler   = $cacheHandler;
         $this->previewHandler = $previewHandler;
         $this->exportHandler  = $exportHandler;
         // NOTE: ImportHandler is lazy-loaded via getImportHandler().
-        $this->uploadHandler  = $uploadHandler;
-        $this->appDataPath    = $appDataPath;
+        $this->uploadHandler = $uploadHandler;
+        $this->appDataPath   = $appDataPath;
 
-        // Wire PreviewHandler with ConfigurationService reference.
-        $this->previewHandler->setConfigurationService($this);
+        // NOTE: PreviewHandler wiring removed to prevent circular dependency during construction.
+        // PreviewHandler should use lazy loading or dependency injection if it needs ConfigurationService.
     }//end __construct()
 
     /**
@@ -300,25 +289,31 @@ class ConfigurationService
      */
     private function getImportHandler(): ImportHandler
     {
-        if ($this->importHandler === null) {
-            // Use the alias registered in Application.php
-            $this->importHandler = $this->container->get('OCA\OpenRegister\Service\Configuration\ImportHandler');
-            // Wire ObjectService after loading.
-            $this->importHandler->setObjectService($this->objectService);
-        }
-
-        return $this->importHandler;
+        // Always get a fresh instance from the container to avoid circular dependency issues.
+        // The container handles caching/singletons if configured.
+        return $this->container->get('OCA\OpenRegister\Service\Configuration\ImportHandler');
     }//end getImportHandler()
 
     /**
-     * Attempts to retrieve the OpenConnector service from the container.
+     * Get FetchHandler instance.
+     *
+     * FetchHandler is responsible for fetching configuration data from remote sources.
+     * It was extracted to avoid circular dependencies between ConfigurationService and PreviewHandler.
+     *
+     * @return FetchHandler The fetch handler instance.
+     */
+    private function getFetchHandler(): FetchHandler
+    {
+        return $this->container->get('OCA\OpenRegister\Service\Configuration\FetchHandler');
+    }//end getFetchHandler()
+
+    /**
+     * Checks if the OpenConnector service is available from the container.
      *
      * @return bool True if the OpenConnector service is available, false otherwise.
      * @throws ContainerExceptionInterface|NotFoundExceptionInterface
-     *
-     * @SuppressWarnings(PHPMD.BooleanGetMethodName) Kept as getOpenConnector() for API compatibility
      */
-    public function getOpenConnector(): bool
+    public function hasOpenConnector(): bool
     {
         if (in_array(needle: 'openconnector', haystack: $this->appManager->getInstalledApps()) === true) {
             try {
@@ -333,7 +328,7 @@ class ConfigurationService
         }
 
         return false;
-    }//end getOpenConnector()
+    }//end hasOpenConnector()
 
     /**
      * Build OpenAPI Specification from configuration or register
@@ -356,7 +351,7 @@ class ConfigurationService
     {
         // Delegate to ExportHandler for the actual export logic.
         $openConnectorService = null;
-        $openConnector        = $this->getOpenConnector();
+        $openConnector        = $this->hasOpenConnector();
         if ($openConnector === true) {
             $openConnectorService = $this->openConnectorConfigurationService;
         }
@@ -401,9 +396,19 @@ class ConfigurationService
      *
      * @psalm-return JSONResponse<400, array{error: string, 'Content-Type'?: string}, array<never, never>>|array
      */
+
+    /**
+     * Get JSON data from a URL.
+     *
+     * @param string $url The URL to fetch JSON from.
+     *
+     * @return array|JSONResponse The parsed JSON data or error response.
+     *
+     * @deprecated Use FetchHandler::getJSONfromURL() directly instead.
+     */
     private function getJSONfromURL(string $url): array|JSONResponse
     {
-        return $this->getImportHandler()->getJSONfromURL($url);
+        return $this->getFetchHandler()->getJSONfromURL($url);
     }//end getJSONfromURL()
 
     /**
@@ -696,61 +701,22 @@ class ConfigurationService
     }//end compareVersions()
 
     /**
-     * Fetch remote configuration data
+     * Fetch remote configuration data.
      *
      * Downloads the configuration file from the source URL and returns
-     * the parsed data as an array.
+     * the parsed data as an array. Delegates to FetchHandler for actual fetching.
      *
-     * @param Configuration $configuration The configuration to fetch
+     * @param Configuration $configuration The configuration to fetch.
      *
-     * @return JSONResponse|array
+     * @return JSONResponse|array The fetched configuration data or error response.
      *
-     * @throws GuzzleException If HTTP request fails
+     * @throws GuzzleException If HTTP request fails.
      *
      * @psalm-return JSONResponse<400|500, array{error: string, 'Content-Type'?: string}, array<never, never>>|array
      */
     public function fetchRemoteConfiguration(Configuration $configuration): array|JSONResponse
     {
-        // Only fetch from remote sources.
-        if ($configuration->isRemoteSource() === false) {
-            return new JSONResponse(
-                data: ['error' => 'Configuration is not from a remote source'],
-                statusCode: 400
-            );
-        }
-
-        $sourceUrl = $configuration->getSourceUrl();
-        if (empty($sourceUrl) === true) {
-            return new JSONResponse(
-                data: ['error' => 'Configuration has no source URL'],
-                statusCode: 400
-            );
-        }
-
-        try {
-            $this->logger->info(message: "Fetching remote configuration from: {$sourceUrl}");
-
-            // Use existing method to fetch and parse the remote configuration.
-            $remoteData = $this->getJSONfromURL($sourceUrl);
-
-            if ($remoteData instanceof JSONResponse) {
-                return $remoteData;
-            }
-
-            $schemaCount   = count($remoteData['components']['schemas'] ?? []);
-            $registerCount = count($remoteData['components']['registers'] ?? []);
-            $this->logger->info(
-                "Successfully fetched remote configuration with {$schemaCount} schemas and {$registerCount} registers"
-            );
-
-            return $remoteData;
-        } catch (GuzzleException $e) {
-            $this->logger->error(message: "Failed to fetch remote configuration: ".$e->getMessage());
-            return new JSONResponse(
-                data: ['error' => 'Failed to fetch remote configuration: '.$e->getMessage()],
-                statusCode: 500
-            );
-        }//end try
+        return $this->getFetchHandler()->fetchRemoteConfiguration($configuration);
     }//end fetchRemoteConfiguration()
 
     /**

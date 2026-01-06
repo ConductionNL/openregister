@@ -212,8 +212,6 @@ class SettingsController extends Controller
     /**
      * Retrieve the current settings.
      *
-     * @NoAdminRequired
-     *
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with settings data
@@ -230,8 +228,6 @@ class SettingsController extends Controller
 
     /**
      * Handle the PUT request to update settings.
-     *
-     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
@@ -289,8 +285,6 @@ class SettingsController extends Controller
      * This method recalculates deletion times for all objects and logs based on current retention settings.
      * It also assigns default owners and organizations to objects that don't have them assigned.
      *
-     * @NoAdminRequired
-     *
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with rebase result
@@ -310,8 +304,6 @@ class SettingsController extends Controller
      *
      * This method provides warning counts for objects and logs that need attention,
      * as well as total counts for all objects, audit trails, and search trails.
-     *
-     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
@@ -333,8 +325,6 @@ class SettingsController extends Controller
      * This method provides warning counts for objects and logs that need attention,
      * as well as total counts for all objects, audit trails, and search trails.
      *
-     * @NoAdminRequired
-     *
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with statistics
@@ -347,7 +337,6 @@ class SettingsController extends Controller
     /**
      * Test SOLR setup directly (bypassing SolrService)
      *
-     * @NoAdminRequired
      * @NoCSRFRequired
      *
      * @return JSONResponse The SOLR setup test results
@@ -415,7 +404,6 @@ class SettingsController extends Controller
      *
      * @return JSONResponse The reindex result
      *
-     * @NoAdminRequired
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|400|422,
@@ -494,8 +482,6 @@ class SettingsController extends Controller
      *
      * Returns which search backend is currently active (solr, elasticsearch, etc).
      *
-     * @NoAdminRequired
-     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Backend configuration
@@ -516,8 +502,6 @@ class SettingsController extends Controller
      * Update search backend configuration.
      *
      * Sets which search backend should be active (requires app reload).
-     *
-     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
@@ -557,8 +541,6 @@ class SettingsController extends Controller
      *
      * Returns information about the current database system and whether it
      * supports native vector operations for optimal semantic search performance.
-     *
-     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
@@ -685,8 +667,6 @@ class SettingsController extends Controller
     /**
      * Get version information only
      *
-     * @NoAdminRequired
-     *
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with version info
@@ -703,8 +683,6 @@ class SettingsController extends Controller
 
     /**
      * Test schema-aware SOLR mapping by indexing sample objects
-     *
-     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
@@ -741,8 +719,6 @@ class SettingsController extends Controller
 
     /**
      * Debug endpoint for type filtering issue
-     *
-     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
@@ -927,7 +903,6 @@ class SettingsController extends Controller
      *
      * @return JSONResponse JSON response with semantic search results
      *
-     * @NoAdminRequired
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|400|500,
@@ -986,8 +961,6 @@ class SettingsController extends Controller
      * @param array       $solrFilters SOLR-specific filters
      * @param array       $weights     Search type weights ['solr' => 0.5, 'vector' => 0.5]
      * @param string|null $provider    Embedding provider override
-     *
-     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *

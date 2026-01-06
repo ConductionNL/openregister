@@ -95,6 +95,42 @@ class PreviewHandler
     }//end __construct()
 
     /**
+     * Set the ConfigurationService dependency (deprecated - use container instead).
+     *
+     * This method allows setting the ConfigurationService after construction
+     * to avoid circular dependency issues.
+     *
+     * @param ConfigurationService $configurationService The configuration service instance.
+     *
+     * @return void
+     *
+     * @deprecated Use constructor with ContainerInterface for automatic lazy loading.
+     */
+    public function setConfigurationService(ConfigurationService $configurationService): void
+    {
+        $this->configurationService = $configurationService;
+    }//end setConfigurationService()
+
+    /**
+     * Get ConfigurationService, loading it lazily from container if needed.
+     *
+     * @return ConfigurationService The configuration service instance.
+     * @throws Exception If ConfigurationService cannot be loaded.
+     */
+    private function getConfigurationService(): ConfigurationService
+    {
+        if ($this->configurationService === null) {
+            if ($this->container === null) {
+                throw new Exception('ConfigurationService must be set via setConfigurationService() or provided via container');
+            }
+
+            $this->configurationService = $this->container->get(ConfigurationService::class);
+        }
+
+        return $this->configurationService;
+    }//end getConfigurationService()
+
+    /**
      * Preview configuration changes.
      *
      * This method fetches remote configuration and previews what would change
@@ -126,8 +162,8 @@ class PreviewHandler
      */
     public function previewConfigurationChanges(Configuration $configuration): array|JSONResponse
     {
-        // Fetch the remote configuration using FetchHandler.
-        $remoteData = $this->fetchHandler->fetchRemoteConfiguration($configuration);
+        // Fetch the remote configuration using lazy-loaded ConfigurationService.
+        $remoteData = $this->getConfigurationService()->fetchRemoteConfiguration($configuration);
 
         if ($remoteData instanceof JSONResponse) {
             return $remoteData;

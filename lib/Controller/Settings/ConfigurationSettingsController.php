@@ -61,8 +61,6 @@ class ConfigurationSettingsController extends Controller
     /**
      * Get RBAC settings only
      *
-     * @NoAdminRequired
-     *
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with RBAC settings
@@ -79,8 +77,6 @@ class ConfigurationSettingsController extends Controller
 
     /**
      * Update RBAC settings only
-     *
-     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
@@ -100,8 +96,6 @@ class ConfigurationSettingsController extends Controller
     /**
      * Get Organisation settings only
      *
-     * @NoAdminRequired
-     *
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with organisation settings
@@ -118,8 +112,6 @@ class ConfigurationSettingsController extends Controller
 
     /**
      * Update Organisation settings only
-     *
-     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
@@ -139,8 +131,6 @@ class ConfigurationSettingsController extends Controller
     /**
      * Get Multitenancy settings only
      *
-     * @NoAdminRequired
-     *
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with multitenancy settings
@@ -157,8 +147,6 @@ class ConfigurationSettingsController extends Controller
 
     /**
      * Update Multitenancy settings only
-     *
-     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
@@ -177,8 +165,6 @@ class ConfigurationSettingsController extends Controller
 
     /**
      * Get Object settings only
-     *
-     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
@@ -207,8 +193,6 @@ class ConfigurationSettingsController extends Controller
 
     /**
      * Update Object Management settings
-     *
-     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
@@ -246,8 +230,6 @@ class ConfigurationSettingsController extends Controller
     /**
      * PATCH Object settings (delegates to updateObjectSettings)
      *
-     * @NoAdminRequired
-     *
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with patched object settings
@@ -259,8 +241,6 @@ class ConfigurationSettingsController extends Controller
 
     /**
      * Get Retention settings only
-     *
-     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
@@ -279,8 +259,6 @@ class ConfigurationSettingsController extends Controller
     /**
      * Update Retention settings only
      *
-     * @NoAdminRequired
-     *
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with updated retention settings
@@ -298,8 +276,6 @@ class ConfigurationSettingsController extends Controller
 
     /**
      * Get object collection field status
-     *
-     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
@@ -331,8 +307,6 @@ class ConfigurationSettingsController extends Controller
 
     /**
      * Create missing fields in object collection
-     *
-     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
