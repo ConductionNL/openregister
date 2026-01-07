@@ -1301,7 +1301,12 @@ class ImportHandler
                 $this->logger->debug(message: 'Import object search filter', context: ['filter' => $search]);
 
                 // Search for existing object.
-                $results        = $this->objectService->searchObjects(query: $search, _rbac: true, _multitenancy: true);
+                // Use _rbac: false and _multitenancy: false to ensure we find objects regardless of organisation context.
+                // This prevents duplicate objects with the same UUID being created.
+                error_log("[IMPORT] Searching: register=$registerId, schema=$schemaId, slug=$slug");
+                $results        = $this->objectService->searchObjects(query: $search, _rbac: false, _multitenancy: false);
+                $resultCount = is_array($results) ? count($results) : 0;
+                error_log("[IMPORT] Found $resultCount results");
                 $existingObject = null;
                 if ((is_array($results) === true) && count($results) > 0) {
                     $existingObject = $results[0];
@@ -2034,11 +2039,34 @@ class ImportHandler
             return;
         }
 
+        // Determine target register for seedData objects.
+        // SeedData should go into the first register defined in the configuration.
+        $targetRegister = null;
+        $registerIds = $configuration->getRegisters();
+        if (!empty($registerIds)) {
+            $targetRegister = $this->registerMapper->find($registerIds[0], _multitenancy: false, _rbac: false);
+        }
+        
+        if ($targetRegister === null) {
+            $this->logger->warning('No register found for seedData - using register 0', [
+                'appId' => $appId,
+                'config_title' => $configData['info']['title'] ?? 'unknown'
+            ]);
+            $targetRegisterId = 0;
+        } else {
+            $targetRegisterId = $targetRegister->getId();
+            $this->logger->info('SeedData will be imported into register', [
+                'register_id' => $targetRegisterId,
+                'register_slug' => $targetRegister->getSlug(),
+                'register_title' => $targetRegister->getTitle()
+            ]);
+        }
         
         $this->logger->info('Importing seed data objects', [
             'config_title' => $configData['info']['title'] ?? 'unknown',
             'description'  => $seedData['description'] ?? 'no description',
             'object_types' => array_keys($seedData['objects']),
+            'target_register' => $targetRegisterId
         ]);
 
         // Ensure dependencies are met before importing seedData.
@@ -2080,6 +2108,92 @@ class ImportHandler
 
             foreach ($objects as $objectData) {
                 
+                // Check if object has @self with external configuration reference.
+                // This allows seedData from one app to reference schemas/registers from another app's configuration.
+                $selfData = $objectData['@self'] ?? null;
+                $externalConfigUrl = $selfData['configuration'] ?? null;
+                $externalRegisterSlug = $selfData['register'] ?? null;
+                $externalSchemaSlug = $selfData['schema'] ?? null;
+                
+                // Start with the current target register (from configuration).
+                $objectTargetRegisterId = $targetRegisterId;
+                $objectSchema = $schema;
+                
+                // If object references external configuration, resolve schema and register from that config.
+                if ($externalConfigUrl !== null) {
+                    $this->logger->info("SeedData object references external configuration", [
+                        'config_url' => $externalConfigUrl,
+                        'register_slug' => $externalRegisterSlug,
+                        'schema_slug' => $externalSchemaSlug,
+                        'object_title' => $objectData['title'] ?? 'unknown'
+                    ]);
+                    
+                    // Find the external register by slug.
+                    if ($externalRegisterSlug !== null) {
+                        try {
+                            // Use slug-to-ID map for efficient lookup.
+                            $slugToIdMap = $this->registerMapper->getSlugToIdMap();
+                            
+                            if (isset($slugToIdMap[$externalRegisterSlug])) {
+                                $externalRegisterId = $slugToIdMap[$externalRegisterSlug];
+                                $externalRegister = $this->registerMapper->find(
+                                    id: $externalRegisterId,
+                                    _rbac: false,
+                                    _multitenancy: false
+                                );
+                                $objectTargetRegisterId = $externalRegister->getId();
+                                $this->logger->info("Resolved external register for seedData object", [
+                                    'slug' => $externalRegisterSlug,
+                                    'id' => $objectTargetRegisterId,
+                                    'title' => $externalRegister->getTitle()
+                                ]);
+                            } else {
+                                $this->logger->warning("External register not found - using default", [
+                                    'requested_slug' => $externalRegisterSlug,
+                                    'available_slugs' => array_keys($slugToIdMap)
+                                ]);
+                            }
+                        } catch (\Exception $e) {
+                            $this->logger->error("Failed to resolve external register", [
+                                'slug' => $externalRegisterSlug,
+                                'error' => $e->getMessage()
+                            ]);
+                        }
+                    }
+                    
+                    // Find the external schema by slug (if different from current schema).
+                    if ($externalSchemaSlug !== null) {
+                        try {
+                            $externalSchemas = $this->schemaMapper->findBySlug(
+                                slug: $externalSchemaSlug,
+                                limit: 1,
+                                offset: 0,
+                                _multitenancy: false,
+                                _rbac: false
+                            );
+                            
+                            if (!empty($externalSchemas)) {
+                                $objectSchema = $externalSchemas[0];
+                                $this->logger->info("Resolved external schema for seedData object", [
+                                    'slug' => $externalSchemaSlug,
+                                    'id' => $objectSchema->getId(),
+                                    'title' => $objectSchema->getTitle()
+                                ]);
+                            } else {
+                                $this->logger->warning("External schema not found - using current schema", [
+                                    'requested_slug' => $externalSchemaSlug,
+                                    'current_schema' => $schemaSlug
+                                ]);
+                            }
+                        } catch (\Exception $e) {
+                            $this->logger->error("Failed to resolve external schema", [
+                                'slug' => $externalSchemaSlug,
+                                'error' => $e->getMessage()
+                            ]);
+                        }
+                    }
+                }
+                
                 $objectSlug = $objectData['slug'] ?? $objectData['title'] ?? null;
                 if ($objectSlug === null) {
                     $this->logger->error(
@@ -2099,12 +2213,12 @@ class ImportHandler
                     $uuid = $objectData['uuid'] ?? \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
                     $objectEntity->setUuid($uuid);
                     
-                    // Set schema reference.
-                    $objectEntity->setSchema($schema->getId());
+                    // Set schema reference - use resolved external schema if available.
+                    $objectEntity->setSchema($objectSchema->getId());
                     
-                    // NOTE: Do NOT set register to null - it has a NOT NULL constraint in database.
-                    // For seedData objects, we use a special register ID (0) to indicate "no register".
-                    $objectEntity->setRegister(0);
+                    // Use the resolved target register (either from external config or default).
+                    // SeedData with external config references goes to the external register.
+                    $objectEntity->setRegister($objectTargetRegisterId);
                     
                     // Store object data.
                     $objectEntity->setObject($objectData);

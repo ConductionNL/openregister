@@ -607,6 +607,103 @@ class MagicMapper
     }//end searchObjectsInRegisterSchemaTable()
 
     /**
+     * Count objects in a register+schema specific table.
+     *
+     * This method counts objects from a dedicated table based on register+schema combination.
+     * It supports basic filtering and returns only the count for better performance.
+     *
+     * @param array    $query    Search parameters for filtering (excluding pagination).
+     * @param Register $register The register context for table selection.
+     * @param Schema   $schema   The schema for table selection.
+     *
+     * @return int Count of matching objects.
+     */
+    public function countObjectsInRegisterSchemaTable(array $query, Register $register, Schema $schema): int
+    {
+        // Use fast cached existence check.
+        if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
+            $this->logger->info(
+                'Register+schema table does not exist for count, returning 0',
+                [
+                    'registerId' => $register->getId(),
+                    'schemaId'   => $schema->getId(),
+                ]
+            );
+            return 0;
+        }
+
+        $tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
+
+        try {
+            $qb = $this->db->getQueryBuilder();
+            $qb->select($qb->createFunction('COUNT(*) as count'))
+                ->from($tableName);
+
+            // Apply search filter if provided (search in metadata columns only for simplicity).
+            if (empty($query['_search']) === false) {
+                $searchTerm = '%'.strtolower($query['_search']).'%';
+
+                // Search in metadata columns that are commonly searchable.
+                // Use columns that exist in magic mapper tables: _uuid, _summary, naam.
+                // Note: _title doesn't exist in magic mapper tables.
+                $searchConditions = [];
+                $searchConditions[] = $qb->expr()->like(
+                    $qb->createFunction('LOWER(_uuid)'),
+                    $qb->createNamedParameter($searchTerm)
+                );
+                $searchConditions[] = $qb->expr()->like(
+                    $qb->createFunction('LOWER(COALESCE(_summary, \'\'))'),
+                    $qb->createNamedParameter($searchTerm)
+                );
+                // Add naam column (common schema field that exists in most tables).
+                $searchConditions[] = $qb->expr()->like(
+                    $qb->createFunction('LOWER(COALESCE(naam, \'\'))'),
+                    $qb->createNamedParameter($searchTerm)
+                );
+
+                if (empty($searchConditions) === false) {
+                    $qb->andWhere($qb->expr()->orX(...$searchConditions));
+                }
+            }//end if
+
+            // Exclude deleted objects by default.
+            if (isset($query['@self.deleted']) === false) {
+                $qb->andWhere($qb->expr()->isNull('_deleted'));
+            } else if ($query['@self.deleted'] === 'IS NOT NULL') {
+                $qb->andWhere($qb->expr()->isNotNull('_deleted'));
+            }
+
+            $result = $qb->executeQuery();
+            $row    = $result->fetch();
+            $result->closeCursor();
+
+            $count = (int) ($row['count'] ?? 0);
+
+            $this->logger->debug(
+                '[MagicMapper] Count query completed',
+                [
+                    'tableName' => $tableName,
+                    'count'     => $count,
+                    'hasSearch' => empty($query['_search']) === false,
+                ]
+            );
+
+            return $count;
+        } catch (Exception $e) {
+            $this->logger->error(
+                'Failed to count in register+schema table',
+                [
+                    'tableName' => $tableName,
+                    'error'     => $e->getMessage(),
+                ]
+            );
+
+            // Return 0 on error instead of throwing.
+            return 0;
+        }
+    }//end countObjectsInRegisterSchemaTable()
+
+    /**
      * Search across multiple register+schema tables simultaneously.
      *
      * This method performs a cross-table search by:
@@ -1862,8 +1959,13 @@ class MagicMapper
                 // DEFAULT value.
                 if (isset($column['default']) === true) {
                     $defaultValue = $column['default'];
-                    if (is_string($column['default']) === true) {
+                    if (is_bool($column['default']) === true) {
+                        // Boolean values need special handling for SQL.
+                        $defaultValue = $column['default'] === true ? 'TRUE' : 'FALSE';
+                    } else if (is_string($column['default']) === true) {
                         $defaultValue = "'".$column['default']."'";
+                    } else if (is_null($column['default']) === true) {
+                        $defaultValue = 'NULL';
                     }
 
                     $def .= ' DEFAULT '.$defaultValue;
@@ -3123,8 +3225,13 @@ class MagicMapper
                 // Add DEFAULT if specified.
                 if (isset($columnDef['default']) === true) {
                     $defaultValue = $columnDef['default'];
-                    if (is_string($columnDef['default']) === true) {
+                    if (is_bool($columnDef['default']) === true) {
+                        // Boolean values need special handling for SQL.
+                        $defaultValue = $columnDef['default'] === true ? 'TRUE' : 'FALSE';
+                    } else if (is_string($columnDef['default']) === true) {
                         $defaultValue = "'".$columnDef['default']."'";
+                    } else if (is_null($columnDef['default']) === true) {
+                        $defaultValue = 'NULL';
                     }
 
                     $sql .= ' DEFAULT '.$defaultValue;

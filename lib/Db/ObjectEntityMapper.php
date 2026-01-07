@@ -444,6 +444,9 @@ class ObjectEntityMapper extends QBMapper
     /**
      * Check if magic mapper should be used for an entity.
      *
+     * This method fetches the register and schema from the entity and delegates
+     * to shouldUseMagicMapperForRegisterSchema() which supports both configuration formats.
+     *
      * @param ObjectEntity $entity The entity to check
      *
      * @return bool True if magic mapper should be used
@@ -466,19 +469,8 @@ class ObjectEntityMapper extends QBMapper
             $register = $registerMapper->find(id: $registerId, _multitenancy: false);
             $schema   = $schemaMapper->find(id: $schemaId, _multitenancy: false);
 
-            // Check register configuration for magic mapping.
-            $registerConfig = $register->getConfiguration() ?? [];
-
-            $magicMappingEnabled = ($registerConfig['enableMagicMapping'] ?? false) === true;
-            $magicMappingSchemas = $registerConfig['magicMappingSchemas'] ?? [];
-
-            // Check if this specific schema is in the magic mapping list (by ID or slug).
-            $schemaSlug    = $schema->getSlug();
-            $isInMagicList = in_array((string) $schemaId, $magicMappingSchemas, true) === true
-                || in_array($schemaSlug, $magicMappingSchemas, true) === true;
-
-            // Return true if magic mapping is enabled and this schema is in the list.
-            return ($magicMappingEnabled === true && $isInMagicList === true);
+            // Delegate to the shared method that supports both configuration formats.
+            return $this->shouldUseMagicMapperForRegisterSchema(register: $register, schema: $schema);
         } catch (Exception $e) {
             // If anything goes wrong, fallback to blob storage.
             $this->logger->debug(
@@ -492,6 +484,9 @@ class ObjectEntityMapper extends QBMapper
     /**
      * Check if magic mapper should be used for given register and schema.
      *
+     * Delegates to Register::isMagicMappingEnabledForSchema() which is the
+     * SINGLE SOURCE OF TRUTH for magic mapping checks.
+     *
      * @param Register $register The register
      * @param Schema   $schema   The schema
      *
@@ -500,19 +495,23 @@ class ObjectEntityMapper extends QBMapper
     private function shouldUseMagicMapperForRegisterSchema(Register $register, Schema $schema): bool
     {
         try {
-            // Check register configuration for magic mapping.
-            $registerConfig = $register->getConfiguration() ?? [];
+            $result = $register->isMagicMappingEnabledForSchema(
+                schemaId: $schema->getId(),
+                schemaSlug: $schema->getSlug()
+            );
 
-            $magicMappingEnabled = ($registerConfig['enableMagicMapping'] ?? false) === true;
-            $magicMappingSchemas = $registerConfig['magicMappingSchemas'] ?? [];
+            if ($result === true) {
+                $this->logger->debug(
+                    '[ObjectEntityMapper] Magic mapping enabled for schema',
+                    [
+                        'registerId' => $register->getId(),
+                        'schemaId'   => $schema->getId(),
+                        'schemaSlug' => $schema->getSlug(),
+                    ]
+                );
+            }
 
-            // Check if this specific schema is in the magic mapping list (by ID or slug).
-            $schemaSlug    = $schema->getSlug();
-            $isInMagicList = in_array((string) $schema->getId(), $magicMappingSchemas, true) === true
-                || in_array($schemaSlug, $magicMappingSchemas, true) === true;
-
-            // Return true if magic mapping is enabled and this schema is in the list.
-            return ($magicMappingEnabled === true && $isInMagicList === true);
+            return $result;
         } catch (Exception $e) {
             // If anything goes wrong, fallback to blob storage.
             $this->logger->debug(
@@ -2222,23 +2221,35 @@ class ObjectEntityMapper extends QBMapper
             return [];
         }
 
-                $qb = $this->db->getQueryBuilder();
+        $qb = $this->db->getQueryBuilder();
         $qb->select('*')
             ->from('openregister_objects')
             ->where($qb->expr()->isNull('deleted'));
 
         // Search in the object JSON field for the search term.
+        // For PostgreSQL, we need to cast JSON to text for LIKE operations.
+        $dbPlatform = $this->db->getDatabasePlatform();
+        $isPostgres = str_contains(strtolower(get_class($dbPlatform)), 'postgresql');
+
+        if ($isPostgres === true) {
+            // PostgreSQL: cast JSON to text
+            $objectColumn = $qb->createFunction('object::text');
+        } else {
+            // MySQL/MariaDB: object column works directly
+            $objectColumn = 'object';
+        }
+
         if ($partialMatch === true) {
             // @psalm-suppress UndefinedInterfaceMethod
             $qb->andWhere(
-                $qb->expr()->like('object', $qb->createNamedParameter('%'.$qb->escapeLikeParameter($search).'%'))
+                $qb->expr()->like($objectColumn, $qb->createNamedParameter('%'.$qb->escapeLikeParameter($search).'%'))
             );
         }
 
         if ($partialMatch === false) {
             // @psalm-suppress UndefinedInterfaceMethod
             $qb->andWhere(
-                $qb->expr()->like('object', $qb->createNamedParameter('%"'.$qb->escapeLikeParameter($search).'"%'))
+                $qb->expr()->like($objectColumn, $qb->createNamedParameter('%"'.$qb->escapeLikeParameter($search).'"%'))
             );
         }
 

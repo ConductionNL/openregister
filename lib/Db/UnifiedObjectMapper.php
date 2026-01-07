@@ -87,9 +87,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      *
      * Decision flow:
      * 1. If register or schema is null → use blob storage (no context)
-     * 2. Check register configuration for this schema's magic mapping setting
-     * 3. If enabled, verify table exists (or auto-create if configured)
-     * 4. Return true if MagicMapper should be used, false for blob storage
+     * 2. Delegate to Register::isMagicMappingEnabledForSchema() which is the
+     *    SINGLE SOURCE OF TRUTH for magic mapping checks.
      *
      * @param Register|null $register The register context.
      * @param Schema|null   $schema   The schema context.
@@ -106,41 +105,23 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             return false;
         }
 
-        // Check register configuration for magic mapping.
-        $registerConfig = $register->getConfiguration() ?? [];
-
-        // Check if magic mapping is globally enabled for this register.
-        $magicMappingEnabled = ($registerConfig['enableMagicMapping'] ?? false) === true;
-
-        if ($magicMappingEnabled === false) {
-            $this->logger->debug(
-                '[UnifiedObjectMapper] Magic mapping not enabled for register',
-                ['registerId' => $register->getId()]
-            );
-            return false;
-        }
-
-        // Check if this specific schema is in the magic mapping schemas list.
-        $magicSchemas = $registerConfig['magicMappingSchemas'] ?? [];
-        $schemaId     = (string) $schema->getId();
-        $schemaSlug   = $schema->getSlug();
-
-        // Check both by ID and slug.
-        $isSchemaEnabled = in_array($schemaId, $magicSchemas, true) ||
-                          in_array($schemaSlug, $magicSchemas, true);
+        // Delegate to Register::isMagicMappingEnabledForSchema() - the single source of truth.
+        $result = $register->isMagicMappingEnabledForSchema(
+            schemaId: $schema->getId(),
+            schemaSlug: $schema->getSlug()
+        );
 
         $this->logger->debug(
             '[UnifiedObjectMapper] Magic mapping check',
             [
-                'registerId'      => $register->getId(),
-                'schemaId'        => $schemaId,
-                'schemaSlug'      => $schemaSlug,
-                'magicSchemas'    => $magicSchemas,
-                'isSchemaEnabled' => $isSchemaEnabled,
+                'registerId' => $register->getId(),
+                'schemaId'   => $schema->getId(),
+                'schemaSlug' => $schema->getSlug(),
+                'enabled'    => $result,
             ]
         );
 
-        return $isSchemaEnabled;
+        return $result;
     }//end shouldUseMagicMapper()
 
     /**
@@ -815,6 +796,34 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         ?array $ids=null,
         ?string $uses=null
     ): int {
+        // Check if register and schema are specified in query for magic mapper routing.
+        $registerId = $query['_register'] ?? $query['register'] ?? null;
+        $schemaId   = $query['_schema'] ?? $query['schema'] ?? null;
+
+        if ($registerId !== null && $schemaId !== null) {
+            try {
+                // Disable multitenancy for register/schema resolution (they're system-level).
+                $register = $this->registerMapper->find((int) $registerId, _multitenancy: false, _rbac: false);
+                $schema   = $this->schemaMapper->find((int) $schemaId, _multitenancy: false, _rbac: false);
+
+                if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
+                    $this->logger->info('[UnifiedObjectMapper] Routing countSearchObjects() to MagicMapper');
+                    return $this->magicMapper->countObjectsInRegisterSchemaTable(
+                        query: $query,
+                        register: $register,
+                        schema: $schema
+                    );
+                }
+            } catch (\Exception $e) {
+                $this->logger->warning(
+                    '[UnifiedObjectMapper] Failed to resolve register/schema for magic mapper count',
+                    ['error' => $e->getMessage()]
+                );
+                // Fall through to blob storage.
+            }
+        }//end if
+
+        $this->logger->debug('[UnifiedObjectMapper] Routing countSearchObjects() to blob storage (ObjectEntityMapper)');
         return $this->objectEntityMapper->countSearchObjects(
             query: $query,
             _activeOrgUuid: $activeOrgUuid,
@@ -824,6 +833,145 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             uses: $uses
         );
     }//end countSearchObjects()
+
+    /**
+     * Optimized paginated search that loads register/schema once and performs both search and count.
+     *
+     * This method eliminates duplicate register/schema lookups by:
+     * 1. Loading register and schema once at the start
+     * 2. Performing both search and count with the cached objects
+     * 3. Returning the register/schema for inclusion in response metadata
+     *
+     * @param array       $searchQuery   Query for search (with _limit, _offset).
+     * @param array       $countQuery    Query for count (without pagination).
+     * @param string|null $activeOrgUuid Active organization UUID.
+     * @param bool        $rbac          Whether to apply RBAC.
+     * @param bool        $multitenancy  Whether to apply multitenancy.
+     * @param array|null  $ids           Optional ID filter.
+     * @param string|null $uses          Optional uses filter.
+     *
+     * @return array{results: ObjectEntity[], total: int, register: ?array, schema: ?array}
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
+     */
+    public function searchObjectsPaginated(
+        array $searchQuery=[],
+        array $countQuery=[],
+        ?string $activeOrgUuid=null,
+        bool $rbac=true,
+        bool $multitenancy=true,
+        ?array $ids=null,
+        ?string $uses=null
+    ): array {
+        // Extract register and schema IDs from query.
+        $registerId = $searchQuery['_register'] ?? $searchQuery['register'] ?? null;
+        $schemaId   = $searchQuery['_schema'] ?? $searchQuery['schema'] ?? null;
+
+        $register = null;
+        $schema   = null;
+        $useMagicMapper = false;
+
+        // Cache for loaded registers and schemas (indexed by ID for frontend lookup).
+        $registersCache = [];
+        $schemasCache   = [];
+
+        // Load register and schema ONCE if both are specified.
+        if ($registerId !== null && $schemaId !== null) {
+            try {
+                $register = $this->registerMapper->find((int) $registerId, _multitenancy: false, _rbac: false);
+                $schema   = $this->schemaMapper->find((int) $schemaId, _multitenancy: false, _rbac: false);
+                $useMagicMapper = $this->shouldUseMagicMapper(register: $register, schema: $schema);
+
+                // Add to cache indexed by ID.
+                $registersCache[$register->getId()] = $register->jsonSerialize();
+                $schemasCache[$schema->getId()]     = $schema->jsonSerialize();
+            } catch (\Exception $e) {
+                $this->logger->warning(
+                    '[UnifiedObjectMapper] Failed to resolve register/schema',
+                    ['error' => $e->getMessage()]
+                );
+            }
+        }
+
+        // Perform search and count using the appropriate mapper.
+        if ($useMagicMapper === true && $register !== null && $schema !== null) {
+            $results = $this->magicMapper->searchObjectsInRegisterSchemaTable(
+                query: $searchQuery,
+                register: $register,
+                schema: $schema
+            );
+            $total = $this->magicMapper->countObjectsInRegisterSchemaTable(
+                query: $countQuery,
+                register: $register,
+                schema: $schema
+            );
+        } else {
+            $results = $this->objectEntityMapper->searchObjects(
+                query: $searchQuery,
+                _activeOrgUuid: $activeOrgUuid,
+                _rbac: $rbac,
+                _multitenancy: $multitenancy,
+                ids: $ids,
+                uses: $uses
+            );
+            $total = $this->objectEntityMapper->countSearchObjects(
+                query: $countQuery,
+                _activeOrgUuid: $activeOrgUuid,
+                _rbac: $rbac,
+                _multitenancy: $multitenancy,
+                ids: $ids,
+                uses: $uses
+            );
+
+            // For blob storage results, collect unique register/schema IDs from results.
+            // This handles queries that span multiple schemas.
+            $uniqueRegisterIds = [];
+            $uniqueSchemaIds   = [];
+
+            foreach ($results as $result) {
+                if ($result instanceof ObjectEntity) {
+                    $regId = $result->getRegister();
+                    $schId = $result->getSchema();
+
+                    if ($regId !== null && !isset($registersCache[$regId])) {
+                        $uniqueRegisterIds[$regId] = true;
+                    }
+
+                    if ($schId !== null && !isset($schemasCache[$schId])) {
+                        $uniqueSchemaIds[$schId] = true;
+                    }
+                }
+            }
+
+            // Load any missing registers.
+            foreach (array_keys($uniqueRegisterIds) as $regId) {
+                try {
+                    $reg = $this->registerMapper->find((int) $regId, _multitenancy: false, _rbac: false);
+                    $registersCache[$reg->getId()] = $reg->jsonSerialize();
+                } catch (\Exception $e) {
+                    // Skip if not found.
+                }
+            }
+
+            // Load any missing schemas.
+            foreach (array_keys($uniqueSchemaIds) as $schId) {
+                try {
+                    $sch = $this->schemaMapper->find((int) $schId, _multitenancy: false, _rbac: false);
+                    $schemasCache[$sch->getId()] = $sch->jsonSerialize();
+                } catch (\Exception $e) {
+                    // Skip if not found.
+                }
+            }
+        }
+
+        // Return results with registers/schemas indexed by ID for frontend lookup.
+        return [
+            'results'   => $results,
+            'total'     => $total,
+            'registers' => $registersCache,
+            'schemas'   => $schemasCache,
+        ];
+    }//end searchObjectsPaginated()
 
     /**
      * Count all objects.

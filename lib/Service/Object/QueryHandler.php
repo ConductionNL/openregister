@@ -25,13 +25,6 @@ use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
 use OCP\AppFramework\IAppContainer;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
-use React\Promise\Deferred;
-use React\Promise\Promise;
-use React\Promise\PromiseInterface;
-
-use function React\Promise\all;
-
-use React\Async;
 
 /**
  * Handles all query and search operations for ObjectService.
@@ -116,12 +109,12 @@ class QueryHandler
             $activeOrgUuid = $this->performanceHandler->getActiveOrganisationForContext();
         }
 
-        // Count uses the mapper's countSearchObjects.
-        return $this->objectEntityMapper->countSearchObjects(
+        // Count uses the unified mapper's countSearchObjects for proper magic mapper routing.
+        return $this->unifiedObjectMapper->countSearchObjects(
             query: $query,
-            _activeOrganisationUuid: $activeOrgUuid,
-            _rbac: $_rbac,
-            _multitenancy: $_multitenancy,
+            activeOrgUuid: $activeOrgUuid,
+            rbac: $_rbac,
+            multitenancy: $_multitenancy,
             ids: $ids,
             uses: $uses
         );
@@ -165,57 +158,25 @@ class QueryHandler
             $query = $this->searchQueryHandler->applyViewsToQuery(query: $query, viewIds: $views);
         }
 
-        // **CRITICAL PERFORMANCE OPTIMIZATION**: Detect simple vs complex rendering needs.
-        $hasExtend           = empty($query['_extend'] ?? []) === false;
-        $hasFields           = empty($query['_fields'] ?? null) === false;
-        $hasFilter           = empty($query['_filter'] ?? null) === false;
-        $hasUnset            = empty($query['_unset'] ?? null) === false;
-        $hasComplexRendering = $hasExtend || $hasFields || $hasFilter || $hasUnset;
+        // Detect if complex rendering is needed (extend, fields, filter, unset).
+        $hasComplexRendering = empty($query['_extend'] ?? []) === false
+            || empty($query['_fields'] ?? null) === false
+            || empty($query['_filter'] ?? null) === false
+            || empty($query['_unset'] ?? null) === false;
 
-        // Get active organization context for multi-tenancy (only if multi is enabled).
-        $activeOrgUuid = null;
-        if ($_multitenancy === true) {
-            $activeOrgUuid = $this->performanceHandler->getActiveOrganisationForContext();
-        }
+        // Get active organization context for multi-tenancy.
+        $activeOrgUuid = $_multitenancy === true
+            ? $this->performanceHandler->getActiveOrganisationForContext()
+            : null;
 
-        // **MAPPER CALL**: Execute database search.
-        $dbStart = microtime(true);
-        $limit   = $query['_limit'] ?? 20;
-
-        $this->logger->info(
-            message: '🔍 MAPPER CALL - Starting database search',
-            context: [
-                'queryKeys'  => array_keys($query),
-                'rbac'       => $_rbac,
-                'multi'      => $_multitenancy,
-                'limit'      => $limit,
-                'requestUri' => $this->request->getRequestUri(),
-            ]
-        );
-
-        // **MAPPER CALL TIMING**: Track how long the mapper takes.
-        $mapperStart = microtime(true);
-        $result      = $this->unifiedObjectMapper->searchObjects(
+        // Execute database search.
+        $result = $this->unifiedObjectMapper->searchObjects(
             query: $query,
-            activeOrganisationUuid: $activeOrgUuid,
+            activeOrgUuid: $activeOrgUuid,
             rbac: $_rbac,
             multitenancy: $_multitenancy,
             ids: $ids,
             uses: $uses
-        );
-
-        $resultCount = 'non-array';
-        if (is_array($result) === true) {
-            $resultCount = count($result);
-        }
-
-        $this->logger->info(
-            message: '✅ MAPPER CALL - Database search completed',
-            context: [
-                'resultCount' => $resultCount,
-                'mapperTime'  => round((microtime(true) - $mapperStart) * 1000, 2).'ms',
-                'totalTime'   => round((microtime(true) - $dbStart) * 1000, 2).'ms',
-            ]
         );
 
         // If _count is requested, return count instead of objects.
@@ -225,28 +186,10 @@ class QueryHandler
 
         // Return early if no complex rendering is needed.
         if ($hasComplexRendering === false) {
-            $this->logger->debug(
-                message: '⚡ FAST PATH - No rendering needed, returning raw results',
-                context: [
-                    'resultCount' => count($result),
-                    'reason'      => 'no_extend_fields_filter_unset',
-                ]
-            );
-
             return $result;
         }
 
-        // **RENDERING**: Apply complex rendering if needed.
-        $this->logger->debug(
-            message: '🎨 RENDERING - Complex rendering required',
-            context: [
-                'hasExtend' => $hasExtend,
-                'hasFields' => $hasFields,
-                'hasFilter' => $hasFilter,
-                'hasUnset'  => $hasUnset,
-            ]
-        );
-
+        // Apply complex rendering (extend, fields, filter, unset).
         return $this->renderHandler->renderEntities(
             entities: $result,
             _extend: $query['_extend'] ?? [],
@@ -386,240 +329,17 @@ class QueryHandler
         ?array $ids=null,
         ?string $uses=null
     ): array {
-        // **PERFORMANCE MONITORING**: Check for _performance=true parameter.
-        $includePerformance = ($query['_performance'] ?? false) === true || ($query['_performance'] ?? false) === 'true';
-
-        if ($includePerformance === true) {
-            $this->logger->info(
-                message: '📊 PERFORMANCE MONITORING: _performance=true parameter detected',
-                context: [
-                    'requestUri' => $this->request->getRequestUri(),
-                    'purpose'    => 'performance_analysis',
-                    'note'       => 'Response will include detailed performance metrics',
-                ]
-            );
-        }
-
-        // **PERFORMANCE OPTIMIZATION**: Start timing execution and detect request complexity.
         $startTime = microtime(true);
 
-        // **PERFORMANCE DETECTION**: Determine if this is a complex request requiring async processing.
-        $hasFacets        = empty($query['_facets']) === false;
-        $hasFacetable     = ($query['_facetable'] ?? false) === true || ($query['_facetable'] ?? false) === 'true';
-        $isComplexRequest = $hasFacets || $hasFacetable;
-
+        // Set published filter if not already set.
         if (isset($query['_published']) === false) {
             $query['_published'] = $published;
         }
 
-        // **PERFORMANCE OPTIMIZATION**: For complex requests, use async version for better performance.
-        if ($isComplexRequest === true) {
-            if ($hasFacets === true) {
-                $facetCount = count($query['_facets'] ?? []);
-            } else {
-                $facetCount = 0;
-            }
-
-            $this->logger->debug(
-                message: 'Complex request detected, using async processing',
-                context: [
-                    'hasFacets'    => $hasFacets,
-                    'hasFacetable' => $hasFacetable,
-                    'facetCount'   => $facetCount,
-                ]
-            );
-
-            // Use async version and return synchronous result.
-            return $this->searchObjectsPaginatedSync(
-                query: $query,
-                _rbac: $_rbac,
-                _multitenancy: $_multitenancy,
-                published: $published,
-                deleted: $deleted
-            );
-        }//end if
-
-        // **PERFORMANCE OPTIMIZATION**: Simple requests - minimal operations for sub-500ms performance.
-        $this->logger->debug(
-            message: 'Simple request detected, using optimized path',
-            context: [
-                'limit'     => $query['_limit'] ?? 20,
-                'hasExtend' => empty($query['_extend']) === false,
-                'hasSearch' => empty($query['_search']) === false,
-            ]
-        );
-
         // Extract pagination parameters.
-        $limit  = $query['_limit'] ?? 20;
+        $limit  = max(1, (int) ($query['_limit'] ?? 20));
         $offset = $query['_offset'] ?? null;
         $page   = $query['_page'] ?? null;
-
-        // Calculate offset from page if provided.
-        if ($page !== null && $offset === null) {
-            $page = max(1, (int) $page);
-            // Ensure page is at least 1.
-            $offset = ($page - 1) * $limit;
-        }
-
-        // Calculate page from offset if not provided.
-        if ($page === null && $offset !== null && $limit > 0) {
-            $page = floor($offset / $limit) + 1;
-        }
-
-        // Default values.
-        $page   = $page ?? 1;
-        $offset = $offset ?? 0;
-        $limit  = max(1, (int) $limit);
-
-        // **PERFORMANCE OPTIMIZATION**: Prepare optimized queries.
-        $paginatedQuery = array_merge(
-            $query,
-            [
-                '_limit'  => $limit,
-                '_offset' => $offset,
-            ]
-        );
-
-        // Remove page parameter from the query as we use offset internally.
-        unset($paginatedQuery['_page'], $paginatedQuery['_facetable']);
-
-        // **CRITICAL OPTIMIZATION**: Get search results and count in a single optimized call.
-        $searchStartTime = microtime(true);
-        $results         = $this->searchObjects(
-            query: $paginatedQuery,
-            _rbac: $_rbac,
-            _multitenancy: $_multitenancy,
-            ids: $ids,
-            uses: $uses
-        );
-        $searchTime      = round((microtime(true) - $searchStartTime) * 1000, 2);
-
-        $countStartTime = microtime(true);
-        $total          = $this->countSearchObjects(
-            query: $query,
-            _rbac: $_rbac,
-            _multitenancy: $_multitenancy,
-            ids: $ids,
-            uses: $uses
-        );
-        $countTime      = round((microtime(true) - $countStartTime) * 1000, 2);
-
-        // Calculate total pages.
-        $pages = max(1, ceil($total / $limit));
-
-        // Build the paginated results structure.
-        $paginatedResults = [
-            'results' => $results,
-            'total'   => $total,
-            'page'    => $page,
-            'pages'   => $pages,
-            'limit'   => $limit,
-            'offset'  => $offset,
-            'facets'  => [],
-        ];
-
-        // Add performance metrics if requested.
-        if ($includePerformance === true) {
-            $totalTime = round((microtime(true) - $startTime) * 1000, 2);
-            $paginatedResults['@performance'] = [
-                'totalTime'  => $totalTime.'ms',
-                'searchTime' => $searchTime.'ms',
-                'countTime'  => $countTime.'ms',
-                'mode'       => 'simple_sync',
-            ];
-        }
-
-        return $paginatedResults;
-    }//end searchObjectsPaginatedDatabase()
-
-    /**
-     * Synchronous wrapper for async paginated search (used for complex requests).
-     *
-     * @param array $query         The search query.
-     * @param bool  $_rbac         Whether to apply RBAC checks.
-     * @param bool  $_multitenancy Whether to apply multitenancy filtering.
-     * @param bool  $published     Whether to filter by published status.
-     * @param bool  $deleted       Whether to include deleted objects.
-     *
-     * @return array Paginated search results.
-     *
-     * @psalm-param    array<string, mixed> $query
-     * @phpstan-param  array<string, mixed> $query
-     * @psalm-return   array<string, mixed>
-     * @phpstan-return array<string, mixed>
-     */
-    public function searchObjectsPaginatedSync(
-        array $query=[],
-        bool $_rbac=true,
-        bool $_multitenancy=true,
-        bool $published=false,
-        bool $deleted=false
-    ): array {
-        // Execute async version and wait for result.
-        $promise = $this->searchObjectsPaginatedAsync(
-            query: $query,
-            _rbac: $_rbac,
-            _multitenancy: $_multitenancy,
-            _published: $published,
-            _deleted: $deleted
-        );
-
-        // Note: React\Async\await requires react/async package which is optional.
-        // For now, we fall back to synchronous resolution of the promise.
-        // If react/async is installed, uncomment: return Async\await($promise).
-        $result      = null;
-        $onFulfilled = function ($value) use (&$result) {
-            $result = $value;
-        };
-        $onRejected  = function ($error) {
-            throw $error;
-        };
-        $promise->then(onFulfilled: $onFulfilled, onRejected: $onRejected);
-
-        // Return result (synchronous fallback).
-        return $result;
-    }//end searchObjectsPaginatedSync()
-
-    /**
-     * Async paginated search with concurrent promise execution.
-     *
-     * @param array $query         The search query.
-     * @param bool  $_rbac         Whether to apply RBAC checks.
-     * @param bool  $_multitenancy Whether to apply multitenancy filtering.
-     * @param bool  $_published    Whether to filter by published status.
-     * @param bool  $_deleted      Whether to include deleted objects.
-     *
-     * @psalm-param array<string, mixed> $query
-     *
-     * @phpstan-param array<string, mixed> $query
-     *
-     * @return PromiseInterface
-     *
-     * @psalm-return   PromiseInterface<array{results: mixed, total: mixed,
-     *     page: float|int<1, max>|mixed, pages: 1|float, limit: int<1, max>,
-     *     offset: 0|mixed, facets: mixed, facetable?: mixed}>
-     * @phpstan-return PromiseInterface
-     */
-    public function searchObjectsPaginatedAsync(
-        array $query=[],
-        bool $_rbac=true,
-        bool $_multitenancy=true,
-        bool $_published=false,
-        bool $_deleted=false
-    ): PromiseInterface {
-        // Start timing execution.
-        $startTime  = microtime(true);
-        $queryLimit = $query['_limit'] ?? 20;
-        $this->logger->debug(
-            message: 'Starting searchObjectsPaginatedAsync',
-            context: ['query_limit' => $queryLimit]
-        );
-
-        // Extract pagination parameters (same as synchronous version).
-        $limit     = $query['_limit'] ?? 20;
-        $offset    = $query['_offset'] ?? null;
-        $page      = $query['_page'] ?? null;
-        $facetable = $query['_facetable'] ?? false;
 
         // Calculate offset from page if provided.
         if ($page !== null && $offset === null) {
@@ -629,155 +349,119 @@ class QueryHandler
 
         // Calculate page from offset if not provided.
         if ($page === null && $offset !== null && $limit > 0) {
-            $page = floor($offset / $limit) + 1;
+            $page = (int) floor($offset / $limit) + 1;
         }
 
         // Default values.
         $page   = $page ?? 1;
         $offset = $offset ?? 0;
-        $limit  = max(1, (int) $limit);
 
-        // Prepare queries for different operations.
-        $paginatedQuery = array_merge(
-            $query,
-            [
-                '_limit'  => $limit,
-                '_offset' => $offset,
-            ]
-        );
-        unset($paginatedQuery['_page']);
+        // Prepare paginated query (remove pagination params for count query).
+        $paginatedQuery = array_merge($query, ['_limit' => $limit, '_offset' => $offset]);
+        unset($paginatedQuery['_page'], $paginatedQuery['_facetable']);
 
         $countQuery = $query;
-        // Use original query without pagination.
         unset($countQuery['_limit'], $countQuery['_offset'], $countQuery['_page'], $countQuery['_facetable']);
 
-        // Create promises for each operation in order of expected duration (longest first).
-        $promises = [];
+        // Get active organization context for multi-tenancy.
+        $activeOrgUuid = $_multitenancy === true
+            ? $this->performanceHandler->getActiveOrganisationForContext()
+            : null;
 
-        // 1. Facetable discovery (~25ms) - Only if requested.
-        if ($facetable === true || $facetable === 'true') {
-            $baseQuery  = $countQuery;
-            $sampleSize = (int) ($query['_sample_size'] ?? 100);
+        // Use optimized combined search+count that loads register/schema once.
+        $searchResult = $this->unifiedObjectMapper->searchObjectsPaginated(
+            searchQuery: $paginatedQuery,
+            countQuery: $countQuery,
+            activeOrgUuid: $activeOrgUuid,
+            rbac: $_rbac,
+            multitenancy: $_multitenancy,
+            ids: $ids,
+            uses: $uses
+        );
 
-            $promises['facetable'] = new Promise(
-                // Resolver function for facetable promise.
-                function (callable $resolve, callable $reject) use ($baseQuery, $sampleSize) {
-                    try {
-                        $result = $this->facetHandler->getFacetableFields(baseQuery: $baseQuery, sampleSize: $sampleSize);
-                        $resolve($result);
-                    } catch (\Throwable $e) {
-                        $this->logger->error(
-                            message: '❌ FACETABLE PROMISE ERROR',
-                            context: [
-                                'error' => $e->getMessage(),
-                                'trace' => $e->getTraceAsString(),
-                            ]
-                        );
-                        $reject($e);
-                    }
-                }
+        $results   = $searchResult['results'];
+        $total     = $searchResult['total'];
+        $registers = $searchResult['registers'] ?? [];
+        $schemas   = $searchResult['schemas'] ?? [];
+
+        // Detect if complex rendering is needed (extend, fields, filter, unset).
+        // Skip @self.register and @self.schema from extend since we include them in response @self.
+        $extend = $query['_extend'] ?? [];
+        if (is_string($extend) === true) {
+            $extend = array_filter(array_map('trim', explode(',', $extend)));
+        }
+
+        // Remove @self.schema and @self.register from extend - we provide them at response level.
+        $extend = array_filter($extend, function ($item) {
+            return $item !== '@self.schema' && $item !== '@self.register';
+        });
+
+        $hasComplexRendering = empty($extend) === false
+            || empty($query['_fields'] ?? null) === false
+            || empty($query['_filter'] ?? null) === false
+            || empty($query['_unset'] ?? null) === false;
+
+        // Apply complex rendering if needed.
+        if ($hasComplexRendering === true && is_array($results) === true) {
+            $results = $this->renderHandler->renderEntities(
+                entities: $results,
+                _extend: $extend,
+                _filter: $query['_filter'] ?? null,
+                _fields: $query['_fields'] ?? null,
+                _unset: $query['_unset'] ?? null,
+                _rbac: $_rbac,
+                _multitenancy: $_multitenancy
             );
-        }//end if
+        }
 
-        // 2. Search results (~10ms).
-        $promises['search'] = new Promise(
-            // Resolver function for search promise.
-            function (callable $resolve, callable $reject) use ($paginatedQuery, $_rbac, $_multitenancy) {
-                try {
-                    $searchStart = microtime(true);
-                    $result      = $this->searchObjects(
-                        query: $paginatedQuery,
-                        _rbac: $_rbac,
-                        _multitenancy: $_multitenancy,
-                        ids: null,
-                        uses: null
-                    );
-                    $searchTime  = round((microtime(true) - $searchStart) * 1000, 2);
-                    $this->logger->debug(
-                        message: 'Search objects completed',
-                        context: [
-                            'searchTime'  => $searchTime.'ms',
-                            'resultCount' => count($result),
-                            'limit'       => $paginatedQuery['_limit'] ?? 20,
-                        ]
-                    );
-                    $resolve($result);
-                } catch (\Throwable $e) {
-                    $reject($e);
-                }//end try
-            }
-        );
+        // Calculate total pages.
+        $pages = max(1, (int) ceil($total / $limit));
 
-        // 3. Facets (~10ms).
-        $promises['facets'] = new Promise(
-            // Resolver function for facets promise.
-            function (callable $resolve, callable $reject) use ($countQuery) {
-                try {
-                    $result = $this->facetHandler->getFacetsForObjects($countQuery);
-                    $resolve($result);
-                } catch (\Throwable $e) {
-                    $reject($e);
-                }
-            }
-        );
+        // Build result structure with registers/schemas indexed by ID at response @self level.
+        $paginatedResults = [
+            'results' => $results,
+            'total'   => $total,
+            'page'    => $page,
+            'pages'   => $pages,
+            'limit'   => $limit,
+            'offset'  => $offset,
+            'facets'  => [],
+            '@self'   => [],
+        ];
 
-        // 4. Count (~5ms).
-        $promises['count'] = new Promise(
-            // Resolver function for count promise.
-            function (callable $resolve, callable $reject) use ($countQuery, $_rbac, $_multitenancy) {
-                try {
-                    $result = $this->countSearchObjects(
-                        query: $countQuery,
-                        _rbac: $_rbac,
-                        _multitenancy: $_multitenancy
-                    );
-                    $resolve($result);
-                } catch (\Throwable $e) {
-                    $reject($e);
-                }
-            }
-        );
+        // Add registers and schemas indexed by ID to response @self.
+        // This allows frontend to quickly lookup register/schema by ID from each result's @self.
+        if (empty($registers) === false) {
+            $paginatedResults['@self']['registers'] = $registers;
+        }
 
-        // Execute all promises concurrently and combine results.
-        return \React\Promise\all($promises)->then(
-            function ($results) use ($page, $limit, $offset, $query, $startTime) {
-                // Extract results from promises.
-                $searchResults   = $results['search'];
-                $total           = $results['count'];
-                $facets          = $results['facets'];
-                $facetableFields = $results['facetable'] ?? null;
+        if (empty($schemas) === false) {
+            $paginatedResults['@self']['schemas'] = $schemas;
+        }
 
-                // Calculate total pages.
-                $pages = max(1, ceil($total / $limit));
+        // Add facets if requested.
+        $hasFacets    = empty($query['_facets']) === false;
+        $hasFacetable = ($query['_facetable'] ?? false) === true || ($query['_facetable'] ?? false) === 'true';
 
-                // Build the paginated results structure.
-                $paginatedResults = [
-                    'results' => $searchResults,
-                    'total'   => $total,
-                    'page'    => $page,
-                    'pages'   => $pages,
-                    'limit'   => $limit,
-                    'offset'  => $offset,
-                    'facets'  => $facets,
-                ];
+        if ($hasFacets === true) {
+            $facetResult = $this->facetHandler->getFacetsForObjects($countQuery);
+            $paginatedResults['facets'] = $facetResult['facets'] ?? [];
+        }
 
-                // Add facetable field discovery if it was requested.
-                if ($facetableFields !== null) {
-                    $paginatedResults['facetable'] = $facetableFields;
-                }
+        if ($hasFacetable === true) {
+            $paginatedResults['facetable'] = $this->facetHandler->getFacetableFields(
+                baseQuery: $countQuery,
+                sampleSize: 100
+            );
+        }
 
-                $totalTime = round((microtime(true) - $startTime) * 1000, 2);
-                $this->logger->debug(
-                    message: 'Async search completed',
-                    context: [
-                        'totalTime'   => $totalTime.'ms',
-                        'resultCount' => count($searchResults),
-                        'total'       => $total,
-                    ]
-                );
+        // Add performance metrics if requested.
+        if (($query['_performance'] ?? false) === true || ($query['_performance'] ?? false) === 'true') {
+            $paginatedResults['@performance'] = [
+                'totalTime' => round((microtime(true) - $startTime) * 1000, 2).'ms',
+            ];
+        }
 
-                return $paginatedResults;
-            }
-        );
-    }//end searchObjectsPaginatedAsync()
+        return $paginatedResults;
+    }//end searchObjectsPaginatedDatabase()
 }//end class

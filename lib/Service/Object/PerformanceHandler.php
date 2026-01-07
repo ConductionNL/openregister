@@ -344,7 +344,9 @@ class PerformanceHandler
     public function getFacetCount(bool $hasFacets, array $query): int
     {
         if ($hasFacets === true) {
-            return count($query['_facets']);
+            $facets = $query['_facets'] ?? [];
+            // Handle string value (e.g., _facets=extend)
+            return is_array($facets) ? count($facets) : 1;
         }
 
         return 0;

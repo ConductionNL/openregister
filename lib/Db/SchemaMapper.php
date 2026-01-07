@@ -358,6 +358,72 @@ class SchemaMapper extends QBMapper
     }//end findMultipleOptimized()
 
     /**
+     * Finds schemas by slug
+     *
+     * Searches for schemas matching the given slug with optional
+     * multi-tenancy and RBAC filtering.
+     *
+     * @param string    $slug           The slug to search for
+     * @param int       $limit          Maximum number of results (default: 10)
+     * @param int       $offset         Offset for pagination (default: 0)
+     * @param bool|null $published      Whether to enable published bypass (default: null = check config)
+     * @param bool      $_rbac          Whether to apply RBAC permission checks (default: true)
+     * @param bool      $_multitenancy  Whether to apply multi-tenancy filtering (default: true)
+     *
+     * @return Schema[] Array of matching schemas
+     *
+     * @psalm-return list<Schema>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
+     */
+    public function findBySlug(
+        string $slug,
+        int $limit = 10,
+        int $offset = 0,
+        ?bool $published = null,
+        bool $_rbac = true,
+        bool $_multitenancy = true
+    ): array {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select('*')
+            ->from('openregister_schemas')
+            ->where(
+                $qb->expr()->eq('slug', $qb->createNamedParameter($slug, IQueryBuilder::PARAM_STR))
+            );
+
+        // Apply organisation filter with published entity bypass support.
+        $enablePublished = $this->shouldPublishedObjectsBypassMultiTenancy();
+        if ($published !== null) {
+            $enablePublished = $published;
+        }
+
+        $this->applyOrganisationFilter(
+            qb: $qb,
+            columnName: 'organisation',
+            allowNullOrg: true,
+            tableAlias: '',
+            enablePublished: $enablePublished,
+            multiTenancyEnabled: $_multitenancy
+        );
+
+        $qb->setMaxResults($limit)
+            ->setFirstResult($offset);
+
+        $result = $qb->executeQuery();
+        $schemas = [];
+
+        while (($row = $result->fetch()) !== false) {
+            $schema = Schema::fromRow($row);
+            $schemas[] = $schema;
+        }
+
+        $result->closeCursor();
+
+        return $schemas;
+    }//end findBySlug()
+
+    /**
      * Finds all schemas, files: with optional extension for statistics
      *
      * @param int|null   $limit            The limit of the results

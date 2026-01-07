@@ -1784,8 +1784,8 @@ class ObjectService
             $indexService = $this->container->get(IndexService::class);
             $result       = $indexService->searchObjects(
                 query: $query,
-                _rbac: $_rbac,
-                _multitenancy: $_multitenancy,
+                rbac: $_rbac,
+                multitenancy: $_multitenancy,
                 published: $published,
                 deleted: $deleted
             );
@@ -1841,111 +1841,6 @@ class ObjectService
      *
      * @return array<string, mixed> Search results with pagination
      */
-
-    /**
-     * Search objects with pagination and comprehensive faceting support (Asynchronous)
-     *
-     * This method provides the same functionality as searchObjectsPaginated but runs
-     * the database operations asynchronously using ReactPHP promises. This significantly
-     * improves performance by executing search, count, facets, and facetable discovery
-     * operations concurrently instead of sequentially.
-     *
-     * ### Performance Benefits
-     *
-     * Instead of sequential execution (~50ms total):
-     * 1. Facetable discovery: ~15ms
-     * 2. Search results: ~10ms
-     * 3. Facets: ~10ms
-     * 4. Count: ~5ms
-     *
-     * Operations run concurrently, reducing total time to ~15ms (longest operation).
-     *
-     * ### Operation Order
-     *
-     * Operations are queued in order of expected duration (longest first):
-     * 1. **Facetable discovery** (~15ms) - Field analysis and discovery
-     * 2. **Search results** (~10ms) - Main object search with pagination
-     * 3. **Facets** (~10ms) - Aggregation calculations
-     * 4. **Count** (~5ms) - Total count for pagination
-     *
-     * @param array<string, mixed> $query         The search query array (same structure as searchObjectsPaginated)
-     * @param bool                 $_rbac         Whether to apply RBAC checks (default: true)
-     * @param bool                 $_multitenancy Whether to apply multitenancy filtering (default: true)
-     * @param bool                 $_published    Whether to filter by published status (default: false).
-     * @param bool                 $_deleted      Whether to include deleted objects (default: false).
-     *
-     * @psalm-param array<string, mixed> $query
-     *
-     * @phpstan-param array<string, mixed> $query
-     *
-     * @return PromiseInterface Promise resolving to paginated results with results, total, pagination info.
-     *
-     * @throws \OCP\DB\Exception If a database error occurs.
-     *
-     * @SuppressWarnings (PHPMD.UnusedFormalParameter)
-     */
-    public function searchObjectsPaginatedAsync(
-        array $query=[],
-        bool $_rbac=true,
-        bool $_multitenancy=true,
-        bool $_published=false,
-        bool $_deleted=false
-    ): PromiseInterface {
-        // ARCHITECTURAL DELEGATION: Delegate to QueryHandler for async paginated search.
-        return $this->queryHandler->searchObjectsPaginatedAsync(
-            query: $query,
-            _rbac: $_rbac,
-            _multitenancy: $_multitenancy,
-            _published: $_published,
-            _deleted: $_deleted
-        );
-    }//end searchObjectsPaginatedAsync()
-
-    /**
-     * Helper method to execute async search and return results synchronously
-     *
-     * This method provides a convenient way to use the async search functionality
-     * while maintaining a synchronous interface. It's useful when you want the
-     * performance benefits of concurrent operations but need to work within
-     * synchronous code.
-     *
-     * @param array<string, mixed> $query         The search query array (same structure as searchObjectsPaginated)
-     * @param bool                 $_rbac         Whether to apply RBAC checks (default: true)
-     * @param bool                 $_multitenancy Whether to apply multitenancy filtering (default: true)
-     * @param bool                 $published     Whether to filter by published status (default: false)
-     * @param bool                 $deleted       Whether to include deleted objects (default: false)
-     *
-     * @psalm-param   array<string, mixed> $query
-     * @phpstan-param array<string, mixed> $query
-     *
-     * @return array<string, mixed> The same structure as searchObjectsPaginated
-     *
-     * @throws \OCP\DB\Exception If a database error occurs
-     */
-    public function searchObjectsPaginatedSync(
-        array $query=[],
-        bool $_rbac=true,
-        bool $_multitenancy=true,
-        bool $published=false,
-        bool $deleted=false
-    ): array {
-        // Execute the async version and wait for the result.
-        $promise = $this->searchObjectsPaginatedAsync(
-            query: $query,
-            _rbac: $_rbac,
-            _multitenancy: $_multitenancy,
-            _published: $published,
-            _deleted: $deleted
-        );
-
-        /*
-         * Use React's await functionality to get the result synchronously.
-         * Note: The async version already logs the search trail, so we don't need to log again.
-         */
-
-        // @psalm-suppress UndefinedFunction React\Async\await is from external library.
-        return \React\Async\await($promise);
-    }//end searchObjectsPaginatedSync()
 
     // From this point on only deprecated functions for backwards compatibility with OpenConnector.
     // To remove after OpenConnector refactor.

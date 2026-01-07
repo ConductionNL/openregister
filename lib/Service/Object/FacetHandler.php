@@ -150,6 +150,12 @@ class FacetHandler
             return ['facets' => []];
         }
 
+        // **BUGFIX**: Handle _facets as string (e.g., _facets=extend) by converting to array.
+        if (is_string($facetConfig) === true) {
+            // Handle special string values like "extend" or comma-separated field names.
+            $facetConfig = [$facetConfig];
+        }
+
         // **PAGINATION INDEPENDENCE**: Remove pagination params for facet calculation.
         $facetQuery = $query;
         unset($facetQuery['_limit'], $facetQuery['_offset'], $facetQuery['_page'], $facetQuery['_facetable']);

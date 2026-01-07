@@ -12,6 +12,7 @@ volumes:
   solr:
   zookeeper:
   elasticsearch:
+  open-webui:
 
 services:
   # PostgreSQL Database (default)
@@ -135,7 +136,7 @@ services:
         echo "Waiting for ZooKeeper..."
         while ! nc -z zookeeper 2181; do sleep 1; done
         echo "ZooKeeper is ready!"
-        
+
         # Start Solr in SolrCloud mode.
         solr-foreground -c -z zookeeper:2181
     healthcheck:
@@ -179,11 +180,13 @@ services:
       retries: 3
       start_period: 60s
 
-  # Ollama for local LLM inference
-  # Provides local AI models for chat, RAG, and agent functionality
+  # Ollama for local LLM inference (Optional - use --profile ollama)
+  # Alternative to Hugging Face TGI for simpler model management
   # Access at: http://localhost:11434
   # Pull models: docker exec openregister-ollama ollama pull llama3.2
   ollama:
+    profiles:
+      - ollama
     image: ollama/ollama:latest
     container_name: openregister-ollama
     restart: always
@@ -246,16 +249,13 @@ services:
       retries: 3
       start_period: 30s
 
-  # n8n Workflow Automation (Optional - use --profile n8n)
+  # n8n Workflow Automation (Default - starts automatically)
   # Integrates with OpenRegister via Nextcloud webhooks
   # Access at: http://localhost:5678
   # Default credentials: admin / admin (change in production!)
   # Documentation: https://docs.n8n.io
   # MCP Integration: See website/docs/technical/n8n-mcp/setup.md
   n8n:
-    profiles:
-      - n8n
-      - automation
     image: n8nio/n8n:latest
     container_name: openregister-n8n
     restart: always
@@ -306,15 +306,12 @@ services:
       retries: 3
       start_period: 30s
 
-  # Hugging Face Text Generation Inference (TGI) with OpenAI-compatible API (Optional - use --profile huggingface)
-  # Provides high-performance inference for language models
+  # Hugging Face Text Generation Inference (TGI) with OpenAI-compatible API (Default)
+  # Primary LLM backend for chat, RAG, and agent functionality
   # Access at: http://localhost:8081
   # OpenAI-compatible API endpoint: http://localhost:8081/v1
   # Documentation: https://huggingface.co/docs/text-generation-inference
   tgi-llm:
-    profiles:
-      - huggingface
-      - llm
     image: ghcr.io/huggingface/text-generation-inference:latest
     container_name: openregister-tgi-llm
     restart: always
@@ -329,21 +326,21 @@ services:
       # - MODEL_ID=meta-llama/Llama-2-7b-chat-hf
       # - MODEL_ID=codellama/CodeLlama-7b-Instruct-hf
       # - MODEL_ID=teknium/OpenHermes-2.5-Mistral-7B
-      
+
       # Performance settings
       - MAX_INPUT_LENGTH=4096
       - MAX_TOTAL_TOKENS=8192
       - MAX_BATCH_PREFILL_TOKENS=4096
       - MAX_CONCURRENT_REQUESTS=128
       - MAX_WAITING_TOKENS=20
-      
+
       # Quantization (reduce memory usage)
       # - QUANTIZE=bitsandbytes-nf4
-      
+
       # Hugging Face token (required for gated models like Llama)
       # Get token from: https://huggingface.co/settings/tokens
       # - HUGGING_FACE_HUB_TOKEN=your_token_here
-      
+
       # Sharding for multi-GPU (if available)
       # - NUM_SHARD=2
     deploy:
@@ -364,19 +361,84 @@ services:
       retries: 3
       start_period: 120s
 
-  # OpenLLM Management Interface (Optional - use --profile huggingface)
-  # Web UI for managing and downloading language models
+  # ByteDance Dolphin VLM for Document Parsing (Default)
+  # Vision-Language Model specialized for document text extraction, OCR, and layout analysis
+  # Access at: http://localhost:8083
+  # Endpoints: /parse (image), /parse_pdf (PDF), /info, /health
+  dolphin-vlm:
+    build:
+      context: ./docker/dolphin
+      dockerfile: Dockerfile
+    container_name: openregister-dolphin-vlm
+    restart: always
+    ports:
+      - "8083:5000"
+    volumes:
+      - ./docker/dolphin/models:/app/models
+    environment:
+      - MODEL_PATH=/app/models
+      - LOG_LEVEL=INFO
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+        reservations:
+          memory: 4G
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+  # Open WebUI - Web interface for LLMs (Default)
+  # Works with both Ollama API and OpenAI-compatible APIs (like TGI)
   # Access at: http://localhost:3000
+  # Documentation: https://docs.openwebui.com
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: openregister-open-webui
+    restart: always
+    ports:
+      - "3000:8080"
+    volumes:
+      - open-webui:/app/backend/data
+    environment:
+      # Connect to Hugging Face TGI (OpenAI-compatible API)
+      - OPENAI_API_BASE_URL=http://openregister-tgi-llm:80/v1
+      - OPENAI_API_KEY=not-needed
+      # Also connect to Ollama if running (optional)
+      - OLLAMA_BASE_URL=http://openregister-ollama:11434
+      # Disable signup for security (admin creates accounts)
+      - WEBUI_AUTH=true
+      - ENABLE_SIGNUP=true
+      # Default admin account (change in production!)
+      - WEBUI_SECRET_KEY=openregister-secret-key-change-me
+    depends_on:
+      - tgi-llm
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # OpenLLM Management Interface (Optional - use --profile llm-management)
+  # Web UI for managing and downloading language models
+  # Access at: http://localhost:3002
   # Documentation: https://github.com/bentoml/OpenLLM
   openllm:
     profiles:
-      - huggingface
-      - llm
+      - llm-management
     image: ghcr.io/bentoml/openllm:latest
     container_name: openregister-openllm
     restart: always
     ports:
-      - "3000:3000"
+      - "3002:3000"
       - "8082:8082"
     volumes:
       - openllm-models:/models
@@ -387,14 +449,14 @@ services:
       - OPENLLM_BACKEND=vllm
       - OPENLLM_PORT=3000
       - OPENLLM_API_PORT=8082
-      
+
       # GPU configuration
       - CUDA_VISIBLE_DEVICES=0
-      
+
       # Performance settings
       - OPENLLM_MAX_MODEL_LEN=4096
       - OPENLLM_GPU_MEMORY_UTILIZATION=0.9
-      
+
       # Hugging Face token
       # - HUGGING_FACE_HUB_TOKEN=your_token_here
     deploy:
@@ -437,8 +499,11 @@ services:
       - 8080:80
     links:
       - db
-      - ollama
-      - presidio-analyzer
+    # Removed AI service links to avoid GPU dependency:
+    # - tgi-llm
+    # - dolphin-vlm  
+    # - presidio-analyzer
+    # - n8n
     volumes:
       - nextcloud:/var/www/html:rw
       - ./custom_apps:/var/www/html/custom_apps
@@ -456,6 +521,11 @@ services:
       - PHP_MEMORY_LIMIT=4G
       - PHP_UPLOAD_LIMIT=2G
       - PHP_POST_MAX_SIZE=2G
+      # AI Service endpoints
+      - TGI_LLM_URL=http://openregister-tgi-llm:80
+      - DOLPHIN_VLM_URL=http://openregister-dolphin-vlm:5000
+      - PRESIDIO_URL=http://openregister-presidio-analyzer:5001
+      - N8N_URL=http://openregister-n8n:5678
 
   # Nextcloud Application Server (MariaDB - For Testing)
   # Start with: docker-compose --profile mariadb up
@@ -472,8 +542,10 @@ services:
       - 8080:80
     links:
       - db-mariadb
-      - ollama
+      - tgi-llm
+      - dolphin-vlm
       - presidio-analyzer
+      - n8n
     volumes:
       - nextcloud:/var/www/html:rw
       - ./custom_apps:/var/www/html/custom_apps
@@ -491,6 +563,11 @@ services:
       - PHP_MEMORY_LIMIT=4G
       - PHP_UPLOAD_LIMIT=2G
       - PHP_POST_MAX_SIZE=2G
+      # AI Service endpoints
+      - TGI_LLM_URL=http://openregister-tgi-llm:80
+      - DOLPHIN_VLM_URL=http://openregister-dolphin-vlm:5000
+      - PRESIDIO_URL=http://openregister-presidio-analyzer:5001
+      - N8N_URL=http://openregister-n8n:5678
     depends_on:
       db-mariadb:
         condition: service_healthy

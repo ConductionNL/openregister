@@ -662,33 +662,91 @@ class Register extends Entity implements JsonSerializable
     /**
      * Check if magic mapping is enabled for a specific schema in this register.
      *
-     * @param int $schemaId The schema ID to check.
+     * This is the SINGLE SOURCE OF TRUTH for magic mapping checks.
+     * All other classes (ObjectEntityMapper, UnifiedObjectMapper) should delegate to this method.
+     *
+     * Supports two configuration formats:
+     * - New format: { "schemas": { "<slug>": { "magicMapping": true } } }
+     * - Legacy format: { "enableMagicMapping": true, "magicMappingSchemas": ["<slug>", "<id>"] }
+     *
+     * @param int         $schemaId   The schema ID to check.
+     * @param string|null $schemaSlug Optional schema slug to also check in configuration.
      *
      * @return bool True if magic mapping is enabled for this schema.
      */
-    public function isMagicMappingEnabledForSchema(int $schemaId): bool
+    public function isMagicMappingEnabledForSchema(int $schemaId, ?string $schemaSlug = null): bool
     {
-        $config        = $this->getConfiguration();
-        $schemaConfigs = $config['schemas'] ?? [];
-        $schemaConfig  = $schemaConfigs[$schemaId] ?? [];
+        $config = $this->getConfiguration();
 
-        return ($schemaConfig['magicMapping'] ?? false) === true;
+        // Check NEW format first: { "schemas": { "<slug>": { "magicMapping": true } } }
+        $schemaConfigs = $config['schemas'] ?? [];
+        if (empty($schemaConfigs) === false) {
+            // Try to find by schema slug (string key).
+            if ($schemaSlug !== null) {
+                $schemaConfig = $schemaConfigs[$schemaSlug] ?? null;
+                if ($schemaConfig !== null && ($schemaConfig['magicMapping'] ?? false) === true) {
+                    return true;
+                }
+            }
+
+            // Try to find by schema ID (integer or string key).
+            $schemaConfig = $schemaConfigs[$schemaId] ?? $schemaConfigs[(string) $schemaId] ?? null;
+            if ($schemaConfig !== null && ($schemaConfig['magicMapping'] ?? false) === true) {
+                return true;
+            }
+        }
+
+        // Check LEGACY format: { "enableMagicMapping": true, "magicMappingSchemas": [...] }
+        $magicMappingEnabled = ($config['enableMagicMapping'] ?? false) === true;
+        if ($magicMappingEnabled === false) {
+            return false;
+        }
+
+        $magicMappingSchemas = $config['magicMappingSchemas'] ?? [];
+
+        // Check if this schema is in the list (by ID or slug).
+        $isInList = in_array((string) $schemaId, $magicMappingSchemas, true) === true
+            || ($schemaSlug !== null && in_array($schemaSlug, $magicMappingSchemas, true) === true);
+
+        return $isInList;
     }//end isMagicMappingEnabledForSchema()
 
     /**
      * Check if auto-create table is enabled for a specific schema in this register.
      *
-     * @param int $schemaId The schema ID to check.
+     * Supports both configuration formats (new and legacy).
+     * Note: Legacy format doesn't have per-schema autoCreateTable, so defaults to true if magicMapping is enabled.
+     *
+     * @param int         $schemaId   The schema ID to check.
+     * @param string|null $schemaSlug Optional schema slug to also check in configuration.
      *
      * @return bool True if auto-create table is enabled for this schema.
      */
-    public function isAutoCreateTableEnabledForSchema(int $schemaId): bool
+    public function isAutoCreateTableEnabledForSchema(int $schemaId, ?string $schemaSlug = null): bool
     {
-        $config        = $this->getConfiguration();
-        $schemaConfigs = $config['schemas'] ?? [];
-        $schemaConfig  = $schemaConfigs[$schemaId] ?? [];
+        $config = $this->getConfiguration();
 
-        return ($schemaConfig['autoCreateTable'] ?? false) === true;
+        // Check NEW format: { "schemas": { "<slug>": { "autoCreateTable": true } } }
+        $schemaConfigs = $config['schemas'] ?? [];
+        if (empty($schemaConfigs) === false) {
+            // Try to find by schema slug (string key).
+            if ($schemaSlug !== null) {
+                $schemaConfig = $schemaConfigs[$schemaSlug] ?? null;
+                if ($schemaConfig !== null) {
+                    return ($schemaConfig['autoCreateTable'] ?? false) === true;
+                }
+            }
+
+            // Try to find by schema ID (integer or string key).
+            $schemaConfig = $schemaConfigs[$schemaId] ?? $schemaConfigs[(string) $schemaId] ?? null;
+            if ($schemaConfig !== null) {
+                return ($schemaConfig['autoCreateTable'] ?? false) === true;
+            }
+        }
+
+        // Legacy format doesn't have per-schema autoCreateTable.
+        // Default to true if magic mapping is enabled for this schema.
+        return $this->isMagicMappingEnabledForSchema($schemaId, $schemaSlug);
     }//end isAutoCreateTableEnabledForSchema()
 
     /**

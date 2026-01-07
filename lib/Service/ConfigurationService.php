@@ -25,6 +25,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use JsonException;
 use Symfony\Component\Yaml\Yaml;
+use OCA\OpenRegister\Service\Configuration\FetchHandler;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Register;
@@ -304,7 +305,11 @@ class ConfigurationService
      */
     private function getFetchHandler(): FetchHandler
     {
-        return $this->container->get('OCA\OpenRegister\Service\Configuration\FetchHandler');
+        // Instantiate directly since FetchHandler is not registered in DI container
+        return new FetchHandler(
+            client: $this->container->get(Client::class),
+            logger: $this->container->get(LoggerInterface::class)
+        );
     }//end getFetchHandler()
 
     /**
