@@ -190,14 +190,15 @@ class SaveObjects
      * 6. Optimized inverse relation processing
      * 7. Bulk writeBack operations
      *
-     * @param array                    $objects       Array of objects in serialized format
-     * @param Register|string|int|null $register      Optional register context
-     * @param Schema|string|int|null   $schema        Optional schema context
-     * @param bool                     $_rbac         Whether to apply RBAC filtering
-     * @param bool                     $_multitenancy Whether to apply multi-organization filtering
-     * @param bool                     $validation    Whether to validate objects against schema definitions
-     * @param bool                     $events        Whether to dispatch object lifecycle events
+     * @param array                    $objects        Array of objects in serialized format
+     * @param Register|string|int|null $register       Optional register context
+     * @param Schema|string|int|null   $schema         Optional schema context
+     * @param bool                     $_rbac          Whether to apply RBAC filtering
+     * @param bool                     $_multitenancy  Whether to apply multi-organization filtering
+     * @param bool                     $validation     Whether to validate objects against schema definitions
+     * @param bool                     $events         Whether to dispatch object lifecycle events
      * @param bool                     $deduplicateIds Whether to deduplicate objects with same ID (default: true)
+     * @param bool                     $enrich         Whether to enrich objects with metadata
      *
      * @throws \InvalidArgumentException If required fields are missing from any object
      * @throws \OCP\DB\Exception If a database error occurs during bulk operations
@@ -218,7 +219,8 @@ class SaveObjects
         bool $_multitenancy=true,
         bool $validation=false,
         bool $events=false,
-        bool $deduplicateIds=true
+        bool $deduplicateIds=true,
+        bool $enrich=true
     ): array {
         // Return early if no objects provided.
         if (empty($objects) === true) {
@@ -261,7 +263,8 @@ class SaveObjects
             objects: $objects,
             register: $register,
             schema: $schema,
-            isMixedSchema: $isMixedSchema
+            isMixedSchema: $isMixedSchema,
+            enrich: $enrich
         );
 
         // Initialize result with invalid objects from preparation.
@@ -376,6 +379,7 @@ class SaveObjects
      * @param Register|string|int|null $register      Register parameter
      * @param Schema|string|int|null   $schema        Schema parameter
      * @param bool                     $isMixedSchema Whether mixed-schema operation
+     * @param bool                     $enrich        Whether to enrich objects with metadata
      *
      * @return array [processedObjects, schemaCache, invalidObjects].
      */
@@ -383,14 +387,16 @@ class SaveObjects
         array $objects,
         Register|string|int|null $register,
         Schema|string|int|null $schema,
-        bool $isMixedSchema
+        bool $isMixedSchema,
+        bool $enrich=true
     ): array {
         // Use fast path for single-schema operations.
         if ($isMixedSchema === false && $schema !== null) {
             return $this->prepareSingleSchemaObjectsOptimized(
                 objects: $objects,
                 register: $register,
-                schema: $schema
+                schema: $schema,
+                enrich: $enrich
             );
         }
 
@@ -611,6 +617,7 @@ class SaveObjects
      * @param array               $objects  Array of objects in serialized format
      * @param Register|string|int $register Register context
      * @param Schema|string|int   $schema   Schema context
+     * @param bool                $enrich   Whether to enrich objects with metadata
      *
      * @return (Schema|mixed)[][] Array containing [prepared objects, schema cache, invalid objects]
      *
@@ -626,7 +633,8 @@ class SaveObjects
     private function prepareSingleSchemaObjectsOptimized(
         array $objects,
         Register|string|int $register,
-        Schema|string|int $schema
+        Schema|string|int $schema,
+        bool $enrich=true
     ): array {
         $startTime = microtime(true);
 
@@ -635,22 +643,22 @@ class SaveObjects
             $registerId = $register->getId();
             // Cache the provided register object.
             self::$registerCache[$registerId] = $register;
-        }
-
-        if (($register instanceof Register) === false) {
+        } else {
             $registerId = $register;
             // PERFORMANCE: Use cached register loading.
             $this->loadRegisterWithCache($registerId);
         }
+
+        // Initialize schema variables before conditional assignment.
+        $schemaId  = null;
+        $schemaObj = null;
 
         if ($schema instanceof Schema) {
             $schemaObj = $schema;
             $schemaId  = $schema->getId();
             // Cache the provided schema object.
             self::$schemaCache[$schemaId] = $schemaObj;
-        }
-
-        if (($schema instanceof Schema) === false) {
+        } else {
             $schemaId = $schema;
             // PERFORMANCE: Use cached schema loading.
             $schemaObj = $this->loadSchemaWithCache($schemaId);
@@ -743,7 +751,11 @@ class SaveObjects
                 $tempEntity->hydrate($selfDataForHydration);
             }//end if
 
+                // METADATA ENRICHMENT: Optionally extract name, description, summary from object data.
+            // Hydrate object metadata (name, description, summary) from object data.
+            if ($enrich === true) {
                 $this->saveHandler->hydrateObjectMetadata(entity: $tempEntity, schema: $schemaObj);
+            }
 
                 // AUTO-PUBLISH LOGIC: Only set published for NEW objects if not already set from CSV.
                 // Note: For updates to existing objects, published status should be preserved unless explicitly changed.
@@ -778,7 +790,6 @@ class SaveObjects
                 // Extract hydrated metadata back to @self data AND top level (for bulk SQL).
             if ($tempEntity->getName() !== null) {
                 $selfData['name'] = $tempEntity->getName();
-                // TOP LEVEL for bulk SQL.
             }
 
             if ($tempEntity->getDescription() !== null) {
@@ -1234,7 +1245,6 @@ class SaveObjects
         return in_array(strtolower($value), $commonWords, true);
     }//end isCommonTextWord()
 
-
     /**
      * Deduplicate objects within a batch by their ID/UUID.
      *
@@ -1340,6 +1350,4 @@ class SaveObjects
             'duplicateIds'   => $duplicateIds,
         ];
     }//end deduplicateBatchObjects()
-
-
 }//end class

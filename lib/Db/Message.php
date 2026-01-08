@@ -50,6 +50,8 @@ use Symfony\Component\Uid\Uuid;
  * @method void setCreated(?DateTime $created)
  *
  * @package OCA\OpenRegister\Db
+ *
+ * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class Message extends Entity implements JsonSerializable
 {

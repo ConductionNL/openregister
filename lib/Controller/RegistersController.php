@@ -904,6 +904,7 @@ class RegistersController extends Controller
             $validation     = $this->parseBooleanParam(paramName: 'validation', default: false);
             $events         = $this->parseBooleanParam(paramName: 'events', default: false);
             $publish        = $this->parseBooleanParam(paramName: 'publish', default: false);
+            $enrich         = $this->parseBooleanParam(paramName: 'enrich', default: true);
 
             // Log import parameters for debugging.
             $this->logger->debug(
@@ -935,7 +936,8 @@ class RegistersController extends Controller
                         _rbac: $rbac,
                         _multitenancy: $multi,
                         publish: $publish,
-                        currentUser: $this->userSession->getUser()
+                        currentUser: $this->userSession->getUser(),
+                        enrich: $enrich
                     );
                     break;
                 case 'csv':
@@ -965,7 +967,8 @@ class RegistersController extends Controller
                         _rbac: $rbac,
                         _multitenancy: $multi,
                         publish: $publish,
-                        currentUser: $this->userSession->getUser()
+                        currentUser: $this->userSession->getUser(),
+                        enrich: $enrich
                     );
                     break;
                 case 'configuration':

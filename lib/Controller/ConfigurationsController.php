@@ -46,6 +46,14 @@ use Symfony\Component\Uid\Uuid;
  */
 class ConfigurationsController extends Controller
 {
+
+    /**
+     * User ID for ownership tracking.
+     *
+     * @var string|null User ID or null if not authenticated.
+     */
+    private readonly ?string $userId;
+
     /**
      * Constructor for ConfigurationController.
      *
@@ -54,15 +62,18 @@ class ConfigurationsController extends Controller
      * @param ConfigurationMapper  $configurationMapper  The configuration mapper instance
      * @param ConfigurationService $configurationService The configuration service instance
      * @param UploadService        $uploadService        The upload service instance
+     * @param string|null          $userId               The current user ID
      */
     public function __construct(
         string $appName,
         IRequest $request,
         private readonly ConfigurationMapper $configurationMapper,
         private readonly ConfigurationService $configurationService,
-        private readonly UploadService $uploadService
+        private readonly UploadService $uploadService,
+        ?string $userId
     ) {
         parent::__construct(appName: $appName, request: $request);
+        $this->userId = $userId;
     }//end __construct()
 
     /**
@@ -92,13 +103,13 @@ class ConfigurationsController extends Controller
         return new JSONResponse(
             data: [
                 'results' => $this->configurationMapper->findAll(
-                        limit: null,
-                        offset: null,
-                        filters: $filters,
-                        searchConditions: $searchConditions,
-                        searchParams: $searchParams,
-                        _multitenancy: false
-                    ),
+                    limit: null,
+                    offset: null,
+                    filters: $filters,
+                    searchConditions: $searchConditions,
+                    searchParams: $searchParams,
+                    _multitenancy: false
+                ),
             ]
         );
     }//end index()
@@ -385,8 +396,8 @@ class ConfigurationsController extends Controller
             $configuration->setSourceType('upload');
             $configuration->setApp($this->request->getParam('appId') ?? ($jsonData['x-openregister']['app'] ?? 'unknown'));
             $configuration->setOwner($this->request->getParam('owner') ?? $this->userId);
-            $configuration->setCreated(new \DateTime());
-            $configuration->setUpdated(new \DateTime());
+            $configuration->setCreated(new DateTime());
+            $configuration->setUpdated(new DateTime());
 
             // Import the data.
             $force  = $this->request->getParam('force') === 'true' || $this->request->getParam('force') === true;

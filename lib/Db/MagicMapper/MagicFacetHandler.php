@@ -83,10 +83,10 @@ class MagicFacetHandler
      * schema-based tables, similar to the blob storage faceting but optimized
      * for column-based storage.
      *
-     * @param string   $tableName   The magic mapper table name (without oc_ prefix).
-     * @param array    $query       The search query array containing filters and facet configuration.
-     * @param Register $register    The register context.
-     * @param Schema   $schema      The schema context.
+     * @param string   $tableName The magic mapper table name (without oc_ prefix).
+     * @param array    $query     The search query array containing filters and facet configuration.
+     * @param Register $register  The register context.
+     * @param Schema   $schema    The schema context.
      *
      * @return array Facet results with buckets.
      *
@@ -106,7 +106,7 @@ class MagicFacetHandler
 
         // Handle _facets as string (e.g., _facets=extend) by converting to array.
         if (is_string($facetConfig) === true) {
-            $facetConfig = $this->expandFacetConfig($facetConfig, $schema);
+            $facetConfig = $this->expandFacetConfig(facetConfig: $facetConfig, schema: $schema);
         }
 
         // Extract base query (without facet config).
@@ -140,8 +140,8 @@ class MagicFacetHandler
                         schema: $schema
                     );
                 }
-            }
-        }
+            }//end foreach
+        }//end if
 
         // Process object field facets (schema properties).
         $objectFacetConfig = array_filter(
@@ -176,7 +176,7 @@ class MagicFacetHandler
                     schema: $schema
                 );
             }
-        }
+        }//end foreach
 
         return $facets;
     }//end getSimpleFacets()
@@ -209,26 +209,28 @@ class MagicFacetHandler
             $schemaFacets = $schema->getFacets();
             if (($schemaFacets['object_fields'] ?? null) !== null) {
                 foreach ($schemaFacets['object_fields'] as $field => $fieldConfig) {
-                    $facetType = $fieldConfig['type'] ?? 'terms';
+                    $facetType      = $fieldConfig['type'] ?? 'terms';
                     $config[$field] = ['type' => $facetType];
                 }
-            } else {
-                // Fall back to analyzing schema properties directly for facetable fields.
-                $properties = $schema->getProperties();
-                if (empty($properties) === false) {
-                    foreach ($properties as $propertyKey => $property) {
-                        // Check if property is marked as facetable.
-                        if (isset($property['facetable']) === true && $property['facetable'] === true) {
-                            // Determine facet type based on property type.
-                            $facetType = $this->determineFacetTypeFromProperty($property);
-                            $config[$propertyKey] = ['type' => $facetType];
-                        }
+
+                return $config;
+            }
+
+            // Fall back to analyzing schema properties directly for facetable fields.
+            $properties = $schema->getProperties();
+            if (empty($properties) === false) {
+                foreach ($properties as $propertyKey => $property) {
+                    // Check if property is marked as facetable.
+                    if (isset($property['facetable']) === true && $property['facetable'] === true) {
+                        // Determine facet type based on property type.
+                        $facetType            = $this->determineFacetTypeFromProperty($property);
+                        $config[$propertyKey] = ['type' => $facetType];
                     }
                 }
             }
 
             return $config;
-        }
+        }//end if
 
         // Treat as comma-separated field names.
         $fields = array_map('trim', explode(',', $facetConfig));
@@ -237,11 +239,15 @@ class MagicFacetHandler
         foreach ($fields as $field) {
             if (in_array($field, ['register', 'schema', 'organisation', 'owner'], true) === true) {
                 $config['@self'][$field] = ['type' => 'terms'];
-            } else if (in_array($field, ['created', 'updated', 'published'], true) === true) {
-                $config['@self'][$field] = ['type' => 'date_histogram', 'interval' => 'month'];
-            } else {
-                $config[$field] = ['type' => 'terms'];
+                continue;
             }
+
+            if (in_array($field, ['created', 'updated', 'published'], true) === true) {
+                $config['@self'][$field] = ['type' => 'date_histogram', 'interval' => 'month'];
+                continue;
+            }
+
+            $config[$field] = ['type' => 'terms'];
         }
 
         return $config;
@@ -330,7 +336,7 @@ class MagicFacetHandler
         Schema $schema
     ): array {
         // Check if column exists in table before querying.
-        if ($this->columnExists($tableName, $field) === false) {
+        if ($this->columnExists(tableName: $tableName, columnName: $field) === false) {
             $this->logger->debug(
                 'MagicFacetHandler: Column does not exist for facet',
                 ['tableName' => $tableName, 'field' => $field]
@@ -342,7 +348,7 @@ class MagicFacetHandler
         }
 
         // Check if this is an array field by looking at the schema property.
-        $isArrayField = $this->isArrayField($field, $schema, $isMetadata);
+        $isArrayField = $this->isArrayField(field: $field, schema: $schema, isMetadata: $isMetadata);
 
         if ($isArrayField === true) {
             // Use JSON array unnesting for array fields.
@@ -443,9 +449,14 @@ class MagicFacetHandler
         }
 
         // Add object field filters for facet filtering.
-        $filterSql = $this->buildObjectFieldFiltersSql($baseQuery, $tableName, $schema, $params);
+        $filterSql = $this->buildObjectFieldFiltersSql(
+            baseQuery: $baseQuery,
+            tableName: $tableName,
+            schema: $schema,
+            params: $params
+        );
         if ($filterSql !== '') {
-            $sql .= " AND " . $filterSql;
+            $sql .= " AND ".$filterSql;
         }
 
         $sql .= " GROUP BY elem ORDER BY doc_count DESC";
@@ -454,8 +465,9 @@ class MagicFacetHandler
             $stmt = $this->db->prepare($sql);
             // Bind parameters if any.
             foreach ($params as $index => $value) {
-                $stmt->bindValue($index + 1, $value);
+                $stmt->bindValue((int) $index + 1, $value);
             }
+
             $stmt->execute();
             $buckets = [];
 
@@ -490,7 +502,7 @@ class MagicFacetHandler
                 'type'    => 'terms',
                 'buckets' => [],
             ];
-        }
+        }//end try
     }//end getTermsFacetForArrayField()
 
     /**
@@ -499,7 +511,7 @@ class MagicFacetHandler
      * @param array       $baseQuery The base query with filters.
      * @param string      $tableName The table name.
      * @param Schema|null $schema    The schema for property type checking.
-     * @param array       &$params   Reference to array for collecting bind parameters.
+     * @param array       $params    Reference to array for collecting bind parameters.
      *
      * @return string SQL WHERE conditions (without leading AND).
      */
@@ -513,15 +525,38 @@ class MagicFacetHandler
 
         // List of reserved query parameters that should not be used as filters.
         $reservedParams = [
-            '_limit', '_offset', '_page', '_order', '_sort', '_search',
-            '_extend', '_fields', '_filter', '_unset', '_facets', '_facetable',
-            '_aggregations', '_debug', '_source', '_published', '_rbac',
-            '_multitenancy', '_validation', '_events', '_register', '_schema',
-            '_schemas', '_includeDeleted', '@self',
+            '_limit',
+            '_offset',
+            '_page',
+            '_order',
+            '_sort',
+            '_search',
+            '_extend',
+            '_fields',
+            '_filter',
+            '_unset',
+            '_facets',
+            '_facetable',
+            '_aggregations',
+            '_debug',
+            '_source',
+            '_published',
+            '_rbac',
+            '_multitenancy',
+            '_validation',
+            '_events',
+            '_register',
+            '_schema',
+            '_schemas',
+            '_includeDeleted',
+            '@self',
         ];
 
         // Get schema properties for type checking.
-        $properties = $schema !== null ? ($schema->getProperties() ?? []) : [];
+        $properties = [];
+        if ($schema !== null) {
+            $properties = ($schema->getProperties() ?? []);
+        }
 
         foreach ($baseQuery as $key => $value) {
             // Skip reserved parameters.
@@ -535,11 +570,11 @@ class MagicFacetHandler
             }
 
             // This is an object field filter.
-            $columnName = $this->sanitizeColumnName($key);
+            $columnName = $this->sanitizeColumnName(name: $key);
 
             // Check if column exists.
             // If filter column doesn't exist, this schema can't match the filter - return impossible condition.
-            if ($this->columnExists($tableName, $columnName) === false) {
+            if ($this->columnExists(tableName: $tableName, columnName: $columnName) === false) {
                 // Return impossible condition to get 0 results.
                 return "1 = 0";
             }
@@ -548,7 +583,10 @@ class MagicFacetHandler
             $propertyType = $properties[$key]['type'] ?? 'string';
 
             // Normalize value to array.
-            $values = is_array($value) === true ? $value : [$value];
+            $values = [$value];
+            if (is_array($value) === true) {
+                $values = $value;
+            }
 
             if ($propertyType === 'array') {
                 // Handle JSON array field filtering using containment operator.
@@ -557,21 +595,25 @@ class MagicFacetHandler
                     $params[]     = json_encode([$v]);
                     $conditions[] = "{$columnName}::jsonb @> ?";
                 }
-            } else {
-                // Handle regular field filtering.
-                if (count($values) === 1) {
-                    $params[]     = $values[0];
-                    $conditions[] = "{$columnName} = ?";
-                } else {
-                    $placeholders = [];
-                    foreach ($values as $v) {
-                        $params[]       = $v;
-                        $placeholders[] = "?";
-                    }
-                    $conditions[] = "{$columnName} IN (" . implode(", ", $placeholders) . ")";
-                }
+
+                continue;
             }
-        }
+
+            // Handle regular field filtering.
+            if (count($values) === 1) {
+                $params[]     = $values[0];
+                $conditions[] = "{$columnName} = ?";
+                continue;
+            }
+
+            $placeholders = [];
+            foreach ($values as $v) {
+                $params[]       = $v;
+                $placeholders[] = "?";
+            }
+
+            $conditions[] = "{$columnName} IN (".implode(", ", $placeholders).")";
+        }//end foreach
 
         return implode(" AND ", $conditions);
     }//end buildObjectFieldFiltersSql()
@@ -629,6 +671,7 @@ class MagicFacetHandler
             if (is_scalar($decoded) === true) {
                 return $decoded;
             }
+
             // If it's an array with one element, return that element.
             if (is_array($decoded) === true && count($decoded) === 1) {
                 return reset($decoded);
@@ -643,10 +686,11 @@ class MagicFacetHandler
      *
      * Returns time-based buckets with counts for date fields.
      *
-     * @param string $tableName The table name.
-     * @param string $field     The field/column name.
-     * @param string $interval  The histogram interval (day, week, month, year).
-     * @param array  $baseQuery Base query filters to apply.
+     * @param string      $tableName The table name.
+     * @param string      $field     The field/column name.
+     * @param string      $interval  The histogram interval (day, week, month, year).
+     * @param array       $baseQuery Base query filters to apply.
+     * @param Schema|null $schema    The schema for property type checking.
      *
      * @return array Facet result with type, interval, and buckets.
      *
@@ -657,10 +701,10 @@ class MagicFacetHandler
         string $field,
         string $interval,
         array $baseQuery,
-        ?Schema $schema = null
+        ?Schema $schema=null
     ): array {
         // Check if column exists.
-        if ($this->columnExists($tableName, $field) === false) {
+        if ($this->columnExists(tableName: $tableName, columnName: $field) === false) {
             return [
                 'type'     => 'date_histogram',
                 'interval' => $interval,
@@ -722,11 +766,10 @@ class MagicFacetHandler
         try {
             // The table name passed may or may not include the prefix.
             // Normalize to always have the 'oc_' prefix for information_schema lookup.
-            $prefix = 'oc_';
+            $prefix        = 'oc_';
+            $fullTableName = $prefix.$tableName;
             if (str_starts_with($tableName, $prefix) === true) {
                 $fullTableName = $tableName;
-            } else {
-                $fullTableName = $prefix.$tableName;
             }
 
             // PostgreSQL stores unquoted identifiers in lowercase.
@@ -747,7 +790,7 @@ class MagicFacetHandler
                 ['tableName' => $tableName, 'column' => $columnName, 'error' => $e->getMessage()]
             );
             return false;
-        }
+        }//end try
     }//end columnExists()
 
     /**
@@ -756,6 +799,7 @@ class MagicFacetHandler
      * @param IQueryBuilder $queryBuilder The query builder to modify.
      * @param array         $baseQuery    The base query filters.
      * @param string        $tableName    The table name.
+     * @param Schema|null   $schema       The schema for property type checking.
      *
      * @return void
      */
@@ -763,7 +807,7 @@ class MagicFacetHandler
         IQueryBuilder $queryBuilder,
         array $baseQuery,
         string $tableName,
-        ?Schema $schema = null
+        ?Schema $schema=null
     ): void {
         // Exclude deleted objects by default.
         $includeDeleted = $baseQuery['_includeDeleted'] ?? false;
@@ -776,13 +820,12 @@ class MagicFacetHandler
         // (it's in the reservedParams list), so facets should match the main search
         // behavior and include all non-deleted objects regardless of published status.
         // This allows facets to show the full distribution of data visible to users.
-
         // Apply metadata filters from @self.
         if (($baseQuery['@self'] ?? null) !== null && is_array($baseQuery['@self']) === true) {
             foreach ($baseQuery['@self'] as $field => $value) {
                 $columnName = self::METADATA_PREFIX.$field;
 
-                if ($this->columnExists($tableName, $columnName) === false) {
+                if ($this->columnExists(tableName: $tableName, columnName: $columnName) === false) {
                     continue;
                 }
 
@@ -793,22 +836,32 @@ class MagicFacetHandler
                             $queryBuilder->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)
                         )
                     );
-                } else {
-                    $queryBuilder->andWhere(
-                        $queryBuilder->expr()->eq($columnName, $queryBuilder->createNamedParameter($value))
-                    );
+                    continue;
                 }
-            }
-        }
+
+                $queryBuilder->andWhere(
+                    $queryBuilder->expr()->eq($columnName, $queryBuilder->createNamedParameter($value))
+                );
+            }//end foreach
+        }//end if
 
         // Apply object field filters (schema property filters).
         // These are filters like licentietype[]=Open source that filter on object fields.
-        $this->applyObjectFieldFilters($queryBuilder, $baseQuery, $tableName, $schema);
+        $this->applyObjectFieldFilters(
+            queryBuilder: $queryBuilder,
+            baseQuery: $baseQuery,
+            tableName: $tableName,
+            schema: $schema
+        );
 
         // Apply search filter if provided.
         $search = $baseQuery['_search'] ?? null;
         if ($search !== null && trim($search) !== '') {
-            $this->applySearchFilter($queryBuilder, trim($search), $tableName);
+            $this->applySearchFilter(
+                queryBuilder: $queryBuilder,
+                searchTerm: trim($search),
+                tableName: $tableName
+            );
         }
     }//end applyBaseFilters()
 
@@ -829,19 +882,42 @@ class MagicFacetHandler
         IQueryBuilder $queryBuilder,
         array $baseQuery,
         string $tableName,
-        ?Schema $schema = null
+        ?Schema $schema=null
     ): void {
         // List of reserved query parameters that should not be used as filters.
         $reservedParams = [
-            '_limit', '_offset', '_page', '_order', '_sort', '_search',
-            '_extend', '_fields', '_filter', '_unset', '_facets', '_facetable',
-            '_aggregations', '_debug', '_source', '_published', '_rbac',
-            '_multitenancy', '_validation', '_events', '_register', '_schema',
-            '_schemas', '_includeDeleted', '@self',
+            '_limit',
+            '_offset',
+            '_page',
+            '_order',
+            '_sort',
+            '_search',
+            '_extend',
+            '_fields',
+            '_filter',
+            '_unset',
+            '_facets',
+            '_facetable',
+            '_aggregations',
+            '_debug',
+            '_source',
+            '_published',
+            '_rbac',
+            '_multitenancy',
+            '_validation',
+            '_events',
+            '_register',
+            '_schema',
+            '_schemas',
+            '_includeDeleted',
+            '@self',
         ];
 
         // Get schema properties for type checking.
-        $properties = $schema !== null ? ($schema->getProperties() ?? []) : [];
+        $properties = [];
+        if ($schema !== null) {
+            $properties = ($schema->getProperties() ?? []);
+        }
 
         foreach ($baseQuery as $key => $value) {
             // Skip reserved parameters.
@@ -855,15 +931,16 @@ class MagicFacetHandler
             }
 
             // This is an object field filter.
-            $columnName = $this->sanitizeColumnName($key);
+            $columnName = $this->sanitizeColumnName(name: $key);
 
             // Check if column exists.
             // If filter column doesn't exist, this schema can't match the filter - return 0 results.
-            if ($this->columnExists($tableName, $columnName) === false) {
+            if ($this->columnExists(tableName: $tableName, columnName: $columnName) === false) {
                 // Add an impossible condition to return 0 results.
                 // This ensures facets don't count items from schemas that don't have the filtered property.
                 $queryBuilder->andWhere('1 = 0');
-                return; // No need to process further filters.
+                return;
+                // No need to process further filters.
             }
 
             // Determine if this is an array-type property.
@@ -871,23 +948,29 @@ class MagicFacetHandler
 
             if ($propertyType === 'array') {
                 // Handle JSON array field filtering using containment operator.
-                $this->applyJsonArrayFilter($queryBuilder, $columnName, $value);
-            } else {
-                // Handle regular field filtering.
-                if (is_array($value) === true) {
-                    $queryBuilder->andWhere(
-                        $queryBuilder->expr()->in(
-                            $columnName,
-                            $queryBuilder->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)
-                        )
-                    );
-                } else {
-                    $queryBuilder->andWhere(
-                        $queryBuilder->expr()->eq($columnName, $queryBuilder->createNamedParameter($value))
-                    );
-                }
+                $this->applyJsonArrayFilter(
+                    queryBuilder: $queryBuilder,
+                    columnName: $columnName,
+                    value: $value
+                );
+                continue;
             }
-        }
+
+            // Handle regular field filtering.
+            if (is_array($value) === true) {
+                $queryBuilder->andWhere(
+                    $queryBuilder->expr()->in(
+                        $columnName,
+                        $queryBuilder->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)
+                    )
+                );
+                continue;
+            }
+
+            $queryBuilder->andWhere(
+                $queryBuilder->expr()->eq($columnName, $queryBuilder->createNamedParameter($value))
+            );
+        }//end foreach
     }//end applyObjectFieldFilters()
 
     /**
@@ -904,7 +987,10 @@ class MagicFacetHandler
     private function applyJsonArrayFilter(IQueryBuilder $queryBuilder, string $columnName, mixed $value): void
     {
         // Normalize value to array.
-        $values = is_array($value) === true ? $value : [$value];
+        $values = [$value];
+        if (is_array($value) === true) {
+            $values = $value;
+        }
 
         // Use AND logic: JSON array must contain ALL specified values.
         $columnCast = $queryBuilder->createFunction("{$columnName}::jsonb");
@@ -937,7 +1023,7 @@ class MagicFacetHandler
         ];
 
         foreach ($searchColumns as $column) {
-            if ($this->columnExists($tableName, $column) === true) {
+            if ($this->columnExists(tableName: $tableName, columnName: $column) === true) {
                 $orConditions->add(
                     $queryBuilder->expr()->like(
                         $queryBuilder->createFunction("LOWER($column)"),
@@ -987,6 +1073,8 @@ class MagicFacetHandler
      * @param Schema   $schema     The schema context.
      *
      * @return string Human-readable label.
+     *
+     * @psalm-suppress UnusedParam Parameters reserved for future label lookup from related entities.
      */
     private function getFieldLabel(
         string $field,

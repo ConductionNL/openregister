@@ -125,7 +125,9 @@ class UpdateFileHandler
         $originalFilePath = $filePath;
         $this->logger->info(message: "updateFile: Original file path received: '$originalFilePath'");
 
-        $file = null;
+        // Initialize variables before conditional assignment.
+        $file     = null;
+        $fileName = '';
 
         // If $filePath is an integer (file ID), try to find the file directly by ID.
         if (is_int($filePath) === true) {
@@ -151,18 +153,16 @@ class UpdateFileHandler
                         throw new Exception("File with ID $filePath does not exist");
                     }
 
-                    $file  = $nodes[0];
-                    $fname = $file->getName();
-                    $fid   = $file->getId();
-                    $this->logger->info(message: "updateFile: Found file by ID in user folder: $fname (ID: $fid)");
+                    $file     = $nodes[0];
+                    $fileName = $file->getName();
+                    $fid      = $file->getId();
+                    $this->logger->info(message: "updateFile: Found file by ID in user folder: $fileName (ID: $fid)");
                 } catch (Exception $e) {
                     $this->logger->error(message: "updateFile: Error finding file by ID $filePath: ".$e->getMessage());
                     throw new Exception("File with ID $filePath does not exist: ".$e->getMessage());
                 }
             }
-        }//end if
-
-        if (is_int($originalFilePath) === false) {
+        } else {
             // Handle string file paths (existing logic).
             // Clean file path and extract filename using utility method.
             $pathInfo = $this->fileService->extractFileNameFromPath($filePath);

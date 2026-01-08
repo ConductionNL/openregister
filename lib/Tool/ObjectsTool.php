@@ -21,6 +21,7 @@
 namespace OCA\OpenRegister\Tool;
 
 use RuntimeException;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -279,7 +280,7 @@ class ObjectsTool extends AbstractTool
         );
 
         $objectList = array_map(
-            function ($object) {
+            function (ObjectEntity $object): array {
                 return [
                     'id'       => $object->getId(),
                     'uuid'     => $object->getUuid(),

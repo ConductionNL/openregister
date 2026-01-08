@@ -388,7 +388,7 @@ class ObjectService
             if (is_numeric($register) === true) {
                 $registers          = $this->performanceHandler->getCachedEntities(
                     [$register],
-                    function ($ids) {
+                    function (array $ids): array {
                         return [$this->registerMapper->find(
                             id: $ids[0],
                             published: null,
@@ -445,7 +445,7 @@ class ObjectService
                     // **PERFORMANCE OPTIMIZATION**: Use cached entity lookup for numeric IDs.
                     $schemas          = $this->performanceHandler->getCachedEntities(
                         [$schema],
-                        function ($ids) {
+                        function (array $ids): array {
                             return [$this->schemaMapper->find(
                                 id: $ids[0],
                                 published: null,
@@ -818,7 +818,7 @@ class ObjectService
                 fallbackFunc: [$this->schemaMapper, 'findMultiple']
             );
             $schemas   = array_combine(
-                array_map(fn($schema) => $schema->getId(), $schemas),
+                array_map(fn(Schema $schema): int => $schema->getId(), $schemas),
                 $schemas
             );
         }
@@ -832,7 +832,7 @@ class ObjectService
                 fallbackFunc: [$this->registerMapper, 'findMultiple']
             );
             $registers   = array_combine(
-                array_map(fn($register) => $register->getId(), $registers),
+                array_map(fn(Register $register): int => $register->getId(), $registers),
                 $registers
             );
         }
@@ -1224,8 +1224,11 @@ class ObjectService
         // Pre-validation cascading: Handle inversedBy properties BEFORE validation.
         // This creates related objects and replaces them with UUIDs so validation sees UUIDs, not objects.
         // Note: If currentRegister is NULL (e.g., for seedData objects), pass NULL as registerId.
-        $currentRegisterId = $this->currentRegister !== null ? $this->currentRegister->getId() : null;
-        
+        $currentRegisterId = null;
+        if ($this->currentRegister !== null) {
+            $currentRegisterId = $this->currentRegister->getId();
+        }
+
         [$object, $uuid] = $this->cascadingHandler->handlePreValidationCascading(
             object: $object,
             schema: $parentSchema,
@@ -1750,7 +1753,7 @@ class ObjectService
             $query['_register'] = $this->currentRegister->getId();
         }
 
-        // Don't auto-set _schema when _schemas is provided (multi-schema search)
+        // Don't auto-set _schema when _schemas is provided (multi-schema search).
         if ($this->currentSchema !== null && isset($query['_schema']) === false && isset($query['_schemas']) === false) {
             $query['_schema'] = $this->currentSchema->getId();
         }
@@ -2063,13 +2066,15 @@ class ObjectService
      * - Time complexity: O(N*M*P) → O(N*M)
      * - Processing speed: 2-3x faster for large datasets
      *
-     * @param array                    $objects       Array of objects in serialized format
-     * @param Register|string|int|null $register      Optional register filter for validation
-     * @param Schema|string|int|null   $schema        Optional schema filter for validation
-     * @param bool                     $_rbac         Whether to apply RBAC filtering
-     * @param bool                     $_multitenancy Whether to apply multi-organization filtering
-     * @param bool                     $validation    Whether to validate objects against schema definitions
-     * @param bool                     $events        Whether to dispatch object lifecycle events
+     * @param array                    $objects        Array of objects in serialized format
+     * @param Register|string|int|null $register       Optional register filter for validation
+     * @param Schema|string|int|null   $schema         Optional schema filter for validation
+     * @param bool                     $_rbac          Whether to apply RBAC filtering
+     * @param bool                     $_multitenancy  Whether to apply multi-organization filtering
+     * @param bool                     $validation     Whether to validate objects against schema definitions
+     * @param bool                     $events         Whether to dispatch object lifecycle events
+     * @param bool                     $deduplicateIds Whether to deduplicate objects with same ID
+     * @param bool                     $enrich         Whether to enrich objects with metadata
      *
      * @throws \InvalidArgumentException If required fields are missing from any object
      * @throws \OCP\DB\Exception If a database error occurs during bulk operations
@@ -2089,7 +2094,8 @@ class ObjectService
         bool $_multitenancy=true,
         bool $validation=false,
         bool $events=false,
-        bool $deduplicateIds=true
+        bool $deduplicateIds=true,
+        bool $enrich=true
     ): array {
 
         // Set register and schema context if provided.
@@ -2110,7 +2116,8 @@ class ObjectService
             _multitenancy: $_multitenancy,
             validation: $validation,
             events: $events,
-            deduplicateIds: $deduplicateIds
+            deduplicateIds: $deduplicateIds,
+            enrich: $enrich
         );
     }//end saveObjects()
 

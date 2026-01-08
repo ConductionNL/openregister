@@ -323,10 +323,11 @@ class ExportService
             'A' => 'id',
         ];
 
+        // Initialize column pointer before conditional usage.
+        $col = 'B';
+
         // Add schema fields from the schema properties.
         if ($schema !== null) {
-            // Start after id column.
-            $col        = 'B';
             $properties = $schema->getProperties();
 
             // Sort properties by their order in the schema.

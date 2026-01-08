@@ -59,6 +59,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setNextRetryAt(?DateTime $nextRetryAt)
  * @method DateTime getCreated()
  * @method void setCreated(DateTime $created)
+ *
+ * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class WebhookLog extends Entity implements JsonSerializable
 {

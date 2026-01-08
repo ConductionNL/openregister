@@ -120,7 +120,7 @@ class FacetsHandler
 
         // Handle _facets as string (e.g., _facets=extend) by expanding to full configuration.
         if (is_string($facetConfig) === true) {
-            $facetConfig = $this->expandFacetConfig($facetConfig, $query);
+            $facetConfig = $this->expandFacetConfig(facetConfig: $facetConfig, query: $query);
         }
 
         // Extract base query (without facet config).
@@ -145,7 +145,7 @@ class FacetsHandler
                     $facets['@self'][$field] = $this->metaDataFacetHandler
                         ->getDateHistogramFacet(
                             field: $field,
-                                interval: $interval,
+                            interval: $interval,
                             baseQuery: $baseQuery
                         );
                 } else if ($type === 'range') {
@@ -459,6 +459,8 @@ class FacetsHandler
      * @param array  $query       The original query for context.
      *
      * @return array Expanded facet configuration.
+     *
+     * @psalm-suppress UnusedParam Parameter reserved for future query-aware facet expansion.
      */
     private function expandFacetConfig(string $facetConfig, array $query): array
     {
@@ -487,12 +489,16 @@ class FacetsHandler
 
             if (in_array($field, $metadataFields, true) === true) {
                 $config['@self'][$field] = ['type' => 'terms'];
-            } else if (in_array($field, $dateFields, true) === true) {
-                $config['@self'][$field] = ['type' => 'date_histogram', 'interval' => 'month'];
-            } else {
-                // Object field facet.
-                $config[$field] = ['type' => 'terms'];
+                continue;
             }
+
+            if (in_array($field, $dateFields, true) === true) {
+                $config['@self'][$field] = ['type' => 'date_histogram', 'interval' => 'month'];
+                continue;
+            }
+
+            // Object field facet.
+            $config[$field] = ['type' => 'terms'];
         }
 
         return $config;

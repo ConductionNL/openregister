@@ -194,9 +194,7 @@ class ResponseGenerationHandler
                 if ($agent?->getTemperature() !== null) {
                     $config->modelOptions['temperature'] = $agent->getTemperature();
                 }
-            }//end if
-
-            if ($chatProvider !== 'ollama') {
+            } else {
                 // OpenAI and Fireworks use OpenAIConfig.
                 $config = new OpenAIConfig();
 
@@ -281,6 +279,11 @@ class ResponseGenerationHandler
                 $functions = $this->toolHandler->convertToolsToFunctions($tools);
             }
 
+            // Initialize response and llmTime before conditional assignment.
+            $response     = '';
+            $llmTime      = 0.0;
+            $llmStartTime = microtime(true);
+
             // Create chat instance based on provider.
             if ($chatProvider === 'fireworks') {
                 /*
@@ -297,6 +300,7 @@ class ResponseGenerationHandler
                     $functions
                     // Pass functions.
                 );
+                $llmTime = microtime(true) - $llmStartTime;
             } else if ($chatProvider === 'ollama') {
                 // Use native Ollama chat with LLPhant's built-in tool support.
                 $chat = new OllamaChat($config);
@@ -312,12 +316,9 @@ class ResponseGenerationHandler
                 }
 
                 // Use generateChat() for message arrays.
-                $llmStartTime = microtime(true);
-                $response     = $chat->generateChat($messageHistory);
-                $llmTime      = microtime(true) - $llmStartTime;
-            }//end if
-
-            if ($chatProvider !== 'ollama') {
+                $response = $chat->generateChat($messageHistory);
+                $llmTime  = microtime(true) - $llmStartTime;
+            } else {
                 // OpenAI chat.
                 $chat = new OpenAIChat($config);
 
@@ -332,9 +333,8 @@ class ResponseGenerationHandler
                 }
 
                 // Use generateChat() for message arrays, which properly handles tools/functions.
-                $llmStartTime = microtime(true);
-                $response     = $chat->generateChat($messageHistory);
-                $llmTime      = microtime(true) - $llmStartTime;
+                $response = $chat->generateChat($messageHistory);
+                $llmTime  = microtime(true) - $llmStartTime;
             }//end if
 
             $totalTime = microtime(true) - $startTime;
@@ -388,8 +388,11 @@ class ResponseGenerationHandler
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) API error handling requires verbose code
      */
     private function callFireworksChatAPIWithHistory(
-        string $apiKey, string $model, string $baseUrl,
-        array $messageHistory, array $functions=[]
+        string $apiKey,
+        string $model,
+        string $baseUrl,
+        array $messageHistory,
+        array $functions=[]
     ): string {
         $url = rtrim($baseUrl, '/').'/chat/completions';
 

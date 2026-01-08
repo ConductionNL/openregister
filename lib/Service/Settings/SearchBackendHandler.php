@@ -22,7 +22,7 @@ namespace OCA\OpenRegister\Service\Settings;
 use Exception;
 use RuntimeException;
 use InvalidArgumentException;
-use OCP\IConfig;
+use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -48,9 +48,9 @@ class SearchBackendHandler
     /**
      * Configuration service
      *
-     * @var IConfig
+     * @var IAppConfig
      */
-    private IConfig $config;
+    private IAppConfig $appConfig;
 
     /**
      * Logger
@@ -69,20 +69,20 @@ class SearchBackendHandler
     /**
      * Constructor for SearchBackendHandler
      *
-     * @param IConfig         $config  Configuration service.
-     * @param LoggerInterface $logger  Logger.
-     * @param string          $appName Application name.
+     * @param IAppConfig      $appConfig Configuration service.
+     * @param LoggerInterface $logger    Logger.
+     * @param string          $appName   Application name.
      *
      * @return void
      */
     public function __construct(
-        IConfig $config,
+        IAppConfig $appConfig,
         LoggerInterface $logger,
         string $appName='openregister'
     ) {
-        $this->config  = $config;
-        $this->logger  = $logger;
-        $this->appName = $appName;
+        $this->appConfig = $appConfig;
+        $this->logger    = $logger;
+        $this->appName   = $appName;
     }//end __construct()
 
     /**
@@ -97,7 +97,7 @@ class SearchBackendHandler
     public function getSearchBackendConfig(): array
     {
         try {
-            $backendConfig = $this->config->getAppValue($this->appName, 'search_backend', '');
+            $backendConfig = $this->appConfig->getValueString($this->appName, 'search_backend', '');
 
             if (empty($backendConfig) === true) {
                 return [
@@ -143,7 +143,7 @@ class SearchBackendHandler
                 'updated'   => time(),
             ];
 
-            $this->config->setAppValue($this->appName, 'search_backend', json_encode($backendConfig));
+            $this->appConfig->setValueString($this->appName, 'search_backend', json_encode($backendConfig));
 
             $this->logger->info(
                 'Search backend changed to: '.$backend,

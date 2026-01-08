@@ -21,7 +21,7 @@ namespace OCA\OpenRegister\Service\Settings;
 
 use Exception;
 use RuntimeException;
-use OCP\IConfig;
+use OCP\IAppConfig;
 
 /**
  * Handler for file management settings operations.
@@ -46,9 +46,9 @@ class FileSettingsHandler
     /**
      * Configuration service
      *
-     * @var IConfig
+     * @var IAppConfig
      */
-    private IConfig $config;
+    private IAppConfig $appConfig;
 
     /**
      * Application name
@@ -60,17 +60,17 @@ class FileSettingsHandler
     /**
      * Constructor for FileSettingsHandler
      *
-     * @param IConfig $config  Configuration service.
-     * @param string  $appName Application name.
+     * @param IAppConfig $appConfig Configuration service.
+     * @param string     $appName   Application name.
      *
      * @return void
      */
     public function __construct(
-        IConfig $config,
+        IAppConfig $appConfig,
         string $appName='openregister'
     ) {
-        $this->config  = $config;
-        $this->appName = $appName;
+        $this->appConfig = $appConfig;
+        $this->appName   = $appName;
     }//end __construct()
 
     /**
@@ -83,7 +83,7 @@ class FileSettingsHandler
     public function getFileSettingsOnly(): array
     {
         try {
-            $fileConfig = $this->config->getAppValue($this->appName, 'fileManagement', '');
+            $fileConfig = $this->appConfig->getValueString($this->appName, 'fileManagement', '');
 
             if (empty($fileConfig) === true) {
                 // Return default configuration.
@@ -185,7 +185,7 @@ class FileSettingsHandler
                 'dolphinApiKey'        => $fileData['dolphinApiKey'] ?? '',
             ];
 
-            $this->config->setAppValue($this->appName, 'fileManagement', json_encode($fileConfig));
+            $this->appConfig->setValueString($this->appName, 'fileManagement', json_encode($fileConfig));
             return $fileConfig;
         } catch (Exception $e) {
             throw new RuntimeException('Failed to update File Management settings: '.$e->getMessage());

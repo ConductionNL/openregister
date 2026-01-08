@@ -305,7 +305,7 @@ class ConfigurationService
      */
     private function getFetchHandler(): FetchHandler
     {
-        // Instantiate directly since FetchHandler is not registered in DI container
+        // Instantiate directly since FetchHandler is not registered in DI container.
         return new FetchHandler(
             client: $this->container->get(Client::class),
             logger: $this->container->get(LoggerInterface::class)
@@ -925,4 +925,3 @@ class ConfigurationService
         );
     }//end importConfigurationWithSelection()
 }//end class
-

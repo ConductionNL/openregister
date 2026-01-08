@@ -102,6 +102,8 @@ use Symfony\Component\Uid\Uuid;
  * @package OCA\OpenRegister\Db
  *
  * @SuppressWarnings(PHPMD.TooManyFields) Domain entity requires many fields for complete LLM agent configuration
+ *
+ * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class Agent extends Entity implements JsonSerializable
 {

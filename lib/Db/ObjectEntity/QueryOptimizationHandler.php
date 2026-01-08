@@ -269,7 +269,7 @@ class QueryOptimizationHandler
                 // Process batch of objects.
                 $batchResults = $this->processBulkOwnerDeclarationBatch(
                     objects: $objects,
-                        defaultOwner: $defaultOwner,
+                    defaultOwner: $defaultOwner,
                     defaultOrganisation: $defaultOrganisation
                 );
 

@@ -22,6 +22,7 @@
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TemplateResponse;
@@ -611,19 +612,20 @@ class OrganisationController extends Controller
             // Between 1 and 100.
             $offset = max(0, $offset);
 
+            // Initialize before conditional assignment.
+            $organisations = [];
+
             // If query is empty, return all organisations.
             // Otherwise search by name.
             if (empty(trim($query)) === true) {
                 $organisations = $this->organisationMapper->findAll(limit: $limit, offset: $offset);
-            }
-
-            if (empty(trim($query)) === false) {
+            } else {
                 $organisations = $this->organisationMapper->findByName(name: trim($query), limit: $limit, offset: $offset);
             }
 
             // Remove user information for privacy.
             $publicData = array_map(
-                function ($org) {
+                function (Organisation $org): array {
                     $data = $org->jsonSerialize();
                     unset($data['users']);
                     // Don't expose user list.

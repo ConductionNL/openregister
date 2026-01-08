@@ -237,11 +237,12 @@ class StatisticsHandler
 
             // PostgreSQL requires explicit casting for VARCHAR to BIGINT comparison.
             // MySQL/MariaDB does implicit type conversion.
-            $qb->leftJoin('o', 'openregister_registers', 'r', 'o.register = r.id');
+            $joinCondition = 'o.register = r.id';
             if ($platform === 'postgresql') {
-                $qb->resetQueryPart('join');
-                $qb->leftJoin('o', 'openregister_registers', 'r', 'CAST(o.register AS BIGINT) = r.id');
+                $joinCondition = 'CAST(o.register AS BIGINT) = r.id';
             }
+
+            $qb->leftJoin('o', 'openregister_registers', 'r', $joinCondition);
 
             $qb->groupBy('r.id', 'r.title')->orderBy('count', 'DESC');
 
@@ -311,11 +312,12 @@ class StatisticsHandler
 
             // PostgreSQL requires explicit casting for VARCHAR to BIGINT comparison.
             // MySQL/MariaDB does implicit type conversion.
-            $qb->leftJoin('o', 'openregister_schemas', 's', 'o.schema = s.id');
+            $joinCondition = 'o.schema = s.id';
             if ($platform === 'postgresql') {
-                $qb->resetQueryPart('join');
-                $qb->leftJoin('o', 'openregister_schemas', 's', 'CAST(o.schema AS BIGINT) = s.id');
+                $joinCondition = 'CAST(o.schema AS BIGINT) = s.id';
             }
+
+            $qb->leftJoin('o', 'openregister_schemas', 's', $joinCondition);
 
             $qb->groupBy('s.id', 's.title')->orderBy('count', 'DESC');
 

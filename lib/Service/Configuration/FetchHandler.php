@@ -43,13 +43,14 @@ use Symfony\Component\Yaml\Yaml;
  * @category Handler
  * @package  OCA\OpenRegister\Service\Configuration
  *
- * @author   Conduction Development Team <info@conduction.nl>
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @author  Conduction Development Team <info@conduction.nl>
+ * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://www.OpenRegister.app
  */
 class FetchHandler
 {
+
     /**
      * HTTP client for making requests.
      *
@@ -226,5 +227,3 @@ class FetchHandler
         return null;
     }//end decode()
 }//end class
-
-

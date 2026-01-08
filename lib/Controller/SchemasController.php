@@ -605,9 +605,7 @@ class SchemasController extends Controller
         if ($id !== null) {
             // If ID is provided, find the existing schema.
             $schema = $this->schemaMapper->find($id);
-        }
-
-        if ($id === null) {
+        } else {
             // Otherwise, create a new schema.
             $schema = new Schema();
             $schema->setUuid(Uuid::v4()->toRfc4122());
@@ -777,11 +775,11 @@ class SchemasController extends Controller
 
                 // Use the same reference logic as getRelated, but reversed.
                 if ($this->schemaMapper->hasReferenceToSchema(
-                    properties: $properties,
-                    targetSchemaId: (string) $schema->getId(),
-                    targetSchemaUuid: $schema->getUuid() ?? '',
-                    targetSchemaSlug: $schema->getSlug() ?? ''
-                ) === true
+                        properties: $properties,
+                        targetSchemaId: (string) $schema->getId(),
+                        targetSchemaUuid: $schema->getUuid() ?? '',
+                        targetSchemaSlug: $schema->getSlug() ?? ''
+                    ) === true
                 ) {
                     $outgoingSchemas[$schema->getId()] = $schema;
                 }

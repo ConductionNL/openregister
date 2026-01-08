@@ -821,13 +821,13 @@ class RenderObject
         if (empty($_extend) === false && $depth < 10) {
             $objectData = $this->extendObject(
                 entity: $entity,
-                    _extend: $_extend,
-                    objectData: $objectData,
+                _extend: $_extend,
+                objectData: $objectData,
                 depth: $depth,
-                    _filter: $filter,
-                    _fields: $fields,
+                _filter: $filter,
+                _fields: $fields,
                 _unset: $unset,
-                    visitedIds: $visitedIds
+                visitedIds: $visitedIds
             );
         }
 
@@ -992,12 +992,12 @@ class RenderObject
 
                         return $this->renderEntity(
                             entity: $object,
-                                _extend: $subExtend,
+                            _extend: $subExtend,
                             depth: $depth + 1,
-                                filter: [],
-                                fields: [],
+                            filter: [],
+                            fields: [],
                             unset: [],
-                                visitedIds: $visitedIds
+                            visitedIds: $visitedIds
                         )->jsonSerialize();
                     },
                     $value
@@ -1125,10 +1125,10 @@ class RenderObject
 
         $objectDataDot = $this->handleExtendDot(
             data: $objectData,
-                _extend: $_extend,
-                depth: $depth,
+            _extend: $_extend,
+            depth: $depth,
             allFlag: in_array('all', $_extend, true),
-                visitedIds: $visitedIds
+            visitedIds: $visitedIds
         );
 
         return $objectDataDot;
@@ -1152,7 +1152,7 @@ class RenderObject
         // from items property to configuration property.
         $inversedProperties = array_filter(
             $properties,
-            function ($property) {
+            function (array $property): bool {
                 return (isset($property['inversedBy'])
                     && empty($property['inversedBy']) === false)
                     || (isset($property['items']['inversedBy'])

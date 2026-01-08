@@ -22,7 +22,7 @@ namespace OCA\OpenRegister\Service\Settings;
 use Exception;
 use RuntimeException;
 use InvalidArgumentException;
-use OCP\IConfig;
+use OCP\IAppConfig;
 use OCP\AppFramework\IAppContainer;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use Psr\Log\LoggerInterface;
@@ -50,9 +50,9 @@ class SolrSettingsHandler
     /**
      * Configuration service
      *
-     * @var IConfig
+     * @var IAppConfig
      */
-    private IConfig $config;
+    private IAppConfig $appConfig;
 
     /**
      * Object cache service (lazy-loaded when needed)
@@ -85,7 +85,7 @@ class SolrSettingsHandler
     /**
      * Constructor for SolrSettingsHandler
      *
-     * @param IConfig            $config             Configuration service.
+     * @param IAppConfig         $appConfig          Configuration service.
      * @param CacheHandler|null  $objectCacheService Object cache service (optional, lazy-loaded).
      * @param IAppContainer|null $container          Container for lazy loading (optional).
      * @param LoggerInterface    $logger             Logger for logging operations.
@@ -94,13 +94,13 @@ class SolrSettingsHandler
      * @return void
      */
     public function __construct(
-        IConfig $config,
+        IAppConfig $appConfig,
         ?CacheHandler $objectCacheService=null,
         ?IAppContainer $container=null,
         ?LoggerInterface $logger=null,
         string $appName='openregister'
     ) {
-        $this->config = $config;
+        $this->appConfig          = $appConfig;
         $this->objectCacheService = $objectCacheService;
         $this->container          = $container;
         $this->logger  = $logger;
@@ -119,7 +119,7 @@ class SolrSettingsHandler
     public function getSolrSettings(): array
     {
         try {
-            $solrConfig = $this->config->getAppValue($this->appName, 'solr', '');
+            $solrConfig = $this->appConfig->getValueString($this->appName, 'solr', '');
             if (empty($solrConfig) === true) {
                 return [
                     'enabled'        => false,
@@ -461,7 +461,7 @@ class SolrSettingsHandler
     public function getSolrSettingsOnly(): array
     {
         try {
-            $solrConfig = $this->config->getAppValue($this->appName, 'solr', '');
+            $solrConfig = $this->appConfig->getValueString($this->appName, 'solr', '');
 
             if (empty($solrConfig) === true) {
                 return [
@@ -564,7 +564,7 @@ class SolrSettingsHandler
                 'fileCollection'    => $solrData['fileCollection'] ?? null,
             ];
 
-            $this->config->setAppValue($this->appName, 'solr', json_encode($solrConfig));
+            $this->appConfig->setValueString($this->appName, 'solr', json_encode($solrConfig));
             return $solrConfig;
         } catch (Exception $e) {
             throw new RuntimeException('Failed to update SOLR settings: '.$e->getMessage());
@@ -583,7 +583,7 @@ class SolrSettingsHandler
     public function getSearchBackendConfig(): array
     {
         try {
-            $backendConfig = $this->config->getAppValue($this->appName, 'search_backend', '');
+            $backendConfig = $this->appConfig->getValueString($this->appName, 'search_backend', '');
 
             if (empty($backendConfig) === true) {
                 return [
@@ -629,7 +629,7 @@ class SolrSettingsHandler
                 'updated'   => time(),
             ];
 
-            $this->config->setAppValue($this->appName, 'search_backend', json_encode($backendConfig));
+            $this->appConfig->setValueString($this->appName, 'search_backend', json_encode($backendConfig));
 
             $this->logger->info(
                 'Search backend changed to: '.$backend,
@@ -660,7 +660,7 @@ class SolrSettingsHandler
     public function getSolrFacetConfiguration(): array
     {
         try {
-            $facetConfig = $this->config->getAppValue($this->appName, 'solr_facet_config', '');
+            $facetConfig = $this->appConfig->getValueString($this->appName, 'solr_facet_config', '');
             if (empty($facetConfig) === true) {
                 return [
                     'facets'           => [],
@@ -719,7 +719,7 @@ class SolrSettingsHandler
             // Validate the configuration structure.
             $validatedConfig = $this->validateFacetConfiguration($facetConfig);
 
-            $this->config->setAppValue($this->appName, 'solr_facet_config', json_encode($validatedConfig));
+            $this->appConfig->setValueString($this->appName, 'solr_facet_config', json_encode($validatedConfig));
             return $validatedConfig;
         } catch (Exception $e) {
             throw new RuntimeException('Failed to update SOLR facet configuration: '.$e->getMessage());

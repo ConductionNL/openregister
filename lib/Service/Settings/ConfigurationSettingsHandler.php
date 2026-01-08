@@ -21,7 +21,7 @@ namespace OCA\OpenRegister\Service\Settings;
 
 use Exception;
 use RuntimeException;
-use OCP\IConfig;
+use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IUserManager;
 use OCA\OpenRegister\Db\OrganisationMapper;
@@ -49,7 +49,6 @@ use Psr\Log\LoggerInterface;
  */
 class ConfigurationSettingsHandler
 {
-
     /**
      * Default Fireworks API URL
      *
@@ -60,9 +59,9 @@ class ConfigurationSettingsHandler
     /**
      * Configuration service
      *
-     * @var IConfig
+     * @var IAppConfig
      */
-    private IConfig $config;
+    private IAppConfig $appConfig;
 
     /**
      * Group manager
@@ -102,7 +101,7 @@ class ConfigurationSettingsHandler
     /**
      * Constructor for ConfigurationSettingsHandler
      *
-     * @param IConfig            $config             Configuration service.
+     * @param IAppConfig         $appConfig          Configuration service.
      * @param IGroupManager      $groupManager       Group manager.
      * @param IUserManager       $userManager        User manager.
      * @param OrganisationMapper $organisationMapper Organisation mapper.
@@ -112,16 +111,16 @@ class ConfigurationSettingsHandler
      * @return void
      */
     public function __construct(
-        IConfig $config,
+        IAppConfig $appConfig,
         IGroupManager $groupManager,
         IUserManager $userManager,
         OrganisationMapper $organisationMapper,
         LoggerInterface $logger,
         string $appName='openregister'
     ) {
-        $this->config       = $config;
-        $this->groupManager = $groupManager;
-        $this->userManager  = $userManager;
+        $this->appConfig          = $appConfig;
+        $this->groupManager       = $groupManager;
+        $this->userManager        = $userManager;
         $this->organisationMapper = $organisationMapper;
         $this->logger  = $logger;
         $this->appName = $appName;
@@ -134,7 +133,7 @@ class ConfigurationSettingsHandler
      */
     public function isMultiTenancyEnabled(): bool
     {
-        $multitenancyConfig = $this->config->getAppValue($this->appName, 'multitenancy', '');
+        $multitenancyConfig = $this->appConfig->getValueString($this->appName, 'multitenancy', '');
         if (empty($multitenancyConfig) === true) {
             return false;
         }
@@ -223,7 +222,7 @@ class ConfigurationSettingsHandler
             ];
 
             // RBAC Settings.
-            $rbacConfig = $this->config->getAppValue($this->appName, 'rbac', '');
+            $rbacConfig = $this->appConfig->getValueString($this->appName, 'rbac', '');
             if (empty($rbacConfig) === true) {
                 $data['rbac'] = [
                     'enabled'             => true,
@@ -246,7 +245,7 @@ class ConfigurationSettingsHandler
             }
 
             // Multitenancy Settings - ENABLED BY DEFAULT for proper data isolation.
-            $multitenancyConfig = $this->config->getAppValue($this->appName, 'multitenancy', '');
+            $multitenancyConfig = $this->appConfig->getValueString($this->appName, 'multitenancy', '');
             if (empty($multitenancyConfig) === true) {
                 $data['multitenancy'] = [
                     'enabled'                            => true,
@@ -278,7 +277,7 @@ class ConfigurationSettingsHandler
             $data['availableUsers'] = $this->getAvailableUsers();
 
             // Retention Settings with defaults.
-            $retentionConfig = $this->config->getAppValue($this->appName, 'retention', '');
+            $retentionConfig = $this->appConfig->getValueString($this->appName, 'retention', '');
             if (empty($retentionConfig) === true) {
                 $data['retention'] = [
                     'objectArchiveRetention' => 31536000000,
@@ -318,7 +317,7 @@ class ConfigurationSettingsHandler
             }//end if
 
             // SOLR Search Configuration.
-            $solrConfig = $this->config->getAppValue($this->appName, 'solr', '');
+            $solrConfig = $this->appConfig->getValueString($this->appName, 'solr', '');
 
             if (empty($solrConfig) === true) {
                 $data['solr'] = [
@@ -531,7 +530,7 @@ class ConfigurationSettingsHandler
                     'defaultObjectOwner'  => $rbacData['defaultObjectOwner'] ?? '',
                     'adminOverride'       => $rbacData['adminOverride'] ?? true,
                 ];
-                $this->config->setAppValue($this->appName, 'rbac', json_encode($rbacConfig));
+                $this->appConfig->setValueString($this->appName, 'rbac', json_encode($rbacConfig));
             }
 
             // Handle Multitenancy settings - enabled by default.
@@ -545,7 +544,7 @@ class ConfigurationSettingsHandler
                     'publishedObjectsBypassMultiTenancy' => $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false,
                     'adminOverride'                      => $multitenancyData['adminOverride'] ?? true,
                 ];
-                $this->config->setAppValue($this->appName, 'multitenancy', json_encode($multitenancyConfig));
+                $this->appConfig->setValueString($this->appName, 'multitenancy', json_encode($multitenancyConfig));
             }
 
             // Handle Retention settings.
@@ -562,7 +561,7 @@ class ConfigurationSettingsHandler
                     'auditTrailsEnabled'     => $retentionData['auditTrailsEnabled'] ?? true,
                     'searchTrailsEnabled'    => $retentionData['searchTrailsEnabled'] ?? true,
                 ];
-                $this->config->setAppValue($this->appName, 'retention', json_encode($retentionConfig));
+                $this->appConfig->setValueString($this->appName, 'retention', json_encode($retentionConfig));
             }
 
             // Handle SOLR settings.
@@ -590,7 +589,7 @@ class ConfigurationSettingsHandler
                     'objectCollection'  => $solrData['objectCollection'] ?? null,
                     'fileCollection'    => $solrData['fileCollection'] ?? null,
                 ];
-                $this->config->setAppValue($this->appName, 'solr', json_encode($solrConfig));
+                $this->appConfig->setValueString($this->appName, 'solr', json_encode($solrConfig));
             }//end if
 
             // Return the updated settings.
@@ -638,9 +637,9 @@ class ConfigurationSettingsHandler
                     }
 
                     // Store the value in the configuration.
-                    $this->config->setAppValue($this->appName, $option, $value);
+                    $this->appConfig->setValueString($this->appName, $option, $value);
                     // Retrieve and convert back to boolean for the response.
-                    $updatedOptions[$option] = $this->config->getAppValue($this->appName, $option, '') === 'true';
+                    $updatedOptions[$option] = $this->appConfig->getValueString($this->appName, $option, '') === 'true';
                 }
             }
 
@@ -666,7 +665,7 @@ class ConfigurationSettingsHandler
     public function getRbacSettingsOnly(): array
     {
         try {
-            $rbacConfig = $this->config->getAppValue($this->appName, 'rbac', '');
+            $rbacConfig = $this->appConfig->getValueString($this->appName, 'rbac', '');
 
             $rbacData = [];
             if (empty($rbacConfig) === true) {
@@ -726,7 +725,7 @@ class ConfigurationSettingsHandler
                 'adminOverride'       => $rbacData['adminOverride'] ?? true,
             ];
 
-            $this->config->setAppValue($this->appName, 'rbac', json_encode($rbacConfig));
+            $this->appConfig->setValueString($this->appName, 'rbac', json_encode($rbacConfig));
 
             return [
                 'rbac'            => $rbacConfig,
@@ -753,7 +752,7 @@ class ConfigurationSettingsHandler
     public function getOrganisationSettingsOnly(): array
     {
         try {
-            $organisationConfig = $this->config->getAppValue($this->appName, 'organisation', '');
+            $organisationConfig = $this->appConfig->getValueString($this->appName, 'organisation', '');
 
             $organisationData = [];
             if (empty($organisationConfig) === true) {
@@ -801,7 +800,7 @@ class ConfigurationSettingsHandler
                 'auto_create_default_organisation' => $organisationData['auto_create_default_organisation'] ?? true,
             ];
 
-            $this->config->setAppValue($this->appName, 'organisation', json_encode($organisationConfig));
+            $this->appConfig->setValueString($this->appName, 'organisation', json_encode($organisationConfig));
 
             return [
                 'organisation' => $organisationConfig,
@@ -891,7 +890,7 @@ class ConfigurationSettingsHandler
     public function getMultitenancySettingsOnly(): array
     {
         try {
-            $multitenancyConfig = $this->config->getAppValue($this->appName, 'multitenancy', '');
+            $multitenancyConfig = $this->appConfig->getValueString($this->appName, 'multitenancy', '');
 
             $multitenancyData = [];
             if (empty($multitenancyConfig) === true) {
@@ -946,7 +945,7 @@ class ConfigurationSettingsHandler
                 'adminOverride'                      => $multitenancyData['adminOverride'] ?? true,
             ];
 
-            $this->config->setAppValue($this->appName, 'multitenancy', json_encode($multitenancyConfig));
+            $this->appConfig->setValueString($this->appName, 'multitenancy', json_encode($multitenancyConfig));
 
             return [
                 'multitenancy'     => $multitenancyConfig,
@@ -974,7 +973,7 @@ class ConfigurationSettingsHandler
     public function getLLMSettingsOnly(): array
     {
         try {
-            $llmConfig = $this->config->getAppValue($this->appName, 'llm', '');
+            $llmConfig = $this->appConfig->getValueString($this->appName, 'llm', '');
 
             if (empty($llmConfig) === true) {
                 // Return default configuration.
@@ -1095,7 +1094,7 @@ class ConfigurationSettingsHandler
                 ],
             ];
 
-            $this->config->setAppValue($this->appName, 'llm', json_encode($llmConfig));
+            $this->appConfig->setValueString($this->appName, 'llm', json_encode($llmConfig));
             return $llmConfig;
         } catch (Exception $e) {
             throw new RuntimeException('Failed to update LLM settings: '.$e->getMessage());
@@ -1114,7 +1113,7 @@ class ConfigurationSettingsHandler
     public function getFileSettingsOnly(): array
     {
         try {
-            $fileConfig = $this->config->getAppValue($this->appName, 'fileManagement', '');
+            $fileConfig = $this->appConfig->getValueString($this->appName, 'fileManagement', '');
 
             if (empty($fileConfig) === true) {
                 // Return default configuration.
@@ -1218,7 +1217,7 @@ class ConfigurationSettingsHandler
                 'dolphinApiKey'        => $fileData['dolphinApiKey'] ?? '',
             ];
 
-            $this->config->setAppValue($this->appName, 'fileManagement', json_encode($fileConfig));
+            $this->appConfig->setValueString($this->appName, 'fileManagement', json_encode($fileConfig));
             return $fileConfig;
         } catch (Exception $e) {
             throw new RuntimeException('Failed to update File Management settings: '.$e->getMessage());
@@ -1237,7 +1236,7 @@ class ConfigurationSettingsHandler
     public function getN8nSettingsOnly(): array
     {
         try {
-            $n8nConfig = $this->config->getAppValue($this->appName, 'n8n', '');
+            $n8nConfig = $this->appConfig->getValueString($this->appName, 'n8n', '');
 
             if (empty($n8nConfig) === true) {
                 // Return default configuration.
@@ -1278,7 +1277,7 @@ class ConfigurationSettingsHandler
                 'project' => $n8nData['project'] ?? 'openregister',
             ];
 
-            $this->config->setAppValue($this->appName, 'n8n', json_encode($n8nConfig));
+            $this->appConfig->setValueString($this->appName, 'n8n', json_encode($n8nConfig));
             return $n8nConfig;
         } catch (Exception $e) {
             throw new RuntimeException('Failed to update n8n settings: '.$e->getMessage());

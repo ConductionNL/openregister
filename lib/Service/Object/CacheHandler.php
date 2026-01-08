@@ -28,9 +28,13 @@ use RuntimeException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\IndexService;
 use OCP\AppFramework\IAppContainer;
+use OCP\DB\IResult;
 use OCP\ICacheFactory;
+use OCP\IDBConnection;
 use OCP\IMemcache;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -146,12 +150,15 @@ class CacheHandler
     /**
      * Constructor for CacheHandler
      *
-     * @param ObjectEntityMapper $objectEntityMapper The object entity mapper
-     * @param OrganisationMapper $organisationMapper The organisation entity mapper
-     * @param LoggerInterface    $logger             Logger for performance monitoring
-     * @param ICacheFactory|null $cacheFactory       Cache factory for query result caching
-     * @param IUserSession|null  $userSession        User session for cache key generation
-     * @param IAppContainer|null $container          Container for lazy loading IndexService (optional)
+     * @param ObjectEntityMapper  $objectEntityMapper The object entity mapper
+     * @param OrganisationMapper  $organisationMapper The organisation entity mapper
+     * @param LoggerInterface     $logger             Logger for performance monitoring
+     * @param ICacheFactory|null  $cacheFactory       Cache factory for query result caching
+     * @param IUserSession|null   $userSession        User session for cache key generation
+     * @param IAppContainer|null  $container          Container for lazy loading IndexService (optional)
+     * @param RegisterMapper|null $registerMapper     Register mapper for magic table queries
+     * @param SchemaMapper|null   $schemaMapper       Schema mapper for magic table queries
+     * @param IDBConnection|null  $db                 Database connection for magic table queries
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
@@ -159,7 +166,10 @@ class CacheHandler
         private readonly LoggerInterface $logger,
         ?ICacheFactory $cacheFactory=null,
         ?IUserSession $userSession=null,
-        ?IAppContainer $container=null
+        ?IAppContainer $container=null,
+        private readonly ?RegisterMapper $registerMapper=null,
+        private readonly ?SchemaMapper $schemaMapper=null,
+        private readonly ?IDBConnection $db=null
     ) {
         // Initialize query cache if available.
         if ($cacheFactory !== null) {
@@ -1268,7 +1278,9 @@ class CacheHandler
         $this->stats['name_warmups']++;
 
         try {
-            $loadedCount = 0;
+            $loadedCount      = 0;
+            $magicTableCount  = 0;
+            $magicNamesLoaded = 0;
 
             // STEP 1: Load all organisations first (they take priority).
             $organisations = $this->organisationMapper->findAllWithUserCount();
@@ -1282,7 +1294,7 @@ class CacheHandler
                 }
             }
 
-            // STEP 2: Load all objects (organisations will overwrite if same UUID).
+            // STEP 2: Load all objects from main table.
             $objects = $this->objectEntityMapper->findAll();
             foreach ($objects as $object) {
                 $name = $object->getName() ?? $object->getUuid();
@@ -1296,6 +1308,12 @@ class CacheHandler
                 }
             }
 
+            // STEP 3: Load names from magic tables (overwrites names with proper enriched values).
+            if ($this->registerMapper !== null && $this->schemaMapper !== null && $this->db !== null) {
+                $magicNamesLoaded = $this->loadNamesFromMagicTables();
+                $magicTableCount  = $magicNamesLoaded;
+            }
+
             $executionTime = round((microtime(true) - $startTime) * 1000, 2);
 
             $this->logger->info(
@@ -1303,12 +1321,13 @@ class CacheHandler
                 [
                     'organisations_processed' => count($organisations),
                     'objects_processed'       => count($objects),
-                    'total_names_cached'      => $loadedCount,
+                    'magic_names_loaded'      => $magicNamesLoaded,
+                    'total_names_cached'      => count($this->nameCache),
                     'execution_time'          => $executionTime.'ms',
                 ]
             );
 
-            return $loadedCount;
+            return count($this->nameCache);
         } catch (\Exception $e) {
             $this->logger->error(
                 'Name cache warmup failed',
@@ -1319,6 +1338,88 @@ class CacheHandler
             return 0;
         }//end try
     }//end warmupNameCache()
+
+    /**
+     * Load object names from magic tables.
+     *
+     * Queries all magic tables (register+schema combinations with magic mapping enabled)
+     * to get proper enriched names. These names overwrite any UUID-based names from
+     * the main objects table.
+     *
+     * @return int Number of names loaded from magic tables.
+     */
+    private function loadNamesFromMagicTables(): int
+    {
+        $loadedCount = 0;
+
+        try {
+            // Get all registers.
+            $registers = $this->registerMapper->findAll();
+
+            foreach ($registers as $register) {
+                $registerId = $register->getId();
+                $schemaIds  = $register->getSchemas() ?? [];
+
+                foreach ($schemaIds as $schemaId) {
+                    // Get schema slug for config lookup (config uses slugs as keys).
+                    $schemaSlug = null;
+                    try {
+                        $schema     = $this->schemaMapper->find((int) $schemaId);
+                        $schemaSlug = $schema->getSlug();
+                    } catch (\Exception $e) {
+                        // Schema not found, continue without slug.
+                    }
+
+                    // Check if this schema has magic mapping enabled.
+                    if ($register->isMagicMappingEnabledForSchema(schemaId: (int) $schemaId, schemaSlug: $schemaSlug) === false) {
+                        continue;
+                    }
+
+                    // Query the magic table for names.
+                    $tableName = '*PREFIX*openregister_table_'.$registerId.'_'.$schemaId;
+
+                    try {
+                        // Check if table exists and has the name column.
+                        // Magic table columns have underscore prefix: _id, _name
+                        // Note: _id is bigint (internal DB ID), we need _uuid (the UUID) for mapping
+                        $sql    = 'SELECT "_uuid", "_name" FROM '.$tableName.' WHERE "_name" IS NOT NULL AND "_name" != \'\'';
+                        $result = $this->db->executeQuery($sql);
+
+                        while ($row = $result->fetch()) {
+                            $uuid = $row['_uuid'] ?? null;
+                            $name = $row['_name'] ?? null;
+
+                            if ($uuid !== null && $name !== null && trim($name) !== '') {
+                                // Overwrite any existing name (magic table has enriched names).
+                                $this->nameCache[$uuid] = $name;
+                                $loadedCount++;
+                            }
+                        }
+
+                        $result->closeCursor();
+                    } catch (\Exception $e) {
+                        // Table might not exist or have different structure - skip silently.
+                        $this->logger->debug(
+                            'Could not query magic table for names',
+                            [
+                                'table' => $tableName,
+                                'error' => $e->getMessage(),
+                            ]
+                        );
+                    }
+                }//end foreach
+            }//end foreach
+        } catch (\Exception $e) {
+            $this->logger->warning(
+                'Failed to load names from magic tables',
+                [
+                    'error' => $e->getMessage(),
+                ]
+            );
+        }//end try
+
+        return $loadedCount;
+    }//end loadNamesFromMagicTables()
 
     /**
      * Clear object name caches

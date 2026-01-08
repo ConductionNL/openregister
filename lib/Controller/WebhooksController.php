@@ -1028,9 +1028,9 @@ class WebhooksController extends Controller
                 if ($webhookId !== null && $webhookId !== '' && $webhookId !== '0') {
                     $webhookIdInt      = (int) $webhookId;
                     $allLogsForWebhook = $this->webhookLogMapper->findByWebhook(
-                    webhookId: $webhookIdInt,
-                    limit: null,
-                    offset: null
+                        webhookId: $webhookIdInt,
+                        limit: null,
+                        offset: null
                     );
                     $total = count(
                         array_filter(

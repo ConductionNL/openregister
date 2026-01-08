@@ -221,17 +221,17 @@ class SchemaMapper extends QBMapper
 
         // Build OR conditions for matching against id, uuid, or slug.
         // Note: Only include id comparison if $id is actually numeric (PostgreSQL strict typing).
-        $qb->where(
-            $qb->expr()->orX(
-                $qb->expr()->eq('uuid', $qb->createNamedParameter(value: $id, type: IQueryBuilder::PARAM_STR)),
-                $qb->expr()->eq('slug', $qb->createNamedParameter(value: $id, type: IQueryBuilder::PARAM_STR))
-            )
-        );
         if (is_numeric($id) === true) {
-            $qb->resetQueryPart('where');
             $qb->where(
                 $qb->expr()->orX(
                     $qb->expr()->eq('id', $qb->createNamedParameter(value: (int) $id, type: IQueryBuilder::PARAM_INT)),
+                    $qb->expr()->eq('uuid', $qb->createNamedParameter(value: $id, type: IQueryBuilder::PARAM_STR)),
+                    $qb->expr()->eq('slug', $qb->createNamedParameter(value: $id, type: IQueryBuilder::PARAM_STR))
+                )
+            );
+        } else {
+            $qb->where(
+                $qb->expr()->orX(
                     $qb->expr()->eq('uuid', $qb->createNamedParameter(value: $id, type: IQueryBuilder::PARAM_STR)),
                     $qb->expr()->eq('slug', $qb->createNamedParameter(value: $id, type: IQueryBuilder::PARAM_STR))
                 )
@@ -363,12 +363,12 @@ class SchemaMapper extends QBMapper
      * Searches for schemas matching the given slug with optional
      * multi-tenancy and RBAC filtering.
      *
-     * @param string    $slug           The slug to search for
-     * @param int       $limit          Maximum number of results (default: 10)
-     * @param int       $offset         Offset for pagination (default: 0)
-     * @param bool|null $published      Whether to enable published bypass (default: null = check config)
-     * @param bool      $_rbac          Whether to apply RBAC permission checks (default: true)
-     * @param bool      $_multitenancy  Whether to apply multi-tenancy filtering (default: true)
+     * @param string    $slug          The slug to search for
+     * @param int       $limit         Maximum number of results (default: 10)
+     * @param int       $offset        Offset for pagination (default: 0)
+     * @param bool|null $published     Whether to enable published bypass (default: null = check config)
+     * @param bool      $_rbac         Whether to apply RBAC permission checks (default: true)
+     * @param bool      $_multitenancy Whether to apply multi-tenancy filtering (default: true)
      *
      * @return Schema[] Array of matching schemas
      *
@@ -378,11 +378,11 @@ class SchemaMapper extends QBMapper
      */
     public function findBySlug(
         string $slug,
-        int $limit = 10,
-        int $offset = 0,
-        ?bool $published = null,
-        bool $_rbac = true,
-        bool $_multitenancy = true
+        int $limit=10,
+        int $offset=0,
+        ?bool $published=null,
+        bool $_rbac=true,
+        bool $_multitenancy=true
     ): array {
         $qb = $this->db->getQueryBuilder();
 
@@ -410,11 +410,11 @@ class SchemaMapper extends QBMapper
         $qb->setMaxResults($limit)
             ->setFirstResult($offset);
 
-        $result = $qb->executeQuery();
+        $result  = $qb->executeQuery();
         $schemas = [];
 
         while (($row = $result->fetch()) !== false) {
-            $schema = Schema::fromRow($row);
+            $schema    = Schema::fromRow($row);
             $schemas[] = $schema;
         }
 
@@ -1078,7 +1078,7 @@ class SchemaMapper extends QBMapper
             $targetSchemaId   = (string) $targetSchema->getId();
             $targetSchemaUuid = $targetSchema->getUuid();
             $targetSchemaSlug = $targetSchema->getSlug();
-        } else if ($schema instanceof Schema) {
+        } else {
             $targetSchemaId   = (string) $schema->getId();
             $targetSchemaUuid = $schema->getUuid();
             $targetSchemaSlug = $schema->getSlug();
@@ -1099,15 +1099,15 @@ class SchemaMapper extends QBMapper
 
             // Search for references to the target schema.
             if ($this->hasReferenceToSchema(
-                properties: $properties,
+                    properties: $properties,
                     targetSchemaId: $targetSchemaId,
-                targetSchemaUuid: $targetSchemaUuid,
-                targetSchemaSlug: $targetSchemaSlug
-            ) === true
+                    targetSchemaUuid: $targetSchemaUuid,
+                    targetSchemaSlug: $targetSchemaSlug
+                ) === true
             ) {
                 $relatedSchemas[] = $currentSchema;
             }
-        }
+        }//end foreach
 
         return $relatedSchemas;
     }//end getRelated()
@@ -1175,11 +1175,11 @@ class SchemaMapper extends QBMapper
             // Recursively check nested properties.
             if (($property['properties'] ?? null) !== null && is_array($property['properties']) === true) {
                 if ($this->hasReferenceToSchema(
-                    properties: $property['properties'],
-                    targetSchemaId: $targetSchemaId,
-                    targetSchemaUuid: $targetSchemaUuid,
-                    targetSchemaSlug: $targetSchemaSlug
-                ) === true
+                        properties: $property['properties'],
+                        targetSchemaId: $targetSchemaId,
+                        targetSchemaUuid: $targetSchemaUuid,
+                        targetSchemaSlug: $targetSchemaSlug
+                    ) === true
                 ) {
                     return true;
                 }
@@ -1188,11 +1188,11 @@ class SchemaMapper extends QBMapper
             // Check array items for references.
             if (($property['items'] ?? null) !== null && is_array($property['items']) === true) {
                 if ($this->hasReferenceToSchema(
-                    properties: [$property['items']],
-                    targetSchemaId: $targetSchemaId,
-                    targetSchemaUuid: $targetSchemaUuid,
-                    targetSchemaSlug: $targetSchemaSlug
-                ) === true
+                        properties: [$property['items']],
+                        targetSchemaId: $targetSchemaId,
+                        targetSchemaUuid: $targetSchemaUuid,
+                        targetSchemaSlug: $targetSchemaSlug
+                    ) === true
                 ) {
                     return true;
                 }
@@ -2012,9 +2012,9 @@ class SchemaMapper extends QBMapper
             if (in_array($key, $validationFields) === true) {
                 $this->validateConstraintChange(
                     parentValue: $parentValue,
-                        childValue: $childValue,
+                    childValue: $childValue,
                     constraint: $key,
-                        propertyName: $propertyName,
+                    propertyName: $propertyName,
                     schemaId: $schemaId
                 );
                 $merged[$key] = $childValue;
@@ -2612,7 +2612,7 @@ class SchemaMapper extends QBMapper
                     parentProperties: $parentProperty[$key],
                     childProperties: $value
                 );
-            }
+            }//end if
         }//end foreach
 
         return $delta;

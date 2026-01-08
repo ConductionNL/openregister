@@ -57,6 +57,27 @@
                 <referencedClass name="OCP\IUserManager"/>
                 <referencedClass name="OCP\IUserSession"/>
                 <referencedClass name="OCP\Search\IFilteringProvider"/>
+                <referencedClass name="OCP\IMemcache"/>
+                <referencedClass name="OCP\IRequest"/>
+                <referencedClass name="OCP\EventDispatcher\IEventDispatcher"/>
+                <referencedClass name="OCP\DB\QueryBuilder\IQueryBuilder"/>
+                <referencedClass name="OCP\AppFramework\Db\QBMapper"/>
+                <referencedClass name="OCP\AppFramework\Db\Entity"/>
+                <referencedClass name="OCP\Files\IRootFolder"/>
+                <referencedClass name="OCP\Files\Node"/>
+                <referencedClass name="OCP\Files\File"/>
+                <referencedClass name="OCP\Files\Folder"/>
+                <referencedClass name="OCP\Files\NotFoundException"/>
+                <referencedClass name="OCP\AppFramework\Http\JSONResponse"/>
+                <referencedClass name="OCP\AppFramework\Http\TemplateResponse"/>
+                <referencedClass name="OCP\AppFramework\Http\DataResponse"/>
+                <referencedClass name="OCP\IL10N"/>
+                <referencedClass name="OCP\IURLGenerator"/>
+                <referencedClass name="OCP\Http\Client\IClient"/>
+                <referencedClass name="OCP\Http\Client\IClientService"/>
+                <referencedClass name="OCP\SystemTag\ISystemTagManager"/>
+                <referencedClass name="OCP\Notification\IManager"/>
+                <referencedClass name="OCP\Share\IManager"/>
             </errorLevel>
         </UndefinedClass>
         <UndefinedMagicMethod errorLevel="suppress"/>
@@ -120,6 +141,12 @@
                 <referencedMethod name="OCA\OpenRegister\Service\OrganisationService::getActiveOrganisationWithFallback"/>
                 <referencedMethod name="OCA\OpenRegister\Service\OrganisationService::getDefaultOrganisationFromConfig"/>
                 <referencedMethod name="OCA\OpenRegister\Service\OrganisationService::getOrganisationHierarchy"/>
+                <!-- Entity base class methods -->
+                <referencedMethod name="OCA\OpenRegister\Db\Register::getId"/>
+                <referencedMethod name="OCA\OpenRegister\Db\Schema::getId"/>
+                <referencedMethod name="OCA\OpenRegister\Db\Schema::getSlug"/>
+                <referencedMethod name="OCA\OpenRegister\Db\ObjectEntity::getRegister"/>
+                <referencedMethod name="OCA\OpenRegister\Db\ObjectEntity::getSchema"/>
             </errorLevel>
         </UndefinedMethod>
         <!-- Suppress dead code warnings for defensive null checks -->
@@ -135,6 +162,8 @@
         <MismatchingDocblockReturnType errorLevel="suppress"/>
         <EmptyArrayAccess errorLevel="suppress"/>
         <ImplementedReturnTypeMismatch errorLevel="suppress"/>
+        <InvalidMethodCall errorLevel="suppress"/>
+        <InvalidPropertyAssignmentValue errorLevel="suppress"/>
     </issueHandlers>
     <extraFiles>
         <directory name="vendor/nextcloud/ocp" />

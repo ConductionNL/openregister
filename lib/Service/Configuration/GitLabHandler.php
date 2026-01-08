@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Service\Configuration;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
 use GuzzleHttp\Exception\GuzzleException;
+use OCP\IAppConfig;
 use OCP\IConfig;
 use Psr\Log\LoggerInterface;
 use Exception;
@@ -59,7 +60,14 @@ class GitLabHandler
     private IClient $client;
 
     /**
-     * Configuration service
+     * App configuration service for app-level settings
+     *
+     * @var IAppConfig
+     */
+    private IAppConfig $appConfig;
+
+    /**
+     * Configuration service for system-level settings
      *
      * @var IConfig
      */
@@ -76,20 +84,23 @@ class GitLabHandler
      * GitLabHandler constructor
      *
      * @param IClientService  $clientService HTTP client service
-     * @param IConfig         $config        Configuration service
+     * @param IAppConfig      $appConfig     App configuration service for app-level settings
+     * @param IConfig         $config        Configuration service for system-level settings
      * @param LoggerInterface $logger        Logger instance
      */
     public function __construct(
         IClientService $clientService,
+        IAppConfig $appConfig,
         IConfig $config,
         LoggerInterface $logger
     ) {
-        $this->client = $clientService->newClient();
-        $this->config = $config;
-        $this->logger = $logger;
+        $this->client    = $clientService->newClient();
+        $this->appConfig = $appConfig;
+        $this->config    = $config;
+        $this->logger    = $logger;
 
         // Allow configuration of GitLab URL (app-level setting takes precedence over system setting).
-        $this->apiBase = $this->config->getAppValue('openregister', 'gitlab_api_url', '');
+        $this->apiBase = $this->appConfig->getValueString('openregister', 'gitlab_api_url', '');
         if (empty($this->apiBase) === true) {
             $this->apiBase = $this->config->getSystemValue('gitlab_api_url', 'https://gitlab.com/api/v4');
         }
@@ -107,7 +118,7 @@ class GitLabHandler
         $headers = [];
 
         // Add authentication token if configured.
-        $token = $this->config->getAppValue('openregister', 'gitlab_api_token', '');
+        $token = $this->appConfig->getValueString('openregister', 'gitlab_api_token', '');
         if (empty($token) === false) {
             $headers['PRIVATE-TOKEN'] = $token;
         }

@@ -683,7 +683,7 @@ class MagicMapper
 
             // Return 0 on error instead of throwing.
             return 0;
-        }
+        }//end try
     }//end countObjectsInRegisterSchemaTable()
 
     /**
@@ -735,7 +735,7 @@ class MagicMapper
             );
 
             return [];
-        }
+        }//end try
     }//end getSimpleFacetsFromRegisterSchemaTable()
 
     /**
@@ -1996,10 +1996,13 @@ class MagicMapper
                     $defaultValue = $column['default'];
                     if (is_bool($column['default']) === true) {
                         // Boolean values need special handling for SQL.
-                        $defaultValue = $column['default'] === true ? 'TRUE' : 'FALSE';
+                        $defaultValue = 'FALSE';
+                        if ($column['default'] === true) {
+                            $defaultValue = 'TRUE';
+                        }
                     } else if (is_string($column['default']) === true) {
                         $defaultValue = "'".$column['default']."'";
-                    } else if (is_null($column['default']) === true) {
+                    } else if ($column['default'] === null) {
                         $defaultValue = 'NULL';
                     }
 
@@ -2569,7 +2572,7 @@ class MagicMapper
                                 'expires',
                             ],
                             true
-                            ) === true
+                        ) === true
                         && ($value !== null) === true
                     ) {
                         $value = new DateTime($value);
@@ -2590,7 +2593,7 @@ class MagicMapper
                                 'groups',
                             ],
                             true
-                            ) === true
+                        ) === true
                         && ($value !== null) === true
                     ) {
                         $value = json_decode($value, true);
@@ -2629,9 +2632,11 @@ class MagicMapper
                 }
 
                 $method = 'set'.ucfirst($field);
-                if (method_exists($objectEntity, $method) === false) {
+                // Use is_callable() instead of method_exists() to support magic methods.
+                // Entity base class uses __call() for property setters.
+                if (is_callable([$objectEntity, $method]) === false) {
                     $this->logger->warning(
-                        '[MagicMapper] Method does not exist for metadata field',
+                        '[MagicMapper] Method is not callable for metadata field',
                         ['field' => $field, 'method' => $method]
                     );
                     continue;
@@ -2811,7 +2816,7 @@ class MagicMapper
         $version   = $this->calculateRegisterSchemaVersion(register: $register, schema: $schema);
         $configKey = 'table_version_'.$cacheKey;
 
-        $this->config->setAppValue('openregister', $configKey, $version);
+        $this->appConfig->setValueString('openregister', $configKey, $version);
 
         // Also update structure cache.
         self::$tableStructureCache[$cacheKey] = $version;
@@ -2830,7 +2835,7 @@ class MagicMapper
         $cacheKey  = $this->getCacheKey(registerId: $registerId, schemaId: $schemaId);
         $configKey = 'table_version_'.$cacheKey;
 
-        $version = $this->config->getAppValue('openregister', $configKey, '');
+        $version = $this->appConfig->getValueString('openregister', $configKey, '');
         if ($version === '') {
             return null;
         }
@@ -2869,12 +2874,13 @@ class MagicMapper
     /**
      * Apply search filters to query builder
      *
-     * @param IQueryBuilder $qb    The query builder
-     * @param array         $query The search parameters
+     * @param IQueryBuilder $qb     The query builder.
+     * @param array         $query  The search parameters.
+     * @param Schema|null   $schema The schema for type checking.
      *
      * @return void
      */
-    private function applySearchFilters(IQueryBuilder $qb, array $query, ?Schema $schema = null): void
+    private function applySearchFilters(IQueryBuilder $qb, array $query, ?Schema $schema=null): void
     {
         // List of reserved query parameters that should not be used as filters.
         $reservedParams = [
@@ -2930,7 +2936,10 @@ class MagicMapper
         ];
 
         // Get schema properties for type checking.
-        $properties = $schema !== null ? ($schema->getProperties() ?? []) : [];
+        $properties = [];
+        if ($schema !== null) {
+            $properties = ($schema->getProperties() ?? []);
+        }
 
         foreach ($query as $key => $value) {
             // Skip reserved parameters (both with and without underscore prefix).
@@ -2960,9 +2969,10 @@ class MagicMapper
             // Check if this is an array-type property (JSON array column).
             if ($propertyType === 'array') {
                 $this->addJsonArrayWhereCondition(qb: $qb, columnName: $columnName, value: $value);
-            } else {
-                $this->addWhereCondition(qb: $qb, columnName: $columnName, value: $value);
+                continue;
             }
+
+            $this->addWhereCondition(qb: $qb, columnName: $columnName, value: $value);
         }//end foreach
     }//end applySearchFilters()
 
@@ -3098,7 +3108,10 @@ class MagicMapper
     private function addJsonArrayWhereCondition(IQueryBuilder $qb, string $columnName, mixed $value): void
     {
         // Normalize value to array.
-        $values = is_array($value) === true ? $value : [$value];
+        $values = [$value];
+        if (is_array($value) === true) {
+            $values = $value;
+        }
 
         // Use createFunction to avoid quoting of the column name with type cast.
         $columnCast = $qb->createFunction("{$columnName}::jsonb");
@@ -3304,10 +3317,13 @@ class MagicMapper
                     $defaultValue = $columnDef['default'];
                     if (is_bool($columnDef['default']) === true) {
                         // Boolean values need special handling for SQL.
-                        $defaultValue = $columnDef['default'] === true ? 'TRUE' : 'FALSE';
+                        $defaultValue = 'FALSE';
+                        if ($columnDef['default'] === true) {
+                            $defaultValue = 'TRUE';
+                        }
                     } else if (is_string($columnDef['default']) === true) {
                         $defaultValue = "'".$columnDef['default']."'";
-                    } else if (is_null($columnDef['default']) === true) {
+                    } else if ($columnDef['default'] === null) {
                         $defaultValue = 'NULL';
                     }
 
@@ -3539,7 +3555,7 @@ class MagicMapper
         }
 
         // Check global configuration.
-        $globalEnabled = $this->config->getAppValue('openregister', 'magic_mapping_enabled', 'false');
+        $globalEnabled = $this->appConfig->getValueString('openregister', 'magic_mapping_enabled', 'false');
 
         return $globalEnabled === 'true';
     }//end isMagicMappingEnabled()
@@ -3564,7 +3580,7 @@ class MagicMapper
             return true;
         }
 
-        $globalEnabled = $this->config->getAppValue(
+        $globalEnabled = $this->appConfig->getValueString(
             'openregister',
             'magic_mapping_enabled',
             'false'

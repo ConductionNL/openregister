@@ -110,6 +110,9 @@ class FilePublishingHandler
         $originalFile = $file;
         $this->logger->info(message: "publishFile: Original file parameter received: '$originalFile'");
 
+        // Initialize fileNode before conditional assignment.
+        $fileNode = null;
+
         // If $file is an integer (file ID), try to find the file directly by ID.
         if (is_int($file) === true) {
             $this->logger->info(message: "publishFile: File ID provided: $file");
@@ -124,9 +127,7 @@ class FilePublishingHandler
             $foundMsg  = "publishFile: Found file by ID: ".$fileNode->getName();
             $foundMsg .= " (ID: ".$fileNode->getId().")";
             $this->logger->info(message: $foundMsg);
-        }
-
-        if (is_int($originalFile) === false) {
+        } else {
             // Handle string file paths (existing logic).
             // Clean file path and extract filename using utility method.
             $pathInfo = $this->fileService->extractFileNameFromPath($file);
@@ -260,6 +261,9 @@ class FilePublishingHandler
         $originalFilePath = $filePath;
         $this->logger->info(message: "unpublishFile: Original file path received: '$originalFilePath'");
 
+        // Initialize file before conditional assignment.
+        $file = null;
+
         // If $filePath is an integer (file ID), try to find the file directly by ID.
         if (is_int($filePath) === true) {
             $this->logger->info(message: "unpublishFile: File ID provided: $filePath");
@@ -274,9 +278,7 @@ class FilePublishingHandler
             $foundMsg  = "unpublishFile: Found file by ID: ".$file->getName();
             $foundMsg .= " (ID: ".$file->getId().")";
             $this->logger->info(message: $foundMsg);
-        }
-
-        if (is_int($originalFilePath) === false) {
+        } else {
             // Handle string file paths (existing logic).
             // Clean file path and extract filename using utility method.
             $pathInfo = $this->fileService->extractFileNameFromPath($filePath);

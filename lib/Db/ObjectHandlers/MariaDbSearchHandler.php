@@ -265,32 +265,32 @@ class MariaDbSearchHandler
     ): void {
         foreach ($value as $operator => $operatorValue) {
             if ($this->applyPatternOperator(
-                queryBuilder: $queryBuilder,
-                qualifiedField: $qualifiedField,
-                operator: $operator,
-                operatorValue: $operatorValue,
-            ) === true
+                    queryBuilder: $queryBuilder,
+                    qualifiedField: $qualifiedField,
+                    operator: $operator,
+                    operatorValue: $operatorValue,
+                ) === true
             ) {
                 continue;
             }
 
             if ($this->applyExistenceOperator(
-                queryBuilder: $queryBuilder,
-                qualifiedField: $qualifiedField,
-                operator: $operator,
-                operatorValue: $operatorValue,
-            ) === true
+                    queryBuilder: $queryBuilder,
+                    qualifiedField: $qualifiedField,
+                    operator: $operator,
+                    operatorValue: $operatorValue,
+                ) === true
             ) {
                 continue;
             }
 
             if ($this->applyTextLogicalOperator(
-                queryBuilder: $queryBuilder,
-                field: $field,
-                qualifiedField: $qualifiedField,
-                operator: $operator,
-                operatorValue: $operatorValue,
-            ) === true
+                    queryBuilder: $queryBuilder,
+                    field: $field,
+                    qualifiedField: $qualifiedField,
+                    operator: $operator,
+                    operatorValue: $operatorValue,
+                ) === true
             ) {
                 return;
             }
@@ -576,21 +576,21 @@ class MariaDbSearchHandler
             $normalizedValue = $this->normalizeDateValue(field: $field, value: $operatorValue);
 
             if ($this->applyComparisonOperator(
-                queryBuilder: $queryBuilder,
-                qualifiedField: $qualifiedField,
-                operator: $sqlOperator,
-                value: $normalizedValue,
-            ) === true
+                    queryBuilder: $queryBuilder,
+                    qualifiedField: $qualifiedField,
+                    operator: $sqlOperator,
+                    value: $normalizedValue,
+                ) === true
             ) {
                 continue;
             }
 
             if ($this->applyDateLogicalOperator(
-                queryBuilder: $queryBuilder,
-                qualifiedField: $qualifiedField,
-                operator: $sqlOperator,
-                operatorValue: $operatorValue,
-            ) === true
+                    queryBuilder: $queryBuilder,
+                    qualifiedField: $qualifiedField,
+                    operator: $sqlOperator,
+                    operatorValue: $operatorValue,
+                ) === true
             ) {
                 return;
             }

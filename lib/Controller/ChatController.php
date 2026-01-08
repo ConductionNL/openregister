@@ -737,9 +737,7 @@ class ChatController extends Controller
                         'hasComment' => empty($comment) === false,
                     ]
                 );
-            }
-
-            if ($existingFeedback === null) {
+            } else {
                 // Create new feedback.
                 $feedback = new Feedback();
                 $feedback->setMessageId($messageId);

@@ -129,7 +129,7 @@ class MappingsController extends Controller
 
         // Serialize mappings to arrays.
         $mappingsArr = array_map(
-            function ($mapping) {
+            function (Mapping $mapping): array {
                 return $mapping->jsonSerialize();
             },
             $mappings

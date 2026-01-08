@@ -285,7 +285,7 @@ class HyperFacetHandler
                 // Use HyperLogLog estimation for large datasets or as default fallback.
                 $results = $this->calculateApproximateFacetsHyperLogLog(
                     facetConfig: $facetConfig,
-                        baseQuery: $baseQuery,
+                    baseQuery: $baseQuery,
                     datasetStats: $datasetStats
                 );
                 break;
@@ -557,9 +557,9 @@ class HyperFacetHandler
         $extrapolationFactor = 1 / $sampleRate;
         $extrapolatedFacets  = $this->extrapolateFacetResults(
             sampleFacets: $sampleFacets,
-                factor: $extrapolationFactor,
+            factor: $extrapolationFactor,
             sampleSize: $sampleSize,
-                totalSize: $totalSize
+            totalSize: $totalSize
         );
 
         return $extrapolatedFacets;
@@ -620,9 +620,9 @@ class HyperFacetHandler
             // JSON field facets use statistical estimation.
             $approximateFacets[$facetName] = $this->estimateJsonFieldFacet(
                 _field: $facetName,
-                    config: $config,
+                config: $config,
                 _baseQuery: $baseQuery,
-                    stats: $datasetStats
+                stats: $datasetStats
             );
         }
 

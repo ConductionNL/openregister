@@ -866,24 +866,24 @@ class ObjectsController extends Controller
 
                 // Return in expected format.
                 $response = new JSONResponse(
-                        data: [
-                            'results' => $serializedResults,
-                            'total'   => $total,
-                            'pages'   => $pages,
-                            'page'    => $page,
-                            'limit'   => $limit,
-                            '@self'   => [
-                                'source'    => 'magic_mapper',
-                                'register'  => $register,
-                                'schema'    => $schema,
-                                'query'     => $query,
-                                'rbac'      => $rbac,
-                                'multi'     => $multi,
-                                'published' => $published,
-                                'deleted'   => $deleted,
-                            ],
-                        ]
-                        );
+                    data: [
+                        'results' => $serializedResults,
+                        'total'   => $total,
+                        'pages'   => $pages,
+                        'page'    => $page,
+                        'limit'   => $limit,
+                        '@self'   => [
+                            'source'    => 'magic_mapper',
+                            'register'  => $register,
+                            'schema'    => $schema,
+                            'query'     => $query,
+                            'rbac'      => $rbac,
+                            'multi'     => $multi,
+                            'published' => $published,
+                            'deleted'   => $deleted,
+                        ],
+                    ]
+                );
 
                 // Enable gzip compression for large payloads.
                 if (count($serializedResults) > 10) {
@@ -1503,6 +1503,9 @@ class ObjectsController extends Controller
         $rbac    = $isAdmin === false;
         $multi   = $isAdmin === false;
 
+        // Initialize mergedData before conditional assignment.
+        $mergedData = $patchData;
+
         // Check if the object exists and can be updated.
         try {
             $existingObject = $this->objectService->find(
@@ -1855,6 +1858,8 @@ class ObjectsController extends Controller
         $requestedSchema   = $schema;
 
         // If objectSchema is an array/object, files: get slug and id.
+        // Initialize before conditional assignment.
+        $objectSchemaId   = '';
         $objectSchemaSlug = null;
         if (is_array($objectSchema) === true && (($objectSchema['id'] ?? null) !== null)) {
             $objectSchemaId   = (string) $objectSchema['id'];

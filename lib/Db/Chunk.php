@@ -72,6 +72,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setUpdatedAt(DateTime $updatedAt)
  *
  * @SuppressWarnings(PHPMD.TooManyFields) Domain entity requires many fields for complete chunk data
+ *
+ * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class Chunk extends Entity implements JsonSerializable
 {

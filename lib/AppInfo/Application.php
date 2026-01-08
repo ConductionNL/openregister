@@ -45,6 +45,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\MySQLJsonService;
 use OCA\OpenRegister\Service\ConfigurationService;
+use OCA\OpenRegister\Service\UserService;
 use OCA\OpenRegister\Service\Objects\DataManipulationHandler;
 use OCA\OpenRegister\Service\Objects\DeleteObject;
 use OCA\OpenRegister\Service\Objects\GetObject;
@@ -170,6 +171,7 @@ use OCA\OpenRegister\Event\OrganisationUpdatedEvent;
 use OCA\OpenRegister\Event\OrganisationDeletedEvent;
 use Twig\Loader\ArrayLoader;
 use GuzzleHttp\Client;
+use Psr\Container\ContainerInterface;
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;
 use OCA\OpenRegister\Service\Configuration\GitLabHandler;
 use OCA\OpenRegister\Service\Configuration\CacheHandler as ConfigurationCacheHandler;
@@ -254,8 +256,8 @@ class Application extends App implements IBootstrap
         // Register UserService for UserController.
         $context->registerService(
             \OCA\OpenRegister\Service\UserService::class,
-            function ($container) {
-                return new \OCA\OpenRegister\Service\UserService(
+            function (ContainerInterface $container) {
+                return new UserService(
                     userManager: $container->get('OCP\IUserManager'),
                     userSession: $container->get('OCP\IUserSession'),
                     config: $container->get('OCP\IConfig'),
@@ -269,7 +271,7 @@ class Application extends App implements IBootstrap
         // Register OrganisationService without SettingsService to break circular dependency.
         $context->registerService(
             OrganisationService::class,
-            function ($container) {
+            function (ContainerInterface $container) {
                 return new OrganisationService(
                     organisationMapper: $container->get(OrganisationMapper::class),
                     userSession: $container->get('OCP\IUserSession'),
@@ -286,7 +288,7 @@ class Application extends App implements IBootstrap
 
         $context->registerService(
             SchemaMapper::class,
-            function ($container) {
+            function (ContainerInterface $container) {
                 return new SchemaMapper(
                     db: $container->get('OCP\IDBConnection'),
                     eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
@@ -301,7 +303,7 @@ class Application extends App implements IBootstrap
 
         $context->registerService(
             ObjectEntityMapper::class,
-            function ($container) {
+            function (ContainerInterface $container) {
                 return new ObjectEntityMapper(
                     db: $container->get('OCP\IDBConnection'),
                     eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
@@ -318,7 +320,7 @@ class Application extends App implements IBootstrap
 
         $context->registerService(
             RegisterMapper::class,
-            function ($container) {
+            function (ContainerInterface $container) {
                 return new RegisterMapper(
                     db: $container->get('OCP\IDBConnection'),
                     schemaMapper: $container->get(SchemaMapper::class),
@@ -334,7 +336,7 @@ class Application extends App implements IBootstrap
 
         $context->registerService(
             MagicMapper::class,
-            function ($container) {
+            function (ContainerInterface $container) {
                 return new MagicMapper(
                     db: $container->get('OCP\IDBConnection'),
                     objectEntityMapper: $container->get(ObjectEntityMapper::class),
@@ -354,7 +356,7 @@ class Application extends App implements IBootstrap
 
         $context->registerService(
             UnifiedObjectMapper::class,
-            function ($container) {
+            function (ContainerInterface $container) {
                 return new UnifiedObjectMapper(
                     objectEntityMapper: $container->get(ObjectEntityMapper::class),
                     magicMapper: $container->get(MagicMapper::class),
@@ -378,14 +380,17 @@ class Application extends App implements IBootstrap
         // CacheHandler uses lazy loading of IndexService to break circular dependency.
         $context->registerService(
             CacheHandler::class,
-            function ($container) {
+            function (ContainerInterface $container) {
                 return new CacheHandler(
                     objectEntityMapper: $container->get(ObjectEntityMapper::class),
                     organisationMapper: $container->get(OrganisationMapper::class),
                     logger: $container->get('Psr\Log\LoggerInterface'),
                     cacheFactory: $container->get('OCP\ICacheFactory'),
                     userSession: $container->get('OCP\IUserSession'),
-                    container: $container
+                    container: $container,
+                    registerMapper: $container->get(RegisterMapper::class),
+                    schemaMapper: $container->get(SchemaMapper::class),
+                    db: $container->get('OCP\IDBConnection')
                 );
             }
         );
@@ -393,7 +398,7 @@ class Application extends App implements IBootstrap
         // FolderManagementHandler without FileService to break circular dependency.
         $context->registerService(
             FolderManagementHandler::class,
-            function ($container) {
+            function (ContainerInterface $container) {
                 return new FolderManagementHandler(
                     rootFolder: $container->get('OCP\Files\IRootFolder'),
                     objectEntityMapper: $container->get(ObjectEntityMapper::class),
@@ -418,7 +423,7 @@ class Application extends App implements IBootstrap
     {
         $context->registerService(
             ConfigurationUploadHandler::class,
-            function ($container) {
+            function (ContainerInterface $container) {
                 return new ConfigurationUploadHandler(
                     client: new Client(),
                     logger: $container->get('Psr\Log\LoggerInterface')
@@ -426,8 +431,24 @@ class Application extends App implements IBootstrap
             }
         );
 
+        // Register GitHubHandler explicitly to fix IConfig auto-wiring issue.
+        $context->registerService(
+            GitHubHandler::class,
+            function (ContainerInterface $container) {
+                return new GitHubHandler(
+                    clientService: $container->get('OCP\Http\Client\IClientService'),
+                    appConfig: $container->get('OCP\IAppConfig'),
+                    config: $container->get('OCP\IConfig'),
+                    cacheFactory: $container->get('OCP\ICacheFactory'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
         // Register ImportHandler (with both alias and real name to prevent auto-wiring conflicts).
-        $importHandlerFactory = function ($container) {
+        $importHandlerFactory = function (
+            ContainerInterface $container
+        ): \OCA\OpenRegister\Service\Configuration\ImportHandler {
             $dataDir     = $container->get('OCP\IConfig')->getSystemValue('datadirectory', '');
             $appDataPath = $dataDir.'/appdata_openregister';
 
@@ -449,7 +470,7 @@ class Application extends App implements IBootstrap
 
         // Register under alias.
         $context->registerService(ConfigurationImportHandler::class, $importHandlerFactory);
-        
+
         // Register under real class name (pointing to same factory).
         $context->registerService(
             'OCA\OpenRegister\Service\Configuration\ImportHandler',
@@ -458,7 +479,7 @@ class Application extends App implements IBootstrap
 
         $context->registerService(
             ConfigurationService::class,
-            function ($container) {
+            function (ContainerInterface $container) {
                 $dataDir     = $container->get('OCP\IConfig')->getSystemValue('datadirectory', '');
                 $appDataPath = $dataDir.'/appdata_openregister';
 
@@ -499,7 +520,7 @@ class Application extends App implements IBootstrap
     {
         $context->registerService(
             ValidationOperationsHandler::class,
-            function ($container) {
+            function (ContainerInterface $container) {
                 return new ValidationOperationsHandler(
                     validateHandler: $container->get(ValidateObject::class),
                     schemaMapper: $container->get(SchemaMapper::class),
@@ -511,7 +532,7 @@ class Application extends App implements IBootstrap
 
         $context->registerService(
             SettingsService::class,
-            function ($container) {
+            function (ContainerInterface $container) {
                 return new SettingsService(
                     config: $container->get('OCP\IConfig'),
                     auditTrailMapper: $container->get(AuditTrailMapper::class),
@@ -552,7 +573,7 @@ class Application extends App implements IBootstrap
     {
         $context->registerService(
             \OCA\OpenRegister\Service\Index\SearchBackendInterface::class,
-            function ($container) {
+            function (ContainerInterface $container): \OCA\OpenRegister\Service\Index\SearchBackendInterface {
                 $settingsService = $container->get(SettingsService::class);
                 $backendConfig   = $settingsService->getSearchBackendConfig();
                 $activeBackend   = $backendConfig['active'] ?? 'solr';
@@ -580,7 +601,7 @@ class Application extends App implements IBootstrap
     {
         $context->registerService(
             VectorizationService::class,
-            function ($container) {
+            function (ContainerInterface $container) {
                 $service = new VectorizationService(
                     vectorService: $container->get(VectorEmbeddings::class),
                     logger: $container->get('Psr\Log\LoggerInterface')

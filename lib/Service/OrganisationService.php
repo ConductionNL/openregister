@@ -754,9 +754,9 @@ class OrganisationService
         $saved = $this->organisationMapper->save($organisation);
 
         // If there's no default organisation set, make this one the default.
-        $defaultOrgId = $this->config->getAppValue('openregister', 'defaultOrganisation', '');
+        $defaultOrgId = $this->appConfig->getValueString('openregister', 'defaultOrganisation', '');
         if ($defaultOrgId === '') {
-            $this->config->setAppValue('openregister', 'defaultOrganisation', $saved->getUuid());
+            $this->appConfig->setValueString('openregister', 'defaultOrganisation', $saved->getUuid());
         }
 
         // Clear cached organisations and active organisation cache to force refresh.
@@ -919,7 +919,7 @@ class OrganisationService
         $adminUsers = $this->getAdminGroupUsers();
 
         // Check if this is the default organisation.
-        $defaultOrgId = $this->config->getAppValue('openregister', 'defaultOrganisation', '');
+        $defaultOrgId = $this->appConfig->getValueString('openregister', 'defaultOrganisation', '');
         $isDefaultOrg = ($organisation->getUuid() === $defaultOrgId);
 
         foreach ($adminUsers as $adminUserId) {
@@ -1329,7 +1329,7 @@ class OrganisationService
      */
     public function getDefaultOrganisationId(): string|null
     {
-        $defaultOrgId = $this->config->getAppValue('openregister', 'defaultOrganisation', '');
+        $defaultOrgId = $this->appConfig->getValueString('openregister', 'defaultOrganisation', '');
         if ($defaultOrgId !== '') {
             return $defaultOrgId;
         }
@@ -1380,7 +1380,7 @@ class OrganisationService
      */
     public function setDefaultOrganisationId(string $uuid): void
     {
-        $this->config->setAppValue('openregister', 'defaultOrganisation', $uuid);
+        $this->appConfig->setValueString('openregister', 'defaultOrganisation', $uuid);
         $this->clearDefaultOrganisationCache();
     }//end setDefaultOrganisationId()
 

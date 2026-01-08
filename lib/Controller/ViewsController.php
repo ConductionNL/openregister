@@ -278,6 +278,10 @@ class ViewsController extends Controller
                 );
             }
 
+            // Initialize query before conditional assignment.
+            /** @var array<string, mixed> $query */
+            $query = [];
+
             // Extract query parameters from configuration or query.
             if (($data['configuration'] ?? null) !== null && is_array($data['configuration']) === true) {
                 // Frontend still sends 'configuration', extract only query params.
@@ -293,11 +297,7 @@ class ViewsController extends Controller
             } else if (($data['query'] ?? null) !== null && is_array($data['query']) === true) {
                 // Direct query parameter.
                 $query = $data['query'];
-            }
-
-            $hasConfiguration = ($data['configuration'] ?? null) !== null;
-            $hasQuery         = ($data['query'] ?? null) !== null && is_array($data['query']) === true;
-            if ($hasConfiguration === false && $hasQuery === false) {
+            } else {
                 return new JSONResponse(
                     data: [
                         'error' => 'View query or configuration is required',
@@ -381,6 +381,10 @@ class ViewsController extends Controller
                 );
             }
 
+            // Initialize query before conditional assignment.
+            /** @var array<string, mixed> $query */
+            $query = [];
+
             // Extract query parameters from configuration or query.
             if (($data['configuration'] ?? null) !== null && is_array($data['configuration']) === true) {
                 // Frontend still sends 'configuration', extract only query params.
@@ -396,11 +400,7 @@ class ViewsController extends Controller
             } else if (($data['query'] ?? null) !== null && is_array($data['query']) === true) {
                 // Direct query parameter.
                 $query = $data['query'];
-            }
-
-            $hasConfiguration = ($data['configuration'] ?? null) !== null;
-            $hasQuery         = ($data['query'] ?? null) !== null && is_array($data['query']) === true;
-            if ($hasConfiguration === false && $hasQuery === false) {
+            } else {
                 return new JSONResponse(
                     data: [
                         'error' => 'View query or configuration is required',

@@ -48,6 +48,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setDetectedAt(DateTime $detectedAt)
  * @method DateTime getUpdatedAt()
  * @method void setUpdatedAt(DateTime $updatedAt)
+ *
+ * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class GdprEntity extends Entity implements JsonSerializable
 {

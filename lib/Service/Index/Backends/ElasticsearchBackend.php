@@ -192,7 +192,7 @@ class ElasticsearchBackend implements SearchBackendInterface
         return [
             'total'   => $result['hits']['total']['value'] ?? 0,
             'results' => array_map(
-                function ($hit) {
+                function (array $hit): array {
                     return $hit['_source'] ?? [];
                 },
                 $result['hits']['hits'] ?? []

@@ -1527,16 +1527,16 @@ class TextExtractionService
         $chunks = match ($strategy) {
             self::FIXED_SIZE => $this->chunkFixedSize(
                 text: $text,
-                    chunkSize: $chunkSize, chunkOverlap: $chunkOverlap
+                chunkSize: $chunkSize, chunkOverlap: $chunkOverlap
             ),
             self::RECURSIVE_CHARACTER => $this->chunkRecursive(
                 text: $text,
-                    chunkSize: $chunkSize, chunkOverlap: $chunkOverlap
+                chunkSize: $chunkSize, chunkOverlap: $chunkOverlap
             ),
             default => $this->chunkRecursive(
                 text: $text,
-                    chunkSize: $chunkSize,
-                    chunkOverlap: $chunkOverlap
+                chunkSize: $chunkSize,
+                chunkOverlap: $chunkOverlap
             )
         };
 
@@ -1703,9 +1703,9 @@ class TextExtractionService
 
         return $this->recursiveSplit(
             text: $text,
-                separators: $separators,
-                chunkSize: $chunkSize,
-                chunkOverlap: $chunkOverlap
+            separators: $separators,
+            chunkSize: $chunkSize,
+            chunkOverlap: $chunkOverlap
         );
     }//end chunkRecursive()
 

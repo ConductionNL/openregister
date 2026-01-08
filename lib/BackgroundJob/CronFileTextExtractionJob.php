@@ -132,9 +132,9 @@ class CronFileTextExtractionJob extends TimedJob
             // Get pending files based on extraction scope.
             $pendingFiles = $this->getPendingFiles(
                 fileMapper: $fileMapper,
-                    extractionScope: $extractionScope,
+                extractionScope: $extractionScope,
                 batchSize: $batchSize,
-                    logger: $logger
+                logger: $logger
             );
 
             if (empty($pendingFiles) === true) {

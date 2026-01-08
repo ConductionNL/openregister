@@ -233,6 +233,7 @@ class ImportService
      * @param bool          $_multitenancy Whether to apply multitenancy checks (default: true, unused).
      * @param bool          $publish       Whether to publish objects after import (default: false).
      * @param IUser|null    $currentUser   The current user performing the import (optional).
+     * @param bool          $enrich        Whether to enrich objects with metadata (default: true).
      *
      * @return (array|int|null|string)[][]
      *
@@ -270,7 +271,8 @@ class ImportService
         bool $_rbac=true,
         bool $_multitenancy=true,
         bool $publish=false,
-        ?IUser $currentUser=null
+        ?IUser $currentUser=null,
+        bool $enrich=true
     ): array {
         // Clear caches at the start of each import to prevent stale data issues.
         $this->clearCaches();
@@ -336,6 +338,7 @@ class ImportService
      * @param bool          $_multitenancy Whether to enable multi-tenancy (default: true, unused).
      * @param bool          $publish       Whether to publish objects immediately (default: false).
      * @param IUser|null    $currentUser   Current user for RBAC checks (default: null).
+     * @param bool          $enrich        Whether to enrich objects with metadata (default: true).
      *
      * @return array Import results by schema
      *
@@ -350,7 +353,8 @@ class ImportService
         bool $_rbac=true,
         bool $_multitenancy=true,
         bool $publish=false,
-        ?IUser $currentUser=null
+        ?IUser $currentUser=null,
+        bool $enrich=true
     ): array {
         // Clear caches at the start of each import to prevent stale data issues.
         $this->clearCaches();
@@ -378,7 +382,8 @@ class ImportService
             _rbac: $_rbac,
             _multitenancy: $_multitenancy,
             publish: $publish,
-            currentUser: $currentUser
+            currentUser: $currentUser,
+            enrich: $enrich
         );
 
         // Add schema information to the summary (consistent with Excel import).
@@ -546,6 +551,7 @@ class ImportService
      * @param bool          $_multitenancy Whether to apply multi-tenancy filtering
      * @param bool          $publish       Whether to publish objects after import
      * @param IUser|null    $currentUser   The current user performing the import
+     * @param bool          $enrich        Whether to enrich objects with metadata
      *
      * @return array Batch processing results
      *
@@ -563,7 +569,8 @@ class ImportService
         bool $_rbac=true,
         bool $_multitenancy=true,
         bool $publish=false,
-        ?IUser $currentUser=null
+        ?IUser $currentUser=null,
+        bool $enrich=false
     ): array {
         $summary = [
             'found'     => 0,
@@ -648,7 +655,8 @@ class ImportService
                 _rbac: $_rbac,
                 _multitenancy: $_multitenancy,
                 validation: $validation,
-                events: $events
+                events: $events,
+                enrich: $enrich
             );
 
             // Use the structured return from saveObjects with smart deduplication.
@@ -709,6 +717,7 @@ class ImportService
      * @param bool                                          $_multitenancy Multi-tenancy filtering
      * @param bool                                          $publish       Whether to publish objects after import
      * @param IUser|null                                    $currentUser   The current user performing the import
+     * @param bool                                          $enrich        Whether to enrich objects with metadata
      *
      * @return array CSV sheet processing results
      *
@@ -726,7 +735,8 @@ class ImportService
         bool $_rbac=true,
         bool $_multitenancy=true,
         bool $publish=false,
-        ?IUser $currentUser=null
+        ?IUser $currentUser=null,
+        bool $enrich=false
     ): array {
         $summary = [
             'found'     => 0,
@@ -793,7 +803,6 @@ class ImportService
 
         // NOTE: Deduplication is now handled by SaveObjects::saveObjects() (deduplicateIds=true by default).
         // This ensures consistent deduplication across ALL bulk save operations (CSV, Excel, API, etc.).
-
         // Call saveObjects ONCE with all objects - deduplication happens automatically.
         if (empty($allObjects) === false) {
             // Log publish processing for debugging.
@@ -840,7 +849,8 @@ class ImportService
                 _rbac: $_rbac,
                 _multitenancy: $_multitenancy,
                 validation: $validation,
-                events: $events
+                events: $events,
+                enrich: $enrich
             );
 
             // Use the structured return from saveObjects with smart deduplication.
@@ -1694,8 +1704,4 @@ class ImportService
             maxObjects: $maxObjects
         );
     }//end scheduleSmartSolrWarmup()
-
-
-
-
 }//end class

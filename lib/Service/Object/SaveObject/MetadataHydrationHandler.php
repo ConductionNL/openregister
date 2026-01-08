@@ -74,31 +74,64 @@ class MetadataHydrationHandler
      */
     public function hydrateObjectMetadata(ObjectEntity $entity, Schema $schema): void
     {
-        $config     = $schema->getConfiguration();
+        $config     = $schema->getConfiguration() ?? [];
         $objectData = $entity->getObject();
 
-        // Name field mapping.
-        if (($config['objectNameField'] ?? null) !== null) {
-            $name = $this->extractMetadataValue(data: $objectData, fieldPath: $config['objectNameField']);
-            if ($name !== null && trim($name) !== '') {
-                $entity->setName(trim($name));
-            }
+        // Name field mapping - use configured field or fallback to common names.
+        $nameField = $config['objectNameField'] ?? null;
+        $name      = null;
+
+        if ($nameField !== null) {
+            $name = $this->extractMetadataValue(data: $objectData, fieldPath: $nameField);
         }
 
-        // Description field mapping.
-        if (($config['objectDescriptionField'] ?? null) !== null) {
-            $description = $this->extractMetadataValue(data: $objectData, fieldPath: $config['objectDescriptionField']);
-            if ($description !== null && trim($description) !== '') {
-                $entity->setDescription(trim($description));
-            }
+        // Fallback: try common name fields if not configured or configured field is empty.
+        if ($name === null || trim($name) === '') {
+            $name = $this->tryCommonFields(data: $objectData, fieldNames: ['naam', 'name', 'title', 'label', 'titel']);
         }
 
-        // Summary field mapping.
-        if (($config['objectSummaryField'] ?? null) !== null) {
-            $summary = $this->extractMetadataValue(data: $objectData, fieldPath: $config['objectSummaryField']);
-            if ($summary !== null && trim($summary) !== '') {
-                $entity->setSummary(trim($summary));
-            }
+        if ($name !== null && trim($name) !== '') {
+            $entity->setName(trim($name));
+        }
+
+        // Description field mapping - use configured field or fallback.
+        $descField   = $config['objectDescriptionField'] ?? null;
+        $description = null;
+
+        if ($descField !== null) {
+            $description = $this->extractMetadataValue(data: $objectData, fieldPath: $descField);
+        }
+
+        // Fallback: try common description fields.
+        if ($description === null || trim($description) === '') {
+            $description = $this->tryCommonFields(
+                data: $objectData,
+                fieldNames: ['beschrijvingLang', 'description', 'beschrijving', 'omschrijving']
+            );
+        }
+
+        if ($description !== null && trim($description) !== '') {
+            $entity->setDescription(trim($description));
+        }
+
+        // Summary field mapping - use configured field or fallback.
+        $summaryField = $config['objectSummaryField'] ?? null;
+        $summary      = null;
+
+        if ($summaryField !== null) {
+            $summary = $this->extractMetadataValue(data: $objectData, fieldPath: $summaryField);
+        }
+
+        // Fallback: try common summary fields.
+        if ($summary === null || trim($summary) === '') {
+            $summary = $this->tryCommonFields(
+                data: $objectData,
+                fieldNames: ['beschrijvingKort', 'summary', 'samenvatting', 'shortDescription']
+            );
+        }
+
+        if ($summary !== null && trim($summary) !== '') {
+            $entity->setSummary(trim($summary));
         }
 
         // Slug field mapping.
@@ -113,6 +146,26 @@ class MetadataHydrationHandler
             }
         }
     }//end hydrateObjectMetadata()
+
+    /**
+     * Try to extract a value from common field names.
+     *
+     * @param array $data       The object data.
+     * @param array $fieldNames Array of field names to try in order of preference.
+     *
+     * @return string|null The first non-empty value found, or null.
+     */
+    private function tryCommonFields(array $data, array $fieldNames): ?string
+    {
+        foreach ($fieldNames as $field) {
+            $value = $this->extractMetadataValue(data: $data, fieldPath: $field);
+            if ($value !== null && trim($value) !== '') {
+                return $value;
+            }
+        }
+
+        return null;
+    }//end tryCommonFields()
 
     /**
      * Gets a value from an object using dot notation path.

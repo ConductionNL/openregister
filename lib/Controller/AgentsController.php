@@ -199,6 +199,7 @@ class AgentsController extends Controller
 
             // Get agents with RBAC filtering (handled in mapper layer).
             // Filter by organisation for multi-tenancy if organisation is set.
+            $agents = [];
             if ($organisationUuid !== null) {
                 $agents = $this->agentMapper->findByOrganisation(
                     organisationUuid: $organisationUuid,

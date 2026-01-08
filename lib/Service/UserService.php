@@ -271,11 +271,11 @@ class UserService
                 }
             } catch (\Exception $quotaException) {
                 $this->logger->debug(
-                        'User quota calculation failed for user: '.$userId,
-                        [
-                            'exception' => $quotaException->getMessage(),
-                        ]
-                        );
+                    'User quota calculation failed for user: '.$userId,
+                    [
+                        'exception' => $quotaException->getMessage(),
+                    ]
+                );
 
                 $usedSpace = $this->getUsedSpaceMemorySafe($userId);
             }
@@ -297,11 +297,11 @@ class UserService
             return $quota;
         } catch (\Exception $e) {
             $this->logger->warning(
-                    'Failed to build quota information for user: '.$user->getUID(),
-                    [
-                        'exception' => $e->getMessage(),
-                    ]
-                    );
+                'Failed to build quota information for user: '.$user->getUID(),
+                [
+                    'exception' => $e->getMessage(),
+                ]
+            );
 
             return [
                 'free'     => 'none',
@@ -326,12 +326,12 @@ class UserService
 
             if ($currentMemoryUsage > 128 * 1024 * 1024) {
                 $this->logger->warning(
-                        'Memory usage too high for quota calculation',
-                        [
-                            'user'         => $userId,
-                            'memory_usage' => $currentMemoryUsage,
-                        ]
-                        );
+                    'Memory usage too high for quota calculation',
+                    [
+                        'user'         => $userId,
+                        'memory_usage' => $currentMemoryUsage,
+                    ]
+                );
                 return 0;
             }
 
@@ -356,11 +356,11 @@ class UserService
             return 0;
         } catch (\Exception $e) {
             $this->logger->warning(
-                    'Memory-safe quota calculation failed for user: '.$userId,
-                    [
-                        'exception' => $e->getMessage(),
-                    ]
-                    );
+                'Memory-safe quota calculation failed for user: '.$userId,
+                [
+                    'exception' => $e->getMessage(),
+                ]
+            );
             return 0;
         }//end try
     }//end getUsedSpaceMemorySafe()
@@ -413,11 +413,11 @@ class UserService
             $additionalInfo = $this->getAccountManagerPropertiesSelectively($user);
         } catch (\Exception $e) {
             $this->logger->warning(
-                    'AccountManager failed for user: '.$user->getUID(),
-                    [
-                        'exception' => $e->getMessage(),
-                    ]
-                    );
+                'AccountManager failed for user: '.$user->getUID(),
+                [
+                    'exception' => $e->getMessage(),
+                ]
+            );
 
             $userId = $user->getUID();
 
@@ -487,12 +487,12 @@ class UserService
                 }
             } catch (\Exception $e) {
                 $this->logger->debug(
-                        'Failed to load account property: '.$propertyName,
-                        [
-                            'user'      => $user->getUID(),
-                            'exception' => $e->getMessage(),
-                        ]
-                        );
+                    'Failed to load account property: '.$propertyName,
+                    [
+                        'user'      => $user->getUID(),
+                        'exception' => $e->getMessage(),
+                    ]
+                );
             }
         }
 
@@ -603,11 +603,11 @@ class UserService
             }
         } catch (\Exception $e) {
             $this->logger->warning(
-                    'Failed to update AccountManager properties for user: '.$user->getUID(),
-                    [
-                        'exception' => $e->getMessage(),
-                    ]
-                    );
+                'Failed to update AccountManager properties for user: '.$user->getUID(),
+                [
+                    'exception' => $e->getMessage(),
+                ]
+            );
         }//end try
 
         $customFields = ['firstName', 'lastName', 'middleName'];

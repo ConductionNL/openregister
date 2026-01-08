@@ -165,9 +165,10 @@ class QueryHandler
             || empty($query['_unset'] ?? null) === false;
 
         // Get active organization context for multi-tenancy.
-        $activeOrgUuid = $_multitenancy === true
-            ? $this->performanceHandler->getActiveOrganisationForContext()
-            : null;
+        $activeOrgUuid = null;
+        if ($_multitenancy === true) {
+            $activeOrgUuid = $this->performanceHandler->getActiveOrganisationForContext();
+        }
 
         // Execute database search.
         $result = $this->unifiedObjectMapper->searchObjects(
@@ -364,9 +365,10 @@ class QueryHandler
         unset($countQuery['_limit'], $countQuery['_offset'], $countQuery['_page'], $countQuery['_facetable']);
 
         // Get active organization context for multi-tenancy.
-        $activeOrgUuid = $_multitenancy === true
-            ? $this->performanceHandler->getActiveOrganisationForContext()
-            : null;
+        $activeOrgUuid = null;
+        if ($_multitenancy === true) {
+            $activeOrgUuid = $this->performanceHandler->getActiveOrganisationForContext();
+        }
 
         // Use optimized combined search+count that loads register/schema once.
         $searchResult = $this->unifiedObjectMapper->searchObjectsPaginated(
@@ -392,9 +394,12 @@ class QueryHandler
         }
 
         // Remove @self.schema and @self.register from extend - we provide them at response level.
-        $extend = array_filter($extend, function ($item) {
-            return $item !== '@self.schema' && $item !== '@self.register';
-        });
+        $extend = array_filter(
+            $extend,
+            function (string $item): bool {
+                return $item !== '@self.schema' && $item !== '@self.register';
+            }
+        );
 
         $hasComplexRendering = empty($extend) === false
             || empty($query['_fields'] ?? null) === false
@@ -415,7 +420,10 @@ class QueryHandler
         }
 
         // Calculate total pages (avoid division by zero when limit=0).
-        $pages = $limit > 0 ? max(1, (int) ceil($total / $limit)) : 0;
+        $pages = 0;
+        if ($limit > 0) {
+            $pages = max(1, (int) ceil($total / $limit));
+        }
 
         // Build result structure with registers/schemas indexed by ID at response @self level.
         $paginatedResults = [
@@ -451,7 +459,7 @@ class QueryHandler
         if ($hasFacetable === true) {
             $paginatedResults['facetable'] = $this->facetHandler->getFacetableFields(
                 baseQuery: $countQuery,
-                sampleSize: 100
+                _sampleSize: 100
             );
         }
 

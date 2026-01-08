@@ -65,6 +65,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setConfiguration(?string $configuration)
  *
  * @SuppressWarnings(PHPMD.TooManyFields)
+ *
+ * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class Webhook extends Entity implements JsonSerializable
 {

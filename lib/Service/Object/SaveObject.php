@@ -842,7 +842,7 @@ class SaveObject
             } catch (Exception $e) {
                 $renderedDefaults[$key] = $defaultValue;
                 // Use original value if template fails.
-            }
+            }//end try
         }//end foreach
 
         // Merge in this order:.
@@ -1727,6 +1727,10 @@ class SaveObject
         Schema | int | string $schema,
         Register | int | string | null $register
     ): array {
+        // Initialize IDs before conditional assignment.
+        $schemaId   = null;
+        $registerId = null;
+
         // Resolve schema.
         if ($schema instanceof Schema === true) {
             $schemaId = $schema->getId();

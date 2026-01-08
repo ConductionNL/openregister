@@ -225,10 +225,10 @@ class ToolManagementHandler
                     // array|string|null $itemsOrProperties=null).
                     $parameters[] = new Parameter(
                         $paramName,
-                            $type,
-                            $description,
-                            $enum,
-                            $format,
+                        $type,
+                        $description,
+                        $enum,
+                        $format,
                         $itemsOrProperties
                     );
                 }//end foreach

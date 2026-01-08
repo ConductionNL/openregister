@@ -136,9 +136,9 @@ class CascadingHandler
                             // This is a nested object, create it first.
                             $createdUuid = $this->createRelatedObject(
                                 objectData: $item,
-                                    definition: $definition['items'],
+                                definition: $definition['items'],
                                 parentUuid: $uuid,
-                                    currentRegister: $currentRegister
+                                currentRegister: $currentRegister
                             );
 
                             // If creation failed, keep original item to avoid empty array.
@@ -157,9 +157,9 @@ class CascadingHandler
                     // This is a nested object, create it first.
                     $createdUuid = $this->createRelatedObject(
                         objectData: $propertyValue,
-                            definition: $definition,
+                        definition: $definition,
                         parentUuid: $uuid,
-                            currentRegister: $currentRegister
+                        currentRegister: $currentRegister
                     );
 
                     // Only overwrite if creation succeeded.
@@ -177,10 +177,10 @@ class CascadingHandler
      * This method creates a nested object with an inverse relationship to the parent.
      * It resolves the schema from the property definition and sets the inversedBy field.
      *
-     * @param array       $objectData      Object data to create.
-     * @param array       $definition      Property definition containing schema reference.
-     * @param string      $parentUuid      UUID of the parent object.
-     * @param int|null    $currentRegister Current register ID (nullable for seedData).
+     * @param array    $objectData      Object data to create.
+     * @param array    $definition      Property definition containing schema reference.
+     * @param string   $parentUuid      UUID of the parent object.
+     * @param int|null $currentRegister Current register ID (nullable for seedData).
      *
      * @return string|null UUID of created object or null if creation failed.
      *

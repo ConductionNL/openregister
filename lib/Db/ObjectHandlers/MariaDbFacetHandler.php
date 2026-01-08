@@ -712,7 +712,7 @@ class MariaDbFacetHandler
                         $field,
                         $queryBuilder->createNamedParameter(
                             $value,
-                                \Doctrine\DBAL\Connection::PARAM_STR_ARRAY
+                            \Doctrine\DBAL\Connection::PARAM_STR_ARRAY
                         )
                     )
                 );

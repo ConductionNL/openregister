@@ -285,7 +285,7 @@ class SecurityService
     public function sanitizeInput(mixed $input, int $maxLength=255): mixed
     {
         if (is_array($input) === true) {
-            return array_map(fn($item) => $this->sanitizeInput(input: $item, maxLength: $maxLength), $input);
+            return array_map(fn(mixed $item): mixed => $this->sanitizeInput(input: $item, maxLength: $maxLength), $input);
         }
 
         if (is_string($input) === false) {

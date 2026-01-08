@@ -1301,9 +1301,12 @@ class ObjectEntityMapper extends QBMapper
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */
     public function find(
-        string|int $identifier, ?Register $register=null,
-        ?Schema $schema=null, bool $includeDeleted=false,
-        bool $_rbac=true, bool $_multitenancy=true
+        string|int $identifier,
+        ?Register $register=null,
+        ?Schema $schema=null,
+        bool $includeDeleted=false,
+        bool $_rbac=true,
+        bool $_multitenancy=true
     ): ObjectEntity {
         // Check if magic mapping should be used.
         $useMagic = $register !== null && $schema !== null
@@ -1367,18 +1370,20 @@ class ObjectEntityMapper extends QBMapper
 
         // Build OR conditions for matching against id, uuid, slug, or uri.
         // Note: Only include id comparison if identifier is actually numeric (PostgreSQL strict typing).
-        $qb->where(
-            $qb->expr()->orX(
-                $qb->expr()->eq('uuid', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
-                $qb->expr()->eq('slug', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
-                $qb->expr()->eq('uri', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR))
-            )
-        );
+        // Build OR conditions for matching against id, uuid, slug, or uri.
+        // Note: Only include id comparison if $identifier is actually numeric (PostgreSQL strict typing).
         if (is_numeric($identifier) === true) {
-            $qb->resetQueryPart('where');
             $qb->where(
                 $qb->expr()->orX(
                     $qb->expr()->eq('id', $qb->createNamedParameter((int) $identifier, IQueryBuilder::PARAM_INT)),
+                    $qb->expr()->eq('uuid', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
+                    $qb->expr()->eq('slug', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
+                    $qb->expr()->eq('uri', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR))
+                )
+            );
+        } else {
+            $qb->where(
+                $qb->expr()->orX(
                     $qb->expr()->eq('uuid', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
                     $qb->expr()->eq('slug', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
                     $qb->expr()->eq('uri', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR))
@@ -1429,9 +1434,12 @@ class ObjectEntityMapper extends QBMapper
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Flags control security filtering behavior
      */
     public function findDirectBlobStorage(
-        string|int $identifier, ?Register $register=null,
-        ?Schema $schema=null, bool $includeDeleted=false,
-        bool $_rbac=true, bool $_multitenancy=true
+        string|int $identifier,
+        ?Register $register=null,
+        ?Schema $schema=null,
+        bool $includeDeleted=false,
+        bool $_rbac=true,
+        bool $_multitenancy=true
     ): ObjectEntity {
         $qb = $this->db->getQueryBuilder();
 
@@ -1440,18 +1448,20 @@ class ObjectEntityMapper extends QBMapper
             ->from('openregister_objects');
 
         // Build OR conditions for matching against id, uuid, slug, or uri.
-        $qb->where(
-            $qb->expr()->orX(
-                $qb->expr()->eq('uuid', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
-                $qb->expr()->eq('slug', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
-                $qb->expr()->eq('uri', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR))
-            )
-        );
+        // Build OR conditions for matching against id, uuid, slug, or uri.
+        // Note: Only include id comparison if $identifier is actually numeric (PostgreSQL strict typing).
         if (is_numeric($identifier) === true) {
-            $qb->resetQueryPart('where');
             $qb->where(
                 $qb->expr()->orX(
                     $qb->expr()->eq('id', $qb->createNamedParameter((int) $identifier, IQueryBuilder::PARAM_INT)),
+                    $qb->expr()->eq('uuid', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
+                    $qb->expr()->eq('slug', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
+                    $qb->expr()->eq('uri', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR))
+                )
+            );
+        } else {
+            $qb->where(
+                $qb->expr()->orX(
                     $qb->expr()->eq('uuid', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
                     $qb->expr()->eq('slug', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
                     $qb->expr()->eq('uri', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR))
@@ -1558,10 +1568,10 @@ class ObjectEntityMapper extends QBMapper
 
         // PostgreSQL requires explicit casting for VARCHAR to BIGINT comparison.
         // MySQL/MariaDB does implicit type conversion.
-        $qb->leftJoin('o', 'openregister_schemas', 's', 'o.schema = s.id');
         if ($platform === 'postgresql') {
-            $qb->resetQueryPart('join');
             $qb->leftJoin('o', 'openregister_schemas', 's', 'CAST(o.schema AS BIGINT) = s.id');
+        } else {
+            $qb->leftJoin('o', 'openregister_schemas', 's', 'o.schema = s.id');
         }
 
         $qb->where($qb->expr()->eq('o.schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)))
@@ -1840,18 +1850,18 @@ class ObjectEntityMapper extends QBMapper
      */
     private function applySchemasFilter(IQueryBuilder $qb, ?array $filters, ?Schema $schema): void
     {
-        // Only apply _schemas filter if no single schema is set
+        // Only apply _schemas filter if no single schema is set.
         if ($schema !== null) {
             return;
         }
 
-        // Check for _schemas in filters
+        // Check for _schemas in filters.
         $schemaIds = $filters['_schemas'] ?? null;
-        if ($schemaIds === null || !is_array($schemaIds) || empty($schemaIds)) {
+        if ($schemaIds === null || is_array($schemaIds) === false || empty($schemaIds) === true) {
             return;
         }
 
-        // Convert to strings for VARCHAR column comparison
+        // Convert to strings for VARCHAR column comparison.
         $schemaIdsStr = array_map('strval', $schemaIds);
         $qb->andWhere($qb->expr()->in('schema', $qb->createNamedParameter($schemaIdsStr, IQueryBuilder::PARAM_STR_ARRAY)));
     }//end applySchemasFilter()
@@ -2040,9 +2050,12 @@ class ObjectEntityMapper extends QBMapper
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Flags control security filtering behavior
      */
     public function searchObjects(
-        array $query=[], ?string $_activeOrgUuid=null,
-        bool $_rbac=true, bool $_multitenancy=true,
-        ?array $ids=null, ?string $uses=null
+        array $query=[],
+        ?string $_activeOrgUuid=null,
+        bool $_rbac=true,
+        bool $_multitenancy=true,
+        ?array $ids=null,
+        ?string $uses=null
     ): array|int {
         // Extract common query parameters.
         $limit  = $query['_limit'] ?? 30;
@@ -2086,9 +2099,12 @@ class ObjectEntityMapper extends QBMapper
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function countSearchObjects(
-        array $query=[], ?string $_activeOrgUuid=null,
-        bool $_rbac=true, bool $_multitenancy=true,
-        ?array $ids=null, ?string $uses=null
+        array $query=[],
+        ?string $_activeOrgUuid=null,
+        bool $_rbac=true,
+        bool $_multitenancy=true,
+        ?array $ids=null,
+        ?string $uses=null
     ): int {
         $qb = $this->db->getQueryBuilder();
         $qb->select($qb->func()->count('id'))
@@ -2133,9 +2149,11 @@ class ObjectEntityMapper extends QBMapper
 
         // Apply _schemas filter for multi-schema search.
         $schemaIds = $query['_schemas'] ?? null;
-        if ($schemaIds !== null && is_array($schemaIds) && !empty($schemaIds)) {
+        if ($schemaIds !== null && is_array($schemaIds) === true && empty($schemaIds) === false) {
             $schemaIdsStr = array_map('strval', $schemaIds);
-            $qb->andWhere($qb->expr()->in('schema', $qb->createNamedParameter($schemaIdsStr, IQueryBuilder::PARAM_STR_ARRAY)));
+            $qb->andWhere(
+                $qb->expr()->in('schema', $qb->createNamedParameter($schemaIdsStr, IQueryBuilder::PARAM_STR_ARRAY))
+            );
         }
 
         $result = $qb->executeQuery();
@@ -2270,10 +2288,10 @@ class ObjectEntityMapper extends QBMapper
         $isPostgres = str_contains(strtolower(get_class($dbPlatform)), 'postgresql');
 
         if ($isPostgres === true) {
-            // PostgreSQL: cast JSON to text
+            // PostgreSQL: cast JSON to text.
             $objectColumn = $qb->createFunction('object::text');
         } else {
-            // MySQL/MariaDB: object column works directly
+            // MySQL/MariaDB: object column works directly.
             $objectColumn = 'object';
         }
 

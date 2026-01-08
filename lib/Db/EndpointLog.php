@@ -36,6 +36,8 @@ use OCP\AppFramework\Db\Entity;
  * @license   EUPL-1.2
  * @version   GIT: <git_id>
  * @link      https://OpenRegister.app
+ *
+ * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class EndpointLog extends Entity implements JsonSerializable
 {

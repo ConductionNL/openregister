@@ -345,8 +345,12 @@ class PerformanceHandler
     {
         if ($hasFacets === true) {
             $facets = $query['_facets'] ?? [];
-            // Handle string value (e.g., _facets=extend)
-            return is_array($facets) ? count($facets) : 1;
+            // Handle string value (e.g., _facets=extend).
+            if (is_array($facets) === true) {
+                return count($facets);
+            }
+
+            return 1;
         }
 
         return 0;

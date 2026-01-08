@@ -70,6 +70,8 @@ use OCP\AppFramework\Db\Entity;
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.TooManyFields)
+ *
+ * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class Register extends Entity implements JsonSerializable
 {
@@ -674,11 +676,11 @@ class Register extends Entity implements JsonSerializable
      *
      * @return bool True if magic mapping is enabled for this schema.
      */
-    public function isMagicMappingEnabledForSchema(int $schemaId, ?string $schemaSlug = null): bool
+    public function isMagicMappingEnabledForSchema(int $schemaId, ?string $schemaSlug=null): bool
     {
         $config = $this->getConfiguration();
 
-        // Check NEW format first: { "schemas": { "<slug>": { "magicMapping": true } } }
+        // Check NEW format first: { "schemas": { "<slug>": { "magicMapping": true } } }.
         $schemaConfigs = $config['schemas'] ?? [];
         if (empty($schemaConfigs) === false) {
             // Try to find by schema slug (string key).
@@ -696,7 +698,7 @@ class Register extends Entity implements JsonSerializable
             }
         }
 
-        // Check LEGACY format: { "enableMagicMapping": true, "magicMappingSchemas": [...] }
+        // Check LEGACY format: { "enableMagicMapping": true, "magicMappingSchemas": [...] }.
         $magicMappingEnabled = ($config['enableMagicMapping'] ?? false) === true;
         if ($magicMappingEnabled === false) {
             return false;
@@ -722,11 +724,11 @@ class Register extends Entity implements JsonSerializable
      *
      * @return bool True if auto-create table is enabled for this schema.
      */
-    public function isAutoCreateTableEnabledForSchema(int $schemaId, ?string $schemaSlug = null): bool
+    public function isAutoCreateTableEnabledForSchema(int $schemaId, ?string $schemaSlug=null): bool
     {
         $config = $this->getConfiguration();
 
-        // Check NEW format: { "schemas": { "<slug>": { "autoCreateTable": true } } }
+        // Check NEW format: { "schemas": { "<slug>": { "autoCreateTable": true } } }.
         $schemaConfigs = $config['schemas'] ?? [];
         if (empty($schemaConfigs) === false) {
             // Try to find by schema slug (string key).
@@ -746,7 +748,7 @@ class Register extends Entity implements JsonSerializable
 
         // Legacy format doesn't have per-schema autoCreateTable.
         // Default to true if magic mapping is enabled for this schema.
-        return $this->isMagicMappingEnabledForSchema($schemaId, $schemaSlug);
+        return $this->isMagicMappingEnabledForSchema(schemaId: $schemaId, schemaSlug: $schemaSlug);
     }//end isAutoCreateTableEnabledForSchema()
 
     /**

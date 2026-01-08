@@ -21,7 +21,7 @@ namespace OCA\OpenRegister\Service\Settings;
 
 use Exception;
 use RuntimeException;
-use OCP\IConfig;
+use OCP\IAppConfig;
 
 /**
  * Handler for LLM (Language Model) settings operations.
@@ -46,9 +46,9 @@ class LlmSettingsHandler
     /**
      * Configuration service
      *
-     * @var IConfig
+     * @var IAppConfig
      */
-    private IConfig $config;
+    private IAppConfig $appConfig;
 
     /**
      * Application name
@@ -60,17 +60,17 @@ class LlmSettingsHandler
     /**
      * Constructor for LlmSettingsHandler
      *
-     * @param IConfig $config  Configuration service.
-     * @param string  $appName Application name.
+     * @param IAppConfig $appConfig Configuration service.
+     * @param string     $appName   Application name.
      *
      * @return void
      */
     public function __construct(
-        IConfig $config,
+        IAppConfig $appConfig,
         string $appName='openregister'
     ) {
-        $this->config  = $config;
-        $this->appName = $appName;
+        $this->appConfig = $appConfig;
+        $this->appName   = $appName;
     }//end __construct()
 
     /**
@@ -90,7 +90,7 @@ class LlmSettingsHandler
     public function getLLMSettingsOnly(): array
     {
         try {
-            $llmConfig = $this->config->getAppValue($this->appName, 'llm', '');
+            $llmConfig = $this->appConfig->getValueString($this->appName, 'llm', '');
 
             if (empty($llmConfig) === true) {
                 // Return default configuration.
@@ -211,7 +211,7 @@ class LlmSettingsHandler
                 ],
             ];
 
-            $this->config->setAppValue($this->appName, 'llm', json_encode($llmConfig));
+            $this->appConfig->setValueString($this->appName, 'llm', json_encode($llmConfig));
             return $llmConfig;
         } catch (Exception $e) {
             throw new RuntimeException('Failed to update LLM settings: '.$e->getMessage());

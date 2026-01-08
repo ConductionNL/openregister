@@ -696,6 +696,10 @@ class EndpointsController extends Controller
             $limit  = (int) ($this->request->getParam('limit') ?? 50);
             $offset = (int) ($this->request->getParam('offset') ?? 0);
 
+            // Initialize variables before conditional assignment.
+            $logs  = [];
+            $total = 0;
+
             // If endpoint_id is provided and valid, filter logs by endpoint.
             if ($endpointId !== null && $endpointId !== '' && $endpointId !== '0') {
                 // Convert endpoint ID to integer for database query.

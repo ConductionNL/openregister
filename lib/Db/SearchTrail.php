@@ -78,6 +78,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setCreated(?DateTime $created)
  * @method string|null getOrganisation()
  * @method void setOrganisation(?string $organisation)
+ *
+ * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class SearchTrail extends Entity implements JsonSerializable
 {

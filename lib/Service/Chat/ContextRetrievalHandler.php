@@ -190,6 +190,9 @@ class ContextRetrievalHandler
             // Determine search method - fetch more results than needed for filtering.
             $fetchLimit = $totalSources * 2;
 
+            // Initialize results before conditional assignment.
+            $results = [];
+
             if ($searchMode === 'semantic') {
                 $results = $this->vectorService->semanticSearch(
                     query: $query,
@@ -207,9 +210,7 @@ class ContextRetrievalHandler
                 );
                 // Extract results array from hybrid search response.
                 $results = $hybridResponse['results'] ?? [];
-            }
-
-            if ($searchMode !== 'semantic' && $searchMode !== 'hybrid') {
+            } else {
                 // Keyword search.
                 $results = $this->searchKeywordOnly(query: $query, _limit: $fetchLimit);
             }//end if

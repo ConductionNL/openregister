@@ -63,6 +63,8 @@ use OCP\AppFramework\Db\Entity;
  * @psalm-suppress PossiblyUnusedMethod
  *
  * @SuppressWarnings(PHPMD.TooManyFields) Domain entity requires many fields for complete audit trail data
+ *
+ * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class AuditTrail extends Entity implements JsonSerializable
 {

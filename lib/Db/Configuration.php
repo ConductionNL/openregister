@@ -97,6 +97,8 @@ use Symfony\Component\Uid\Uuid;
  * @method void setUpdated(?DateTime $updated)
  *
  * @SuppressWarnings(PHPMD.TooManyFields) Domain entity requires many fields for complete configuration sync data
+ *
+ * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class Configuration extends Entity implements JsonSerializable
 {

@@ -47,6 +47,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setUpdated(?DateTime $updated)
  * @method DateTime|null getCreated()
  * @method void setCreated(?DateTime $created)
+ *
+ * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class Source extends Entity implements JsonSerializable
 {

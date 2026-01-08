@@ -197,11 +197,11 @@ class FacetCacheHandler
     {
         $this->setCachedFacetData(
             schemaId: $schemaId,
-                cacheKey: 'facetable_fields',
+            cacheKey: 'facetable_fields',
             facetType: 'config',
-                facetConfig: [],
-                data: $facetableFields,
-                ttl: $ttl
+            facetConfig: [],
+            data: $facetableFields,
+            ttl: $ttl
         );
 
         // Store in memory cache.

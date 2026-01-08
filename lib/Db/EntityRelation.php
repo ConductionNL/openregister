@@ -54,6 +54,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setAnonymizedValue(?string $anonymizedValue)
  * @method DateTime getCreatedAt()
  * @method void setCreatedAt(DateTime $createdAt)
+ *
+ * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class EntityRelation extends Entity implements JsonSerializable
 {

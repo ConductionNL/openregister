@@ -653,14 +653,15 @@ class ConfigurationController extends Controller
                 return new JSONResponse(data: ['error' => 'Invalid source. Must be "github" or "gitlab"'], statusCode: 400);
             }
 
+            // Initialize before conditional assignment.
+            $results = [];
+
             // Call appropriate service.
             if ($source === 'github') {
                 $this->logger->info('About to call GitHub search service');
                 $results = $this->githubHandler->searchConfigurations(search: $search, page: $page);
                 $this->logger->info('GitHub search completed', ['result_count' => count($results['results'] ?? [])]);
-            }
-
-            if ($source !== 'github') {
+            } else {
                 $this->logger->info('About to call GitLab search service');
                 $results = $this->gitlabHandler->searchConfigurations(
                     search: $search,
@@ -1192,7 +1193,7 @@ class ConfigurationController extends Controller
     public function importFromGitHub(): JSONResponse
     {
         return $this->importFromSource(
-            fetchConfig: fn($params) => $this->fetchConfigFromGitHub($params),
+            fetchConfig: fn(array $params) => $this->fetchConfigFromGitHub($params),
             params: $this->request->getParams(),
             sourceType: 'github'
         );
@@ -1214,7 +1215,7 @@ class ConfigurationController extends Controller
     public function importFromGitLab(): JSONResponse
     {
         return $this->importFromSource(
-            fetchConfig: fn($params) => $this->fetchConfigFromGitLab($params),
+            fetchConfig: fn(array $params) => $this->fetchConfigFromGitLab($params),
             params: $this->request->getParams(),
             sourceType: 'gitlab'
         );
@@ -1236,7 +1237,7 @@ class ConfigurationController extends Controller
     public function importFromUrl(): JSONResponse
     {
         return $this->importFromSource(
-            fetchConfig: fn($params) => $this->fetchConfigFromUrl($params),
+            fetchConfig: fn(array $params) => $this->fetchConfigFromUrl($params),
             params: $this->request->getParams(),
             sourceType: 'url'
         );

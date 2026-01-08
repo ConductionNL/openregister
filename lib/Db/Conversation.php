@@ -61,6 +61,8 @@ use Symfony\Component\Uid\Uuid;
  * @method void setUpdated(?DateTime $updated)
  *
  * @package OCA\OpenRegister\Db
+ *
+ * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class Conversation extends Entity implements JsonSerializable
 {

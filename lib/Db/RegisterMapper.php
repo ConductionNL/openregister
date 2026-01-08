@@ -228,22 +228,16 @@ class RegisterMapper extends QBMapper
 
         // Build OR conditions for matching against id, uuid, or slug.
         // Note: Only include id comparison if $id is actually numeric (PostgreSQL strict typing).
-        $qb->where(
-            $qb->expr()->orX(
-                $qb->expr()->eq('uuid', $qb->createNamedParameter($id, IQueryBuilder::PARAM_STR)),
-                $qb->expr()->eq('slug', $qb->createNamedParameter($id, IQueryBuilder::PARAM_STR))
-            )
+        $orConditions = $qb->expr()->orX(
+            $qb->expr()->eq('uuid', $qb->createNamedParameter($id, IQueryBuilder::PARAM_STR)),
+            $qb->expr()->eq('slug', $qb->createNamedParameter($id, IQueryBuilder::PARAM_STR))
         );
+
         if (is_numeric($id) === true) {
-            $qb->resetQueryPart('where');
-            $qb->where(
-                $qb->expr()->orX(
-                    $qb->expr()->eq('id', $qb->createNamedParameter((int) $id, IQueryBuilder::PARAM_INT)),
-                    $qb->expr()->eq('uuid', $qb->createNamedParameter($id, IQueryBuilder::PARAM_STR)),
-                    $qb->expr()->eq('slug', $qb->createNamedParameter($id, IQueryBuilder::PARAM_STR))
-                )
-            );
+            $orConditions->add($qb->expr()->eq('id', $qb->createNamedParameter((int) $id, IQueryBuilder::PARAM_INT)));
         }
+
+        $qb->where($orConditions);
 
         // Check if register exists before applying filters (for debugging).
         $qbBeforeFilter     = clone $qb;

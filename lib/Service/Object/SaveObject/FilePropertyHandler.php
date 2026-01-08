@@ -515,9 +515,9 @@ class FilePropertyHandler
                 // Handle string inputs (base64, data URI, or URL).
                 return $this->processStringFileInput(
                     objectEntity: $objectEntity,
-                        fileInput: $fileInput,
+                    fileInput: $fileInput,
                     propertyName: $propertyName,
-                        fileConfig: $fileConfig,
+                    fileConfig: $fileConfig,
                     index: $index
                 );
             }
@@ -526,9 +526,9 @@ class FilePropertyHandler
                 // Handle file object input.
                 return $this->processFileObjectInput(
                     objectEntity: $objectEntity,
-                        fileObject: $fileInput,
+                    fileObject: $fileInput,
                     propertyName: $propertyName,
-                        fileConfig: $fileConfig,
+                    fileConfig: $fileConfig,
                     index: $index
                 );
             }
@@ -574,6 +574,9 @@ class FilePropertyHandler
         array $fileConfig,
         ?int $index=null
     ) {
+        // Initialize fileData before conditional assignment.
+        $fileData = [];
+
         // Check if it's a URL.
         if (filter_var($fileInput, FILTER_VALIDATE_URL) !== false
             && (strpos($fileInput, 'http://') === 0 || strpos($fileInput, 'https://') === 0)
@@ -581,12 +584,7 @@ class FilePropertyHandler
             // Fetch file content from URL.
             $fileContent = $this->fetchFileFromUrl($fileInput);
             $fileData    = $this->parseFileDataFromUrl(url: $fileInput, content: $fileContent);
-        }
-
-        if (filter_var($fileInput, FILTER_VALIDATE_URL) === false
-            && str_starts_with($fileInput, 'http://') === false
-            && str_starts_with($fileInput, 'https://') === false
-        ) {
+        } else {
             // Parse as base64 or data URI.
             $fileData = $this->parseFileData($fileInput);
         }
@@ -660,27 +658,22 @@ class FilePropertyHandler
         // 2. Validate it against current config
         // 3. Apply auto tags if needed
         // 4. Return the file ID if valid
-
         // If no ID or existing file not accessible, create a new file.
         // This requires downloadUrl or accessUrl to fetch content.
         if (($fileObject['downloadUrl'] ?? null) !== null) {
             $fileUrl = $fileObject['downloadUrl'];
-        }
-
-        if (($fileObject['accessUrl'] ?? null) !== null) {
+        } else if (($fileObject['accessUrl'] ?? null) !== null) {
             $fileUrl = $fileObject['accessUrl'];
-        }
-
-        if (($fileObject['downloadUrl'] ?? null) === null && ($fileObject['accessUrl'] ?? null) === null) {
+        } else {
             throw new Exception("File object for property '$propertyName' has no downloadable URL");
         }
 
         // Fetch and process as URL.
         return $this->processStringFileInput(
             objectEntity: $objectEntity,
-                fileInput: $fileUrl,
+            fileInput: $fileUrl,
             propertyName: $propertyName,
-                fileConfig: $fileConfig,
+            fileConfig: $fileConfig,
             index: $index
         );
     }//end processFileObjectInput()
@@ -790,6 +783,9 @@ class FilePropertyHandler
     {
         $mimeType = 'application/octet-stream';
 
+        // Initialize content before conditional assignment.
+        $content = '';
+
         // Handle data URI format (data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...).
         if (strpos($fileContent, 'data:') === 0) {
             // Extract MIME type and content from data URI.
@@ -800,14 +796,10 @@ class FilePropertyHandler
                 if ($content === false) {
                     throw new Exception('Invalid base64 content in data URI');
                 }
-            }
-
-            if (preg_match('/^data:([^;]+);base64,(.+)$/', $fileContent, $matches) !== 1) {
+            } else {
                 throw new Exception('Invalid data URI format');
             }
-        }
-
-        if (strpos($fileContent, 'data:') !== 0) {
+        } else {
             // Handle plain base64 content.
             $content = base64_decode($fileContent, true);
             // Strict mode.

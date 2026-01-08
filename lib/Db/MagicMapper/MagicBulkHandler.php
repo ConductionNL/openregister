@@ -113,24 +113,32 @@ class MagicBulkHandler
             $preparedObject = [];
 
             // Extract @self metadata.
-            $selfData = $object['@self'] ?? [];
+            // Handle both formats:
+            // 1. Objects with @self key (legacy format).
+            // 2. Flat selfData arrays (optimized format from TransformationHandler).
+            // Object is already a flat selfData array by default - use it directly.
+            $selfData = $object;
+            if (($object['@self'] ?? null) !== null) {
+                $selfData = $object['@self'];
+            }
 
-            // Map metadata to prefixed columns.
-            $preparedObject['_uuid']         = $selfData['id'] ?? $object['id'] ?? Uuid::v4()->toRfc4122();
+            // Map metadata to prefixed columns with proper fallbacks.
+            $uuid = $selfData['uuid'] ?? $selfData['id'] ?? $object['id'] ?? Uuid::v4()->toRfc4122();
+            $preparedObject['_uuid']         = $uuid;
             $preparedObject['_register']     = $register->getId();
             $preparedObject['_schema']       = $schema->getId();
-            $preparedObject['_owner']        = $selfData['owner'] ?? null;
-            $preparedObject['_organisation'] = $selfData['organisation'] ?? null;
-            $preparedObject['_created']      = $selfData['created'] ?? $now->format('Y-m-d H:i:s');
+            $preparedObject['_owner']        = $selfData['owner'] ?? $object['owner'] ?? null;
+            $preparedObject['_organisation'] = $selfData['organisation'] ?? $object['organisation'] ?? null;
+            $preparedObject['_created']      = $selfData['created'] ?? $object['created'] ?? $now->format('Y-m-d H:i:s');
             $preparedObject['_updated']      = $now->format('Y-m-d H:i:s');
-            $preparedObject['_published']    = $selfData['published'] ?? null;
-            $preparedObject['_depublished']  = $selfData['depublished'] ?? null;
-            $preparedObject['_name']         = $selfData['name'] ?? null;
-            $preparedObject['_description']  = $selfData['description'] ?? null;
-            $preparedObject['_summary']      = $selfData['summary'] ?? null;
-            $preparedObject['_image']        = $selfData['image'] ?? null;
-            $preparedObject['_slug']         = $selfData['slug'] ?? null;
-            $preparedObject['_uri']          = $selfData['uri'] ?? null;
+            $preparedObject['_published']    = $selfData['published'] ?? $object['published'] ?? null;
+            $preparedObject['_depublished']  = $selfData['depublished'] ?? $object['depublished'] ?? null;
+            $preparedObject['_name']         = $selfData['name'] ?? $object['name'] ?? null;
+            $preparedObject['_description']  = $selfData['description'] ?? $object['description'] ?? null;
+            $preparedObject['_summary']      = $selfData['summary'] ?? $object['summary'] ?? null;
+            $preparedObject['_image']        = $selfData['image'] ?? $object['image'] ?? null;
+            $preparedObject['_slug']         = $selfData['slug'] ?? $object['slug'] ?? null;
+            $preparedObject['_uri']          = $selfData['uri'] ?? $object['uri'] ?? null;
 
             // Map ALL object properties to columns (camelCase → snake_case).
             // Properties can be at top level OR in 'object' key (structured format).

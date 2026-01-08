@@ -459,8 +459,8 @@ class FacetHandler
                     queryParameter: '@self['.$field.']',
                     order: $order
                 );
-            }
-        }
+            }//end foreach
+        }//end if
 
         // Process object field facets (non-@self).
         foreach ($facets as $field => $facetData) {
@@ -488,7 +488,7 @@ class FacetHandler
                 queryParameter: $field,
                 order: $order
             );
-        }
+        }//end foreach
 
         return $transformed;
     }//end transformFacetsToStandardFormat()
@@ -603,6 +603,7 @@ class FacetHandler
             if (is_int($firstValue) === true) {
                 return 'integer';
             }
+
             if (is_float($firstValue) === true) {
                 return 'number';
             }

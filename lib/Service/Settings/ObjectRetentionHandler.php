@@ -19,7 +19,7 @@ namespace OCA\OpenRegister\Service\Settings;
 
 use Exception;
 use RuntimeException;
-use OCP\IConfig;
+use OCP\IAppConfig;
 
 /**
  * Handler for object and retention settings operations.
@@ -41,9 +41,9 @@ class ObjectRetentionHandler
     /**
      * Nextcloud configuration instance
      *
-     * @var IConfig
+     * @var IAppConfig
      */
-    private IConfig $config;
+    private IAppConfig $appConfig;
 
     /**
      * Application name identifier
@@ -55,13 +55,13 @@ class ObjectRetentionHandler
     /**
      * Constructor for ObjectRetentionHandler.
      *
-     * @param IConfig $config  Configuration service.
-     * @param string  $appName Application name (default: 'openregister').
+     * @param IAppConfig $appConfig Configuration service.
+     * @param string     $appName   Application name (default: 'openregister').
      */
-    public function __construct(IConfig $config, string $appName="openregister")
+    public function __construct(IAppConfig $appConfig, string $appName="openregister")
     {
-        $this->config  = $config;
-        $this->appName = $appName;
+        $this->appConfig = $appConfig;
+        $this->appName   = $appName;
     }//end __construct()
 
     /**
@@ -80,7 +80,7 @@ class ObjectRetentionHandler
     public function getObjectSettingsOnly(): array
     {
         try {
-            $objectConfig = $this->config->getAppValue($this->appName, 'objectManagement', '');
+            $objectConfig = $this->appConfig->getValueString($this->appName, 'objectManagement', '');
 
             if (empty($objectConfig) === true) {
                 return [
@@ -146,7 +146,7 @@ class ObjectRetentionHandler
                 'autoRetry'            => $objectData['autoRetry'] ?? true,
             ];
 
-            $this->config->setAppValue($this->appName, 'objectManagement', json_encode($objectConfig));
+            $this->appConfig->setValueString($this->appName, 'objectManagement', json_encode($objectConfig));
             return $objectConfig;
         } catch (Exception $e) {
             throw new RuntimeException('Failed to update Object Management settings: '.$e->getMessage());
@@ -171,7 +171,7 @@ class ObjectRetentionHandler
     public function getRetentionSettingsOnly(): array
     {
         try {
-            $retentionConfig = $this->config->getAppValue($this->appName, 'retention', '');
+            $retentionConfig = $this->appConfig->getValueString($this->appName, 'retention', '');
 
             if (empty($retentionConfig) === true) {
                 return [
@@ -245,7 +245,7 @@ class ObjectRetentionHandler
                 'searchTrailsEnabled'    => $retentionData['searchTrailsEnabled'] ?? true,
             ];
 
-            $this->config->setAppValue($this->appName, 'retention', json_encode($retentionConfig));
+            $this->appConfig->setValueString($this->appName, 'retention', json_encode($retentionConfig));
             return $retentionConfig;
         } catch (Exception $e) {
             throw new RuntimeException('Failed to update Retention settings: '.$e->getMessage());

@@ -238,8 +238,8 @@ class DashboardService
             // Get orphaned audit trail statistics using the same exclusions.
             $auditStats = $this->auditTrailMapper->getStatistics(
                 registerId: null,
-                    schemaId: null,
-                    exclude: $validCombinations
+                schemaId: null,
+                exclude: $validCombinations
             );
 
             return [
@@ -666,9 +666,9 @@ class DashboardService
         try {
             return $this->auditTrailMapper->getActionChartData(
                 from: $from,
-                    till: $till,
-                    registerId: $registerId,
-                    schemaId: $schemaId
+                till: $till,
+                registerId: $registerId,
+                schemaId: $schemaId
             );
         } catch (Exception $e) {
             $this->logger->error(message: 'Failed to get audit trail action chart data: '.$e->getMessage());
@@ -764,8 +764,8 @@ class DashboardService
         try {
             return $this->auditTrailMapper->getDetailedStatistics(
                 registerId: $registerId,
-                    schemaId: $schemaId,
-                    hours: $hours
+                schemaId: $schemaId,
+                hours: $hours
             );
         } catch (Exception $e) {
             $this->logger->error(message: 'Failed to get audit trail statistics: '.$e->getMessage());
@@ -795,8 +795,8 @@ class DashboardService
         try {
             return $this->auditTrailMapper->getActionDistribution(
                 registerId: $registerId,
-                    schemaId: $schemaId,
-                    hours: $hours
+                schemaId: $schemaId,
+                hours: $hours
             );
         } catch (Exception $e) {
             $this->logger->error(message: 'Failed to get audit trail action distribution: '.$e->getMessage());
@@ -823,9 +823,9 @@ class DashboardService
         try {
             return $this->auditTrailMapper->getMostActiveObjects(
                 registerId: $registerId,
-                    schemaId: $schemaId,
-                    limit: $limit,
-                    hours: $hours
+                schemaId: $schemaId,
+                limit: $limit,
+                hours: $hours
             );
         } catch (Exception $e) {
             $this->logger->error(message: 'Failed to get most active objects: '.$e->getMessage());

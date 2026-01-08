@@ -181,6 +181,10 @@ class ConversationController extends Controller
             $offset      = (int) ($params['offset'] ?? $params['_offset'] ?? 0);
             $showDeleted = filter_var($params['_deleted'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
+            // Initialize variables before conditional assignment.
+            $conversations = [];
+            $total         = 0;
+
             // Fetch conversations based on deleted filter.
             if ($showDeleted === true) {
                 // Fetch only deleted/archived conversations.
@@ -218,7 +222,7 @@ class ConversationController extends Controller
 
             return new JSONResponse(
                 data: [
-                    'results' => array_map(fn($conv) => $conv->jsonSerialize(), $conversations),
+                    'results' => array_map(fn(Conversation $conv) => $conv->jsonSerialize(), $conversations),
                     'total'   => $total,
                     'limit'   => $limit,
                     'offset'  => $offset,

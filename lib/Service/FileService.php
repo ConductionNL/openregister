@@ -1151,8 +1151,11 @@ class FileService
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag is intentional for simple share toggle
      */
     public function addFile(
-        ObjectEntity | string $objectEntity, string $fileName,
-        string $content, bool $share=false, array $tags=[],
+        ObjectEntity | string $objectEntity,
+        string $fileName,
+        string $content,
+        bool $share=false,
+        array $tags=[],
         int | string | Schema | null $_schema=null,
         int | string | Register | null $_register=null,
         int|string|null $registerId=null

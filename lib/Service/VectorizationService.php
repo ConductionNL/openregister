@@ -280,7 +280,7 @@ class VectorizationService
 
             foreach ($itemBatches as $batch) {
                 try {
-                    $texts      = array_map(fn($item) => $item['text'], $batch);
+                    $texts      = array_map(fn(array $item): string => $item['text'], $batch);
                     $embeddings = $this->vectorService->generateBatchEmbeddings($texts);
 
                     foreach ($batch as $index => $item) {
@@ -305,9 +305,7 @@ class VectorizationService
                             // EmbeddingData may contain 'error' key even if not in type definition.
                             if (is_array($embeddingData) === true && array_key_exists('error', $embeddingData) === true) {
                                 $errorMsg = $embeddingData['error'];
-                            }
-
-                            if (is_array($embeddingData) === false || array_key_exists('error', $embeddingData) === false) {
+                            } else {
                                 $errorMsg = 'Embedding generation failed';
                             }
 

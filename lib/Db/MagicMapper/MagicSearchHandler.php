@@ -121,14 +121,16 @@ class MagicSearchHandler
         $queryBuilder = $this->db->getQueryBuilder();
 
         // Build base query - different for count vs search.
-        $queryBuilder->select('t.*')
-            ->from($tableName, 't')
-            ->setMaxResults($limit)
-            ->setFirstResult($offset);
         if ($count === true) {
-            $queryBuilder->resetQueryParts(queryPartNames: ['select', 'maxResults', 'firstResult']);
             $queryBuilder->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'count')
                 ->from($tableName, 't');
+        }
+
+        if ($count === false) {
+            $queryBuilder->select('t.*')
+                ->from($tableName, 't')
+                ->setMaxResults($limit)
+                ->setFirstResult($offset);
         }
 
         // Apply basic filters (deleted, published, etc.).
@@ -262,7 +264,7 @@ class MagicSearchHandler
 
                 // Handle array type columns (JSON arrays in PostgreSQL).
                 if ($propertyType === 'array') {
-                    $this->applyJsonArrayFilter($qb, $columnName, $value);
+                    $this->applyJsonArrayFilter(qb: $qb, columnName: $columnName, value: $value);
                     continue;
                 }
 
@@ -293,7 +295,10 @@ class MagicSearchHandler
     private function applyJsonArrayFilter(IQueryBuilder $qb, string $columnName, mixed $value): void
     {
         // Normalize value to array.
-        $values = is_array($value) === true ? $value : [$value];
+        $values = [$value];
+        if (is_array($value) === true) {
+            $values = $value;
+        }
 
         if (count($values) === 1) {
             // Single value: check if JSON array contains this value.
@@ -301,27 +306,28 @@ class MagicSearchHandler
             $jsonValue = json_encode($values[0]);
             $qb->andWhere(
                 $qb->expr()->comparison(
-                    "t.{$columnName}::jsonb",
-                    '@>',
-                    $qb->createNamedParameter('[' . $jsonValue . ']')
+                    x: "t.{$columnName}::jsonb",
+                    operator: '@>',
+                    y: $qb->createNamedParameter('['.$jsonValue.']')
                 )
             );
-        } else {
-            // Multiple values: check if JSON array contains ANY of the values (OR logic).
-            $orConditions = $qb->expr()->orX();
-            foreach ($values as $v) {
-                $jsonValue = json_encode($v);
-                $orConditions->add(
-                    $qb->expr()->comparison(
-                        "t.{$columnName}::jsonb",
-                        '@>',
-                        $qb->createNamedParameter('[' . $jsonValue . ']')
-                    )
-                );
-            }
-
-            $qb->andWhere($orConditions);
+            return;
         }
+
+        // Multiple values: check if JSON array contains ANY of the values (OR logic).
+        $orConditions = $qb->expr()->orX();
+        foreach ($values as $v) {
+            $jsonValue = json_encode($v);
+            $orConditions->add(
+                $qb->expr()->comparison(
+                    x: "t.{$columnName}::jsonb",
+                    operator: '@>',
+                    y: $qb->createNamedParameter('['.$jsonValue.']')
+                )
+            );
+        }
+
+        $qb->andWhere($orConditions);
     }//end applyJsonArrayFilter()
 
     /**

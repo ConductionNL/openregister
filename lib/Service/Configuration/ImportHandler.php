@@ -36,6 +36,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
+use DateTime;
 use Symfony\Component\Yaml\Yaml;
 
 /**
@@ -58,7 +59,7 @@ class ImportHandler
      * When an app is enabled as a dependency, it may boot and load its own configuration,
      * which could trigger another dependency check. This flag prevents infinite recursion.
      *
-     * @var bool
+     * @var boolean
      */
     private static bool $isDependencyCheckActive = false;
 
@@ -147,6 +148,13 @@ class ImportHandler
     private array $schemasMap = [];
 
     /**
+     * OpenConnector configuration service for optional integration.
+     *
+     * @var mixed The OpenConnector configuration service or null.
+     */
+    private mixed $openConnectorConfigurationService = null;
+
+    /**
      * Constructor for ImportHandler.
      *
      * @param SchemaMapper        $schemaMapper        The schema mapper.
@@ -158,6 +166,7 @@ class ImportHandler
      * @param LoggerInterface     $logger              The logger interface.
      * @param string              $appDataPath         The app data path.
      * @param UploadHandler       $uploadHandler       The upload handler.
+     * @param ObjectService       $objectService       The object service.
      */
     public function __construct(
         SchemaMapper $schemaMapper,
@@ -381,7 +390,7 @@ class ImportHandler
      *
      * @throws Exception If import fails.
      *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Force flag to override version checks
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  Force flag to override version checks
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Register import has multiple exception and version checks
      * @SuppressWarnings(PHPMD.NPathComplexity)      Version checking and update/create paths add complexity
      */
@@ -433,7 +442,7 @@ class ImportHandler
                     appId: $appId ?? 'unknown',
                     version: $version ?? 'unknown'
                 );
-            }
+            }//end try
 
             if ($existingRegister !== null) {
                 // Compare versions using version_compare for proper semver comparison.
@@ -456,16 +465,16 @@ class ImportHandler
                 }
 
                 return $this->registerMapper->update($existingRegister);
-            }
+            }//end if
 
             // Create new register.
             // NOTE: createFromArray already calls insert(), so we get a register with an ID.
             $register = $this->registerMapper->createFromArray($data);
-            
+
             // Set owner and application if provided.
             // These must be set AFTER creation because createFromArray doesn't handle them.
             $needsUpdate = false;
-            
+
             if ($owner !== null) {
                 $register->setOwner($owner);
                 $needsUpdate = true;
@@ -650,10 +659,10 @@ class ImportHandler
      *
      * @throws Exception If import fails.
      *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Force flag to override version checks
-     * @SuppressWarnings(PHPMD.NPathComplexity)        Schema import requires many conditional transformations
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)   Schema property processing has many type conditions
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)  Schema import involves complex property transformations
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Force flag to override version checks
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Schema import requires many conditional transformations
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Schema property processing has many type conditions
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Schema import involves complex property transformations
      */
     public function importSchema(
         array $data,
@@ -926,7 +935,7 @@ class ImportHandler
                 if ($owner !== null) {
                     $existingSchema->setOwner($owner);
                 }
-                
+
                 if ($appId !== null) {
                     $existingSchema->setApplication($appId);
                 }
@@ -939,11 +948,11 @@ class ImportHandler
             if ($owner !== null) {
                 $schema->setOwner($owner);
             }
-            
+
             if ($appId !== null) {
                 $schema->setApplication($appId);
             }
-            
+
             $schema = $this->schemaMapper->update($schema);
 
             return $schema;
@@ -1079,8 +1088,8 @@ class ImportHandler
             // PASS 1: Create all schemas without resolving objectConfiguration.schema references.
             // This ensures all schema entities exist before we try to look them up.
             $this->logger->info('PASS 1: Creating all schemas without cross-reference resolution');
-            $schemasToResolve = []; // Track schemas that need $ref resolution in Pass 2.
-
+            $schemasToResolve = [];
+            // Track schemas that need $ref resolution in Pass 2.
             foreach ($data['components']['schemas'] as $key => $schemaData) {
                 $this->logger->debug(
                     'Processing schema (Pass 1)',
@@ -1098,9 +1107,9 @@ class ImportHandler
                 try {
                     // Create schema without resolving cross-references.
                     // We'll temporarily skip schema lookups in importSchema by clearing the schemasMap.
-                    $savedSchemasMap    = $this->schemasMap;
-                    $this->schemasMap   = []; // Temporarily empty to prevent $ref resolution.
-
+                    $savedSchemasMap  = $this->schemasMap;
+                    $this->schemasMap = [];
+                    // Temporarily empty to prevent $ref resolution.
                     $schema = $this->importSchema(
                         data: $schemaData,
                         slugsAndIdsMap: $slugsAndIdsMap,
@@ -1113,9 +1122,9 @@ class ImportHandler
                     // Restore schemasMap and add newly created schema.
                     $this->schemasMap = $savedSchemasMap;
                     $this->schemasMap[$schema->getSlug()] = $schema;
-                    $result['schemas'][]                  = $schema;
-                    $schemasToResolve[$key]               = $schemaData; // Save for Pass 2.
-
+                    $result['schemas'][]    = $schema;
+                    $schemasToResolve[$key] = $schemaData;
+                    // Save for Pass 2.
                     $this->logger->debug(
                         'Successfully created schema (Pass 1)',
                         [
@@ -1178,7 +1187,8 @@ class ImportHandler
                         owner: $owner,
                         appId: $appId,
                         version: $version,
-                        force: true // Force update to resolve cross-references.
+                        force: true
+                        // Force update to resolve cross-references.
                     );
 
                     // Update in map with resolved version.
@@ -1219,8 +1229,12 @@ class ImportHandler
                     foreach ($registerData['schemas'] as $schemaSlug) {
                         // First check if schema exists in schemasMap (schemas imported in this session).
                         if (($this->schemasMap[$schemaSlug] ?? null) !== null) {
-                            $schemaIds[] = $this->schemasMap[$schemaSlug]->getId();
-                            $this->logger->debug("Schema '{$schemaSlug}' found in schemasMap", ['schemaId' => $this->schemasMap[$schemaSlug]->getId()]);
+                            $schemaId    = $this->schemasMap[$schemaSlug]->getId();
+                            $schemaIds[] = $schemaId;
+                            $this->logger->debug(
+                                "Schema '{$schemaSlug}' found in schemasMap",
+                                ['schemaId' => $schemaId]
+                            );
                             continue;
                         }
 
@@ -1303,10 +1317,14 @@ class ImportHandler
                 // Search for existing object.
                 // Use _rbac: false and _multitenancy: false to ensure we find objects regardless of organisation context.
                 // This prevents duplicate objects with the same UUID being created.
-                error_log("[IMPORT] Searching: register=$registerId, schema=$schemaId, slug=$slug");
-                $results        = $this->objectService->searchObjects(query: $search, _rbac: false, _multitenancy: false);
-                $resultCount = is_array($results) ? count($results) : 0;
-                error_log("[IMPORT] Found $resultCount results");
+                $this->logger->debug("[IMPORT] Searching: register=$registerId, schema=$schemaId, slug=$slug");
+                $results     = $this->objectService->searchObjects(query: $search, _rbac: false, _multitenancy: false);
+                $resultCount = 0;
+                if (is_array($results) === true) {
+                    $resultCount = count($results);
+                }
+
+                $this->logger->debug("[IMPORT] Found $resultCount results");
                 $existingObject = null;
                 if ((is_array($results) === true) && count($results) > 0) {
                     $existingObject = $results[0];
@@ -1416,17 +1434,18 @@ class ImportHandler
         }
 
         // Import seed data objects if present (only if configuration was created/updated).
-        if ($configuration !== null) {
-            $this->importSeedData(
-                configData: $data,
-                owner: $owner,
-                appId: $appId,
-                configuration: $configuration,
-                result: $result
-            );
-        } else {
+        if ($configuration === null) {
             $this->logger->debug('Skipping seedData import - no configuration entity available');
+            return $result;
         }
+
+        $this->importSeedData(
+            configData: $data,
+            owner: $owner,
+            appId: $appId,
+            configuration: $configuration,
+            result: $result
+        );
 
         return $result;
     }//end importFromJson()
@@ -1459,10 +1478,10 @@ class ImportHandler
      *     rules: array
      * }
      *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Force flag to override version checks
-     * @SuppressWarnings(PHPMD.NPathComplexity)        App import requires many conditional transformations
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)   Configuration lookup and metadata mapping has many branches
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)  App import with entity tracking requires detailed logic
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Force flag to override version checks
+     * @SuppressWarnings(PHPMD.NPathComplexity)       App import requires many conditional transformations
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Configuration lookup and metadata mapping has many branches
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) App import with entity tracking requires detailed logic
      */
     public function importFromApp(string $appId, array $data, string $version, bool $force=false): array
     {
@@ -1519,18 +1538,16 @@ class ImportHandler
                         // because we still want to check for seedData changes.
                         // The importFromJson method will handle version checks for schemas/registers.
                         if ($force === false && version_compare($newVersion, $existingVersion, '<=') === true) {
-                            $this->logger->info(
-                                "Configuration version ({$existingVersion}) is up-to-date, will skip schema/register import but check for seedData",
-                                ['app' => $appId, 'force' => $force]
-                            );
+                            $msg = "Config version ({$existingVersion}) up-to-date, checking seedData";
+                            $this->logger->info($msg, ['app' => $appId, 'force' => $force]);
                             // Continue to importFromJson, which will skip schemas/registers but may import seedData.
                         }
-                    }
+                    }//end if
                 } catch (Exception $e) {
                     // No existing configuration found, we'll create a new one.
                     $this->logger->info(message: "No existing configuration found for app {$appId}, will create new one");
-                }
-            }
+                }//end try
+            }//end if
 
             // Create new configuration if none exists.
             if ($configuration === null) {
@@ -1930,9 +1947,7 @@ class ImportHandler
 
                 $configuration = $this->configurationMapper->update($existingConfig);
                 $this->logger->info(message: "Updated existing configuration for app {$appId} with version {$version}");
-            }
-
-            if ($existingConfig === null) {
+            } else {
                 // Create new configuration.
                 $configuration = new Configuration();
                 $configuration->setTitle($title);
@@ -2016,11 +2031,11 @@ class ImportHandler
      * Processes the x-openregister.seedData section and creates initial objects
      * using the ObjectService for proper validation and handling.
      *
-     * @param array         $configData   The configuration data containing seedData.
-     * @param string|null   $owner        The owner of the objects.
-     * @param string|null   $appId        The application ID.
+     * @param array         $configData    The configuration data containing seedData.
+     * @param string|null   $owner         The owner of the objects.
+     * @param string|null   $appId         The application ID.
      * @param Configuration $configuration The configuration entity.
-     * @param array         $result       The result array to append object IDs to.
+     * @param array         $result        The result array to append object IDs to.
      *
      * @return void
      */
@@ -2031,9 +2046,9 @@ class ImportHandler
         Configuration $configuration,
         array &$result
     ): void {
-        
+
         $seedData = $configData['x-openregister']['seedData'] ?? null;
-        
+
         if ($seedData === null || empty($seedData['objects']) === true) {
             $this->logger->debug('No seed data found for configuration', ['appId' => $appId]);
             return;
@@ -2042,43 +2057,52 @@ class ImportHandler
         // Determine target register for seedData objects.
         // SeedData should go into the first register defined in the configuration.
         $targetRegister = null;
-        $registerIds = $configuration->getRegisters();
-        if (!empty($registerIds)) {
+        $registerIds    = $configuration->getRegisters();
+        if (empty($registerIds) === false) {
             $targetRegister = $this->registerMapper->find($registerIds[0], _multitenancy: false, _rbac: false);
         }
-        
+
+        $targetRegisterId = 0;
         if ($targetRegister === null) {
-            $this->logger->warning('No register found for seedData - using register 0', [
-                'appId' => $appId,
-                'config_title' => $configData['info']['title'] ?? 'unknown'
-            ]);
-            $targetRegisterId = 0;
-        } else {
-            $targetRegisterId = $targetRegister->getId();
-            $this->logger->info('SeedData will be imported into register', [
-                'register_id' => $targetRegisterId,
-                'register_slug' => $targetRegister->getSlug(),
-                'register_title' => $targetRegister->getTitle()
-            ]);
+            $this->logger->warning(
+                'No register found for seedData - using register 0',
+                [
+                    'appId'        => $appId,
+                    'config_title' => $configData['info']['title'] ?? 'unknown',
+                ]
+            );
         }
-        
-        $this->logger->info('Importing seed data objects', [
-            'config_title' => $configData['info']['title'] ?? 'unknown',
-            'description'  => $seedData['description'] ?? 'no description',
-            'object_types' => array_keys($seedData['objects']),
-            'target_register' => $targetRegisterId
-        ]);
+
+        if ($targetRegister !== null) {
+            $targetRegisterId = $targetRegister->getId();
+            $this->logger->info(
+                'SeedData will be imported into register',
+                [
+                    'register_id'    => $targetRegisterId,
+                    'register_slug'  => $targetRegister->getSlug(),
+                    'register_title' => $targetRegister->getTitle(),
+                ]
+            );
+        }
+
+        $this->logger->info(
+            'Importing seed data objects',
+            [
+                'config_title'    => $configData['info']['title'] ?? 'unknown',
+                'description'     => $seedData['description'] ?? 'no description',
+                'object_types'    => array_keys($seedData['objects']),
+                'target_register' => $targetRegisterId,
+            ]
+        );
 
         // Ensure dependencies are met before importing seedData.
         // This is checked here (lazy) rather than at start of import to avoid circular dependency issues.
         // TEMPORARILY DISABLED: Causes hanging due to circular dependency when apps try to load configs at boot.
-        // $this->ensureDependenciesForSeedData($configData);
-
+        // See: $this->ensureDependenciesForSeedData($configData).
         foreach ($seedData['objects'] as $schemaSlug => $objects) {
-            
             // Find schema by slug - first check schemasMap, then database.
             $schema = $this->schemasMap[$schemaSlug] ?? null;
-            
+
             if ($schema === null) {
                 // Try to find schema in database (may be from another app/config).
                 // Disable multitenancy to allow cross-app schema lookup.
@@ -2101,66 +2125,78 @@ class ImportHandler
                     );
                     continue;
                 }
-            } else {
-            }
+            }//end if
 
             $this->logger->info("Importing seed objects for schema '{$schemaSlug}'", ['count' => count($objects)]);
 
             foreach ($objects as $objectData) {
-                
                 // Check if object has @self with external configuration reference.
                 // This allows seedData from one app to reference schemas/registers from another app's configuration.
-                $selfData = $objectData['@self'] ?? null;
+                $selfData          = $objectData['@self'] ?? null;
                 $externalConfigUrl = $selfData['configuration'] ?? null;
                 $externalRegisterSlug = $selfData['register'] ?? null;
-                $externalSchemaSlug = $selfData['schema'] ?? null;
-                
+                $externalSchemaSlug   = $selfData['schema'] ?? null;
+
                 // Start with the current target register (from configuration).
                 $objectTargetRegisterId = $targetRegisterId;
-                $objectSchema = $schema;
-                
+                $objectSchema           = $schema;
+
                 // If object references external configuration, resolve schema and register from that config.
                 if ($externalConfigUrl !== null) {
-                    $this->logger->info("SeedData object references external configuration", [
-                        'config_url' => $externalConfigUrl,
-                        'register_slug' => $externalRegisterSlug,
-                        'schema_slug' => $externalSchemaSlug,
-                        'object_title' => $objectData['title'] ?? 'unknown'
-                    ]);
-                    
+                    $this->logger->info(
+                        "SeedData object references external configuration",
+                        [
+                            'config_url'    => $externalConfigUrl,
+                            'register_slug' => $externalRegisterSlug,
+                            'schema_slug'   => $externalSchemaSlug,
+                            'object_title'  => $objectData['title'] ?? 'unknown',
+                        ]
+                    );
+
                     // Find the external register by slug.
                     if ($externalRegisterSlug !== null) {
                         try {
                             // Use slug-to-ID map for efficient lookup.
                             $slugToIdMap = $this->registerMapper->getSlugToIdMap();
-                            
-                            if (isset($slugToIdMap[$externalRegisterSlug])) {
-                                $externalRegisterId = $slugToIdMap[$externalRegisterSlug];
-                                $externalRegister = $this->registerMapper->find(
+
+                            if (isset($slugToIdMap[$externalRegisterSlug]) === false) {
+                                $this->logger->warning(
+                                    "External register not found - using default",
+                                    [
+                                        'requested_slug'  => $externalRegisterSlug,
+                                        'available_slugs' => array_keys($slugToIdMap),
+                                    ]
+                                );
+                            }
+
+                            if (isset($slugToIdMap[$externalRegisterSlug]) === true) {
+                                $externalRegisterId     = $slugToIdMap[$externalRegisterSlug];
+                                $externalRegister       = $this->registerMapper->find(
                                     id: $externalRegisterId,
                                     _rbac: false,
                                     _multitenancy: false
                                 );
                                 $objectTargetRegisterId = $externalRegister->getId();
-                                $this->logger->info("Resolved external register for seedData object", [
-                                    'slug' => $externalRegisterSlug,
-                                    'id' => $objectTargetRegisterId,
-                                    'title' => $externalRegister->getTitle()
-                                ]);
-                            } else {
-                                $this->logger->warning("External register not found - using default", [
-                                    'requested_slug' => $externalRegisterSlug,
-                                    'available_slugs' => array_keys($slugToIdMap)
-                                ]);
+                                $this->logger->info(
+                                    "Resolved external register for seedData object",
+                                    [
+                                        'slug'  => $externalRegisterSlug,
+                                        'id'    => $objectTargetRegisterId,
+                                        'title' => $externalRegister->getTitle(),
+                                    ]
+                                );
                             }
                         } catch (\Exception $e) {
-                            $this->logger->error("Failed to resolve external register", [
-                                'slug' => $externalRegisterSlug,
-                                'error' => $e->getMessage()
-                            ]);
-                        }
-                    }
-                    
+                            $this->logger->error(
+                                "Failed to resolve external register",
+                                [
+                                    'slug'  => $externalRegisterSlug,
+                                    'error' => $e->getMessage(),
+                                ]
+                            );
+                        }//end try
+                    }//end if
+
                     // Find the external schema by slug (if different from current schema).
                     if ($externalSchemaSlug !== null) {
                         try {
@@ -2171,29 +2207,40 @@ class ImportHandler
                                 _multitenancy: false,
                                 _rbac: false
                             );
-                            
-                            if (!empty($externalSchemas)) {
+
+                            if (empty($externalSchemas) === true) {
+                                $this->logger->warning(
+                                    "External schema not found - using current schema",
+                                    [
+                                        'requested_slug' => $externalSchemaSlug,
+                                        'current_schema' => $schemaSlug,
+                                    ]
+                                );
+                            }
+
+                            if (empty($externalSchemas) === false) {
                                 $objectSchema = $externalSchemas[0];
-                                $this->logger->info("Resolved external schema for seedData object", [
-                                    'slug' => $externalSchemaSlug,
-                                    'id' => $objectSchema->getId(),
-                                    'title' => $objectSchema->getTitle()
-                                ]);
-                            } else {
-                                $this->logger->warning("External schema not found - using current schema", [
-                                    'requested_slug' => $externalSchemaSlug,
-                                    'current_schema' => $schemaSlug
-                                ]);
+                                $this->logger->info(
+                                    "Resolved external schema for seedData object",
+                                    [
+                                        'slug'  => $externalSchemaSlug,
+                                        'id'    => $objectSchema->getId(),
+                                        'title' => $objectSchema->getTitle(),
+                                    ]
+                                );
                             }
                         } catch (\Exception $e) {
-                            $this->logger->error("Failed to resolve external schema", [
-                                'slug' => $externalSchemaSlug,
-                                'error' => $e->getMessage()
-                            ]);
-                        }
-                    }
-                }
-                
+                            $this->logger->error(
+                                "Failed to resolve external schema",
+                                [
+                                    'slug'  => $externalSchemaSlug,
+                                    'error' => $e->getMessage(),
+                                ]
+                            );
+                        }//end try
+                    }//end if
+                }//end if
+
                 $objectSlug = $objectData['slug'] ?? $objectData['title'] ?? null;
                 if ($objectSlug === null) {
                     $this->logger->error(
@@ -2203,31 +2250,30 @@ class ImportHandler
                     continue;
                 }
 
-
                 try {
                     // Use ObjectEntityMapper directly for seedData objects to avoid complex ObjectService dependencies.
                     // SeedData objects are simple and don't require cascading or complex validation.
-                    $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
-                    
+                    $objectEntity = new ObjectEntity();
+
                     // Generate UUID if not provided.
                     $uuid = $objectData['uuid'] ?? \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
                     $objectEntity->setUuid($uuid);
-                    
+
                     // Set schema reference - use resolved external schema if available.
                     $objectEntity->setSchema($objectSchema->getId());
-                    
+
                     // Use the resolved target register (either from external config or default).
                     // SeedData with external config references goes to the external register.
                     $objectEntity->setRegister($objectTargetRegisterId);
-                    
+
                     // Store object data.
                     $objectEntity->setObject($objectData);
-                    
+
                     // Set timestamps.
-                    $now = new \DateTime();
+                    $now = new DateTime();
                     $objectEntity->setCreated($now);
                     $objectEntity->setUpdated($now);
-                    
+
                     // Insert into database.
                     $createdObject = $this->objectEntityMapper->insert($objectEntity);
 
@@ -2245,10 +2291,13 @@ class ImportHandler
             }//end foreach
         }//end foreach
 
-        $this->logger->info('Seed data import complete', [
-            'config_title' => $configData['info']['title'] ?? 'unknown',
-            'imported'     => count($result['objects']),
-        ]);
+        $this->logger->info(
+            'Seed data import complete',
+            [
+                'config_title' => $configData['info']['title'] ?? 'unknown',
+                'imported'     => count($result['objects']),
+            ]
+        );
     }//end importSeedData()
 
     /**
@@ -2277,11 +2326,14 @@ class ImportHandler
             return;
         }
 
-        $this->logger->info('Ensuring Nextcloud app dependencies for seedData', [
-            'count' => count($dependencies),
-        ]);
+        $this->logger->info(
+            'Ensuring Nextcloud app dependencies for seedData',
+            [
+                'count' => count($dependencies),
+            ]
+        );
 
-        // Set guard flag before processing
+        // Set guard flag before processing.
         self::$isDependencyCheckActive = true;
 
         try {
@@ -2293,19 +2345,22 @@ class ImportHandler
                     continue;
                 }
 
-                $appId = $dependency['app'] ?? null;
+                $appId    = $dependency['app'] ?? null;
                 $required = $dependency['required'] ?? false;
-                $reason = $dependency['reason'] ?? 'Required for seedData import';
+                $reason   = $dependency['reason'] ?? 'Required for seedData import';
 
                 if ($appId === null) {
                     $this->logger->warning('Nextcloud app dependency missing app ID - skipping');
                     continue;
                 }
 
-                $this->logger->info("Checking Nextcloud app dependency: {$appId}", [
-                    'required' => $required,
-                    'reason' => $reason,
-                ]);
+                $this->logger->info(
+                    "Checking Nextcloud app dependency: {$appId}",
+                    [
+                        'required' => $required,
+                        'reason'   => $reason,
+                    ]
+                );
 
                 try {
                     $appManager = \OC::$server->get(\OCP\App\IAppManager::class);
@@ -2316,43 +2371,45 @@ class ImportHandler
                         $this->logger->warning($msg);
 
                         if ($required === true) {
-                            throw new Exception($msg . " - cannot enable required app for seedData");
+                            throw new Exception($msg." - cannot enable required app for seedData");
                         }
+
                         continue;
                     }
 
-                    if ($appManager->isEnabledForUser($appId) === false) {
-                        $this->logger->info("Nextcloud app '{$appId}' is not enabled - enabling now");
-
-                        try {
-                            $appManager->enableApp($appId);
-                            $this->logger->info("Successfully enabled Nextcloud app '{$appId}'");
-
-                            // Load the app to ensure its services are available.
-                            \OC_App::loadApp($appId);
-                            $this->logger->info("Successfully loaded Nextcloud app '{$appId}'");
-                        } catch (Exception $e) {
-                            $msg = "Failed to enable Nextcloud app '{$appId}': {$e->getMessage()}";
-                            if ($required === true) {
-                                throw new Exception($msg);
-                            } else {
-                                $this->logger->warning($msg);
-                            }
-                        }
-                    } else {
+                    if ($appManager->isEnabledForUser($appId) === true) {
                         $this->logger->info("Nextcloud app '{$appId}' is already enabled");
+                        continue;
                     }
+
+                    $this->logger->info("Nextcloud app '{$appId}' is not enabled - enabling now");
+
+                    try {
+                        $appManager->enableApp($appId);
+                        $this->logger->info("Successfully enabled Nextcloud app '{$appId}'");
+
+                        // Load the app to ensure its services are available.
+                        \OC_App::loadApp($appId);
+                        $this->logger->info("Successfully loaded Nextcloud app '{$appId}'");
+                    } catch (Exception $e) {
+                        $msg = "Failed to enable Nextcloud app '{$appId}': {$e->getMessage()}";
+                        if ($required === true) {
+                            throw new Exception($msg);
+                        }
+
+                        $this->logger->warning($msg);
+                    }//end try
                 } catch (Exception $e) {
                     $msg = "Error checking/enabling Nextcloud app '{$appId}': {$e->getMessage()}";
                     if ($required === true) {
                         throw new Exception($msg);
-                    } else {
-                        $this->logger->warning($msg);
                     }
+
+                    $this->logger->warning($msg);
                 }//end try
             }//end foreach
         } finally {
-            // Always reset guard flag, even if exception occurred
+            // Always reset guard flag, even if exception occurred.
             self::$isDependencyCheckActive = false;
         }//end try
     }//end ensureDependenciesForSeedData()
@@ -2360,11 +2417,13 @@ class ImportHandler
     /**
      * Handle Nextcloud app dependencies.
      *
-     * @deprecated Use ensureDependenciesForSeedData() instead. This method is kept for backwards compatibility.
-     *
      * @param array $configData The configuration data.
      *
      * @return void
+     *
+     * @deprecated Use ensureDependenciesForSeedData() instead. This method is kept for backwards compatibility.
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Kept for backwards compatibility
      */
     private function handleNextcloudAppDependencies(array $configData): void
     {

@@ -71,6 +71,8 @@ class BulkOperationsHandler
      * @param bool          $_multitenancy   Whether to apply multitenancy filtering.
      * @param bool          $validation      Whether to validate objects.
      * @param bool          $events          Whether to trigger events.
+     * @param bool          $deduplicateIds  Whether to deduplicate IDs.
+     * @param bool          $enrich          Whether to enrich objects with metadata.
      *
      * @psalm-param array<int, array<string, mixed>> $objects
      * @psalm-param Register|null $currentRegister
@@ -92,7 +94,8 @@ class BulkOperationsHandler
         bool $_multitenancy=true,
         bool $validation=false,
         bool $events=false,
-        bool $deduplicateIds=true
+        bool $deduplicateIds=true,
+        bool $enrich=true
     ): array {
 
         // ARCHITECTURAL DELEGATION: Use specialized SaveObjects handler for bulk operations.
@@ -105,7 +108,8 @@ class BulkOperationsHandler
             _multitenancy: $_multitenancy,
             validation: $validation,
             events: $events,
-            deduplicateIds: $deduplicateIds
+            deduplicateIds: $deduplicateIds,
+            enrich: $enrich
         );
 
         // **BULK CACHE INVALIDATION**: Clear collection caches after successful bulk operations.

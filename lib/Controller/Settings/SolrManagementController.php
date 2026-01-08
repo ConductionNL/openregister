@@ -278,9 +278,9 @@ class SolrManagementController extends Controller
                 data: [
                     'success'           => $totalErrors === 0,
                     'message'           => sprintf(
-                            'Field creation completed: %d total fields created across both collections',
-                            $totalCreated
-                        ),
+                        'Field creation completed: %d total fields created across both collections',
+                        $totalCreated
+                    ),
                     'total_created'     => $totalCreated,
                     'total_errors'      => $totalErrors,
                     'results'           => $results,

@@ -41,6 +41,8 @@ use OCP\AppFramework\Db\Entity;
  * @link      https://OpenRegister.app
  *
  * @SuppressWarnings(PHPMD.TooManyFields) Domain entity requires many fields for complete endpoint configuration
+ *
+ * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class Endpoint extends Entity implements JsonSerializable
 {

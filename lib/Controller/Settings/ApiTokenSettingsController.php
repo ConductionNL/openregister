@@ -80,7 +80,7 @@ class ApiTokenSettingsController extends Controller
                 $maskedGithubToken = $this->settingsService->maskToken($githubToken);
             }
 
-            $maskedGithubToken = '';
+            $maskedGitlabToken = '';
             if ($gitlabToken !== '') {
                 $maskedGitlabToken = $this->settingsService->maskToken($gitlabToken);
             }

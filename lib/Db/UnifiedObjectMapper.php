@@ -488,14 +488,14 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         ?Schema $schema=null
     ): array {
         $this->logger->info(
-                '[UnifiedObjectMapper] ultraFastBulkSave called',
-                [
-                    'insertCount' => count($insertObjects),
-                    'updateCount' => count($updateObjects),
-                    'hasRegister' => $register !== null,
-                    'hasSchema'   => $schema !== null,
-                ]
-                );
+            '[UnifiedObjectMapper] ultraFastBulkSave called',
+            [
+                'insertCount' => count($insertObjects),
+                'updateCount' => count($updateObjects),
+                'hasRegister' => $register !== null,
+                'hasSchema'   => $schema !== null,
+            ]
+        );
 
         // Try to resolve register and schema from object data if not provided.
         if ($register === null || $schema === null) {
@@ -523,12 +523,12 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             }
 
             $this->logger->info(
-                    '[UnifiedObjectMapper] Resolved',
-                    [
-                        'register' => $register?->getId(),
-                        'schema'   => $schema?->getId(),
-                    ]
-                    );
+                '[UnifiedObjectMapper] Resolved',
+                [
+                    'register' => $register?->getId(),
+                    'schema'   => $schema?->getId(),
+                ]
+            );
         }//end if
 
         // Check if magic mapping should be used.
@@ -733,7 +733,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                 );
                 // Fall through to blob storage.
             }
-        }
+        }//end if
 
         return $this->objectEntityMapper->getSimpleFacets($query);
     }//end getSimpleFacets()
@@ -754,10 +754,13 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         try {
             $register = $this->registerMapper->find($registerId, _multitenancy: false, _rbac: false);
         } catch (\Exception $e) {
-            $this->logger->warning('[UnifiedObjectMapper] Failed to find register for multi-schema facets', [
-                'registerId' => $registerId,
-                'error'      => $e->getMessage(),
-            ]);
+            $this->logger->warning(
+                '[UnifiedObjectMapper] Failed to find register for multi-schema facets',
+                [
+                    'registerId' => $registerId,
+                    'error'      => $e->getMessage(),
+                ]
+            );
             return [];
         }
 
@@ -777,15 +780,18 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                 );
 
                 // Merge into combined results.
-                $mergedFacets = $this->mergeFacetResults($mergedFacets, $schemaFacets);
+                $mergedFacets = $this->mergeFacetResults(existing: $mergedFacets, new: $schemaFacets);
             } catch (\Exception $e) {
-                $this->logger->warning('[UnifiedObjectMapper] Failed to get facets for schema', [
-                    'schemaId' => $schemaId,
-                    'error'    => $e->getMessage(),
-                ]);
+                $this->logger->warning(
+                    '[UnifiedObjectMapper] Failed to get facets for schema',
+                    [
+                        'schemaId' => $schemaId,
+                        'error'    => $e->getMessage(),
+                    ]
+                );
                 // Continue with other schemas.
-            }
-        }
+            }//end try
+        }//end foreach
 
         return $mergedFacets;
     }//end getSimpleFacetsMultiSchema()
@@ -816,18 +822,19 @@ class UnifiedObjectMapper extends AbstractObjectMapper
 
                     // Merge buckets.
                     $existing['@self'][$metaKey] = $this->mergeFacetBuckets(
-                        $existing['@self'][$metaKey],
-                        $metaFacet
+                        existing: $existing['@self'][$metaKey],
+                        new: $metaFacet
                     );
                 }
+
                 continue;
             }
 
             // Merge object field facets.
             if (is_array($facetData) === true && isset($facetData['buckets']) === true) {
-                $existing[$facetKey] = $this->mergeFacetBuckets($existing[$facetKey], $facetData);
+                $existing[$facetKey] = $this->mergeFacetBuckets(existing: $existing[$facetKey], new: $facetData);
             }
-        }
+        }//end foreach
 
         return $existing;
     }//end mergeFacetResults()
@@ -848,7 +855,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         // Index existing buckets by key for fast lookup.
         $bucketIndex = [];
         foreach ($existingBuckets as $idx => $bucket) {
-            $key               = $bucket['key'] ?? '';
+            $key = $bucket['key'] ?? '';
             $bucketIndex[$key] = $idx;
         }
 
@@ -859,17 +866,21 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                 // Add counts.
                 $idx = $bucketIndex[$key];
                 $existingBuckets[$idx]['results'] += $newBucket['results'] ?? 0;
-            } else {
-                // Add new bucket.
-                $existingBuckets[]  = $newBucket;
-                $bucketIndex[$key] = count($existingBuckets) - 1;
+                continue;
             }
+
+            // Add new bucket.
+            $existingBuckets[] = $newBucket;
+            $bucketIndex[$key] = count($existingBuckets) - 1;
         }
 
         // Re-sort by results descending.
-        usort($existingBuckets, function ($a, $b) {
-            return ($b['results'] ?? 0) - ($a['results'] ?? 0);
-        });
+        usort(
+            $existingBuckets,
+            function (array $a, array $b): int {
+                return ($b['results'] ?? 0) - ($a['results'] ?? 0);
+            }
+        );
 
         $existing['buckets'] = $existingBuckets;
         return $existing;
@@ -895,6 +906,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      * @return array{results: ObjectEntity[], total: int, registers: array, schemas: array}
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
+     * @psalm-suppress                              UnusedParam Parameters reserved for future per-schema security filtering.
      */
     private function searchObjectsPaginatedMultiSchema(
         array $searchQuery,
@@ -907,23 +919,26 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         ?array $ids=null,
         ?string $uses=null
     ): array {
-        // Extract pagination parameters
+        // Extract pagination parameters.
         $limit  = (int) ($searchQuery['_limit'] ?? 20);
         $offset = (int) ($searchQuery['_offset'] ?? 0);
 
-        // Cache for loaded registers and schemas
+        // Cache for loaded registers and schemas.
         $registersCache = [];
         $schemasCache   = [];
 
-        // Load register once
+        // Load register once.
         try {
             $register = $this->registerMapper->find($registerId, _multitenancy: false, _rbac: false);
             $registersCache[$register->getId()] = $register->jsonSerialize();
         } catch (\Exception $e) {
-            $this->logger->warning('[UnifiedObjectMapper] Failed to find register for multi-schema search', [
-                'registerId' => $registerId,
-                'error'      => $e->getMessage(),
-            ]);
+            $this->logger->warning(
+                '[UnifiedObjectMapper] Failed to find register for multi-schema search',
+                [
+                    'registerId' => $registerId,
+                    'error'      => $e->getMessage(),
+                ]
+            );
             return [
                 'results'   => [],
                 'total'     => 0,
@@ -935,21 +950,24 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         $allResults = [];
         $totalCount = 0;
 
-        // Query each schema
+        // Query each schema.
         foreach ($schemaIds as $schemaId) {
             try {
                 $schema = $this->schemaMapper->find((int) $schemaId, _multitenancy: false, _rbac: false);
                 $schemasCache[$schema->getId()] = $schema->jsonSerialize();
 
-                // Check if magic mapper should be used for this schema
+                // Check if magic mapper should be used for this schema.
                 if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === false) {
-                    $this->logger->debug('[UnifiedObjectMapper] Skipping non-magic-mapper schema', [
-                        'schemaId' => $schemaId,
-                    ]);
+                    $this->logger->debug(
+                        '[UnifiedObjectMapper] Skipping non-magic-mapper schema',
+                        [
+                            'schemaId' => $schemaId,
+                        ]
+                    );
                     continue;
                 }
 
-                // Get count for this schema
+                // Get count for this schema.
                 $schemaCount = $this->magicMapper->countObjectsInRegisterSchemaTable(
                     query: $countQuery,
                     register: $register,
@@ -957,9 +975,9 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                 );
                 $totalCount += $schemaCount;
 
-                // For results, we need to fetch enough to cover pagination
-                // Fetch up to (offset + limit) from each table to ensure we have enough results
-                $schemaSearchQuery = $searchQuery;
+                // For results, we need to fetch enough to cover pagination.
+                // Fetch up to (offset + limit) from each table to ensure we have enough results.
+                $schemaSearchQuery            = $searchQuery;
                 $schemaSearchQuery['_limit']  = $offset + $limit;
                 $schemaSearchQuery['_offset'] = 0;
 
@@ -969,32 +987,42 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                     schema: $schema
                 );
 
-                // Add schema ID to each result for sorting reference
+                // Add schema ID to each result for sorting reference.
                 foreach ($schemaResults as $result) {
                     $allResults[] = $result;
                 }
             } catch (\Exception $e) {
-                $this->logger->warning('[UnifiedObjectMapper] Failed to search schema in multi-schema search', [
-                    'schemaId' => $schemaId,
-                    'error'    => $e->getMessage(),
-                ]);
-                // Continue with other schemas
+                $this->logger->warning(
+                    '[UnifiedObjectMapper] Failed to search schema in multi-schema search',
+                    [
+                        'schemaId' => $schemaId,
+                        'error'    => $e->getMessage(),
+                    ]
+                );
+                // Continue with other schemas.
+            }//end try
+        }//end foreach
+
+        // Sort combined results by updated/created date descending (most recent first).
+        usort(
+            $allResults,
+            function ($a, $b) {
+                $aDate = $a->getUpdated() ?? $a->getCreated() ?? new DateTime('1970-01-01');
+                $bDate = $b->getUpdated() ?? $b->getCreated() ?? new DateTime('1970-01-01');
+
+                if ($aDate instanceof DateTime && $bDate instanceof DateTime) {
+                    return $bDate->getTimestamp() - $aDate->getTimestamp();
+                }
+
+                return 0;
             }
+        );
+
+        // Apply final pagination.
+        $paginatedResults = array_slice($allResults, $offset);
+        if ($limit > 0) {
+            $paginatedResults = array_slice($allResults, $offset, $limit);
         }
-
-        // Sort combined results by updated/created date descending (most recent first)
-        usort($allResults, function ($a, $b) {
-            $aDate = $a->getUpdated() ?? $a->getCreated() ?? new DateTime('1970-01-01');
-            $bDate = $b->getUpdated() ?? $b->getCreated() ?? new DateTime('1970-01-01');
-
-            if ($aDate instanceof DateTime && $bDate instanceof DateTime) {
-                return $bDate->getTimestamp() - $aDate->getTimestamp();
-            }
-            return 0;
-        });
-
-        // Apply final pagination
-        $paginatedResults = array_slice($allResults, $offset, $limit > 0 ? $limit : null);
 
         return [
             'results'   => $paginatedResults,
@@ -1174,16 +1202,21 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         $schemaId   = $searchQuery['_schema'] ?? $searchQuery['schema'] ?? null;
         $schemaIds  = $searchQuery['_schemas'] ?? null;
 
-        $register = null;
-        $schema   = null;
+        $register       = null;
+        $schema         = null;
         $useMagicMapper = false;
 
         // Cache for loaded registers and schemas (indexed by ID for frontend lookup).
         $registersCache = [];
         $schemasCache   = [];
 
-        // Check for multi-schema search (when _schemas is provided but _schema is not)
-        if ($registerId !== null && $schemaId === null && $schemaIds !== null && is_array($schemaIds) && count($schemaIds) > 0) {
+        // Check for multi-schema search (when _schemas is provided but _schema is not).
+        $isMultiSchemaSearch = $registerId !== null
+            && $schemaId === null
+            && $schemaIds !== null
+            && is_array($schemaIds) === true
+            && count($schemaIds) > 0;
+        if ($isMultiSchemaSearch === true) {
             return $this->searchObjectsPaginatedMultiSchema(
                 searchQuery: $searchQuery,
                 countQuery: $countQuery,
@@ -1200,8 +1233,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         // Load register and schema ONCE if both are specified.
         if ($registerId !== null && $schemaId !== null) {
             try {
-                $register = $this->registerMapper->find((int) $registerId, _multitenancy: false, _rbac: false);
-                $schema   = $this->schemaMapper->find((int) $schemaId, _multitenancy: false, _rbac: false);
+                $register       = $this->registerMapper->find((int) $registerId, _multitenancy: false, _rbac: false);
+                $schema         = $this->schemaMapper->find((int) $schemaId, _multitenancy: false, _rbac: false);
                 $useMagicMapper = $this->shouldUseMagicMapper(register: $register, schema: $schema);
 
                 // Add to cache indexed by ID.
@@ -1216,73 +1249,83 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         }
 
         // Perform search and count using the appropriate mapper.
-        if ($useMagicMapper === true && $register !== null && $schema !== null) {
+        $canUseMagicMapper = $useMagicMapper === true && $register !== null && $schema !== null;
+        if ($canUseMagicMapper === true) {
             $results = $this->magicMapper->searchObjectsInRegisterSchemaTable(
                 query: $searchQuery,
                 register: $register,
                 schema: $schema
             );
-            $total = $this->magicMapper->countObjectsInRegisterSchemaTable(
+            $total   = $this->magicMapper->countObjectsInRegisterSchemaTable(
                 query: $countQuery,
                 register: $register,
                 schema: $schema
             );
-        } else {
-            $results = $this->objectEntityMapper->searchObjects(
-                query: $searchQuery,
-                _activeOrgUuid: $activeOrgUuid,
-                _rbac: $rbac,
-                _multitenancy: $multitenancy,
-                ids: $ids,
-                uses: $uses
-            );
-            $total = $this->objectEntityMapper->countSearchObjects(
-                query: $countQuery,
-                _activeOrgUuid: $activeOrgUuid,
-                _rbac: $rbac,
-                _multitenancy: $multitenancy,
-                ids: $ids,
-                uses: $uses
-            );
 
-            // For blob storage results, collect unique register/schema IDs from results.
-            // This handles queries that span multiple schemas.
-            $uniqueRegisterIds = [];
-            $uniqueSchemaIds   = [];
+            // Return results with registers/schemas indexed by ID for frontend lookup.
+            return [
+                'results'   => $results,
+                'total'     => $total,
+                'registers' => $registersCache,
+                'schemas'   => $schemasCache,
+            ];
+        }
 
-            foreach ($results as $result) {
-                if ($result instanceof ObjectEntity) {
-                    $regId = $result->getRegister();
-                    $schId = $result->getSchema();
+        // Use objectEntityMapper for blob storage.
+        $results = $this->objectEntityMapper->searchObjects(
+            query: $searchQuery,
+            _activeOrgUuid: $activeOrgUuid,
+            _rbac: $rbac,
+            _multitenancy: $multitenancy,
+            ids: $ids,
+            uses: $uses
+        );
+        $total   = $this->objectEntityMapper->countSearchObjects(
+            query: $countQuery,
+            _activeOrgUuid: $activeOrgUuid,
+            _rbac: $rbac,
+            _multitenancy: $multitenancy,
+            ids: $ids,
+            uses: $uses
+        );
 
-                    if ($regId !== null && !isset($registersCache[$regId])) {
-                        $uniqueRegisterIds[$regId] = true;
-                    }
+        // For blob storage results, collect unique register/schema IDs from results.
+        // This handles queries that span multiple schemas.
+        $uniqueRegisterIds = [];
+        $uniqueSchemaIds   = [];
 
-                    if ($schId !== null && !isset($schemasCache[$schId])) {
-                        $uniqueSchemaIds[$schId] = true;
-                    }
+        foreach ($results as $result) {
+            if ($result instanceof ObjectEntity) {
+                $regId = $result->getRegister();
+                $schId = $result->getSchema();
+
+                if ($regId !== null && isset($registersCache[$regId]) === false) {
+                    $uniqueRegisterIds[$regId] = true;
+                }
+
+                if ($schId !== null && isset($schemasCache[$schId]) === false) {
+                    $uniqueSchemaIds[$schId] = true;
                 }
             }
+        }
 
-            // Load any missing registers.
-            foreach (array_keys($uniqueRegisterIds) as $regId) {
-                try {
-                    $reg = $this->registerMapper->find((int) $regId, _multitenancy: false, _rbac: false);
-                    $registersCache[$reg->getId()] = $reg->jsonSerialize();
-                } catch (\Exception $e) {
-                    // Skip if not found.
-                }
+        // Load any missing registers.
+        foreach (array_keys($uniqueRegisterIds) as $regId) {
+            try {
+                $reg = $this->registerMapper->find((int) $regId, _multitenancy: false, _rbac: false);
+                $registersCache[$reg->getId()] = $reg->jsonSerialize();
+            } catch (\Exception $e) {
+                // Skip if not found.
             }
+        }
 
-            // Load any missing schemas.
-            foreach (array_keys($uniqueSchemaIds) as $schId) {
-                try {
-                    $sch = $this->schemaMapper->find((int) $schId, _multitenancy: false, _rbac: false);
-                    $schemasCache[$sch->getId()] = $sch->jsonSerialize();
-                } catch (\Exception $e) {
-                    // Skip if not found.
-                }
+        // Load any missing schemas.
+        foreach (array_keys($uniqueSchemaIds) as $schId) {
+            try {
+                $sch = $this->schemaMapper->find((int) $schId, _multitenancy: false, _rbac: false);
+                $schemasCache[$sch->getId()] = $sch->jsonSerialize();
+            } catch (\Exception $e) {
+                // Skip if not found.
             }
         }
 

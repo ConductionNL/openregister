@@ -251,6 +251,9 @@ class ExportHandler
                 );
             }
 
+            // Initialize result before conditional assignment.
+            $result = null;
+
             // Delegate to ImportService based on file type.
             if (in_array($extension, ['xlsx', 'xls'], true) === true) {
                 $result = $this->importService->importFromExcel(

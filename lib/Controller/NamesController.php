@@ -115,6 +115,10 @@ class NamesController extends Controller
             // Check if specific IDs were requested.
             $requestedIds = $this->request->getParam('ids');
 
+            // Initialize names array before conditional assignment.
+            /** @var array<string, string> $names */
+            $names = [];
+
             // Handle different input formats for IDs.
             if ($requestedIds !== null) {
                 // Parse IDs from different possible formats.
@@ -134,6 +138,9 @@ class NamesController extends Controller
                 }
 
                 // Get names for specific IDs.
+                /*
+                 * @var array<string, string> $names
+                 */
                 $names = $this->objectCacheService->getMultipleObjectNames($requestedIds);
 
                 $this->logger->debug(

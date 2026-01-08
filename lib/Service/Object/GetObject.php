@@ -96,11 +96,11 @@ class GetObject
     ): ObjectEntity {
         $object = $this->objectEntityMapper->find(
             identifier: $id,
-                register: $register,
-                schema: $schema,
+            register: $register,
+            schema: $schema,
             includeDeleted: false,
-                _rbac: $_rbac,
-                _multitenancy: $_multitenancy
+            _rbac: $_rbac,
+            _multitenancy: $_multitenancy
         );
 
         if ($files === true) {
@@ -149,11 +149,11 @@ class GetObject
     ): ObjectEntity {
         $object = $this->objectEntityMapper->find(
             identifier: $id,
-                register: $register,
-                schema: $schema,
+            register: $register,
+            schema: $schema,
             includeDeleted: false,
-                _rbac: $_rbac,
-                _multitenancy: $_multitenancy
+            _rbac: $_rbac,
+            _multitenancy: $_multitenancy
         );
 
         if ($files === true) {

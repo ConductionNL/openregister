@@ -169,9 +169,7 @@ class ConversationManagementHandler
                 $config->url   = rtrim($ollamaConfig['url'], '/').'/api/';
                 $config->model = $ollamaConfig['chatModel'] ?? 'llama2';
                 $config->modelOptions['temperature'] = 0.7;
-            }
-
-            if ($chatProvider !== 'ollama') {
+            } else {
                 // OpenAI and Fireworks use OpenAIConfig.
                 $config = new OpenAIConfig();
 
@@ -214,6 +212,9 @@ class ConversationManagementHandler
             $prompt .= "\"{$firstMessage}\"\n\n";
             $prompt .= "Title:";
 
+            // Initialize title before conditional assignment.
+            $title = '';
+
             // Generate title based on provider.
             if ($chatProvider === 'fireworks') {
                 // Use ResponseGenerationHandler's Fireworks method.
@@ -235,9 +236,7 @@ class ConversationManagementHandler
                 // Use native Ollama chat.
                 $chat  = new OllamaChat($config);
                 $title = $chat->generateText($prompt);
-            }//end if
-
-            if ($chatProvider !== 'fireworks' && $chatProvider !== 'ollama') {
+            } else {
                 // OpenAI chat.
                 $chat  = new OpenAIChat($config);
                 $title = $chat->generateText($prompt);
@@ -486,9 +485,7 @@ class ConversationManagementHandler
             $config        = new OllamaConfig();
             $config->url   = rtrim($ollamaConfig['url'], '/').'/api/';
             $config->model = $ollamaConfig['chatModel'] ?? 'llama2';
-        }
-
-        if ($chatProvider !== 'ollama') {
+        } else {
             // OpenAI and Fireworks use OpenAIConfig.
             $config = new OpenAIConfig();
 

@@ -25,9 +25,10 @@ use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
-use OCP\IConfig;
+use OCP\IAppConfig;
 use OCP\ICache;
 use OCP\ICacheFactory;
+use OCP\IConfig;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -66,9 +67,9 @@ class GitHubHandler
     /**
      * Configuration service
      *
-     * @var IConfig
+     * @var IAppConfig
      */
-    private IConfig $config;
+    private IAppConfig $appConfig;
 
     /**
      * Logger instance
@@ -85,23 +86,33 @@ class GitHubHandler
     private ICache $cache;
 
     /**
+     * Configuration service for accessing app and user settings
+     *
+     * @var IConfig
+     */
+    private IConfig $config;
+
+    /**
      * GitHubHandler constructor
      *
      * @param IClientService  $clientService HTTP client service
-     * @param IConfig         $config        Configuration service
+     * @param IAppConfig      $appConfig     App configuration service for app-level settings
+     * @param IConfig         $config        User configuration service for user-level settings
      * @param ICacheFactory   $cacheFactory  Cache factory for creating cache instances
      * @param LoggerInterface $logger        Logger instance
      */
     public function __construct(
         IClientService $clientService,
+        IAppConfig $appConfig,
         IConfig $config,
         ICacheFactory $cacheFactory,
         LoggerInterface $logger
     ) {
-        $this->client = $clientService->newClient();
-        $this->config = $config;
-        $this->cache  = $cacheFactory->createDistributed('openregister_github_configs');
-        $this->logger = $logger;
+        $this->client    = $clientService->newClient();
+        $this->appConfig = $appConfig;
+        $this->config    = $config;
+        $this->cache     = $cacheFactory->createDistributed('openregister_github_configs');
+        $this->logger    = $logger;
     }//end __construct()
 
     /**
@@ -117,7 +128,7 @@ class GitHubHandler
         ];
 
         // Add authentication token if configured.
-        $token = $this->config->getAppValue('openregister', 'github_api_token', '');
+        $token = $this->appConfig->getValueString('openregister', 'github_api_token', '');
         if (empty($token) === false) {
             $headers['Authorization'] = 'Bearer '.$token;
             $this->logger->debug(
@@ -333,7 +344,7 @@ class GitHubHandler
         switch ($statusCode) {
             case 403:
                 if (stripos($rawError, 'rate limit') !== false) {
-                    $token = $this->config->getAppValue('openregister', 'github_api_token', '');
+                    $token = $this->appConfig->getValueString('openregister', 'github_api_token', '');
                     if (empty($token) === true) {
                         $message  = 'GitHub API rate limit exceeded (60 requests/hour for ';
                         $message .= 'unauthenticated). Please configure a GitHub API token in ';
@@ -814,7 +825,7 @@ class GitHubHandler
     public function getRepositories(int $page=1, int $perPage=100): array
     {
         // Check if GitHub API token is configured.
-        $token = $this->config->getAppValue('openregister', 'github_api_token', '');
+        $token = $this->appConfig->getValueString('openregister', 'github_api_token', '');
         if (empty($token) === true) {
             $this->logger->info(message: 'GitHub API token not configured - returning empty repositories list');
             return [];
@@ -1205,7 +1216,7 @@ class GitHubHandler
     {
         try {
             // Get user token if userId provided, otherwise use app-level token.
-            $token = $this->config->getAppValue('openregister', 'github_api_token', '');
+            $token = $this->appConfig->getValueString('openregister', 'github_api_token', '');
             if ($userId !== null) {
                 $token = $this->getUserToken($userId);
             }
