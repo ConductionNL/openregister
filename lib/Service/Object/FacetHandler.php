@@ -20,9 +20,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
-use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCP\ICacheFactory;
 use OCP\IMemcache;
 use OCP\IUserSession;
@@ -76,16 +76,16 @@ class FacetHandler
     /**
      * Constructor for FacetHandler.
      *
-     * @param ObjectEntityMapper $objectEntityMapper Object database mapper.
-     * @param SchemaMapper       $schemaMapper       Schema database mapper.
-     * @param ICacheFactory      $cacheFactory       Cache factory for distributed caching.
-     * @param IUserSession       $userSession        User session for tenant isolation.
-     * @param LoggerInterface    $logger             Logger for debugging and monitoring.
+     * @param UnifiedObjectMapper $unifiedObjectMapper Unified object mapper with storage routing.
+     * @param SchemaMapper        $schemaMapper        Schema database mapper.
+     * @param ICacheFactory       $cacheFactory        Cache factory for distributed caching.
+     * @param IUserSession        $userSession         User session for tenant isolation.
+     * @param LoggerInterface     $logger              Logger for debugging and monitoring.
      *
      * @return void
      */
     public function __construct(
-        private readonly ObjectEntityMapper $objectEntityMapper,
+        private readonly UnifiedObjectMapper $unifiedObjectMapper,
         private readonly SchemaMapper $schemaMapper,
         /**
          * Logger for facet operations
@@ -301,7 +301,7 @@ class FacetHandler
     private function calculateFacetsWithFallback(array $facetQuery, array $facetConfig): array
     {
         // **STAGE 1**: Try facets with current filters.
-        $facets = $this->objectEntityMapper->getSimpleFacets($facetQuery);
+        $facets = $this->unifiedObjectMapper->getSimpleFacets($facetQuery);
 
         // **STAGE 2**: Check if we got meaningful facets.
         $totalFacetResults = $this->countFacetResults($facets);
@@ -329,7 +329,7 @@ class FacetHandler
             ];
 
             // Calculate collection-wide facets.
-            $fallbackFacets  = $this->objectEntityMapper->getSimpleFacets($collectionQuery);
+            $fallbackFacets  = $this->unifiedObjectMapper->getSimpleFacets($collectionQuery);
             $fallbackResults = $this->countFacetResults($fallbackFacets);
 
             if ($fallbackResults > 0) {
@@ -348,8 +348,11 @@ class FacetHandler
             }
         }//end if
 
+        // **OUTPUT FORMAT**: Transform facets to standardized format matching external API.
+        $transformedFacets = $this->transformFacetsToStandardFormat($facets);
+
         return [
-            'facets'               => $facets,
+            'facets'               => $transformedFacets,
             'performance_metadata' => [
                 'strategy'                => $strategy,
                 'fallback_used'           => $fallbackUsed,
@@ -358,6 +361,255 @@ class FacetHandler
             ],
         ];
     }//end calculateFacetsWithFallback()
+
+    /**
+     * Transform facets from internal format to standardized external API format.
+     *
+     * Converts the internal structure:
+     * ```
+     * { "@self": { "register": { "type": "terms", "buckets": [{key, results, label}] } } }
+     * ```
+     *
+     * To the external API format:
+     * ```
+     * { "_register": { "name": "_register", "type": "terms", "title": "Register", ... ,
+     *                  "data": { "type": "terms", "total_count": N, "buckets": [{value, count, label}] } } }
+     * ```
+     *
+     * @param array $facets Raw facets from mapper.
+     *
+     * @return array Transformed facets in standardized format.
+     */
+    private function transformFacetsToStandardFormat(array $facets): array
+    {
+        $transformed = [];
+        $order       = 0;
+
+        // Metadata facet definitions for @self fields.
+        $metadataDefinitions = [
+            'register'     => [
+                'title'       => 'Register',
+                'description' => 'metadata field: Register',
+                'data_type'   => 'integer',
+                'index_field' => 'self_register',
+                'index_type'  => 'pint',
+                'enabled'     => false,
+            ],
+            'schema'       => [
+                'title'       => 'Schema',
+                'description' => 'metadata field: Schema',
+                'data_type'   => 'integer',
+                'index_field' => 'self_schema',
+                'index_type'  => 'pint',
+                'enabled'     => true,
+            ],
+            'organisation' => [
+                'title'       => 'Leverancier',
+                'description' => 'metadata field: Organisation',
+                'data_type'   => 'string',
+                'index_field' => 'self_organisation',
+                'index_type'  => 'string',
+                'enabled'     => true,
+            ],
+            'owner'        => [
+                'title'       => 'Owner',
+                'description' => 'metadata field: Owner',
+                'data_type'   => 'string',
+                'index_field' => 'self_owner',
+                'index_type'  => 'string',
+                'enabled'     => true,
+            ],
+            'created'      => [
+                'title'       => 'Created',
+                'description' => 'metadata field: Created',
+                'data_type'   => 'datetime',
+                'index_field' => 'self_created',
+                'index_type'  => 'pdate',
+                'enabled'     => false,
+            ],
+            'updated'      => [
+                'title'       => 'Updated',
+                'description' => 'metadata field: Updated',
+                'data_type'   => 'datetime',
+                'index_field' => 'self_updated',
+                'index_type'  => 'pdate',
+                'enabled'     => false,
+            ],
+        ];
+
+        // Process @self metadata facets.
+        if (isset($facets['@self']) === true && is_array($facets['@self']) === true) {
+            foreach ($facets['@self'] as $field => $facetData) {
+                $order++;
+                $name       = '_'.$field;
+                $definition = $metadataDefinitions[$field] ?? [
+                    'title'       => ucfirst($field),
+                    'description' => 'metadata field: '.ucfirst($field),
+                    'data_type'   => 'string',
+                    'index_field' => 'self_'.$field,
+                    'index_type'  => 'string',
+                    'enabled'     => true,
+                ];
+
+                $transformed[$name] = $this->buildFacetEntry(
+                    name: $name,
+                    facetData: $facetData,
+                    definition: $definition,
+                    source: 'metadata',
+                    queryParameter: '@self['.$field.']',
+                    order: $order
+                );
+            }
+        }
+
+        // Process object field facets (non-@self).
+        foreach ($facets as $field => $facetData) {
+            if ($field === '@self') {
+                continue;
+            }
+
+            $order++;
+
+            // Create definition for object field.
+            $definition = [
+                'title'       => $this->formatFieldTitle($field),
+                'description' => 'object field: '.$field,
+                'data_type'   => $this->inferDataType($facetData),
+                'index_field' => $this->sanitizeFieldName($field),
+                'index_type'  => 'string',
+                'enabled'     => true,
+            ];
+
+            $transformed[$field] = $this->buildFacetEntry(
+                name: $field,
+                facetData: $facetData,
+                definition: $definition,
+                source: 'object',
+                queryParameter: $field,
+                order: $order
+            );
+        }
+
+        return $transformed;
+    }//end transformFacetsToStandardFormat()
+
+    /**
+     * Build a single facet entry in the standardized format.
+     *
+     * @param string $name           The facet name.
+     * @param array  $facetData      The raw facet data with type and buckets.
+     * @param array  $definition     The facet definition (title, description, etc.).
+     * @param string $source         The source type (metadata or object).
+     * @param string $queryParameter The query parameter for filtering.
+     * @param int    $order          The display order.
+     *
+     * @return array The formatted facet entry.
+     */
+    private function buildFacetEntry(
+        string $name,
+        array $facetData,
+        array $definition,
+        string $source,
+        string $queryParameter,
+        int $order
+    ): array {
+        $type    = $facetData['type'] ?? 'terms';
+        $buckets = $facetData['buckets'] ?? [];
+
+        // Transform buckets to use value/count instead of key/results.
+        $transformedBuckets = [];
+        foreach ($buckets as $bucket) {
+            $transformedBuckets[] = [
+                'value' => $bucket['key'] ?? $bucket['value'] ?? '',
+                'count' => (int) ($bucket['results'] ?? $bucket['count'] ?? 0),
+                'label' => $bucket['label'] ?? (string) ($bucket['key'] ?? $bucket['value'] ?? ''),
+            ];
+        }
+
+        return [
+            'name'           => $name,
+            'type'           => $type,
+            'title'          => $definition['title'],
+            'description'    => $definition['description'],
+            'data_type'      => $definition['data_type'],
+            'index_field'    => $definition['index_field'],
+            'index_type'     => $definition['index_type'],
+            'queryParameter' => $queryParameter,
+            'source'         => $source,
+            'show_count'     => true,
+            'enabled'        => $definition['enabled'],
+            'order'          => $order,
+            'data'           => [
+                'type'        => $type,
+                'total_count' => count($transformedBuckets),
+                'buckets'     => $transformedBuckets,
+            ],
+        ];
+    }//end buildFacetEntry()
+
+    /**
+     * Format a field name as a human-readable title.
+     *
+     * @param string $field The field name (e.g., cloudDienstverleningsmodel).
+     *
+     * @return string The formatted title (e.g., Cloud Dienstverleningsmodel).
+     */
+    private function formatFieldTitle(string $field): string
+    {
+        // Convert camelCase to Title Case.
+        $spaced = preg_replace('/([a-z])([A-Z])/', '$1 $2', $field);
+        return ucfirst($spaced);
+    }//end formatFieldTitle()
+
+    /**
+     * Sanitize a field name for use as an index field.
+     *
+     * @param string $field The field name.
+     *
+     * @return string The sanitized field name.
+     */
+    private function sanitizeFieldName(string $field): string
+    {
+        // Convert camelCase to snake_case.
+        $name = preg_replace('/([a-z0-9])([A-Z])/', '$1_$2', $field);
+        $name = strtolower($name);
+        // Remove any non-alphanumeric characters except underscore.
+        return preg_replace('/[^a-z0-9_]/', '_', $name);
+    }//end sanitizeFieldName()
+
+    /**
+     * Infer the data type from facet data.
+     *
+     * @param array $facetData The facet data with type and buckets.
+     *
+     * @return string The inferred data type.
+     */
+    private function inferDataType(array $facetData): string
+    {
+        $type = $facetData['type'] ?? 'terms';
+
+        if ($type === 'date_histogram') {
+            return 'datetime';
+        }
+
+        if ($type === 'range') {
+            return 'number';
+        }
+
+        // Check bucket values to infer type.
+        $buckets = $facetData['buckets'] ?? [];
+        if (empty($buckets) === false) {
+            $firstValue = $buckets[0]['key'] ?? null;
+            if (is_int($firstValue) === true) {
+                return 'integer';
+            }
+            if (is_float($firstValue) === true) {
+                return 'number';
+            }
+        }
+
+        return 'string';
+    }//end inferDataType()
 
     /**
      * Generate cache key for facet responses.

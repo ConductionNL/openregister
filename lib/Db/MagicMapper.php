@@ -639,32 +639,14 @@ class MagicMapper
             $qb->select($qb->createFunction('COUNT(*) as count'))
                 ->from($tableName);
 
-            // Apply search filter if provided (search in metadata columns only for simplicity).
+            // Apply all filters (including object field filters) using the same logic as search.
+            // This ensures count matches the actual filtered results.
+            $this->applySearchFilters(qb: $qb, query: $query, schema: $schema);
+
+            // Apply full-text search if provided.
             if (empty($query['_search']) === false) {
-                $searchTerm = '%'.strtolower($query['_search']).'%';
-
-                // Search in metadata columns that are commonly searchable.
-                // Use columns that exist in magic mapper tables: _uuid, _summary, naam.
-                // Note: _title doesn't exist in magic mapper tables.
-                $searchConditions = [];
-                $searchConditions[] = $qb->expr()->like(
-                    $qb->createFunction('LOWER(_uuid)'),
-                    $qb->createNamedParameter($searchTerm)
-                );
-                $searchConditions[] = $qb->expr()->like(
-                    $qb->createFunction('LOWER(COALESCE(_summary, \'\'))'),
-                    $qb->createNamedParameter($searchTerm)
-                );
-                // Add naam column (common schema field that exists in most tables).
-                $searchConditions[] = $qb->expr()->like(
-                    $qb->createFunction('LOWER(COALESCE(naam, \'\'))'),
-                    $qb->createNamedParameter($searchTerm)
-                );
-
-                if (empty($searchConditions) === false) {
-                    $qb->andWhere($qb->expr()->orX(...$searchConditions));
-                }
-            }//end if
+                $this->applyFuzzySearch(qb: $qb, searchTerm: $query['_search'], schema: $schema);
+            }
 
             // Exclude deleted objects by default.
             if (isset($query['@self.deleted']) === false) {
@@ -685,6 +667,7 @@ class MagicMapper
                     'tableName' => $tableName,
                     'count'     => $count,
                     'hasSearch' => empty($query['_search']) === false,
+                    'query'     => array_keys($query),
                 ]
             );
 
@@ -702,6 +685,58 @@ class MagicMapper
             return 0;
         }
     }//end countObjectsInRegisterSchemaTable()
+
+    /**
+     * Get simple facets for a register+schema specific table.
+     *
+     * This method retrieves facet data (aggregations) from a dedicated magic mapper table
+     * based on register+schema combination. It supports both metadata facets (@self fields)
+     * and schema property facets.
+     *
+     * @param array    $query    Search parameters including _facets configuration.
+     * @param Register $register The register context for table selection.
+     * @param Schema   $schema   The schema for table selection.
+     *
+     * @return array Facet results with buckets.
+     */
+    public function getSimpleFacetsFromRegisterSchemaTable(array $query, Register $register, Schema $schema): array
+    {
+        // Use fast cached existence check.
+        if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
+            $this->logger->info(
+                'Register+schema table does not exist for facets, returning empty',
+                [
+                    'registerId' => $register->getId(),
+                    'schemaId'   => $schema->getId(),
+                ]
+            );
+            return [];
+        }
+
+        $tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
+
+        try {
+            // Initialize facet handler if not already done.
+            $this->initializeHandlers();
+
+            return $this->facetHandler->getSimpleFacets(
+                tableName: $tableName,
+                query: $query,
+                register: $register,
+                schema: $schema
+            );
+        } catch (\Exception $e) {
+            $this->logger->error(
+                'Failed to get facets from register+schema table',
+                [
+                    'tableName' => $tableName,
+                    'error'     => $e->getMessage(),
+                ]
+            );
+
+            return [];
+        }
+    }//end getSimpleFacetsFromRegisterSchemaTable()
 
     /**
      * Search across multiple register+schema tables simultaneously.
@@ -2416,7 +2451,7 @@ class MagicMapper
         }
 
         // Apply filters.
-        $this->applySearchFilters(qb: $qb, query: $query);
+        $this->applySearchFilters(qb: $qb, query: $query, schema: $schema);
 
         // Apply pagination.
         if (($query['_limit'] ?? null) !== null) {
@@ -2839,7 +2874,7 @@ class MagicMapper
      *
      * @return void
      */
-    private function applySearchFilters(IQueryBuilder $qb, array $query): void
+    private function applySearchFilters(IQueryBuilder $qb, array $query, ?Schema $schema = null): void
     {
         // List of reserved query parameters that should not be used as filters.
         $reservedParams = [
@@ -2865,6 +2900,7 @@ class MagicMapper
             '_events',
             '_register',
             '_schema',
+            '_schemas',
             'limit',
             'offset',
             'page',
@@ -2893,6 +2929,9 @@ class MagicMapper
             'schemas',
         ];
 
+        // Get schema properties for type checking.
+        $properties = $schema !== null ? ($schema->getProperties() ?? []) : [];
+
         foreach ($query as $key => $value) {
             // Skip reserved parameters (both with and without underscore prefix).
             if (in_array($key, $reservedParams, true) === true) {
@@ -2915,8 +2954,15 @@ class MagicMapper
             }
 
             // Handle schema property filters.
-            $columnName = $this->sanitizeColumnName($key);
-            $this->addWhereCondition(qb: $qb, columnName: $columnName, value: $value);
+            $columnName   = $this->sanitizeColumnName($key);
+            $propertyType = $properties[$key]['type'] ?? 'string';
+
+            // Check if this is an array-type property (JSON array column).
+            if ($propertyType === 'array') {
+                $this->addJsonArrayWhereCondition(qb: $qb, columnName: $columnName, value: $value);
+            } else {
+                $this->addWhereCondition(qb: $qb, columnName: $columnName, value: $value);
+            }
         }//end foreach
     }//end applySearchFilters()
 
@@ -3033,6 +3079,37 @@ class MagicMapper
         // Handle exact match.
         $qb->andWhere($qb->expr()->eq($columnName, $qb->createNamedParameter($value)));
     }//end addWhereCondition()
+
+    /**
+     * Add WHERE condition for JSON array columns using PostgreSQL jsonb operators.
+     *
+     * For JSON array columns (e.g., ["SaaS", "PaaS"]), this uses PostgreSQL's
+     * jsonb containment operator (@>) to check if the array contains the value.
+     *
+     * When multiple values are provided, uses AND logic: the array must contain
+     * ALL specified values (intersection filtering).
+     *
+     * @param IQueryBuilder $qb         Query builder to modify
+     * @param string        $columnName Column name to filter
+     * @param mixed         $value      Filter value (string or array of strings)
+     *
+     * @return void
+     */
+    private function addJsonArrayWhereCondition(IQueryBuilder $qb, string $columnName, mixed $value): void
+    {
+        // Normalize value to array.
+        $values = is_array($value) === true ? $value : [$value];
+
+        // Use createFunction to avoid quoting of the column name with type cast.
+        $columnCast = $qb->createFunction("{$columnName}::jsonb");
+
+        // Multiple values use AND logic: array must contain ALL specified values.
+        foreach ($values as $v) {
+            $jsonValue = json_encode([$v]);
+            $paramName = $qb->createNamedParameter($jsonValue);
+            $qb->andWhere("{$columnCast} @> {$paramName}");
+        }
+    }//end addJsonArrayWhereCondition()
 
     /**
      * Find object in register+schema table by UUID

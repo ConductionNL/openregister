@@ -689,14 +689,320 @@ class UnifiedObjectMapper extends AbstractObjectMapper
     /**
      * Get simple facets.
      *
-     * @param array $query Search query
+     * Routes to MagicMapper if magic mapping is enabled for the register+schema combination,
+     * otherwise uses ObjectEntityMapper blob storage for faceting.
+     *
+     * @param array $query Search query containing register, schema, and _facets configuration.
      *
      * @return ((((int|mixed|string)[]|int|mixed|string)[]|mixed|string)[]|mixed|string)[][] Facets data.
      */
     public function getSimpleFacets(array $query=[]): array
     {
+        // Check if register and schema(s) are specified in query for magic mapper routing.
+        $registerId = $query['@self']['register'] ?? $query['_register'] ?? $query['register'] ?? null;
+        $schemaIds  = $query['@self']['schemas'] ?? $query['_schemas'] ?? null;
+        $schemaId   = $query['@self']['schema'] ?? $query['_schema'] ?? $query['schema'] ?? null;
+
+        // If _schemas is provided (array of schema IDs), use multi-schema faceting.
+        if ($registerId !== null && $schemaIds !== null && is_array($schemaIds) === true) {
+            return $this->getSimpleFacetsMultiSchema(
+                query: $query,
+                registerId: (int) $registerId,
+                schemaIds: array_map('intval', $schemaIds)
+            );
+        }
+
+        // Single schema faceting.
+        if ($registerId !== null && $schemaId !== null) {
+            try {
+                // Disable multitenancy for register/schema resolution (they're system-level).
+                $register = $this->registerMapper->find((int) $registerId, _multitenancy: false, _rbac: false);
+                $schema   = $this->schemaMapper->find((int) $schemaId, _multitenancy: false, _rbac: false);
+
+                if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
+                    return $this->magicMapper->getSimpleFacetsFromRegisterSchemaTable(
+                        query: $query,
+                        register: $register,
+                        schema: $schema
+                    );
+                }
+            } catch (\Exception $e) {
+                $this->logger->warning(
+                    '[UnifiedObjectMapper] Failed to resolve register/schema for magic mapper facets',
+                    ['error' => $e->getMessage()]
+                );
+                // Fall through to blob storage.
+            }
+        }
+
         return $this->objectEntityMapper->getSimpleFacets($query);
     }//end getSimpleFacets()
+
+    /**
+     * Get facets aggregated across multiple schemas.
+     *
+     * @param array $query      The search query.
+     * @param int   $registerId The register ID.
+     * @param array $schemaIds  Array of schema IDs to aggregate.
+     *
+     * @return array Merged facet results.
+     */
+    private function getSimpleFacetsMultiSchema(array $query, int $registerId, array $schemaIds): array
+    {
+        $mergedFacets = [];
+
+        try {
+            $register = $this->registerMapper->find($registerId, _multitenancy: false, _rbac: false);
+        } catch (\Exception $e) {
+            $this->logger->warning('[UnifiedObjectMapper] Failed to find register for multi-schema facets', [
+                'registerId' => $registerId,
+                'error'      => $e->getMessage(),
+            ]);
+            return [];
+        }
+
+        foreach ($schemaIds as $schemaId) {
+            try {
+                $schema = $this->schemaMapper->find($schemaId, _multitenancy: false, _rbac: false);
+
+                if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === false) {
+                    continue;
+                }
+
+                // Get facets for this schema.
+                $schemaFacets = $this->magicMapper->getSimpleFacetsFromRegisterSchemaTable(
+                    query: $query,
+                    register: $register,
+                    schema: $schema
+                );
+
+                // Merge into combined results.
+                $mergedFacets = $this->mergeFacetResults($mergedFacets, $schemaFacets);
+            } catch (\Exception $e) {
+                $this->logger->warning('[UnifiedObjectMapper] Failed to get facets for schema', [
+                    'schemaId' => $schemaId,
+                    'error'    => $e->getMessage(),
+                ]);
+                // Continue with other schemas.
+            }
+        }
+
+        return $mergedFacets;
+    }//end getSimpleFacetsMultiSchema()
+
+    /**
+     * Merge facet results from multiple schemas.
+     *
+     * @param array $existing Existing facet results.
+     * @param array $new      New facet results to merge.
+     *
+     * @return array Merged facet results.
+     */
+    private function mergeFacetResults(array $existing, array $new): array
+    {
+        foreach ($new as $facetKey => $facetData) {
+            if (isset($existing[$facetKey]) === false) {
+                $existing[$facetKey] = $facetData;
+                continue;
+            }
+
+            // Handle @self metadata facets.
+            if ($facetKey === '@self' && is_array($facetData) === true) {
+                foreach ($facetData as $metaKey => $metaFacet) {
+                    if (isset($existing['@self'][$metaKey]) === false) {
+                        $existing['@self'][$metaKey] = $metaFacet;
+                        continue;
+                    }
+
+                    // Merge buckets.
+                    $existing['@self'][$metaKey] = $this->mergeFacetBuckets(
+                        $existing['@self'][$metaKey],
+                        $metaFacet
+                    );
+                }
+                continue;
+            }
+
+            // Merge object field facets.
+            if (is_array($facetData) === true && isset($facetData['buckets']) === true) {
+                $existing[$facetKey] = $this->mergeFacetBuckets($existing[$facetKey], $facetData);
+            }
+        }
+
+        return $existing;
+    }//end mergeFacetResults()
+
+    /**
+     * Merge facet buckets, combining counts for same keys.
+     *
+     * @param array $existing Existing facet with buckets.
+     * @param array $new      New facet with buckets to merge.
+     *
+     * @return array Merged facet.
+     */
+    private function mergeFacetBuckets(array $existing, array $new): array
+    {
+        $existingBuckets = $existing['buckets'] ?? [];
+        $newBuckets      = $new['buckets'] ?? [];
+
+        // Index existing buckets by key for fast lookup.
+        $bucketIndex = [];
+        foreach ($existingBuckets as $idx => $bucket) {
+            $key               = $bucket['key'] ?? '';
+            $bucketIndex[$key] = $idx;
+        }
+
+        // Merge new buckets.
+        foreach ($newBuckets as $newBucket) {
+            $key = $newBucket['key'] ?? '';
+            if (isset($bucketIndex[$key]) === true) {
+                // Add counts.
+                $idx = $bucketIndex[$key];
+                $existingBuckets[$idx]['results'] += $newBucket['results'] ?? 0;
+            } else {
+                // Add new bucket.
+                $existingBuckets[]  = $newBucket;
+                $bucketIndex[$key] = count($existingBuckets) - 1;
+            }
+        }
+
+        // Re-sort by results descending.
+        usort($existingBuckets, function ($a, $b) {
+            return ($b['results'] ?? 0) - ($a['results'] ?? 0);
+        });
+
+        $existing['buckets'] = $existingBuckets;
+        return $existing;
+    }//end mergeFacetBuckets()
+
+    /**
+     * Search objects across multiple schemas using magic mapper tables.
+     *
+     * This method queries each schema's magic mapper table and combines the results
+     * with proper pagination support. For efficient pagination across multiple tables,
+     * we fetch more results than needed and then apply final pagination.
+     *
+     * @param array       $searchQuery   Search query parameters
+     * @param array       $countQuery    Count query parameters
+     * @param int         $registerId    Register ID
+     * @param array       $schemaIds     Array of schema IDs to search
+     * @param string|null $activeOrgUuid Organisation UUID
+     * @param bool        $rbac          Apply RBAC
+     * @param bool        $multitenancy  Apply multitenancy
+     * @param array|null  $ids           Specific IDs to filter
+     * @param string|null $uses          Uses filter
+     *
+     * @return array{results: ObjectEntity[], total: int, registers: array, schemas: array}
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
+     */
+    private function searchObjectsPaginatedMultiSchema(
+        array $searchQuery,
+        array $countQuery,
+        int $registerId,
+        array $schemaIds,
+        ?string $activeOrgUuid=null,
+        bool $rbac=true,
+        bool $multitenancy=true,
+        ?array $ids=null,
+        ?string $uses=null
+    ): array {
+        // Extract pagination parameters
+        $limit  = (int) ($searchQuery['_limit'] ?? 20);
+        $offset = (int) ($searchQuery['_offset'] ?? 0);
+
+        // Cache for loaded registers and schemas
+        $registersCache = [];
+        $schemasCache   = [];
+
+        // Load register once
+        try {
+            $register = $this->registerMapper->find($registerId, _multitenancy: false, _rbac: false);
+            $registersCache[$register->getId()] = $register->jsonSerialize();
+        } catch (\Exception $e) {
+            $this->logger->warning('[UnifiedObjectMapper] Failed to find register for multi-schema search', [
+                'registerId' => $registerId,
+                'error'      => $e->getMessage(),
+            ]);
+            return [
+                'results'   => [],
+                'total'     => 0,
+                'registers' => [],
+                'schemas'   => [],
+            ];
+        }
+
+        $allResults = [];
+        $totalCount = 0;
+
+        // Query each schema
+        foreach ($schemaIds as $schemaId) {
+            try {
+                $schema = $this->schemaMapper->find((int) $schemaId, _multitenancy: false, _rbac: false);
+                $schemasCache[$schema->getId()] = $schema->jsonSerialize();
+
+                // Check if magic mapper should be used for this schema
+                if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === false) {
+                    $this->logger->debug('[UnifiedObjectMapper] Skipping non-magic-mapper schema', [
+                        'schemaId' => $schemaId,
+                    ]);
+                    continue;
+                }
+
+                // Get count for this schema
+                $schemaCount = $this->magicMapper->countObjectsInRegisterSchemaTable(
+                    query: $countQuery,
+                    register: $register,
+                    schema: $schema
+                );
+                $totalCount += $schemaCount;
+
+                // For results, we need to fetch enough to cover pagination
+                // Fetch up to (offset + limit) from each table to ensure we have enough results
+                $schemaSearchQuery = $searchQuery;
+                $schemaSearchQuery['_limit']  = $offset + $limit;
+                $schemaSearchQuery['_offset'] = 0;
+
+                $schemaResults = $this->magicMapper->searchObjectsInRegisterSchemaTable(
+                    query: $schemaSearchQuery,
+                    register: $register,
+                    schema: $schema
+                );
+
+                // Add schema ID to each result for sorting reference
+                foreach ($schemaResults as $result) {
+                    $allResults[] = $result;
+                }
+            } catch (\Exception $e) {
+                $this->logger->warning('[UnifiedObjectMapper] Failed to search schema in multi-schema search', [
+                    'schemaId' => $schemaId,
+                    'error'    => $e->getMessage(),
+                ]);
+                // Continue with other schemas
+            }
+        }
+
+        // Sort combined results by updated/created date descending (most recent first)
+        usort($allResults, function ($a, $b) {
+            $aDate = $a->getUpdated() ?? $a->getCreated() ?? new DateTime('1970-01-01');
+            $bDate = $b->getUpdated() ?? $b->getCreated() ?? new DateTime('1970-01-01');
+
+            if ($aDate instanceof DateTime && $bDate instanceof DateTime) {
+                return $bDate->getTimestamp() - $aDate->getTimestamp();
+            }
+            return 0;
+        });
+
+        // Apply final pagination
+        $paginatedResults = array_slice($allResults, $offset, $limit > 0 ? $limit : null);
+
+        return [
+            'results'   => $paginatedResults,
+            'total'     => $totalCount,
+            'registers' => $registersCache,
+            'schemas'   => $schemasCache,
+        ];
+    }//end searchObjectsPaginatedMultiSchema()
 
     /**
      * Get facetable fields from schemas.
@@ -866,6 +1172,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         // Extract register and schema IDs from query.
         $registerId = $searchQuery['_register'] ?? $searchQuery['register'] ?? null;
         $schemaId   = $searchQuery['_schema'] ?? $searchQuery['schema'] ?? null;
+        $schemaIds  = $searchQuery['_schemas'] ?? null;
 
         $register = null;
         $schema   = null;
@@ -874,6 +1181,21 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         // Cache for loaded registers and schemas (indexed by ID for frontend lookup).
         $registersCache = [];
         $schemasCache   = [];
+
+        // Check for multi-schema search (when _schemas is provided but _schema is not)
+        if ($registerId !== null && $schemaId === null && $schemaIds !== null && is_array($schemaIds) && count($schemaIds) > 0) {
+            return $this->searchObjectsPaginatedMultiSchema(
+                searchQuery: $searchQuery,
+                countQuery: $countQuery,
+                registerId: (int) $registerId,
+                schemaIds: $schemaIds,
+                activeOrgUuid: $activeOrgUuid,
+                rbac: $rbac,
+                multitenancy: $multitenancy,
+                ids: $ids,
+                uses: $uses
+            );
+        }
 
         // Load register and schema ONCE if both are specified.
         if ($registerId !== null && $schemaId !== null) {

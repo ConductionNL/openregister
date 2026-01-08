@@ -1765,6 +1765,7 @@ class ObjectEntityMapper extends QBMapper
 
         $this->applyDeletedFilter(qb: $qb, filters: $filters, includeDeleted: $includeDeleted);
         $this->applyRegisterSchemaFilters(qb: $qb, register: $register, schema: $schema);
+        $this->applySchemasFilter(qb: $qb, filters: $filters, schema: $schema);
         $this->applyIdFilters(qb: $qb, ids: $ids);
         $this->applyPublishedFilter(qb: $qb, published: $published);
         $this->applySorting(qb: $qb, sort: $sort);
@@ -1824,6 +1825,36 @@ class ObjectEntityMapper extends QBMapper
             $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_STR)));
         }
     }//end applyRegisterSchemaFilters()
+
+    /**
+     * Apply multi-schema filter from _schemas parameter
+     *
+     * When _schemas array is provided and no single schema is set,
+     * filter results to only include objects from the specified schemas.
+     *
+     * @param IQueryBuilder $qb      Query builder
+     * @param array|null    $filters Filters array containing _schemas
+     * @param Schema|null   $schema  Single schema filter (if set, _schemas is ignored)
+     *
+     * @return void
+     */
+    private function applySchemasFilter(IQueryBuilder $qb, ?array $filters, ?Schema $schema): void
+    {
+        // Only apply _schemas filter if no single schema is set
+        if ($schema !== null) {
+            return;
+        }
+
+        // Check for _schemas in filters
+        $schemaIds = $filters['_schemas'] ?? null;
+        if ($schemaIds === null || !is_array($schemaIds) || empty($schemaIds)) {
+            return;
+        }
+
+        // Convert to strings for VARCHAR column comparison
+        $schemaIdsStr = array_map('strval', $schemaIds);
+        $qb->andWhere($qb->expr()->in('schema', $qb->createNamedParameter($schemaIdsStr, IQueryBuilder::PARAM_STR_ARRAY)));
+    }//end applySchemasFilter()
 
     /**
      * Apply ID filters to query
@@ -2098,6 +2129,13 @@ class ObjectEntityMapper extends QBMapper
             if (empty($idConditions) === false) {
                 $qb->andWhere($qb->expr()->orX(...$idConditions));
             }
+        }
+
+        // Apply _schemas filter for multi-schema search.
+        $schemaIds = $query['_schemas'] ?? null;
+        if ($schemaIds !== null && is_array($schemaIds) && !empty($schemaIds)) {
+            $schemaIdsStr = array_map('strval', $schemaIds);
+            $qb->andWhere($qb->expr()->in('schema', $qb->createNamedParameter($schemaIdsStr, IQueryBuilder::PARAM_STR_ARRAY)));
         }
 
         $result = $qb->executeQuery();

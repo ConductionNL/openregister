@@ -336,8 +336,8 @@ class QueryHandler
             $query['_published'] = $published;
         }
 
-        // Extract pagination parameters.
-        $limit  = max(1, (int) ($query['_limit'] ?? 20));
+        // Extract pagination parameters (limit=0 is valid for count/facets-only requests).
+        $limit  = max(0, (int) ($query['_limit'] ?? 20));
         $offset = $query['_offset'] ?? null;
         $page   = $query['_page'] ?? null;
 
@@ -347,7 +347,7 @@ class QueryHandler
             $offset = ($page - 1) * $limit;
         }
 
-        // Calculate page from offset if not provided.
+        // Calculate page from offset if not provided (avoid division by zero).
         if ($page === null && $offset !== null && $limit > 0) {
             $page = (int) floor($offset / $limit) + 1;
         }
@@ -414,8 +414,8 @@ class QueryHandler
             );
         }
 
-        // Calculate total pages.
-        $pages = max(1, (int) ceil($total / $limit));
+        // Calculate total pages (avoid division by zero when limit=0).
+        $pages = $limit > 0 ? max(1, (int) ceil($total / $limit)) : 0;
 
         // Build result structure with registers/schemas indexed by ID at response @self level.
         $paginatedResults = [

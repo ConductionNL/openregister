@@ -1750,7 +1750,8 @@ class ObjectService
             $query['_register'] = $this->currentRegister->getId();
         }
 
-        if ($this->currentSchema !== null && isset($query['_schema']) === false) {
+        // Don't auto-set _schema when _schemas is provided (multi-schema search)
+        if ($this->currentSchema !== null && isset($query['_schema']) === false && isset($query['_schemas']) === false) {
             $query['_schema'] = $this->currentSchema->getId();
         }
 

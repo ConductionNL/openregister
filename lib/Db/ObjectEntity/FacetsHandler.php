@@ -118,6 +118,11 @@ class FacetsHandler
             return [];
         }
 
+        // Handle _facets as string (e.g., _facets=extend) by expanding to full configuration.
+        if (is_string($facetConfig) === true) {
+            $facetConfig = $this->expandFacetConfig($facetConfig, $query);
+        }
+
         // Extract base query (without facet config).
         $baseQuery = $query;
         unset($baseQuery['_facets']);
@@ -444,4 +449,52 @@ class FacetsHandler
 
         return $merged;
     }//end mergeFieldConfigs()
+
+    /**
+     * Expand facet config string to full configuration.
+     *
+     * Handles special values like "extend" which should return all facetable metadata fields.
+     *
+     * @param string $facetConfig The facet config string (e.g., "extend").
+     * @param array  $query       The original query for context.
+     *
+     * @return array Expanded facet configuration.
+     */
+    private function expandFacetConfig(string $facetConfig, array $query): array
+    {
+        if ($facetConfig === 'extend') {
+            // Return all facetable metadata fields.
+            return [
+                '@self' => [
+                    'register'     => ['type' => 'terms'],
+                    'schema'       => ['type' => 'terms'],
+                    'organisation' => ['type' => 'terms'],
+                    'owner'        => ['type' => 'terms'],
+                    'created'      => ['type' => 'date_histogram', 'interval' => 'month'],
+                    'updated'      => ['type' => 'date_histogram', 'interval' => 'month'],
+                    'published'    => ['type' => 'date_histogram', 'interval' => 'month'],
+                ],
+            ];
+        }
+
+        // Treat as comma-separated field names.
+        $fields = array_map('trim', explode(',', $facetConfig));
+        $config = ['@self' => []];
+
+        foreach ($fields as $field) {
+            $metadataFields = ['register', 'schema', 'organisation', 'owner'];
+            $dateFields     = ['created', 'updated', 'published', 'depublished'];
+
+            if (in_array($field, $metadataFields, true) === true) {
+                $config['@self'][$field] = ['type' => 'terms'];
+            } else if (in_array($field, $dateFields, true) === true) {
+                $config['@self'][$field] = ['type' => 'date_histogram', 'interval' => 'month'];
+            } else {
+                // Object field facet.
+                $config[$field] = ['type' => 'terms'];
+            }
+        }
+
+        return $config;
+    }//end expandFacetConfig()
 }//end class

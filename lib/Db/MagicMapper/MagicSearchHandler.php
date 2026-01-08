@@ -247,7 +247,8 @@ class MagicSearchHandler
         foreach ($filters as $field => $value) {
             // Check if this field exists as a column in the schema.
             if (($properties[$field] ?? null) !== null) {
-                $columnName = $this->sanitizeColumnName($field);
+                $columnName   = $this->sanitizeColumnName($field);
+                $propertyType = $properties[$field]['type'] ?? 'string';
 
                 if ($value === 'IS NOT NULL') {
                     $qb->andWhere($qb->expr()->isNotNull("t.{$columnName}"));
@@ -256,6 +257,12 @@ class MagicSearchHandler
 
                 if ($value === 'IS NULL') {
                     $qb->andWhere($qb->expr()->isNull("t.{$columnName}"));
+                    continue;
+                }
+
+                // Handle array type columns (JSON arrays in PostgreSQL).
+                if ($propertyType === 'array') {
+                    $this->applyJsonArrayFilter($qb, $columnName, $value);
                     continue;
                 }
 
@@ -273,6 +280,49 @@ class MagicSearchHandler
             }//end if
         }//end foreach
     }//end applyObjectFilters()
+
+    /**
+     * Apply filter for JSON array columns using PostgreSQL jsonb operators
+     *
+     * @param IQueryBuilder $qb         Query builder to modify
+     * @param string        $columnName Column name to filter
+     * @param mixed         $value      Filter value (string or array of strings)
+     *
+     * @return void
+     */
+    private function applyJsonArrayFilter(IQueryBuilder $qb, string $columnName, mixed $value): void
+    {
+        // Normalize value to array.
+        $values = is_array($value) === true ? $value : [$value];
+
+        if (count($values) === 1) {
+            // Single value: check if JSON array contains this value.
+            // PostgreSQL: column::jsonb ? 'value' (checks if array contains the element).
+            $jsonValue = json_encode($values[0]);
+            $qb->andWhere(
+                $qb->expr()->comparison(
+                    "t.{$columnName}::jsonb",
+                    '@>',
+                    $qb->createNamedParameter('[' . $jsonValue . ']')
+                )
+            );
+        } else {
+            // Multiple values: check if JSON array contains ANY of the values (OR logic).
+            $orConditions = $qb->expr()->orX();
+            foreach ($values as $v) {
+                $jsonValue = json_encode($v);
+                $orConditions->add(
+                    $qb->expr()->comparison(
+                        "t.{$columnName}::jsonb",
+                        '@>',
+                        $qb->createNamedParameter('[' . $jsonValue . ']')
+                    )
+                );
+            }
+
+            $qb->andWhere($orConditions);
+        }
+    }//end applyJsonArrayFilter()
 
     /**
      * Apply ID-based filtering (UUID, slug, etc.)
