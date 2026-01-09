@@ -253,21 +253,6 @@ class Application extends App implements IBootstrap
      */
     private function registerMappersWithCircularDependencies(IRegistrationContext $context): void
     {
-        // Register UserService for UserController.
-        $context->registerService(
-            \OCA\OpenRegister\Service\UserService::class,
-            function (ContainerInterface $container) {
-                return new UserService(
-                    userManager: $container->get('OCP\IUserManager'),
-                    userSession: $container->get('OCP\IUserSession'),
-                    config: $container->get('OCP\IConfig'),
-                    groupManager: $container->get('OCP\IGroupManager'),
-                    accountManager: $container->get('OCP\Accounts\IAccountManager'),
-                    logger: $container->get('Psr\Log\LoggerInterface')
-                );
-            }
-        );
-
         // Register OrganisationService without SettingsService to break circular dependency.
         $context->registerService(
             OrganisationService::class,
@@ -282,6 +267,22 @@ class Application extends App implements IBootstrap
                     userManager: $container->get('OCP\IUserManager'),
                     logger: $container->get('Psr\Log\LoggerInterface'),
                     settingsService: null
+                );
+            }
+        );
+
+        // Register UserService for UserController (after OrganisationService which it depends on).
+        $context->registerService(
+            \OCA\OpenRegister\Service\UserService::class,
+            function (ContainerInterface $container) {
+                return new UserService(
+                    userManager: $container->get('OCP\IUserManager'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    config: $container->get('OCP\IConfig'),
+                    groupManager: $container->get('OCP\IGroupManager'),
+                    accountManager: $container->get('OCP\Accounts\IAccountManager'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                    organisationService: $container->get(OrganisationService::class)
                 );
             }
         );

@@ -438,12 +438,22 @@ class QueryHandler
         ];
 
         // Add registers and schemas indexed by ID to response @self.
-        // This allows frontend to quickly lookup register/schema by ID from each result's @self.
-        if (empty($registers) === false) {
+        // Only include when explicitly requested via _extend parameter.
+        // Supports both singular (_register, _schema) and plural (_registers, _schemas) forms.
+        $extend = $query['_extend'] ?? [];
+        if (is_string($extend) === true) {
+            $extend = explode(',', $extend);
+        }
+
+        if ((in_array('_registers', $extend, true) === true || in_array('_register', $extend, true) === true)
+            && empty($registers) === false
+        ) {
             $paginatedResults['@self']['registers'] = $registers;
         }
 
-        if (empty($schemas) === false) {
+        if ((in_array('_schemas', $extend, true) === true || in_array('_schema', $extend, true) === true)
+            && empty($schemas) === false
+        ) {
             $paginatedResults['@self']['schemas'] = $schemas;
         }
 

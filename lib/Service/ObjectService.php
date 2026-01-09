@@ -1799,6 +1799,13 @@ class ObjectService
             $result['@self']['multi']     = $_multitenancy;
             $result['@self']['published'] = $published;
             $result['@self']['deleted']   = $deleted;
+
+            // Add extended objects only if _extend is requested.
+            $extend = $query['_extend'] ?? [];
+            if (empty($extend) === false) {
+                $result['@self']['objects'] = $this->getExtendedObjects();
+            }
+
             return $result;
         }
 
@@ -1818,6 +1825,12 @@ class ObjectService
         $result['@self']['multi']     = $_multitenancy;
         $result['@self']['published'] = $published;
         $result['@self']['deleted']   = $deleted;
+
+        // Add extended objects only if _extend is requested.
+        $extend = $query['_extend'] ?? [];
+        if (empty($extend) === false) {
+            $result['@self']['objects'] = $this->getExtendedObjects();
+        }
 
         return $result;
     }//end searchObjectsPaginated()
@@ -1918,6 +1931,20 @@ class ObjectService
             _multitenancy: $_multitenancy
         )->jsonSerialize();
     }//end renderEntity()
+
+    /**
+     * Get the objects cache containing all extended/related objects indexed by UUID.
+     *
+     * This method returns all objects that were loaded during rendering (via _extend).
+     * Objects are indexed by their UUID for easy lookup by the frontend.
+     * Should be called after renderEntity() to get the extended objects.
+     *
+     * @return array<string, array> Objects indexed by UUID
+     */
+    public function getExtendedObjects(): array
+    {
+        return $this->renderHandler->getObjectsCache();
+    }//end getExtendedObjects()
 
     /**
      * Handle validation exceptions

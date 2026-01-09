@@ -242,10 +242,11 @@ class SchemasController extends Controller
      */
     public function show($id): JSONResponse
     {
-        $extend = $this->request->getParam(key: '_extend', default: []);
-        if (is_string($extend) === true) {
-            $extend = [$extend];
-        }
+        try {
+            $extend = $this->request->getParam(key: '_extend', default: []);
+            if (is_string($extend) === true) {
+                $extend = [$extend];
+            }
 
             $schema    = $this->schemaMapper->find(id: $id, _extend: []);
             $schemaArr = $schema->jsonSerialize();
@@ -257,24 +258,39 @@ class SchemasController extends Controller
 
             // Add property source metadata to distinguish native vs inherited properties.
             // This is especially useful for schemas using allOf composition.
-        if (($schema->getAllOf() ?? null) !== null && count($schema->getAllOf()) > 0) {
-            $schemaArr['@self']['propertyMetadata'] = $this->schemaMapper->getPropertySourceMetadata($schema);
-        }
+            if (($schema->getAllOf() ?? null) !== null && count($schema->getAllOf()) > 0) {
+                $schemaArr['@self']['propertyMetadata'] = $this->schemaMapper->getPropertySourceMetadata($schema);
+            }
 
             // If '@self.stats' is requested, attach statistics to the schema.
-        if (in_array('@self.stats', $extend, true) === true) {
-            // Get register counts for all schemas in one call.
-            $registerCounts     = $this->schemaMapper->getRegisterCountPerSchema();
-            $schemaArr['stats'] = [
-                'objects'   => $this->objectEntityMapper->getStatistics(registerId: null, schemaId: $schemaArr['id']),
-                'logs'      => $this->auditTrailMapper->getStatistics(registerId: null, schemaId: $schemaArr['id']),
-                'files'     => [ 'total' => 0, 'size' => 0 ],
-            // Add the number of registers referencing this schema.
-                'registers' => $registerCounts[$schemaArr['id']] ?? 0,
-            ];
-        }
+            if (in_array('@self.stats', $extend, true) === true) {
+                // Get register counts for all schemas in one call.
+                $registerCounts     = $this->schemaMapper->getRegisterCountPerSchema();
+                $schemaArr['stats'] = [
+                    'objects'   => $this->objectEntityMapper->getStatistics(registerId: null, schemaId: $schemaArr['id']),
+                    'logs'      => $this->auditTrailMapper->getStatistics(registerId: null, schemaId: $schemaArr['id']),
+                    'files'     => [ 'total' => 0, 'size' => 0 ],
+                    // Add the number of registers referencing this schema.
+                    'registers' => $registerCounts[$schemaArr['id']] ?? 0,
+                ];
+            }
 
             return new JSONResponse(data: $schemaArr);
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
+        } catch (\OCA\OpenRegister\Exception\ValidationException $e) {
+            // ValidationException is thrown when schema is not found (includes debugging info).
+            return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
+        } catch (Exception $e) {
+            $this->logger->error(
+                message: 'Failed to retrieve schema',
+                context: [
+                    'schema_id'     => $id,
+                    'error_message' => $e->getMessage(),
+                ]
+            );
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+        }//end try
     }//end show()
 
     /**

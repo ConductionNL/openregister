@@ -221,19 +221,27 @@ class SchemaMapper extends QBMapper
 
         // Build OR conditions for matching against id, uuid, or slug.
         // Note: Only include id comparison if $id is actually numeric (PostgreSQL strict typing).
+        // Slug comparison is case-insensitive using LOWER() function.
+        $lowerId = strtolower((string) $id);
         if (is_numeric($id) === true) {
             $qb->where(
                 $qb->expr()->orX(
                     $qb->expr()->eq('id', $qb->createNamedParameter(value: (int) $id, type: IQueryBuilder::PARAM_INT)),
                     $qb->expr()->eq('uuid', $qb->createNamedParameter(value: $id, type: IQueryBuilder::PARAM_STR)),
-                    $qb->expr()->eq('slug', $qb->createNamedParameter(value: $id, type: IQueryBuilder::PARAM_STR))
+                    $qb->expr()->eq(
+                        $qb->func()->lower('slug'),
+                        $qb->createNamedParameter(value: $lowerId, type: IQueryBuilder::PARAM_STR)
+                    )
                 )
             );
         } else {
             $qb->where(
                 $qb->expr()->orX(
                     $qb->expr()->eq('uuid', $qb->createNamedParameter(value: $id, type: IQueryBuilder::PARAM_STR)),
-                    $qb->expr()->eq('slug', $qb->createNamedParameter(value: $id, type: IQueryBuilder::PARAM_STR))
+                    $qb->expr()->eq(
+                        $qb->func()->lower('slug'),
+                        $qb->createNamedParameter(value: $lowerId, type: IQueryBuilder::PARAM_STR)
+                    )
                 )
             );
         }

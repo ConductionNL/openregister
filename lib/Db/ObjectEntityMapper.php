@@ -1654,7 +1654,8 @@ class ObjectEntityMapper extends QBMapper
             published: $published,
             sort: $sort,
             limit: $limit,
-            offset: $offset
+            offset: $offset,
+            uses: $uses
         );
         return $this->findEntities($qb);
     }//end findAll()
@@ -1768,7 +1769,8 @@ class ObjectEntityMapper extends QBMapper
         ?bool $published,
         array $sort,
         ?int $limit,
-        ?int $offset
+        ?int $offset,
+        ?string $uses=null
     ): IQueryBuilder {
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')->from('openregister_objects');
@@ -1777,6 +1779,7 @@ class ObjectEntityMapper extends QBMapper
         $this->applyRegisterSchemaFilters(qb: $qb, register: $register, schema: $schema);
         $this->applySchemasFilter(qb: $qb, filters: $filters, schema: $schema);
         $this->applyIdFilters(qb: $qb, ids: $ids);
+        $this->applyUsesFilter(qb: $qb, uses: $uses);
         $this->applyPublishedFilter(qb: $qb, published: $published);
         $this->applySorting(qb: $qb, sort: $sort);
         $this->applyPagination(qb: $qb, limit: $limit, offset: $offset);
@@ -1896,6 +1899,29 @@ class ObjectEntityMapper extends QBMapper
             $qb->andWhere($qb->expr()->orX(...$idConditions));
         }
     }//end applyIdFilters()
+
+    /**
+     * Apply uses filter to query (find objects that have a specific UUID in their relations)
+     *
+     * Searches the JSON relations column for a specific UUID.
+     * Uses LIKE pattern matching for database-agnostic compatibility.
+     *
+     * @param IQueryBuilder $qb   Query builder
+     * @param string|null   $uses UUID that must be present in relations
+     *
+     * @return void
+     */
+    private function applyUsesFilter(IQueryBuilder $qb, ?string $uses): void
+    {
+        if ($uses === null || empty($uses) === true) {
+            return;
+        }
+
+        // Use LIKE pattern matching for database-agnostic compatibility.
+        // The UUID will be quoted in the JSON, so search for "uuid" pattern.
+        $pattern = '%"' . $uses . '"%';
+        $qb->andWhere($qb->expr()->like('relations', $qb->createNamedParameter($pattern)));
+    }//end applyUsesFilter()
 
     /**
      * Apply published filter to query
@@ -2145,6 +2171,12 @@ class ObjectEntityMapper extends QBMapper
             if (empty($idConditions) === false) {
                 $qb->andWhere($qb->expr()->orX(...$idConditions));
             }
+        }
+
+        // Apply uses filter (find objects that have a specific UUID in their relations).
+        if ($uses !== null && empty($uses) === false) {
+            $pattern = '%"' . $uses . '"%';
+            $qb->andWhere($qb->expr()->like('relations', $qb->createNamedParameter($pattern)));
         }
 
         // Apply _schemas filter for multi-schema search.

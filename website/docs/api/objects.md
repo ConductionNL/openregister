@@ -37,7 +37,12 @@ Retrieves a paginated list of objects that match the specified register and sche
 - **`_search`**: Full-text search term
 
 ##### Rendering
-- **`_extend`**: Properties to extend (comma-separated)
+- **`_extend`**: Properties to extend (comma-separated or array)
+  - Extend object properties by fetching related objects
+  - Special values:
+    - `_registers`: Include full register object(s) in `@self.registers`
+    - `_schemas`: Include full schema object(s) in `@self.schemas`
+  - When any `_extend` is requested, `@self.objects` will contain all extended objects indexed by UUID
 - **`_fields`**: Fields to include (comma-separated)
 - **`_filter`**: Fields to filter (comma-separated)
 - **`_unset`**: Fields to exclude (comma-separated)
@@ -69,10 +74,19 @@ Retrieves a paginated list of objects that match the specified register and sche
 # Basic search
 GET /api/objects/1/3?_limit=10
 
+# Search with property extension
+GET /api/objects/1/3?_extend=aanbieder&_limit=10
+
+# Search with register and schema metadata
+GET /api/objects/1/3?_extend=_registers,_schemas&_limit=10
+
+# Combine property extension with metadata
+GET /api/objects/1/3?_extend=aanbieder,_registers,_schemas&_limit=10
+
 # Search with facets (SOLR only)
 GET /api/objects/1/3?_facetable=true&_limit=10
 
-# Search with aggregations (SOLR only)  
+# Search with aggregations (SOLR only)
 GET /api/objects/1/3?_aggregations=true&_limit=10
 
 # Search with debug information (SOLR only)
@@ -116,6 +130,18 @@ GET /api/objects/1/3?created=2024-01-01&_limit=10
   "page": 1,
   "pages": 50,
   "limit": 20,
+  "@self": {
+    "source": "database",
+    "registers": {
+      "1": { "id": 1, "title": "Register Name", "..." : "..." }
+    },
+    "schemas": {
+      "3": { "id": 3, "title": "Schema Name", "..." : "..." }
+    },
+    "objects": {
+      "related-uuid": { "..." : "..." }
+    }
+  },
   "facets": {
     "facet_queries": [],
     "facet_fields": {
@@ -142,10 +168,14 @@ GET /api/objects/1/3?created=2024-01-01&_limit=10
     "solr_status": 0,
     "translated_query": {...},
     "solr_facets": {...}
-  },
-  "_source": "index"
+  }
 }
 ```
+
+**Note:** The `@self` section at the response root level contains:
+- `registers`: Only included when `_extend=_registers` is specified
+- `schemas`: Only included when `_extend=_schemas` is specified
+- `objects`: Extended/related objects indexed by UUID (included when any `_extend` is specified)
 
 #### Response Fields
 
@@ -211,10 +241,63 @@ Retrieves a single object by ID.
 
 #### Parameters
 
-- **`_extend`**: Properties to extend
+- **`_extend`**: Properties to extend (comma-separated or array)
+  - Extend object properties by fetching related objects
+  - Special values:
+    - `_registers`: Include full register object in `@self.registers`
+    - `_schemas`: Include full schema object in `@self.schemas`
+  - When any `_extend` is requested, `@self.objects` will contain all extended objects indexed by UUID
 - **`_fields`**: Fields to include
 - **`_filter`**: Fields to filter
 - **`_unset`**: Fields to exclude
+
+#### Example Requests
+
+```bash
+# Get single object
+GET /api/objects/1/3/uuid
+
+# Get single object with extended property
+GET /api/objects/1/3/uuid?_extend=aanbieder
+
+# Get single object with register and schema metadata
+GET /api/objects/1/3/uuid?_extend=_registers,_schemas
+
+# Combine property extension with metadata
+GET /api/objects/1/3/uuid?_extend=aanbieder,_registers,_schemas
+```
+
+#### Single Object Response Format
+
+```json
+{
+  "id": "uuid",
+  "naam": "Object Name",
+  "beschrijvingKort": "Short description",
+  "aanbieder": "related-uuid",
+  "@self": {
+    "id": "uuid",
+    "name": "Object Name",
+    "register": "1",
+    "schema": "3",
+    "created": "2024-01-01T00:00:00Z",
+    "updated": "2024-01-01T00:00:00Z",
+    "owner": "admin",
+    "organisation": "org-uuid",
+    "registers": {
+      "1": { "id": 1, "title": "Register Name", "..." : "..." }
+    },
+    "schemas": {
+      "3": { "id": 3, "title": "Schema Name", "..." : "..." }
+    },
+    "objects": {
+      "related-uuid": { "..." : "..." }
+    }
+  }
+}
+```
+
+**Note:** For single objects, the `registers`, `schemas`, and `objects` are included in the object's own `@self` section (not at the response root level).
 
 ## Error Handling
 

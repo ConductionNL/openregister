@@ -228,9 +228,14 @@ class RegisterMapper extends QBMapper
 
         // Build OR conditions for matching against id, uuid, or slug.
         // Note: Only include id comparison if $id is actually numeric (PostgreSQL strict typing).
+        // Slug comparison is case-insensitive using LOWER() function.
+        $lowerId = strtolower((string) $id);
         $orConditions = $qb->expr()->orX(
             $qb->expr()->eq('uuid', $qb->createNamedParameter($id, IQueryBuilder::PARAM_STR)),
-            $qb->expr()->eq('slug', $qb->createNamedParameter($id, IQueryBuilder::PARAM_STR))
+            $qb->expr()->eq(
+                $qb->func()->lower('slug'),
+                $qb->createNamedParameter($lowerId, IQueryBuilder::PARAM_STR)
+            )
         );
 
         if (is_numeric($id) === true) {

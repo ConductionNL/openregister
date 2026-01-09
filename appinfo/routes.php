@@ -424,9 +424,11 @@ return [
 		['name' => 'ui#entities', 'url' => '/entities', 'verb' => 'GET'],
 	['name' => 'files#page', 'url' => '/files', 'verb' => 'GET'],
 
-		// User - Profile management.
+		// User - Profile management and authentication.
 		['name' => 'user#me', 'url' => '/api/user/me', 'verb' => 'GET'],
 		['name' => 'user#updateMe', 'url' => '/api/user/me', 'verb' => 'PUT'],
+		['name' => 'user#login', 'url' => '/api/user/login', 'verb' => 'POST'],
+		['name' => 'user#logout', 'url' => '/api/user/logout', 'verb' => 'POST'],
 
 		// Webhooks.
 		['name' => 'webhooks#index', 'url' => '/api/webhooks', 'verb' => 'GET'],

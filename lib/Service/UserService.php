@@ -50,12 +50,13 @@ class UserService
     /**
      * UserService constructor
      *
-     * @param IUserManager    $userManager    The user manager service
-     * @param IUserSession    $userSession    The user session service
-     * @param IConfig         $config         The configuration service
-     * @param IGroupManager   $groupManager   The group manager service
-     * @param IAccountManager $accountManager The account manager service
-     * @param LoggerInterface $logger         The logger interface
+     * @param IUserManager        $userManager         The user manager service
+     * @param IUserSession        $userSession         The user session service
+     * @param IConfig             $config              The configuration service
+     * @param IGroupManager       $groupManager        The group manager service
+     * @param IAccountManager     $accountManager      The account manager service
+     * @param LoggerInterface     $logger              The logger interface
+     * @param OrganisationService $organisationService The organisation service
      */
     public function __construct(
         private readonly IUserManager $userManager,
@@ -63,7 +64,8 @@ class UserService
         private readonly IConfig $config,
         private readonly IGroupManager $groupManager,
         private readonly IAccountManager $accountManager,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly OrganisationService $organisationService
     ) {
     }//end __construct()
 
@@ -165,6 +167,11 @@ class UserService
         $result['lastName']   = $result['lastName'] ?? null;
         $result['middleName'] = $result['middleName'] ?? null;
 
+        // Add organization information.
+        $organisationStats       = $this->organisationService->getUserOrganisationStats();
+        $organisationStats['available'] = true;
+        $result['organisations'] = $organisationStats;
+
         return $result;
     }//end buildUserDataArray()
 
@@ -174,14 +181,27 @@ class UserService
      * @param IUser $user The user object to update
      * @param array $data The data array containing updates
      *
-     * @return array Result of the update operation
+     * @return array Result of the update operation including organization changes
      */
     public function updateUserProperties(IUser $user, array $data): array
     {
         $result = [
-            'success' => true,
-            'message' => 'User properties updated successfully',
+            'success'              => true,
+            'message'              => 'User properties updated successfully',
+            'organisation_updated' => false,
         ];
+
+        // Handle organization switching if requested.
+        if (isset($data['activeOrganisation']) === true && is_string($data['activeOrganisation']) === true) {
+            $organisationResult = $this->organisationService->setActiveOrganisation($data['activeOrganisation']);
+            $result['organisation_updated'] = $organisationResult;
+            $result['organisation_message'] = $organisationResult
+                ? 'Active organization updated successfully'
+                : 'Failed to update active organization';
+
+            // Remove the organization field from data to prevent it from being processed as a user property.
+            unset($data['activeOrganisation']);
+        }
 
         $this->updateStandardUserProperties(user: $user, data: $data);
 

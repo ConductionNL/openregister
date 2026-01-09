@@ -254,6 +254,31 @@ class RenderObject
     }//end clearCache()
 
     /**
+     * Get the objects cache containing all extended/related objects indexed by UUID.
+     *
+     * This method returns all objects that were loaded during rendering (via _extend).
+     * Objects are indexed by their UUID for easy lookup by the frontend.
+     *
+     * @return array<string, array> Objects indexed by UUID, serialized as arrays
+     */
+    public function getObjectsCache(): array
+    {
+        $result = [];
+        foreach ($this->objectsCache as $key => $object) {
+            // Only include entries keyed by UUID (skip numeric IDs).
+            if (is_string($key) === true && preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $key) === 1) {
+                if ($object instanceof ObjectEntity) {
+                    $result[$key] = $object->jsonSerialize();
+                } else if (is_array($object) === true) {
+                    $result[$key] = $object;
+                }
+            }
+        }
+
+        return $result;
+    }//end getObjectsCache()
+
+    /**
      * Add formatted files to the files array in the entity using FileMapper.
      *
      * This method retrieves files for an object using the FileMapper's getFilesForObject method,

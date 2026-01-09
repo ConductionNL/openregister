@@ -1109,8 +1109,8 @@ class ObjectsController extends Controller
         ObjectService $objectService
     ): JSONResponse {
         try {
-            // Resolve slugs to numeric IDs consistently (validation only).
-            $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
+            // Resolve slugs to numeric IDs consistently and get register/schema entities.
+            $resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
         } catch (RegisterNotFoundException | SchemaNotFoundException $e) {
             // Return 404 with clear error message if register or schema not found.
             return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
@@ -1178,6 +1178,46 @@ class ObjectsController extends Controller
                 _rbac: $rbac,
                 _multitenancy: $multi
             );
+
+            // Add registers, schemas, and extended objects to @self for single object responses.
+            // Only include when explicitly requested via _extend parameter.
+            // Supports both singular (_register, _schema) and plural (_registers, _schemas) forms.
+            if (isset($renderedObject['@self']) === true) {
+                $extendArray = is_array($extend) ? $extend : [];
+
+                // Add registers if _registers or _register is in _extend.
+                if (in_array('_registers', $extendArray, true) === true
+                    || in_array('_register', $extendArray, true) === true
+                ) {
+                    $registerId = $resolved['register'];
+                    $registers  = [];
+                    if ($resolved['registerEntity'] !== null) {
+                        $registers[$registerId] = $resolved['registerEntity']->jsonSerialize();
+                    }
+
+                    $renderedObject['@self']['registers'] = $registers;
+                }
+
+                // Add schemas if _schemas or _schema is in _extend.
+                if (in_array('_schemas', $extendArray, true) === true
+                    || in_array('_schema', $extendArray, true) === true
+                ) {
+                    $schemaId = $resolved['schema'];
+                    $schemas  = [];
+                    if ($resolved['schemaEntity'] !== null) {
+                        $schemas[$schemaId] = $resolved['schemaEntity']->jsonSerialize();
+                    }
+
+                    $renderedObject['@self']['schemas'] = $schemas;
+                }
+
+                // Get extended objects indexed by UUID (for _extend lookups).
+                // Always include objects if any _extend is requested.
+                if (empty($extendArray) === false) {
+                    $extendedObjects                      = $objectService->getExtendedObjects();
+                    $renderedObject['@self']['objects'] = $extendedObjects;
+                }
+            }
 
             return new JSONResponse(data: $renderedObject);
         } catch (DoesNotExistException $exception) {
