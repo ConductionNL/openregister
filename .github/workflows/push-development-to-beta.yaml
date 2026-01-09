@@ -7,7 +7,7 @@ permissions:
 on:
   push:
     branches:
-      - development
+      - feature/php-linting
 
 jobs:
   sync-to-beta:
@@ -30,35 +30,35 @@ jobs:
         run: |
           # Fetch all branches
           git fetch origin
-          
+
           # Get the commit message that triggered this workflow
           COMMIT_MSG=$(git log -1 --pretty=%B)
-          
+
           # Store the current beta version if it exists
           BETA_VERSION=""
           if git show-ref --quiet refs/remotes/origin/beta; then
             git checkout origin/beta
             BETA_VERSION=$(grep -oP '(?<=<version>)[^<]+' appinfo/info.xml || echo "")
           fi
-          
+
           # Check if beta branch exists
           if git show-ref --quiet refs/remotes/origin/beta; then
             # If exists, checkout beta
             git checkout beta
-            git reset --hard origin/development  # Reset to latest development state
+            git reset --hard origin/feature/php-linting  # Reset to latest php-linting state
           else
-            # If doesn't exist, create from development
-            git checkout -b beta origin/development
+            # If doesn't exist, create from php-linting
+            git checkout -b beta origin/feature/php-linting
           fi
-          
+
           # Restore the beta version if it existed
           if [ ! -z "$BETA_VERSION" ]; then
             sed -i "s|<version>.*</version>|<version>${BETA_VERSION}</version>|" appinfo/info.xml
             git add appinfo/info.xml
             git commit -m "${COMMIT_MSG}
-            
+
             Restored beta version to ${BETA_VERSION}"
           fi
-          
+
           # Push to beta branch using SSH with force
           git push -f origin beta

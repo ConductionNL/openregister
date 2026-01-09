@@ -3,15 +3,14 @@ name: Beta Release
 on:
   push:
     branches:
-      - feature/php-linting
-      # - beta
+      - beta
       # - code-refactor/ObjectService
 
 jobs:
   release-management:
     runs-on: ubuntu-latest
     steps:
-    
+
       # Stap 1: Code ophalen
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -31,16 +30,16 @@ jobs:
           # Get version from main branch
           git fetch origin main
           main_version=$(git show origin/main:appinfo/info.xml | grep -oP '(?<=<version>)[^<]+' || echo "")
-          
+
           # Get current version from feature/php-linting branch
           current_version=$(grep -oP '(?<=<version>)[^<]+' appinfo/info.xml || echo "")
-          
+
           # Split main version into parts
           IFS='.' read -ra main_version_parts <<< "$main_version"
-          
+
           # Increment patch version by 1 from main
           next_patch=$((main_version_parts[2] + 1))
-          
+
           # Extract beta counter from current version if it exists
           beta_counter=1
           if [[ $current_version =~ -beta\.([0-9]+)$ ]]; then
@@ -50,9 +49,9 @@ jobs:
               beta_counter=$((BASH_REMATCH[1] + 1))
             fi
           fi
-          
+
           beta_version="${main_version_parts[0]}.${main_version_parts[1]}.${next_patch}-beta.${beta_counter}"
-          
+
           echo "NEW_VERSION=$beta_version" >> $GITHUB_ENV
           echo "new_version=$beta_version" >> $GITHUB_OUTPUT
           echo "Main version: $main_version"
@@ -65,10 +64,10 @@ jobs:
         run: |
           # Get the date for the changelog entry
           RELEASE_DATE=$(date +%Y-%m-%d)
-          
+
           # Find the last release tag (beta or main)
           LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-          
+
           # Determine the base commit for finding PRs
           if [ -z "$LAST_TAG" ]; then
             # If no tag exists, use main branch as base
@@ -80,26 +79,26 @@ jobs:
             BASE_SHA=$(git rev-parse "$LAST_TAG")
             echo "Found last tag: $LAST_TAG ($BASE_SHA)"
           fi
-          
+
           CURRENT_SHA=$(git rev-parse HEAD)
-          
+
           # Create category files before processing
           FEATURES_FILE=$(mktemp)
           FIXES_FILE=$(mktemp)
           DOCS_FILE=$(mktemp)
           IMPROVEMENTS_FILE=$(mktemp)
           OTHER_FILE=$(mktemp)
-          
+
           # Track PRs we've already processed (by PR number)
           PROCESSED_PRS=$(mktemp)
-          
+
           # Fetch PRs that were merged into the beta branch
           # We'll query PRs and check if their merge commit is in our range
           echo "Fetching merged PRs from GitHub API..."
-          
+
           # Get all commits in the range
           COMMITS_IN_RANGE=$(git log --pretty=format:"%H" "$BASE_SHA..$CURRENT_SHA")
-          
+
           # For each commit, check if it's a merge commit and find associated PR
           for commit_sha in $COMMITS_IN_RANGE; do
             # Skip if this commit is a version bump or skip-changelog
@@ -107,51 +106,51 @@ jobs:
             if echo "$commit_msg" | grep -qiE "\[skip ci\]|Bump.*version|skip-changelog"; then
               continue
             fi
-            
+
             # Try to find PR associated with this commit
             # GitHub API: GET /repos/{owner}/{repo}/commits/{commit_sha}/pulls
             pr_data=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
               -H "Accept: application/vnd.github+json" \
               "https://api.github.com/repos/${{ github.repository }}/commits/$commit_sha/pulls" || echo "[]")
-            
+
             # Parse PR numbers from response
             pr_numbers=$(echo "$pr_data" | jq -r '.[].number' 2>/dev/null || echo "")
-            
+
             if [ -n "$pr_numbers" ]; then
               for pr_num in $pr_numbers; do
                 # Skip if we've already processed this PR
                 if grep -q "^$pr_num$" "$PROCESSED_PRS"; then
                   continue
                 fi
-                
+
                 # Mark as processed
                 echo "$pr_num" >> "$PROCESSED_PRS"
-                
+
                 # Fetch PR details
                 pr_info=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
                   -H "Accept: application/vnd.github+json" \
                   "https://api.github.com/repos/${{ github.repository }}/pulls/$pr_num" || echo "{}")
-                
+
                 # Check if PR is merged and not excluded
                 pr_state=$(echo "$pr_info" | jq -r '.state // "unknown"' 2>/dev/null)
                 pr_merged=$(echo "$pr_info" | jq -r '.merged // false' 2>/dev/null)
                 pr_labels=$(echo "$pr_info" | jq -r '[.labels[].name] | join(",")' 2>/dev/null || echo "")
-                
+
                 # Skip if PR is not merged or has skip-changelog label
                 if [ "$pr_state" != "closed" ] || [ "$pr_merged" != "true" ]; then
                   continue
                 fi
-                
+
                 if echo "$pr_labels" | grep -qi "skip-changelog"; then
                   echo "Skipping PR #$pr_num (has skip-changelog label)"
                   continue
                 fi
-                
+
                 # Extract PR information
                 pr_title=$(echo "$pr_info" | jq -r '.title // ""' 2>/dev/null)
                 pr_body=$(echo "$pr_info" | jq -r '.body // ""' 2>/dev/null)
                 pr_url=$(echo "$pr_info" | jq -r '.html_url // ""' 2>/dev/null)
-                
+
                 # Use PR description (body) if available, otherwise use title
                 if [ -n "$pr_body" ] && [ "$pr_body" != "null" ] && [ "$pr_body" != "" ]; then
                   # Clean up PR body - remove markdown code blocks, images, and formatting
@@ -166,7 +165,7 @@ jobs:
                     tr '\n' ' ' | \
                     sed -E 's/^[[:space:]]+|[[:space:]]+$//g' | \
                     sed -E 's/[[:space:]]+/ /g')
-                  
+
                   # If description is too long, too short, or empty, use title
                   if [ ${#pr_description} -gt 250 ] || [ ${#pr_description} -lt 10 ] || [ -z "$pr_description" ]; then
                     pr_description="$pr_title"
@@ -174,10 +173,10 @@ jobs:
                 else
                   pr_description="$pr_title"
                 fi
-                
+
                 # Create entry with PR link
                 entry="- ${pr_description} ([#${pr_num}](${pr_url}))"
-                
+
                 # Categorize based on PR labels first (more accurate), then fall back to title/content
                 category="OTHER"
                 if echo "$pr_labels" | grep -qiE "(feature|feat|enhancement)"; then
@@ -197,7 +196,7 @@ jobs:
                 elif echo "$pr_title" | grep -qiE "^(refactor|perf|style|chore|improve|improvement):"; then
                   category="IMPROVEMENTS"
                 fi
-                
+
                 # Write to appropriate category file
                 case "$category" in
                   FEATURES)
@@ -219,10 +218,10 @@ jobs:
               done
             fi
           done
-          
+
           # Check if we found any PRs
           total_entries=$(cat "$FEATURES_FILE" "$FIXES_FILE" "$DOCS_FILE" "$IMPROVEMENTS_FILE" "$OTHER_FILE" 2>/dev/null | wc -l)
-          
+
           if [ "$total_entries" -eq 0 ]; then
             echo "No merged PRs found for changelog"
             echo "HAS_CHANGES=false" >> $GITHUB_OUTPUT
@@ -231,49 +230,49 @@ jobs:
             # Build changelog entry in a file
             CHANGELOG_ENTRY_FILE=$(mktemp)
             echo "## ${{ env.NEW_VERSION }} – ${RELEASE_DATE}" > "$CHANGELOG_ENTRY_FILE"
-            
+
             if [ -s "$FEATURES_FILE" ]; then
               echo "" >> "$CHANGELOG_ENTRY_FILE"
               echo "### Added" >> "$CHANGELOG_ENTRY_FILE"
               cat "$FEATURES_FILE" >> "$CHANGELOG_ENTRY_FILE"
             fi
-            
+
             if [ -s "$FIXES_FILE" ]; then
               echo "" >> "$CHANGELOG_ENTRY_FILE"
               echo "### Fixed" >> "$CHANGELOG_ENTRY_FILE"
               cat "$FIXES_FILE" >> "$CHANGELOG_ENTRY_FILE"
             fi
-            
+
             if [ -s "$IMPROVEMENTS_FILE" ]; then
               echo "" >> "$CHANGELOG_ENTRY_FILE"
               echo "### Changed" >> "$CHANGELOG_ENTRY_FILE"
               cat "$IMPROVEMENTS_FILE" >> "$CHANGELOG_ENTRY_FILE"
             fi
-            
+
             if [ -s "$DOCS_FILE" ]; then
               echo "" >> "$CHANGELOG_ENTRY_FILE"
               echo "### Documentation" >> "$CHANGELOG_ENTRY_FILE"
               cat "$DOCS_FILE" >> "$CHANGELOG_ENTRY_FILE"
             fi
-            
+
             if [ -s "$OTHER_FILE" ]; then
               echo "" >> "$CHANGELOG_ENTRY_FILE"
               echo "### Other" >> "$CHANGELOG_ENTRY_FILE"
               cat "$OTHER_FILE" >> "$CHANGELOG_ENTRY_FILE"
             fi
-            
+
             echo "" >> "$CHANGELOG_ENTRY_FILE"
-            
+
             # Save changelog entry file path for next step
             echo "$CHANGELOG_ENTRY_FILE" > changelog_entry_path.txt
-            
+
             # Clean up temp files (except the entry file)
             rm -f "$PRS_FILE" "$PROCESSED_PRS" "$FEATURES_FILE" "$FIXES_FILE" "$DOCS_FILE" "$IMPROVEMENTS_FILE" "$OTHER_FILE"
-            
+
             echo "HAS_CHANGES=true" >> $GITHUB_OUTPUT
             echo "✓ Generated changelog entry for ${{ env.NEW_VERSION }} with $total_entries PR entries"
           fi
-          
+
           echo "RELEASE_DATE=$RELEASE_DATE" >> $GITHUB_ENV
 
       # Stap 5: Update CHANGELOG.md met nieuwe entries
@@ -283,7 +282,7 @@ jobs:
           # Read changelog entry file path
           if [ -f "changelog_entry_path.txt" ]; then
             NEW_ENTRY_FILE=$(cat changelog_entry_path.txt)
-            
+
             # Read current changelog and insert new entry
             if [ -f "CHANGELOG.md" ]; then
               # Insert new entry after "# Changelog" line and before first version entry
@@ -309,7 +308,7 @@ jobs:
               echo "" >> CHANGELOG.md
               cat "$NEW_ENTRY_FILE" >> CHANGELOG.md
             fi
-            
+
             # Clean up
             rm -f "$NEW_ENTRY_FILE" changelog_entry_path.txt
             echo "✓ CHANGELOG.md updated with version ${{ env.NEW_VERSION }}"
@@ -327,7 +326,7 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          
+
           # Check if there are changes to commit
           if git diff --quiet && git diff --cached --quiet; then
             echo "No changes to commit"
@@ -365,36 +364,36 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: composer install --no-dev --optimize-autoloader --classmap-authoritative
-      
+
       # Stap 9a: Verify vendor dependencies are installed
       - name: Verify vendor dependencies
         run: |
           echo "Checking critical dependencies..."
-          
+
           # Check that vendor directory exists and has content
           if [ ! -d "vendor" ] || [ -z "$(ls -A vendor 2>/dev/null)" ]; then
             echo "ERROR: vendor directory is missing or empty"
             exit 1
           fi
-          
+
           # Check specific critical dependencies
           missing_deps=0
-          
+
           if [ ! -d "vendor/openai-php/client/src" ]; then
             echo "ERROR: openai-php/client source files not found"
             missing_deps=1
           fi
-          
+
           if [ ! -d "vendor/theodo-group/llphant/src" ]; then
             echo "ERROR: theodo-group/llphant source files not found"
             missing_deps=1
           fi
-          
+
           if [ $missing_deps -eq 1 ]; then
             echo "HINT: Check composer.json dependencies and composer install output"
             exit 1
           fi
-          
+
           echo "✓ All critical dependencies verified with source files"
 
       # Stap 10: Kopieer de bestanden naar de package directory
@@ -456,13 +455,13 @@ jobs:
       - name: Verify package vendor directory
         run: |
           echo "Verifying package contains complete vendor dependencies..."
-          
+
           # Check vendor directory was copied
           if [ ! -d "package/${{ github.event.repository.name }}/vendor" ]; then
             echo "ERROR: vendor directory not found in package"
             exit 1
           fi
-          
+
           # Verify vendor packages have source files (not just LICENSE)
           if [ ! -d "package/${{ github.event.repository.name }}/vendor/openai-php/client/src" ]; then
             echo "ERROR: openai-php/client/src not found in package"
@@ -470,7 +469,7 @@ jobs:
             ls -la package/${{ github.event.repository.name }}/vendor/openai-php/client/ || true
             exit 1
           fi
-          
+
           # Quick sanity check: count vendor subdirectories
           vendor_count=$(find package/${{ github.event.repository.name }}/vendor -maxdepth 1 -type d | wc -l)
           if [ $vendor_count -lt 10 ]; then
@@ -478,9 +477,9 @@ jobs:
             echo "Listing vendor contents:"
             ls -la package/${{ github.event.repository.name }}/vendor/
           fi
-          
+
           echo "✓ Package vendor directory verified with source files"
-      
+
       # Stap 12: Maak het TAR.GZ archief
       - name: Create Tarball
         run: |
@@ -506,7 +505,7 @@ jobs:
         id: version
         uses: codacy/git-version@2.7.1
         with:
-          release-branch: feature/php-linting
+          release-branch: beta
 
       # Stap 15: Extraheer repository description (optioneel)
       - name: Extract repository description
