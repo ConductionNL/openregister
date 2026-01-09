@@ -508,10 +508,12 @@ class RelationHandler
      *
      * This method finds all objects that are referenced by the given object.
      *
-     * @param string $objectId      Object ID or UUID.
-     * @param array  $query         Search query parameters.
-     * @param bool   $_rbac         Apply RBAC filters.
-     * @param bool   $_multitenancy Apply multitenancy filters.
+     * @param string   $objectId      Object ID or UUID.
+     * @param array    $query         Search query parameters.
+     * @param bool     $_rbac         Apply RBAC filters.
+     * @param bool     $_multitenancy Apply multitenancy filters.
+     * @param int|null $_registerId   Register ID for magic table lookup.
+     * @param int|null $_schemaId     Schema ID for magic table lookup.
      *
      * @return array{results: ObjectEntity[], total: int, limit: int|mixed, offset: int|mixed}
      *
@@ -519,15 +521,57 @@ class RelationHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) RBAC/multitenancy flags follow established API patterns
      */
-    public function getUses(string $objectId, array $query=[], bool $_rbac=true, bool $_multitenancy=true): array
-    {
+    public function getUses(
+        string $objectId,
+        array $query=[],
+        bool $_rbac=true,
+        bool $_multitenancy=true,
+        ?int $_registerId=null,
+        ?int $_schemaId=null
+    ): array {
         try {
-            // Find the object.
-            $object = $this->objectEntityMapper->find(identifier: $objectId);
+            // Get register and schema for magic table lookup if provided.
+            $register = null;
+            $schema   = null;
+            if ($_registerId !== null && $_schemaId !== null) {
+                try {
+                    $registerMapper = \OC::$server->get(\OCA\OpenRegister\Db\RegisterMapper::class);
+                    $register       = $registerMapper->find($_registerId);
+                    $schema         = $this->schemaMapper->find($_schemaId);
+                } catch (\Exception $e) {
+                    $this->logger->debug(
+                        '[RelationHandler::getUses] Could not load register/schema for magic table lookup',
+                        ['registerId' => $_registerId, 'schemaId' => $_schemaId, 'error' => $e->getMessage()]
+                    );
+                }
+            }
 
-            // Extract all relationship IDs from the object.
-            // Note: extractAllRelationshipIds expects ObjectEntity[], not raw array data.
-            $relationshipIds = $this->extractAllRelationshipIds(objects: [$object], _extend: []);
+            // Find the object (with magic table support if register/schema available).
+            $object = $this->objectEntityMapper->find(
+                identifier: $objectId,
+                register: $register,
+                schema: $schema
+            );
+
+            // Get pre-scanned relations from the object entity.
+            // These are populated during save/import by scanForRelations().
+            $relations = $object->getRelations() ?? [];
+
+            // Extract just the UUID values from the relations array.
+            // Relations can be stored as ['field' => 'uuid'] or as flat array of UUIDs.
+            $relationshipIds = [];
+            foreach ($relations as $key => $value) {
+                if (is_string($value) === true && empty($value) === false) {
+                    $relationshipIds[] = $value;
+                } else if (is_array($value) === true) {
+                    foreach ($value as $subValue) {
+                        if (is_string($subValue) === true && empty($subValue) === false) {
+                            $relationshipIds[] = $subValue;
+                        }
+                    }
+                }
+            }
+
 
             if (empty($relationshipIds) === true) {
                 return [
@@ -538,8 +582,79 @@ class RelationHandler
                 ];
             }
 
-            // Load the related objects.
-            $relatedObjects = $this->objectEntityMapper->findMultiple(ids: array_unique($relationshipIds));
+            // Load the related objects from magic tables using cross-table search.
+            $uniqueIds = array_unique($relationshipIds);
+
+            // Get all register+schema pairs that have magic mapping enabled.
+            $registerMapper = \OC::$server->get(\OCA\OpenRegister\Db\RegisterMapper::class);
+            $magicMapper    = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
+            $registers      = $registerMapper->findAll();
+
+            $registerSchemaPairs = [];
+            foreach ($registers as $reg) {
+                $schemaIds = $reg->getSchemas() ?? [];
+                foreach ($schemaIds as $schemaId) {
+                    try {
+                        $sch        = $this->schemaMapper->find((int) $schemaId);
+                        $schemaSlug = $sch->getSlug();
+                        if ($reg->isMagicMappingEnabledForSchema((int) $schemaId, $schemaSlug) === true) {
+                            $registerSchemaPairs[] = ['register' => $reg, 'schema' => $sch];
+                        }
+                    } catch (\Exception $e) {
+                        // Schema not found, skip.
+                    }
+                }
+            }
+
+            // Search each magic table individually for the UUIDs.
+            // This avoids UNION column mismatch issues.
+            $relatedObjects = [];
+            $foundUuids     = [];
+            foreach ($registerSchemaPairs as $pair) {
+                // Skip if we've found all the UUIDs already.
+                if (count($foundUuids) >= count($uniqueIds)) {
+                    break;
+                }
+
+                // Only search for UUIDs not yet found.
+                $remainingUuids = array_diff($uniqueIds, $foundUuids);
+                if (empty($remainingUuids) === true) {
+                    break;
+                }
+
+                try {
+                    $results = $magicMapper->findAllInRegisterSchemaTable(
+                        register: $pair['register'],
+                        schema: $pair['schema'],
+                        filters: ['_ids' => array_values($remainingUuids), '_limit' => 200]
+                    );
+
+                    foreach ($results as $obj) {
+                        $uuid = $obj->getUuid();
+                        if (in_array($uuid, $uniqueIds, true) === true && in_array($uuid, $foundUuids, true) === false) {
+                            $relatedObjects[] = $obj;
+                            $foundUuids[]     = $uuid;
+                        }
+                    }
+                } catch (\Exception $e) {
+                    // Table might not exist or query failed, continue.
+                }
+            }
+
+            // Also check main objects table as fallback for any missing UUIDs.
+            $missingUuids = array_diff($uniqueIds, $foundUuids);
+            if (empty($missingUuids) === false) {
+                $fallbackObjects = $this->objectEntityMapper->findMultiple(ids: $missingUuids);
+                $relatedObjects  = array_merge($relatedObjects, $fallbackObjects);
+            }
+
+            $this->logger->debug(
+                '[RelationHandler::getUses] Found related objects',
+                [
+                    'searchedIds' => $uniqueIds,
+                    'foundCount'  => count($relatedObjects),
+                ]
+            );
 
             // Apply pagination.
             $limit  = $query['_limit'] ?? 30;
@@ -589,35 +704,97 @@ class RelationHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) RBAC/multitenancy flags follow established API patterns
      */
-    public function getUsedBy(string $objectId, array $query=[], bool $_rbac=true, bool $_multitenancy=true): array
-    {
+    public function getUsedBy(
+        string $objectId,
+        array $query=[],
+        bool $_rbac=true,
+        bool $_multitenancy=true,
+        ?int $_registerId=null,
+        ?int $_schemaId=null
+    ): array {
         try {
-            // Find the object.
-            $object     = $this->objectEntityMapper->find(identifier: $objectId);
+            // Get register and schema for magic table lookup if provided.
+            $register = null;
+            $schema   = null;
+            if ($_registerId !== null && $_schemaId !== null) {
+                try {
+                    $registerMapper = \OC::$server->get(\OCA\OpenRegister\Db\RegisterMapper::class);
+                    $register       = $registerMapper->find($_registerId);
+                    $schema         = $this->schemaMapper->find($_schemaId);
+                } catch (\Exception $e) {
+                    $this->logger->warning(
+                        message: 'Failed to load register/schema for getUsedBy magic table support',
+                        context: ['error' => $e->getMessage()]
+                    );
+                }
+            }
+
+            // Find the object (with magic table support if register/schema available).
+            $object     = $this->objectEntityMapper->find(
+                identifier: $objectId,
+                register: $register,
+                schema: $schema
+            );
             $targetUuid = $object->getUuid();
 
-            // This requires searching all objects for references to this UUID.
-            // This is an expensive operation - ideally would be done with a dedicated index.
-            // For now, return empty results with a note in the logs.
-            $this->logger->info(
-                message: 'getUsedBy called - this operation requires full table scan',
-                context: [
-                    'objectId'   => $objectId,
-                    'targetUuid' => $targetUuid,
-                ]
-            );
+            // Search across all magic tables for objects that reference this UUID in their _relations.
+            $results      = [];
+            $magicMapper  = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
+            $registerMapper = \OC::$server->get(\OCA\OpenRegister\Db\RegisterMapper::class);
+            $magicTables  = $magicMapper->getExistingRegisterSchemaTables();
+            $limit        = $query['_limit'] ?? 30;
+            $offset       = $query['_offset'] ?? 0;
+            $totalResults = 0;
 
-            // TODO: Implement efficient reverse relationship lookup.
-            // This would require either:
-            // 1. A dedicated relationship table with indexes.
-            // 2. A cache of reverse relationships.
-            // 3. Full text search on JSON fields (expensive).
+            // Search each magic table for objects that have this UUID in their _relations.
+            foreach ($magicTables as $tableInfo) {
+                if (count($results) >= $limit) {
+                    break;
+                }
+
+                try {
+                    // Get register and schema for this table.
+                    $tableRegister = $registerMapper->find($tableInfo['registerId']);
+                    $tableSchema   = $this->schemaMapper->find($tableInfo['schemaId']);
+
+                    // Search for objects where _relations contains the target UUID.
+                    // Use JSON contains search on the _relations column.
+                    $searchResults = $magicMapper->findAllInRegisterSchemaTable(
+                        register: $tableRegister,
+                        schema: $tableSchema,
+                        limit: $limit - count($results),
+                        offset: max(0, $offset - $totalResults),
+                        filters: ['_relations_contains' => $targetUuid],
+                        sort: ['_updated' => 'DESC']
+                    );
+
+                    foreach ($searchResults as $resultObject) {
+                        // Skip the object itself.
+                        if ($resultObject->getUuid() === $targetUuid) {
+                            continue;
+                        }
+
+                        $results[] = $resultObject->jsonSerialize();
+                    }
+
+                    $totalResults += count($searchResults);
+                } catch (\Exception $e) {
+                    $this->logger->debug(
+                        message: 'Error searching magic table for usedBy',
+                        context: [
+                            'table' => $tableInfo['tableName'] ?? 'unknown',
+                            'error' => $e->getMessage(),
+                        ]
+                    );
+                    continue;
+                }
+            }
+
             return [
-                'results' => [],
-                'total'   => 0,
-                'limit'   => $query['_limit'] ?? 30,
-                'offset'  => $query['_offset'] ?? 0,
-                'message' => 'Reverse relationship lookup not yet implemented',
+                'results' => $results,
+                'total'   => count($results),
+                'limit'   => $limit,
+                'offset'  => $offset,
             ];
         } catch (\Exception $e) {
             $this->logger->error(

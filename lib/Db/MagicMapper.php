@@ -2947,7 +2947,25 @@ class MagicMapper
                 continue;
             }
 
-            // Skip system parameters starting with underscore.
+            // Handle _ids filter specially (UUID/slug lookup).
+            if ($key === '_ids' && is_array($value) === true && empty($value) === false) {
+                $orX = $qb->expr()->orX();
+                $orX->add($qb->expr()->in('_uuid', $qb->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+                $orX->add($qb->expr()->in('_slug', $qb->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+                $qb->andWhere($orX);
+                continue;
+            }
+
+            // Handle _relations_contains filter (find objects that reference a UUID).
+            if ($key === '_relations_contains' && is_string($value) === true && empty($value) === false) {
+                // Use PostgreSQL JSONB @> operator to check if _relations array contains the UUID.
+                $qb->andWhere(
+                    '_relations @> ' . $qb->createNamedParameter(json_encode([$value]))
+                );
+                continue;
+            }
+
+            // Skip other system parameters starting with underscore.
             if (str_starts_with($key, '_') === true) {
                 continue;
             }

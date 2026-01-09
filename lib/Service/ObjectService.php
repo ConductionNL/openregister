@@ -2400,7 +2400,9 @@ class ObjectService
             objectId: $objectId,
             query: $query,
             _rbac: $rbac,
-            _multitenancy: $_multitenancy
+            _multitenancy: $_multitenancy,
+            _registerId: $this->currentRegister?->getId(),
+            _schemaId: $this->currentSchema?->getId()
         );
     }//end getObjectUses()
 
@@ -2426,7 +2428,9 @@ class ObjectService
             objectId: $objectId,
             query: $query,
             _rbac: $rbac,
-            _multitenancy: $_multitenancy
+            _multitenancy: $_multitenancy,
+            _registerId: $this->currentRegister?->getId(),
+            _schemaId: $this->currentSchema?->getId()
         );
     }//end getObjectUsedBy()
 

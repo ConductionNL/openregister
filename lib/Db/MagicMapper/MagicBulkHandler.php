@@ -140,6 +140,14 @@ class MagicBulkHandler
             $preparedObject['_slug']         = $selfData['slug'] ?? $object['slug'] ?? null;
             $preparedObject['_uri']          = $selfData['uri'] ?? $object['uri'] ?? null;
 
+            // Map relations (scanned UUIDs/URLs from object data).
+            $relations = $selfData['relations'] ?? $object['relations'] ?? null;
+            if ($relations !== null && is_array($relations) === true) {
+                $preparedObject['_relations'] = json_encode(array_values($relations));
+            } else if ($relations !== null && is_string($relations) === true) {
+                $preparedObject['_relations'] = $relations;
+            }
+
             // Map ALL object properties to columns (camelCase → snake_case).
             // Properties can be at top level OR in 'object' key (structured format).
             $propertySource = $object['object'] ?? $object;
