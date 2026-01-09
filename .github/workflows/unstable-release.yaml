@@ -3,7 +3,8 @@ name: Unstable Release
 on:
   push:
     branches:
-      - feature/php-linting
+      # - feature/php-linting  # Disabled - now building beta releases instead
+      - disabled-placeholder  # Workflow disabled
 
 jobs:
   release-management:

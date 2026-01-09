@@ -3,7 +3,8 @@ name: Beta Release
 on:
   push:
     branches:
-      - beta
+      - feature/php-linting
+      # - beta
       # - code-refactor/ObjectService
 
 jobs:
@@ -31,7 +32,7 @@ jobs:
           git fetch origin main
           main_version=$(git show origin/main:appinfo/info.xml | grep -oP '(?<=<version>)[^<]+' || echo "")
           
-          # Get current version from development branch
+          # Get current version from feature/php-linting branch
           current_version=$(grep -oP '(?<=<version>)[^<]+' appinfo/info.xml || echo "")
           
           # Split main version into parts
@@ -505,7 +506,7 @@ jobs:
         id: version
         uses: codacy/git-version@2.7.1
         with:
-          release-branch: beta
+          release-branch: feature/php-linting
 
       # Stap 15: Extraheer repository description (optioneel)
       - name: Extract repository description
