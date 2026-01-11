@@ -28,6 +28,9 @@ on:
       - master
       - development
       - dev
+      - 'feature/**'
+      - 'bugfix/**'
+      - 'hotfix/**'
   pull_request:
     branches:
       - main
