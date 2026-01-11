@@ -204,9 +204,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Setup Docker Compose
-        run: |
-          docker compose version
+      - name: Install jq for JSON processing
+        run: sudo apt-get update && sudo apt-get install -y jq
       
       - name: Start Nextcloud with PostgreSQL
         run: |
@@ -220,24 +219,43 @@ jobs:
             -e NEXTCLOUD_ADMIN_USER=admin \
             -e NEXTCLOUD_ADMIN_PASSWORD=admin \
             -e NEXTCLOUD_TRUSTED_DOMAINS=localhost \
-            -v $(pwd):/var/www/html/custom_apps/openregister \
             nextcloud:latest
+          
+          echo "⏳ Waiting for Nextcloud container to start..."
+          sleep 10
       
-      - name: Wait for Nextcloud
+      - name: Copy OpenRegister app to container
+        run: |
+          echo "📦 Copying OpenRegister app to Nextcloud container..."
+          docker exec nextcloud mkdir -p /var/www/html/custom_apps/openregister
+          docker cp . nextcloud:/var/www/html/custom_apps/openregister/
+          docker exec nextcloud chown -R www-data:www-data /var/www/html/custom_apps/openregister
+      
+      - name: Wait for Nextcloud to be ready
         run: |
           echo "Waiting for Nextcloud to be ready..."
           for i in {1..60}; do
-            if docker exec nextcloud curl -f http://localhost/status.php 2>/dev/null; then
+            if docker exec nextcloud curl -sf http://localhost/status.php > /dev/null 2>&1; then
               echo "✅ Nextcloud is ready!"
               break
+            fi
+            if [ $i -eq 60 ]; then
+              echo "❌ Nextcloud failed to become ready"
+              docker logs nextcloud --tail 50
+              exit 1
             fi
             echo "⏳ Waiting... ($i/60)"
             sleep 5
           done
       
-      - name: Install OpenRegister app
+      - name: Enable OpenRegister app
         run: |
-          docker exec --user www-data nextcloud php occ app:enable openregister
+          echo "📱 Enabling OpenRegister app..."
+          docker exec --user www-data nextcloud php occ app:enable openregister || {
+            echo "❌ Failed to enable app, checking logs..."
+            docker exec nextcloud cat /var/www/html/data/nextcloud.log | tail -20 || true
+            exit 1
+          }
           docker exec --user www-data nextcloud php occ app:list | grep openregister
       
       - name: Setup Node.js
@@ -250,11 +268,19 @@ jobs:
       
       - name: Run Newman tests (Normal Storage)
         env:
+          NEXTCLOUD_URL: "http://localhost"
+          NEXTCLOUD_ADMIN_USER: "admin"
+          NEXTCLOUD_ADMIN_PASSWORD: "admin"
+          NEXTCLOUD_CONTAINER: "nextcloud"
           ENABLE_MAGIC_MAPPER: "false"
         run: |
           cd tests/integration
           chmod +x run-tests.sh
-          ./run-tests.sh --mode ci --clean
+          ./run-tests.sh --mode ci --url "http://localhost" --container nextcloud --clean || {
+            echo "❌ Newman tests failed"
+            docker logs nextcloud --tail 100
+            exit 1
+          }
       
       - name: Upload test results
         if: always()
@@ -288,6 +314,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
+      - name: Install jq for JSON processing
+        run: sudo apt-get update && sudo apt-get install -y jq
+      
       - name: Start Nextcloud with PostgreSQL
         run: |
           docker run -d \
@@ -300,24 +329,43 @@ jobs:
             -e NEXTCLOUD_ADMIN_USER=admin \
             -e NEXTCLOUD_ADMIN_PASSWORD=admin \
             -e NEXTCLOUD_TRUSTED_DOMAINS=localhost \
-            -v $(pwd):/var/www/html/custom_apps/openregister \
             nextcloud:latest
+          
+          echo "⏳ Waiting for Nextcloud container to start..."
+          sleep 10
       
-      - name: Wait for Nextcloud
+      - name: Copy OpenRegister app to container
+        run: |
+          echo "📦 Copying OpenRegister app to Nextcloud container..."
+          docker exec nextcloud mkdir -p /var/www/html/custom_apps/openregister
+          docker cp . nextcloud:/var/www/html/custom_apps/openregister/
+          docker exec nextcloud chown -R www-data:www-data /var/www/html/custom_apps/openregister
+      
+      - name: Wait for Nextcloud to be ready
         run: |
           echo "Waiting for Nextcloud to be ready..."
           for i in {1..60}; do
-            if docker exec nextcloud curl -f http://localhost/status.php 2>/dev/null; then
+            if docker exec nextcloud curl -sf http://localhost/status.php > /dev/null 2>&1; then
               echo "✅ Nextcloud is ready!"
               break
+            fi
+            if [ $i -eq 60 ]; then
+              echo "❌ Nextcloud failed to become ready"
+              docker logs nextcloud --tail 50
+              exit 1
             fi
             echo "⏳ Waiting... ($i/60)"
             sleep 5
           done
       
-      - name: Install OpenRegister app
+      - name: Enable OpenRegister app
         run: |
-          docker exec --user www-data nextcloud php occ app:enable openregister
+          echo "📱 Enabling OpenRegister app..."
+          docker exec --user www-data nextcloud php occ app:enable openregister || {
+            echo "❌ Failed to enable app, checking logs..."
+            docker exec nextcloud cat /var/www/html/data/nextcloud.log | tail -20 || true
+            exit 1
+          }
           docker exec --user www-data nextcloud php occ app:list | grep openregister
       
       - name: Setup Node.js
@@ -329,10 +377,20 @@ jobs:
         run: npm install -g newman newman-reporter-htmlextra
       
       - name: Run Newman tests (Magic Mapper)
+        env:
+          NEXTCLOUD_URL: "http://localhost"
+          NEXTCLOUD_ADMIN_USER: "admin"
+          NEXTCLOUD_ADMIN_PASSWORD: "admin"
+          NEXTCLOUD_CONTAINER: "nextcloud"
+          ENABLE_MAGIC_MAPPER: "true"
         run: |
           cd tests/integration
-          chmod +x run-dual-storage-tests.sh
-          ./run-dual-storage-tests.sh --verbose
+          chmod +x run-tests.sh
+          ./run-tests.sh --mode ci --url "http://localhost" --container nextcloud --clean || {
+            echo "❌ Newman tests failed"
+            docker logs nextcloud --tail 100
+            exit 1
+          }
       
       - name: Upload test results
         if: always()
@@ -367,6 +425,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
+      - name: Install jq for JSON processing
+        run: sudo apt-get update && sudo apt-get install -y jq
+      
       - name: Start Nextcloud with MySQL
         run: |
           docker run -d \
@@ -379,24 +440,43 @@ jobs:
             -e NEXTCLOUD_ADMIN_USER=admin \
             -e NEXTCLOUD_ADMIN_PASSWORD=admin \
             -e NEXTCLOUD_TRUSTED_DOMAINS=localhost \
-            -v $(pwd):/var/www/html/custom_apps/openregister \
             nextcloud:latest
+          
+          echo "⏳ Waiting for Nextcloud container to start..."
+          sleep 10
       
-      - name: Wait for Nextcloud
+      - name: Copy OpenRegister app to container
+        run: |
+          echo "📦 Copying OpenRegister app to Nextcloud container..."
+          docker exec nextcloud mkdir -p /var/www/html/custom_apps/openregister
+          docker cp . nextcloud:/var/www/html/custom_apps/openregister/
+          docker exec nextcloud chown -R www-data:www-data /var/www/html/custom_apps/openregister
+      
+      - name: Wait for Nextcloud to be ready
         run: |
           echo "Waiting for Nextcloud to be ready..."
           for i in {1..60}; do
-            if docker exec nextcloud curl -f http://localhost/status.php 2>/dev/null; then
+            if docker exec nextcloud curl -sf http://localhost/status.php > /dev/null 2>&1; then
               echo "✅ Nextcloud is ready!"
               break
+            fi
+            if [ $i -eq 60 ]; then
+              echo "❌ Nextcloud failed to become ready"
+              docker logs nextcloud --tail 50
+              exit 1
             fi
             echo "⏳ Waiting... ($i/60)"
             sleep 5
           done
       
-      - name: Install OpenRegister app
+      - name: Enable OpenRegister app
         run: |
-          docker exec --user www-data nextcloud php occ app:enable openregister
+          echo "📱 Enabling OpenRegister app..."
+          docker exec --user www-data nextcloud php occ app:enable openregister || {
+            echo "❌ Failed to enable app, checking logs..."
+            docker exec nextcloud cat /var/www/html/data/nextcloud.log | tail -20 || true
+            exit 1
+          }
           docker exec --user www-data nextcloud php occ app:list | grep openregister
       
       - name: Setup Node.js
@@ -409,11 +489,19 @@ jobs:
       
       - name: Run Newman tests (Normal Storage)
         env:
+          NEXTCLOUD_URL: "http://localhost"
+          NEXTCLOUD_ADMIN_USER: "admin"
+          NEXTCLOUD_ADMIN_PASSWORD: "admin"
+          NEXTCLOUD_CONTAINER: "nextcloud"
           ENABLE_MAGIC_MAPPER: "false"
         run: |
           cd tests/integration
           chmod +x run-tests.sh
-          ./run-tests.sh --mode ci --clean
+          ./run-tests.sh --mode ci --url "http://localhost" --container nextcloud --clean || {
+            echo "❌ Newman tests failed"
+            docker logs nextcloud --tail 100
+            exit 1
+          }
       
       - name: Upload test results
         if: always()
@@ -448,6 +536,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
+      - name: Install jq for JSON processing
+        run: sudo apt-get update && sudo apt-get install -y jq
+      
       - name: Start Nextcloud with MySQL
         run: |
           docker run -d \
@@ -460,24 +551,43 @@ jobs:
             -e NEXTCLOUD_ADMIN_USER=admin \
             -e NEXTCLOUD_ADMIN_PASSWORD=admin \
             -e NEXTCLOUD_TRUSTED_DOMAINS=localhost \
-            -v $(pwd):/var/www/html/custom_apps/openregister \
             nextcloud:latest
+          
+          echo "⏳ Waiting for Nextcloud container to start..."
+          sleep 10
       
-      - name: Wait for Nextcloud
+      - name: Copy OpenRegister app to container
+        run: |
+          echo "📦 Copying OpenRegister app to Nextcloud container..."
+          docker exec nextcloud mkdir -p /var/www/html/custom_apps/openregister
+          docker cp . nextcloud:/var/www/html/custom_apps/openregister/
+          docker exec nextcloud chown -R www-data:www-data /var/www/html/custom_apps/openregister
+      
+      - name: Wait for Nextcloud to be ready
         run: |
           echo "Waiting for Nextcloud to be ready..."
           for i in {1..60}; do
-            if docker exec nextcloud curl -f http://localhost/status.php 2>/dev/null; then
+            if docker exec nextcloud curl -sf http://localhost/status.php > /dev/null 2>&1; then
               echo "✅ Nextcloud is ready!"
               break
+            fi
+            if [ $i -eq 60 ]; then
+              echo "❌ Nextcloud failed to become ready"
+              docker logs nextcloud --tail 50
+              exit 1
             fi
             echo "⏳ Waiting... ($i/60)"
             sleep 5
           done
       
-      - name: Install OpenRegister app
+      - name: Enable OpenRegister app
         run: |
-          docker exec --user www-data nextcloud php occ app:enable openregister
+          echo "📱 Enabling OpenRegister app..."
+          docker exec --user www-data nextcloud php occ app:enable openregister || {
+            echo "❌ Failed to enable app, checking logs..."
+            docker exec nextcloud cat /var/www/html/data/nextcloud.log | tail -20 || true
+            exit 1
+          }
           docker exec --user www-data nextcloud php occ app:list | grep openregister
       
       - name: Setup Node.js
@@ -489,10 +599,20 @@ jobs:
         run: npm install -g newman newman-reporter-htmlextra
       
       - name: Run Newman tests (Magic Mapper)
+        env:
+          NEXTCLOUD_URL: "http://localhost"
+          NEXTCLOUD_ADMIN_USER: "admin"
+          NEXTCLOUD_ADMIN_PASSWORD: "admin"
+          NEXTCLOUD_CONTAINER: "nextcloud"
+          ENABLE_MAGIC_MAPPER: "true"
         run: |
           cd tests/integration
-          chmod +x run-dual-storage-tests.sh
-          ./run-dual-storage-tests.sh --verbose
+          chmod +x run-tests.sh
+          ./run-tests.sh --mode ci --url "http://localhost" --container nextcloud --clean || {
+            echo "❌ Newman tests failed"
+            docker logs nextcloud --tail 100
+            exit 1
+          }
       
       - name: Upload test results
         if: always()
