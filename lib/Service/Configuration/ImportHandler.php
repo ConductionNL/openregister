@@ -69,9 +69,9 @@ class ImportHandler
      * When an app is enabled as a dependency, it may boot and load its own configuration,
      * which could trigger another dependency check. This flag prevents infinite recursion.
      *
-     * @SuppressWarnings(PHPMD.UnusedPrivateField) Reserved for future dependency check feature
-     *
      * @var boolean
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateField) Reserved for future dependency check feature
      */
     private static bool $depCheckActive = false;
 
@@ -176,9 +176,9 @@ class ImportHandler
     /**
      * OpenConnector configuration service for optional integration.
      *
-     * @SuppressWarnings(PHPMD.UnusedPrivateField) Reserved for future OpenConnector integration
-     *
      * @var mixed The OpenConnector configuration service or null.
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateField) Reserved for future OpenConnector integration
      */
     private mixed $connectorConfigSvc = null;
 
@@ -2226,8 +2226,8 @@ class ImportHandler
                 $externalSchemaSlug   = $selfData['schema'] ?? null;
 
                 // Start with the current target register (from configuration).
-                $targetRegId = $targetRegisterId;
-                $objectSchema           = $schema;
+                $targetRegId  = $targetRegisterId;
+                $objectSchema = $schema;
 
                 // If object references external configuration, resolve schema and register from that config.
                 if ($externalConfigUrl !== null) {
@@ -2258,13 +2258,13 @@ class ImportHandler
                             }
 
                             if (isset($slugToIdMap[$externalRegisterSlug]) === true) {
-                                $externalRegisterId     = $slugToIdMap[$externalRegisterSlug];
-                                $externalRegister       = $this->registerMapper->find(
+                                $externalRegisterId = $slugToIdMap[$externalRegisterSlug];
+                                $externalRegister   = $this->registerMapper->find(
                                     id: $externalRegisterId,
                                     _rbac: false,
                                     _multitenancy: false
                                 );
-                                $targetRegId = $externalRegister->getId();
+                                $targetRegId        = $externalRegister->getId();
                                 $this->logger->info(
                                     "Resolved external register for seedData object",
                                     [
