@@ -455,7 +455,7 @@ class Application extends App implements IBootstrap
 
             $logger = $container->get('Psr\Log\LoggerInterface');
 
-            return new ConfigurationImportHandler(
+            $importHandler = new ConfigurationImportHandler(
                 schemaMapper: $container->get(SchemaMapper::class),
                 registerMapper: $container->get(RegisterMapper::class),
                 objectEntityMapper: $container->get(ObjectEntityMapper::class),
@@ -467,6 +467,16 @@ class Application extends App implements IBootstrap
                 uploadHandler: $container->get(ConfigurationUploadHandler::class),
                 objectService: $container->get(ObjectService::class)
             );
+
+            // Inject MagicMapper for pre-creating magic mapper tables before seed data import.
+            // This prevents the race condition where the first seed object goes to blob storage.
+            $importHandler->setMagicMapper($container->get(MagicMapper::class));
+
+            // Inject UnifiedObjectMapper for routing seed data to correct storage (magic/blob).
+            // This ensures objects go to the magic mapper table when the register is configured for it.
+            $importHandler->setUnifiedObjectMapper($container->get(UnifiedObjectMapper::class));
+
+            return $importHandler;
         };
 
         // Register under alias.

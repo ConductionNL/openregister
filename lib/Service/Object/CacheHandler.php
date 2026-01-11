@@ -1279,7 +1279,6 @@ class CacheHandler
 
         try {
             $loadedCount      = 0;
-            $magicTableCount  = 0;
             $magicNamesLoaded = 0;
 
             // STEP 1: Load all organisations first (they take priority).
@@ -1311,7 +1310,6 @@ class CacheHandler
             // STEP 3: Load names from magic tables (overwrites names with proper enriched values).
             if ($this->registerMapper !== null && $this->schemaMapper !== null && $this->db !== null) {
                 $magicNamesLoaded = $this->loadNamesFromMagicTables();
-                $magicTableCount  = $magicNamesLoaded;
             }
 
             $executionTime = round((microtime(true) - $startTime) * 1000, 2);
@@ -1380,12 +1378,12 @@ class CacheHandler
 
                     try {
                         // Check if table exists and has the name column.
-                        // Magic table columns have underscore prefix: _id, _name
-                        // Note: _id is bigint (internal DB ID), we need _uuid (the UUID) for mapping
+                        // Magic table columns have underscore prefix: _id, _name.
+                        // Note: _id is bigint (internal DB ID), we need _uuid (the UUID) for mapping.
                         $sql    = 'SELECT "_uuid", "_name" FROM '.$tableName.' WHERE "_name" IS NOT NULL AND "_name" != \'\'';
                         $result = $this->db->executeQuery($sql);
 
-                        while ($row = $result->fetch()) {
+                        while (($row = $result->fetch()) !== false) {
                             $uuid = $row['_uuid'] ?? null;
                             $name = $row['_name'] ?? null;
 
@@ -1406,7 +1404,7 @@ class CacheHandler
                                 'error' => $e->getMessage(),
                             ]
                         );
-                    }
+                    }//end try
                 }//end foreach
             }//end foreach
         } catch (\Exception $e) {

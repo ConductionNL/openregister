@@ -41,11 +41,10 @@ use OCP\AppFramework\Db\Entity;
  * @link      https://OpenRegister.app
  *
  * @psalm-suppress UnusedClass
+ * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  *
  * @SuppressWarnings(PHPMD.StaticAccess)         Transliterator::create is the correct pattern for ICU transliteration
  * @SuppressWarnings(PHPMD.ErrorControlOperator) @ suppression needed for Transliterator which may not be available
- *
- * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class Mapping extends Entity implements JsonSerializable
 {

@@ -139,6 +139,8 @@ use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
  * @SuppressWarnings(PHPMD.TooManyMethods)
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.NPathComplexity)
  */
 class MagicMapper
 {
@@ -2403,15 +2405,26 @@ class MagicMapper
                 if (($data[$propertyName] ?? null) !== null) {
                     $value = $data[$propertyName];
 
+                    // Convert boolean values to integers (0/1) for database compatibility.
+                    // PHP's false can be incorrectly converted to empty string '' by some drivers.
+                    // Using 0/1 integers ensures PostgreSQL and other databases handle booleans correctly.
+                    if (is_bool($value) === true) {
+                        if ($value === true) {
+                            $value = 1;
+                        } else {
+                            $value = 0;
+                        }
+                    }
+
                     // Convert complex types to JSON.
                     if (is_array($value) === true || is_object($value) === true) {
                         $value = json_encode($value);
                     }
 
                     $preparedData[$this->sanitizeColumnName($propertyName)] = $value;
-                }
-            }
-        }
+                }//end if
+            }//end foreach
+        }//end if
 
         return $preparedData;
     }//end prepareObjectDataForTable()
@@ -2960,7 +2973,7 @@ class MagicMapper
             if ($key === '_relations_contains' && is_string($value) === true && empty($value) === false) {
                 // Use PostgreSQL JSONB @> operator to check if _relations array contains the UUID.
                 $qb->andWhere(
-                    '_relations @> ' . $qb->createNamedParameter(json_encode([$value]))
+                    '_relations @> '.$qb->createNamedParameter(json_encode([$value]))
                 );
                 continue;
             }

@@ -244,7 +244,7 @@ class SchemaMapper extends QBMapper
                     )
                 )
             );
-        }
+        }//end if
 
         // Apply organisation filter with published entity bypass support
         // Published schemas can bypass multi-tenancy restrictions if configured

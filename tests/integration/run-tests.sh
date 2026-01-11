@@ -24,7 +24,9 @@ NC='\033[0m' # No Color.
 
 # Script directory.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+POSTMAN_DIR="${SCRIPT_DIR}/../postman"
 COLLECTION_FILE="${SCRIPT_DIR}/openregister-crud.postman_collection.json"
+RELATIONS_COLLECTION_FILE="${POSTMAN_DIR}/openregister-relations-tests.postman_collection.json"
 
 # Default configuration.
 # IMPORTANT: Never use http://localhost when running from host! 
@@ -272,24 +274,61 @@ clean_database() {
     docker exec "$db_container" mysql -u nextcloud -pnextcloud nextcloud -e "
         DELETE FROM oc_openregister_objects
         WHERE \`register\` IN (
-            SELECT id FROM oc_openregister_registers 
-            WHERE title LIKE '%Newman%' OR title LIKE '%Test%'
+            SELECT id FROM oc_openregister_registers
+            WHERE title LIKE '%Newman%' OR title LIKE '%Test%' OR title LIKE '%Relations%'
         );
-        
-        DELETE FROM oc_openregister_schemas 
-        WHERE title LIKE '%Newman%' 
-        OR title LIKE '%Test%' 
-        OR slug LIKE 'person-schema-%' 
+
+        DELETE FROM oc_openregister_schemas
+        WHERE title LIKE '%Newman%'
+        OR title LIKE '%Test%'
+        OR title LIKE '%Schema%'
+        OR slug LIKE 'person-schema-%'
         OR slug LIKE 'validation-test-schema-%'
         OR slug LIKE 'org2-schema-%'
-        OR slug LIKE 'public-read-schema-%';
-        
-        DELETE FROM oc_openregister_registers 
-        WHERE title LIKE '%Newman%' OR title LIKE '%Test%';
-        
-        DELETE FROM oc_openregister_organisations 
+        OR slug LIKE 'public-read-schema-%'
+        OR slug LIKE 'author-%'
+        OR slug LIKE 'category-%'
+        OR slug LIKE 'article-%';
+
+        DELETE FROM oc_openregister_registers
+        WHERE title LIKE '%Newman%' OR title LIKE '%Test%' OR title LIKE '%Relations%';
+
+        DELETE FROM oc_openregister_organisations
         WHERE name LIKE '%Newman%' OR name LIKE '%Test%';
     " 2>/dev/null && print_message "$GREEN" "✅ Database cleaned" || print_message "$YELLOW" "⚠️  Could not clean database (continuing anyway)"
+}
+
+##
+# Run Newman tests for a single collection.
+#
+# @param string  $1 Collection name for display
+# @param string  $2 Collection file path
+# @param boolean $3 Whether running from container
+#
+# @return int Exit code from Newman
+##
+run_single_collection() {
+    local collection_name=$1
+    local collection_path=$2
+    local from_container=$3
+
+    print_message "$BLUE" "🚀 Running $collection_name tests..."
+
+    if [ "$from_container" = true ]; then
+        docker exec "$CONTAINER_NAME" newman run "$collection_path" \
+            --env-var "base_url=$BASE_URL" \
+            --env-var "admin_user=$ADMIN_USER" \
+            --env-var "admin_password=$ADMIN_PASSWORD" \
+            --reporters cli \
+            --color on
+    else
+        newman run "$collection_path" \
+            --env-var "base_url=$BASE_URL" \
+            --env-var "admin_user=$ADMIN_USER" \
+            --env-var "admin_password=$ADMIN_PASSWORD" \
+            --reporters cli \
+            --color on
+    fi
 }
 
 ##
@@ -301,28 +340,52 @@ clean_database() {
 ##
 run_newman() {
     local from_container=$1
-    local collection_path="$COLLECTION_FILE"
-    
+    local exit_code=0
+    local total_failures=0
+
+    # Run CRUD tests
+    print_message "$GREEN" "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    print_message "$GREEN" "  Running CRUD Integration Tests"
+    print_message "$GREEN" "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
     if [ "$from_container" = true ]; then
-        collection_path="/tmp/openregister-crud.postman_collection.json"
-        print_message "$BLUE" "🚀 Running Newman tests from container..."
-        
-        docker exec "$CONTAINER_NAME" newman run "$collection_path" \
-            --env-var "base_url=$BASE_URL" \
-            --env-var "admin_user=$ADMIN_USER" \
-            --env-var "admin_password=$ADMIN_PASSWORD" \
-            --reporters cli \
-            --color on
+        run_single_collection "CRUD" "/tmp/openregister-crud.postman_collection.json" true || exit_code=$?
     else
-        print_message "$BLUE" "🚀 Running Newman tests from host..."
-        
-        newman run "$collection_path" \
-            --env-var "base_url=$BASE_URL" \
-            --env-var "admin_user=$ADMIN_USER" \
-            --env-var "admin_password=$ADMIN_PASSWORD" \
-            --reporters cli \
-            --color on
+        run_single_collection "CRUD" "$COLLECTION_FILE" false || exit_code=$?
     fi
+
+    if [ $exit_code -ne 0 ]; then
+        ((total_failures++))
+        print_message "$YELLOW" "⚠️  CRUD tests had failures"
+    fi
+
+    echo ""
+
+    # Run Relations tests (/uses and /used endpoints)
+    if [ -f "$RELATIONS_COLLECTION_FILE" ]; then
+        print_message "$GREEN" "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        print_message "$GREEN" "  Running Relations (/uses and /used) Integration Tests"
+        print_message "$GREEN" "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+        exit_code=0
+        if [ "$from_container" = true ]; then
+            # Copy relations collection to container
+            docker cp "$RELATIONS_COLLECTION_FILE" "$CONTAINER_NAME:/tmp/openregister-relations-tests.postman_collection.json" 2>/dev/null || true
+            run_single_collection "Relations" "/tmp/openregister-relations-tests.postman_collection.json" true || exit_code=$?
+        else
+            run_single_collection "Relations" "$RELATIONS_COLLECTION_FILE" false || exit_code=$?
+        fi
+
+        if [ $exit_code -ne 0 ]; then
+            ((total_failures++))
+            print_message "$YELLOW" "⚠️  Relations tests had failures"
+        fi
+    else
+        print_message "$YELLOW" "⚠️  Relations test collection not found at: $RELATIONS_COLLECTION_FILE"
+    fi
+
+    # Return overall exit code
+    return $total_failures
 }
 
 ##
@@ -376,7 +439,9 @@ main() {
     done
     
     print_message "$GREEN" "╔════════════════════════════════════════════════════════════╗"
-    print_message "$GREEN" "║         OpenRegister Newman Integration Tests            ║"
+    print_message "$GREEN" "║       OpenRegister Newman Integration Test Suite          ║"
+    print_message "$GREEN" "║   - CRUD Tests (Create, Read, Update, Delete)            ║"
+    print_message "$GREEN" "║   - Relations Tests (/uses and /used endpoints)          ║"
     print_message "$GREEN" "╚════════════════════════════════════════════════════════════╝"
     echo ""
     
@@ -418,13 +483,16 @@ main() {
     run_newman "$from_container" || exit_code=$?
     
     echo ""
+    print_message "$GREEN" "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    print_message "$GREEN" "  Test Suite Summary"
+    print_message "$GREEN" "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     if [ $exit_code -eq 0 ]; then
-        print_message "$GREEN" "✅ All tests passed!"
+        print_message "$GREEN" "✅ All test suites passed!"
     else
-        print_message "$YELLOW" "⚠️  Some tests failed (exit code: $exit_code)"
+        print_message "$YELLOW" "⚠️  $exit_code test suite(s) had failures"
         print_message "$BLUE" "💡 Tip: Run with --clean flag to force a fresh start"
     fi
-    
+
     exit $exit_code
 }
 

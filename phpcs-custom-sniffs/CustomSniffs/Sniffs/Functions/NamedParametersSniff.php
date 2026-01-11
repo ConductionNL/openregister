@@ -152,7 +152,7 @@ class NamedParametersSniff implements Sniff
             // Nextcloud IConfig methods.
             'getappvalue', 'setappvalue', 'getuservalue', 'setuservalue', 'deleteuservalue', 'getsystemvalue',
             // Nextcloud IUserManager methods.
-            'createuser',
+            'createuser', 'checkpassword',
             // Nextcloud Files_Versions methods.
             'getversionfile',
             // Nextcloud IURLGenerator methods.
@@ -172,7 +172,9 @@ class NamedParametersSniff implements Sniff
             'dropcolumn', 'dropindex', 'dropuniqueindex', 'droptype', 'dropoption',
             'modifycolumn', 'changecolumn', 'renamecolumn', 'renameindex',
             'setprimarykey', 'dropprimarykey', 'addforeignkey', 'dropforeignkey',
-            'setcomment', 'setcharset', 'setcollation'
+            'setcomment', 'setcharset', 'setcollation',
+            // OpenRegister domain-specific methods.
+            'ismagicmappingenabledforschema'
         ];
         if ($isMethodCall && in_array(strtolower($functionName), $queryBuilderMethods)) {
             // This is a Nextcloud/Doctrine method that doesn't support named parameters well.

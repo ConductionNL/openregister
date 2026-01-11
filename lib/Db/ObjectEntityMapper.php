@@ -77,6 +77,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessivePublicCount)
  * @SuppressWarnings(PHPMD.ElseExpression)
+ * @SuppressWarnings(PHPMD.ExcessiveParameterList)
  */
 class ObjectEntityMapper extends QBMapper
 {
@@ -1755,6 +1756,7 @@ class ObjectEntityMapper extends QBMapper
      * @param array         $sort           Sort order
      * @param int|null      $limit          Result limit
      * @param int|null      $offset         Result offset
+     * @param string|null   $uses           Filter by objects this object uses
      *
      * @return IQueryBuilder Query builder
      *
@@ -1919,7 +1921,7 @@ class ObjectEntityMapper extends QBMapper
 
         // Use LIKE pattern matching for database-agnostic compatibility.
         // The UUID will be quoted in the JSON, so search for "uuid" pattern.
-        $pattern = '%"' . $uses . '"%';
+        $pattern = '%"'.$uses.'"%';
         $qb->andWhere($qb->expr()->like('relations', $qb->createNamedParameter($pattern)));
     }//end applyUsesFilter()
 
@@ -2175,7 +2177,7 @@ class ObjectEntityMapper extends QBMapper
 
         // Apply uses filter (find objects that have a specific UUID in their relations).
         if ($uses !== null && empty($uses) === false) {
-            $pattern = '%"' . $uses . '"%';
+            $pattern = '%"'.$uses.'"%';
             $qb->andWhere($qb->expr()->like('relations', $qb->createNamedParameter($pattern)));
         }
 

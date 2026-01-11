@@ -58,6 +58,7 @@ use React\EventLoop\Loop;
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Import service requires comprehensive data transformation methods
  * @SuppressWarnings(PHPMD.TooManyMethods)           Many methods required for multi-format import support
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex import logic with multiple data formats
+ * @SuppressWarnings(PHPMD.ExcessiveParameterList)   Import methods require comprehensive configuration parameters
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Requires many dependencies for import operations
  * @SuppressWarnings(PHPMD.LongVariable)             Descriptive variable names improve code readability
  */

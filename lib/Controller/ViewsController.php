@@ -278,8 +278,12 @@ class ViewsController extends Controller
                 );
             }
 
-            // Initialize query before conditional assignment.
-            /** @var array<string, mixed> $query */
+            /*
+             * Initialize query before conditional assignment.
+             *
+             * @var array<string, mixed> $query
+             */
+
             $query = [];
 
             // Extract query parameters from configuration or query.
@@ -304,7 +308,7 @@ class ViewsController extends Controller
                     ],
                     statusCode: 400
                 );
-            }
+            }//end if
 
             $view = $this->viewService->create(
                 name: $data['name'],
@@ -381,8 +385,12 @@ class ViewsController extends Controller
                 );
             }
 
-            // Initialize query before conditional assignment.
-            /** @var array<string, mixed> $query */
+            /*
+             * Initialize query before conditional assignment.
+             *
+             * @var array<string, mixed> $query
+             */
+
             $query = [];
 
             // Extract query parameters from configuration or query.
@@ -407,7 +415,7 @@ class ViewsController extends Controller
                     ],
                     statusCode: 400
                 );
-            }
+            }//end if
 
             $view = $this->viewService->update(
                 id: $id,

@@ -1101,6 +1101,9 @@ class ObjectsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with the object or error
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     public function show(
         string $id,
@@ -1183,7 +1186,10 @@ class ObjectsController extends Controller
             // Only include when explicitly requested via _extend parameter.
             // Supports both singular (_register, _schema) and plural (_registers, _schemas) forms.
             if (isset($renderedObject['@self']) === true) {
-                $extendArray = is_array($extend) ? $extend : [];
+                $extendArray = [];
+                if (is_array($extend) === true) {
+                    $extendArray = $extend;
+                }
 
                 // Add registers if _registers or _register is in _extend.
                 if (in_array('_registers', $extendArray, true) === true
@@ -1214,10 +1220,10 @@ class ObjectsController extends Controller
                 // Get extended objects indexed by UUID (for _extend lookups).
                 // Always include objects if any _extend is requested.
                 if (empty($extendArray) === false) {
-                    $extendedObjects                      = $objectService->getExtendedObjects();
+                    $extendedObjects = $objectService->getExtendedObjects();
                     $renderedObject['@self']['objects'] = $extendedObjects;
                 }
-            }
+            }//end if
 
             return new JSONResponse(data: $renderedObject);
         } catch (DoesNotExistException $exception) {
@@ -1240,6 +1246,8 @@ class ObjectsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @PublicPage
      *
      * @psalm-return JSONResponse<201|403|404,
      *     array{'@self'?: array{name: mixed|null|string,...}|mixed,

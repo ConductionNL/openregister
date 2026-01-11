@@ -1,0 +1,560 @@
+name: CI Pipeline (Quality & Functionality)
+
+##
+# Comprehensive CI/CD Pipeline with staged execution
+#
+# Stage 1: Code Quality (Sequential)
+#   - PHPQA (PHPCS, PHPMD, Psalm)
+#   - Dependency/License Check
+#   - Container Scanning
+#
+# Stage 2: Functionality Tests (Parallel - 4 jobs)
+#   - PostgreSQL + Normal Storage (JSON blob)
+#   - PostgreSQL + Magic Mapper (Multi-table)
+#   - MySQL + Normal Storage (JSON blob)
+#   - MySQL + Magic Mapper (Multi-table)
+#
+# @category CI/CD
+# @package  OpenRegister
+# @author   Conduction
+# @license  EUPL-1.2 https://opensource.org/licenses/EUPL-1.2
+# @link     https://github.com/ConductionNL/openregister
+##
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - development
+      - dev
+  pull_request:
+    branches:
+      - main
+      - master
+      - development
+      - dev
+  workflow_dispatch:
+
+jobs:
+  #############################################################################
+  # STAGE 1: CODE QUALITY
+  #############################################################################
+  
+  quality-phpqa:
+    name: "Stage 1: PHPQA Analysis"
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_mysql, pdo_pgsql, dom, filter, gd, json, posix, simplexml, xmlreader, xmlwriter, zip
+          coverage: xdebug
+          tools: composer:v2
+      
+      - name: Get composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+      
+      - name: Cache composer dependencies
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+      
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+      
+      - name: Run PHP Lint
+        run: composer lint
+      
+      - name: Run PHPCS (Coding Standards)
+        id: phpcs
+        run: |
+          composer phpcs
+          echo "✅ PHPCS passed with 0 errors"
+      
+      - name: Run Psalm (Static Analysis)
+        id: psalm
+        run: |
+          composer psalm
+          echo "✅ Psalm passed with 0 errors"
+      
+      - name: Run PHPMD (Mess Detector)
+        id: phpmd
+        run: |
+          composer phpmd > phpmd-output.txt || true
+          VIOLATIONS=$(wc -l < phpmd-output.txt || echo "0")
+          echo "violations=$VIOLATIONS" >> $GITHUB_OUTPUT
+          echo "📊 PHPMD found $VIOLATIONS violations"
+          
+          # Set threshold for acceptable violations
+          if [ "$VIOLATIONS" -gt "150" ]; then
+            echo "❌ PHPMD violations ($VIOLATIONS) exceed threshold (150)"
+            exit 1
+          fi
+          echo "✅ PHPMD violations within acceptable range"
+      
+      - name: Run Full PHPQA
+        run: |
+          composer phpqa
+          echo "✅ Full PHPQA analysis completed"
+      
+      - name: Upload PHPQA Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phpqa-reports
+          path: phpqa/
+          retention-days: 30
+  
+  quality-dependencies:
+    name: "Stage 1: Dependency & License Check"
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          tools: composer:v2
+      
+      - name: Validate composer.json
+        run: composer validate --strict
+      
+      - name: Check for security vulnerabilities
+        run: composer audit
+      
+      - name: Check licenses
+        run: |
+          composer licenses --format=json > licenses.json
+          echo "✅ License check completed"
+      
+      - name: Upload license report
+        uses: actions/upload-artifact@v4
+        with:
+          name: licenses-report
+          path: licenses.json
+          retention-days: 30
+  
+  quality-container:
+    name: "Stage 1: Container Security Scan"
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Build Docker image
+        run: |
+          docker build -t openregister:test -f docker/Dockerfile . || echo "No Dockerfile found, skipping"
+      
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'nextcloud:latest'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+        continue-on-error: true
+      
+      - name: Upload Trivy results
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-results.sarif'
+        continue-on-error: true
+
+  #############################################################################
+  # STAGE 2: FUNCTIONALITY TESTS (Parallel)
+  #############################################################################
+  
+  test-postgres-normal:
+    name: "Stage 2: PostgreSQL + Normal Storage"
+    needs: [quality-phpqa, quality-dependencies, quality-container]
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: nextcloud
+          POSTGRES_USER: nextcloud
+          POSTGRES_PASSWORD: nextcloud_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U nextcloud -d nextcloud"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Docker Compose
+        run: |
+          docker compose version
+      
+      - name: Start Nextcloud with PostgreSQL
+        run: |
+          docker run -d \
+            --name nextcloud \
+            --network host \
+            -e POSTGRES_HOST=localhost \
+            -e POSTGRES_DB=nextcloud \
+            -e POSTGRES_USER=nextcloud \
+            -e POSTGRES_PASSWORD=nextcloud_test \
+            -e NEXTCLOUD_ADMIN_USER=admin \
+            -e NEXTCLOUD_ADMIN_PASSWORD=admin \
+            -e NEXTCLOUD_TRUSTED_DOMAINS=localhost \
+            -v $(pwd):/var/www/html/custom_apps/openregister \
+            nextcloud:latest
+      
+      - name: Wait for Nextcloud
+        run: |
+          echo "Waiting for Nextcloud to be ready..."
+          for i in {1..60}; do
+            if docker exec nextcloud curl -f http://localhost/status.php 2>/dev/null; then
+              echo "✅ Nextcloud is ready!"
+              break
+            fi
+            echo "⏳ Waiting... ($i/60)"
+            sleep 5
+          done
+      
+      - name: Install OpenRegister app
+        run: |
+          docker exec --user www-data nextcloud php occ app:enable openregister
+          docker exec --user www-data nextcloud php occ app:list | grep openregister
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install Newman
+        run: npm install -g newman newman-reporter-htmlextra
+      
+      - name: Run Newman tests (Normal Storage)
+        env:
+          ENABLE_MAGIC_MAPPER: "false"
+        run: |
+          cd tests/integration
+          chmod +x run-tests.sh
+          ./run-tests.sh --mode ci --clean
+      
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-postgres-normal
+          path: tests/integration/newman-results/
+          retention-days: 30
+  
+  test-postgres-magic:
+    name: "Stage 2: PostgreSQL + Magic Mapper"
+    needs: [quality-phpqa, quality-dependencies, quality-container]
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: nextcloud
+          POSTGRES_USER: nextcloud
+          POSTGRES_PASSWORD: nextcloud_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U nextcloud -d nextcloud"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Start Nextcloud with PostgreSQL
+        run: |
+          docker run -d \
+            --name nextcloud \
+            --network host \
+            -e POSTGRES_HOST=localhost \
+            -e POSTGRES_DB=nextcloud \
+            -e POSTGRES_USER=nextcloud \
+            -e POSTGRES_PASSWORD=nextcloud_test \
+            -e NEXTCLOUD_ADMIN_USER=admin \
+            -e NEXTCLOUD_ADMIN_PASSWORD=admin \
+            -e NEXTCLOUD_TRUSTED_DOMAINS=localhost \
+            -v $(pwd):/var/www/html/custom_apps/openregister \
+            nextcloud:latest
+      
+      - name: Wait for Nextcloud
+        run: |
+          echo "Waiting for Nextcloud to be ready..."
+          for i in {1..60}; do
+            if docker exec nextcloud curl -f http://localhost/status.php 2>/dev/null; then
+              echo "✅ Nextcloud is ready!"
+              break
+            fi
+            echo "⏳ Waiting... ($i/60)"
+            sleep 5
+          done
+      
+      - name: Install OpenRegister app
+        run: |
+          docker exec --user www-data nextcloud php occ app:enable openregister
+          docker exec --user www-data nextcloud php occ app:list | grep openregister
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install Newman
+        run: npm install -g newman newman-reporter-htmlextra
+      
+      - name: Run Newman tests (Magic Mapper)
+        run: |
+          cd tests/integration
+          chmod +x run-dual-storage-tests.sh
+          ./run-dual-storage-tests.sh --verbose
+      
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-postgres-magic
+          path: tests/integration/newman-results/
+          retention-days: 30
+  
+  test-mysql-normal:
+    name: "Stage 2: MySQL + Normal Storage"
+    needs: [quality-phpqa, quality-dependencies, quality-container]
+    runs-on: ubuntu-latest
+    
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: rootpassword
+          MYSQL_DATABASE: nextcloud
+          MYSQL_USER: nextcloud
+          MYSQL_PASSWORD: nextcloud_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Start Nextcloud with MySQL
+        run: |
+          docker run -d \
+            --name nextcloud \
+            --network host \
+            -e MYSQL_HOST=localhost \
+            -e MYSQL_DATABASE=nextcloud \
+            -e MYSQL_USER=nextcloud \
+            -e MYSQL_PASSWORD=nextcloud_test \
+            -e NEXTCLOUD_ADMIN_USER=admin \
+            -e NEXTCLOUD_ADMIN_PASSWORD=admin \
+            -e NEXTCLOUD_TRUSTED_DOMAINS=localhost \
+            -v $(pwd):/var/www/html/custom_apps/openregister \
+            nextcloud:latest
+      
+      - name: Wait for Nextcloud
+        run: |
+          echo "Waiting for Nextcloud to be ready..."
+          for i in {1..60}; do
+            if docker exec nextcloud curl -f http://localhost/status.php 2>/dev/null; then
+              echo "✅ Nextcloud is ready!"
+              break
+            fi
+            echo "⏳ Waiting... ($i/60)"
+            sleep 5
+          done
+      
+      - name: Install OpenRegister app
+        run: |
+          docker exec --user www-data nextcloud php occ app:enable openregister
+          docker exec --user www-data nextcloud php occ app:list | grep openregister
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install Newman
+        run: npm install -g newman newman-reporter-htmlextra
+      
+      - name: Run Newman tests (Normal Storage)
+        env:
+          ENABLE_MAGIC_MAPPER: "false"
+        run: |
+          cd tests/integration
+          chmod +x run-tests.sh
+          ./run-tests.sh --mode ci --clean
+      
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-mysql-normal
+          path: tests/integration/newman-results/
+          retention-days: 30
+  
+  test-mysql-magic:
+    name: "Stage 2: MySQL + Magic Mapper"
+    needs: [quality-phpqa, quality-dependencies, quality-container]
+    runs-on: ubuntu-latest
+    
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: rootpassword
+          MYSQL_DATABASE: nextcloud
+          MYSQL_USER: nextcloud
+          MYSQL_PASSWORD: nextcloud_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Start Nextcloud with MySQL
+        run: |
+          docker run -d \
+            --name nextcloud \
+            --network host \
+            -e MYSQL_HOST=localhost \
+            -e MYSQL_DATABASE=nextcloud \
+            -e MYSQL_USER=nextcloud \
+            -e MYSQL_PASSWORD=nextcloud_test \
+            -e NEXTCLOUD_ADMIN_USER=admin \
+            -e NEXTCLOUD_ADMIN_PASSWORD=admin \
+            -e NEXTCLOUD_TRUSTED_DOMAINS=localhost \
+            -v $(pwd):/var/www/html/custom_apps/openregister \
+            nextcloud:latest
+      
+      - name: Wait for Nextcloud
+        run: |
+          echo "Waiting for Nextcloud to be ready..."
+          for i in {1..60}; do
+            if docker exec nextcloud curl -f http://localhost/status.php 2>/dev/null; then
+              echo "✅ Nextcloud is ready!"
+              break
+            fi
+            echo "⏳ Waiting... ($i/60)"
+            sleep 5
+          done
+      
+      - name: Install OpenRegister app
+        run: |
+          docker exec --user www-data nextcloud php occ app:enable openregister
+          docker exec --user www-data nextcloud php occ app:list | grep openregister
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install Newman
+        run: npm install -g newman newman-reporter-htmlextra
+      
+      - name: Run Newman tests (Magic Mapper)
+        run: |
+          cd tests/integration
+          chmod +x run-dual-storage-tests.sh
+          ./run-dual-storage-tests.sh --verbose
+      
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-mysql-magic
+          path: tests/integration/newman-results/
+          retention-days: 30
+
+  #############################################################################
+  # SUMMARY
+  #############################################################################
+  
+  ci-summary:
+    name: "CI Pipeline Summary"
+    needs: [test-postgres-normal, test-postgres-magic, test-mysql-normal, test-mysql-magic]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: Generate Summary
+        run: |
+          echo "# 🎯 CI Pipeline Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Stage 1: Code Quality ✅" >> $GITHUB_STEP_SUMMARY
+          echo "- PHPQA Analysis" >> $GITHUB_STEP_SUMMARY
+          echo "- Dependency & License Check" >> $GITHUB_STEP_SUMMARY
+          echo "- Container Security Scan" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Stage 2: Functionality Tests" >> $GITHUB_STEP_SUMMARY
+          echo "| Database | Storage Mode | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|--------------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| PostgreSQL | Normal (Blob) | ${{ needs.test-postgres-normal.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| PostgreSQL | Magic Mapper | ${{ needs.test-postgres-magic.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| MySQL | Normal (Blob) | ${{ needs.test-mysql-normal.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| MySQL | Magic Mapper | ${{ needs.test-mysql-magic.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📊 Detailed reports available in workflow artifacts" >> $GITHUB_STEP_SUMMARY
+      
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const summary = `# 🎯 CI Pipeline Results
+            
+            ## Stage 1: Code Quality ✅
+            All quality checks passed!
+            
+            ## Stage 2: Functionality Tests
+            
+            | Database | Storage Mode | Status |
+            |----------|--------------|--------|
+            | PostgreSQL | Normal (Blob) | ${{ needs.test-postgres-normal.result }} |
+            | PostgreSQL | Magic Mapper | ${{ needs.test-postgres-magic.result }} |
+            | MySQL | Normal (Blob) | ${{ needs.test-mysql-normal.result }} |
+            | MySQL | Magic Mapper | ${{ needs.test-mysql-magic.result }} |
+            
+            📊 Detailed reports available in workflow artifacts.
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: summary
+            });

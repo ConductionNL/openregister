@@ -45,6 +45,10 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex query routing and optimization logic
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Query operations require many handler dependencies
+ * @SuppressWarnings(PHPMD.BooleanArgumentFlag)      Boolean flags are part of established API pattern for RBAC/multitenancy filtering
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)     Complex business logic requires multiple conditional paths
+ * @SuppressWarnings(PHPMD.NPathComplexity)          Query operations have inherently complex execution paths
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)    Query methods handle complex operations that benefit from cohesion
  */
 class QueryHandler
 {

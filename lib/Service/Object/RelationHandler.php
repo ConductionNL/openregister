@@ -39,6 +39,11 @@ use Symfony\Component\Uid\Uuid;
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
  *
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.NPathComplexity)
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * Reason: Relationship resolution requires complex multi-path logic for performance optimization
+ *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex relationship resolution logic
  */
 class RelationHandler
@@ -560,7 +565,7 @@ class RelationHandler
             // Extract just the UUID values from the relations array.
             // Relations can be stored as ['field' => 'uuid'] or as flat array of UUIDs.
             $relationshipIds = [];
-            foreach ($relations as $key => $value) {
+            foreach ($relations as $value) {
                 if (is_string($value) === true && empty($value) === false) {
                     $relationshipIds[] = $value;
                 } else if (is_array($value) === true) {
@@ -571,7 +576,6 @@ class RelationHandler
                     }
                 }
             }
-
 
             if (empty($relationshipIds) === true) {
                 return [
@@ -639,7 +643,7 @@ class RelationHandler
                 } catch (\Exception $e) {
                     // Table might not exist or query failed, continue.
                 }
-            }
+            }//end foreach
 
             // Also check main objects table as fallback for any missing UUIDs.
             $missingUuids = array_diff($uniqueIds, $foundUuids);
@@ -691,10 +695,12 @@ class RelationHandler
      *
      * This method finds all objects that reference the given object.
      *
-     * @param string $objectId      Object ID or UUID.
-     * @param array  $query         Search query parameters.
-     * @param bool   $_rbac         Apply RBAC filters.
-     * @param bool   $_multitenancy Apply multitenancy filters.
+     * @param string   $objectId      Object ID or UUID.
+     * @param array    $query         Search query parameters.
+     * @param bool     $_rbac         Apply RBAC filters.
+     * @param bool     $_multitenancy Apply multitenancy filters.
+     * @param int|null $_registerId   Register ID for filtering.
+     * @param int|null $_schemaId     Schema ID for filtering.
      *
      * @return (array|int|mixed|string)[] Paginated results with referencing objects.
      *
@@ -738,13 +744,13 @@ class RelationHandler
             $targetUuid = $object->getUuid();
 
             // Search across all magic tables for objects that reference this UUID in their _relations.
-            $results      = [];
-            $magicMapper  = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
+            $results        = [];
+            $magicMapper    = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
             $registerMapper = \OC::$server->get(\OCA\OpenRegister\Db\RegisterMapper::class);
-            $magicTables  = $magicMapper->getExistingRegisterSchemaTables();
-            $limit        = $query['_limit'] ?? 30;
-            $offset       = $query['_offset'] ?? 0;
-            $totalResults = 0;
+            $magicTables    = $magicMapper->getExistingRegisterSchemaTables();
+            $limit          = $query['_limit'] ?? 30;
+            $offset         = $query['_offset'] ?? 0;
+            $totalResults   = 0;
 
             // Search each magic table for objects that have this UUID in their _relations.
             foreach ($magicTables as $tableInfo) {
@@ -787,8 +793,8 @@ class RelationHandler
                         ]
                     );
                     continue;
-                }
-            }
+                }//end try
+            }//end foreach
 
             return [
                 'results' => $results,

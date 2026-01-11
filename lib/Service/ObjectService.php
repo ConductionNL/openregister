@@ -1807,7 +1807,7 @@ class ObjectService
             }
 
             return $result;
-        }
+        }//end if
 
         // Use database search.
         $result = $this->queryHandler->searchObjectsPaginatedDatabase(

@@ -173,7 +173,7 @@ class UpdateFileHandler
             if ($fileName !== $filePath) {
                 $this->logger->info(message: "updateFile: Extracted filename from path: '$fileName' (from '$filePath')");
             }
-        }
+        }//end if
 
         // Skip the existing object/user folder search logic for file IDs since we already found the file.
         if ($file === null) {

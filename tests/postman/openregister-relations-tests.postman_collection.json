@@ -1,0 +1,1772 @@
+{
+	"info": {
+		"_postman_id": "openregister-relations-tests",
+		"name": "OpenRegister - Relations (/uses and /used) Integration Tests",
+		"description": "Comprehensive tests for the /uses and /used endpoints that track object relationships.\n\nThis collection tests:\n1. Setup: Register + Schemas with relation properties\n2. Create objects with relations\n3. Test /uses endpoint (objects THIS object references)\n4. Test /used endpoint (objects that reference THIS object)\n5. Edge cases (no relations, invalid IDs, pagination)\n6. Cleanup",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "basic",
+		"basic": [
+			{
+				"key": "username",
+				"value": "{{username}}",
+				"type": "string"
+			},
+			{
+				"key": "password",
+				"value": "{{password}}",
+				"type": "string"
+			}
+		]
+	},
+	"item": [
+		{
+			"name": "Setup",
+			"item": [
+				{
+					"name": "1.1 Create Register",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 201', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test('Response has register ID', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('id');",
+									"    pm.collectionVariables.set('registerId', jsonData.id);",
+									"    pm.collectionVariables.set('registerSlug', jsonData.slug);",
+									"    console.log('✅ Register created: ' + jsonData.slug + ' (ID: ' + jsonData.id + ')');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"slug\": \"relations-test-{{$timestamp}}\",\n    \"title\": \"Relations Test Register\",\n    \"description\": \"Register for testing /uses and /used endpoints\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/registers",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "registers"]
+						}
+					}
+				},
+				{
+					"name": "1.2 Create Author Schema",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 201', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test('Response has schema ID', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('id');",
+									"    pm.collectionVariables.set('authorSchemaId', jsonData.id);",
+									"    pm.collectionVariables.set('authorSchemaSlug', jsonData.slug);",
+									"    console.log('✅ Author Schema created: ' + jsonData.slug);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"register\": {{registerId}},\n    \"slug\": \"author-{{$timestamp}}\",\n    \"title\": \"Author Schema\",\n    \"description\": \"Schema for authors - used to test /used endpoint\",\n    \"properties\": {\n        \"name\": {\n            \"type\": \"string\",\n            \"description\": \"Author name\"\n        },\n        \"email\": {\n            \"type\": \"string\",\n            \"format\": \"email\",\n            \"description\": \"Author email\"\n        }\n    },\n    \"required\": [\"name\"]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "schemas"]
+						}
+					}
+				},
+				{
+					"name": "1.3 Create Category Schema",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 201', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test('Response has schema ID', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('id');",
+									"    pm.collectionVariables.set('categorySchemaId', jsonData.id);",
+									"    pm.collectionVariables.set('categorySchemaSlug', jsonData.slug);",
+									"    console.log('✅ Category Schema created: ' + jsonData.slug);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"register\": {{registerId}},\n    \"slug\": \"category-{{$timestamp}}\",\n    \"title\": \"Category Schema\",\n    \"description\": \"Schema for categories\",\n    \"properties\": {\n        \"name\": {\n            \"type\": \"string\",\n            \"description\": \"Category name\"\n        },\n        \"description\": {\n            \"type\": \"string\",\n            \"description\": \"Category description\"\n        }\n    },\n    \"required\": [\"name\"]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "schemas"]
+						}
+					}
+				},
+				{
+					"name": "1.4 Create Article Schema (with relations)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 201', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test('Response has schema ID and relation properties', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('id');",
+									"    pm.expect(jsonData.properties).to.have.property('author');",
+									"    pm.expect(jsonData.properties).to.have.property('categories');",
+									"    pm.collectionVariables.set('articleSchemaId', jsonData.id);",
+									"    pm.collectionVariables.set('articleSchemaSlug', jsonData.slug);",
+									"    console.log('✅ Article Schema created with relations: ' + jsonData.slug);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"register\": {{registerId}},\n    \"slug\": \"article-{{$timestamp}}\",\n    \"title\": \"Article Schema\",\n    \"description\": \"Schema for articles - has relations to authors and categories\",\n    \"properties\": {\n        \"title\": {\n            \"type\": \"string\",\n            \"description\": \"Article title\"\n        },\n        \"content\": {\n            \"type\": \"string\",\n            \"description\": \"Article content\"\n        },\n        \"author\": {\n            \"type\": \"string\",\n            \"format\": \"uuid\",\n            \"$ref\": \"{{authorSchemaSlug}}\",\n            \"description\": \"Reference to author (single relation)\"\n        },\n        \"categories\": {\n            \"type\": \"array\",\n            \"items\": {\n                \"type\": \"string\",\n                \"format\": \"uuid\",\n                \"$ref\": \"{{categorySchemaSlug}}\"\n            },\n            \"description\": \"References to categories (multiple relations)\"\n        }\n    },\n    \"required\": [\"title\"]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "schemas"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Create Test Objects",
+			"item": [
+				{
+					"name": "2.1 Create Author 1 (John)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 201', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test('Response has author UUID', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('uuid');",
+									"    pm.collectionVariables.set('author1Uuid', jsonData.uuid);",
+									"    console.log('✅ Author 1 created: John Doe (UUID: ' + jsonData.uuid + ')');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"John Doe\",\n    \"email\": \"john@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerSlug}}/{{authorSchemaSlug}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "{{registerSlug}}", "{{authorSchemaSlug}}"]
+						}
+					}
+				},
+				{
+					"name": "2.2 Create Author 2 (Jane)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 201', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test('Response has author UUID', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('uuid');",
+									"    pm.collectionVariables.set('author2Uuid', jsonData.uuid);",
+									"    console.log('✅ Author 2 created: Jane Smith (UUID: ' + jsonData.uuid + ')');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Jane Smith\",\n    \"email\": \"jane@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerSlug}}/{{authorSchemaSlug}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "{{registerSlug}}", "{{authorSchemaSlug}}"]
+						}
+					}
+				},
+				{
+					"name": "2.3 Create Category 1 (Technology)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 201', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test('Response has category UUID', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('uuid');",
+									"    pm.collectionVariables.set('category1Uuid', jsonData.uuid);",
+									"    console.log('✅ Category 1 created: Technology (UUID: ' + jsonData.uuid + ')');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Technology\",\n    \"description\": \"Technology related articles\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerSlug}}/{{categorySchemaSlug}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "{{registerSlug}}", "{{categorySchemaSlug}}"]
+						}
+					}
+				},
+				{
+					"name": "2.4 Create Category 2 (Science)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 201', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test('Response has category UUID', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('uuid');",
+									"    pm.collectionVariables.set('category2Uuid', jsonData.uuid);",
+									"    console.log('✅ Category 2 created: Science (UUID: ' + jsonData.uuid + ')');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Science\",\n    \"description\": \"Science related articles\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerSlug}}/{{categorySchemaSlug}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "{{registerSlug}}", "{{categorySchemaSlug}}"]
+						}
+					}
+				},
+				{
+					"name": "2.5 Create Category 3 (News)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 201', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test('Response has category UUID', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('uuid');",
+									"    pm.collectionVariables.set('category3Uuid', jsonData.uuid);",
+									"    console.log('✅ Category 3 created: News (UUID: ' + jsonData.uuid + ')');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"News\",\n    \"description\": \"News articles\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerSlug}}/{{categorySchemaSlug}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "{{registerSlug}}", "{{categorySchemaSlug}}"]
+						}
+					}
+				},
+				{
+					"name": "2.6 Create Article 1 (by John, 2 categories)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 201', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test('Article has author and categories relations', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('uuid');",
+									"    pm.expect(jsonData).to.have.property('author');",
+									"    pm.expect(jsonData).to.have.property('categories');",
+									"    pm.collectionVariables.set('article1Uuid', jsonData.uuid);",
+									"    console.log('✅ Article 1 created with relations (UUID: ' + jsonData.uuid + ')');",
+									"    console.log('   - Author: ' + jsonData.author);",
+									"    console.log('   - Categories: ' + JSON.stringify(jsonData.categories));",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Build article body with proper UUIDs",
+									"var author1Uuid = pm.collectionVariables.get('author1Uuid');",
+									"var category1Uuid = pm.collectionVariables.get('category1Uuid');",
+									"var category2Uuid = pm.collectionVariables.get('category2Uuid');",
+									"",
+									"var body = {",
+									"    title: 'Introduction to AI Technology',",
+									"    content: 'An in-depth look at artificial intelligence...',",
+									"    author: author1Uuid,",
+									"    categories: [category1Uuid, category2Uuid]",
+									"};",
+									"",
+									"pm.collectionVariables.set('article1Body', JSON.stringify(body));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{article1Body}}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerSlug}}/{{articleSchemaSlug}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "{{registerSlug}}", "{{articleSchemaSlug}}"]
+						}
+					}
+				},
+				{
+					"name": "2.7 Create Article 2 (by John, 1 category)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 201', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test('Article created with relations', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('uuid');",
+									"    pm.collectionVariables.set('article2Uuid', jsonData.uuid);",
+									"    console.log('✅ Article 2 created (UUID: ' + jsonData.uuid + ')');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"var author1Uuid = pm.collectionVariables.get('author1Uuid');",
+									"var category3Uuid = pm.collectionVariables.get('category3Uuid');",
+									"",
+									"var body = {",
+									"    title: 'Breaking News: Tech Industry Update',",
+									"    content: 'Latest developments in the tech world...',",
+									"    author: author1Uuid,",
+									"    categories: [category3Uuid]",
+									"};",
+									"",
+									"pm.collectionVariables.set('article2Body', JSON.stringify(body));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{article2Body}}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerSlug}}/{{articleSchemaSlug}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "{{registerSlug}}", "{{articleSchemaSlug}}"]
+						}
+					}
+				},
+				{
+					"name": "2.8 Create Article 3 (by Jane, 2 categories)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 201', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test('Article created with relations', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('uuid');",
+									"    pm.collectionVariables.set('article3Uuid', jsonData.uuid);",
+									"    console.log('✅ Article 3 created (UUID: ' + jsonData.uuid + ')');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"var author2Uuid = pm.collectionVariables.get('author2Uuid');",
+									"var category1Uuid = pm.collectionVariables.get('category1Uuid');",
+									"var category2Uuid = pm.collectionVariables.get('category2Uuid');",
+									"",
+									"var body = {",
+									"    title: 'Quantum Computing Explained',",
+									"    content: 'Understanding quantum mechanics and computing...',",
+									"    author: author2Uuid,",
+									"    categories: [category1Uuid, category2Uuid]",
+									"};",
+									"",
+									"pm.collectionVariables.set('article3Body', JSON.stringify(body));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{article3Body}}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerSlug}}/{{articleSchemaSlug}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "{{registerSlug}}", "{{articleSchemaSlug}}"]
+						}
+					}
+				},
+				{
+					"name": "2.9 Create Article 4 (no relations)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 201', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test('Article created without relations', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('uuid');",
+									"    pm.collectionVariables.set('article4Uuid', jsonData.uuid);",
+									"    console.log('✅ Article 4 created (no relations) (UUID: ' + jsonData.uuid + ')');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Standalone Article\",\n    \"content\": \"This article has no author or categories\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerSlug}}/{{articleSchemaSlug}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "{{registerSlug}}", "{{articleSchemaSlug}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Test /uses Endpoint",
+			"item": [
+				{
+					"name": "3.1 GET /uses for Article 1 - Should return author + 2 categories",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response has results array', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('results');",
+									"    pm.expect(jsonData.results).to.be.an('array');",
+									"});",
+									"",
+									"pm.test('Article 1 uses 3 objects (1 author + 2 categories)', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.total).to.eql(3);",
+									"    pm.expect(jsonData.results.length).to.eql(3);",
+									"    console.log('✅ Article 1 /uses returns ' + jsonData.total + ' relations');",
+									"});",
+									"",
+									"pm.test('Results contain author1 and category1 and category2', function () {",
+									"    var jsonData = pm.response.json();",
+									"    var author1Uuid = pm.collectionVariables.get('author1Uuid');",
+									"    var category1Uuid = pm.collectionVariables.get('category1Uuid');",
+									"    var category2Uuid = pm.collectionVariables.get('category2Uuid');",
+									"    ",
+									"    var uuids = jsonData.results.map(function(obj) { return obj.uuid; });",
+									"    ",
+									"    pm.expect(uuids).to.include(author1Uuid);",
+									"    pm.expect(uuids).to.include(category1Uuid);",
+									"    pm.expect(uuids).to.include(category2Uuid);",
+									"    console.log('   Found expected UUIDs in results');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerSlug}}/{{articleSchemaSlug}}/{{article1Uuid}}/uses",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "{{registerSlug}}", "{{articleSchemaSlug}}", "{{article1Uuid}}", "uses"]
+						}
+					}
+				},
+				{
+					"name": "3.2 GET /uses for Article 2 - Should return author + 1 category",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Article 2 uses 2 objects (1 author + 1 category)', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.total).to.eql(2);",
+									"    pm.expect(jsonData.results.length).to.eql(2);",
+									"    console.log('✅ Article 2 /uses returns ' + jsonData.total + ' relations');",
+									"});",
+									"",
+									"pm.test('Results contain author1 and category3', function () {",
+									"    var jsonData = pm.response.json();",
+									"    var author1Uuid = pm.collectionVariables.get('author1Uuid');",
+									"    var category3Uuid = pm.collectionVariables.get('category3Uuid');",
+									"    ",
+									"    var uuids = jsonData.results.map(function(obj) { return obj.uuid; });",
+									"    ",
+									"    pm.expect(uuids).to.include(author1Uuid);",
+									"    pm.expect(uuids).to.include(category3Uuid);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerSlug}}/{{articleSchemaSlug}}/{{article2Uuid}}/uses",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "{{registerSlug}}", "{{articleSchemaSlug}}", "{{article2Uuid}}", "uses"]
+						}
+					}
+				},
+				{
+					"name": "3.3 GET /uses for Article 4 (no relations) - Should return empty",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Article 4 uses 0 objects', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.total).to.eql(0);",
+									"    pm.expect(jsonData.results).to.be.an('array');",
+									"    pm.expect(jsonData.results.length).to.eql(0);",
+									"    console.log('✅ Article 4 (no relations) /uses returns 0 relations');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerSlug}}/{{articleSchemaSlug}}/{{article4Uuid}}/uses",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "{{registerSlug}}", "{{articleSchemaSlug}}", "{{article4Uuid}}", "uses"]
+						}
+					}
+				},
+				{
+					"name": "3.4 GET /uses for Author 1 - Authors don't use anything",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Author uses 0 objects (authors have no outgoing relations)', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.total).to.eql(0);",
+									"    pm.expect(jsonData.results.length).to.eql(0);",
+									"    console.log('✅ Author 1 /uses returns 0 (no outgoing relations from author schema)');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerSlug}}/{{authorSchemaSlug}}/{{author1Uuid}}/uses",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "{{registerSlug}}", "{{authorSchemaSlug}}", "{{author1Uuid}}", "uses"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Test /used Endpoint",
+			"item": [
+				{
+					"name": "4.1 GET /used for Author 1 (John) - Should return 2 articles",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response has results array', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('results');",
+									"    pm.expect(jsonData.results).to.be.an('array');",
+									"});",
+									"",
+									"pm.test('Author 1 is used by 2 articles', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.total).to.eql(2);",
+									"    pm.expect(jsonData.results.length).to.eql(2);",
+									"    console.log('✅ Author 1 /used returns ' + jsonData.total + ' articles');",
+									"});",
+									"",
+									"pm.test('Results contain article1 and article2', function () {",
+									"    var jsonData = pm.response.json();",
+									"    var article1Uuid = pm.collectionVariables.get('article1Uuid');",
+									"    var article2Uuid = pm.collectionVariables.get('article2Uuid');",
+									"    ",
+									"    var uuids = jsonData.results.map(function(obj) { return obj.uuid; });",
+									"    ",
+									"    pm.expect(uuids).to.include(article1Uuid);",
+									"    pm.expect(uuids).to.include(article2Uuid);",
+									"    console.log('   Found Article 1 and Article 2 in results');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerSlug}}/{{authorSchemaSlug}}/{{author1Uuid}}/used",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "{{registerSlug}}", "{{authorSchemaSlug}}", "{{author1Uuid}}", "used"]
+						}
+					}
+				},
+				{
+					"name": "4.2 GET /used for Author 2 (Jane) - Should return 1 article",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Author 2 is used by 1 article', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.total).to.eql(1);",
+									"    pm.expect(jsonData.results.length).to.eql(1);",
+									"    console.log('✅ Author 2 /used returns ' + jsonData.total + ' article');",
+									"});",
+									"",
+									"pm.test('Result contains article3', function () {",
+									"    var jsonData = pm.response.json();",
+									"    var article3Uuid = pm.collectionVariables.get('article3Uuid');",
+									"    ",
+									"    pm.expect(jsonData.results[0].uuid).to.eql(article3Uuid);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerSlug}}/{{authorSchemaSlug}}/{{author2Uuid}}/used",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "{{registerSlug}}", "{{authorSchemaSlug}}", "{{author2Uuid}}", "used"]
+						}
+					}
+				},
+				{
+					"name": "4.3 GET /used for Category 1 (Technology) - Should return 2 articles",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Category 1 is used by 2 articles', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.total).to.eql(2);",
+									"    pm.expect(jsonData.results.length).to.eql(2);",
+									"    console.log('✅ Category 1 (Technology) /used returns ' + jsonData.total + ' articles');",
+									"});",
+									"",
+									"pm.test('Results contain article1 and article3', function () {",
+									"    var jsonData = pm.response.json();",
+									"    var article1Uuid = pm.collectionVariables.get('article1Uuid');",
+									"    var article3Uuid = pm.collectionVariables.get('article3Uuid');",
+									"    ",
+									"    var uuids = jsonData.results.map(function(obj) { return obj.uuid; });",
+									"    ",
+									"    pm.expect(uuids).to.include(article1Uuid);",
+									"    pm.expect(uuids).to.include(article3Uuid);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerSlug}}/{{categorySchemaSlug}}/{{category1Uuid}}/used",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "{{registerSlug}}", "{{categorySchemaSlug}}", "{{category1Uuid}}", "used"]
+						}
+					}
+				},
+				{
+					"name": "4.4 GET /used for Category 3 (News) - Should return 1 article",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Category 3 is used by 1 article', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.total).to.eql(1);",
+									"    pm.expect(jsonData.results.length).to.eql(1);",
+									"    console.log('✅ Category 3 (News) /used returns ' + jsonData.total + ' article');",
+									"});",
+									"",
+									"pm.test('Result contains article2', function () {",
+									"    var jsonData = pm.response.json();",
+									"    var article2Uuid = pm.collectionVariables.get('article2Uuid');",
+									"    pm.expect(jsonData.results[0].uuid).to.eql(article2Uuid);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerSlug}}/{{categorySchemaSlug}}/{{category3Uuid}}/used",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "{{registerSlug}}", "{{categorySchemaSlug}}", "{{category3Uuid}}", "used"]
+						}
+					}
+				},
+				{
+					"name": "4.5 GET /used for Article 1 - Articles are not used by anything",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Article is used by 0 objects (articles have no incoming relations)', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.total).to.eql(0);",
+									"    pm.expect(jsonData.results.length).to.eql(0);",
+									"    console.log('✅ Article 1 /used returns 0 (no incoming relations to article schema)');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerSlug}}/{{articleSchemaSlug}}/{{article1Uuid}}/used",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "{{registerSlug}}", "{{articleSchemaSlug}}", "{{article1Uuid}}", "used"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Edge Cases and Error Handling",
+			"item": [
+				{
+					"name": "5.1 GET /uses with invalid UUID - Should return 404",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 404 for non-existent object', function () {",
+									"    pm.response.to.have.status(404);",
+									"    console.log('✅ Invalid UUID returns 404');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerSlug}}/{{articleSchemaSlug}}/00000000-0000-0000-0000-000000000000/uses",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "{{registerSlug}}", "{{articleSchemaSlug}}", "00000000-0000-0000-0000-000000000000", "uses"]
+						}
+					}
+				},
+				{
+					"name": "5.2 GET /used with invalid UUID - Should return 404",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 404 for non-existent object', function () {",
+									"    pm.response.to.have.status(404);",
+									"    console.log('✅ Invalid UUID returns 404');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerSlug}}/{{authorSchemaSlug}}/00000000-0000-0000-0000-000000000000/used",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "{{registerSlug}}", "{{authorSchemaSlug}}", "00000000-0000-0000-0000-000000000000", "used"]
+						}
+					}
+				},
+				{
+					"name": "5.3 GET /uses with invalid register - Should return 404",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 404 for invalid register', function () {",
+									"    pm.response.to.have.status(404);",
+									"    console.log('✅ Invalid register returns 404');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/invalid-register/{{articleSchemaSlug}}/{{article1Uuid}}/uses",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "invalid-register", "{{articleSchemaSlug}}", "{{article1Uuid}}", "uses"]
+						}
+					}
+				},
+				{
+					"name": "5.4 GET /uses with invalid schema - Should return 404",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 404 for invalid schema', function () {",
+									"    pm.response.to.have.status(404);",
+									"    console.log('✅ Invalid schema returns 404');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerSlug}}/invalid-schema/{{article1Uuid}}/uses",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "{{registerSlug}}", "invalid-schema", "{{article1Uuid}}", "uses"]
+						}
+					}
+				},
+				{
+					"name": "5.5 GET /uses with pagination - limit=1",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Pagination works - returns 1 result but total is 3', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.results.length).to.eql(1);",
+									"    pm.expect(jsonData.total).to.eql(3);",
+									"    pm.expect(jsonData.limit).to.eql(1);",
+									"    console.log('✅ Pagination works: limit=1 returns 1 result, total=3');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerSlug}}/{{articleSchemaSlug}}/{{article1Uuid}}/uses?_limit=1",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "{{registerSlug}}", "{{articleSchemaSlug}}", "{{article1Uuid}}", "uses"],
+							"query": [
+								{
+									"key": "_limit",
+									"value": "1"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "5.6 GET /uses with pagination - offset=1",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Offset pagination works - returns 2 results', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.results.length).to.eql(2);",
+									"    pm.expect(jsonData.total).to.eql(3);",
+									"    pm.expect(jsonData.offset).to.eql(1);",
+									"    console.log('✅ Offset pagination works: offset=1 returns 2 results');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerSlug}}/{{articleSchemaSlug}}/{{article1Uuid}}/uses?_offset=1",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "{{registerSlug}}", "{{articleSchemaSlug}}", "{{article1Uuid}}", "uses"],
+							"query": [
+								{
+									"key": "_offset",
+									"value": "1"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Test Relation Updates",
+			"item": [
+				{
+					"name": "6.1 Update Article 1 - Remove one category",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Article updated with fewer categories', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.categories.length).to.eql(1);",
+									"    console.log('✅ Article 1 updated - now has 1 category');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"var author1Uuid = pm.collectionVariables.get('author1Uuid');",
+									"var category1Uuid = pm.collectionVariables.get('category1Uuid');",
+									"",
+									"var body = {",
+									"    title: 'Introduction to AI Technology (Updated)',",
+									"    content: 'An in-depth look at artificial intelligence...',",
+									"    author: author1Uuid,",
+									"    categories: [category1Uuid]  // Removed category2",
+									"};",
+									"",
+									"pm.collectionVariables.set('article1UpdateBody', JSON.stringify(body));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{article1UpdateBody}}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerSlug}}/{{articleSchemaSlug}}/{{article1Uuid}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "{{registerSlug}}", "{{articleSchemaSlug}}", "{{article1Uuid}}"]
+						}
+					}
+				},
+				{
+					"name": "6.2 Verify /uses after update - Should return 2 now",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('After removing category, /uses returns 2 objects', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.total).to.eql(2);",
+									"    pm.expect(jsonData.results.length).to.eql(2);",
+									"    console.log('✅ After update: Article 1 /uses returns 2 relations (was 3)');",
+									"});",
+									"",
+									"pm.test('Category 2 is no longer in results', function () {",
+									"    var jsonData = pm.response.json();",
+									"    var category2Uuid = pm.collectionVariables.get('category2Uuid');",
+									"    ",
+									"    var uuids = jsonData.results.map(function(obj) { return obj.uuid; });",
+									"    pm.expect(uuids).to.not.include(category2Uuid);",
+									"    console.log('   Category 2 correctly removed from relations');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerSlug}}/{{articleSchemaSlug}}/{{article1Uuid}}/uses",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "{{registerSlug}}", "{{articleSchemaSlug}}", "{{article1Uuid}}", "uses"]
+						}
+					}
+				},
+				{
+					"name": "6.3 Verify /used for Category 2 - Should now return 1",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Category 2 is now used by 1 article (was 2)', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.total).to.eql(1);",
+									"    pm.expect(jsonData.results.length).to.eql(1);",
+									"    console.log('✅ Category 2 /used returns 1 (was 2 before Article 1 update)');",
+									"});",
+									"",
+									"pm.test('Only Article 3 references Category 2 now', function () {",
+									"    var jsonData = pm.response.json();",
+									"    var article3Uuid = pm.collectionVariables.get('article3Uuid');",
+									"    pm.expect(jsonData.results[0].uuid).to.eql(article3Uuid);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerSlug}}/{{categorySchemaSlug}}/{{category2Uuid}}/used",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "{{registerSlug}}", "{{categorySchemaSlug}}", "{{category2Uuid}}", "used"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Cleanup",
+			"item": [
+				{
+					"name": "7.1 Delete Article 1",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 204', function () {",
+									"    pm.response.to.have.status(204);",
+									"    console.log('✅ Article 1 deleted');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerSlug}}/{{articleSchemaSlug}}/{{article1Uuid}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "{{registerSlug}}", "{{articleSchemaSlug}}", "{{article1Uuid}}"]
+						}
+					}
+				},
+				{
+					"name": "7.2 Delete Article 2",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 204', function () {",
+									"    pm.response.to.have.status(204);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerSlug}}/{{articleSchemaSlug}}/{{article2Uuid}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "{{registerSlug}}", "{{articleSchemaSlug}}", "{{article2Uuid}}"]
+						}
+					}
+				},
+				{
+					"name": "7.3 Delete Article 3",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 204', function () {",
+									"    pm.response.to.have.status(204);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerSlug}}/{{articleSchemaSlug}}/{{article3Uuid}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "{{registerSlug}}", "{{articleSchemaSlug}}", "{{article3Uuid}}"]
+						}
+					}
+				},
+				{
+					"name": "7.4 Delete Article 4",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 204', function () {",
+									"    pm.response.to.have.status(204);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerSlug}}/{{articleSchemaSlug}}/{{article4Uuid}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "{{registerSlug}}", "{{articleSchemaSlug}}", "{{article4Uuid}}"]
+						}
+					}
+				},
+				{
+					"name": "7.5 Delete Author 1",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 204', function () {",
+									"    pm.response.to.have.status(204);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerSlug}}/{{authorSchemaSlug}}/{{author1Uuid}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "{{registerSlug}}", "{{authorSchemaSlug}}", "{{author1Uuid}}"]
+						}
+					}
+				},
+				{
+					"name": "7.6 Delete Author 2",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 204', function () {",
+									"    pm.response.to.have.status(204);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerSlug}}/{{authorSchemaSlug}}/{{author2Uuid}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "{{registerSlug}}", "{{authorSchemaSlug}}", "{{author2Uuid}}"]
+						}
+					}
+				},
+				{
+					"name": "7.7 Delete Categories",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 204', function () {",
+									"    pm.response.to.have.status(204);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerSlug}}/{{categorySchemaSlug}}/{{category1Uuid}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "{{registerSlug}}", "{{categorySchemaSlug}}", "{{category1Uuid}}"]
+						}
+					}
+				},
+				{
+					"name": "7.8 Delete Category 2",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 204', function () {",
+									"    pm.response.to.have.status(204);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerSlug}}/{{categorySchemaSlug}}/{{category2Uuid}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "{{registerSlug}}", "{{categorySchemaSlug}}", "{{category2Uuid}}"]
+						}
+					}
+				},
+				{
+					"name": "7.9 Delete Category 3",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 204', function () {",
+									"    pm.response.to.have.status(204);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerSlug}}/{{categorySchemaSlug}}/{{category3Uuid}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "{{registerSlug}}", "{{categorySchemaSlug}}", "{{category3Uuid}}"]
+						}
+					}
+				},
+				{
+					"name": "7.10 Delete Article Schema",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 204', function () {",
+									"    pm.response.to.have.status(204);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas/{{articleSchemaId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "schemas", "{{articleSchemaId}}"]
+						}
+					}
+				},
+				{
+					"name": "7.11 Delete Category Schema",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 204', function () {",
+									"    pm.response.to.have.status(204);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas/{{categorySchemaId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "schemas", "{{categorySchemaId}}"]
+						}
+					}
+				},
+				{
+					"name": "7.12 Delete Author Schema",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 204', function () {",
+									"    pm.response.to.have.status(204);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas/{{authorSchemaId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "schemas", "{{authorSchemaId}}"]
+						}
+					}
+				},
+				{
+					"name": "7.13 Delete Register",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 204', function () {",
+									"    pm.response.to.have.status(204);",
+									"    console.log('');",
+									"    console.log('🎉 Relations test suite completed successfully!');",
+									"    console.log('   All /uses and /used endpoints work correctly');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{registerId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["index.php", "apps", "openregister", "api", "registers", "{{registerId}}"]
+						}
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080"
+		},
+		{
+			"key": "username",
+			"value": "admin"
+		},
+		{
+			"key": "password",
+			"value": "admin"
+		},
+		{
+			"key": "registerId",
+			"value": ""
+		},
+		{
+			"key": "registerSlug",
+			"value": ""
+		},
+		{
+			"key": "authorSchemaId",
+			"value": ""
+		},
+		{
+			"key": "authorSchemaSlug",
+			"value": ""
+		},
+		{
+			"key": "categorySchemaId",
+			"value": ""
+		},
+		{
+			"key": "categorySchemaSlug",
+			"value": ""
+		},
+		{
+			"key": "articleSchemaId",
+			"value": ""
+		},
+		{
+			"key": "articleSchemaSlug",
+			"value": ""
+		},
+		{
+			"key": "author1Uuid",
+			"value": ""
+		},
+		{
+			"key": "author2Uuid",
+			"value": ""
+		},
+		{
+			"key": "category1Uuid",
+			"value": ""
+		},
+		{
+			"key": "category2Uuid",
+			"value": ""
+		},
+		{
+			"key": "category3Uuid",
+			"value": ""
+		},
+		{
+			"key": "article1Uuid",
+			"value": ""
+		},
+		{
+			"key": "article2Uuid",
+			"value": ""
+		},
+		{
+			"key": "article3Uuid",
+			"value": ""
+		},
+		{
+			"key": "article4Uuid",
+			"value": ""
+		},
+		{
+			"key": "article1Body",
+			"value": ""
+		},
+		{
+			"key": "article2Body",
+			"value": ""
+		},
+		{
+			"key": "article3Body",
+			"value": ""
+		},
+		{
+			"key": "article1UpdateBody",
+			"value": ""
+		}
+	]
+}

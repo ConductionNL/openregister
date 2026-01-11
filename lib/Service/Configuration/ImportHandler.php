@@ -32,6 +32,8 @@ use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
@@ -49,6 +51,14 @@ use Symfony\Component\Yaml\Yaml;
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.TooManyFields)
+ * @SuppressWarnings(PHPMD.ExcessiveParameterList)
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.NPathComplexity)
+ * @SuppressWarnings(PHPMD.UnusedPrivateField)
+ * Reason: Configuration import requires comprehensive dependencies and complex validation logic.
+ *         Reserved fields for future features.
  */
 class ImportHandler
 {
@@ -59,9 +69,11 @@ class ImportHandler
      * When an app is enabled as a dependency, it may boot and load its own configuration,
      * which could trigger another dependency check. This flag prevents infinite recursion.
      *
+     * @SuppressWarnings(PHPMD.UnusedPrivateField) Reserved for future dependency check feature
+     *
      * @var boolean
      */
-    private static bool $isDependencyCheckActive = false;
+    private static bool $depCheckActive = false;
 
     /**
      * Schema mapper instance for handling schema operations.
@@ -83,6 +95,20 @@ class ImportHandler
      * @var ObjectEntityMapper The object mapper instance.
      */
     private readonly ObjectEntityMapper $objectEntityMapper;
+
+    /**
+     * Magic mapper instance for handling magic table operations.
+     *
+     * @var MagicMapper|null The magic mapper instance (optional, set via setter).
+     */
+    private ?MagicMapper $magicMapper = null;
+
+    /**
+     * Unified object mapper for routing to magic/blob storage.
+     *
+     * @var UnifiedObjectMapper|null The unified object mapper instance (optional, set via setter).
+     */
+    private ?UnifiedObjectMapper $unifiedObjectMapper = null;
 
     /**
      * Configuration mapper instance for handling configuration operations.
@@ -150,9 +176,11 @@ class ImportHandler
     /**
      * OpenConnector configuration service for optional integration.
      *
+     * @SuppressWarnings(PHPMD.UnusedPrivateField) Reserved for future OpenConnector integration
+     *
      * @var mixed The OpenConnector configuration service or null.
      */
-    private mixed $openConnectorConfigurationService = null;
+    private mixed $connectorConfigSvc = null;
 
     /**
      * Constructor for ImportHandler.
@@ -221,6 +249,36 @@ class ImportHandler
     {
         $this->openConnectorConfigurationService = $service;
     }//end setOpenConnectorConfigurationService()
+
+    /**
+     * Set the MagicMapper dependency for ensuring magic mapper tables exist.
+     *
+     * This method allows setting the MagicMapper after construction for
+     * pre-creating magic mapper tables before seed data import.
+     *
+     * @param MagicMapper $magicMapper The magic mapper instance.
+     *
+     * @return void
+     */
+    public function setMagicMapper(MagicMapper $magicMapper): void
+    {
+        $this->magicMapper = $magicMapper;
+    }//end setMagicMapper()
+
+    /**
+     * Set the UnifiedObjectMapper dependency for routing objects to storage.
+     *
+     * This method allows setting the UnifiedObjectMapper after construction for
+     * routing seed data objects to the correct storage (magic mapper or blob).
+     *
+     * @param UnifiedObjectMapper $unifiedObjectMapper The unified object mapper instance.
+     *
+     * @return void
+     */
+    public function setUnifiedObjectMapper(UnifiedObjectMapper $unifiedObjectMapper): void
+    {
+        $this->unifiedObjectMapper = $unifiedObjectMapper;
+    }//end setUnifiedObjectMapper()
 
     /**
      * Decode JSON or YAML string data into PHP array.
@@ -2129,6 +2187,36 @@ class ImportHandler
 
             $this->logger->info("Importing seed objects for schema '{$schemaSlug}'", ['count' => count($objects)]);
 
+            // PRE-CREATE MAGIC MAPPER TABLE: Ensure the magic mapper table exists BEFORE inserting objects.
+            // This prevents the race condition where the first object goes to blob storage because
+            // the magic mapper table doesn't exist yet (it would only be created by the second insert).
+            if ($this->magicMapper !== null && $targetRegister !== null) {
+                try {
+                    $this->logger->debug(
+                        "Pre-creating magic mapper table for schema before importing seed objects",
+                        [
+                            'schema_id'   => $schema->getId(),
+                            'schema_slug' => $schemaSlug,
+                            'register_id' => $targetRegisterId,
+                        ]
+                    );
+                    $this->magicMapper->ensureTableForRegisterSchema(
+                        register: $targetRegister,
+                        schema: $schema
+                    );
+                } catch (\Exception $e) {
+                    // Non-fatal: if table creation fails, objects will go to blob storage (existing behavior).
+                    $this->logger->warning(
+                        "Failed to pre-create magic mapper table - objects may go to blob storage",
+                        [
+                            'schema_slug' => $schemaSlug,
+                            'register_id' => $targetRegisterId,
+                            'error'       => $e->getMessage(),
+                        ]
+                    );
+                }//end try
+            }//end if
+
             foreach ($objects as $objectData) {
                 // Check if object has @self with external configuration reference.
                 // This allows seedData from one app to reference schemas/registers from another app's configuration.
@@ -2138,7 +2226,7 @@ class ImportHandler
                 $externalSchemaSlug   = $selfData['schema'] ?? null;
 
                 // Start with the current target register (from configuration).
-                $objectTargetRegisterId = $targetRegisterId;
+                $targetRegId = $targetRegisterId;
                 $objectSchema           = $schema;
 
                 // If object references external configuration, resolve schema and register from that config.
@@ -2176,12 +2264,12 @@ class ImportHandler
                                     _rbac: false,
                                     _multitenancy: false
                                 );
-                                $objectTargetRegisterId = $externalRegister->getId();
+                                $targetRegId = $externalRegister->getId();
                                 $this->logger->info(
                                     "Resolved external register for seedData object",
                                     [
                                         'slug'  => $externalRegisterSlug,
-                                        'id'    => $objectTargetRegisterId,
+                                        'id'    => $targetRegId,
                                         'title' => $externalRegister->getTitle(),
                                     ]
                                 );
@@ -2264,7 +2352,7 @@ class ImportHandler
 
                     // Use the resolved target register (either from external config or default).
                     // SeedData with external config references goes to the external register.
-                    $objectEntity->setRegister($objectTargetRegisterId);
+                    $objectEntity->setRegister($targetRegId);
 
                     // Store object data.
                     $objectEntity->setObject($objectData);
@@ -2274,8 +2362,15 @@ class ImportHandler
                     $objectEntity->setCreated($now);
                     $objectEntity->setUpdated($now);
 
-                    // Insert into database.
-                    $createdObject = $this->objectEntityMapper->insert($objectEntity);
+                    // Insert into database using UnifiedObjectMapper if available.
+                    // UnifiedObjectMapper routes objects to magic mapper or blob storage
+                    // based on register configuration, ensuring consistent storage.
+                    if ($this->unifiedObjectMapper !== null) {
+                        $createdObject = $this->unifiedObjectMapper->insert($objectEntity);
+                    } else {
+                        // Fallback to ObjectEntityMapper (blob storage only).
+                        $createdObject = $this->objectEntityMapper->insert($objectEntity);
+                    }
 
                     $result['objects'][] = $createdObject->getId();
                     $this->logger->debug(

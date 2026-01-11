@@ -527,6 +527,7 @@ jobs:
           name: Beta Release ${{ env.NEW_VERSION }}
           draft: false
           prerelease: true
+          skipIfReleaseExists: true
 
       # Stap 18: Voeg het tarball toe als asset aan de GitHub release
       - name: Attach tarball to GitHub release

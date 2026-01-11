@@ -230,7 +230,7 @@ class UserController extends Controller
             $clientIp = $this->securityService->getClientIpAddress(request: $this->request);
 
             // Get and validate login credentials from request.
-            $data                 = $this->request->getParams();
+            $data = $this->request->getParams();
             $credentialValidation = $this->securityService->validateLoginCredentials(credentials: $data);
 
             if ($credentialValidation['valid'] === false) {
@@ -255,8 +255,8 @@ class UserController extends Controller
 
                 $response = new JSONResponse(
                     data: [
-                        'error'        => $rateLimitCheck['reason'],
-                        'retry_after'  => $rateLimitCheck['delay'] ?? null,
+                        'error'         => $rateLimitCheck['reason'],
+                        'retry_after'   => $rateLimitCheck['delay'] ?? null,
                         'lockout_until' => $rateLimitCheck['lockout_until'] ?? null,
                     ],
                     statusCode: 429

@@ -168,9 +168,9 @@ class UserService
         $result['middleName'] = $result['middleName'] ?? null;
 
         // Add organization information.
-        $organisationStats       = $this->organisationService->getUserOrganisationStats();
+        $organisationStats = $this->organisationService->getUserOrganisationStats();
         $organisationStats['available'] = true;
-        $result['organisations'] = $organisationStats;
+        $result['organisations']        = $organisationStats;
 
         return $result;
     }//end buildUserDataArray()
@@ -193,11 +193,15 @@ class UserService
 
         // Handle organization switching if requested.
         if (isset($data['activeOrganisation']) === true && is_string($data['activeOrganisation']) === true) {
-            $organisationResult = $this->organisationService->setActiveOrganisation($data['activeOrganisation']);
+            $organisationResult = $this->organisationService->setActiveOrganisation(
+                $data['activeOrganisation']
+            );
             $result['organisation_updated'] = $organisationResult;
-            $result['organisation_message'] = $organisationResult
-                ? 'Active organization updated successfully'
-                : 'Failed to update active organization';
+            if ($organisationResult === true) {
+                $result['organisation_message'] = 'Active organization updated successfully';
+            } else {
+                $result['organisation_message'] = 'Failed to update active organization';
+            }
 
             // Remove the organization field from data to prevent it from being processed as a user property.
             unset($data['activeOrganisation']);
