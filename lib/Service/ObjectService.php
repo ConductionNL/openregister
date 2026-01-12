@@ -1947,6 +1947,31 @@ class ObjectService
     }//end getExtendedObjects()
 
     /**
+     * Get sub-objects created during the last save operation.
+     *
+     * Returns an array of sub-objects indexed by their UUID, suitable for
+     * inclusion in the parent object's @self.objects property.
+     *
+     * @return array<string, array> Sub-objects indexed by UUID
+     */
+    public function getCreatedSubObjects(): array
+    {
+        return $this->saveHandler->getCreatedSubObjects();
+    }//end getCreatedSubObjects()
+
+    /**
+     * Clear the created sub-objects cache.
+     *
+     * Should be called before processing a new parent object.
+     *
+     * @return void
+     */
+    public function clearCreatedSubObjects(): void
+    {
+        $this->saveHandler->clearCreatedSubObjects();
+    }//end clearCreatedSubObjects()
+
+    /**
      * Handle validation exceptions
      *
      * @param ValidationException|CustomValidationException $exception The exception to handle

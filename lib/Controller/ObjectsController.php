@@ -1325,6 +1325,9 @@ class ObjectsController extends Controller
 
         // Save the object.
         try {
+            // Clear sub-objects cache before saving to ensure clean state.
+            $objectService->clearCreatedSubObjects();
+
             // Use the object service to validate and save the object.
             // Use resolved numeric IDs instead of slugs.
             $objectToSave = $object;
@@ -1349,8 +1352,15 @@ class ObjectsController extends Controller
             return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
         }//end try
 
+        // Build response with sub-objects in @self.objects.
+        $responseData = $objectEntity->jsonSerialize();
+        $subObjects = $objectService->getCreatedSubObjects();
+        if (empty($subObjects) === false) {
+            $responseData['@self']['objects'] = $subObjects;
+        }
+
         // Return the created object.
-        return new JSONResponse(data: $objectEntity->jsonSerialize(), statusCode: 201);
+        return new JSONResponse(data: $responseData, statusCode: 201);
     }//end create()
 
     /**

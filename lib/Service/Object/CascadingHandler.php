@@ -249,7 +249,13 @@ class CascadingHandler
                 // Use default multitenancy for internal cascading operations.
             );
 
-            return $createdObject->getUuid();
+            // Track the created sub-object for inclusion in parent's @self.objects.
+            $createdUuid = $createdObject->getUuid();
+            if ($createdUuid !== null) {
+                $this->saveHandler->trackCreatedSubObject($createdUuid, $createdObject->jsonSerialize());
+            }
+
+            return $createdUuid;
         } catch (Exception $e) {
             // Log error but don't expose details.
             $this->logger->error('Failed to create related object: '.$e->getMessage());

@@ -124,6 +124,16 @@ class SaveObject
     private Environment $twig;
 
     /**
+     * Cache for sub-objects created during cascade operations.
+     *
+     * Stores created sub-objects indexed by their UUID for inclusion in @self.objects.
+     * This allows the parent object response to include the full sub-object data.
+     *
+     * @var array<string, array>
+     */
+    private array $createdSubObjects = [];
+
+    /**
      * Constructor for SaveObject handler.
      *
      * @param ObjectEntityMapper       $objectEntityMapper   Object entity mapper
@@ -159,6 +169,48 @@ class SaveObject
     ) {
         $this->twig = new Environment($arrayLoader);
     }//end __construct()
+
+    /**
+     * Get sub-objects created during cascade operations.
+     *
+     * Returns an array of sub-objects indexed by their UUID, suitable for
+     * inclusion in the parent object's @self.objects property.
+     *
+     * @return array<string, array> Sub-objects indexed by UUID
+     */
+    public function getCreatedSubObjects(): array
+    {
+        return $this->createdSubObjects;
+    }//end getCreatedSubObjects()
+
+    /**
+     * Clear the created sub-objects cache.
+     *
+     * Should be called before processing a new parent object to ensure
+     * sub-objects from previous operations are not included.
+     *
+     * @return void
+     */
+    public function clearCreatedSubObjects(): void
+    {
+        $this->createdSubObjects = [];
+    }//end clearCreatedSubObjects()
+
+    /**
+     * Track a created sub-object for inclusion in @self.objects.
+     *
+     * This method is called by CascadingHandler when creating related objects
+     * during pre-validation cascading.
+     *
+     * @param string $uuid       The UUID of the created sub-object
+     * @param array  $objectData The serialized object data
+     *
+     * @return void
+     */
+    public function trackCreatedSubObject(string $uuid, array $objectData): void
+    {
+        $this->createdSubObjects[$uuid] = $objectData;
+    }//end trackCreatedSubObject()
 
     /**
      * Resolves a schema reference to a schema ID.
@@ -1086,33 +1138,52 @@ class SaveObject
                     propData: $data[$property]
                 );
 
-                // Handle the result based on whether inversedBy is present.
-                $hasInversedBy      = ($definition['inversedBy'] ?? null) !== null;
-                $hasItemsInversedBy = (($definition['items']['inversedBy'] ?? null) !== null) === true;
-                if ($hasInversedBy === true || $hasItemsInversedBy === true) {
-                    // With inversedBy: check if writeBack is enabled.
-                    $defWriteBack   = ($definition['writeBack'] ?? null) !== null
-                        && $definition['writeBack'] === true;
-                    $itemsWriteBack = isset($definition['items']['writeBack'])
-                        && $definition['items']['writeBack'] === true;
-                    $hasWriteBack   = $defWriteBack || $itemsWriteBack;
+                // Check if this is a related-object handling (stores UUIDs in parent).
+                $objHandling   = $definition['objectConfiguration']['handling'] ?? null;
+                $itemsHandling = $definition['items']['objectConfiguration']['handling'] ?? null;
+                $isRelatedObject = $objHandling === 'related-object' || $itemsHandling === 'related-object';
 
-                    if ($hasWriteBack === true) {
-                        // Keep the property for write-back processing.
+                // For related-object handling: always store UUIDs in parent property.
+                // This ensures the parent object contains references to the sub-objects.
+                // Note: cascadeMultipleObjects skips existing UUIDs and returns only newly created ones.
+                // So we need to preserve existing UUIDs from the original data.
+                if ($isRelatedObject === true) {
+                    // Collect existing UUIDs that were passed through (not created, just referenced).
+                    $existingUuids = array_filter(
+                        $data[$property] ?? [],
+                        fn($item) => is_string($item) && \Symfony\Component\Uid\Uuid::isValid($item)
+                    );
+                    // Merge existing UUIDs with newly created ones.
+                    $data[$property] = array_values(array_unique(array_merge($existingUuids, $createdUuids)));
+                } else {
+                    // Handle the result based on whether inversedBy is present.
+                    $hasInversedBy      = ($definition['inversedBy'] ?? null) !== null;
+                    $hasItemsInversedBy = (($definition['items']['inversedBy'] ?? null) !== null) === true;
+                    if ($hasInversedBy === true || $hasItemsInversedBy === true) {
+                        // With inversedBy: check if writeBack is enabled.
+                        $defWriteBack   = ($definition['writeBack'] ?? null) !== null
+                            && $definition['writeBack'] === true;
+                        $itemsWriteBack = isset($definition['items']['writeBack'])
+                            && $definition['items']['writeBack'] === true;
+                        $hasWriteBack   = $defWriteBack || $itemsWriteBack;
+
+                        if ($hasWriteBack === true) {
+                            // Keep the property for write-back processing.
+                            $data[$property] = $createdUuids;
+                        }
+
+                        if ($hasWriteBack === false) {
+                            // Remove the property (traditional cascading).
+                            unset($data[$property]);
+                        }
+                    }
+
+                    $noInversedBy      = ($definition['inversedBy'] ?? null) === null;
+                    $noItemsInversedBy = (($definition['items']['inversedBy'] ?? null) !== null) === false;
+                    if ($noInversedBy === true && $noItemsInversedBy === true) {
+                        // Without inversedBy: store the created objects' UUIDs.
                         $data[$property] = $createdUuids;
                     }
-
-                    if ($hasWriteBack === false) {
-                        // Remove the property (traditional cascading).
-                        unset($data[$property]);
-                    }
-                }
-
-                $noInversedBy      = ($definition['inversedBy'] ?? null) === null;
-                $noItemsInversedBy = (($definition['items']['inversedBy'] ?? null) !== null) === false;
-                if ($noInversedBy === true && $noItemsInversedBy === true) {
-                    // Without inversedBy: store the created objects' UUIDs.
-                    $data[$property] = $createdUuids;
                 }
             } catch (Exception $e) {
                 // Continue with other properties even if one fails.
@@ -1284,7 +1355,15 @@ class SaveObject
 
         try {
             $savedObject = $this->saveObject(register: $register, schema: $schemaId, data: $object, uuid: $uuid);
-            return $savedObject->getUuid();
+            $savedUuid = $savedObject->getUuid();
+
+            // Track the created sub-object for inclusion in @self.objects.
+            // This allows the parent response to include the full sub-object data.
+            if ($savedUuid !== null) {
+                $this->createdSubObjects[$savedUuid] = $savedObject->jsonSerialize();
+            }
+
+            return $savedUuid;
         } catch (Exception $e) {
             throw $e;
         }

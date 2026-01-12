@@ -1188,7 +1188,19 @@ class MagicMapper
             // Nextcloud default prefix.
             $fullTableName = $prefix.$tableName;
 
-            $sql  = "SELECT 1 FROM information_schema.tables WHERE table_name = ? AND table_schema = 'public' LIMIT 1";
+            // Get database platform to use correct schema check.
+            // MySQL/MariaDB: table_schema = DATABASE()
+            // PostgreSQL: table_schema = current_schema()
+            $platform = $this->db->getDatabasePlatform();
+            $isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
+
+            if ($isPostgres === true) {
+                $sql = "SELECT 1 FROM information_schema.tables WHERE table_name = ? AND table_schema = current_schema() LIMIT 1";
+            } else {
+                // MySQL/MariaDB/SQLite.
+                $sql = "SELECT 1 FROM information_schema.tables WHERE table_name = ? AND table_schema = DATABASE() LIMIT 1";
+            }
+
             $stmt = $this->db->prepare($sql);
             $stmt->execute([$fullTableName]);
             $result = $stmt->fetch();
