@@ -71,9 +71,9 @@ export const useRegisterStore = defineStore('register', {
 		/* istanbul ignore next */ // ignore this for Jest until moved into a service
 		async refreshRegisterList(search = null) {
 			console.log('RegisterStore: Starting refreshRegisterList')
-			let endpoint = '/index.php/apps/openregister/api/registers'
+			let endpoint = '/index.php/apps/openregister/api/registers?_extend=schemas'
 			if (search !== null && search !== '') {
-				endpoint = endpoint + '?_search=' + encodeURIComponent(search)
+				endpoint = endpoint + '&_search=' + encodeURIComponent(search)
 			}
 			const response = await fetch(endpoint, {
 				method: 'GET',
@@ -149,6 +149,80 @@ export const useRegisterStore = defineStore('register', {
 				throw new Error(`Failed to delete register: ${error.message}`)
 			}
 		},
+		// Publish a register
+		async publishRegister(registerId, date = null) {
+			if (!registerId) {
+				throw new Error('No register ID provided')
+			}
+
+			console.log('Publishing register...')
+
+			let endpoint = `/index.php/apps/openregister/api/registers/${registerId}/publish`
+			if (date) {
+				endpoint += `?date=${encodeURIComponent(date)}`
+			}
+
+			try {
+				const response = await fetch(endpoint, {
+					method: 'POST',
+				})
+
+				if (!response.ok) {
+					const errorData = await response.json().catch(() => ({}))
+					throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
+				}
+
+				const responseData = await response.json()
+
+				await this.refreshRegisterList()
+				// Update the register item if it's currently selected
+				if (this.registerItem && this.registerItem.id === registerId) {
+					this.setRegisterItem(responseData)
+				}
+
+				return { response, data: responseData }
+			} catch (error) {
+				console.error('Error publishing register:', error)
+				throw new Error(`Failed to publish register: ${error.message}`)
+			}
+		},
+		// Depublish a register
+		async depublishRegister(registerId, date = null) {
+			if (!registerId) {
+				throw new Error('No register ID provided')
+			}
+
+			console.log('Depublishing register...')
+
+			let endpoint = `/index.php/apps/openregister/api/registers/${registerId}/depublish`
+			if (date) {
+				endpoint += `?date=${encodeURIComponent(date)}`
+			}
+
+			try {
+				const response = await fetch(endpoint, {
+					method: 'POST',
+				})
+
+				if (!response.ok) {
+					const errorData = await response.json().catch(() => ({}))
+					throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
+				}
+
+				const responseData = await response.json()
+
+				await this.refreshRegisterList()
+				// Update the register item if it's currently selected
+				if (this.registerItem && this.registerItem.id === registerId) {
+					this.setRegisterItem(responseData)
+				}
+
+				return { response, data: responseData }
+			} catch (error) {
+				console.error('Error depublishing register:', error)
+				throw new Error(`Failed to depublish register: ${error.message}`)
+			}
+		},
 		// Create or save a register from store
 		async saveRegister(registerItem) {
 			if (!registerItem) {
@@ -163,8 +237,8 @@ export const useRegisterStore = defineStore('register', {
 				: `/index.php/apps/openregister/api/registers/${registerItem.id}`
 			const method = isNewRegister ? 'POST' : 'PUT'
 
-			// change updated to current date as a singular iso date string
-			registerItem.updated = new Date().toISOString()
+			// Clean the data before sending - remove read-only fields
+			const cleanedData = this.cleanRegisterForSave(registerItem)
 
 			try {
 				const response = await fetch(
@@ -174,7 +248,7 @@ export const useRegisterStore = defineStore('register', {
 						headers: {
 							'Content-Type': 'application/json',
 						},
-						body: JSON.stringify(registerItem),
+						body: JSON.stringify(cleanedData),
 					},
 				)
 
@@ -198,6 +272,18 @@ export const useRegisterStore = defineStore('register', {
 				console.error('Error saving register:', error)
 				throw new Error(`Failed to save register: ${error.message}`)
 			}
+		},
+		// Clean register data for saving - remove read-only fields
+		cleanRegisterForSave(registerItem) {
+			const cleaned = { ...registerItem }
+
+			// Remove read-only/calculated fields that should not be sent to the server
+			delete cleaned.id
+			delete cleaned.uuid
+			delete cleaned.created
+			delete cleaned.updated
+
+			return cleaned
 		},
 		// Create or save a register from store
 		async uploadRegister(register) {

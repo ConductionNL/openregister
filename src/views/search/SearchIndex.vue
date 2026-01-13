@@ -10,13 +10,13 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 				<h1 class="viewHeaderTitleIndented">
 					{{ pageTitle }}
 				</h1>
-				<p v-if="registerStore.registerItem && schemaStore.schemaItem">
+				<p v-if="hasSelectedRegisters && hasSelectedSchemas">
 					{{ t('openregister', 'Search and browse objects in this schema') }}
 				</p>
 			</div>
 
 			<!-- Actions Bar -->
-			<div v-if="registerStore.registerItem && schemaStore.schemaItem" class="viewActionsBar">
+			<div v-if="hasSelectedRegisters && hasSelectedSchemas" class="viewActionsBar">
 				<div class="viewInfo">
 					<span v-if="objectStore.objectList?.results?.length" class="viewTotalCount">
 						{{ t('openregister', 'Showing {showing} of {total} objects', {
@@ -120,43 +120,6 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 							Refresh
 						</NcActionButton>
 					</NcActions>
-
-					<!-- Columns Actions -->
-					<NcActions
-						:force-name="true"
-						:inline="1"
-						menu-name="Columns">
-						<template #icon>
-							<FormatColumns :size="20" />
-						</template>
-
-						<!-- Properties Section -->
-						<NcActionCaption name="Properties" />
-						<NcActionCheckbox
-							v-for="(property, propertyName) in objectStore.properties"
-							:key="`prop_${propertyName}`"
-							:checked="objectStore.columnFilters[`prop_${propertyName}`]"
-							@update:checked="(status) => objectStore.updateColumnFilter(`prop_${propertyName}`, status)">
-							{{ property.label }}
-						</NcActionCheckbox>
-
-						<template v-if="!Object.keys(objectStore.properties || {}).length">
-							<NcActionText>
-								No properties available. Select a schema to view properties.
-							</NcActionText>
-						</template>
-
-						<!-- Metadata Section -->
-						<NcActionSeparator />
-						<NcActionCaption name="Metadata" />
-						<NcActionCheckbox
-							v-for="meta in metadataColumns"
-							:key="`meta_${meta.id}`"
-							:checked="objectStore.columnFilters[`meta_${meta.id}`]"
-							@update:checked="(status) => objectStore.updateColumnFilter(`meta_${meta.id}`, status)">
-							{{ meta.label }}
-						</NcActionCheckbox>
-					</NcActions>
 				</div>
 			</div>
 
@@ -171,7 +134,7 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 			</NcEmptyContent>
 
 			<!-- Search List Content -->
-			<div v-else-if="objectStore.objectList?.results?.length && registerStore.registerItem && schemaStore.schemaItem" class="searchList">
+			<div v-else-if="objectStore.objectList?.results?.length && hasSelectedRegisters && hasSelectedSchemas" class="searchList">
 				<div class="viewTableContainer">
 					<VueDraggable v-model="objectStore.enabledColumns"
 						target=".sort-target"
@@ -310,7 +273,7 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 </template>
 
 <script>
-import { NcAppContent, NcLoadingIcon, NcEmptyContent, NcCheckboxRadioSwitch, NcActions, NcActionButton, NcActionCheckbox, NcActionCaption, NcActionSeparator, NcActionText, NcCounterBubble } from '@nextcloud/vue'
+import { NcAppContent, NcLoadingIcon, NcEmptyContent, NcCheckboxRadioSwitch, NcActions, NcActionButton, NcCounterBubble } from '@nextcloud/vue'
 import { VueDraggable } from 'vue-draggable-plus'
 import getValidISOstring from '../../services/getValidISOstring.js'
 import formatBytes from '../../services/formatBytes.js'
@@ -323,7 +286,6 @@ import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
 import Merge from 'vue-material-design-icons/Merge.vue'
 import DatabaseExport from 'vue-material-design-icons/DatabaseExport.vue'
 import FormatListChecks from 'vue-material-design-icons/FormatListChecks.vue'
-import FormatColumns from 'vue-material-design-icons/FormatColumns.vue'
 import Publish from 'vue-material-design-icons/Publish.vue'
 import PublishOff from 'vue-material-design-icons/PublishOff.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
@@ -340,10 +302,6 @@ export default {
 		NcCheckboxRadioSwitch,
 		NcActions,
 		NcActionButton,
-		NcActionCheckbox,
-		NcActionCaption,
-		NcActionSeparator,
-		NcActionText,
 		NcCounterBubble,
 		VueDraggable,
 		Pencil,
@@ -355,7 +313,6 @@ export default {
 		Merge,
 		DatabaseExport,
 		FormatListChecks,
-		FormatColumns,
 		Publish,
 		PublishOff,
 		CheckCircle,
@@ -368,32 +325,89 @@ export default {
 		}
 	},
 	computed: {
+		// Check if registers are selected from URL query params (multi-select)
+		selectedRegisterIds() {
+			const registerParam = this.$route.query.register
+			if (!registerParam) return []
+			return Array.isArray(registerParam)
+				? registerParam.map(r => parseInt(r))
+				: registerParam.split(',').map(r => parseInt(r.trim()))
+		},
+
+		// Check if schemas are selected from URL query params (multi-select)
+		selectedSchemaIds() {
+			const schemaParam = this.$route.query.schema
+			if (!schemaParam) return []
+			return Array.isArray(schemaParam)
+				? schemaParam.map(s => parseInt(s))
+				: schemaParam.split(',').map(s => parseInt(s.trim()))
+		},
+
+		hasSelectedRegisters() {
+			return this.selectedRegisterIds.length > 0
+		},
+
+		hasSelectedSchemas() {
+			return this.selectedSchemaIds.length > 0
+		},
+
 		pageTitle() {
-			if (!registerStore.registerItem) {
+			if (!this.hasSelectedRegisters) {
 				return 'No register selected'
 			}
 
-			const registerName = (registerStore.registerItem.label || registerStore.registerItem.title).charAt(0).toUpperCase()
-		+ (registerStore.registerItem.label || registerStore.registerItem.title).slice(1)
+			// Get register names
+			const registerNames = this.selectedRegisterIds
+				.map(id => {
+					const reg = registerStore.registerList.find(r => r.id === id)
+					return reg ? (reg.label || reg.title) : null
+				})
+				.filter(Boolean)
 
-			if (!schemaStore.schemaItem) {
-				return `${registerName} / No schema selected`
+			if (registerNames.length === 0) {
+				return 'No register selected'
 			}
 
-			const schemaName = (schemaStore.schemaItem.label || schemaStore.schemaItem.title).charAt(0).toUpperCase()
-		+ (schemaStore.schemaItem.label || schemaStore.schemaItem.title).slice(1)
-			return `${registerName} / ${schemaName}`
+			const registerTitle = registerNames.length === 1
+				? registerNames[0].charAt(0).toUpperCase() + registerNames[0].slice(1)
+				: `${registerNames.length} Registers (${registerNames.join(', ')})`
+
+			if (!this.hasSelectedSchemas) {
+				return `${registerTitle} / No schema selected`
+			}
+
+			// Get schema names
+			const schemaNames = this.selectedSchemaIds
+				.map(id => {
+					const schema = schemaStore.schemaList.find(s => s.id === id)
+					return schema ? (schema.label || schema.title) : null
+				})
+				.filter(Boolean)
+
+			const schemaTitle = schemaNames.length === 1
+				? schemaNames[0].charAt(0).toUpperCase() + schemaNames[0].slice(1)
+				: `${schemaNames.length} Schemas (${schemaNames.join(', ')})`
+
+			return `${registerTitle} / ${schemaTitle}`
 		},
 
 		showNoRegisterWarning() {
-			return !registerStore.registerItem
+			// Don't show warning if objects are already loaded (register/schema set in store)
+			const hasObjectsLoaded = objectStore.objectList?.results?.length > 0
+			const hasRegisterInStore = registerStore.registerItem !== null
+
+			return !this.hasSelectedRegisters && !hasObjectsLoaded && !hasRegisterInStore
 		},
 		showNoSchemaWarning() {
-			return registerStore.registerItem && !schemaStore.schemaItem
+			// Don't show warning if objects are already loaded (register/schema set in store)
+			const hasObjectsLoaded = objectStore.objectList?.results?.length > 0
+			const hasSchemaInStore = schemaStore.schemaItem !== null
+
+			return this.hasSelectedRegisters && !this.hasSelectedSchemas && !hasObjectsLoaded && !hasSchemaInStore
 		},
 		showNoObjectsMessage() {
-			return registerStore.registerItem
-				&& schemaStore.schemaItem
+			return this.hasSelectedRegisters
+				&& this.hasSelectedSchemas
 				&& !objectStore.loading
 				&& !objectStore.objectList?.results?.length
 		},
@@ -432,14 +446,99 @@ export default {
 			}
 			return ''
 		},
-		metadataColumns() {
-			return Object.entries(objectStore.metadata).map(([id, meta]) => ({
-				id,
-				...meta,
-			}))
-		},
 	},
 	watch: {
+		// Watch for URL changes and update stores accordingly
+		selectedRegisterIds: {
+			async handler(newIds, oldIds) {
+				console.info('SearchIndex: selectedRegisterIds changed', { newIds, oldIds })
+
+				// If we have exactly one register selected, set it in the store
+				if (newIds.length === 1) {
+					const registerId = newIds[0]
+					const register = registerStore.registerList.find(r => r.id === registerId)
+
+					if (register) {
+						console.info('SearchIndex: Setting registerItem to', register)
+						registerStore.setRegisterItem(register)
+					} else {
+						// Register not in list yet, fetch it
+						console.info('SearchIndex: Fetching register', registerId)
+						try {
+							const fetchedRegister = await registerStore.getRegister(registerId)
+							if (fetchedRegister) {
+								registerStore.setRegisterItem(fetchedRegister)
+							}
+						} catch (error) {
+							console.error('Failed to fetch register:', error)
+						}
+					}
+				} else if (newIds.length > 1) {
+					// Multiple registers selected - set the first one as active for now
+					// TODO: Implement proper multi-register object loading
+					console.info('SearchIndex: Multiple registers selected, setting first register as active')
+					const firstRegisterId = newIds[0]
+					const register = registerStore.registerList.find(r => r.id === firstRegisterId)
+					if (register) {
+						registerStore.setRegisterItem(register)
+					}
+				} else {
+					// No registers selected
+					console.info('SearchIndex: No registers selected, clearing registerItem')
+					registerStore.setRegisterItem(null)
+				}
+			},
+			immediate: true,
+		},
+
+		selectedSchemaIds: {
+			async handler(newIds, oldIds) {
+				console.info('SearchIndex: selectedSchemaIds changed', { newIds, oldIds })
+
+				// If we have exactly one schema selected, set it in the store
+				if (newIds.length === 1) {
+					const schemaId = newIds[0]
+					const schema = schemaStore.schemaList.find(s => s.id === schemaId)
+
+					if (schema) {
+						console.info('SearchIndex: Setting schemaItem to', schema)
+						schemaStore.setSchemaItem(schema)
+
+						// Refresh objects when both register and schema are set
+						if (registerStore.registerItem) {
+							console.info('SearchIndex: Both register and schema set, refreshing objects')
+							await objectStore.refreshObjectList()
+						}
+					} else {
+						// Schema not in list yet, fetch it
+						console.info('SearchIndex: Fetching schema', schemaId)
+						try {
+							const fetchedSchema = await schemaStore.getSchema(schemaId)
+							if (fetchedSchema) {
+								schemaStore.setSchemaItem(fetchedSchema)
+
+								// Refresh objects when both register and schema are set
+								if (registerStore.registerItem) {
+									console.info('SearchIndex: Both register and schema set, refreshing objects')
+									await objectStore.refreshObjectList()
+								}
+							}
+						} catch (error) {
+							console.error('Failed to fetch schema:', error)
+						}
+					}
+				} else if (newIds.length > 1) {
+					// Multiple schemas selected - don't set a single item
+					console.info('SearchIndex: Multiple schemas selected, not setting schemaItem')
+					schemaStore.setSchemaItem(null)
+				} else {
+					// No schemas selected
+					console.info('SearchIndex: No schemas selected, clearing schemaItem')
+					schemaStore.setSchemaItem(null)
+				}
+			},
+			immediate: true,
+		},
 		loading: {
 			handler(newVal) {
 				newVal === false && objectStore.setSelectAllObjects()
@@ -543,15 +642,47 @@ export default {
 			navigationStore.setModal('migrationObject')
 		},
 		addObject() {
-			// Clear any existing object and open the add object modal
+			// Clear any existing object
 			objectStore.setObjectItem(null)
-			// Ensure register and schema are set for new object creation
-			if (registerStore.registerItem) {
-				registerStore.setRegisterItem(registerStore.registerItem)
+
+			// Check if registers and schemas are selected
+			if (this.selectedRegisterIds.length === 0 || this.selectedSchemaIds.length === 0) {
+				return
 			}
-			if (schemaStore.schemaItem) {
-				schemaStore.setSchemaItem(schemaStore.schemaItem)
+
+			// Get the selected registers and schemas
+			const selectedRegisters = this.selectedRegisterIds
+				.map(id => registerStore.registerList.find(r => r.id === id))
+				.filter(Boolean)
+
+			const selectedSchemas = this.selectedSchemaIds
+				.map(id => schemaStore.schemaList.find(s => s.id === id))
+				.filter(Boolean)
+
+			// If only one register and one schema, use them directly
+			if (selectedRegisters.length === 1 && selectedSchemas.length === 1) {
+				registerStore.setRegisterItem(selectedRegisters[0])
+				schemaStore.setSchemaItem(selectedSchemas[0])
+
+				console.info('Opening add object modal with single register/schema:', {
+					register: selectedRegisters[0]?.title,
+					schema: selectedSchemas[0]?.title,
+					schemaProperties: selectedSchemas[0]?.properties,
+				})
+
+				navigationStore.setModal('viewObject')
+				return
 			}
+
+			// If multiple registers or schemas, store them for selection in the modal
+			objectStore.availableRegistersForNewObject = selectedRegisters
+			objectStore.availableSchemasForNewObject = selectedSchemas
+
+			console.info('Opening add object modal with multiple options:', {
+				registers: selectedRegisters.map(r => r.title),
+				schemas: selectedSchemas.map(s => s.title),
+			})
+
 			navigationStore.setModal('viewObject')
 		},
 		refreshObjects() {

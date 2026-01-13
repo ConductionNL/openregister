@@ -13,10 +13,10 @@
     
     <testsuites>
         <testsuite name="Unit Tests">
-            <directory>tests/unit</directory>
+            <directory>tests/Unit</directory>
         </testsuite>
         <testsuite name="Integration Tests">
-            <directory>tests/integration</directory>
+            <directory>tests/Integration</directory>
         </testsuite>
         <testsuite name="Database Tests">
             <directory>tests/Db</directory>

@@ -24,10 +24,224 @@ Files in Open Register are:
 
 Files can be attached to objects in several ways:
 
-1. Schema-defined file properties: When a schema includes properties of type 'file', these are automatically handled during object creation or updates
-2. Direct API attachment: Files can be added to an object after creation using the file attachment API endpoints
-3. Base64 encoded content: Files can be included in object data as base64-encoded strings
-4. URL references: External files can be referenced by URL and will be downloaded and stored locally
+1. **Integrated Uploads**: Files can be uploaded directly within object POST/PUT operations using multipart/form-data, base64-encoded content, or URL references
+2. Schema-defined file properties: When a schema includes properties of type 'file', these are automatically handled during object creation or updates
+3. Direct API attachment: Files can be added to an object after creation using the file attachment API endpoints
+4. Base64 encoded content: Files can be included in object data as base64-encoded strings
+5. URL references: External files can be referenced by URL and will be downloaded and stored locally
+
+## Integrated File Uploads
+
+OpenRegister supports **integrated file uploads** directly within object POST/PUT operations, providing a unified approach to handling structured data (objects) and unstructured data (files) together.
+
+### Upload Methods
+
+#### 1. Multipart/Form-Data Upload (Recommended)
+
+**Use Case:** Uploading files from web forms or file inputs
+
+**Example:**
+```http
+POST /index.php/apps/openregister/api/registers/documents/schemas/document/objects
+Content-Type: multipart/form-data
+
+title=Annual Report 2024
+attachment=@report.pdf
+thumbnail=@cover.jpg
+```
+
+**JavaScript Example:**
+```javascript
+const formData = new FormData();
+formData.append('title', 'Annual Report 2024');
+formData.append('attachment', fileInput.files[0]);
+formData.append('thumbnail', thumbnailInput.files[0]);
+
+fetch('/index.php/apps/openregister/api/registers/documents/schemas/document/objects', {
+  method: 'POST',
+  body: formData,
+  headers: {
+    'Authorization': 'Bearer YOUR_TOKEN'
+  }
+})
+.then(response => response.json())
+.then(data => console.log('Created:', data));
+```
+
+**Why this is recommended:**
+- ✅ Most efficient: No encoding overhead, files transferred directly
+- ✅ Preserves metadata: Original filename and MIME type are maintained
+- ✅ No guessing: Extension and filename are exactly as uploaded
+- ✅ Best file quality: No conversion or inference errors
+- ✅ Low memory footprint: Can stream directly from disk to disk
+- ✅ Fastest method: Direct transfer without intermediate conversions
+
+#### 2. Base64-Encoded Files
+
+**Use Case:** Embedding files in JSON payloads, API integrations
+
+**Data URI Format:**
+```json
+{
+  "title": "Screenshot",
+  "image": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+}
+```
+
+**Plain Base64 Format:**
+```json
+{
+  "title": "Document",
+  "attachment": "JVBERi0xLjQKJeLjz9MKMyAwIG9iago8PC9MZW5ndGggMj..."
+}
+```
+
+**Note:** Base64 encoding increases file size by approximately 33% and original filenames are lost. Use only for small files (< 100 KB) or when multipart is not possible.
+
+#### 3. URL References
+
+**Use Case:** Referencing remote files, importing from external sources
+
+**Example:**
+```json
+{
+  "title": "External Document",
+  "attachment": "https://example.com/files/document.pdf",
+  "logo": "https://cdn.example.com/images/logo.png"
+}
+```
+
+**Note:** URL references are slower as the server must download the file from the external URL. Use only for trusted sources or migration scenarios.
+
+#### 4. Mixed Upload Methods
+
+You can combine all three methods in a single request:
+
+```http
+POST /index.php/apps/openregister/api/registers/documents/schemas/document/objects
+Content-Type: multipart/form-data
+
+title=Complete Package
+mainDocument=@contract.pdf
+signature=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA...
+reference=https://example.com/terms.pdf
+```
+
+### Array of Files
+
+Files can be uploaded as arrays:
+
+**Schema:**
+```json
+{
+  "properties": {
+    "attachments": {
+      "type": "array",
+      "items": {
+        "type": "file"
+      }
+    }
+  }
+}
+```
+
+**Upload:**
+```json
+{
+  "title": "Multi-File Document",
+  "attachments": [
+    "data:application/pdf;base64,JVBERi0xLjQKJeL...",
+    "https://example.com/file2.pdf",
+    "data:image/png;base64,iVBORw0KGgo..."
+  ]
+}
+```
+
+### Update Operations
+
+File properties work the same way with PUT/PATCH operations:
+
+```http
+PUT /index.php/apps/openregister/api/registers/documents/schemas/document/objects/abc-123
+Content-Type: multipart/form-data
+
+title=Updated Document
+attachment=@new-version.pdf
+```
+
+**Note:** Updating a file property replaces the previous file.
+
+### Error Handling
+
+#### Invalid MIME Type
+```json
+{
+  "error": "File at attachment has invalid type 'application/zip'. Allowed types: application/pdf, application/msword"
+}
+```
+
+#### File Too Large
+```json
+{
+  "error": "File at attachment exceeds maximum size (10485760 bytes). File size: 15728640 bytes"
+}
+```
+
+#### Upload Error
+```json
+{
+  "error": "Failed to read uploaded file for field 'attachment'"
+}
+```
+
+#### URL Download Failure
+```json
+{
+  "error": "Unable to fetch file from URL: https://example.com/missing.pdf"
+}
+```
+
+### Backward Compatibility
+
+✅ **Existing file endpoints remain unchanged:**
+
+- `POST /api/objects/{register}/{schema}/{id}/files`
+- `GET /api/objects/{register}/{schema}/{id}/files`
+- `DELETE /api/objects/{register}/{schema}/{id}/files/{fileId}`
+
+Both approaches work and can be used interchangeably.
+
+### Performance Comparison
+
+| Method | Speed | File Size | Metadata | Use Case |
+|--------|-------|-----------|----------|----------|
+| **Multipart** | Fastest | Original | Preserved | ✅ Recommended for all uploads |
+| **Base64** | Medium | +33% larger | Lost | ⚠️ Small files only (< 100 KB) |
+| **URL** | Slowest | Original | Preserved | 🐌 External imports only |
+
+### Best Practices
+
+1. **✅ ALWAYS use Multipart for user uploads**
+   - Users expect filenames to be preserved
+   - Prevents confusion about generic filenames
+
+2. **⚠️ Base64 only for APIs**
+   - When API client doesn't support multipart
+   - Document that filenames will be lost
+   - Always use data URI format with MIME type
+
+3. **🐌 URLs only for trusted sources**
+   - Use timeout limits (max 30 seconds)
+   - Validate content-length headers upfront
+   - Implement retry logic
+
+4. **📝 Document your choice**
+   - If using base64 or URL, explain why
+   - Make users aware of trade-offs
+
+5. **🧪 Test performance**
+   - Measure upload times in production
+   - Monitor failure rates for URL downloads
 
 ## File Metadata and Tagging
 
@@ -161,6 +375,10 @@ For supported file types, content can be extracted for indexing and search:
 - OCR for scanned documents and images
 - Metadata extraction
 
+:::tip Enhanced Text Extraction
+OpenRegister now includes **enhanced text extraction** with entity tracking (GDPR), language detection, and language level assessment. See [Enhanced Text Extraction & GDPR Entity Tracking](../features/text-extraction-enhanced.md) for details.
+:::
+
 **Asynchronous Processing**: Text extraction happens in the background after file upload, ensuring:
 - **Fast uploads**: Your file uploads complete instantly without waiting
 - **Non-blocking**: Users don't experience delays during file operations
@@ -202,6 +420,183 @@ OpenRegister supports two text extraction engines:
 - Images with OCR (Dolphin): 5-20 seconds
 
 You can configure text extraction in Settings → File Configuration. Check extraction status in the file's metadata after upload.
+
+### Technical Implementation
+
+**Background Job Processing**:
+
+Text extraction uses Nextcloud's background job system for reliable, async processing:
+
+1. **File Upload** - User uploads a file
+2. **Job Queuing** - 'FileChangeListener' automatically queues 'FileTextExtractionJob'
+3. **Job Execution** - Background job system processes the file when resources are available
+4. **Text Extraction** - Selected extractor (LLPhant or Dolphin) processes the file
+5. **Chunking** - Text is automatically split into chunks with overlap (1000 chars per chunk, 200 char overlap)
+6. **Storage** - Extracted text and chunks stored in 'FileText' entity for reuse
+7. **Completion** - Status updated to 'completed' or 'failed'
+
+**Note**: Text extraction is now **fully independent of SOLR**. Chunks are generated during extraction and stored in the database, making them reusable for SOLR indexing, vector embeddings, AI processing, or any other service that needs chunked text.
+
+**File Type Compatibility Matrix**:
+
+**LLPhant Support:**
+- ✓ **Native** (TXT, MD, HTML, JSON, XML, CSV) - Perfect quality, very fast
+- ○ **Library** (PDF, DOCX, DOC, XLSX, XLS) - Good quality, medium speed
+- ⚠️ **Limited** (PPTX, ODT, RTF) - Basic text only, use Dolphin for better results
+- ✗ **No Support** (JPG, PNG, GIF, WebP) - Requires Dolphin with OCR
+
+**Dolphin AI Support:**
+- ✓ All formats with superior quality
+- ✓ OCR for scanned documents and images
+- ✓ Table extraction with structure preserved
+- ✓ Formula recognition (LaTeX format)
+- ✓ Multi-language support
+- ✓ Layout understanding (multi-column, etc.)
+
+**OCR-Specific Use Cases (Dolphin only)**:
+1. **Document Digitization** - Scanning paper archives into searchable text
+2. **Receipt Processing** - Photo receipts from mobile devices
+3. **Screenshot Analysis** - Extract text from application screenshots
+4. **Infographic Text** - Extract text from images with embedded text
+5. **Historical Documents** - Digitize old scanned materials
+
+**Quality Requirements for OCR**:
+- Minimum: 150 DPI resolution
+- Recommended: 300+ DPI
+- Clear, high-contrast images
+- Minimal blur or distortion
+- Properly oriented (not rotated)
+
+**Extraction Configuration Options**:
+
+Configure in Settings → File Configuration:
+
+1. **Text Extractor Selection**:
+   - LLPhant (default) - Local, free, privacy-friendly
+   - Dolphin - Advanced AI, requires API key
+
+2. **Extraction Scope**:
+   - None - Disabled
+   - All files - Every uploaded file
+   - Files in folders - Specific folders only
+   - Files attached to objects - Only object attachments (recommended)
+
+3. **Extraction Mode**:
+   - Background (default) - Async via background jobs
+   - Immediate - Synchronous during upload (slower)
+   - Manual - Triggered by admin action only
+
+4. **Enabled File Types**:
+   - Select which file extensions to process
+   - Different for LLPhant vs Dolphin
+   - Enable OCR formats (images) only if using Dolphin
+
+**Integration Tests**:
+
+The file text extraction system includes comprehensive integration tests:
+
+```bash
+# Run file extraction tests
+vendor/bin/phpunit tests/Integration/FileTextExtractionIntegrationTest.php
+
+# Test cases covered:
+# - File upload queues background job
+# - Background job execution completes
+# - Text extraction end-to-end with content verification
+# - Multiple file format support (TXT, MD, JSON)
+# - Extraction metadata recording (status, method, timestamps)
+```
+
+**Monitoring Extraction**:
+
+Check extraction status via logs:
+
+```bash
+# Watch extraction progress
+docker logs -f nextcloud-container | grep FileTextExtractionJob
+
+# Check for errors
+docker logs nextcloud-container | grep 'extraction failed'
+
+# View extraction statistics
+# Settings → File Configuration → Statistics section
+```
+
+## Files Management Page
+
+The Files page provides a centralized view of all files tracked in the text extraction system.
+
+**Accessing the Files Page**:
+
+Navigate to **Files** in the main menu to view all files with their extraction status.
+
+**Features**:
+
+1. **File List Table**:
+   - File name and path
+   - File type and size
+   - Extraction status (Pending, Processing, Completed, Failed)
+   - Number of text chunks created
+   - Last extraction timestamp
+
+2. **Status Indicators**:
+   - 🟠 **Pending**: File discovered but not yet extracted
+   - 🔵 **Processing**: Extraction in progress
+   - 🟢 **Completed**: Successfully extracted
+   - 🔴 **Failed**: Extraction error occurred
+
+3. **File Actions**:
+   - **Retry**: Re-extract failed files
+   - **View Error**: See detailed error message for failed extractions
+
+4. **Pagination**:
+   - Browse through large file lists (50 files per page)
+   - Navigate between pages
+
+5. **Refresh**:
+   - Update the list to see latest extraction status
+
+**Use Cases**:
+
+- Monitor extraction progress across all files
+- Identify and retry failed extractions
+- View error details for troubleshooting
+- Verify which files have been processed
+
+**Core File Extraction API**:
+
+OpenRegister provides dedicated API endpoints for file text extraction (moved from settings to core functionality):
+
+- `GET /api/files` - List all tracked files with extraction status
+- `GET /api/files/{id}` - Get single file extraction information
+- `POST /api/files/{id}/extract` - Extract text from specific file
+- `POST /api/files/extract` - Extract all pending files (batch processing)
+- `POST /api/files/retry-failed` - Retry all failed extractions
+- `GET /api/files/stats` - Get extraction statistics
+
+**Smart Re-Extraction**:
+
+The system automatically detects when files need re-extraction by comparing:
+- File modification time ('mtime' from Nextcloud's 'oc_filecache')
+- Last extraction time ('extractedAt' from 'oc_openregister_file_texts')
+
+If 'mtime > extractedAt', the file is re-extracted to ensure content is up-to-date.
+
+**File Tracking Table**:
+
+Extracted text and metadata are stored in 'oc_openregister_file_texts' with:
+- 'file_id' - Links to Nextcloud's 'oc_filecache' table
+- 'extraction_status' - pending, processing, completed, failed
+- 'extractedAt' - Timestamp of last extraction
+- 'text_content' - Full extracted text
+- 'text_length' - Character count
+- 'chunked' - Whether text has been chunked
+- 'chunk_count' - Number of chunks created
+- 'chunks_json' - JSON array of text chunks with offsets (new in v0.2.7)
+- 'extraction_method' - LLPhant or Dolphin
+- Plus SOLR indexing and vectorization tracking
+
+**Chunking Details**: Each chunk in 'chunks_json' contains the chunk text, start offset, and end offset. This allows for precise text retrieval and consistent chunking across all services.
 
 ## Working with Files
 
@@ -428,8 +823,8 @@ Files that are not publicly shared still have 'accessUrl' and 'downloadUrl' prop
 #### Authenticated URLs
 
 Non-shared files return URLs with the following format:
-- **Access URL**: '/index.php/core/preview?fileId={fileId}&x=1920&y=1080&a=1'
-- **Download URL**: '/index.php/apps/openregister/api/files/{fileId}/download'
+- **Access URL**: `/index.php/core/preview?fileId={fileId}&x=1920&y=1080&a=1`
+- **Download URL**: `/index.php/apps/openregister/api/files/{fileId}/download`
 
 These URLs require the user to be authenticated to Nextcloud.
 
@@ -537,6 +932,258 @@ This will:
 - **Data Lifecycle**: Remove temporary or expired files
 - **Error Correction**: Remove incorrectly uploaded files
 
+## Executable File Blocking
+
+OpenRegister automatically **blocks executable files** from being uploaded for security reasons. This prevents malicious code execution and protects your Nextcloud instance.
+
+### What is Blocked
+
+#### Blocked File Types
+
+**Windows Executables**
+- `.exe`, `.bat`, `.cmd`, `.com`, `.msi`, `.scr`
+- `.vbs`, `.vbe`, `.js`, `.jse`, `.wsf`, `.wsh`
+- `.ps1` (PowerShell), `.dll`
+
+**Unix/Linux Executables**
+- `.sh`, `.bash`, `.csh`, `.ksh`, `.zsh`
+- `.run`, `.bin`, `.app`
+- `.deb`, `.rpm` (package files)
+
+**Scripts & Code**
+- `.php`, `.phtml`, `.php3`, `.php4`, `.php5`, `.phps`, `.phar`
+- `.py`, `.pyc`, `.pyo`, `.pyw` (Python)
+- `.pl`, `.pm`, `.cgi` (Perl)
+- `.rb`, `.rbw` (Ruby)
+- `.jar`, `.war`, `.ear`, `.class` (Java)
+
+**Containers & Packages**
+- `.appimage`, `.snap`, `.flatpak`
+- `.dmg`, `.pkg`, `.command` (macOS)
+- `.apk` (Android)
+
+**Binary Formats**
+- `.elf`, `.out`, `.o`, `.so`, `.dylib`
+
+### Detection Methods
+
+OpenRegister uses **multiple layers** of detection:
+
+#### 1. File Extension Check
+Checks the file extension against a blacklist of dangerous extensions.
+
+#### 2. Magic Bytes Detection
+Checks the **first bytes** of the file content for executable signatures:
+- `MZ` - Windows PE/EXE files
+- `\x7FELF` - Linux/Unix ELF executables
+- `#!/bin/sh` - Shell scripts
+- `#!/bin/bash` - Bash scripts
+- `<?php` - PHP scripts
+- `\xCA\xFE\xBA\xBE` - Java class files
+
+#### 3. MIME Type Validation
+Blocks dangerous MIME types:
+- `application/x-executable`
+- `application/x-dosexec`
+- `application/x-msdownload`
+- `application/x-sh`
+- `application/x-php`
+- `text/x-shellscript`
+- And more...
+
+### Default Behavior: Blocked
+
+**By default, ALL executable files are blocked.**
+
+```json
+POST /api/registers/docs/schemas/document/objects
+{
+  "title": "My Document",
+  "attachment": "script.sh"  // ❌ BLOCKED!
+}
+```
+
+**Response:**
+```json
+{
+  "error": "File at attachment is an executable file (.sh). Executable files are blocked for security reasons. Allowed formats: documents, images, archives, data files."
+}
+```
+
+### Explicit Allow (Not Recommended)
+
+If you **absolutely need** to allow executables (e.g., for a software repository), you can set `allowExecutables: true` in your schema:
+
+```json
+{
+  "properties": {
+    "softwarePackage": {
+      "type": "file",
+      "allowExecutables": true,  // ⚠️ DANGEROUS!
+      "allowedTypes": ["application/x-deb"]  // Still enforce MIME type
+    }
+  }
+}
+```
+
+**⚠️ WARNING:** Only use `allowExecutables: true` if:
+- You absolutely trust the source of files
+- Users are administrators only
+- You have other security measures in place (virus scanning, sandboxing)
+- You understand the security risks
+
+### Examples
+
+#### ✅ Safe Files (Allowed by Default)
+
+```bash
+# Documents
+curl -X POST '/api/registers/docs/schemas/document/objects' \
+  -F 'title=Report' \
+  -F 'attachment=@report.pdf'  # ✅ OK
+
+# Images
+curl -X POST '/api/registers/docs/schemas/document/objects' \
+  -F 'title=Photo' \
+  -F 'image=@photo.jpg'  # ✅ OK
+
+# Archives
+curl -X POST '/api/registers/docs/schemas/document/objects' \
+  -F 'title=Data' \
+  -F 'data=@archive.zip'  # ✅ OK (ZIPs are allowed unless they're JARs)
+```
+
+#### ❌ Blocked Files (Default)
+
+```bash
+# Windows executable
+curl -X POST '/api/registers/docs/schemas/document/objects' \
+  -F 'title=Software' \
+  -F 'file=@program.exe'  # ❌ BLOCKED
+
+# Shell script
+curl -X POST '/api/registers/docs/schemas/document/objects' \
+  -F 'title=Script' \
+  -F 'file=@setup.sh'  # ❌ BLOCKED
+
+# PHP script
+curl -X POST '/api/registers/docs/schemas/document/objects' \
+  -F 'title=Code' \
+  -F 'file=@index.php'  # ❌ BLOCKED
+```
+
+#### 🎭 Bypassing Attempts (Also Blocked!)
+
+OpenRegister detects renamed executables:
+
+```bash
+# Renamed EXE to TXT - Still blocked by magic bytes!
+mv malware.exe document.txt
+curl -X POST '/api/.../' -F 'file=@document.txt'  # ❌ BLOCKED (magic bytes: MZ)
+
+# PHP file renamed to JPG - Still blocked!
+mv shell.php image.jpg
+curl -X POST '/api/.../' -F 'file=@image.jpg'  # ❌ BLOCKED (detects <?php)
+```
+
+### Schema Configuration
+
+#### Basic File Upload (Executables Blocked)
+
+```json
+{
+  "slug": "document",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "attachment": {
+      "type": "file",
+      "allowedTypes": ["application/pdf", "application/msword"],
+      "maxSize": 10485760  // 10MB
+      // allowExecutables defaults to false
+    }
+  }
+}
+```
+
+### Security Recommendations
+
+#### 1. Keep Executables Blocked (Default)
+
+**DO:**
+- ✅ Use the default behavior (block executables)
+- ✅ Only allow documents, images, archives
+- ✅ Combine with virus scanning (ClamAV)
+
+**DON'T:**
+- ❌ Set `allowExecutables: true` unless absolutely necessary
+- ❌ Allow untrusted users to upload files to executable-allowed schemas
+- ❌ Assume file extensions are safe
+
+#### 2. Layer Your Security
+
+Even with executable blocking, use additional security:
+
+```mermaid
+graph TD
+    A[File Upload] --> B[1. Extension Check]
+    B --> C[2. Magic Bytes Detection]
+    C --> D[3. MIME Type Validation]
+    D --> E[4. Size Validation]
+    E --> F[5. Virus Scan - ClamAV]
+    F --> G[6. Store in Nextcloud]
+    
+    B --> X[❌ Block Executable]
+    C --> X
+    D --> X
+    F --> Y[❌ Virus Detected]
+    
+    style X fill:#f44
+    style Y fill:#f44
+    style G fill:#4f4
+```
+
+#### 3. Monitor and Log
+
+All blocked uploads are logged:
+
+```bash
+# Check logs for blocked attempts
+docker logs master-nextcloud-1 | grep "Executable file upload blocked"
+```
+
+### Performance Impact
+
+**Minimal!**
+
+- **Extension check:** < 0.1ms
+- **Magic bytes check:** < 1ms (only checks first 1KB)
+- **MIME type check:** < 0.1ms
+
+**Total overhead:** ~1-2ms per file upload
+
+### Frequently Asked Questions
+
+**Q: Can I upload ZIP files?**
+A: ✅ Yes! ZIP files (`.zip`) are allowed by default. Only executable ZIPs like JARs are blocked.
+
+**Q: What about JavaScript files (.js)?**
+A: ❌ Blocked by default (can be executed in browsers). Use JSON or TXT for data.
+
+**Q: Can I upload Python notebooks (.ipynb)?**
+A: ✅ Yes! `.ipynb` is JSON format, not an executable. Allowed by default.
+
+**Q: What if I need to share code files?**
+A: Use:
+- Text files (`.txt`) with code inside
+- Archives (`.zip` or `.tar.gz`) containing code
+- Git repositories
+- Dedicated code hosting (GitHub, GitLab)
+
+**Q: Does this protect against all malware?**
+A: **No!** This blocks **known executable formats**. Malicious documents (PDF with exploits, Office macros) need virus scanning. Use ClamAV for complete protection.
+
 ## Best Practices
 
 1. **Define File Types**: Establish clear guidelines for what file types are allowed
@@ -549,7 +1196,502 @@ This will:
 8. **Use Auto-Publish Wisely**: Only enable property-level 'autoPublish' for files that should be publicly accessible. Remember: property 'autoPublish' (file sharing) is different from schema 'autoPublish' (object publishing)
 9. **Document File Deletion**: Maintain audit trails when files are deleted for compliance
 10. **Handle Authentication**: Use authenticated URLs for sensitive files
+11. **Keep Executables Blocked**: Use the default executable blocking behavior unless absolutely necessary
+12. **Layer Security**: Combine executable blocking with virus scanning for complete protection
 
 ## Conclusion
 
-Files in Open Register bridge the gap between structured data and unstructured content, providing a comprehensive solution for managing all types of information in your application. With advanced features like auto-sharing, authenticated access, metadata extraction, and flexible deletion options, Open Register creates a unified system where all your data—structured and unstructured—works together seamlessly. 
+Files in Open Register bridge the gap between structured data and unstructured content, providing a comprehensive solution for managing all types of information in your application. With advanced features like auto-sharing, authenticated access, metadata extraction, and flexible deletion options, Open Register creates a unified system where all your data—structured and unstructured—works together seamlessly.
+
+---
+
+## Technical Architecture
+
+This section provides detailed visualization of the file handling system's architecture and data flow.
+
+### File Upload and Processing Flow
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant API
+    participant ObjectService
+    participant SaveObject
+    participant FileService
+    participant Nextcloud
+    participant DB
+    participant BgJob
+    participant Extractor
+    participant Solr
+    
+    Client->>API: POST /objects with file data
+    API->>ObjectService: saveObject(data)
+    
+    ObjectService->>SaveObject: handle(data, uploadedFiles)
+    
+    Note over SaveObject: 1. Detect file properties
+    SaveObject->>SaveObject: detectFileProperties(schema)
+    
+    Note over SaveObject: 2. Process file data
+    SaveObject->>SaveObject: processFileProperty(fileData)
+    
+    alt Base64 data
+        SaveObject->>SaveObject: decodeBase64()
+    else URL
+        SaveObject->>SaveObject: fetchFromURL()
+    else File object
+        SaveObject->>SaveObject: validateFileObject()
+    end
+    
+    Note over SaveObject: 3. Create file
+    SaveObject->>FileService: createFile(objectEntity, data)
+    
+    FileService->>FileService: determineFolder()
+    FileService->>Nextcloud: createFolder(path)
+    Nextcloud-->>FileService: Folder created
+    
+    FileService->>Nextcloud: writeFile(path, content)
+    Nextcloud-->>FileService: File ID
+    
+    FileService->>FileService: applyAutoTags()
+    FileService->>FileService: createShareLink()
+    
+    FileService-->>SaveObject: File metadata
+    
+    Note over SaveObject: 4. Update object data
+    SaveObject->>SaveObject: replaceFileDataWithIds()
+    
+    SaveObject->>DB: INSERT/UPDATE object
+    DB-->>SaveObject: Object saved
+    
+    SaveObject-->>ObjectService: ObjectEntity
+    ObjectService-->>API: Response
+    API-->>Client: Object with file IDs
+    
+    Note over BgJob: Background Processing
+    Nextcloud->>BgJob: FileChangeListener
+    BgJob->>Extractor: extractText(fileId)
+    
+    alt LLPhant
+        Extractor->>Extractor: extractWithLLPhant()
+    else Dolphin AI
+        Extractor->>Extractor: extractWithDolphin()
+    end
+    
+    Extractor-->>BgJob: Extracted text
+    BgJob->>DB: Store extracted text
+    BgJob->>Solr: Index file chunks
+    Solr-->>BgJob: Indexed
+```
+
+### File Property Processing Pipeline
+
+```mermaid
+graph TD
+    A[Object with File Property] --> B{Property Type}
+    B -->|type=file| C[Single File]
+    B -->|type=array items.type=file| D[Multiple Files]
+    
+    C --> E{Data Type?}
+    D --> E
+    
+    E -->|Base64 String| F[Decode Base64]
+    E -->|URL String| G[Fetch from URL]
+    E -->|File Object| H[Validate File Object]
+    E -->|File ID| I[Load Existing File]
+    
+    F --> J[Validate MIME Type]
+    G --> J
+    H --> J
+    I --> J
+    
+    J --> K{Size Check?}
+    K -->|Too Large| L[Reject Upload]
+    K -->|OK| M[Create File Entity]
+    
+    M --> N[Determine Folder Path]
+    N --> O[/register/schema/object_uuid/]
+    
+    O --> P[Write to Nextcloud]
+    P --> Q[Generate Filename]
+    Q --> R[Apply Auto Tags]
+    
+    R --> S{Auto Publish?}
+    S -->|Yes| T[Create Share Link]
+    S -->|No| U[Skip Sharing]
+    
+    T --> V[Store File Metadata]
+    U --> V
+    
+    V --> W[Return File ID]
+    W --> X[Update Object Data]
+    
+    L --> Y[Return Error]
+    
+    style J fill:#e1f5ff
+    style P fill:#ffe1e1
+    style T fill:#fff4e1
+```
+
+### Text Extraction Process
+
+```mermaid
+sequenceDiagram
+    participant NC as Nextcloud
+    participant Listener as FileChangeListener
+    participant Job as FileTextExtractionJob
+    participant Service as FileTextExtractionService
+    participant LLPhant as LLPhant Extractor
+    participant Dolphin as Dolphin AI API
+    participant DB as Database
+    participant Solr as Solr Index
+    
+    Note over NC: File uploaded/modified
+    NC->>Listener: post_create / post_update event
+    
+    Listener->>Listener: Check extraction scope
+    alt Scope matches
+        Listener->>Job: Queue FileTextExtractionJob
+        Job-->>Listener: Job queued
+    else Scope doesn't match
+        Listener->>Listener: Skip extraction
+    end
+    
+    Note over Job: Background job execution
+    Job->>Service: extractText(fileId)
+    
+    Service->>Service: Check extraction mode
+    alt Mode=background
+        Service->>Service: Process immediately
+    else Mode=immediate
+        Service->>Service: Process in request
+    else Mode=manual
+        Service->>Service: Skip until manual trigger
+    end
+    
+    Service->>DB: Get file info
+    DB-->>Service: File metadata
+    
+    Service->>Service: Validate file type
+    
+    alt LLPhant Selected
+        Service->>LLPhant: extract(filePath)
+        
+        alt Native format (TXT, MD, HTML)
+            LLPhant->>LLPhant: Read directly
+        else PDF/DOCX
+            LLPhant->>LLPhant: Use library parser
+        else Image (JPG, PNG)
+            LLPhant->>LLPhant: Not supported
+        end
+        
+        LLPhant-->>Service: Extracted text
+    else Dolphin AI Selected
+        Service->>Dolphin: POST /extract
+        
+        Dolphin->>Dolphin: AI processing
+        alt Document
+            Dolphin->>Dolphin: Text + layout extraction
+        else Image
+            Dolphin->>Dolphin: OCR processing
+        end
+        
+        Dolphin-->>Service: Extracted text + metadata
+    end
+    
+    Service->>Service: Chunk document
+    Service->>DB: Store FileText entity with chunks
+    DB-->>Service: Stored
+    
+    Note over Service: Chunks stored in DB for reuse
+    Note over Service: SOLR indexing is separate
+    
+    Service->>DB: Update status=completed
+    DB-->>Service: Success
+    
+    Service-->>Job: Extraction complete
+```
+
+### File Storage Architecture
+
+```mermaid
+graph TB
+    A[File Upload] --> B[FileService]
+    B --> C{Storage Backend?}
+    
+    C -->|Nextcloud| D[Nextcloud Files API]
+    C -->|S3| E[S3 Compatible Storage]
+    C -->|Database| F[Direct DB Storage]
+    
+    D --> G[Folder Structure]
+    G --> H[/openregister/]
+    H --> I[/register_id/]
+    I --> J[/schema_id/]
+    J --> K[/object_uuid/]
+    K --> L[file_timestamp.ext]
+    
+    E --> M[Bucket Structure]
+    M --> N[openregister/register/schema/object/file]
+    
+    F --> O[file_data BLOB]
+    
+    L --> P[File Metadata]
+    N --> P
+    O --> P
+    
+    P --> Q[(File Registry)]
+    Q --> R[file_id]
+    Q --> S[file_path]
+    Q --> T[share_link]
+    Q --> U[checksum]
+    Q --> V[tags]
+    
+    style B fill:#e1f5ff
+    style Q fill:#ffe1e1
+```
+
+### File Type Compatibility Matrix
+
+```mermaid
+graph TD
+    A[File Type] --> B{Extraction Engine}
+    
+    B -->|LLPhant| C[LLPhant Support]
+    B -->|Dolphin AI| D[Dolphin Support]
+    
+    C --> E[Native: TXT, MD, HTML, JSON, XML, CSV]
+    C --> F[Library: PDF, DOCX, DOC, XLSX, XLS]
+    C --> G[Limited: PPTX, ODT, RTF]
+    C --> H[Not Supported: Images JPG, PNG, GIF, WebP]
+    
+    D --> I[Full Support: All Documents]
+    D --> J[OCR: Images JPG, PNG, GIF, WebP]
+    D --> K[Advanced: Tables, Formulas]
+    D --> L[Multi-language OCR]
+    
+    E --> M[✅ Instant]
+    F --> N[✅ 2-10s]
+    G --> O[⚠️ May Fail]
+    H --> P[❌ No Support]
+    
+    I --> Q[✅ 3-15s]
+    J --> R[✅ 5-20s OCR]
+    K --> S[✅ Superior Quality]
+    L --> T[✅ 100+ Languages]
+    
+    style C fill:#fff4e1
+    style D fill:#e1ffe1
+```
+
+### File Text Extraction Settings
+
+```mermaid
+graph LR
+    A[Settings] --> B{Extraction Engine}
+    B -->|llphant| C[LLPhant Extractor]
+    B -->|dolphin| D[Dolphin AI API]
+    
+    A --> E{Extraction Scope}
+    E -->|none| F[Disabled]
+    E -->|all| G[All Files]
+    E -->|folders| H[Specific Folders]
+    E -->|objects| I[Object Files Only]
+    
+    A --> J{Extraction Mode}
+    J -->|background| K[Async Processing]
+    J -->|immediate| L[Sync Processing]
+    J -->|manual| M[Manual Trigger]
+    
+    C --> N{File Type}
+    D --> N
+    
+    N -->|Supported| O[Extract Text]
+    N -->|Unsupported| P[Skip Extraction]
+    
+    O --> Q[Store in FileText]
+    Q --> R[Index in Solr]
+    
+    style B fill:#e1f5ff
+    style E fill:#fff4e1
+    style J fill:#ffe1e1
+```
+
+### File Chunking for Solr
+
+**Note**: As of v0.2.7, chunking happens during text extraction, not during SOLR indexing. Chunks are stored in the database and reused.
+
+```mermaid
+graph TD
+    A[Text Extraction] --> B[Chunk Document]
+    B --> C{Chunking Strategy}
+    
+    C -->|Recursive Character| D[Smart splitting by paragraphs/sentences]
+    C -->|Fixed Size| E[1000 chars per chunk + 200 overlap]
+    
+    D --> F[Create Chunks]
+    E --> F
+    
+    F --> G[Store in Database]
+    G --> H[chunks_json column]
+    
+    H --> I[Chunk 1: 0-1000]
+    H --> J[Chunk 2: 900-1900]
+    H --> K[Chunk 3: 1800-2800]
+    H --> L[...]
+    
+    subgraph SOLR_Indexing[SOLR Indexing - Reads Pre-Chunked Data]
+        M[Read chunks_json from DB]
+        M --> N[Parse JSON chunks]
+        N --> O[Solr Documents]
+    end
+    
+    I --> M
+    J --> M
+    K --> M
+    L --> M
+    
+    O --> P[Index Fields]
+    P --> Q[file_id]
+    P --> R[chunk_index]
+    P --> S[chunk_text]
+    P --> T[chunk_start_offset]
+    P --> U[chunk_end_offset]
+    
+    Q --> V[(Solr Index)]
+    R --> V
+    S --> V
+    T --> V
+    U --> V
+    
+    style G fill:#e1f5ff
+    style H fill:#ffe1e1
+    style V fill:#e1ffe1
+```
+
+### Performance Characteristics
+
+**File Upload Performance:**
+```
+Small files (<1MB):      ~100-200ms
+Medium files (1-10MB):   ~500ms-2s
+Large files (>10MB):     ~2-10s
+Very large (>100MB):     ~10-60s
+```
+
+**Text Extraction Performance:**
+```
+LLPhant:
+- TXT/MD/HTML:    <1s    (instant)
+- PDF (10 pages): 2-5s   (library parsing)
+- DOCX:           3-8s   (library parsing)
+- Images:         N/A    (not supported)
+
+Dolphin AI:
+- TXT/MD/HTML:    1-2s   (API latency)
+- PDF (10 pages): 5-10s  (AI processing)
+- DOCX:           4-8s   (AI processing)
+- Images (OCR):   5-15s  (OCR + AI)
+```
+
+**Chunking and Indexing:**
+```
+Text chunking:     <100ms  for 100KB text (now part of extraction)
+Solr indexing:     ~50-200ms per document (reads pre-chunked data)
+Batch indexing:    ~500ms for 100 chunks (faster with pre-chunked data)
+```
+
+**Note**: Since v0.2.7, chunking is performed once during text extraction and stored in the database. This makes SOLR indexing faster and allows chunks to be reused for vector embeddings, AI processing, or any other service that needs chunked text.
+
+### Code Examples
+
+#### Processing File Upload
+
+```php
+use OCA\OpenRegister\Service\FileService;
+
+// Create file from base64
+$fileMetadata = $fileService->createFile(
+    objectEntity: $object,
+    fileData: [
+        'content' => 'data:image/jpeg;base64,/9j/4AAQ...',
+        'tags' => ['profile', 'avatar']
+    ]
+);
+
+// Create file from URL
+$fileMetadata = $fileService->createFile(
+    objectEntity: $object,
+    fileData: [
+        'url' => 'https://example.com/document.pdf',
+        'tags' => ['imported', 'external']
+    ]
+);
+
+// Access file metadata
+$fileId = $fileMetadata['id'];
+$shareLinkUrl = $fileMetadata['accessUrl'];
+$downloadUrl = $fileMetadata['downloadUrl'];
+```
+
+#### Text Extraction
+
+```php
+use OCA\OpenRegister\Service\FileTextExtractionService;
+
+// Extract text from file
+$extractionService->extractText($fileId);
+
+// Get extraction status
+$fileText = $fileTextMapper->findByFileId($fileId);
+$status = $fileText->getExtractionStatus(); // 'pending', 'processing', 'completed', 'failed'
+$text = $fileText->getTextContent();
+
+// Manually trigger extraction
+$extractionService->queueExtraction($fileId);
+```
+
+#### Searching File Content
+
+```php
+// Search across file content in Solr
+$results = $solrService->searchFiles([
+    '_search' => 'contract terms',
+    'mime_type' => 'application/pdf',
+    '_limit' => 20
+]);
+
+// Access chunk results
+foreach ($results['hits'] as $hit) {
+    $fileId = $hit['file_id'];
+    $chunkIndex = $hit['chunk_index'];
+    $text = $hit['chunk_text'];
+    $highlighted = $hit['highlighted_text'];
+}
+```
+
+### Testing
+
+```bash
+# Run file handling tests
+vendor/bin/phpunit tests/Service/FileServiceTest.php
+
+# Test text extraction
+vendor/bin/phpunit tests/Service/FileTextExtractionServiceTest.php
+
+# Test specific scenarios
+vendor/bin/phpunit --filter testBase64FileUpload
+vendor/bin/phpunit --filter testTextExtraction
+vendor/bin/phpunit --filter testFileChunking
+
+# Integration tests
+vendor/bin/phpunit tests/Integration/FileIntegrationTest.php
+```
+
+**Test Coverage:**
+- File upload (base64, URL, file object)
+- File property processing
+- Text extraction (LLPhant, Dolphin)
+- Chunking and Solr indexing
+- File deletion
+- Share link generation
+- Auto-tagging 

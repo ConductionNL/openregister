@@ -20,8 +20,6 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SourceMapper;
-use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\SearchService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
@@ -56,36 +54,10 @@ class SourcesController extends Controller
 
     }//end __construct()
 
-
-    /**
-     * Returns the template of the main app's page
-     *
-     * This method renders the main page of the application, adding any necessary data to the template.
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @return TemplateResponse The rendered template response
-     */
-    public function page(): TemplateResponse
-    {
-        return new TemplateResponse(
-            'openregister',
-            'index',
-            []
-        );
-
-    }//end page()
-
-
     /**
      * Retrieves a list of all sources
      *
      * This method returns a JSON response containing an array of all sources in the system.
-     *
-     * @param ObjectService $objectService The object service
-     * @param SearchService $searchService The search service
      *
      * @return JSONResponse A JSON response containing the list of sources
      *
@@ -93,31 +65,32 @@ class SourcesController extends Controller
      *
      * @NoCSRFRequired
      */
-    public function index(
-        ObjectService $objectService,
-        SearchService $searchService
-    ): JSONResponse {
+    public function index(): JSONResponse {
         // Get request parameters for filtering and searching.
-        $filters        = $this->request->getParams();
-        $fieldsToSearch = ['title', 'description'];
+        $params = $this->request->getParams();
+        
+        // Extract pagination and search parameters
+        $limit  = isset($params['_limit']) ? (int) $params['_limit'] : null;
+        $offset = isset($params['_offset']) ? (int) $params['_offset'] : null;
+        $page   = isset($params['_page']) ? (int) $params['_page'] : null;
+        $search = $params['_search'] ?? '';
+        
+        // Convert page to offset if provided
+        if ($page !== null && $limit !== null) {
+            $offset = ($page - 1) * $limit;
+        }
+        
+        // Remove special query params from filters
+        $filters = $params;
+        unset($filters['_limit'], $filters['_offset'], $filters['_page'], $filters['_search'], $filters['_route']);
 
-        // Create search parameters and conditions for filtering.
-        $searchParams     = $searchService->createMySQLSearchParams(filters: $filters);
-        $searchConditions = $searchService->createMySQLSearchConditions(
-            filters: $filters,
-            fieldsToSearch: $fieldsToSearch
-        );
-        $filters          = $searchService->unsetSpecialQueryParams(filters: $filters);
-
-        // Return all sources that match the search conditions.
+        // Return all sources that match the filters.
         return new JSONResponse(
             [
                 'results' => $this->sourceMapper->findAll(
-                    limit: null,
-                    offset: null,
-                    filters: $filters,
-                    searchConditions: $searchConditions,
-                    searchParams: $searchParams
+                    limit: $limit,
+                    offset: $offset,
+                    filters: $filters
                 ),
             ]
         );
@@ -210,15 +183,33 @@ class SourcesController extends Controller
             }
         }
 
-        // Remove ID if present to prevent conflicts.
-        if (isset($data['id']) === true) {
-            unset($data['id']);
-        }
+        // Remove immutable fields to prevent tampering
+        unset($data['id']);
+        unset($data['organisation']);
+        unset($data['owner']);
+        unset($data['created']);
 
         // Update the source with the provided data.
         return new JSONResponse($this->sourceMapper->updateFromArray(id: (int) $id, object: $data));
 
     }//end update()
+
+
+    /**
+     * Patch (partially update) a source
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param int $id The ID of the source to patch
+     *
+     * @return JSONResponse The updated source data
+     */
+    public function patch(int $id): JSONResponse
+    {
+        return $this->update($id);
+
+    }//end patch()
 
 
     /**

@@ -62,6 +62,14 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 							</template>
 							Activeren
 						</NcActionButton>
+						<NcActionButton
+							close-after-click
+							@click="openJoinModal">
+							<template #icon>
+								<AccountPlus :size="20" />
+							</template>
+							Add User
+						</NcActionButton>
 						<NcActionButton v-if="canDelete"
 							close-after-click
 							@click="navigationStore.setDialog('deleteOrganisation')">
@@ -96,7 +104,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 						</div>
 						<div class="metaRow">
 							<strong>{{ t('openregister', 'Members:') }}</strong>
-							<span>{{ organisationStore.organisationItem.userCount || 0 }}</span>
+							<span>{{ organisationStore.organisationItem.users?.length || 0 }}</span>
 						</div>
 						<div v-if="organisationStore.organisationItem.created" class="metaRow">
 							<strong>{{ t('openregister', 'Created:') }}</strong>
@@ -175,11 +183,6 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 		</div>
 
 		<!-- Organisation Management Modal -->
-		<OrganisationModal
-			:show="showOrganisationModal"
-			:organisation="organisationStore.organisationItem"
-			:mode="organisationModalMode"
-			@close="closeOrganisationModal" />
 	</NcAppContent>
 </template>
 
@@ -192,12 +195,11 @@ import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import AccountGroup from 'vue-material-design-icons/AccountGroup.vue'
 import AccountMinus from 'vue-material-design-icons/AccountMinus.vue'
+import AccountPlus from 'vue-material-design-icons/AccountPlus.vue'
 import Account from 'vue-material-design-icons/Account.vue'
 import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
 import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
-
-import OrganisationModal from '../../modals/OrganisationModal.vue'
 
 export default {
 	name: 'OrganisationDetails',
@@ -215,11 +217,11 @@ export default {
 		CheckCircle,
 		AccountGroup,
 		AccountMinus,
+		AccountPlus,
 		Account,
 		ContentCopy,
 		Eye,
 		OpenInNew,
-		OrganisationModal,
 	},
 	data() {
 		return {
@@ -229,8 +231,6 @@ export default {
 				objects: 0,
 				storage: 0,
 			},
-			showOrganisationModal: false,
-			organisationModalMode: 'edit',
 		}
 	},
 	computed: {
@@ -347,15 +347,20 @@ export default {
 			window.open(publicationUrl, '_blank')
 		},
 		editOrganisation() {
-			this.organisationModalMode = 'edit'
-			this.showOrganisationModal = true
+			// organisationStore.organisationItem is already set by the page
+			navigationStore.setModal('editOrganisation')
 		},
-		copyOrganisation() {
-			this.organisationModalMode = 'copy'
-			this.showOrganisationModal = true
+		openJoinModal() {
+			// Set the transfer data with the current organisation UUID
+			navigationStore.setTransferData({
+				organisationUuid: organisationStore.organisationItem?.uuid,
+			})
+			// Open the join organisation modal
+			navigationStore.setModal('joinOrganisation')
 		},
-		closeOrganisationModal() {
-			this.showOrganisationModal = false
+		openManageRolesModal() {
+			// Open the manage organisation roles modal
+			navigationStore.setModal('manageOrganisationRoles')
 		},
 		goToOrganisation() {
 			if (organisationStore.organisationItem?.website) {

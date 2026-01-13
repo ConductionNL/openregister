@@ -31,6 +31,13 @@ This section contains documentation for fixes and solutions implemented in OpenR
 
 **Impact**: Prevents import errors with reused UUIDs and ensures complete resource cleanup.
 
+### [Migration Errors Fix](./MIGRATION_INDEX_COLLISION_FIX.md)
+**Issue**: OpenRegister startup failing with three database errors: (1) Index name collision between 'openregister_views' and 'openregister_view' tables, (2) Missing 'extend' column for index creation, and (3) Foreign key constraint errors in entity_relations table.
+
+**Solution**: (1) Updated migration to rename indexes when copying from plural to singular table names, (2) Removed deprecated 'extend' property from Schema entity and disabled the migration that added it, and (3) Removed foreign key constraints that were causing migration failures (kept indexes for performance).
+
+**Impact**: Resolves all OpenRegister initialization errors, enables proper table renaming migrations, removes deprecated schema extension functionality, and avoids foreign key constraint migration issues.
+
 ## Fix Categories
 
 ### Database & Migration Fixes
@@ -90,6 +97,6 @@ Use the following structure for new fix documentation:
 
 ## Related Documentation
 
-- [Development Guide](../development/)
-- [API Documentation](../api/)
-- [Technical Documentation](../technical/) 
+- [Development Guide](../developers/testing.md)
+- [API Documentation](../api/objects.md)
+- [Technical Documentation](../technical/unified-faceting-system.md) 

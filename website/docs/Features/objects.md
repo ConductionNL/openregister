@@ -1095,3 +1095,647 @@ The OpenRegister object relation system provides flexible ways to model data rel
 - **Automatic Detection:** UUIDs and URLs are automatically tracked as relations
 
 Choose the appropriate handling type based on your data modeling needs and whether you want separate storage, automatic relation management, and cascade operations.
+
+---
+
+## Technical Implementation
+
+This section provides detailed technical information about how objects are implemented in OpenRegister.
+
+### Architecture Overview
+
+OpenRegister uses a layered architecture for object management:
+
+```mermaid
+graph TB
+    A[API Controller] --> B[ObjectService]
+    B --> C[SaveObject Handler]
+    B --> D[GetObject Handler]
+    B --> E[DeleteObject Handler]
+    B --> F[RenderObject Handler]
+    B --> G[ValidateObject Handler]
+    C --> H[ObjectEntityMapper]
+    D --> H
+    E --> H
+    F --> H
+    G --> I[Schema Validation]
+    H --> J[(MySQL Database)]
+    B --> K[Event Dispatcher]
+    K --> L[SolrEventListener]
+    L --> M[GuzzleSolrService]
+    M --> N[(Solr Search Engine)]
+    
+    style B fill:#e1f5ff
+    style H fill:#ffe1e1
+    style J fill:#fff4e1
+    style N fill:#e1ffe1
+```
+
+**Key Components:**
+- **ObjectService**: High-level orchestration service that coordinates all object operations
+- **Handlers**: Specialized classes for specific operations (Save, Get, Delete, Render, Validate)
+- **ObjectEntityMapper**: Database access layer for CRUD operations
+- **Event System**: Nextcloud event dispatcher for lifecycle events
+- **Solr Integration**: Automatic indexing for search functionality
+
+### Object Lifecycle
+
+#### Object Creation Flow
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant API
+    participant ObjectService
+    participant SaveObject
+    participant Mapper
+    participant DB
+    participant Events
+    participant Solr
+    
+    Client->>API: POST /objects
+    API->>ObjectService: saveObject(data)
+    
+    ObjectService->>SaveObject: handle(data, schema, register)
+    
+    Note over SaveObject: 1. Validate Schema
+    SaveObject->>SaveObject: resolveSchemaReference()
+    
+    Note over SaveObject: 2. Process inversedBy
+    SaveObject->>SaveObject: handleCascadingPreValidation()
+    SaveObject->>Mapper: Create nested objects
+    
+    Note over SaveObject: 3. Set Defaults
+    SaveObject->>SaveObject: setDefaultValues()
+    SaveObject->>SaveObject: generateSlug()
+    
+    Note over SaveObject: 4. Hydrate Metadata
+    SaveObject->>SaveObject: hydrateObjectMetadata()
+    
+    Note over SaveObject: 5. Track Relations
+    SaveObject->>SaveObject: scanForRelations()
+    SaveObject->>SaveObject: updateObjectRelations()
+    
+    SaveObject->>Mapper: insert(objectEntity)
+    Mapper->>DB: INSERT INTO oc_openregister_objects
+    DB-->>Mapper: ID + UUID
+    
+    Note over SaveObject: 6. Post-Save Operations
+    SaveObject->>SaveObject: handleInverseRelationsWriteBack()
+    SaveObject->>Mapper: Update related objects
+    
+    Mapper-->>SaveObject: ObjectEntity
+    SaveObject-->>ObjectService: ObjectEntity
+    
+    Note over ObjectService: 7. Fire Events
+    ObjectService->>Events: dispatchTyped(ObjectCreatedEvent)
+    Events->>Solr: SolrEventListener::handleObjectCreated()
+    Solr->>Solr: indexObject()
+    
+    ObjectService-->>API: ObjectEntity
+    API-->>Client: JSON Response
+```
+
+**Creation Steps:**
+
+1. **Schema Resolution**: Convert schema reference (ID/slug/path) to schema entity
+2. **Cascading Pre-Validation**: Create nested objects defined in `inversedBy` properties before main validation
+3. **Default Values**: Apply schema-defined default values and generate slugs
+4. **Metadata Hydration**: Extract name, description, summary, image from object data based on schema configuration
+5. **Relation Tracking**: Scan object data for UUIDs and URLs, store in dot notation
+6. **Database Insert**: Persist object entity to MySQL database
+7. **Write-Back Operations**: Update related objects for bidirectional relations
+8. **Event Dispatch**: Fire `ObjectCreatedEvent` for listeners (e.g., Solr indexing)
+
+#### Object Update Flow
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant API
+    participant ObjectService
+    participant SaveObject
+    participant Mapper
+    participant DB
+    participant Events
+    participant Solr
+    participant AuditTrail
+    
+    Client->>API: PUT /objects/{uuid}
+    API->>ObjectService: saveObject(data, uuid)
+    
+    ObjectService->>Mapper: findByUuid(uuid)
+    Mapper->>DB: SELECT * FROM ... WHERE uuid = ?
+    DB-->>Mapper: Existing ObjectEntity
+    Mapper-->>ObjectService: ObjectEntity
+    
+    Note over ObjectService: Store old version
+    ObjectService->>AuditTrail: createAuditLog(oldObject, newData)
+    
+    ObjectService->>SaveObject: handle(data, schema, register)
+    
+    Note over SaveObject: Update Operations
+    SaveObject->>SaveObject: Update object data
+    SaveObject->>SaveObject: Update relations
+    SaveObject->>SaveObject: Update metadata
+    
+    SaveObject->>Mapper: update(objectEntity)
+    Mapper->>DB: UPDATE oc_openregister_objects SET ...
+    DB-->>Mapper: Success
+    
+    SaveObject->>SaveObject: handleInverseRelationsWriteBack()
+    
+    Mapper-->>SaveObject: ObjectEntity
+    SaveObject-->>ObjectService: ObjectEntity
+    
+    Note over ObjectService: Fire Events
+    ObjectService->>Events: dispatchTyped(ObjectUpdatedEvent)
+    Events->>Solr: SolrEventListener::handleObjectUpdated()
+    Solr->>Solr: updateObject()
+    
+    ObjectService-->>API: ObjectEntity
+    API-->>Client: JSON Response
+```
+
+#### Object Retrieval Flow
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant API
+    participant ObjectService
+    participant GetObject
+    participant RenderObject
+    participant Mapper
+    participant DB
+    participant Solr
+    
+    Client->>API: GET /objects/{uuid}?extend=addresses
+    API->>ObjectService: findObject(uuid, extend)
+    
+    ObjectService->>GetObject: getObject(uuid)
+    GetObject->>Mapper: findByUuid(uuid)
+    Mapper->>DB: SELECT * FROM ... WHERE uuid = ?
+    DB-->>Mapper: ObjectEntity
+    Mapper-->>GetObject: ObjectEntity
+    GetObject-->>ObjectService: ObjectEntity
+    
+    Note over ObjectService: Apply RBAC filters
+    ObjectService->>ObjectService: checkAccess(user, object)
+    
+    Note over ObjectService: Render with extensions
+    ObjectService->>RenderObject: renderEntity(object, extend)
+    
+    Note over RenderObject: 1. Get inversedBy properties
+    RenderObject->>RenderObject: getInversedProperties(schema)
+    
+    Note over RenderObject: 2. Find related objects
+    loop For each inversedBy property
+        RenderObject->>Mapper: findByRelation(object.uuid)
+        Mapper->>DB: SELECT * FROM ... WHERE relations LIKE ?
+        DB-->>Mapper: Related objects
+        Mapper-->>RenderObject: Array of objects
+    end
+    
+    Note over RenderObject: 3. Extend requested properties
+    loop For each extend path
+        RenderObject->>Mapper: findByUuid(relatedUuid)
+        Mapper->>DB: SELECT * FROM ...
+        DB-->>Mapper: Related object
+        Mapper-->>RenderObject: ObjectEntity
+        RenderObject->>RenderObject: Recursive render (depth++)
+    end
+    
+    RenderObject-->>ObjectService: Rendered object with extensions
+    ObjectService-->>API: JSON array
+    API-->>Client: JSON Response
+```
+
+### Database Schema
+
+Objects are stored in the `oc_openregister_objects` table:
+
+```sql
+CREATE TABLE oc_openregister_objects (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    uuid VARCHAR(36) UNIQUE NOT NULL,
+    slug VARCHAR(255),
+    uri TEXT,
+    version VARCHAR(50),
+    register VARCHAR(36),
+    schema VARCHAR(36),
+    object JSON,
+    files JSON,
+    relations JSON,
+    locked JSON,
+    owner VARCHAR(64),
+    authorization JSON,
+    folder VARCHAR(255),
+    application VARCHAR(255),
+    organisation VARCHAR(255),
+    validation JSON,
+    deleted JSON,
+    geo JSON,
+    retention JSON,
+    size VARCHAR(50),
+    name VARCHAR(255),
+    description TEXT,
+    summary TEXT,
+    image TEXT,
+    labels JSON,
+    created DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    published DATETIME,
+    depublished DATETIME,
+    
+    INDEX idx_uuid (uuid),
+    INDEX idx_register (register),
+    INDEX idx_schema (schema),
+    INDEX idx_owner (owner),
+    INDEX idx_organisation (organisation),
+    INDEX idx_published (published),
+    INDEX idx_slug (slug, register, schema)
+);
+```
+
+**Key Fields:**
+- `object`: JSON field containing the actual object data (business logic fields)
+- `relations`: JSON field with dot-notation storage of all UUIDs/URLs found in object data
+- `files`: JSON array of file IDs attached to this object
+- `published`: Objects must have a published date to be indexed in Solr
+- `slug`: URL-friendly identifier, unique within register+schema combination
+
+### Relations Storage
+
+Relations are automatically detected and stored in dot notation:
+
+**Example Object Data:**
+```json
+{
+  "name": "John Doe",
+  "address": "123e4567-e89b-41d4-a716-446655440000",
+  "contacts": [
+    "456e7890-e29b-41d4-a716-446655440001",
+    "789e0123-e29b-41d4-a716-446655440002"
+  ],
+  "website": "https://example.com"
+}
+```
+
+**Stored Relations:**
+```json
+{
+  "address": "123e4567-e89b-41d4-a716-446655440000",
+  "contacts.0": "456e7890-e29b-41d4-a716-446655440001",
+  "contacts.1": "789e0123-e29b-41d4-a716-446655440002",
+  "website": "https://example.com"
+}
+```
+
+This enables efficient querying for inverse relations using:
+```sql
+SELECT * FROM oc_openregister_objects 
+WHERE JSON_SEARCH(relations, 'one', '123e4567-e89b-41d4-a716-446655440000') IS NOT NULL
+```
+
+### Event System
+
+OpenRegister dispatches events at key points in the object lifecycle:
+
+**Available Events:**
+
+| Event | When Fired | Use Cases |
+|-------|-----------|-----------|
+| `ObjectCreatingEvent` | Before object creation | Validation, pre-processing |
+| `ObjectCreatedEvent` | After object creation | Solr indexing, webhooks, audit |
+| `ObjectUpdatingEvent` | Before object update | Change detection, validation |
+| `ObjectUpdatedEvent` | After object update | Solr re-indexing, notifications |
+| `ObjectDeletingEvent` | Before object deletion | Cascade checks, backups |
+| `ObjectDeletedEvent` | After object deletion | Solr cleanup, cleanup tasks |
+| `ObjectLockedEvent` | When object is locked | Concurrent access control |
+| `ObjectUnlockedEvent` | When object is unlocked | Resume operations |
+| `ObjectRevertedEvent` | After version revert | Audit trail, re-indexing |
+
+**Event Listener Example:**
+
+```php
+namespace OCA\OpenRegister\EventListener;
+
+use OCA\OpenRegister\Event\ObjectCreatedEvent;
+use OCP\EventDispatcher\Event;
+use OCP\EventDispatcher\IEventListener;
+
+class SolrEventListener implements IEventListener
+{
+    public function handle(Event $event): void
+    {
+        if ($event instanceof ObjectCreatedEvent) {
+            $object = $event->getObject();
+            $this->solrService->indexObject($object);
+        }
+    }
+}
+```
+
+### Solr Integration
+
+Objects are automatically indexed in Solr when:
+- Created (if published)
+- Updated (if published)
+- Published (status change)
+
+**Solr Document Structure:**
+
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "self_uuid": "123e4567-e89b-12d3-a456-426614174000",
+  "self_name": "John Doe",
+  "self_name_s": "John Doe",
+  "self_description": "Software developer",
+  "self_schema": "person",
+  "self_register": "employees",
+  "self_created": "2024-01-15T10:30:00Z",
+  "self_updated": "2024-01-20T14:45:00Z",
+  "self_published": "2024-01-15T10:30:00Z",
+  "self_relations": ["456e7890-...", "789e0123-..."],
+  "self_object": "{...complete JSON...}",
+  
+  "age_i": 30,
+  "email_s": "john@example.com",
+  "skills": ["PHP", "JavaScript", "Vue.js"],
+  "department_s": "Engineering"
+}
+```
+
+**Field Naming Conventions:**
+- `self_*`: System metadata fields
+- `*_i`: Integer fields
+- `*_s`: String fields (sortable, not tokenized)
+- `*_t`: Text fields (tokenized for full-text search)
+- Arrays without suffix: Multi-valued fields
+
+### Performance Optimizations
+
+#### Bulk Operations
+
+For importing large datasets, use bulk operations:
+
+```php
+$results = $objectService->saveObjects(
+    objects: $arrayOfObjects,
+    register: $register,
+    schema: $schema,
+    validation: false,  // Skip validation for performance
+    events: false       // Skip event firing for performance
+);
+```
+
+**Bulk Operation Optimizations:**
+- Single-pass schema analysis
+- Batch database inserts with `INSERT ... ON DUPLICATE KEY UPDATE`
+- Memory-optimized processing with pass-by-reference
+- Deferred event firing
+- Bulk Solr indexing
+
+#### Caching
+
+OpenRegister implements multiple caching layers:
+
+1. **Object Cache**: Recently accessed objects (PSR-6 compliant)
+2. **Schema Cache**: Schema definitions
+3. **Facet Cache**: Facetable fields per schema
+4. **Query Cache**: Search result caching
+
+### Validation System
+
+Objects are validated against their schema using JSON Schema validation:
+
+```mermaid
+graph LR
+    A[Object Data] --> B[ValidateObject Handler]
+    B --> C[Schema Definition]
+    C --> D[JSON Schema Validator]
+    D --> E{Valid?}
+    E -->|Yes| F[Save Object]
+    E -->|No| G[Return Validation Errors]
+    
+    G --> H[Enhanced Error Messages]
+    H --> I[Field-level errors]
+    H --> J[Nested path tracking]
+    H --> K[Human-readable messages]
+```
+
+**Validation Modes:**
+- **Hard Validation** (default): Rejects invalid objects
+- **Soft Validation**: Saves object but stores validation errors in `validation` field
+
+**Enhanced Error Messages:**
+
+```json
+{
+  "valid": false,
+  "errors": [
+    {
+      "property": "email",
+      "message": "The property email is required",
+      "constraint": "required"
+    },
+    {
+      "property": "age",
+      "message": "Integer value found, but a string is required",
+      "constraint": "type"
+    }
+  ]
+}
+```
+
+### Metadata Extraction
+
+Objects automatically extract metadata from their data based on schema configuration:
+
+**Schema Configuration:**
+```json
+{
+  "configuration": {
+    "objectNameField": "firstName",
+    "objectDescriptionField": "bio",
+    "objectSummaryField": "headline",
+    "objectImageField": "avatar",
+    "objectSlugField": "username"
+  }
+}
+```
+
+**Extraction Process:**
+
+```mermaid
+graph TD
+    A[Object Data] --> B[SaveObject::hydrateObjectMetadata]
+    B --> C{Has objectNameField?}
+    C -->|Yes| D[Extract name]
+    C -->|No| E[Use default logic]
+    D --> F[Set ObjectEntity.name]
+    E --> F
+    
+    B --> G{Has objectSlugField?}
+    G -->|Yes| H[Extract slug value]
+    G -->|No| I[Generate from name]
+    H --> J[Convert to URL-friendly slug]
+    I --> J
+    J --> K[Set ObjectEntity.slug]
+    
+    B --> L[Extract description, summary, image]
+    L --> M[Complete ObjectEntity]
+```
+
+**Benefits:**
+- Consistent object display across UI
+- SEO-friendly URLs via slugs
+- Rich search results with descriptions
+- Thumbnail support via image extraction
+
+### File Attachments
+
+Objects can have file attachments stored in Nextcloud Files:
+
+**File Storage:**
+1. Files uploaded via API or UI
+2. Stored in Nextcloud filesystem under `openregister/{register}/{schema}/`
+3. File IDs tracked in `files` JSON array field
+4. Text extraction for searchable content (optional)
+
+**Text Extraction:**
+- Background job processes uploaded files
+- Supports PDFs, Word docs, text files, images (OCR)
+- Extracted text stored separately for Solr indexing
+- Configurable extraction scope and mode
+
+### Access Control
+
+Objects support granular access control:
+
+**RBAC (Role-Based Access Control):**
+```php
+$objects = $objectService->findObjects(
+    filters: ['status' => 'active'],
+    rbac: true  // Apply user permissions
+);
+```
+
+**Authorization Field:**
+```json
+{
+  "authorization": {
+    "read": ["user1", "group:admins"],
+    "write": ["user1"],
+    "delete": ["group:admins"]
+  }
+}
+```
+
+**Multi-Tenancy:**
+```php
+// Filter by organization
+$objects = $objectService->findObjects(
+    filters: [],
+    multi: true  // Apply organization filtering
+);
+```
+
+### Code Examples
+
+#### Creating an Object
+
+```php
+use OCA\OpenRegister\Service\ObjectService;
+
+// Via service
+$object = $objectService->saveObject(
+    object: [
+        'name' => 'John Doe',
+        'email' => 'john@example.com',
+        'age' => 30
+    ],
+    register: 'employees',
+    schema: 'person',
+    rbac: true,
+    multi: true
+);
+
+// Access result
+echo $object->getUuid();  // "123e4567-e89b-12d3-a456-426614174000"
+echo $object->getName();  // "John Doe"
+```
+
+#### Querying Objects
+
+```php
+// Find all objects in a register
+$objects = $objectService->findObjects(
+    limit: 50,
+    offset: 0,
+    filters: ['status' => 'active'],
+    register: 'employees',
+    schema: 'person'
+);
+
+// Find by UUID
+$object = $objectService->findObject(
+    uuid: '123e4567-e89b-12d3-a456-426614174000'
+);
+
+// Search with extension
+$object = $objectService->findObject(
+    uuid: '123e4567-e89b-12d3-a456-426614174000',
+    extend: ['addresses', 'employer']
+);
+```
+
+#### Updating an Object
+
+```php
+$updated = $objectService->saveObject(
+    object: [
+        'name' => 'John Doe',
+        'email' => 'john.doe@newcompany.com',  // Updated
+        'age' => 31  // Updated
+    ],
+    uuid: '123e4567-e89b-12d3-a456-426614174000',
+    schema: 'person',
+    register: 'employees'
+);
+```
+
+#### Deleting an Object
+
+```php
+$result = $objectService->deleteObject(
+    id: '123e4567-e89b-12d3-a456-426614174000'
+);
+```
+
+### Testing
+
+OpenRegister includes comprehensive tests for object operations:
+
+```bash
+# Run all object tests
+vendor/bin/phpunit tests/Service/ObjectServiceTest.php
+
+# Run specific test
+vendor/bin/phpunit --filter testCreateObject
+
+# Integration tests
+vendor/bin/phpunit tests/Integration/ObjectIntegrationTest.php
+```
+
+**Test Coverage:**
+- Object CRUD operations
+- Relation handling
+- Cascade operations
+- Inverse relations
+- Write-back operations
+- Validation
+- Event firing
+- Solr indexing

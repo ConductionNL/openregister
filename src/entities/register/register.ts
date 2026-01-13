@@ -13,7 +13,12 @@ export class Register implements TRegister {
 	public updated: string
 	public created: string
 	public slug: string
+	public groups?: string[]
+	public quota?: TRegister['quota']
+	public usage?: TRegister['usage']
 	public stats?: TRegister['stats']
+	public published?: string | null
+	public depublished?: string | null
 
 	constructor(register: TRegister) {
 		this.id = register.id || ''
@@ -26,7 +31,24 @@ export class Register implements TRegister {
 		this.updated = register.updated || ''
 		this.created = register.created || ''
 		this.slug = register.slug || ''
+		this.groups = register.groups || []
+		this.quota = register.quota || {
+			storage: null,
+			bandwidth: null,
+			requests: null,
+			users: null,
+			groups: null,
+		}
+		this.usage = register.usage || {
+			storage: 0,
+			bandwidth: 0,
+			requests: 0,
+			users: 0,
+			groups: 0,
+		}
 		this.stats = register.stats
+		this.published = register.published || null
+		this.depublished = register.depublished || null
 	}
 
 	public validate(): SafeParseReturnType<TRegister, unknown> {
@@ -39,6 +61,8 @@ export class Register implements TRegister {
 			databaseId: z.string().min(1),
 			tablePrefix: z.string(),
 			slug: z.string().min(1),
+			published: z.string().nullable().optional(),
+			depublished: z.string().nullable().optional(),
 		})
 
 		return schema.safeParse(this)

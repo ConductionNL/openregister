@@ -351,6 +351,6 @@ All bulk operations are logged with:
 ## Related Documentation
 
 - [Objects API](./objects.md) - Individual object operations
-- [Authentication](./authentication.md) - API authentication methods
-- [RBAC](./rbac.md) - Role-based access control
-- [Multi-tenancy](./multi-tenancy.md) - Multi-organization support
+- [RBAC](../developers/rbac.md) - Role-based access control
+- [Multi-tenancy](../Features/multi-tenancy.md) - Multi-organization support
+- [Organisations API](./organisations.md) - Organisation management endpoints

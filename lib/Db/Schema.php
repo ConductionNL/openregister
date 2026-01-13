@@ -168,9 +168,9 @@ class Schema extends Entity implements JsonSerializable
     protected ?string $application = null;
 
     /**
-     * The organisation name
+     * Organisation UUID this schema belongs to (for multi-tenancy)
      *
-     * @var string|null The organisation name
+     * @var string|null Organisation UUID this schema belongs to
      */
     protected ?string $organisation = null;
 
@@ -247,6 +247,57 @@ class Schema extends Entity implements JsonSerializable
      */
     protected ?array $groups = [];
 
+    /**
+     * Array of schema references that this schema must validate against (all schemas).
+     * Implements JSON Schema 'allOf' for multiple inheritance/composition.
+     * The instance must validate against ALL schemas in the array.
+     * Only additional constraints are allowed (Liskov Substitution Principle).
+     * Metadata (title, description, order) can be overridden.
+     *
+     * @var array|null Array of schema IDs, UUIDs, or slugs
+     */
+    protected ?array $allOf = null;
+
+    /**
+     * Array of schema references where instance must validate against exactly one.
+     * Implements JSON Schema 'oneOf' for mutually exclusive options.
+     * The instance must validate against EXACTLY ONE schema in the array.
+     *
+     * @var array|null Array of schema IDs, UUIDs, or slugs
+     */
+    protected ?array $oneOf = null;
+
+    /**
+     * Array of schema references where instance must validate against at least one.
+     * Implements JSON Schema 'anyOf' for flexible composition.
+     * The instance must validate against AT LEAST ONE schema in the array.
+     *
+     * @var array|null Array of schema IDs, UUIDs, or slugs
+     */
+    protected ?array $anyOf = null;
+
+    /**
+     * Publication timestamp.
+     *
+     * When set, this schema becomes publicly accessible regardless of organisation restrictions
+     * if published bypass is enabled. The schema is considered published when:
+     * - published <= now AND
+     * - (depublished IS NULL OR depublished > now)
+     *
+     * @var DateTime|null Publication timestamp
+     */
+    protected ?DateTime $published = null;
+
+    /**
+     * Depublication timestamp.
+     *
+     * When set, this schema becomes inaccessible after this date/time.
+     * Used together with published to control publication lifecycle.
+     *
+     * @var DateTime|null Depublication timestamp
+     */
+    protected ?DateTime $depublished = null;
+
 
     /**
      * Constructor for the Schema class
@@ -267,6 +318,9 @@ class Schema extends Entity implements JsonSerializable
         $this->addType(fieldName: 'properties', type: 'json');
         $this->addType(fieldName: 'archive', type: 'json');
         $this->addType(fieldName: 'facets', type: 'json');
+        $this->addType(fieldName: 'allOf', type: 'json');
+        $this->addType(fieldName: 'oneOf', type: 'json');
+        $this->addType(fieldName: 'anyOf', type: 'json');
         $this->addType(fieldName: 'source', type: 'string');
         $this->addType(fieldName: 'hardValidation', type: Types::BOOLEAN);
         $this->addType(fieldName: 'immutable', type: Types::BOOLEAN);
@@ -281,6 +335,8 @@ class Schema extends Entity implements JsonSerializable
         $this->addType(fieldName: 'deleted', type: 'datetime');
         $this->addType(fieldName: 'configuration', type: 'json');
         $this->addType(fieldName: 'groups', type: 'json');
+        $this->addType(fieldName: 'published', type: 'datetime');
+        $this->addType(fieldName: 'depublished', type: 'datetime');
 
     }//end __construct()
 
@@ -643,6 +699,16 @@ class Schema extends Entity implements JsonSerializable
             $deleted = $this->deleted->format('c');
         }
 
+        $published = null;
+        if (isset($this->published) === true) {
+            $published = $this->published->format('c');
+        }
+
+        $depublished = null;
+        if (isset($this->depublished) === true) {
+            $depublished = $this->depublished->format('c');
+        }
+
         return [
             'id'             => $this->id,
             'uuid'           => $this->uuid,
@@ -670,7 +736,12 @@ class Schema extends Entity implements JsonSerializable
             'groups'         => $this->groups,
             'authorization'  => $this->authorization,
             'deleted'        => $deleted,
+            'published'      => $published,
+            'depublished'    => $depublished,
             'configuration'  => $this->configuration,
+            'allOf'          => $this->allOf,
+            'oneOf'          => $this->oneOf,
+            'anyOf'          => $this->anyOf,
         ];
 
     }//end jsonSerialize()
@@ -1260,6 +1331,222 @@ class Schema extends Entity implements JsonSerializable
         return 'terms';
         
     }//end determineFacetTypeFromPropertyType()
+
+
+    /**
+     * Get the array of schema references that this schema must validate against (allOf)
+     *
+     * The instance must validate against ALL schemas in the array.
+     * This implements JSON Schema 'allOf' for multiple inheritance/composition.
+     *
+     * @return array|null Array of schema IDs, UUIDs, or slugs
+     */
+    public function getAllOf(): ?array
+    {
+        return $this->allOf;
+
+    }//end getAllOf()
+
+
+    /**
+     * Set the array of schema references that this schema must validate against (allOf)
+     *
+     * The instance must validate against ALL schemas in the array.
+     * Only additional constraints are allowed (Liskov Substitution Principle).
+     * Metadata (title, description, order) can be overridden.
+     *
+     * @param array|null $allOf Array of schema IDs, UUIDs, or slugs
+     *
+     * @return void
+     */
+    public function setAllOf(?array $allOf): void
+    {
+        $this->allOf = $allOf;
+        $this->markFieldUpdated('allOf');
+
+    }//end setAllOf()
+
+
+    /**
+     * Get the array of schema references where instance must validate against exactly one (oneOf)
+     *
+     * The instance must validate against EXACTLY ONE schema in the array.
+     * This implements JSON Schema 'oneOf' for mutually exclusive options.
+     *
+     * @return array|null Array of schema IDs, UUIDs, or slugs
+     */
+    public function getOneOf(): ?array
+    {
+        return $this->oneOf;
+
+    }//end getOneOf()
+
+
+    /**
+     * Set the array of schema references where instance must validate against exactly one (oneOf)
+     *
+     * The instance must validate against EXACTLY ONE schema in the array.
+     * This implements JSON Schema 'oneOf' for mutually exclusive options.
+     *
+     * @param array|null $oneOf Array of schema IDs, UUIDs, or slugs
+     *
+     * @return void
+     */
+    public function setOneOf(?array $oneOf): void
+    {
+        $this->oneOf = $oneOf;
+        $this->markFieldUpdated('oneOf');
+
+    }//end setOneOf()
+
+
+    /**
+     * Get the array of schema references where instance must validate against at least one (anyOf)
+     *
+     * The instance must validate against AT LEAST ONE schema in the array.
+     * This implements JSON Schema 'anyOf' for flexible composition.
+     *
+     * @return array|null Array of schema IDs, UUIDs, or slugs
+     */
+    public function getAnyOf(): ?array
+    {
+        return $this->anyOf;
+
+    }//end getAnyOf()
+
+
+    /**
+     * Set the array of schema references where instance must validate against at least one (anyOf)
+     *
+     * The instance must validate against AT LEAST ONE schema in the array.
+     * This implements JSON Schema 'anyOf' for flexible composition.
+     *
+     * @param array|null $anyOf Array of schema IDs, UUIDs, or slugs
+     *
+     * @return void
+     */
+    public function setAnyOf(?array $anyOf): void
+    {
+        $this->anyOf = $anyOf;
+        $this->markFieldUpdated('anyOf');
+
+    }//end setAnyOf()
+
+
+    /**
+     * Get the publication timestamp
+     *
+     * @return DateTime|null Publication timestamp
+     */
+    public function getPublished(): ?DateTime
+    {
+        return $this->published;
+
+    }//end getPublished()
+
+
+    /**
+     * Set the publication timestamp
+     *
+     * @param DateTime|null $published Publication timestamp
+     *
+     * @return void
+     */
+    public function setPublished(?DateTime $published): void
+    {
+        $this->published = $published;
+        $this->markFieldUpdated('published');
+
+    }//end setPublished()
+
+
+    /**
+     * Get the depublication timestamp
+     *
+     * @return DateTime|null Depublication timestamp
+     */
+    public function getDepublished(): ?DateTime
+    {
+        return $this->depublished;
+
+    }//end getDepublished()
+
+
+    /**
+     * Set the depublication timestamp
+     *
+     * @param DateTime|null $depublished Depublication timestamp
+     *
+     * @return void
+     */
+    public function setDepublished(?DateTime $depublished): void
+    {
+        $this->depublished = $depublished;
+        $this->markFieldUpdated('depublished');
+
+    }//end setDepublished()
+
+
+    /**
+     * Check if this schema is managed by any configuration
+     *
+     * This method checks if the schema's ID is present in the schemas array
+     * of any provided configuration entities.
+     *
+     * @param array<Configuration> $configurations Array of Configuration entities to check against
+     *
+     * @return bool True if this schema is managed by at least one configuration
+     *
+     * @phpstan-param array<Configuration> $configurations
+     * @psalm-param   array<Configuration> $configurations
+     */
+    public function isManagedByConfiguration(array $configurations): bool
+    {
+        if (empty($configurations) === true || $this->id === null) {
+            return false;
+        }
+
+        foreach ($configurations as $configuration) {
+            $schemas = $configuration->getSchemas();
+            if (in_array($this->id, $schemas, true) === true) {
+                return true;
+            }
+        }
+
+        return false;
+
+    }//end isManagedByConfiguration()
+
+
+    /**
+     * Get the configuration that manages this schema
+     *
+     * Returns the first configuration that has this schema's ID in its schemas array.
+     * Returns null if the schema is not managed by any configuration.
+     *
+     * @param array<Configuration> $configurations Array of Configuration entities to check against
+     *
+     * @return Configuration|null The configuration managing this schema, or null
+     *
+     * @phpstan-param array<Configuration> $configurations
+     * @psalm-param   array<Configuration> $configurations
+     */
+    public function getManagedByConfiguration(array $configurations): ?Configuration
+    {
+        if (empty($configurations) === true || $this->id === null) {
+            return null;
+        }
+
+        foreach ($configurations as $configuration) {
+            $schemas = $configuration->getSchemas();
+            if (in_array($this->id, $schemas, true) === true) {
+                return $configuration;
+            }
+        }
+
+        return null;
+
+    }//end getManagedByConfiguration()
 
 
 }//end class

@@ -4,19 +4,19 @@ If you request a schema or register by slug or ID that does not exist, the API w
 
 ### Example Error Response
 
-'
+```json
 {
-  'message': 'Schema not found: voorzieningen'
+  "message": "Schema not found: voorzieningen"
 }
-'
+```
 
 or
 
-'
+```json
 {
-  'message': 'Register not found: voorzieningen'
+  "message": "Register not found: voorzieningen"
 }
-'
+```
 
 **Note:**
 - The error message will specify whether the missing resource is a register or a schema.
@@ -32,22 +32,21 @@ This provides a full bidirectional view of schema relationships.
 
 ### Example Request
 
-'GET /api/schemas/{id}/related'
+`GET /api/schemas/{id}/related`
 
 ### Example Response
 
-'
+```json
 {
-  'incoming': [
-    { 'id': 2, 'title': 'Referrer Schema', ... },
-    ...
+  "incoming": [
+    { "id": 2, "title": "Referrer Schema" }
   ],
-  'outgoing': [
-    { 'id': 3, 'title': 'Referenced Schema', ... },
-    ...
+  "outgoing": [
+    { "id": 3, "title": "Referenced Schema" }
   ],
-  'total': 2
+  "total": 2
 }
+```
 '
 
 - 'incoming' contains schemas that reference the given schema.
@@ -69,19 +68,18 @@ The 'stats' object for a schema now includes the following fields:
 
 Example:
 
-'
+```json
 {
-  'id': 123,
-  'title': 'My Schema',
-  ...
-  'stats': {
-    'objects': { 'total': 10, ... },
-    'logs': { 'total': 5, ... },
-    'files': { 'total': 0, 'size': 0 },
-    'registers': 2
+  "id": 123,
+  "title": "My Schema",
+  "stats": {
+    "objects": { "total": 10 },
+    "logs": { "total": 5 },
+    "files": { "total": 0, "size": 0 },
+    "registers": 2
   }
 }
-'
+```
 
 ## Schema Exploration Endpoints
 

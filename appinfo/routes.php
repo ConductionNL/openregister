@@ -6,8 +6,19 @@ return [
         'Schemas' => ['url' => 'api/schemas'],
         'Sources' => ['url' => 'api/sources'],
         'Configurations' => ['url' => 'api/configurations'],
+        'Applications' => ['url' => 'api/applications'],
+        'Agents' => ['url' => 'api/agents'],
     ],
     'routes' => [
+        // PATCH routes for resources (partial updates)
+        ['name' => 'registers#patch', 'url' => '/api/registers/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'schemas#patch', 'url' => '/api/schemas/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'sources#patch', 'url' => '/api/sources/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'configurations#patch', 'url' => '/api/configurations/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'applications#patch', 'url' => '/api/applications/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'agents#patch', 'url' => '/api/agents/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
+        
+
         // Settings - Legacy endpoints (kept for compatibility)
         ['name' => 'settings#index', 'url' => '/api/settings', 'verb' => 'GET'],
         ['name' => 'settings#update', 'url' => '/api/settings', 'verb' => 'PUT'],
@@ -16,6 +27,7 @@ return [
         
         // Settings - Focused endpoints for better performance
         ['name' => 'settings#getSolrSettings', 'url' => '/api/settings/solr', 'verb' => 'GET'],
+        ['name' => 'settings#updateSolrSettings', 'url' => '/api/settings/solr', 'verb' => 'PATCH'],
         ['name' => 'settings#updateSolrSettings', 'url' => '/api/settings/solr', 'verb' => 'PUT'],
         ['name' => 'settings#testSolrConnection', 'url' => '/api/settings/solr/test', 'verb' => 'POST'],
         ['name' => 'settings#warmupSolrIndex', 'url' => '/api/settings/solr/warmup', 'verb' => 'POST'],
@@ -67,28 +79,73 @@ return [
         // Object Vectorization endpoints - SolrController
         ['name' => 'solr#vectorizeObject', 'url' => '/api/objects/{objectId}/vectorize', 'verb' => 'POST'],
         ['name' => 'solr#bulkVectorizeObjects', 'url' => '/api/objects/vectorize/bulk', 'verb' => 'POST'],
-        ['name' => 'solr#getVectorizationStats', 'url' => '/api/objects/vectorize/stats', 'verb' => 'GET'],
+        ['name' => 'solr#getVectorizationStats', 'url' => '/api/solr/vectorize/stats', 'verb' => 'GET'],
         
         ['name' => 'settings#getRbacSettings', 'url' => '/api/settings/rbac', 'verb' => 'GET'],
+        ['name' => 'settings#updateRbacSettings', 'url' => '/api/settings/rbac', 'verb' => 'PATCH'],
         ['name' => 'settings#updateRbacSettings', 'url' => '/api/settings/rbac', 'verb' => 'PUT'],
         
         ['name' => 'settings#getMultitenancySettings', 'url' => '/api/settings/multitenancy', 'verb' => 'GET'],
+        ['name' => 'settings#updateMultitenancySettings', 'url' => '/api/settings/multitenancy', 'verb' => 'PATCH'],
         ['name' => 'settings#updateMultitenancySettings', 'url' => '/api/settings/multitenancy', 'verb' => 'PUT'],
         
+        ['name' => 'settings#getOrganisationSettings', 'url' => '/api/settings/organisation', 'verb' => 'GET'],
+        ['name' => 'settings#updateOrganisationSettings', 'url' => '/api/settings/organisation', 'verb' => 'PATCH'],
+        ['name' => 'settings#updateOrganisationSettings', 'url' => '/api/settings/organisation', 'verb' => 'PUT'],
+        
         ['name' => 'settings#getLLMSettings', 'url' => '/api/settings/llm', 'verb' => 'GET'],
+        ['name' => 'settings#getDatabaseInfo', 'url' => '/api/settings/database', 'verb' => 'GET'],
+        ['name' => 'settings#getSolrInfo', 'url' => '/api/settings/solr-info', 'verb' => 'GET'],
         ['name' => 'settings#updateLLMSettings', 'url' => '/api/settings/llm', 'verb' => 'POST'],
+        ['name' => 'settings#patchLLMSettings', 'url' => '/api/settings/llm', 'verb' => 'PATCH'],
+        ['name' => 'settings#updateLLMSettings', 'url' => '/api/settings/llm', 'verb' => 'PUT'],
+        ['name' => 'settings#testEmbedding', 'url' => '/api/vectors/test-embedding', 'verb' => 'POST'],
+        ['name' => 'settings#testChat', 'url' => '/api/llm/test-chat', 'verb' => 'POST'],
+        ['name' => 'settings#getOllamaModels', 'url' => '/api/llm/ollama-models', 'verb' => 'GET'],
+        ['name' => 'settings#checkEmbeddingModelMismatch', 'url' => '/api/vectors/check-model-mismatch', 'verb' => 'GET'],
+        ['name' => 'settings#clearAllEmbeddings', 'url' => '/api/vectors/clear-all', 'verb' => 'DELETE'],
         ['name' => 'settings#getFileSettings', 'url' => '/api/settings/files', 'verb' => 'GET'],
+        ['name' => 'settings#updateFileSettings', 'url' => '/api/settings/files', 'verb' => 'PATCH'],
         ['name' => 'settings#updateFileSettings', 'url' => '/api/settings/files', 'verb' => 'PUT'],
+        ['name' => 'settings#getFileExtractionStats', 'url' => '/api/settings/files/stats', 'verb' => 'GET'],
         ['name' => 'settings#testDolphinConnection', 'url' => '/api/settings/files/test-dolphin', 'verb' => 'POST'],
-        ['name' => 'settings#updateObjectSettings', 'url' => '/api/settings/objects', 'verb' => 'POST'],
+        ['name' => 'settings#getObjectSettings', 'url' => '/api/settings/objects/vectorize', 'verb' => 'GET'],
+        ['name' => 'settings#updateObjectSettings', 'url' => '/api/settings/objects/vectorize', 'verb' => 'POST'],
+        ['name' => 'settings#patchObjectSettings', 'url' => '/api/settings/objects/vectorize', 'verb' => 'PATCH'],
+        ['name' => 'settings#updateObjectSettings', 'url' => '/api/settings/objects/vectorize', 'verb' => 'PUT'],
+        
+        // Object vectorization endpoints
+        ['name' => 'objects#vectorizeBatch', 'url' => '/api/objects/vectorize/batch', 'verb' => 'POST'],
+        ['name' => 'objects#getObjectVectorizationCount', 'url' => '/api/objects/vectorize/count', 'verb' => 'GET'],
+        ['name' => 'objects#getObjectVectorizationStats', 'url' => '/api/objects/vectorize/stats', 'verb' => 'GET'],
+        
+        // Core file extraction endpoints (use fileExtraction controller to avoid conflict with files controller)
+        // NOTE: Specific routes MUST come before parameterized routes like {id}
+        ['name' => 'fileExtraction#index', 'url' => '/api/files', 'verb' => 'GET'],
+        ['name' => 'fileExtraction#stats', 'url' => '/api/files/stats', 'verb' => 'GET'],
+        ['name' => 'fileExtraction#fileTypes', 'url' => '/api/files/types', 'verb' => 'GET'],
+        ['name' => 'fileExtraction#vectorizeBatch', 'url' => '/api/files/vectorize/batch', 'verb' => 'POST'],
+        ['name' => 'fileExtraction#discover', 'url' => '/api/files/discover', 'verb' => 'POST'],
+        ['name' => 'fileExtraction#extractAll', 'url' => '/api/files/extract', 'verb' => 'POST'],
+        ['name' => 'fileExtraction#retryFailed', 'url' => '/api/files/retry-failed', 'verb' => 'POST'],
+        ['name' => 'fileExtraction#cleanup', 'url' => '/api/files/cleanup', 'verb' => 'POST'],
+        ['name' => 'fileExtraction#show', 'url' => '/api/files/{id}', 'verb' => 'GET'],
+        ['name' => 'fileExtraction#extract', 'url' => '/api/files/{id}/extract', 'verb' => 'POST'],
         
         ['name' => 'settings#getRetentionSettings', 'url' => '/api/settings/retention', 'verb' => 'GET'],
         
         // Debug endpoints for type filtering issue
         ['name' => 'settings#debugTypeFiltering', 'url' => '/api/debug/type-filtering', 'verb' => 'GET'],
+        ['name' => 'settings#updateRetentionSettings', 'url' => '/api/settings/retention', 'verb' => 'PATCH'],
         ['name' => 'settings#updateRetentionSettings', 'url' => '/api/settings/retention', 'verb' => 'PUT'],
         
         ['name' => 'settings#getVersionInfo', 'url' => '/api/settings/version', 'verb' => 'GET'],
+        
+        // API Tokens for GitHub and GitLab
+        ['name' => 'settings#getApiTokens', 'url' => '/api/settings/api-tokens', 'verb' => 'GET'],
+        ['name' => 'settings#saveApiTokens', 'url' => '/api/settings/api-tokens', 'verb' => 'POST'],
+        ['name' => 'settings#testGitHubToken', 'url' => '/api/settings/api-tokens/test/github', 'verb' => 'POST'],
+        ['name' => 'settings#testGitLabToken', 'url' => '/api/settings/api-tokens/test/gitlab', 'verb' => 'POST'],
         
         // Statistics endpoint  
         ['name' => 'settings#getStatistics', 'url' => '/api/settings/statistics', 'verb' => 'GET'],
@@ -109,7 +166,6 @@ return [
         ['name' => 'names#create', 'url' => '/api/names', 'verb' => 'POST'],
         ['name' => 'names#show', 'url' => '/api/names/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         // Dashbaord
-        ['name' => 'dashboard#page', 'url' => '/', 'verb' => 'GET'],
         ['name' => 'dashboard#index', 'url' => '/api/dashboard', 'verb' => 'GET'],
         ['name' => 'dashboard#calculate', 'url' => '/api/dashboard/calculate/{registerId}', 'verb' => 'POST', 'requirements' => ['registerId' => '\d+']],
         // Dashboard Charts
@@ -207,16 +263,52 @@ return [
         ['name' => 'schemas#stats', 'url' => '/api/schemas/{id}/stats', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#explore', 'url' => '/api/schemas/{id}/explore', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#updateFromExploration', 'url' => '/api/schemas/{id}/update-from-exploration', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'schemas#publish', 'url' => '/api/schemas/{id}/publish', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'schemas#depublish', 'url' => '/api/schemas/{id}/depublish', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         // Registers
         ['name' => 'registers#export', 'url' => '/api/registers/{id}/export', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'registers#import', 'url' => '/api/registers/{id}/import', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'registers#publishToGitHub', 'url' => '/api/registers/{id}/publish/github', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'registers#publish', 'url' => '/api/registers/{id}/publish', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'registers#depublish', 'url' => '/api/registers/{id}/depublish', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'registers#schemas', 'url' => '/api/registers/{id}/schemas', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'registers#stats', 'url' => '/api/registers/{id}/stats', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'oas#generate', 'url' => '/api/registers/{id}/oas', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'oas#generateAll', 'url' => '/api/registers/oas', 'verb' => 'GET'],
-        // Configurations
-        ['name' => 'configurations#export', 'url' => '/api/configurations/{id}/export', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
-        ['name' => 'configurations#import', 'url' => '/api/configurations/import', 'verb' => 'POST'],
+        // Configurations - Management
+        ['name' => 'configuration#checkVersion', 'url' => '/api/configurations/{id}/check-version', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
+        ['name' => 'configuration#preview', 'url' => '/api/configurations/{id}/preview', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
+        ['name' => 'configuration#import', 'url' => '/api/configurations/{id}/import', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
+        ['name' => 'configuration#export', 'url' => '/api/configurations/{id}/export', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
+        
+        // Configuration discovery endpoints
+        ['name' => 'configuration#discover', 'url' => '/api/configurations/discover', 'verb' => 'GET'],
+        ['name' => 'configuration#enrichDetails', 'url' => '/api/configurations/enrich', 'verb' => 'GET'],
+        ['name' => 'configuration#getGitHubBranches', 'url' => '/api/configurations/github/branches', 'verb' => 'GET'],
+        ['name' => 'configuration#getGitHubRepositories', 'url' => '/api/configurations/github/repositories', 'verb' => 'GET'],
+        ['name' => 'configuration#getGitHubConfigurations', 'url' => '/api/configurations/github/files', 'verb' => 'GET'],
+        ['name' => 'configuration#getGitLabBranches', 'url' => '/api/configurations/gitlab/branches', 'verb' => 'GET'],
+        ['name' => 'configuration#getGitLabConfigurations', 'url' => '/api/configurations/gitlab/files', 'verb' => 'GET'],
+        
+        // Configuration import endpoints
+        ['name' => 'configuration#importFromGitHub', 'url' => '/api/configurations/import/github', 'verb' => 'POST'],
+        ['name' => 'configuration#importFromGitLab', 'url' => '/api/configurations/import/gitlab', 'verb' => 'POST'],
+        ['name' => 'configuration#importFromUrl', 'url' => '/api/configurations/import/url', 'verb' => 'POST'],
+        
+        // Configuration publish endpoints
+        ['name' => 'configuration#publishToGitHub', 'url' => '/api/configurations/{id}/publish/github', 'verb' => 'POST'],
+        
+        // User Settings - GitHub Integration
+        ['name' => 'userSettings#getGitHubTokenStatus', 'url' => '/api/user-settings/github/status', 'verb' => 'GET'],
+        ['name' => 'userSettings#setGitHubToken', 'url' => '/api/user-settings/github/token', 'verb' => 'POST'],
+        ['name' => 'userSettings#removeGitHubToken', 'url' => '/api/user-settings/github/token', 'verb' => 'DELETE'],
+        // Applications
+        ['name' => 'applications#page', 'url' => '/applications', 'verb' => 'GET'],
+        ['name' => 'applications#stats', 'url' => '/api/applications/stats', 'verb' => 'GET'],
+        // Agents
+        ['name' => 'agents#page', 'url' => '/agents', 'verb' => 'GET'],
+        ['name' => 'agents#stats', 'url' => '/api/agents/stats', 'verb' => 'GET'],
+        ['name' => 'agents#tools', 'url' => '/api/agents/tools', 'verb' => 'GET'],
         // Search
         ['name' => 'search#search', 'url' => '/api/search', 'verb' => 'GET'],
         // Organisations - Multi-tenancy management
@@ -224,21 +316,42 @@ return [
         ['name' => 'organisation#create', 'url' => '/api/organisations', 'verb' => 'POST'],
         ['name' => 'organisation#search', 'url' => '/api/organisations/search', 'verb' => 'GET'],
         ['name' => 'organisation#stats', 'url' => '/api/organisations/stats', 'verb' => 'GET'],
+        ['name' => 'organisation#stats', 'url' => '/api/organisations/statistics', 'verb' => 'GET'],
         ['name' => 'organisation#clearCache', 'url' => '/api/organisations/clear-cache', 'verb' => 'POST'],
         ['name' => 'organisation#getActive', 'url' => '/api/organisations/active', 'verb' => 'GET'],
         ['name' => 'organisation#show', 'url' => '/api/organisations/{uuid}', 'verb' => 'GET'],
         ['name' => 'organisation#update', 'url' => '/api/organisations/{uuid}', 'verb' => 'PUT'],
+        ['name' => 'organisation#patch', 'url' => '/api/organisations/{uuid}', 'verb' => 'PATCH'],
         ['name' => 'organisation#setActive', 'url' => '/api/organisations/{uuid}/set-active', 'verb' => 'POST'],
         ['name' => 'organisation#join', 'url' => '/api/organisations/{uuid}/join', 'verb' => 'POST'],
         ['name' => 'organisation#leave', 'url' => '/api/organisations/{uuid}/leave', 'verb' => 'POST'],
 		// Tags
 		['name' => 'tags#getAllTags', 'url' => 'api/tags', 'verb' => 'GET'],
 		
+		// Views - Saved search configurations
+		['name' => 'views#index', 'url' => '/api/views', 'verb' => 'GET'],
+		['name' => 'views#show', 'url' => '/api/views/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'views#create', 'url' => '/api/views', 'verb' => 'POST'],
+		['name' => 'views#update', 'url' => '/api/views/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'views#patch', 'url' => '/api/views/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'views#destroy', 'url' => '/api/views/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
+		
 		// Chat - AI Assistant endpoints
 		['name' => 'chat#sendMessage', 'url' => '/api/chat/send', 'verb' => 'POST'],
 		['name' => 'chat#getHistory', 'url' => '/api/chat/history', 'verb' => 'GET'],
 		['name' => 'chat#clearHistory', 'url' => '/api/chat/history', 'verb' => 'DELETE'],
-		['name' => 'chat#sendFeedback', 'url' => '/api/chat/feedback', 'verb' => 'POST'],
+		['name' => 'chat#getChatStats', 'url' => '/api/chat/stats', 'verb' => 'GET'],
+		['name' => 'chat#sendFeedback', 'url' => '/api/conversations/{conversationUuid}/messages/{messageId}/feedback', 'verb' => 'POST', 'requirements' => ['conversationUuid' => '[^/]+', 'messageId' => '\\d+']],
+		
+		// Conversations - AI Conversation management
+		['name' => 'conversation#index', 'url' => '/api/conversations', 'verb' => 'GET'],
+		['name' => 'conversation#show', 'url' => '/api/conversations/{uuid}', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'conversation#messages', 'url' => '/api/conversations/{uuid}/messages', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'conversation#create', 'url' => '/api/conversations', 'verb' => 'POST'],
+		['name' => 'conversation#update', 'url' => '/api/conversations/{uuid}', 'verb' => 'PATCH', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'conversation#destroy', 'url' => '/api/conversations/{uuid}', 'verb' => 'DELETE', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'conversation#restore', 'url' => '/api/conversations/{uuid}/restore', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'conversation#destroyPermanent', 'url' => '/api/conversations/{uuid}/permanent', 'verb' => 'DELETE', 'requirements' => ['uuid' => '[^/]+']],
 		
 		// File Text Management - Extract and manage text from files
 		['name' => 'fileText#getFileText', 'url' => '/api/files/{fileId}/text', 'verb' => 'GET', 'requirements' => ['fileId' => '\\d+']],
@@ -264,19 +377,20 @@ return [
 		['name' => 'fileSearch#hybridSearch', 'url' => '/api/search/files/hybrid', 'verb' => 'POST'],
 
 		// Page routes
-		['name' => 'dashboard#page', 'url' => '/', 'verb' => 'GET'],
-		['name' => 'registers#page', 'url' => '/registers', 'verb' => 'GET'],
-		['name' => 'registersDetails#page', 'url' => '/registers/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
-		['name' => 'schemas#page', 'url' => '/schemas', 'verb' => 'GET'],
-		['name' => 'schemasDetails#page', 'url' => '/schemas/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
-		['name' => 'sources#page', 'url' => '/sources', 'verb' => 'GET'],
-		['name' => 'organisation#page', 'url' => '/organisation', 'verb' => 'GET'],
-		['name' => 'objects#page', 'url' => '/objects', 'verb' => 'GET'],
-		['name' => 'tables#page', 'url' => '/tables', 'verb' => 'GET'],
-		['name' => 'chat#page', 'url' => '/chat', 'verb' => 'GET'],
-		['name' => 'configurations#page', 'url' => '/configurations', 'verb' => 'GET'],
-		['name' => 'deleted#page', 'url' => '/deleted', 'verb' => 'GET'],
-		['name' => 'auditTrail#page', 'url' => '/audit-trails', 'verb' => 'GET'],
-		['name' => 'searchTrail#page', 'url' => '/search-trails', 'verb' => 'GET'],
+		['name' => 'dashboard#page', 'url' => '/', 'verb' => 'GET'], // you cannot remove `dashboard#page` as the dashboard expects this.
+		['name' => 'ui#registers', 'url' => '/registers', 'verb' => 'GET'],
+		['name' => 'ui#registersDetails', 'url' => '/registers/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'ui#schemas', 'url' => '/schemas', 'verb' => 'GET'],
+		['name' => 'ui#schemasDetails', 'url' => '/schemas/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'ui#sources', 'url' => '/sources', 'verb' => 'GET'],
+		['name' => 'ui#organisation', 'url' => '/organisation', 'verb' => 'GET'],
+		['name' => 'ui#objects', 'url' => '/objects', 'verb' => 'GET'],
+		['name' => 'ui#tables', 'url' => '/tables', 'verb' => 'GET'],
+		['name' => 'ui#chat', 'url' => '/chat', 'verb' => 'GET'],
+		['name' => 'ui#configurations', 'url' => '/configurations', 'verb' => 'GET'],
+		['name' => 'ui#deleted', 'url' => '/deleted', 'verb' => 'GET'],
+		['name' => 'ui#auditTrail', 'url' => '/audit-trails', 'verb' => 'GET'],
+		['name' => 'ui#searchTrail', 'url' => '/search-trails', 'verb' => 'GET'],
+	['name' => 'files#page', 'url' => '/files', 'verb' => 'GET'],
     ],
 ];

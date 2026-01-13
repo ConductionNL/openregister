@@ -59,25 +59,6 @@ class ConfigurationsController extends Controller
 
     }//end __construct()
 
-	/**
-	 * This returns the template of the main app's page
-	 * It adds some data to the template (app version)
-	 *
-	 * @NoAdminRequired
-	 * @NoCSRFRequired
-	 *
-	 * @return TemplateResponse
-	 */
-	public function page(): TemplateResponse
-	{
-        return new TemplateResponse(
-            //Application::APP_ID,
-            'openregister',
-            'index',
-            []
-        );
-	}
-
     /**
      * List all configurations
      *
@@ -163,6 +144,24 @@ class ConfigurationsController extends Controller
             $data['uuid'] = Uuid::v4();
         }
 
+        // Set default values for new local configurations
+        // If sourceType is not provided, assume it's a local configuration
+        if (!isset($data['sourceType']) || $data['sourceType'] === null || $data['sourceType'] === '') {
+            $data['sourceType'] = 'local';
+        }
+        
+        // Set isLocal based on sourceType (enforce consistency)
+        // Local configurations: sourceType === 'local' or 'manual' → isLocal = true
+        // External configurations: sourceType === 'github', 'gitlab', or 'url' → isLocal = false
+        if (in_array($data['sourceType'], ['local', 'manual'], true)) {
+            $data['isLocal'] = true;
+        } elseif (in_array($data['sourceType'], ['github', 'gitlab', 'url'], true)) {
+            $data['isLocal'] = false;
+        } elseif (!isset($data['isLocal'])) {
+            // Fallback: if sourceType is something else and isLocal not set, default to true
+            $data['isLocal'] = true;
+        }
+
         try {
             return new JSONResponse(
                 $this->configurationMapper->createFromArray($data)
@@ -198,6 +197,21 @@ class ConfigurationsController extends Controller
             }
         }
 
+        // Remove immutable fields to prevent tampering
+        unset($data['id']);
+        unset($data['organisation']);
+        unset($data['owner']);
+        unset($data['created']);
+
+        // Enforce consistency between sourceType and isLocal
+        if (isset($data['sourceType'])) {
+            if (in_array($data['sourceType'], ['local', 'manual'], true)) {
+                $data['isLocal'] = true;
+            } elseif (in_array($data['sourceType'], ['github', 'gitlab', 'url'], true)) {
+                $data['isLocal'] = false;
+            }
+        }
+
         try {
             return new JSONResponse(
                 $this->configurationMapper->updateFromArray($id, $data)
@@ -210,6 +224,23 @@ class ConfigurationsController extends Controller
         }
 
     }//end update()
+
+
+    /**
+     * Patch (partially update) a configuration
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param int $id The ID of the configuration to patch
+     *
+     * @return JSONResponse The updated configuration data
+     */
+    public function patch(int $id): JSONResponse
+    {
+        return $this->update($id);
+
+    }//end patch()
 
 
     /**

@@ -12,6 +12,7 @@ namespace OCA\OpenRegister\Service;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 use LLPhant\OpenAIConfig;
+use LLPhant\OllamaConfig;
 use LLPhant\Embeddings\EmbeddingGenerator\OpenAI\OpenAIADA002EmbeddingGenerator;
 use LLPhant\Embeddings\EmbeddingGenerator\OpenAI\OpenAI3SmallEmbeddingGenerator;
 use LLPhant\Embeddings\EmbeddingGenerator\OpenAI\OpenAI3LargeEmbeddingGenerator;
@@ -22,13 +23,33 @@ use LLPhant\Embeddings\EmbeddingGenerator\EmbeddingGeneratorInterface;
  * Vector Embedding Service
  * 
  * Handles vector embeddings generation, storage, and semantic search using LLPhant.
- * Supports multiple embedding providers (OpenAI, Ollama, local models) and provides
- * similarity search capabilities for both objects and file chunks.
+ * This service is INDEPENDENT of SOLR and handles all LLM embedding operations.
  * 
- * This service works in conjunction with:
- * - SolrObjectService: For object indexing and keyword search
- * - SolrFileService: For file processing and keyword search
- * - Hybrid search: Combining keyword (SOLR) and semantic (vectors) results
+ * RESPONSIBILITIES:
+ * - Generate embeddings for text using multiple LLM providers (OpenAI, Fireworks, Ollama)
+ * - Store embeddings in the database (oc_openregister_vectors table)
+ * - Perform semantic similarity searches using cosine similarity
+ * - Test embedding configurations without saving settings
+ * - Manage embedding generators for different providers and models
+ * 
+ * PROVIDER SUPPORT:
+ * - OpenAI: text-embedding-ada-002, text-embedding-3-small, text-embedding-3-large
+ * - Fireworks AI: Custom OpenAI-compatible API with various models
+ * - Ollama: Local models with custom configurations
+ * 
+ * ARCHITECTURE:
+ * - Uses LLPhant library for embedding generation
+ * - Stores embeddings in database for semantic search
+ * - Independent of SOLR/keyword search infrastructure
+ * - Can be used standalone for vector operations
+ * 
+ * INTEGRATION POINTS:
+ * - ChatService: Uses embeddings for RAG (Retrieval Augmented Generation)
+ * - SolrObjectService/SolrFileService: Can work together for hybrid search
+ * - SettingsController: Delegates testing to this service
+ * 
+ * NOTE: This service does NOT depend on SOLR. For hybrid search that combines
+ * keyword and semantic results, use ChatService or implement in calling code.
  * 
  * @category Service
  * @package  OCA\OpenRegister\Service
@@ -63,14 +84,96 @@ class VectorEmbeddingService
      * 
      * @param IDBConnection     $db              Database connection
      * @param SettingsService   $settingsService Settings management service
+     * @param GuzzleSolrService $solrService     Solr service for vector storage
      * @param LoggerInterface   $logger          PSR-3 logger
      */
     public function __construct(
         private readonly IDBConnection $db,
         private readonly SettingsService $settingsService,
+        private readonly GuzzleSolrService $solrService,
         private readonly LoggerInterface $logger,
     ) {
     }
+
+    /**
+     * Get the configured vector search backend
+     * 
+     * Returns the backend configured in LLM settings: 'php', 'database', or 'solr'
+     * Defaults to 'php' if not configured.
+     * 
+     * @return string Vector search backend ('php', 'database', or 'solr')
+     */
+    private function getVectorSearchBackend(): string
+    {
+        try {
+            $llmSettings = $this->settingsService->getLLMSettingsOnly();
+            return $llmSettings['vectorConfig']['backend'] ?? 'php';
+        } catch (\Exception $e) {
+            $this->logger->warning('[VectorEmbeddingService] Failed to get vector search backend, defaulting to PHP', [
+                'error' => $e->getMessage()
+            ]);
+            return 'php';
+        }
+    }//end getVectorSearchBackend()
+
+    /**
+     * Get the appropriate Solr collection based on entity type
+     * 
+     * Files go to fileCollection, objects go to objectCollection
+     * 
+     * @param string $entityType Entity type ('file' or 'object')
+     * 
+     * @return string|null Solr collection name or null if not configured
+     */
+    private function getSolrCollectionForEntityType(string $entityType): ?string
+    {
+        try {
+            $settings = $this->settingsService->getSettings();
+            
+            // Normalize entity type
+            $entityType = strtolower($entityType);
+            
+            // Determine which collection to use based on entity type
+            if ($entityType === 'file' || $entityType === 'files') {
+                $collection = $settings['solr']['fileCollection'] ?? null;
+            } else {
+                // Default to object collection for objects and any other type
+                $collection = $settings['solr']['objectCollection'] ?? $settings['solr']['collection'] ?? null;
+            }
+            
+            if (!$collection) {
+                $this->logger->warning('[VectorEmbeddingService] No Solr collection configured for entity type', [
+                    'entity_type' => $entityType
+                ]);
+            }
+            
+            return $collection;
+        } catch (\Exception $e) {
+            $this->logger->warning('[VectorEmbeddingService] Failed to get Solr collection for entity type', [
+                'entity_type' => $entityType,
+                'error' => $e->getMessage()
+            ]);
+            return null;
+        }
+    }//end getSolrCollectionForEntityType()
+
+    /**
+     * Get the configured Solr vector field name
+     * 
+     * @return string Solr vector field name (default: '_embedding_')
+     */
+    private function getSolrVectorField(): string
+    {
+        try {
+            $settings = $this->settingsService->getSettings();
+            return $settings['llm']['vectorConfig']['solrField'] ?? '_embedding_';
+        } catch (\Exception $e) {
+            $this->logger->warning('[VectorEmbeddingService] Failed to get Solr vector field, using default', [
+                'error' => $e->getMessage()
+            ]);
+            return '_embedding_';
+        }
+    }//end getSolrVectorField()
 
     /**
      * Generate embedding for a single text
@@ -195,6 +298,66 @@ class VectorEmbeddingService
     }
 
     /**
+     * Test embedding generation with custom configuration
+     * 
+     * Tests if the provided embedding configuration works correctly by generating
+     * a test embedding. Does not save any configuration or store the embedding.
+     * 
+     * @param string $provider Provider name ('openai', 'fireworks', 'ollama')
+     * @param array  $config   Provider-specific configuration
+     * @param string $testText Optional test text to embed
+     * 
+     * @return array Test results with success status and embedding info
+     */
+    public function testEmbedding(string $provider, array $config, string $testText = 'This is a test embedding to verify the LLM configuration.'): array
+    {
+        $this->logger->info('[VectorEmbeddingService] Testing embedding generation', [
+            'provider' => $provider,
+            'model' => $config['model'] ?? 'unknown',
+            'testTextLength' => strlen($testText),
+        ]);
+
+        try {
+            // Generate embedding using custom config
+            $embedding = $this->generateEmbeddingWithCustomConfig($testText, [
+                'provider' => $provider,
+                'model' => $config['model'] ?? null,
+                'apiKey' => $config['apiKey'] ?? null,
+                'baseUrl' => $config['baseUrl'] ?? $config['url'] ?? null,
+            ]);
+
+            $this->logger->info('[VectorEmbeddingService] Embedding test successful', [
+                'provider' => $provider,
+                'model' => $config['model'] ?? 'unknown',
+                'dimensions' => count($embedding),
+            ]);
+
+            return [
+                'success' => true,
+                'message' => 'Embedding test successful',
+                'data' => [
+                    'provider' => $provider,
+                    'model' => $config['model'] ?? 'unknown',
+                    'vectorLength' => count($embedding),
+                    'sampleValues' => array_slice($embedding, 0, 5),
+                    'testText' => $testText,
+                ],
+            ];
+        } catch (\Exception $e) {
+            $this->logger->error('[VectorEmbeddingService] Embedding test failed', [
+                'provider' => $provider,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'message' => 'Failed to generate embedding: ' . $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
      * Generate embeddings for multiple texts in batch
      * 
      * More efficient than calling generateEmbedding() multiple times.
@@ -265,6 +428,282 @@ class VectorEmbeddingService
     }
 
     /**
+     * Store vector embedding in Solr
+     * 
+     * Stores a vector embedding in the configured Solr collection using dense vector fields.
+     * The vector is stored as a Solr document with the embedding in a dense vector field.
+     * 
+     * @param string      $entityType   Entity type ('object' or 'file')
+     * @param string      $entityId     Entity UUID
+     * @param array       $embedding    Vector embedding (array of floats)
+     * @param string      $model        Model used to generate embedding
+     * @param int         $dimensions   Number of dimensions
+     * @param int         $chunkIndex   Chunk index (0 for objects, N for file chunks)
+     * @param int         $totalChunks  Total number of chunks
+     * @param string|null $chunkText    The text that was embedded
+     * @param array       $metadata     Additional metadata as associative array
+     * 
+     * @return string The Solr document ID
+     * 
+     * @throws \Exception If storage fails or Solr is not configured
+     */
+    private function storeVectorInSolr(
+        string $entityType,
+        string $entityId,
+        array $embedding,
+        string $model,
+        int $dimensions,
+        int $chunkIndex = 0,
+        int $totalChunks = 1,
+        ?string $chunkText = null,
+        array $metadata = []
+    ): string {
+        $this->logger->debug('[VectorEmbeddingService] Storing vector in Solr', [
+            'entity_type' => $entityType,
+            'entity_id' => $entityId,
+            'chunk_index' => $chunkIndex,
+            'dimensions' => $dimensions
+        ]);
+
+        try {
+            // Get appropriate Solr collection based on entity type
+            $collection = $this->getSolrCollectionForEntityType($entityType);
+            $vectorField = $this->getSolrVectorField();
+
+            if (!$collection) {
+                throw new \Exception("Solr collection not configured for entity type: {$entityType}");
+            }
+
+            // Check if Solr is available
+            if (!$this->solrService->isAvailable()) {
+                throw new \Exception('Solr service is not available');
+            }
+
+            // Determine document ID based on entity type
+            // Files: {fileId}_chunk_{chunkIndex} (matches existing file indexing)
+            // Objects: use the object's UUID or ID directly
+            $entityTypeLower = strtolower($entityType);
+            if ($entityTypeLower === 'file' || $entityTypeLower === 'files') {
+                $documentId = "{$entityId}_chunk_{$chunkIndex}";
+            } else {
+                // For objects, use the entity ID directly (should be UUID)
+                $documentId = $entityId;
+            }
+
+            // Prepare atomic update document to add embedding fields to existing document
+            // Using Solr atomic updates: https://solr.apache.org/guide/solr/latest/indexing-guide/partial-document-updates.html
+            $updateDocument = [
+                'id' => $documentId,
+                $vectorField => ['set' => $embedding], // Set the embedding vector
+                '_embedding_model_' => ['set' => $model], // Set the model name
+                '_embedding_dim_' => ['set' => $dimensions], // Set the dimensions
+                'self_updated' => ['set' => gmdate('Y-m-d\TH:i:s\Z')], // Update timestamp
+            ];
+
+            $this->logger->debug('[VectorEmbeddingService] Preparing atomic update', [
+                'document_id' => $documentId,
+                'collection' => $collection,
+                'vector_field' => $vectorField,
+                'embedding_size' => count($embedding)
+            ]);
+
+            // Perform atomic update in Solr
+            $solrUrl = $this->solrService->buildSolrBaseUrl() . "/{$collection}/update?commit=true";
+            $response = $this->solrService->getHttpClient()->post($solrUrl, [
+                'json' => [$updateDocument],
+                'headers' => ['Content-Type' => 'application/json'],
+            ]);
+
+            $responseData = json_decode((string)$response->getBody(), true);
+            
+            if (!isset($responseData['responseHeader']['status']) || $responseData['responseHeader']['status'] !== 0) {
+                throw new \Exception('Solr atomic update failed: ' . json_encode($responseData));
+            }
+
+            $this->logger->info('[VectorEmbeddingService] Vector added to existing Solr document', [
+                'document_id' => $documentId,
+                'collection' => $collection,
+                'entity_type' => $entityType,
+                'entity_id' => $entityId,
+                'operation' => 'atomic_update'
+            ]);
+
+            return $documentId;
+
+        } catch (\Exception $e) {
+            $this->logger->error('[VectorEmbeddingService] Failed to store vector in Solr', [
+                'error' => $e->getMessage(),
+                'entity_type' => $entityType,
+                'entity_id' => $entityId,
+                'chunk_index' => $chunkIndex
+            ]);
+            throw new \Exception('Solr vector storage failed: ' . $e->getMessage());
+        }
+    }//end storeVectorInSolr()
+
+    /**
+     * Search vectors in Solr using dense vector KNN
+     * 
+     * Performs K-Nearest Neighbors search using Solr's dense vector capabilities.
+     * Uses the {!knn f=FIELD topK=N} query syntax for efficient vector similarity search.
+     * 
+     * @param array $queryEmbedding Query vector embedding
+     * @param int   $limit          Maximum number of results
+     * @param array $filters        Additional filters (entity_type, etc.)
+     * 
+     * @return array<int, array{entity_type: string, entity_id: string, similarity: float, chunk_index: int, chunk_text: string|null, metadata: array, vector_id: string}> Search results
+     * 
+     * @throws \Exception If search fails or Solr is not configured
+     */
+    private function searchVectorsInSolr(
+        array $queryEmbedding,
+        int $limit = 10,
+        array $filters = []
+    ): array {
+        $this->logger->debug('[VectorEmbeddingService] Searching vectors in Solr', [
+            'limit' => $limit,
+            'filters' => $filters
+        ]);
+
+        try {
+            // Check if Solr is available
+            if (!$this->solrService->isAvailable()) {
+                throw new \Exception('Solr service is not available');
+            }
+
+            $vectorField = $this->getSolrVectorField();
+            $allResults = [];
+
+            // Determine which collections to search based on entity_type filter
+            $collectionsToSearch = [];
+            if (isset($filters['entity_type'])) {
+                $entityTypes = is_array($filters['entity_type']) ? $filters['entity_type'] : [$filters['entity_type']];
+                foreach ($entityTypes as $entityType) {
+                    $collection = $this->getSolrCollectionForEntityType($entityType);
+                    if ($collection) {
+                        $collectionsToSearch[] = ['type' => $entityType, 'collection' => $collection];
+                    }
+                }
+            } else {
+                // Search both object and file collections
+                $settings = $this->settingsService->getSettings();
+                $objectCollection = $settings['solr']['objectCollection'] ?? $settings['solr']['collection'] ?? null;
+                $fileCollection = $settings['solr']['fileCollection'] ?? null;
+                
+                if ($objectCollection) {
+                    $collectionsToSearch[] = ['type' => 'object', 'collection' => $objectCollection];
+                }
+                if ($fileCollection) {
+                    $collectionsToSearch[] = ['type' => 'file', 'collection' => $fileCollection];
+                }
+            }
+
+            if (empty($collectionsToSearch)) {
+                throw new \Exception('No Solr collections configured for vector search');
+            }
+
+            // Build Solr KNN query
+            // Format: {!knn f=_embedding_ topK=10}[0.1, 0.2, 0.3, ...]
+            $vectorString = '[' . implode(', ', $queryEmbedding) . ']';
+            $knnQuery = "{!knn f={$vectorField} topK={$limit}}{$vectorString}";
+
+            // Search each collection
+            foreach ($collectionsToSearch as $collectionInfo) {
+                $collection = $collectionInfo['collection'];
+                $entityType = $collectionInfo['type'];
+
+                $this->logger->debug('[VectorEmbeddingService] Searching collection', [
+                    'collection' => $collection,
+                    'entity_type' => $entityType
+                ]);
+
+                // Query Solr - return all fields (*)
+                $queryParams = [
+                    'q' => $knnQuery,
+                    'rows' => $limit,
+                    'fl' => '*,score', // Return all fields plus the similarity score
+                    'wt' => 'json',
+                ];
+
+                $solrUrl = $this->solrService->buildSolrBaseUrl() . "/{$collection}/select";
+                
+                try {
+                    $response = $this->solrService->getHttpClient()->get($solrUrl, [
+                        'query' => $queryParams,
+                    ]);
+
+                    $responseData = json_decode((string)$response->getBody(), true);
+
+                    if (!isset($responseData['response']['docs'])) {
+                        $this->logger->warning('[VectorEmbeddingService] Invalid Solr response format', [
+                            'collection' => $collection
+                        ]);
+                        continue;
+                    }
+
+                    // Transform Solr documents - keep the full document
+                    foreach ($responseData['response']['docs'] as $doc) {
+                        $allResults[] = [
+                            'vector_id' => $doc['id'],
+                            'entity_type' => $entityType,
+                            'entity_id' => $this->extractEntityId($doc, $entityType),
+                            'similarity' => $doc['score'] ?? 0.0,
+                            'chunk_index' => $doc['chunk_index'] ?? $doc['chunk_index_i'] ?? 0,
+                            'total_chunks' => $doc['chunk_total'] ?? $doc['total_chunks_i'] ?? 1,
+                            'chunk_text' => $doc['chunk_text'] ?? $doc['chunk_text_txt'] ?? null,
+                            'metadata' => $doc, // Include full Solr document as metadata
+                            'model' => $doc['_embedding_model_'] ?? $doc['embedding_model_s'] ?? '',
+                            'dimensions' => $doc['_embedding_dim_'] ?? $doc['embedding_dimensions_i'] ?? 0,
+                        ];
+                    }
+                } catch (\Exception $e) {
+                    $this->logger->warning('[VectorEmbeddingService] Failed to search collection', [
+                        'collection' => $collection,
+                        'error' => $e->getMessage()
+                    ]);
+                    // Continue to next collection
+                }
+            }
+
+            // Sort all results by similarity (descending) and limit
+            usort($allResults, fn($a, $b) => $b['similarity'] <=> $a['similarity']);
+            $allResults = array_slice($allResults, 0, $limit);
+
+            $this->logger->info('[VectorEmbeddingService] Solr vector search completed', [
+                'results_count' => count($allResults),
+                'collections_searched' => count($collectionsToSearch),
+            ]);
+
+            return $allResults;
+
+        } catch (\Exception $e) {
+            $this->logger->error('[VectorEmbeddingService] Solr vector search failed', [
+                'error' => $e->getMessage(),
+            ]);
+            throw new \Exception('Solr vector search failed: ' . $e->getMessage());
+        }
+    }//end searchVectorsInSolr()
+
+    /**
+     * Extract entity ID from Solr document based on entity type
+     * 
+     * @param array  $doc        Solr document
+     * @param string $entityType Entity type ('file' or 'object')
+     * 
+     * @return string Entity ID
+     */
+    private function extractEntityId(array $doc, string $entityType): string
+    {
+        // For files, extract file_id
+        if ($entityType === 'file' || $entityType === 'files') {
+            return (string)($doc['file_id'] ?? $doc['file_id_l'] ?? '');
+        }
+        
+        // For objects, use self_uuid or self_object_id
+        return $doc['self_uuid'] ?? $doc['self_object_id'] ?? $doc['id'] ?? '';
+    }//end extractEntityId()
+
+    /**
      * Store vector embedding in database
      * 
      * @param string      $entityType   Entity type ('object' or 'file')
@@ -292,7 +731,89 @@ class VectorEmbeddingService
         ?string $chunkText = null,
         array $metadata = []
     ): int {
-        $this->logger->debug('Storing vector in database', [
+        // Route to appropriate backend based on configuration
+        $backend = $this->getVectorSearchBackend();
+        
+        $this->logger->debug('[VectorEmbeddingService] Routing vector storage', [
+            'backend' => $backend,
+            'entity_type' => $entityType,
+            'entity_id' => $entityId,
+            'chunk_index' => $chunkIndex,
+            'dimensions' => $dimensions
+        ]);
+
+        try {
+            // Route to selected backend
+            if ($backend === 'solr') {
+                // Store in Solr and return a pseudo-ID (we hash the document ID to an integer for compatibility)
+                $documentId = $this->storeVectorInSolr(
+                    $entityType,
+                    $entityId,
+                    $embedding,
+                    $model,
+                    $dimensions,
+                    $chunkIndex,
+                    $totalChunks,
+                    $chunkText,
+                    $metadata
+                );
+                // Return a hash of the document ID as integer for API compatibility
+                return crc32($documentId);
+            }
+            
+            // Default: Store in database (PHP backend or future database backend)
+            return $this->storeVectorInDatabase(
+                $entityType,
+                $entityId,
+                $embedding,
+                $model,
+                $dimensions,
+                $chunkIndex,
+                $totalChunks,
+                $chunkText,
+                $metadata
+            );
+
+        } catch (\Exception $e) {
+            $this->logger->error('[VectorEmbeddingService] Failed to store vector', [
+                'backend' => $backend,
+                'error' => $e->getMessage(),
+                'entity_type' => $entityType,
+                'entity_id' => $entityId
+            ]);
+            throw new \Exception('Vector storage failed: ' . $e->getMessage());
+        }
+    }//end storeVector()
+
+    /**
+     * Store vector embedding in database (original implementation)
+     * 
+     * @param string      $entityType   Entity type ('object' or 'file')
+     * @param string      $entityId     Entity UUID
+     * @param array       $embedding    Vector embedding (array of floats)
+     * @param string      $model        Model used to generate embedding
+     * @param int         $dimensions   Number of dimensions
+     * @param int         $chunkIndex   Chunk index (0 for objects, N for file chunks)
+     * @param int         $totalChunks  Total number of chunks
+     * @param string|null $chunkText    The text that was embedded
+     * @param array       $metadata     Additional metadata as associative array
+     * 
+     * @return int The ID of the inserted vector
+     * 
+     * @throws \Exception If storage fails
+     */
+    private function storeVectorInDatabase(
+        string $entityType,
+        string $entityId,
+        array $embedding,
+        string $model,
+        int $dimensions,
+        int $chunkIndex = 0,
+        int $totalChunks = 1,
+        ?string $chunkText = null,
+        array $metadata = []
+    ): int {
+        $this->logger->debug('[VectorEmbeddingService] Storing vector in database', [
             'entity_type' => $entityType,
             'entity_id' => $entityId,
             'chunk_index' => $chunkIndex,
@@ -306,6 +827,10 @@ class VectorEmbeddingService
             // Serialize metadata to JSON
             $metadataJson = !empty($metadata) ? json_encode($metadata) : null;
 
+            // Sanitize chunk_text to prevent encoding errors
+            // Remove invalid UTF-8 sequences and control characters
+            $sanitizedChunkText = $chunkText !== null ? $this->sanitizeText($chunkText) : null;
+
             $qb = $this->db->getQueryBuilder();
             $qb->insert('openregister_vectors')
                 ->values([
@@ -313,7 +838,7 @@ class VectorEmbeddingService
                     'entity_id' => $qb->createNamedParameter($entityId),
                     'chunk_index' => $qb->createNamedParameter($chunkIndex, \PDO::PARAM_INT),
                     'total_chunks' => $qb->createNamedParameter($totalChunks, \PDO::PARAM_INT),
-                    'chunk_text' => $qb->createNamedParameter($chunkText),
+                    'chunk_text' => $qb->createNamedParameter($sanitizedChunkText),
                     'embedding' => $qb->createNamedParameter($embeddingBlob, \PDO::PARAM_LOB),
                     'embedding_model' => $qb->createNamedParameter($model),
                     'embedding_dimensions' => $qb->createNamedParameter($dimensions, \PDO::PARAM_INT),
@@ -364,8 +889,10 @@ class VectorEmbeddingService
         ?string $provider = null
     ): array {
         $startTime = microtime(true);
+        $backend = $this->getVectorSearchBackend();
 
-        $this->logger->info('Performing semantic search', [
+        $this->logger->info('[VectorEmbeddingService] Performing semantic search', [
+            'backend' => $backend,
             'query_length' => strlen($query),
             'limit' => $limit,
             'filters' => $filters
@@ -377,65 +904,74 @@ class VectorEmbeddingService
             $queryEmbeddingData = $this->generateEmbedding($query, $provider);
             $queryEmbedding = $queryEmbeddingData['embedding'];
 
-            // Step 2: Fetch vectors from database with filters
-            $this->logger->debug('Step 2: Fetching vectors from database');
-            $vectors = $this->fetchVectors($filters);
+            // Step 2: Route to appropriate backend for vector search
+            if ($backend === 'solr') {
+                // Use Solr KNN search
+                $this->logger->debug('Step 2: Searching vectors in Solr using KNN');
+                $results = $this->searchVectorsInSolr($queryEmbedding, $limit, $filters);
+            } else {
+                // Use PHP/database similarity calculation
+                $this->logger->debug('Step 2: Fetching vectors from database');
+                $vectors = $this->fetchVectors($filters);
 
-            if (empty($vectors)) {
-                $this->logger->warning('No vectors found in database', ['filters' => $filters]);
-                return [];
-            }
-
-            // Step 3: Calculate cosine similarity for each vector
-            $this->logger->debug('Step 3: Calculating similarities', ['vector_count' => count($vectors)]);
-            $results = [];
-            
-            foreach ($vectors as $vector) {
-                try {
-                    $storedEmbedding = unserialize($vector['embedding']);
-                    
-                    if (!is_array($storedEmbedding)) {
-                        $this->logger->warning('Invalid embedding format', ['vector_id' => $vector['id']]);
-                        continue;
-                    }
-
-                    $similarity = $this->cosineSimilarity($queryEmbedding, $storedEmbedding);
-                    
-                    // Parse metadata
-                    $metadata = [];
-                    if (!empty($vector['metadata'])) {
-                        $metadata = json_decode($vector['metadata'], true) ?? [];
-                    }
-
-                    $results[] = [
-                        'vector_id' => $vector['id'],
-                        'entity_type' => $vector['entity_type'],
-                        'entity_id' => $vector['entity_id'],
-                        'similarity' => $similarity,
-                        'chunk_index' => $vector['chunk_index'],
-                        'total_chunks' => $vector['total_chunks'],
-                        'chunk_text' => $vector['chunk_text'],
-                        'metadata' => $metadata,
-                        'model' => $vector['embedding_model'],
-                        'dimensions' => $vector['embedding_dimensions']
-                    ];
-                } catch (\Exception $e) {
-                    $this->logger->warning('Failed to process vector', [
-                        'vector_id' => $vector['id'],
-                        'error' => $e->getMessage()
-                    ]);
+                if (empty($vectors)) {
+                    $this->logger->warning('No vectors found in database', ['filters' => $filters]);
+                    return [];
                 }
+
+                // Step 3: Calculate cosine similarity for each vector
+                $this->logger->debug('Step 3: Calculating similarities', ['vector_count' => count($vectors)]);
+                $results = [];
+                
+                foreach ($vectors as $vector) {
+                    try {
+                        $storedEmbedding = unserialize($vector['embedding']);
+                        
+                        if (!is_array($storedEmbedding)) {
+                            $this->logger->warning('Invalid embedding format', ['vector_id' => $vector['id']]);
+                            continue;
+                        }
+
+                        $similarity = $this->cosineSimilarity($queryEmbedding, $storedEmbedding);
+                        
+                        // Parse metadata
+                        $metadata = [];
+                        if (!empty($vector['metadata'])) {
+                            $metadata = json_decode($vector['metadata'], true) ?? [];
+                        }
+
+                        $results[] = [
+                            'vector_id' => $vector['id'],
+                            'entity_type' => $vector['entity_type'],
+                            'entity_id' => $vector['entity_id'],
+                            'similarity' => $similarity,
+                            'chunk_index' => $vector['chunk_index'],
+                            'total_chunks' => $vector['total_chunks'],
+                            'chunk_text' => $vector['chunk_text'],
+                            'metadata' => $metadata,
+                            'model' => $vector['embedding_model'],
+                            'dimensions' => $vector['embedding_dimensions']
+                        ];
+                    } catch (\Exception $e) {
+                        $this->logger->warning('Failed to process vector', [
+                            'vector_id' => $vector['id'],
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+                }
+
+                // Step 4: Sort by similarity descending
+                usort($results, fn($a, $b) => $b['similarity'] <=> $a['similarity']);
+
+                // Step 5: Return top N results
+                $results = array_slice($results, 0, $limit);
             }
 
-            // Step 4: Sort by similarity descending
-            usort($results, fn($a, $b) => $b['similarity'] <=> $a['similarity']);
-
-            // Step 5: Return top N results
-            $results = array_slice($results, 0, $limit);
-
+            // Log final results
             $searchTime = round((microtime(true) - $startTime) * 1000, 2);
 
-            $this->logger->info('Semantic search completed', [
+            $this->logger->info('[VectorEmbeddingService] Semantic search completed', [
+                'backend' => $backend,
                 'results_count' => count($results),
                 'top_similarity' => $results[0]['similarity'] ?? 0,
                 'search_time_ms' => $searchTime
@@ -472,23 +1008,39 @@ class VectorEmbeddingService
 
             // Apply filters
             if (isset($filters['entity_type'])) {
-                $qb->andWhere($qb->expr()->eq('entity_type', $qb->createNamedParameter($filters['entity_type'])));
+                // Support both string and array for entity_type
+                if (is_array($filters['entity_type'])) {
+                    $qb->andWhere($qb->expr()->in('entity_type', $qb->createNamedParameter($filters['entity_type'], \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_STR_ARRAY)));
+                } else {
+                    $qb->andWhere($qb->expr()->eq('entity_type', $qb->createNamedParameter($filters['entity_type'])));
+                }
             }
 
             if (isset($filters['entity_id'])) {
-                $qb->andWhere($qb->expr()->eq('entity_id', $qb->createNamedParameter($filters['entity_id'])));
+                // Support both string and array for entity_id
+                if (is_array($filters['entity_id'])) {
+                    $qb->andWhere($qb->expr()->in('entity_id', $qb->createNamedParameter($filters['entity_id'], \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_STR_ARRAY)));
+                } else {
+                    $qb->andWhere($qb->expr()->eq('entity_id', $qb->createNamedParameter($filters['entity_id'])));
+                }
             }
 
             if (isset($filters['embedding_model'])) {
                 $qb->andWhere($qb->expr()->eq('embedding_model', $qb->createNamedParameter($filters['embedding_model'])));
             }
-
-            // Order by creation date (most recent first) for consistency
-            $qb->orderBy('created_at', 'DESC');
-
-            // Limit to prevent memory issues (configurable later)
-            $maxVectors = $filters['max_vectors'] ?? 10000;
+            
+            // PERFORMANCE OPTIMIZATION: Limit vectors fetched to reduce PHP similarity calculations
+            // TODO: Replace with proper database-level vector search (PostgreSQL + pgvector)
+            // For now, limit to most recent vectors to improve performance
+            // This is a temporary fix until we migrate to a database with native vector operations
+            $maxVectors = $filters['max_vectors'] ?? 500; // Default: Compare against max 500 vectors (reduced from 10000)
             $qb->setMaxResults($maxVectors);
+            $qb->orderBy('created_at', 'DESC'); // Get most recent vectors first
+            
+            $this->logger->debug('[VectorEmbeddingService] Applied vector fetch limit for performance', [
+                'max_vectors' => $maxVectors,
+                'note' => 'Temporary optimization until PostgreSQL + pgvector migration'
+            ]);
 
             $result = $qb->executeQuery();
             $vectors = $result->fetchAll();
@@ -767,6 +1319,46 @@ class VectorEmbeddingService
     }
 
     /**
+     * Get vector count for specific entity type(s)
+     * 
+     * @param string|null $entityType Filter by entity type ('object', 'file', or null for all)
+     * @param array       $filters    Additional filters (e.g., entity_id, model)
+     * 
+     * @return int Total count
+     */
+    public function getVectorCount(?string $entityType = null, array $filters = []): int
+    {
+        try {
+            $qb = $this->db->getQueryBuilder();
+            $qb->select($qb->func()->count('*', 'total'))
+                ->from('openregister_vectors');
+
+            // Filter by entity type
+            if ($entityType !== null) {
+                $qb->andWhere($qb->expr()->eq('entity_type', $qb->createNamedParameter($entityType)));
+            }
+
+            // Apply additional filters
+            foreach ($filters as $field => $value) {
+                $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter($value)));
+            }
+
+            $result = $qb->executeQuery();
+            $count = (int) $result->fetchOne();
+            $result->closeCursor();
+
+            return $count;
+
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to get vector count', [
+                'entity_type' => $entityType,
+                'error' => $e->getMessage()
+            ]);
+            return 0;
+        }
+    }
+
+    /**
      * Get vector statistics
      * 
      * @return array Statistics about stored vectors
@@ -774,6 +1366,14 @@ class VectorEmbeddingService
     public function getVectorStats(): array
     {
         try {
+            // Check if we should use Solr for stats
+            $backend = $this->getVectorSearchBackend();
+            
+            if ($backend === 'solr') {
+                return $this->getVectorStatsFromSolr();
+            }
+            
+            // Default: get stats from database
             $qb = $this->db->getQueryBuilder();
             
             // Total vectors
@@ -826,6 +1426,160 @@ class VectorEmbeddingService
     }
 
     /**
+     * Get vector statistics from Solr collections
+     * 
+     * Counts documents with embeddings in file and object collections
+     * 
+     * @return array Vector statistics from Solr
+     */
+    private function getVectorStatsFromSolr(): array
+    {
+        try {
+            if (!$this->solrService->isAvailable()) {
+                $this->logger->warning('[VectorEmbeddingService] Solr not available for stats');
+                return [
+                    'total_vectors' => 0,
+                    'by_type' => [],
+                    'by_model' => [],
+                    'object_vectors' => 0,
+                    'file_vectors' => 0,
+                    'source' => 'solr_unavailable'
+                ];
+            }
+
+            $settings = $this->settingsService->getSettings();
+            $vectorField = $this->getSolrVectorField();
+            $objectCollection = $settings['solr']['objectCollection'] ?? $settings['solr']['collection'] ?? null;
+            $fileCollection = $settings['solr']['fileCollection'] ?? null;
+
+            $objectCount = 0;
+            $fileCount = 0;
+            $byModel = [];
+
+            // Count objects with embeddings
+            if ($objectCollection) {
+                try {
+                    $objectStats = $this->countVectorsInCollection($objectCollection, $vectorField);
+                    $objectCount = $objectStats['count'];
+                    $byModel = array_merge($byModel, $objectStats['by_model']);
+                } catch (\Exception $e) {
+                    $this->logger->warning('[VectorEmbeddingService] Failed to get object vector stats from Solr', [
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+
+            // Count files with embeddings
+            if ($fileCollection) {
+                try {
+                    $fileStats = $this->countVectorsInCollection($fileCollection, $vectorField);
+                    $fileCount = $fileStats['count'];
+                    // Merge model counts
+                    foreach ($fileStats['by_model'] as $model => $count) {
+                        $byModel[$model] = ($byModel[$model] ?? 0) + $count;
+                    }
+                } catch (\Exception $e) {
+                    $this->logger->warning('[VectorEmbeddingService] Failed to get file vector stats from Solr', [
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+
+            $total = $objectCount + $fileCount;
+
+            $this->logger->debug('[VectorEmbeddingService] Vector stats from Solr', [
+                'total' => $total,
+                'objects' => $objectCount,
+                'files' => $fileCount
+            ]);
+
+            return [
+                'total_vectors' => $total,
+                'by_type' => [
+                    'object' => $objectCount,
+                    'file' => $fileCount
+                ],
+                'by_model' => $byModel,
+                'object_vectors' => $objectCount,
+                'file_vectors' => $fileCount,
+                'source' => 'solr'
+            ];
+
+        } catch (\Exception $e) {
+            $this->logger->error('[VectorEmbeddingService] Failed to get vector stats from Solr', [
+                'error' => $e->getMessage()
+            ]);
+            return [
+                'total_vectors' => 0,
+                'by_type' => [],
+                'by_model' => [],
+                'object_vectors' => 0,
+                'file_vectors' => 0,
+                'source' => 'solr_error'
+            ];
+        }
+    }//end getVectorStatsFromSolr()
+
+    /**
+     * Count vectors in a specific Solr collection
+     * 
+     * @param string $collection Collection name
+     * @param string $vectorField Vector field name
+     * 
+     * @return array{count: int, by_model: array} Count and breakdown by model
+     */
+    private function countVectorsInCollection(string $collection, string $vectorField): array
+    {
+        // Get Solr configuration for authentication
+        $settings = $this->settingsService->getSettings();
+        $solrConfig = $settings['solr'] ?? [];
+        
+        // Build request options
+        $options = [
+            'query' => [
+                'q' => "{$vectorField}:*", // Documents with vector field
+                'rows' => 0, // Don't return documents, just count
+                'wt' => 'json',
+                'facet' => 'true',
+                'facet.field' => '_embedding_model_' // Count by model
+            ]
+        ];
+        
+        // Add HTTP authentication if configured
+        if (!empty($solrConfig['username']) && !empty($solrConfig['password'])) {
+            $options['auth'] = [$solrConfig['username'], $solrConfig['password']];
+        }
+        
+        // Query Solr for documents with the embedding field present
+        $solrUrl = $this->solrService->buildSolrBaseUrl() . "/{$collection}/select";
+        $response = $this->solrService->getHttpClient()->get($solrUrl, $options);
+
+        $data = json_decode((string)$response->getBody(), true);
+        $count = $data['response']['numFound'] ?? 0;
+        
+        // Extract model counts from facets
+        $byModel = [];
+        if (isset($data['facet_counts']['facet_fields']['_embedding_model_'])) {
+            $facets = $data['facet_counts']['facet_fields']['_embedding_model_'];
+            // Facets are returned as [value1, count1, value2, count2, ...]
+            for ($i = 0; $i < count($facets); $i += 2) {
+                if (isset($facets[$i]) && isset($facets[$i + 1])) {
+                    $modelName = $facets[$i];
+                    $modelCount = $facets[$i + 1];
+                    if ($modelName && $modelCount > 0) {
+                        $byModel[$modelName] = $modelCount;
+                    }
+                }
+            }
+        }
+
+        return [
+            'count' => $count,
+            'by_model' => $byModel
+        ];
+    }//end countVectorsInCollection()
+
+    /**
      * Get embedding configuration from settings
      * 
      * @param string|null $provider Override provider (null = use default from settings)
@@ -834,20 +1588,35 @@ class VectorEmbeddingService
      */
     private function getEmbeddingConfig(?string $provider = null): array
     {
-        // Load from settings service
-        $settings = $this->settingsService->getSettings();
-        $vectorSettings = $settings['vector_embeddings'] ?? [];
+        // Load from LLM settings
+        $llmSettings = $this->settingsService->getLLMSettingsOnly();
         
-        // Determine provider and model
-        $configuredProvider = $provider ?? ($vectorSettings['provider'] ?? 'openai');
-        $configuredModel = $vectorSettings['model'] ?? 'text-embedding-ada-002';
-        $apiKey = $vectorSettings['api_key'] ?? null;
-        $baseUrl = $vectorSettings['base_url'] ?? null;
+        // Determine provider: use provided, or fall back to configured embedding provider
+        $configuredProvider = $provider ?? ($llmSettings['embeddingProvider'] ?? 'openai');
+        
+        // Get provider-specific configuration
+        $providerConfig = match ($configuredProvider) {
+            'fireworks' => $llmSettings['fireworksConfig'] ?? [],
+            'ollama' => $llmSettings['ollamaConfig'] ?? [],
+            'openai' => $llmSettings['openaiConfig'] ?? [],
+            default => []
+        };
+        
+        // Extract model and credentials based on provider
+        $model = match ($configuredProvider) {
+            'fireworks' => $providerConfig['embeddingModel'] ?? 'thenlper/gte-base',
+            'ollama' => $providerConfig['model'] ?? 'nomic-embed-text',
+            'openai' => $providerConfig['model'] ?? 'text-embedding-ada-002',
+            default => 'text-embedding-ada-002'
+        };
+        
+        $apiKey = $providerConfig['apiKey'] ?? null;
+        $baseUrl = $providerConfig['baseUrl'] ?? $providerConfig['url'] ?? null;
 
         return [
             'provider' => $configuredProvider,
-            'model' => $configuredModel,
-            'dimensions' => self::EMBEDDING_DIMENSIONS[$configuredModel] ?? 1536,
+            'model' => $model,
+            'dimensions' => self::EMBEDDING_DIMENSIONS[$model] ?? 1536,
             'api_key' => $apiKey,
             'base_url' => $baseUrl
         ];
@@ -872,22 +1641,11 @@ class VectorEmbeddingService
                 'model' => $config['model']
             ]);
 
-            // Create LLPhant config
-            $llphantConfig = new OpenAIConfig();
-            
-            if (!empty($config['api_key'])) {
-                $llphantConfig->apiKey = $config['api_key'];
-            }
-            
-            if (!empty($config['base_url'])) {
-                $llphantConfig->url = $config['base_url'];
-            }
-
             // Create appropriate generator based on provider and model
             $generator = match ($config['provider']) {
-                'openai' => $this->createOpenAIGenerator($config['model'], $llphantConfig),
-                'fireworks' => $this->createFireworksGenerator($config['model'], $llphantConfig),
-                'ollama' => $this->createOllamaGenerator($config['model'], $llphantConfig),
+                'openai' => $this->createOpenAIGenerator($config['model'], $config),
+                'fireworks' => $this->createFireworksGenerator($config['model'], $config),
+                'ollama' => $this->createOllamaGenerator($config['model'], $config),
                 default => throw new \Exception("Unsupported embedding provider: {$config['provider']}")
             };
 
@@ -906,19 +1664,29 @@ class VectorEmbeddingService
     /**
      * Create OpenAI embedding generator
      * 
-     * @param string        $model  Model name
-     * @param OpenAIConfig  $config LLPhant config
+     * @param string $model  Model name
+     * @param array  $config Configuration array with api_key and base_url
      * 
      * @return EmbeddingGeneratorInterface Generator instance
      * 
      * @throws \Exception If model is not supported
      */
-    private function createOpenAIGenerator(string $model, OpenAIConfig $config): EmbeddingGeneratorInterface
+    private function createOpenAIGenerator(string $model, array $config): EmbeddingGeneratorInterface
     {
+        $llphantConfig = new OpenAIConfig();
+        
+        if (!empty($config['api_key'])) {
+            $llphantConfig->apiKey = $config['api_key'];
+        }
+        
+        if (!empty($config['base_url'])) {
+            $llphantConfig->url = $config['base_url'];
+        }
+        
         return match ($model) {
-            'text-embedding-ada-002' => new OpenAIADA002EmbeddingGenerator($config),
-            'text-embedding-3-small' => new OpenAI3SmallEmbeddingGenerator($config),
-            'text-embedding-3-large' => new OpenAI3LargeEmbeddingGenerator($config),
+            'text-embedding-ada-002' => new OpenAIADA002EmbeddingGenerator($llphantConfig),
+            'text-embedding-3-small' => new OpenAI3SmallEmbeddingGenerator($llphantConfig),
+            'text-embedding-3-large' => new OpenAI3LargeEmbeddingGenerator($llphantConfig),
             default => throw new \Exception("Unsupported OpenAI model: {$model}")
         };
     }
@@ -929,23 +1697,23 @@ class VectorEmbeddingService
      * Fireworks AI uses OpenAI-compatible API, so we create a custom wrapper
      * that works with any Fireworks model.
      * 
-     * @param string        $model  Model name (e.g., 'nomic-ai/nomic-embed-text-v1.5')
-     * @param OpenAIConfig  $config LLPhant config with API key and base URL
+     * @param string $model  Model name (e.g., 'nomic-ai/nomic-embed-text-v1.5')
+     * @param array  $config Configuration array with api_key and base_url
      * 
      * @return EmbeddingGeneratorInterface Generator instance
      * 
      * @throws \Exception If model is not supported
      */
-    private function createFireworksGenerator(string $model, OpenAIConfig $config): EmbeddingGeneratorInterface
+    private function createFireworksGenerator(string $model, array $config): EmbeddingGeneratorInterface
     {
         // Create a custom anonymous class that implements the EmbeddingGeneratorInterface
         // This allows us to use any Fireworks model name without LLPhant's restrictions
         return new class($model, $config, $this->logger) implements EmbeddingGeneratorInterface {
             private string $model;
-            private OpenAIConfig $config;
+            private array $config;
             private $logger;
 
-            public function __construct(string $model, OpenAIConfig $config, $logger)
+            public function __construct(string $model, array $config, $logger)
             {
                 $this->model = $model;
                 $this->config = $config;
@@ -954,7 +1722,7 @@ class VectorEmbeddingService
 
             public function embedText(string $text): array
             {
-                $url = rtrim($this->config->url ?? 'https://api.fireworks.ai/inference/v1', '/') . '/embeddings';
+                $url = rtrim($this->config['base_url'] ?? 'https://api.fireworks.ai/inference/v1', '/') . '/embeddings';
                 
                 $this->logger->debug('Calling Fireworks AI API', [
                     'url' => $url,
@@ -965,7 +1733,7 @@ class VectorEmbeddingService
                 curl_setopt($ch, CURLOPT_POST, true);
                 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
                 curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                    'Authorization: Bearer ' . $this->config->apiKey,
+                    'Authorization: Bearer ' . $this->config['api_key'],
                     'Content-Type: application/json',
                 ]);
                 curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
@@ -1027,17 +1795,20 @@ class VectorEmbeddingService
     /**
      * Create Ollama embedding generator
      * 
-     * @param string        $model  Model name
-     * @param OpenAIConfig  $config LLPhant config (used for base URL)
+     * @param string $model  Model name (e.g., 'nomic-embed-text')
+     * @param array  $config Configuration array with base_url
      * 
      * @return EmbeddingGeneratorInterface Generator instance
      */
-    private function createOllamaGenerator(string $model, OpenAIConfig $config): EmbeddingGeneratorInterface
+    private function createOllamaGenerator(string $model, array $config): EmbeddingGeneratorInterface
     {
-        // Ollama generator uses different initialization
-        // For now, return a generic Ollama generator
-        // The user will need to have Ollama running locally
-        return new OllamaEmbeddingGenerator();
+        // Create native Ollama configuration
+        $ollamaConfig = new OllamaConfig();
+        $ollamaConfig->url = rtrim($config['base_url'] ?? 'http://localhost:11434', '/') . '/api/';
+        $ollamaConfig->model = $model;
+        
+        // Create and return Ollama embedding generator with native config
+        return new OllamaEmbeddingGenerator($ollamaConfig);
     }
 
 
@@ -1230,6 +2001,200 @@ class VectorEmbeddingService
             'unique_files' => $uniqueFiles,
             'average_dimensions' => $avgDimensions
         ];
+    }
+
+    /**
+     * Sanitize text to prevent UTF-8 encoding errors
+     * 
+     * Removes invalid UTF-8 sequences and problematic control characters
+     * that can cause database storage issues.
+     * 
+     * @param string $text Text to sanitize
+     * 
+     * @return string Sanitized text safe for UTF-8 storage
+     */
+    private function sanitizeText(string $text): string
+    {
+        // Step 1: Remove invalid UTF-8 sequences
+        // This handles cases like \xC2 that aren't valid UTF-8
+        $text = mb_convert_encoding($text, 'UTF-8', 'UTF-8');
+        
+        // Step 2: Remove NULL bytes and other problematic control characters
+        // but keep newlines, tabs, and carriage returns
+        $text = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $text);
+        
+        // Step 3: Replace any remaining invalid UTF-8 with replacement character
+        $text = iconv('UTF-8', 'UTF-8//IGNORE', $text);
+        
+        // Step 4: Normalize whitespace (optional but helpful)
+        $text = preg_replace('/\s+/u', ' ', $text);
+        
+        return trim($text);
+    }
+
+    /**
+     * Check if embedding model has changed since vectors were created
+     *
+     * Compares the configured embedding model with models used in existing vectors.
+     * If they don't match, vectors need to be regenerated.
+     *
+     * @return array Status information with mismatch details
+     */
+    public function checkEmbeddingModelMismatch(): array
+    {
+        try {
+            // Get current configured model
+            $settings = $this->settingsService->getLLMSettingsOnly();
+            $currentProvider = $settings['embeddingProvider'] ?? null;
+            $currentModel = null;
+
+            if ($currentProvider === 'openai') {
+                $currentModel = $settings['openaiConfig']['model'] ?? null;
+            } elseif ($currentProvider === 'ollama') {
+                $currentModel = $settings['ollamaConfig']['model'] ?? null;
+            } elseif ($currentProvider === 'fireworks') {
+                $currentModel = $settings['fireworksConfig']['embeddingModel'] ?? null;
+            }
+
+            if (!$currentModel) {
+                return [
+                    'has_vectors' => false,
+                    'mismatch' => false,
+                    'message' => 'No embedding model configured'
+                ];
+            }
+
+            // Check if any vectors exist
+            $qb = $this->db->getQueryBuilder();
+            $qb->select($qb->func()->count('*', 'total'))
+                ->from('openregister_vectors');
+            
+            $result = $qb->executeQuery();
+            $totalVectors = (int) $result->fetchOne();
+            $result->closeCursor();
+
+            if ($totalVectors === 0) {
+                return [
+                    'has_vectors' => false,
+                    'mismatch' => false,
+                    'current_model' => $currentModel,
+                    'message' => 'No vectors exist yet'
+                ];
+            }
+
+            // Get distinct embedding models used in existing vectors
+            $qb = $this->db->getQueryBuilder();
+            $qb->selectDistinct('embedding_model')
+                ->from('openregister_vectors')
+                ->where($qb->expr()->isNotNull('embedding_model'));
+
+            $result = $qb->executeQuery();
+            $existingModels = [];
+            while ($row = $result->fetch()) {
+                $existingModels[] = $row['embedding_model'];
+            }
+            $result->closeCursor();
+
+            // Count vectors with NULL model (created before tracking)
+            $qb = $this->db->getQueryBuilder();
+            $qb->select($qb->func()->count('*', 'null_count'))
+                ->from('openregister_vectors')
+                ->where($qb->expr()->isNull('embedding_model'));
+            
+            $result = $qb->executeQuery();
+            $nullModelCount = (int) $result->fetchOne();
+            $result->closeCursor();
+
+            // Check for mismatch
+            $hasMismatch = false;
+            $mismatchDetails = [];
+
+            foreach ($existingModels as $existingModel) {
+                if ($existingModel !== $currentModel) {
+                    $hasMismatch = true;
+                    $mismatchDetails[] = $existingModel;
+                }
+            }
+
+            return [
+                'has_vectors' => true,
+                'mismatch' => $hasMismatch || $nullModelCount > 0,
+                'current_model' => $currentModel,
+                'existing_models' => $existingModels,
+                'total_vectors' => $totalVectors,
+                'null_model_count' => $nullModelCount,
+                'mismatched_models' => $mismatchDetails,
+                'message' => $hasMismatch || $nullModelCount > 0
+                    ? 'Embedding model has changed. Please clear all vectors and re-vectorize.'
+                    : 'All vectors use the current embedding model'
+            ];
+
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to check embedding model mismatch', [
+                'error' => $e->getMessage()
+            ]);
+
+            return [
+                'has_vectors' => false,
+                'mismatch' => false,
+                'error' => $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Clear all embeddings from the database
+     *
+     * Deletes all vectors. This should be done when changing embedding models.
+     *
+     * @return array Result with count of deleted vectors
+     */
+    public function clearAllEmbeddings(): array
+    {
+        try {
+            // Count vectors before deletion
+            $qb = $this->db->getQueryBuilder();
+            $qb->select($qb->func()->count('*', 'total'))
+                ->from('openregister_vectors');
+            
+            $result = $qb->executeQuery();
+            $totalVectors = (int) $result->fetchOne();
+            $result->closeCursor();
+
+            if ($totalVectors === 0) {
+                return [
+                    'success' => true,
+                    'deleted' => 0,
+                    'message' => 'No vectors to delete'
+                ];
+            }
+
+            // Delete all vectors
+            $qb = $this->db->getQueryBuilder();
+            $qb->delete('openregister_vectors');
+            $deletedCount = $qb->executeStatement();
+
+            $this->logger->info('All embeddings cleared', [
+                'deleted_count' => $deletedCount
+            ]);
+
+            return [
+                'success' => true,
+                'deleted' => $deletedCount,
+                'message' => "Deleted {$deletedCount} vectors successfully"
+            ];
+
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to clear embeddings', [
+                'error' => $e->getMessage()
+            ]);
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'message' => 'Failed to clear embeddings: ' . $e->getMessage()
+            ];
+        }
     }
 }
 

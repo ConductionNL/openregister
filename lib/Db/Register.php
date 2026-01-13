@@ -166,6 +166,28 @@ class Register extends Entity implements JsonSerializable
      */
     protected ?DateTime $deleted = null;
 
+    /**
+     * Publication timestamp.
+     *
+     * When set, this register becomes publicly accessible regardless of organisation restrictions
+     * if published bypass is enabled. The register is considered published when:
+     * - published <= now AND
+     * - (depublished IS NULL OR depublished > now)
+     *
+     * @var DateTime|null Publication timestamp
+     */
+    protected ?DateTime $published = null;
+
+    /**
+     * Depublication timestamp.
+     *
+     * When set, this register becomes inaccessible after this date/time.
+     * Used together with published to control publication lifecycle.
+     *
+     * @var DateTime|null Depublication timestamp
+     */
+    protected ?DateTime $depublished = null;
+
 
     /**
      * Constructor for the Register class
@@ -191,6 +213,8 @@ class Register extends Entity implements JsonSerializable
         $this->addType(fieldName: 'authorization', type: 'json');
         $this->addType(fieldName: 'groups', type: 'json');
         $this->addType(fieldName: 'deleted', type: 'datetime');
+        $this->addType(fieldName: 'published', type: 'datetime');
+        $this->addType(fieldName: 'depublished', type: 'datetime');
 
     }//end __construct()
 
@@ -320,6 +344,16 @@ class Register extends Entity implements JsonSerializable
             $deleted = $this->deleted->format('c');
         }
 
+        $published = null;
+        if (isset($this->published) === true) {
+            $published = $this->published->format('c');
+        }
+
+        $depublished = null;
+        if (isset($this->depublished) === true) {
+            $depublished = $this->depublished->format('c');
+        }
+
         // Always return schemas as array of IDs (int/string)
         $schemas = array_filter(
                 $this->schemas ?? [],
@@ -327,6 +361,8 @@ class Register extends Entity implements JsonSerializable
                     return is_int($item) || is_string($item);
                 }
                 );
+
+        $groups = $this->groups ?? [];
 
         return [
             'id'            => $this->id,
@@ -345,7 +381,23 @@ class Register extends Entity implements JsonSerializable
             'application'   => $this->application,
             'organisation'  => $this->organisation,
             'authorization' => $this->authorization,
-            'groups'        => $this->groups,
+            'groups'        => $groups,
+            'published'      => $published,
+            'depublished'    => $depublished,
+            'quota'         => [
+                'storage'   => null, // To be set via admin configuration
+                'bandwidth' => null, // To be set via admin configuration
+                'requests'  => null, // To be set via admin configuration
+                'users'     => null, // To be set via admin configuration
+                'groups'    => null, // To be set via admin configuration
+            ],
+            'usage'         => [
+                'storage'   => 0, // To be calculated from actual usage
+                'bandwidth' => 0, // To be calculated from actual usage
+                'requests'  => 0, // To be calculated from actual usage
+                'users'     => 0, // Registers don't have direct users
+                'groups'    => count($groups),
+            ],
             'deleted'       => $deleted,
         ];
 
@@ -376,6 +428,122 @@ class Register extends Entity implements JsonSerializable
         return 'Register #'.($this->id ?? 'unknown');
 
     }//end __toString()
+
+
+    /**
+     * Check if this register is managed by any configuration
+     *
+     * This method checks if the register's ID is present in the registers array
+     * of any provided configuration entities.
+     *
+     * @param array<Configuration> $configurations Array of Configuration entities to check against
+     *
+     * @return bool True if this register is managed by at least one configuration
+     *
+     * @phpstan-param array<Configuration> $configurations
+     * @psalm-param   array<Configuration> $configurations
+     */
+    public function isManagedByConfiguration(array $configurations): bool
+    {
+        if (empty($configurations) === true || $this->id === null) {
+            return false;
+        }
+
+        foreach ($configurations as $configuration) {
+            $registers = $configuration->getRegisters();
+            if (in_array($this->id, $registers, true) === true) {
+                return true;
+            }
+        }
+
+        return false;
+
+    }//end isManagedByConfiguration()
+
+
+    /**
+     * Get the configuration that manages this register
+     *
+     * Returns the first configuration that has this register's ID in its registers array.
+     * Returns null if the register is not managed by any configuration.
+     *
+     * @param array<Configuration> $configurations Array of Configuration entities to check against
+     *
+     * @return Configuration|null The configuration managing this register, or null
+     *
+     * @phpstan-param array<Configuration> $configurations
+     * @psalm-param   array<Configuration> $configurations
+     */
+    public function getManagedByConfiguration(array $configurations): ?Configuration
+    {
+        if (empty($configurations) === true || $this->id === null) {
+            return null;
+        }
+
+        foreach ($configurations as $configuration) {
+            $registers = $configuration->getRegisters();
+            if (in_array($this->id, $registers, true) === true) {
+                return $configuration;
+            }
+        }
+
+        return null;
+
+    }//end getManagedByConfiguration()
+
+
+    /**
+     * Get the publication timestamp
+     *
+     * @return DateTime|null Publication timestamp
+     */
+    public function getPublished(): ?DateTime
+    {
+        return $this->published;
+
+    }//end getPublished()
+
+
+    /**
+     * Set the publication timestamp
+     *
+     * @param DateTime|null $published Publication timestamp
+     *
+     * @return void
+     */
+    public function setPublished(?DateTime $published): void
+    {
+        $this->published = $published;
+        $this->markFieldUpdated('published');
+
+    }//end setPublished()
+
+
+    /**
+     * Get the depublication timestamp
+     *
+     * @return DateTime|null Depublication timestamp
+     */
+    public function getDepublished(): ?DateTime
+    {
+        return $this->depublished;
+
+    }//end getDepublished()
+
+
+    /**
+     * Set the depublication timestamp
+     *
+     * @param DateTime|null $depublished Depublication timestamp
+     *
+     * @return void
+     */
+    public function setDepublished(?DateTime $depublished): void
+    {
+        $this->depublished = $depublished;
+        $this->markFieldUpdated('depublished');
+
+    }//end setDepublished()
 
 
 }//end class

@@ -461,7 +461,7 @@ export default {
 						}
 					}
 
-					console.log('📦 Loaded current assignments:', {
+					console.info('📦 Loaded current assignments:', {
 						objectCollection: this.selectedObjectCollection,
 						fileCollection: this.selectedFileCollection,
 					})
@@ -528,7 +528,7 @@ export default {
 		},
 
 		handleConfigSetUpdate() {
-			console.log('📦 ConfigSet updated, reloading ConfigSets list')
+			console.info('📦 ConfigSet updated, reloading ConfigSets list')
 			this.loadConfigSets()
 		},
 

@@ -19,8 +19,54 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 			:can-close="true"
 			@update:open="handleDialogClose">
 			<div class="formContainer viewObjectDialog">
+				<!-- Register/Schema Selection (for new objects with multiple options) -->
+				<div v-if="showRegisterSchemaSelection" class="selection-step">
+					<div class="selection-container">
+						<h3>{{ t('openregister', 'Select Register and Schema') }}</h3>
+						<p class="selection-hint">
+							{{ t('openregister', 'Please select which register and schema to use for the new object') }}
+						</p>
+
+						<div class="selection-fields">
+							<div v-if="availableRegisters.length > 1" class="field-group">
+								<label for="register-select">{{ t('openregister', 'Register') }}</label>
+								<NcSelect
+									id="register-select"
+									v-model="selectedRegisterForNewObject"
+									:options="availableRegisters"
+									label="title"
+									track-by="id"
+									:placeholder="t('openregister', 'Choose a register')"
+									:clearable="false" />
+							</div>
+
+							<div v-if="availableSchemas.length > 1" class="field-group">
+								<label for="schema-select">{{ t('openregister', 'Schema') }}</label>
+								<NcSelect
+									id="schema-select"
+									v-model="selectedSchemaForNewObject"
+									:options="availableSchemas"
+									label="title"
+									track-by="id"
+									:placeholder="t('openregister', 'Choose a schema')"
+									:clearable="false" />
+							</div>
+
+							<NcButton
+								type="primary"
+								:disabled="!canProceedToProperties"
+								@click="confirmRegisterSchemaSelection">
+								<template #icon>
+									<ArrowRight :size="20" />
+								</template>
+								{{ t('openregister', 'Continue to Properties') }}
+							</NcButton>
+						</div>
+					</div>
+				</div>
+
 				<!-- Display Object -->
-				<div>
+				<div v-else>
 					<div class="tabContainer">
 						<BTabs v-model="activeTab" content-class="mt-3" justified>
 							<BTab title="Properties" active>
@@ -626,6 +672,7 @@ import {
 	NcLoadingIcon,
 	NcDateTimePickerNative,
 	NcEmptyContent,
+	NcSelect,
 } from '@nextcloud/vue'
 import { json, jsonParseLinter } from '@codemirror/lang-json'
 import CodeMirror from 'vue-codemirror6'
@@ -650,6 +697,7 @@ import Plus from 'vue-material-design-icons/Plus.vue'
 import Publish from 'vue-material-design-icons/Publish.vue'
 import PublishOff from 'vue-material-design-icons/PublishOff.vue'
 import ExclamationThick from 'vue-material-design-icons/ExclamationThick.vue'
+import ArrowRight from 'vue-material-design-icons/ArrowRight.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
 export default {
 	name: 'ViewObject',
@@ -665,6 +713,7 @@ export default {
 		NcActionButton,
 		NcDateTimePickerNative,
 		NcEmptyContent,
+		NcSelect,
 		CodeMirror,
 		BTabs,
 		BTab,
@@ -687,6 +736,7 @@ export default {
 		Publish,
 		PublishOff,
 		ExclamationThick,
+		ArrowRight,
 		PaginationComponent,
 	},
 	data() {
@@ -709,6 +759,10 @@ export default {
 			publishLoading: [],
 			depublishLoading: [],
 			fileIdsLoading: [],
+			// Register/Schema selection for new objects with multiple options
+			selectedRegisterForNewObject: null,
+			selectedSchemaForNewObject: null,
+			registerSchemaSelectionConfirmed: false,
 			filesCurrentPage: 1,
 			filesPerPage: 10,
 			// Object publish/depublish modal states
@@ -720,11 +774,37 @@ export default {
 			isDepublishing: false,
 			selectedProperty: null,
 			isSaving: false,
+			propertyChangeDebounceTimers: {}, // Track debounce timers per property
+			pendingNotifications: {}, // Store pending notification info per property
 		}
 	},
 	computed: {
+		// Check if we need to show register/schema selection
+		showRegisterSchemaSelection() {
+			return this.isNewObject
+				&& !this.registerSchemaSelectionConfirmed
+				&& (this.availableRegisters.length > 1 || this.availableSchemas.length > 1)
+		},
+
+		// Available registers for selection
+		availableRegisters() {
+			return objectStore.availableRegistersForNewObject || []
+		},
+
+		// Available schemas for selection
+		availableSchemas() {
+			return objectStore.availableSchemasForNewObject || []
+		},
+
+		// Can proceed to properties if selections are made
+		canProceedToProperties() {
+			const hasRegister = this.availableRegisters.length === 1 || this.selectedRegisterForNewObject
+			const hasSchema = this.availableSchemas.length === 1 || this.selectedSchemaForNewObject
+			return hasRegister && hasSchema
+		},
+
 		objectProperties() {
-			console.log('objectProperties computed called:', {
+			console.info('objectProperties computed called:', {
 				objectItem: objectStore?.objectItem,
 				currentSchema: this.currentSchema,
 				isNewObject: this.isNewObject,
@@ -736,11 +816,11 @@ export default {
 			if (!objectStore?.objectItem) {
 				const schemaProperties = this.currentSchema?.properties
 				if (!schemaProperties) {
-					console.log('No schema properties available')
+					console.info('No schema properties available')
 					return []
 				}
 
-				console.log('Schema properties found:', Object.keys(schemaProperties))
+				console.info('Schema properties found:', Object.keys(schemaProperties))
 				const defaultProperties = []
 
 				for (const [key, schemaProperty] of Object.entries(schemaProperties)) {
@@ -769,7 +849,7 @@ export default {
 					defaultProperties.push([key, defaultValue])
 				}
 
-				console.log('objectProperties returning default properties:', defaultProperties)
+				console.info('objectProperties returning default properties:', defaultProperties)
 				return defaultProperties
 			}
 
@@ -885,7 +965,7 @@ export default {
 			return this.selectedAttachments.length > 0 && !this.allFilesSelected
 		},
 		formFields() {
-			console.log('formFields computed called:', {
+			console.info('formFields computed called:', {
 				currentSchema: this.currentSchema,
 				hasProperties: this.currentSchema?.properties,
 				propertiesCount: this.currentSchema?.properties ? Object.keys(this.currentSchema.properties).length : 0,
@@ -926,7 +1006,7 @@ export default {
 				}
 			}
 
-			console.log('formFields returning:', fields)
+			console.info('formFields returning:', fields)
 			return fields
 		},
 		metadataProperties() {
@@ -1044,7 +1124,7 @@ export default {
 		// Watch for schema changes to re-initialize data
 		currentSchema: {
 			handler(newSchema) {
-				console.log('Schema changed in ViewObject:', newSchema)
+				console.info('Schema changed in ViewObject:', newSchema)
 				if (newSchema && this.isNewObject) {
 					// Re-initialize data when schema becomes available for new objects
 					this.initializeData()
@@ -1057,7 +1137,7 @@ export default {
 		// Watch for register changes to re-initialize data
 		currentRegister: {
 			handler(newRegister) {
-				console.log('Register changed in ViewObject:', newRegister)
+				console.info('Register changed in ViewObject:', newRegister)
 				if (newRegister && this.isNewObject) {
 					// Re-initialize data when register becomes available for new objects
 					this.initializeData()
@@ -1083,7 +1163,7 @@ export default {
 	},
 	mounted() {
 		// Debug: Log current state when modal opens
-		console.log('ViewObject mounted:', {
+		console.info('ViewObject mounted:', {
 			objectItem: objectStore.objectItem,
 			schemaItem: schemaStore.schemaItem,
 			registerItem: registerStore.registerItem,
@@ -1102,6 +1182,26 @@ export default {
 		}
 	},
 	methods: {
+		confirmRegisterSchemaSelection() {
+			// Set the selected register and schema in the store
+			const selectedRegister = this.selectedRegisterForNewObject || this.availableRegisters[0]
+			const selectedSchema = this.selectedSchemaForNewObject || this.availableSchemas[0]
+
+			registerStore.setRegisterItem(selectedRegister)
+			schemaStore.setSchemaItem(selectedSchema)
+
+			console.info('Register and schema selected:', {
+				register: selectedRegister?.title,
+				schema: selectedSchema?.title,
+			})
+
+			// Confirm selection so we show the properties
+			this.registerSchemaSelectionConfirmed = true
+
+			// Initialize data with the selected schema
+			this.initializeData()
+		},
+
 		getModalTitle() {
 			if (!objectStore?.objectItem || !objectStore.objectItem['@self']?.id) {
 				return 'Add Object'
@@ -1153,6 +1253,13 @@ export default {
 			this.error = null
 			this.isCopied = false
 
+			// Clear register/schema selection state
+			this.selectedRegisterForNewObject = null
+			this.selectedSchemaForNewObject = null
+			this.registerSchemaSelectionConfirmed = false
+			objectStore.availableRegistersForNewObject = null
+			objectStore.availableSchemasForNewObject = null
+
 			// Clear publish/depublish modal states
 			this.showPublishModal = false
 			this.showDepublishModal = false
@@ -1160,6 +1267,13 @@ export default {
 			this.depublishDate = null
 			this.isPublishing = false
 			this.isDepublishing = false
+
+			// Clear debounce timers
+			Object.values(this.propertyChangeDebounceTimers).forEach(timer => {
+				if (timer) clearTimeout(timer)
+			})
+			this.propertyChangeDebounceTimers = {}
+			this.pendingNotifications = {}
 
 			// Clear any timeouts
 			clearTimeout(this.closeModalTimeout)
@@ -1226,10 +1340,13 @@ export default {
 			}
 		},
 		initializeData() {
-			console.log('initializeData called:', {
+			console.info('initializeData called:', {
 				objectItem: objectStore.objectItem,
 				currentSchema: this.currentSchema,
+				currentSchemaProperties: this.currentSchema?.properties,
 				currentRegister: this.currentRegister,
+				hasSchema: !!this.currentSchema,
+				hasRegister: !!this.currentRegister,
 			})
 
 			// Initialize with empty data for new objects
@@ -1250,8 +1367,32 @@ export default {
 						owner: '',
 					},
 				}
+
+				// Add schema properties with default values
+				if (this.currentSchema?.properties) {
+					console.info('Adding schema properties to initial data:', Object.keys(this.currentSchema.properties))
+					for (const [key, property] of Object.entries(this.currentSchema.properties)) {
+						// Set default value based on property type
+						let defaultValue = null
+						if (property.type === 'string') {
+							defaultValue = ''
+						} else if (property.type === 'number' || property.type === 'integer') {
+							defaultValue = 0
+						} else if (property.type === 'boolean') {
+							defaultValue = false
+						} else if (property.type === 'array') {
+							defaultValue = []
+						} else if (property.type === 'object') {
+							defaultValue = {}
+						}
+
+						initialData[key] = property.default !== undefined ? property.default : defaultValue
+					}
+				}
+
 				this.formData = initialData
 				this.jsonData = JSON.stringify(initialData, null, 2)
+				console.info('Initialized new object with data:', initialData)
 				return
 			}
 
@@ -1290,7 +1431,7 @@ export default {
 					register: this.currentRegister.id,
 					schema: this.currentSchema.id,
 				})
-				console.log('Save object response:', response)
+				console.info('Save object response:', response)
 				this.success = response.ok
 				if (this.success) {
 					// Re-initialize data to refresh jsonData with the newly created object
@@ -1579,7 +1720,7 @@ export default {
 			// You'll need to implement the labels editing functionality
 			// This could open a modal or inline editor for file labels
 			// eslint-disable-next-line no-console
-			console.log('Editing labels for file:', file.name)
+			console.info('Editing labels for file:', file.name)
 			// Placeholder for labels editing implementation
 		},
 		getPropertyValidationClass(key, value) {
@@ -1905,14 +2046,48 @@ export default {
 			// Update the form data using Vue 3 reactivity
 			this.formData = { ...this.formData, [key]: convertedValue }
 
-			// Show notification if value actually changed
+			// Show notification if value actually changed (debounced)
 			if (oldValue !== convertedValue) {
-				this.showPropertyChangeNotification(key, oldValue, convertedValue)
+				// Store pending notification info
+				this.pendingNotifications[key] = {
+					oldValue,
+					newValue: convertedValue,
+				}
+
+				// Clear existing debounce timer for this property
+				if (this.propertyChangeDebounceTimers[key]) {
+					clearTimeout(this.propertyChangeDebounceTimers[key])
+				}
+
+				// Set new debounce timer (500ms delay)
+				this.propertyChangeDebounceTimers[key] = setTimeout(() => {
+					const notification = this.pendingNotifications[key]
+					if (notification) {
+						this.showPropertyChangeNotification(key, notification.oldValue, notification.newValue)
+						delete this.pendingNotifications[key]
+					}
+					delete this.propertyChangeDebounceTimers[key]
+				}, 500)
 			}
 		},
+		/**
+		 * Remove all existing toast notifications
+		 */
+		clearAllToasts() {
+			const toasts = document.querySelectorAll('.property-change-toast, .property-warning-toast')
+			toasts.forEach(toast => {
+				if (toast.parentNode) {
+					toast.parentNode.removeChild(toast)
+				}
+			})
+		},
 		showPropertyChangeNotification(key, oldValue, newValue) {
+			// Clear any existing toasts before showing a new one
+			this.clearAllToasts()
+
 			// Create a simple notification - you could replace this with a proper toast library
 			const notification = document.createElement('div')
+			notification.className = 'property-change-toast'
 			notification.style.cssText = `
 				position: fixed;
 				top: 20px;
@@ -2105,8 +2280,12 @@ export default {
 			return value
 		},
 		showWarningNotification(warning) {
+			// Clear any existing toasts before showing a new one
+			this.clearAllToasts()
+
 			// Create a warning notification
 			const notification = document.createElement('div')
+			notification.className = 'property-warning-toast'
 			notification.style.cssText = `
 				position: fixed;
 				top: 20px;
@@ -2144,6 +2323,46 @@ export default {
 </script>
 
 <style scoped>
+/* Register/Schema Selection Step */
+.selection-step {
+	padding: 24px;
+	min-height: 300px;
+}
+
+.selection-container {
+	max-width: 600px;
+	margin: 0 auto;
+}
+
+.selection-container h3 {
+	margin-bottom: 12px;
+	font-size: 20px;
+	font-weight: 600;
+}
+
+.selection-hint {
+	margin-bottom: 24px;
+	color: var(--color-text-maxcontrast);
+	font-size: 14px;
+}
+
+.selection-fields {
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+}
+
+.selection-fields .field-group {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.selection-fields .field-group label {
+	font-weight: 600;
+	font-size: 14px;
+}
+
 /* Property table row border colors matching validation states */
 .viewTableRow.property-invalid {
 	background-color: var(--color-error-light);

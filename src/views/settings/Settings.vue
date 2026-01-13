@@ -1,30 +1,20 @@
 <template>
-	<div id="openregister_settings" class="section">
-		<h2>{{ t('openregister', 'OpenRegister Settings') }}</h2>
+	<div>
+		<!-- Page Title with Documentation Link -->
+		<NcSettingsSection
+			name="OpenRegister Settings"
+			description="Configure your OpenRegister installation"
+			doc-url="https://docs.openregister.nl" />
 
 		<!-- Version Information Section -->
-		<NcSettingsSection name="Version Information"
-			description="Information about the current OpenRegister installation">
-			<div v-if="!settingsStore.loadingVersionInfo" class="version-info">
-				<div class="version-card">
-					<h4>📦 Application Information</h4>
-					<div class="version-details">
-						<div class="version-item">
-							<span class="version-label">Application Name:</span>
-							<span class="version-value">{{ settingsStore.versionInfo.appName }}</span>
-						</div>
-						<div class="version-item">
-							<span class="version-label">Version:</span>
-							<span class="version-value">{{ settingsStore.versionInfo.appVersion }}</span>
-						</div>
-					</div>
-				</div>
-			</div>
-			<NcLoadingIcon v-else
-				class="loading-icon"
-				:size="64"
-				appearance="dark" />
-		</NcSettingsSection>
+		<VersionInfoCard
+			:app-name="settingsStore.versionInfo.appName || 'Open Register'"
+			:app-version="settingsStore.versionInfo.appVersion || 'Unknown'"
+			:loading="settingsStore.loadingVersionInfo"
+			:is-up-to-date="true"
+			:show-update-button="true"
+			title="Version Information"
+			description="Information about the current OpenRegister installation" />
 
 		<!-- System Statistics Section -->
 		<StatisticsOverview />
@@ -35,70 +25,71 @@
 		<!-- RBAC Configuration Section -->
 		<RbacConfiguration />
 
+		<!-- Organisation Configuration Section -->
+		<OrganisationConfiguration />
+
 		<!-- Multitenancy Configuration Section -->
 		<MultitenancyConfiguration />
 
 		<!-- Retention Configuration Section -->
 		<RetentionConfiguration />
 
-	<!-- SOLR Configuration Section -->
-	<SolrConfiguration />
+		<!-- SOLR Configuration Section -->
+		<SolrConfiguration />
 
-	<!-- LLM Configuration Section -->
-	<LlmConfiguration />
+		<!-- LLM Configuration Section -->
+		<LlmConfiguration />
 
-	<!-- File Configuration Section -->
-	<FileConfiguration />
+		<!-- File Configuration Section -->
+		<FileConfiguration />
 
-	<!-- Dialogs -->
-	<Dialogs />
-</div>
+		<!-- API Token Configuration Section -->
+		<ApiTokenConfiguration />
+
+		<!-- Dialogs -->
+		<Dialogs />
+	</div>
 </template>
 
 <script>
+/* eslint-disable no-console */
 import { mapStores } from 'pinia'
 import { useSettingsStore } from '../../store/settings.js'
 
-import { NcSettingsSection, NcLoadingIcon } from '@nextcloud/vue'
-
+import { NcSettingsSection } from '@nextcloud/vue'
+import VersionInfoCard from '../../components/shared/VersionInfoCard.vue'
 import SolrConfiguration from './sections/SolrConfiguration.vue'
 import StatisticsOverview from './sections/StatisticsOverview.vue'
 import CacheManagement from './sections/CacheManagement.vue'
 import RbacConfiguration from './sections/RbacConfiguration.vue'
+import OrganisationConfiguration from './sections/OrganisationConfiguration.vue'
 import MultitenancyConfiguration from './sections/MultitenancyConfiguration.vue'
 import RetentionConfiguration from './sections/RetentionConfiguration.vue'
 import LlmConfiguration from './sections/LlmConfiguration.vue'
 import FileConfiguration from './sections/FileConfiguration.vue'
+import ApiTokenConfiguration from './sections/ApiTokenConfiguration.vue'
 import Dialogs from '../../dialogs/Dialogs.vue'
 
 /**
- * @class Settings
- * @module Components
- * @package
- * 
  * Main settings component that orchestrates all settings sections using Pinia store.
  * This component serves as a container and delegates all data management to the settings store.
- * 
- * @author   Conduction Development Team <info@conduction.nl>
- * @copyright 2024 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version  GIT: <git_id>
- * @link     https://www.OpenRegister.nl
  */
 export default {
 	name: 'Settings',
 
 	components: {
 		NcSettingsSection,
-		NcLoadingIcon,
+		VersionInfoCard,
 		SolrConfiguration,
 		StatisticsOverview,
 		CacheManagement,
 		RbacConfiguration,
+		OrganisationConfiguration,
 		MultitenancyConfiguration,
 		RetentionConfiguration,
 		LlmConfiguration,
 		FileConfiguration,
+		ApiTokenConfiguration,
 		Dialogs,
 	},
 
@@ -132,73 +123,5 @@ export default {
 </script>
 
 <style scoped>
-#openregister_settings {
-	padding: 20px;
-	max-width: 1200px;
-	margin: 0 auto;
-}
-
-.version-info {
-	margin-top: 20px;
-}
-
-.version-card {
-	background: var(--color-background-hover);
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	padding: 20px;
-	margin-bottom: 20px;
-}
-
-.version-card h4 {
-	color: var(--color-text-light);
-	margin: 0 0 16px 0;
-	font-size: 16px;
-}
-
-.version-details {
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
-}
-
-.version-item {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	padding: 8px 0;
-	border-bottom: 1px solid var(--color-border-dark);
-}
-
-.version-item:last-child {
-	border-bottom: none;
-}
-
-.version-label {
-	color: var(--color-text-maxcontrast);
-	font-weight: 500;
-}
-
-.version-value {
-	color: var(--color-text-light);
-	font-family: monospace;
-	font-size: 14px;
-}
-
-.loading-icon {
-	margin: 40px auto;
-	display: block;
-}
-
-@media (max-width: 768px) {
-	#openregister_settings {
-		padding: 10px;
-	}
-
-	.version-item {
-		flex-direction: column;
-		align-items: flex-start;
-		gap: 4px;
-	}
-}
+/* Minimal styling - let Nextcloud handle the layout */
 </style>

@@ -29,8 +29,11 @@ export const useSchemaStore = defineStore('schema', {
 		setSchemaList(schemas) {
 			this.schemaList = schemas.map(schema => {
 				const existing = this.schemaList.find(item => item.id === schema.id) || {}
+				// Convert properties array to object if needed (backend sometimes returns array when empty)
+				const normalizedProperties = Array.isArray(schema.properties) ? {} : (schema.properties || {})
 				return {
 					...schema,
+					properties: normalizedProperties,
 					// keep previously toggled value if available, otherwise default false
 					showProperties: typeof existing.showProperties === 'boolean' ? existing.showProperties : false,
 				}
@@ -78,6 +81,10 @@ export const useSchemaStore = defineStore('schema', {
 					method: 'GET',
 				})
 				const data = await response.json()
+				// Convert properties array to object if needed (backend sometimes returns array when empty)
+				if (data && Array.isArray(data.properties)) {
+					data.properties = {}
+				}
 				options.setItem && this.setSchemaItem(data)
 				return data
 			} catch (err) {
@@ -135,6 +142,80 @@ export const useSchemaStore = defineStore('schema', {
 			} catch (error) {
 				console.error('Error deleting schema:', error)
 				throw new Error(`Failed to delete schema: ${error.message}`)
+			}
+		},
+		// Publish a schema
+		async publishSchema(schemaId, date = null) {
+			if (!schemaId) {
+				throw new Error('No schema ID provided')
+			}
+
+			console.log('Publishing schema...')
+
+			let endpoint = `/index.php/apps/openregister/api/schemas/${schemaId}/publish`
+			if (date) {
+				endpoint += `?date=${encodeURIComponent(date)}`
+			}
+
+			try {
+				const response = await fetch(endpoint, {
+					method: 'POST',
+				})
+
+				if (!response.ok) {
+					const errorData = await response.json().catch(() => ({}))
+					throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
+				}
+
+				const responseData = await response.json()
+
+				await this.refreshSchemaList()
+				// Update the schema item if it's currently selected
+				if (this.schemaItem && this.schemaItem.id === schemaId) {
+					this.setSchemaItem(responseData)
+				}
+
+				return { response, data: responseData }
+			} catch (error) {
+				console.error('Error publishing schema:', error)
+				throw new Error(`Failed to publish schema: ${error.message}`)
+			}
+		},
+		// Depublish a schema
+		async depublishSchema(schemaId, date = null) {
+			if (!schemaId) {
+				throw new Error('No schema ID provided')
+			}
+
+			console.log('Depublishing schema...')
+
+			let endpoint = `/index.php/apps/openregister/api/schemas/${schemaId}/depublish`
+			if (date) {
+				endpoint += `?date=${encodeURIComponent(date)}`
+			}
+
+			try {
+				const response = await fetch(endpoint, {
+					method: 'POST',
+				})
+
+				if (!response.ok) {
+					const errorData = await response.json().catch(() => ({}))
+					throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
+				}
+
+				const responseData = await response.json()
+
+				await this.refreshSchemaList()
+				// Update the schema item if it's currently selected
+				if (this.schemaItem && this.schemaItem.id === schemaId) {
+					this.setSchemaItem(responseData)
+				}
+
+				return { response, data: responseData }
+			} catch (error) {
+				console.error('Error depublishing schema:', error)
+				throw new Error(`Failed to depublish schema: ${error.message}`)
 			}
 		},
 		// Create or save a schema from store

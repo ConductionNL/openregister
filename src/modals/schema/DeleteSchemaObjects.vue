@@ -4,7 +4,7 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.modal === 'deleteSchemaObjects'"
+	<NcDialog v-if="navigationStore.dialog === 'deleteSchemaObjects'"
 		name="Delete Schema Objects"
 		size="normal"
 		:can-close="false">
@@ -156,19 +156,19 @@ export default {
 		// Watch for changes in schemaItem and reload count if needed
 		'schemaStore.schemaItem': {
 			handler(newSchemaItem) {
-				console.log('Schema item changed in DeleteSchemaObjects:', newSchemaItem)
+				console.info('Schema item changed in DeleteSchemaObjects:', newSchemaItem)
 				if (newSchemaItem?.id && this.objectCount === 0) {
 					this.loadObjectCount()
 				}
 			},
 			immediate: true,
 		},
-		// Watch for dialog state changes to load count when modal becomes visible
-		'navigationStore.modal': {
-			handler(newModal) {
-				console.log('Modal changed to:', newModal)
-				if (newModal === 'deleteSchemaObjects' && schemaStore.schemaItem?.id) {
-					console.log('DeleteSchemaObjects modal opened, loading object count')
+		// Watch for dialog state changes to load count when dialog becomes visible
+		'navigationStore.dialog': {
+			handler(newDialog) {
+				console.info('Dialog changed to:', newDialog)
+				if (newDialog === 'deleteSchemaObjects' && schemaStore.schemaItem?.id) {
+					console.info('DeleteSchemaObjects dialog opened, loading object count')
 					this.loadObjectCount()
 				}
 			},
@@ -176,23 +176,23 @@ export default {
 		},
 	},
 	async mounted() {
-		console.log('DeleteSchemaObjects modal mounted, schemaItem:', schemaStore.schemaItem)
+		console.info('DeleteSchemaObjects dialog mounted, schemaItem:', schemaStore.schemaItem)
 		await this.loadObjectCount()
 	},
 	methods: {
 		async loadObjectCount() {
-			console.log('DeleteSchemaObjects loadObjectCount called, schemaItem:', schemaStore.schemaItem)
+			console.info('DeleteSchemaObjects loadObjectCount called, schemaItem:', schemaStore.schemaItem)
 			try {
 				if (schemaStore.schemaItem?.id) {
-					console.log('Calling getSchemaStats for schema ID:', schemaStore.schemaItem.id)
+					console.info('Calling getSchemaStats for schema ID:', schemaStore.schemaItem.id)
 					// Use the upgraded stats endpoint to get detailed object counts
 					const stats = await schemaStore.getSchemaStats(schemaStore.schemaItem.id)
-					console.log('DeleteSchemaObjects received stats:', stats)
+					console.info('DeleteSchemaObjects received stats:', stats)
 					this.objectStats = stats.objects
 					this.objectCount = stats.objects?.total || 0
-					console.log('DeleteSchemaObjects set objectCount to:', this.objectCount)
+					console.info('DeleteSchemaObjects set objectCount to:', this.objectCount)
 				} else {
-					console.log('DeleteSchemaObjects: No schema item ID available')
+					console.info('DeleteSchemaObjects: No schema item ID available')
 				}
 			} catch (err) {
 				console.error('DeleteSchemaObjects error in loadObjectCount:', err)
@@ -210,7 +210,7 @@ export default {
 				// Find the register that contains this schema
 				await registerStore.refreshRegisterList()
 				const register = registerStore.registerList.find(reg =>
-					reg.schemas.includes(schemaStore.schemaItem.id),
+					reg.schemas.some(regSchema => regSchema.id === schemaStore.schemaItem.id),
 				)
 
 				if (!register) {
@@ -256,7 +256,7 @@ export default {
 		},
 
 		closeDialog() {
-			navigationStore.setModal(false)
+			navigationStore.setDialog(false)
 			this.loading = false
 			this.error = false
 			this.success = false
