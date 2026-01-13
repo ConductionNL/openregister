@@ -85,7 +85,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 							<template #icon>
 								<AccountPlus :size="20" />
 							</template>
-							Organisatie Deelnemen
+							Add User to Organisation
 						</NcActionButton>
 						<NcActionButton
 							close-after-click
@@ -134,6 +134,14 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 										</template>
 										Bekijken
 									</NcActionButton>
+									<NcActionButton v-if="!isActiveOrganisation(organisation)"
+										close-after-click
+										@click="setActiveOrganisation(organisation.uuid)">
+										<template #icon>
+											<Check :size="20" />
+										</template>
+										Instellen als Actief
+									</NcActionButton>
 									<NcActionButton v-if="canEditOrganisation(organisation)"
 										close-after-click
 										@click="editOrganisation(organisation)">
@@ -141,13 +149,6 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 											<Pencil :size="20" />
 										</template>
 										Bewerken
-									</NcActionButton>
-									<NcActionButton close-after-click
-										@click="copyOrganisation(organisation)">
-										<template #icon>
-											<ContentCopy :size="20" />
-										</template>
-										Kopiëren
 									</NcActionButton>
 									<NcActionButton v-if="organisation.website"
 										close-after-click
@@ -157,13 +158,13 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 										</template>
 										Ga naar organisatie
 									</NcActionButton>
-									<NcActionButton v-if="!isActiveOrganisation(organisation)"
+									<NcActionButton
 										close-after-click
-										@click="setActiveOrganisation(organisation.uuid)">
+										@click="openJoinModal(organisation)">
 										<template #icon>
-											<CheckCircle :size="20" />
+											<AccountMultiplePlus :size="20" />
 										</template>
-										Activeren
+										Add User
 									</NcActionButton>
 									<NcActionButton v-if="canDeleteOrganisation(organisation)"
 										close-after-click
@@ -183,7 +184,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 								<div class="organisationStats">
 									<div class="stat">
 										<span class="statLabel">Leden:</span>
-										<span class="statValue">{{ organisation.userCount || 0 }}</span>
+										<span class="statValue">{{ organisation.users?.length || 0 }}</span>
 									</div>
 									<div class="stat">
 										<span class="statLabel">Eigenaar:</span>
@@ -243,7 +244,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 											<span v-if="organisation.description" class="textDescription textEllipsis">{{ organisation.description }}</span>
 										</div>
 									</td>
-									<td>{{ organisation.userCount || 0 }}</td>
+									<td>{{ organisation.users?.length || 0 }}</td>
 									<td>{{ organisation.owner || 'System' }}</td>
 									<td>
 										<span v-if="isActiveOrganisation(organisation)" class="statusActive">Actief</span>
@@ -263,6 +264,14 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 												</template>
 												Bekijken
 											</NcActionButton>
+											<NcActionButton v-if="!isActiveOrganisation(organisation)"
+												close-after-click
+												@click="setActiveOrganisation(organisation.uuid)">
+												<template #icon>
+													<Check :size="20" />
+												</template>
+												Instellen als Actief
+											</NcActionButton>
 											<NcActionButton v-if="canEditOrganisation(organisation)"
 												close-after-click
 												@click="editOrganisation(organisation)">
@@ -270,13 +279,6 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 													<Pencil :size="20" />
 												</template>
 												Bewerken
-											</NcActionButton>
-											<NcActionButton close-after-click
-												@click="copyOrganisation(organisation)">
-												<template #icon>
-													<ContentCopy :size="20" />
-												</template>
-												Kopiëren
 											</NcActionButton>
 											<NcActionButton v-if="organisation.website"
 												close-after-click
@@ -286,13 +288,21 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 												</template>
 												Ga naar organisatie
 											</NcActionButton>
-											<NcActionButton v-if="!isActiveOrganisation(organisation)"
+											<NcActionButton
 												close-after-click
-												@click="setActiveOrganisation(organisation.uuid)">
+												@click="openJoinModal(organisation)">
 												<template #icon>
-													<CheckCircle :size="20" />
+													<AccountMultiplePlus :size="20" />
 												</template>
-												Activeren
+												Add User
+											</NcActionButton>
+											<NcActionButton v-if="canDeleteOrganisation(organisation)"
+												close-after-click
+												@click="organisationStore.setOrganisationItem(organisation); navigationStore.setModal('deleteOrganisation')">
+												<template #icon>
+													<TrashCanOutline :size="20" />
+												</template>
+												Verwijderen
 											</NcActionButton>
 										</NcActions>
 									</td>
@@ -339,11 +349,6 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 		</NcModal>
 
 		<!-- Organisation Management Modal -->
-		<OrganisationModal
-			:show="showOrganisationModal"
-			:organisation="selectedOrganisation"
-			:mode="organisationModalMode"
-			@close="closeOrganisationModal" />
 	</NcAppContent>
 </template>
 
@@ -354,18 +359,16 @@ import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
-import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
-import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import AccountPlus from 'vue-material-design-icons/AccountPlus.vue'
-import AccountMinus from 'vue-material-design-icons/AccountMinus.vue'
+import AccountMultiplePlus from 'vue-material-design-icons/AccountMultiplePlus.vue'
 import SwapHorizontal from 'vue-material-design-icons/SwapHorizontal.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
-import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
 import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
 
 import PaginationComponent from '../../components/PaginationComponent.vue'
-import OrganisationModal from '../../modals/OrganisationModal.vue'
+import { reloadAppData } from '../../services/AppInitializationService.js'
+import Check from 'vue-material-design-icons/Check.vue'
 
 export default {
 	name: 'OrganisationsIndex',
@@ -382,25 +385,19 @@ export default {
 		Pencil,
 		TrashCanOutline,
 		Refresh,
-		InformationOutline,
-		CheckCircle,
 		AccountPlus,
-		AccountMinus,
+		AccountMultiplePlus,
 		SwapHorizontal,
 		Plus,
 		Eye,
-		ContentCopy,
 		OpenInNew,
+		Check,
 		PaginationComponent,
-		OrganisationModal,
 	},
 	data() {
 		return {
 			selectedOrganisations: [],
 			showOrganisationSwitcher: false,
-			showOrganisationModal: false,
-			selectedOrganisation: null,
-			organisationModalMode: 'create', // 'create', 'edit', 'copy'
 		}
 	},
 	computed: {
@@ -418,14 +415,11 @@ export default {
 	},
 	async mounted() {
 		try {
+			// Load Nextcloud groups into store first (needed for edit modal)
+			await organisationStore.loadNextcloudGroups()
+			// Then load organisations
 			await organisationStore.refreshOrganisationList()
-
-			// Check if the method exists before calling it
-			if (typeof organisationStore.getActiveOrganisation === 'function') {
-				await organisationStore.getActiveOrganisation()
-			} else {
-				console.warn('getActiveOrganisation method not available in organisationStore')
-			}
+			await organisationStore.getActiveOrganisation()
 		} catch (error) {
 			console.error('Error loading organisation data:', error)
 		}
@@ -459,6 +453,10 @@ export default {
 			try {
 				await organisationStore.setActiveOrganisationById(uuid)
 				this.showSuccessMessage('Active organisation changed successfully')
+
+				// Reload all hot-loaded data for the new organisation context
+				console.info('[OrganisationsIndex] Reloading application data after organisation switch...')
+				await reloadAppData()
 			} catch (error) {
 				this.showErrorMessage('Failed to change active organisation: ' + error.message)
 			}
@@ -515,24 +513,26 @@ export default {
 		},
 		// Organisation Modal Methods
 		createOrganisation() {
-			this.selectedOrganisation = null
-			this.organisationModalMode = 'create'
-			this.showOrganisationModal = true
+			organisationStore.setOrganisationItem(null)
+			navigationStore.setModal('editOrganisation')
 		},
 		editOrganisation(organisation) {
-			this.selectedOrganisation = organisation
-			this.organisationModalMode = 'edit'
-			this.showOrganisationModal = true
+			organisationStore.setOrganisationItem(organisation)
+			navigationStore.setModal('editOrganisation')
 		},
-		copyOrganisation(organisation) {
-			this.selectedOrganisation = organisation
-			this.organisationModalMode = 'copy'
-			this.showOrganisationModal = true
+		openJoinModal(organisation) {
+			// Set the transfer data with the organisation UUID
+			navigationStore.setTransferData({
+				organisationUuid: organisation.uuid,
+			})
+			// Open the join organisation modal
+			navigationStore.setModal('joinOrganisation')
 		},
-		closeOrganisationModal() {
-			this.showOrganisationModal = false
-			this.selectedOrganisation = null
-			this.organisationModalMode = 'create'
+		openManageRolesModal(organisation) {
+			// Set the organisation item in store
+			organisationStore.setOrganisationItem(organisation)
+			// Open the manage organisation roles modal
+			navigationStore.setModal('manageOrganisationRoles')
 		},
 		// Organisation Action Methods
 		viewOrganisation(organisation) {

@@ -101,7 +101,7 @@ class OrganisationMapper extends QBMapper
                 $qb->expr()->in('uuid', $qb->createNamedParameter($uuids, IQueryBuilder::PARAM_STR_ARRAY))
             );
 
-        $result = $qb->executeQuery();
+        $result = $qb->execute();
         $organisations = [];
         
         while ($row = $result->fetch()) {
@@ -197,7 +197,6 @@ class OrganisationMapper extends QBMapper
                     'description' => $organisation->getDescription(),
                     'owner'       => $organisation->getOwner(),
                     'users'       => $organisation->getUsers(),
-                    'isDefault'   => $organisation->getIsDefault(),
                 ]
                 );
 
@@ -208,17 +207,16 @@ class OrganisationMapper extends QBMapper
             $this->logger->info(
                     '[OrganisationMapper] Entity state before insert:',
                     [
-                        'id'          => $organisation->getId(),
-                        'uuid'        => $organisation->getUuid(),
-                        'name'        => $organisation->getName(),
-                        'description' => $organisation->getDescription(),
-                        'owner'       => $organisation->getOwner(),
-                        'users'       => $organisation->getUsers(),
-                        'isDefault'   => $organisation->getIsDefault(),
-                        'created'     => $organisation->getCreated(),
-                        'updated'     => $organisation->getUpdated(),
-                    ]
-                    );
+                    'id'          => $organisation->getId(),
+                    'uuid'        => $organisation->getUuid(),
+                    'name'        => $organisation->getName(),
+                    'description' => $organisation->getDescription(),
+                    'owner'       => $organisation->getOwner(),
+                    'users'       => $organisation->getUsers(),
+                    'created'     => $organisation->getCreated(),
+                    'updated'     => $organisation->getUpdated(),
+                ]
+                );
 
             try {
                 $result = $this->insert($organisation);
@@ -326,14 +324,48 @@ class OrganisationMapper extends QBMapper
      *
      * @return array Array of matching organisations
      */
-    public function findByName(string $name): array
+    /**
+     * Find all organisations with pagination
+     *
+     * @param int $limit  Maximum number of results to return (default 50)
+     * @param int $offset Number of results to skip (default 0)
+     *
+     * @return array List of organisation entities
+     */
+    public function findAll(int $limit=50, int $offset=0): array
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select('*')
+            ->from($this->getTableName())
+            ->orderBy('name', 'ASC')
+            ->setMaxResults($limit)
+            ->setFirstResult($offset);
+
+        return $this->findEntities($qb);
+
+    }//end findAll()
+
+
+    /**
+     * Find organisations by name with pagination
+     *
+     * @param string $name   The name pattern to search for
+     * @param int    $limit  Maximum number of results to return
+     * @param int    $offset Number of results to skip
+     *
+     * @return array List of organisation entities
+     */
+    public function findByName(string $name, int $limit=50, int $offset=0): array
     {
         $qb = $this->db->getQueryBuilder();
 
         $qb->select('*')
             ->from($this->getTableName())
             ->where($qb->expr()->like('name', $qb->createNamedParameter('%'.$name.'%')))
-            ->orderBy('name', 'ASC');
+            ->orderBy('name', 'ASC')
+            ->setMaxResults($limit)
+            ->setFirstResult($offset);
 
         return $this->findEntities($qb);
 
@@ -426,6 +458,8 @@ class OrganisationMapper extends QBMapper
 
     /**
      * Find the default organisation
+     * 
+     * @deprecated Use OrganisationService::getDefaultOrganisation() instead
      *
      * @return Organisation The default organisation
      *
@@ -433,20 +467,16 @@ class OrganisationMapper extends QBMapper
      */
     public function findDefault(): Organisation
     {
-        $qb = $this->db->getQueryBuilder();
-
-        $qb->select('*')
-            ->from($this->getTableName())
-            ->where($qb->expr()->eq('is_default', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL)))
-            ->setMaxResults(1);
-
-        return $this->findEntity($qb);
+        // Default organisation is now managed via config, not database
+        throw new \Exception('findDefault() is deprecated. Use OrganisationService::getDefaultOrganisation() instead.');
 
     }//end findDefault()
 
 
     /**
      * Find the default organisation for a specific user
+     *
+     * @deprecated Use OrganisationService::getDefaultOrganisation() instead
      *
      * @param string $userId The user ID
      *
@@ -456,15 +486,8 @@ class OrganisationMapper extends QBMapper
      */
     public function findDefaultForUser(string $userId): Organisation
     {
-        $qb = $this->db->getQueryBuilder();
-
-        $qb->select('*')
-            ->from($this->getTableName())
-            ->where($qb->expr()->eq('is_default', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL)))
-            ->andWhere($qb->expr()->like('users', $qb->createNamedParameter('%"'.$userId.'"%')))
-            ->setMaxResults(1);
-
-        return $this->findEntity($qb);
+        // Default organisation is now managed via config, not database
+        throw new \Exception('findDefaultForUser() is deprecated. Use OrganisationService::getDefaultOrganisation() instead.');
 
     }//end findDefaultForUser()
 
@@ -472,18 +495,14 @@ class OrganisationMapper extends QBMapper
     /**
      * Create a default organisation
      *
+     * @deprecated Use OrganisationService::createOrganisation() and setDefaultOrganisationId() instead
+     *
      * @return Organisation The created default organisation
      */
     public function createDefault(): Organisation
     {
-        $organisation = new Organisation();
-        $organisation->setName('Default Organisation');
-        $organisation->setDescription('Default organisation for the system');
-        $organisation->setIsDefault(true);
-        $organisation->setOwner('admin');
-        $organisation->setUsers(['admin']);
-
-        return $this->save($organisation);
+        // Default organisation is now managed via config, not database
+        throw new \Exception('createDefault() is deprecated. Use OrganisationService::createOrganisation() and setDefaultOrganisationId() instead.');
 
     }//end createDefault()
 
@@ -507,8 +526,7 @@ class OrganisationMapper extends QBMapper
         string $description='',
         string $uuid='',
         string $owner='',
-        array $users=[],
-        bool $isDefault=false
+        array $users=[]
     ): Organisation {
         // Debug logging
         $this->logger->info(
@@ -519,7 +537,6 @@ class OrganisationMapper extends QBMapper
                     'uuid'        => $uuid,
                     'owner'       => $owner,
                     'users'       => $users,
-                    'isDefault'   => $isDefault,
                 ]
                 );
 
@@ -528,7 +545,6 @@ class OrganisationMapper extends QBMapper
         $organisation->setDescription($description);
         $organisation->setOwner($owner);
         $organisation->setUsers($users);
-        $organisation->setIsDefault($isDefault);
 
         // Set UUID if provided, otherwise let save() generate one
         if ($uuid !== '') {
@@ -554,39 +570,8 @@ class OrganisationMapper extends QBMapper
      */
     public function setAsDefault(Organisation $organisation): bool
     {
-        // First, unset any existing default organisation
-        $qb = $this->db->getQueryBuilder();
-        $qb->update($this->getTableName())
-            ->set('is_default', $qb->createNamedParameter(false, IQueryBuilder::PARAM_BOOL))
-            ->where($qb->expr()->eq('is_default', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL)));
-        $qb->execute();
-
-        // Set the new default organisation
-        $organisation->setIsDefault(true);
-        $this->update($organisation);
-
-        // Update all registers without organisation
-        $qb = $this->db->getQueryBuilder();
-        $qb->update('openregister_registers')
-            ->set('organisation', $qb->createNamedParameter($organisation->getUuid()))
-            ->where($qb->expr()->isNull('organisation'));
-        $qb->execute();
-
-        // Update all schemas without organisation
-        $qb = $this->db->getQueryBuilder();
-        $qb->update('openregister_schemas')
-            ->set('organisation', $qb->createNamedParameter($organisation->getUuid()))
-            ->where($qb->expr()->isNull('organisation'));
-        $qb->execute();
-
-        // Update all objects without organisation
-        $qb = $this->db->getQueryBuilder();
-        $qb->update('openregister_objects')
-            ->set('organisation', $qb->createNamedParameter($organisation->getUuid()))
-            ->where($qb->expr()->isNull('organisation'));
-        $qb->execute();
-
-        return true;
+        // Default organisation is now managed via config, not database
+        throw new \Exception('setAsDefault() is deprecated. Use OrganisationService::setDefaultOrganisationId() instead.');
 
     }//end setAsDefault()
 
@@ -610,6 +595,316 @@ class OrganisationMapper extends QBMapper
         return $this->findEntities($qb);
 
     }//end findUpdatedAfter()
+
+
+    /**
+     * Find all parent organisations recursively for a given organisation UUID
+     *
+     * Uses recursive Common Table Expression (CTE) for efficient hierarchical queries.
+     * Returns array of parent organisation UUIDs ordered from direct parent to root.
+     * Maximum depth is limited to 10 levels to prevent infinite loops.
+     *
+     * Example:
+     * - Organisation A (root)
+     * - Organisation B (parent: A)
+     * - Organisation C (parent: B)
+     * 
+     * findParentChain(C) returns: [B, A]
+     *
+     * @param string $organisationUuid The starting organisation UUID
+     *
+     * @return array Array of parent organisation UUIDs ordered by level (direct parent first)
+     */
+    public function findParentChain(string $organisationUuid): array
+    {
+        // Use raw SQL for recursive CTE (Common Table Expression)
+        // This is more efficient than multiple queries for hierarchical data
+        $sql = "
+            WITH RECURSIVE org_hierarchy AS (
+                -- Base case: the organisation itself
+                SELECT uuid, parent, 0 as level
+                FROM " . $this->getTablePrefix() . $this->getTableName() . "
+                WHERE uuid = :org_uuid
+                
+                UNION ALL
+                
+                -- Recursive case: get parent organisations
+                SELECT o.uuid, o.parent, oh.level + 1
+                FROM " . $this->getTablePrefix() . $this->getTableName() . " o
+                INNER JOIN org_hierarchy oh ON o.uuid = oh.parent
+                WHERE oh.level < 10  -- Prevent infinite loops, max 10 levels
+            )
+            SELECT uuid 
+            FROM org_hierarchy 
+            WHERE level > 0
+            ORDER BY level ASC
+        ";
+        
+        try {
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindValue(':org_uuid', $organisationUuid);
+            $result = $stmt->execute();
+            
+            $parents = [];
+            while ($row = $result->fetch()) {
+                $parents[] = $row['uuid'];
+            }
+            
+            $this->logger->debug(
+                'Found parent chain for organisation',
+                [
+                    'organisation' => $organisationUuid,
+                    'parents'      => $parents,
+                    'count'        => count($parents),
+                ]
+            );
+            
+            return $parents;
+        } catch (\Exception $e) {
+            $this->logger->error(
+                'Error finding parent chain',
+                [
+                    'organisation' => $organisationUuid,
+                    'error'        => $e->getMessage(),
+                ]
+            );
+            
+            // Return empty array on error (fail gracefully)
+            return [];
+        }//end try
+
+    }//end findParentChain()
+
+
+    /**
+     * Find all child organisations recursively for a given organisation UUID
+     *
+     * Uses recursive Common Table Expression (CTE) for efficient hierarchical queries.
+     * Returns array of all child organisation UUIDs (direct and indirect children).
+     * Maximum depth is limited to 10 levels to prevent infinite loops.
+     *
+     * Example:
+     * - Organisation A (root)
+     * - Organisation B (parent: A)
+     * - Organisation C (parent: A)
+     * - Organisation D (parent: B)
+     * 
+     * findChildrenChain(A) returns: [B, C, D]
+     *
+     * @param string $organisationUuid The parent organisation UUID
+     *
+     * @return array Array of child organisation UUIDs
+     */
+    public function findChildrenChain(string $organisationUuid): array
+    {
+        // Use raw SQL for recursive CTE
+        $sql = "
+            WITH RECURSIVE org_hierarchy AS (
+                -- Base case: direct children
+                SELECT uuid, parent, 0 as level
+                FROM " . $this->getTablePrefix() . $this->getTableName() . "
+                WHERE parent = :org_uuid
+                
+                UNION ALL
+                
+                -- Recursive case: children of children
+                SELECT o.uuid, o.parent, oh.level + 1
+                FROM " . $this->getTablePrefix() . $this->getTableName() . " o
+                INNER JOIN org_hierarchy oh ON o.parent = oh.uuid
+                WHERE oh.level < 10  -- Prevent infinite loops, max 10 levels
+            )
+            SELECT uuid 
+            FROM org_hierarchy
+            ORDER BY level ASC
+        ";
+        
+        try {
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindValue(':org_uuid', $organisationUuid);
+            $result = $stmt->execute();
+            
+            $children = [];
+            while ($row = $result->fetch()) {
+                $children[] = $row['uuid'];
+            }
+            
+            $this->logger->debug(
+                'Found children chain for organisation',
+                [
+                    'organisation' => $organisationUuid,
+                    'children'     => $children,
+                    'count'        => count($children),
+                ]
+            );
+            
+            return $children;
+        } catch (\Exception $e) {
+            $this->logger->error(
+                'Error finding children chain',
+                [
+                    'organisation' => $organisationUuid,
+                    'error'        => $e->getMessage(),
+                ]
+            );
+            
+            // Return empty array on error (fail gracefully)
+            return [];
+        }//end try
+
+    }//end findChildrenChain()
+
+
+    /**
+     * Validate parent assignment to prevent circular references and enforce max depth
+     *
+     * Checks that setting a parent organisation will not create:
+     * - Circular references (A -> B -> A)
+     * - Excessive depth (> 10 levels)
+     * - Self-reference (organisation pointing to itself)
+     *
+     * @param string      $organisationUuid The organisation UUID to update
+     * @param string|null $newParentUuid    The new parent UUID to assign (null to remove parent)
+     *
+     * @return void
+     *
+     * @throws \Exception If validation fails (circular reference, max depth exceeded, etc.)
+     */
+    public function validateParentAssignment(string $organisationUuid, ?string $newParentUuid): void
+    {
+        // Allow setting parent to null (removing parent)
+        if ($newParentUuid === null) {
+            return;
+        }
+        
+        // Prevent self-reference
+        if ($organisationUuid === $newParentUuid) {
+            throw new \Exception('Organisation cannot be its own parent.');
+        }
+        
+        // Check if new parent exists
+        try {
+            $parentOrg = $this->findByUuid($newParentUuid);
+        } catch (\Exception $e) {
+            throw new \Exception('Parent organisation not found.');
+        }
+        
+        // Check for circular reference: if the new parent has this org in its parent chain
+        $parentChain = $this->findParentChain($newParentUuid);
+        if (in_array($organisationUuid, $parentChain)) {
+            throw new \Exception(
+                'Circular reference detected: The new parent organisation is already a descendant of this organisation.'
+            );
+        }
+        
+        // Check max depth: current parent chain + this org + existing children chain
+        $childrenChain = $this->findChildrenChain($organisationUuid);
+        
+        // Calculate maximum depth after assignment
+        $maxDepthAbove = count($parentChain) + 1; // Parent chain + new parent
+        $maxDepthBelow = $this->getMaxDepthInChain($childrenChain, $organisationUuid);
+        $totalDepth = $maxDepthAbove + $maxDepthBelow;
+        
+        if ($totalDepth > 10) {
+            throw new \Exception(
+                "Maximum hierarchy depth exceeded. Total depth would be {$totalDepth} levels (max 10 allowed)."
+            );
+        }
+        
+        $this->logger->debug(
+            'Parent assignment validated',
+            [
+                'organisation' => $organisationUuid,
+                'newParent'    => $newParentUuid,
+                'parentChain'  => $parentChain,
+                'totalDepth'   => $totalDepth,
+            ]
+        );
+
+    }//end validateParentAssignment()
+
+
+    /**
+     * Get maximum depth in a children chain
+     *
+     * Helper method to calculate the deepest level in a hierarchy chain.
+     * Used for validating maximum depth constraints.
+     *
+     * @param array  $childrenUuids Array of child organisation UUIDs
+     * @param string $rootUuid      The root organisation UUID
+     *
+     * @return int Maximum depth from root
+     */
+    private function getMaxDepthInChain(array $childrenUuids, string $rootUuid): int
+    {
+        if (empty($childrenUuids)) {
+            return 0;
+        }
+        
+        // Build parent map for efficient lookup
+        $parentMap = [];
+        foreach ($childrenUuids as $childUuid) {
+            try {
+                $child = $this->findByUuid($childUuid);
+                if ($child->getParent() !== null) {
+                    $parentMap[$childUuid] = $child->getParent();
+                }
+            } catch (\Exception $e) {
+                // Skip if child not found
+                continue;
+            }
+        }
+        
+        // Calculate depth for each child
+        $maxDepth = 0;
+        foreach ($childrenUuids as $childUuid) {
+            $depth = $this->calculateDepthFromRoot($childUuid, $rootUuid, $parentMap);
+            $maxDepth = max($maxDepth, $depth);
+        }
+        
+        return $maxDepth;
+
+    }//end getMaxDepthInChain()
+
+
+    /**
+     * Calculate depth of a node from root
+     *
+     * @param string $nodeUuid  The node UUID
+     * @param string $rootUuid  The root UUID
+     * @param array  $parentMap Parent mapping array
+     *
+     * @return int Depth from root
+     */
+    private function calculateDepthFromRoot(string $nodeUuid, string $rootUuid, array $parentMap): int
+    {
+        $depth = 0;
+        $current = $nodeUuid;
+        
+        while (isset($parentMap[$current]) && $current !== $rootUuid && $depth < 20) {
+            $depth++;
+            $current = $parentMap[$current];
+        }
+        
+        return $depth;
+
+    }//end calculateDepthFromRoot()
+
+
+    /**
+     * Get table prefix for raw SQL queries
+     *
+     * Nextcloud uses 'oc_' prefix by default but can be customized.
+     * This method ensures we use the correct prefix for raw SQL.
+     *
+     * @return string Table prefix (e.g., 'oc_')
+     */
+    private function getTablePrefix(): string
+    {
+        // Get table prefix from Nextcloud system configuration
+        // Default is 'oc_' but can be customized per installation
+        return \OC::$server->getSystemConfig()->getValue('dbtableprefix', 'oc_');
+
+    }//end getTablePrefix()
 
 
 }//end class

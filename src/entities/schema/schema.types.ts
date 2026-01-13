@@ -24,6 +24,7 @@ export type TSchema = {
     hardValidation: boolean; // Whether hard validation is enabled
     maxDepth: number; // Maximum depth of the schema
     authorization?: Record<string, string[]>; // RBAC authorization configuration
+    extend?: string; // ID or UUID of the parent schema that this schema extends
     stats?: {
         objects: {
             total: number

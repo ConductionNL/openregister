@@ -35,7 +35,7 @@ graph TD
 **Issue**: All external apps without user sessions share the same `'anonymous'` cache namespace, causing:
 - **Cache invalidation conflicts** between different apps
 - **Poor cache hit rates** due to mixed usage patterns
-- **Slow responses** (2+ seconds instead of <500ms)
+- **Slow responses** (2+ seconds instead of &lt;500ms)
 - **Resource waste** from repeated identical queries
 
 ## The Solution
@@ -127,9 +127,9 @@ $results = $objectService->searchObjectsPaginated($query);
 
 | **Scenario** | **Cache Hit Rate** | **Response Time** | **Improvement** |
 |-------------|-------------------|------------------|----------------|
-| App with `setExternalAppContext()` | ~95% | <500ms | **🚀 10x faster** |
-| Auto-detected external app | ~80% | <750ms | **🚀 4x faster** |
-| Query fingerprint isolation | ~60% | <1s | **🚀 3x faster** |
+| App with `setExternalAppContext()` | ~95% | &lt;500ms | **🚀 10x faster** |
+| Auto-detected external app | ~80% | &lt;750ms | **🚀 4x faster** |
+| Query fingerprint isolation | ~60% | &lt;1s | **🚀 3x faster** |
 
 ## Cache Key Structure
 
@@ -306,9 +306,9 @@ $results = $objectService->searchObjectsPaginated($query); // App-specific cachi
 
 | **App Usage Pattern** | **Before** | **After** | **Improvement** |
 |---------------------|-----------|----------|----------------|
-| High-frequency identical queries | 2-3s | <100ms | **🚀 20-30x faster** |
-| Similar query patterns | 1-2s | <300ms | **🚀 5-7x faster** |
-| Mixed query patterns | 2-5s | <500ms | **🚀 4-10x faster** |
+| High-frequency identical queries | 2-3s | &lt;100ms | **🚀 20-30x faster** |
+| Similar query patterns | 1-2s | &lt;300ms | **🚀 5-7x faster** |
+| Mixed query patterns | 2-5s | &lt;500ms | **🚀 4-10x faster** |
 
 ## Troubleshooting
 
@@ -345,4 +345,4 @@ $results = $objectService->searchObjectsPaginated($query); // App-specific cachi
 **Related Documentation**:
 - [Cache Invalidation System](../technical/cache-invalidation-system.md)
 - [Object Handlers](./object-handlers.md)
-- [Performance Best Practices](../technical/performance-optimization.md)
+- [API Caching](../technical/api-caching.md)

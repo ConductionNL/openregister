@@ -6,6 +6,8 @@ volumes:
   config:
   solr:
   zookeeper:
+  ollama:
+  presidio-models:
 
 services:
   db:
@@ -64,6 +66,73 @@ services:
       timeout: 10s
       retries: 3
 
+  # Ollama for local LLM inference
+  # Provides local AI models for chat, RAG, and agent functionality
+  # Access at: http://localhost:11434
+  # Pull models: docker exec openregister-ollama ollama pull llama3.2
+  ollama:
+    image: ollama/ollama:latest
+    container_name: openregister-ollama
+    restart: always
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+      # Allow multiple concurrent requests
+      - OLLAMA_NUM_PARALLEL=2
+      # Keep models loaded for faster responses
+      - OLLAMA_KEEP_ALIVE=15m
+    # Memory limits for larger models (Llama 3.2 8B, Mistral, etc.)
+    # GPU support enabled for NVIDIA GPUs
+    deploy:
+      resources:
+        limits:
+          memory: 16G  # Sufficient for 8B models
+        reservations:
+          memory: 8G   # Minimum required
+          devices:
+            - driver: nvidia
+              count: all  # Use all available GPUs
+              capabilities: [gpu]
+    # Shared memory for model loading
+    shm_size: '2gb'
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:11434/api/tags || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Presidio Analyzer for PII detection and NER
+  # Microsoft's open-source PII detection service (RECOMMENDED FOR PRODUCTION)
+  # Access at: http://localhost:5001
+  # Documentation: https://microsoft.github.io/presidio/
+  presidio-analyzer:
+    image: mcr.microsoft.com/presidio-analyzer:latest
+    container_name: openregister-presidio-analyzer
+    restart: always
+    ports:
+      - "5001:5001"
+    environment:
+      - GRPC_PORT=5001
+      - LOG_LEVEL=INFO
+      # Enable multi-language support
+      - PRESIDIO_ANALYZER_LANGUAGES=en,nl,de,fr,es
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 512M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5001/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
   # init-ubuntu:
   #   image: ubuntu
   #   command: sh /home/ubuntu/docker/init-ubuntu.sh
@@ -82,6 +151,8 @@ services:
     links:
       - db
       - solr
+      - ollama
+      - presidio-analyzer
     volumes:
       - nextcloud:/var/www/html:rw
       - ./custom_apps:/var/www/html/custom_apps

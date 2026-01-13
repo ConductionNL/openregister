@@ -43,8 +43,59 @@ use OCP\ICacheFactory;
 /**
  * Service for handling settings-related operations.
  *
- * Provides functionality for retrieving, saving, and loading settings,
- * as well as managing configuration for different object types.
+ * This service is responsible ONLY for storing and retrieving application settings.
+ * It does NOT contain business logic for testing or using the configured services.
+ *
+ * RESPONSIBILITIES:
+ * - Store and retrieve settings from Nextcloud's IAppConfig
+ * - Provide default values for unconfigured settings
+ * - Manage settings for: RBAC, Multitenancy, Retention, SOLR, LLM, Files, Objects
+ * - Get available options (groups, users, tenants) for settings UI
+ * - Rebase operations (apply default owners/tenants to existing objects)
+ * - Cache management statistics and operations
+ *
+ * WHAT THIS SERVICE DOES NOT DO:
+ * - Test LLM connections (use VectorEmbeddingService or ChatService)
+ * - Test SOLR connections (use GuzzleSolrService)
+ * - Generate embeddings (use VectorEmbeddingService)
+ * - Execute chat operations (use ChatService)
+ * - Perform searches (use appropriate search services)
+ *
+ * SETTINGS CATEGORIES:
+ * - Version: Application name and version information
+ * - RBAC: Role-based access control configuration
+ * - Multitenancy: Tenant isolation and default tenant settings
+ * - Retention: Data retention policies for objects, logs, and trails
+ * - SOLR: Search engine configuration and connection details
+ * - LLM: Language model provider configuration (OpenAI, Fireworks, Ollama)
+ * - Files: File processing and vectorization settings
+ * - Objects: Object vectorization and metadata settings
+ * - Organisation: Default organisation and auto-creation settings
+ *
+ * ARCHITECTURE PATTERN:
+ * - Controllers validate input and delegate to this service for storage
+ * - Business logic services (ChatService, VectorEmbeddingService) read from this service
+ * - Testing logic is delegated to the appropriate business logic service
+ * - This service only handles persistence, not business logic
+ *
+ * INTEGRATION POINTS:
+ * - IAppConfig: Nextcloud's app configuration storage
+ * - IConfig: Nextcloud's system configuration
+ * - ChatService: Reads LLM settings for chat operations
+ * - VectorEmbeddingService: Reads LLM settings for embeddings
+ * - GuzzleSolrService: Reads SOLR settings for search operations
+ * - Controllers: Delegate settings CRUD operations to this service
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.nl
  */
 class SettingsService
 {
@@ -246,6 +297,7 @@ class SettingsService
                     'defaultUserTenant'   => '',
                     'defaultObjectTenant' => '',
                     'publishedObjectsBypassMultiTenancy' => false,
+                    'adminOverride'       => true,
                 ];
             } else {
                 $multitenancyData     = json_decode($multitenancyConfig, true);
@@ -254,6 +306,7 @@ class SettingsService
                     'defaultUserTenant'   => $multitenancyData['defaultUserTenant'] ?? '',
                     'defaultObjectTenant' => $multitenancyData['defaultObjectTenant'] ?? '',
                     'publishedObjectsBypassMultiTenancy' => $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false,
+                    'adminOverride'       => $multitenancyData['adminOverride'] ?? true,
                 ];
             }
 
@@ -465,6 +518,7 @@ class SettingsService
                     'defaultUserTenant'   => $multitenancyData['defaultUserTenant'] ?? '',
                     'defaultObjectTenant' => $multitenancyData['defaultObjectTenant'] ?? '',
                     'publishedObjectsBypassMultiTenancy' => $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false,
+                    'adminOverride'       => $multitenancyData['adminOverride'] ?? true,
                 ];
                 $this->config->setValueString($this->appName, 'multitenancy', json_encode($multitenancyConfig));
             }
@@ -2580,6 +2634,97 @@ class SettingsService
     }
 
     /**
+     * Get Organisation settings only
+     *
+     * @return array Organisation configuration
+     * @throws \RuntimeException If Organisation settings retrieval fails
+     */
+    public function getOrganisationSettingsOnly(): array
+    {
+        try {
+            $organisationConfig = $this->config->getValueString($this->appName, 'organisation', '');
+            
+            $organisationData = [];
+            if (empty($organisationConfig)) {
+                $organisationData = [
+                    'default_organisation'              => null,
+                    'auto_create_default_organisation' => true,
+                ];
+            } else {
+                $storedData = json_decode($organisationConfig, true);
+                $organisationData = [
+                    'default_organisation'              => $storedData['default_organisation'] ?? null,
+                    'auto_create_default_organisation' => $storedData['auto_create_default_organisation'] ?? true,
+                ];
+            }
+            
+            return [
+                'organisation' => $organisationData,
+            ];
+        } catch (Exception $e) {
+            throw new \RuntimeException('Failed to retrieve Organisation settings: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Update Organisation settings only
+     *
+     * @param array $organisationData Organisation configuration data
+     * @return array Updated Organisation configuration
+     * @throws \RuntimeException If Organisation settings update fails
+     */
+    public function updateOrganisationSettingsOnly(array $organisationData): array
+    {
+        try {
+            $organisationConfig = [
+                'default_organisation'              => $organisationData['default_organisation'] ?? null,
+                'auto_create_default_organisation' => $organisationData['auto_create_default_organisation'] ?? true,
+            ];
+            
+            $this->config->setValueString($this->appName, 'organisation', json_encode($organisationConfig));
+            
+            return [
+                'organisation' => $organisationConfig,
+            ];
+        } catch (Exception $e) {
+            throw new \RuntimeException('Failed to update Organisation settings: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Get default organisation UUID from settings
+     *
+     * @return string|null Default organisation UUID or null if not set
+     */
+    public function getDefaultOrganisationUuid(): ?string
+    {
+        try {
+            $settings = $this->getOrganisationSettingsOnly();
+            return $settings['organisation']['default_organisation'] ?? null;
+        } catch (Exception $e) {
+            $this->logger->warning('Failed to get default organisation UUID: '.$e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Set default organisation UUID in settings
+     *
+     * @param string|null $uuid Default organisation UUID
+     * @return void
+     */
+    public function setDefaultOrganisationUuid(?string $uuid): void
+    {
+        try {
+            $settings = $this->getOrganisationSettingsOnly();
+            $settings['organisation']['default_organisation'] = $uuid;
+            $this->updateOrganisationSettingsOnly($settings['organisation']);
+        } catch (Exception $e) {
+            $this->logger->error('Failed to set default organisation UUID: '.$e->getMessage());
+        }
+    }
+
+    /**
      * Get focused Multitenancy settings only
      *
      * @return array Multitenancy configuration with available tenants
@@ -2612,6 +2757,7 @@ class SettingsService
                     'defaultUserTenant'   => '',
                     'defaultObjectTenant' => '',
                     'publishedObjectsBypassMultiTenancy' => false,
+                    'adminOverride'       => true,
                 ];
             } else {
                 $storedData = json_decode($multitenancyConfig, true);
@@ -2620,6 +2766,7 @@ class SettingsService
                     'defaultUserTenant'   => $storedData['defaultUserTenant'] ?? '',
                     'defaultObjectTenant' => $storedData['defaultObjectTenant'] ?? '',
                     'publishedObjectsBypassMultiTenancy' => $storedData['publishedObjectsBypassMultiTenancy'] ?? false,
+                    'adminOverride'       => $storedData['adminOverride'] ?? true,
                 ];
             }
             
@@ -2648,6 +2795,7 @@ class SettingsService
                 'defaultUserTenant'   => $multitenancyData['defaultUserTenant'] ?? '',
                 'defaultObjectTenant' => $multitenancyData['defaultObjectTenant'] ?? '',
                 'publishedObjectsBypassMultiTenancy' => $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false,
+                'adminOverride'       => $multitenancyData['adminOverride'] ?? true,
             ];
             
             $this->config->setValueString($this->appName, 'multitenancy', json_encode($multitenancyConfig));
@@ -2675,6 +2823,7 @@ class SettingsService
             if (empty($llmConfig) === true) {
                 // Return default configuration
                 return [
+                    'enabled' => false,
                     'embeddingProvider' => null,
                     'chatProvider' => null,
                     'openaiConfig' => [
@@ -2688,16 +2837,45 @@ class SettingsService
                         'model' => null,
                         'chatModel' => null,
                     ],
-                    'fireworksConfig' => [
-                        'apiKey' => '',
-                        'embeddingModel' => null,
-                        'chatModel' => null,
-                        'baseUrl' => 'https://api.fireworks.ai/inference/v1',
-                    ],
+                'fireworksConfig' => [
+                    'apiKey' => '',
+                    'embeddingModel' => null,
+                    'chatModel' => null,
+                    'baseUrl' => 'https://api.fireworks.ai/inference/v1',
+                ],
+                'vectorConfig' => [
+                    'backend' => 'php',
+                    'solrField' => '_embedding_',
+                ],
                 ];
             }
             
-            return json_decode($llmConfig, true);
+            $decoded = json_decode($llmConfig, true);
+            
+            // Ensure enabled field exists (for backward compatibility)
+            if (isset($decoded['enabled']) === false) {
+                $decoded['enabled'] = false;
+            }
+            
+            // Ensure vector config exists (for backward compatibility)
+            if (isset($decoded['vectorConfig']) === false) {
+                $decoded['vectorConfig'] = [
+                    'backend' => 'php',
+                    'solrField' => '_embedding_',
+                ];
+            } else {
+                // Ensure all vector config fields exist
+                if (isset($decoded['vectorConfig']['backend']) === false) {
+                    $decoded['vectorConfig']['backend'] = 'php';
+                }
+                if (isset($decoded['vectorConfig']['solrField']) === false) {
+                    $decoded['vectorConfig']['solrField'] = '_embedding_';
+                }
+                // Remove deprecated solrCollection if it exists
+                unset($decoded['vectorConfig']['solrCollection']);
+            }
+            
+            return $decoded;
         } catch (Exception $e) {
             throw new \RuntimeException('Failed to retrieve LLM settings: '.$e->getMessage());
         }
@@ -2713,25 +2891,34 @@ class SettingsService
     public function updateLLMSettingsOnly(array $llmData): array
     {
         try {
+            // Get existing config for PATCH support
+            $existingConfig = $this->getLLMSettingsOnly();
+            
+            // Merge with existing config (PATCH behavior)
             $llmConfig = [
-                'embeddingProvider' => $llmData['embeddingProvider'] ?? null,
-                'chatProvider' => $llmData['chatProvider'] ?? null,
+                'enabled' => $llmData['enabled'] ?? $existingConfig['enabled'] ?? false,
+                'embeddingProvider' => $llmData['embeddingProvider'] ?? $existingConfig['embeddingProvider'] ?? null,
+                'chatProvider' => $llmData['chatProvider'] ?? $existingConfig['chatProvider'] ?? null,
                 'openaiConfig' => [
-                    'apiKey' => $llmData['openaiConfig']['apiKey'] ?? '',
-                    'model' => $llmData['openaiConfig']['model'] ?? null,
-                    'chatModel' => $llmData['openaiConfig']['chatModel'] ?? null,
-                    'organizationId' => $llmData['openaiConfig']['organizationId'] ?? '',
+                    'apiKey' => $llmData['openaiConfig']['apiKey'] ?? $existingConfig['openaiConfig']['apiKey'] ?? '',
+                    'model' => $llmData['openaiConfig']['model'] ?? $existingConfig['openaiConfig']['model'] ?? null,
+                    'chatModel' => $llmData['openaiConfig']['chatModel'] ?? $existingConfig['openaiConfig']['chatModel'] ?? null,
+                    'organizationId' => $llmData['openaiConfig']['organizationId'] ?? $existingConfig['openaiConfig']['organizationId'] ?? '',
                 ],
                 'ollamaConfig' => [
-                    'url' => $llmData['ollamaConfig']['url'] ?? 'http://localhost:11434',
-                    'model' => $llmData['ollamaConfig']['model'] ?? null,
-                    'chatModel' => $llmData['ollamaConfig']['chatModel'] ?? null,
+                    'url' => $llmData['ollamaConfig']['url'] ?? $existingConfig['ollamaConfig']['url'] ?? 'http://localhost:11434',
+                    'model' => $llmData['ollamaConfig']['model'] ?? $existingConfig['ollamaConfig']['model'] ?? null,
+                    'chatModel' => $llmData['ollamaConfig']['chatModel'] ?? $existingConfig['ollamaConfig']['chatModel'] ?? null,
                 ],
                 'fireworksConfig' => [
-                    'apiKey' => $llmData['fireworksConfig']['apiKey'] ?? '',
-                    'embeddingModel' => $llmData['fireworksConfig']['embeddingModel'] ?? null,
-                    'chatModel' => $llmData['fireworksConfig']['chatModel'] ?? null,
-                    'baseUrl' => $llmData['fireworksConfig']['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1',
+                    'apiKey' => $llmData['fireworksConfig']['apiKey'] ?? $existingConfig['fireworksConfig']['apiKey'] ?? '',
+                    'embeddingModel' => $llmData['fireworksConfig']['embeddingModel'] ?? $existingConfig['fireworksConfig']['embeddingModel'] ?? null,
+                    'chatModel' => $llmData['fireworksConfig']['chatModel'] ?? $existingConfig['fireworksConfig']['chatModel'] ?? null,
+                    'baseUrl' => $llmData['fireworksConfig']['baseUrl'] ?? $existingConfig['fireworksConfig']['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1',
+                ],
+                'vectorConfig' => [
+                    'backend' => $llmData['vectorConfig']['backend'] ?? $existingConfig['vectorConfig']['backend'] ?? 'php',
+                    'solrField' => $llmData['vectorConfig']['solrField'] ?? $existingConfig['vectorConfig']['solrField'] ?? '_embedding_',
                 ],
             ];
             
@@ -2825,18 +3012,64 @@ class SettingsService
      * @return array Updated object management configuration
      * @throws \RuntimeException
      */
+    /**
+     * Get focused Object settings only (vectorization config)
+     *
+     * @return array Object vectorization configuration
+     * @throws \RuntimeException If Object settings retrieval fails
+     */
+    public function getObjectSettingsOnly(): array
+    {
+        try {
+            $objectConfig = $this->config->getValueString($this->appName, 'objectManagement', '');
+            
+            if (empty($objectConfig)) {
+                return [
+                    'vectorizationEnabled' => false,
+                    'vectorizeOnCreate' => true,
+                    'vectorizeOnUpdate' => false,
+                    'vectorizeAllViews' => true,
+                    'enabledViews' => [],
+                    'includeMetadata' => true,
+                    'includeRelations' => true,
+                    'maxNestingDepth' => 10,
+                    'batchSize' => 25,
+                    'autoRetry' => true,
+                ];
+            }
+
+            $objectData = json_decode($objectConfig, true);
+            return [
+                'vectorizationEnabled' => $objectData['vectorizationEnabled'] ?? false,
+                'vectorizeOnCreate' => $objectData['vectorizeOnCreate'] ?? true,
+                'vectorizeOnUpdate' => $objectData['vectorizeOnUpdate'] ?? false,
+                'vectorizeAllViews' => $objectData['vectorizeAllViews'] ?? ($objectData['vectorizeAllSchemas'] ?? true),
+                'enabledViews' => $objectData['enabledViews'] ?? ($objectData['enabledSchemas'] ?? []),
+                'includeMetadata' => $objectData['includeMetadata'] ?? true,
+                'includeRelations' => $objectData['includeRelations'] ?? true,
+                'maxNestingDepth' => $objectData['maxNestingDepth'] ?? 10,
+                'batchSize' => $objectData['batchSize'] ?? 25,
+                'autoRetry' => $objectData['autoRetry'] ?? true,
+            ];
+        } catch (Exception $e) {
+            throw new \RuntimeException('Failed to get Object Management settings: '.$e->getMessage());
+        }
+    }
+
     public function updateObjectSettingsOnly(array $objectData): array
     {
         try {
             $objectConfig = [
                 'vectorizationEnabled' => $objectData['vectorizationEnabled'] ?? false,
-                'provider' => $objectData['provider'] ?? null,
                 'vectorizeOnCreate' => $objectData['vectorizeOnCreate'] ?? true,
                 'vectorizeOnUpdate' => $objectData['vectorizeOnUpdate'] ?? false,
-                'vectorizeAllSchemas' => $objectData['vectorizeAllSchemas'] ?? true,
-                'enabledSchemas' => $objectData['enabledSchemas'] ?? [],
+                'vectorizeAllViews' => $objectData['vectorizeAllViews'] ?? true,
+                'enabledViews' => $objectData['enabledViews'] ?? [],
                 'includeMetadata' => $objectData['includeMetadata'] ?? true,
+                'includeRelations' => $objectData['includeRelations'] ?? true,
                 'maxNestingDepth' => $objectData['maxNestingDepth'] ?? 10,
+                'batchSize' => $objectData['batchSize'] ?? 25,
+                'autoRetry' => $objectData['autoRetry'] ?? true,
             ];
             
             $this->config->setValueString($this->appName, 'objectManagement', json_encode($objectConfig));

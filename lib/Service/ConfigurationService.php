@@ -32,6 +32,11 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
+use OCA\OpenRegister\Service\Handler\ViewHandler;
+use OCA\OpenRegister\Service\Handler\AgentHandler;
+use OCA\OpenRegister\Service\Handler\OrganisationHandler;
+use OCA\OpenRegister\Service\Handler\ApplicationHandler;
+use OCA\OpenRegister\Service\Handler\SourceHandler;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
@@ -149,6 +154,41 @@ class ConfigurationService
      */
     private ObjectService $objectService;
 
+    /**
+     * View handler instance for view import/export operations.
+     *
+     * @var ViewHandler The view handler instance.
+     */
+    private ViewHandler $viewHandler;
+
+    /**
+     * Agent handler instance for agent import/export operations.
+     *
+     * @var AgentHandler The agent handler instance.
+     */
+    private AgentHandler $agentHandler;
+
+    /**
+     * Organisation handler instance for organisation import/export operations.
+     *
+     * @var OrganisationHandler The organisation handler instance.
+     */
+    private OrganisationHandler $organisationHandler;
+
+    /**
+     * Application handler instance for application import/export operations.
+     *
+     * @var ApplicationHandler The application handler instance.
+     */
+    private ApplicationHandler $applicationHandler;
+
+    /**
+     * Source handler instance for source import/export operations.
+     *
+     * @var SourceHandler The source handler instance.
+     */
+    private SourceHandler $sourceHandler;
+
 
     /**
      * Constructor
@@ -164,6 +204,11 @@ class ConfigurationService
      * @param \OCP\IAppConfig                   $appConfig           The app config instance
      * @param Client                            $client              The HTTP client instance
      * @param ObjectService                     $objectService       The object service instance
+     * @param ViewHandler                       $viewHandler         The view handler instance
+     * @param AgentHandler                      $agentHandler        The agent handler instance
+     * @param OrganisationHandler               $organisationHandler The organisation handler instance
+     * @param ApplicationHandler                $applicationHandler  The application handler instance
+     * @param SourceHandler                     $sourceHandler       The source handler instance
      */
     public function __construct(
         SchemaMapper $schemaMapper,
@@ -176,7 +221,12 @@ class ConfigurationService
         ContainerInterface $container,
         IAppConfig $appConfig,
         Client $client,
-        ObjectService $objectService
+        ObjectService $objectService,
+        ViewHandler $viewHandler,
+        AgentHandler $agentHandler,
+        OrganisationHandler $organisationHandler,
+        ApplicationHandler $applicationHandler,
+        SourceHandler $sourceHandler
     ) {
         $this->schemaMapper        = $schemaMapper;
         $this->registerMapper      = $registerMapper;
@@ -189,6 +239,11 @@ class ConfigurationService
         $this->appConfig     = $appConfig;
         $this->client        = $client;
         $this->objectService = $objectService;
+        $this->viewHandler         = $viewHandler;
+        $this->agentHandler        = $agentHandler;
+        $this->organisationHandler = $organisationHandler;
+        $this->applicationHandler  = $applicationHandler;
+        $this->sourceHandler       = $sourceHandler;
 
     }//end __construct()
 
@@ -261,20 +316,42 @@ class ConfigurationService
 
             // Set the info from the configuration.
             $openApiSpec['info'] = [
-                'id'          => $input->getId(),
                 'title'       => $input->getTitle(),
                 'description' => $input->getDescription(),
                 'version'     => $input->getVersion(),
+            ];
+
+            // Add OpenRegister-specific metadata as an extension following OpenAPI spec
+            // https://swagger.io/docs/specification/v3_0/openapi-extensions/
+            // Standard OAS properties (title, description, version) are in the info section above
+            // Note: Internal properties (autoUpdate, notificationGroups, owner, organisation, registers, 
+            // schemas, objects, views, agents, sources, applications) are excluded as they are 
+            // instance-specific or automatically managed during import
+            $openApiSpec['x-openregister'] = [
+                'type'         => $input->getType(),
+                'app'          => $input->getApp(),
+                'sourceType'   => $input->getSourceType(),
+                'sourceUrl'    => $input->getSourceUrl(),
+                'openregister' => $input->getOpenregister(),
+                'github'       => [
+                    'repo'   => $input->getGithubRepo(),
+                    'branch' => $input->getGithubBranch(),
+                    'path'   => $input->getGithubPath(),
+                ],
             ];
         } else if ($input instanceof Register) {
             // Pass the register as an array to the exportConfig function.
             $registers = [$input];
             // Set the info from the register.
             $openApiSpec['info'] = [
-                'id'          => $input->getId(),
                 'title'       => $input->getTitle(),
                 'description' => $input->getDescription(),
                 'version'     => $input->getVersion(),
+            ];
+
+            // Add minimal x-openregister metadata for register export
+            $openApiSpec['x-openregister'] = [
+                'type' => 'register',
             ];
         } else {
             // Get all registers associated with this configuration.
@@ -289,6 +366,20 @@ class ConfigurationService
                 'description' => $input['description'] ?? 'Default Description',
                 'version'     => $input['version'] ?? '1.0.0',
             ];
+
+            // Add x-openregister metadata if available in input
+            if (isset($input['x-openregister']) === true) {
+                $openApiSpec['x-openregister'] = $input['x-openregister'];
+            } else {
+                // Create basic metadata from input
+                $openApiSpec['x-openregister'] = [
+                    'title'       => $input['title'] ?? null,
+                    'description' => $input['description'] ?? null,
+                    'type'        => $input['type'] ?? null,
+                    'app'         => $input['app'] ?? null,
+                    'version'     => $input['version'] ?? '1.0.0',
+                ];
+            }
         }//end if
 
         // Export each register and its schemas.
@@ -363,8 +454,9 @@ class ConfigurationService
         // Use jsonSerialize to get the JSON representation of the register.
         $registerArray = $register->jsonSerialize();
 
-        // Unset id and uuid if they are present.
-        unset($registerArray['id'], $registerArray['uuid']);
+        // Unset id, uuid, and organisation if they are present.
+        // Organisation is instance-specific and should not be exported.
+        unset($registerArray['id'], $registerArray['uuid'], $registerArray['organisation']);
 
         return $registerArray;
 
@@ -389,8 +481,9 @@ class ConfigurationService
         // Use jsonSerialize to get the JSON representation of the schema.
         $schemaArray = $schema->jsonSerialize();
 
-        // Unset id and uuid if they are present.
-        unset($schemaArray['id'], $schemaArray['uuid']);
+        // Unset id, uuid, and organisation if they are present.
+        // Organisation is instance-specific and should not be exported.
+        unset($schemaArray['id'], $schemaArray['uuid'], $schemaArray['organisation']);
 
         foreach ($schemaArray['properties'] as &$property) {
             // Ensure property is always an array
@@ -546,7 +639,15 @@ class ConfigurationService
     private function exportObject(ObjectEntity $object): array
     {
         // Use jsonSerialize to get the JSON representation of the object.
-        return $object->jsonSerialize();
+        $objectArray = $object->jsonSerialize();
+        
+        // Remove organisation if present (though objects typically don't have this at top level)
+        // Organisation is instance-specific and should not be exported.
+        if (isset($objectArray['organisation']) === true) {
+            unset($objectArray['organisation']);
+        }
+        
+        return $objectArray;
 
     }//end exportObject()
 
@@ -771,14 +872,18 @@ class ConfigurationService
      * - Objects with references to existing schemas and registers
      * - Version checking to prevent unnecessary imports
      *
-     * @param array       $data    The configuration JSON content
-     * @param string|null $owner   The owner of the imported data
-     * @param string|null $appId   The app ID for version tracking (optional, will be extracted from data if not provided)
-     * @param string|null $version The version for version tracking (optional, will be extracted from data if not provided)
-     * @param bool        $force   Force import even if the same or newer version already exists
+     * ⚠️ IMPORTANT: This method MUST be called with a Configuration entity.
+     * Direct calls without a Configuration entity will throw an exception.
+     * This ensures proper tracking of imported entities.
      *
-     * @throws JsonException If JSON parsing fails
-     * @throws Exception     If schema validation fails or format is unsupported
+     * @param array              $data          The configuration JSON content
+     * @param Configuration|null $configuration The configuration entity (REQUIRED)
+     * @param string|null        $owner         The owner of the imported data (deprecated, use configuration->app)
+     * @param string|null        $appId         The app ID for version tracking (deprecated, use configuration->app)
+     * @param string|null        $version       The version for version tracking (deprecated, use data version)
+     * @param bool               $force         Force import even if the same or newer version already exists
+     *
+     * @throws Exception If called without a Configuration entity or if import fails
      * @return array        Array of created/updated entities
      *
      * @phpstan-return array{
@@ -793,8 +898,16 @@ class ConfigurationService
      *     rules: array
      * }
      */
-    public function importFromJson(array $data, ?string $owner=null, ?string $appId=null, ?string $version=null, bool $force=false): array
+    public function importFromJson(array $data, ?Configuration $configuration=null, ?string $owner=null, ?string $appId=null, ?string $version=null, bool $force=false): array
     {
+        // ⚠️ CRITICAL: Configuration entity is required for proper tracking
+        if ($configuration === null) {
+            throw new Exception(
+                'importFromJson must be called with a Configuration entity. ' .
+                'Direct imports without a Configuration are not allowed to ensure proper entity tracking. ' .
+                'Please create a Configuration entity first before importing.'
+            );
+        }
         // Ensure data is consistently an array by converting any stdClass objects
         $data = $this->ensureArrayStructure($data);
 
@@ -934,14 +1047,15 @@ class ConfigurationService
                             $schemaIds[] = $this->schemasMap[$schemaSlug]->getId();
                         } else {
                             // Try to find existing schema in database.
+                            // Note: May fail due to organisation filtering during cross-instance import.
                             try {
                                 $existingSchema = $this->schemaMapper->find(strtolower($schemaSlug));
                                 $schemaIds[]    = $existingSchema->getId();
                                 // Add to map for object processing.
                                 $this->schemasMap[$schemaSlug] = $existingSchema;
                             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-                                $this->logger->warning(
-                                    sprintf('Schema with slug %s not found during register import.', $schemaSlug)
+                                $this->logger->info(
+                                    sprintf('Schema with slug %s not found in current organisation context during register import (will be created if defined in import).', $schemaSlug)
                                 );
                             }
                         }
@@ -959,21 +1073,8 @@ class ConfigurationService
             }//end foreach
         }//end if
 
-        // Build register slug to ID map after register import
-        $registerSlugToId = [];
-        foreach ($this->registersMap as $slug => $register) {
-            if ($register instanceof \OCA\OpenRegister\Db\Register) {
-                $registerSlugToId[$slug] = $register->getId();
-            }
-        }
-
-        // Build schema slug to ID map after schema import
-        $schemaSlugToId = [];
-        foreach ($this->schemasMap as $slug => $schema) {
-            if ($schema instanceof \OCA\OpenRegister\Db\Schema) {
-                $schemaSlugToId[$slug] = $schema->getId();
-            }
-        }
+        // NOTE: We do NOT build ID maps - we'll pass the actual objects to avoid organisation filter issues
+        // When saveObject() receives Register/Schema objects, it skips the find() lookup entirely
 
         // Process and import objects.
         if (isset($data['components']['objects']) === true && is_array($data['components']['objects']) === true) {
@@ -989,79 +1090,71 @@ class ConfigurationService
                     continue;
                 }
 
-                // Map register and schema
-                $registerId = $registerSlugToId[$rawRegister] ?? null;
-                $schemaId   = $schemaSlugToId[$rawSchema] ?? null;
-                if (empty($registerId) || empty($schemaId)) {
+                // Get the actual Register and Schema objects from maps (not IDs!)
+                // This is CRITICAL - passing objects avoids organisation filter in find()
+                $registerObject = $this->registersMap[$rawRegister] ?? null;
+                $schemaObject   = $this->schemasMap[$rawSchema] ?? null;
+                if ($registerObject === null || $schemaObject === null) {
+                    $this->logger->warning(
+                        'Skipping object import - register or schema not found in maps',
+                        [
+                            'objectSlug'     => $slug,
+                            'registerSlug'   => $rawRegister,
+                            'schemaSlug'     => $rawSchema,
+                            'registerFound'  => $registerObject !== null,
+                            'schemaFound'    => $schemaObject !== null,
+                        ]
+                    );
                     continue;
                 }
+
+                // Get IDs for searching existing objects
+                $registerId = $registerObject->getId();
+                $schemaId   = $schemaObject->getId();
 
                 // Use ObjectService::searchObjects to find existing object by register+schema+slug
                 $search = [
                     '@self'  => [
                         'register' => (int) $registerId,
-                // ensure integer
                         'schema'   => (int) $schemaId,
-                // ensure integer
                         'slug'     => $slug,
-                // string
                     ],
                     '_limit' => 1,
                 ];
                 $this->logger->debug('Import object search filter', ['filter' => $search]);
-                // Log what we are searching for (now as warning for visibility)
-                $this->logger->warning(
-                        'Import: searching for existing object',
-                        [
-                            'registerId'   => $registerId,
-                            'schemaId'     => $schemaId,
-                            'slug'         => $slug,
-                            'searchFilter' => $search,
-                        ]
-                        );
-                // TEMP: Always log search filter to Docker logs for debugging
+                
+                // Search for existing object
                 $results = $this->objectService->searchObjects($search, true, true);
-                $this->logger->warning(
-                        'Import: search result',
-                        [
-                            'resultType'  => gettype($results),
-                            'resultCount' => is_array($results) ? count($results) : null,
-                            'resultValue' => $results,
-                        ]
-                        );
                 $existingObject = is_array($results) && count($results) > 0 ? $results[0] : null;
+                
                 if (!$existingObject) {
-                    $this->logger->warning(
-                            'Import: No existing object found for update',
-                            [
-                                'registerId'   => $registerId,
-                                'schemaId'     => $schemaId,
-                                'slug'         => $slug,
-                                'searchFilter' => $search,
-                            ]
-                            );
-                    $this->logger->error(
-                            'No existing object found for insert, about to insert new object',
-                            [
-                                'registerId' => $registerId,
-                                'schemaId'   => $schemaId,
-                                'slug'       => $slug,
-                                'search'     => $search,
-                                'objectData' => $objectData,
-                            ]
-                            );
-                }//end if
+                    $this->logger->info(
+                        'No existing object found - will create new object',
+                        [
+                            'registerId' => $registerId,
+                            'schemaId'   => $schemaId,
+                            'slug'       => $slug,
+                        ]
+                    );
+                }
 
+                // Replace string slugs with integer IDs in objectData's @self metadata
+                // This prevents any internal lookups from using string slugs
+                $objectData['@self']['register'] = (int) $registerId;
+                $objectData['@self']['schema'] = (int) $schemaId;
+                
                 if ($existingObject) {
                     $existingObjectData = is_array($existingObject) ? $existingObject : $existingObject->jsonSerialize();
                     $importedVersion    = $objectData['@self']['version'] ?? $objectData['version'] ?? '1.0.0';
                     $existingVersion    = $existingObjectData['@self']['version'] ?? $existingObjectData['version'] ?? '1.0.0';
                     if (version_compare($importedVersion, $existingVersion, '>')) {
                         $uuid   = $existingObjectData['@self']['id'] ?? $existingObjectData['id'] ?? null;
+                        // CRITICAL: Pass Register and Schema OBJECTS, not IDs
+                        // This avoids organisation filter issues in find()
                         $object = $this->objectService->saveObject(
                             object: $objectData,
-                            register: (int) $registerId,
-                            schema: (int) $schemaId,
+                            register: $registerObject,
+                            schema: $schemaObject,
                             uuid: $uuid
                         );
                         if ($object !== null) {
@@ -1082,10 +1175,12 @@ class ConfigurationService
                     }//end if
                 } else {
                     // Create new object
+                    // CRITICAL: Pass Register and Schema OBJECTS, not IDs
+                    // This avoids organisation filter issues in find()
                     $object = $this->objectService->saveObject(
                         object: $objectData,
-                        register: (int) $registerId,
-                        schema: (int) $schemaId
+                        register: $registerObject,
+                        schema: $schemaObject
                     );
                     if ($object !== null) {
                         $result['objects'][] = $object;
@@ -1151,10 +1246,16 @@ class ConfigurationService
                 // No existing configuration found, we'll create a new one
             }
 
-            // Extract title and description from import data
-            $title       = $data['info']['title'] ?? $data['title'] ?? "Configuration for {$appId}";
-            $description = $data['info']['description'] ?? $data['description'] ?? "Imported configuration for application {$appId}";
-            $type        = $data['type'] ?? 'imported';
+            // Extract metadata following OAS standard first, then x-openregister extension
+            $info = $data['info'] ?? [];
+            $xOpenregister = $data['x-openregister'] ?? [];
+            
+            // Standard OAS properties from info section
+            $title       = $info['title'] ?? $xOpenregister['title'] ?? $data['title'] ?? "Configuration for {$appId}";
+            $description = $info['description'] ?? $xOpenregister['description'] ?? $data['description'] ?? "Imported configuration for application {$appId}";
+            
+            // OpenRegister-specific properties
+            $type        = $xOpenregister['type'] ?? $data['type'] ?? 'imported';
 
             // Collect IDs of imported entities
             $registerIds = [];
@@ -1186,9 +1287,9 @@ class ConfigurationService
                 $existingConfiguration->setVersion($version);
 
                 // Merge with existing IDs to avoid losing previously imported entities
-                $existingRegisterIds = $existingConfiguration->getRegisters();
-                $existingSchemaIds   = $existingConfiguration->getSchemas();
-                $existingObjectIds   = $existingConfiguration->getObjects();
+                $existingRegisterIds = $existingConfiguration->getRegisters() ?? [];
+                $existingSchemaIds   = $existingConfiguration->getSchemas() ?? [];
+                $existingObjectIds   = $existingConfiguration->getObjects() ?? [];
 
                 $existingConfiguration->setRegisters(array_unique(array_merge($existingRegisterIds, $registerIds)));
                 $existingConfiguration->setSchemas(array_unique(array_merge($existingSchemaIds, $schemaIds)));
@@ -1207,6 +1308,56 @@ class ConfigurationService
                 $configuration->setRegisters($registerIds);
                 $configuration->setSchemas($schemaIds);
                 $configuration->setObjects($objectIds);
+                
+                // Mark as local configuration (maintained by the app)
+                $configuration->setIsLocal(true);
+                $configuration->setSyncEnabled(false);
+                $configuration->setSyncStatus('never');
+                
+                // Set version requirements from x-openregister if available
+                if (isset($xOpenregister['openregister']) === true) {
+                    $configuration->setOpenregister($xOpenregister['openregister']);
+                }
+                
+                // Set additional metadata from x-openregister if available
+                // Note: Internal properties (autoUpdate, notificationGroups, owner, organisation) 
+                // are not imported as they are instance-specific settings
+                if (isset($xOpenregister['sourceType']) === true) {
+                    $configuration->setSourceType($xOpenregister['sourceType']);
+                }
+                if (isset($xOpenregister['sourceUrl']) === true) {
+                    $configuration->setSourceUrl($xOpenregister['sourceUrl']);
+                }
+                
+                // Support both nested github structure (new) and flat structure (backward compatibility)
+                if (isset($xOpenregister['github']) === true && is_array($xOpenregister['github'])) {
+                    // New nested structure
+                    if (isset($xOpenregister['github']['repo']) === true) {
+                        $configuration->setGithubRepo($xOpenregister['github']['repo']);
+                    }
+                    if (isset($xOpenregister['github']['branch']) === true) {
+                        $configuration->setGithubBranch($xOpenregister['github']['branch']);
+                    }
+                    if (isset($xOpenregister['github']['path']) === true) {
+                        $configuration->setGithubPath($xOpenregister['github']['path']);
+                    }
+                } else {
+                    // Legacy flat structure (backward compatibility)
+                    if (isset($xOpenregister['githubRepo']) === true) {
+                        $configuration->setGithubRepo($xOpenregister['githubRepo']);
+                    }
+                    if (isset($xOpenregister['githubBranch']) === true) {
+                        $configuration->setGithubBranch($xOpenregister['githubBranch']);
+                    }
+                    if (isset($xOpenregister['githubPath']) === true) {
+                        $configuration->setGithubPath($xOpenregister['githubPath']);
+                    }
+                }
+                
+                // Set owner from parameter if provided (for backward compatibility)
+                if ($owner !== null) {
+                    $configuration->setOwner($owner);
+                }
 
                 $configuration = $this->configurationMapper->insert($configuration);
                 $this->logger->info("Created new configuration for app {$appId} with version {$version}");
@@ -1235,15 +1386,21 @@ class ConfigurationService
             // Ensure data is consistently an array by converting any stdClass objects
             $data = $this->ensureArrayStructure($data);
 
-            // Remove id and uuid from the data.
-            unset($data['id'], $data['uuid']);
+            // Remove id, uuid, and organisation from the data.
+            // Organisation is instance-specific and should not be imported.
+            unset($data['id'], $data['uuid'], $data['organisation']);
 
             // Check if register already exists by slug.
+            // Note: The find method applies organisation filtering which may prevent finding
+            // registers from imported configurations. We treat DoesNotExistException as
+            // "needs to be created" rather than an error.
             $existingRegister = null;
             try {
                 $existingRegister = $this->registerMapper->find(strtolower($data['slug']));
             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-                // Register doesn't exist, we'll create a new one.
+                // Register doesn't exist in current organisation context, we'll create a new one.
+                // This is expected behavior when importing from another instance.
+                $this->logger->info("Register '{$data['slug']}' not found in current organisation context, will create new one");
             } catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
                 // Multiple registers found with the same identifier
                 $this->handleDuplicateRegisterError($data['slug'], $appId ?? 'unknown', $version ?? 'unknown');
@@ -1302,8 +1459,9 @@ class ConfigurationService
     private function importSchema(array $data, array $slugsAndIdsMap, ?string $owner=null, ?string $appId=null, ?string $version=null, bool $force=false): ?Schema
     {
         try {
-            // Remove id and uuid from the data.
-            unset($data['id'], $data['uuid']);
+            // Remove id, uuid, and organisation from the data.
+            // Organisation is instance-specific and should not be imported.
+            unset($data['id'], $data['uuid'], $data['organisation']);
 
             // @todo this shouldnt be necessary if we fully supported oas
             // if properties is oneOf or allOf (which we dont support yet) it wont have a type, this is a hacky fix so it doesnt break the whole process.
@@ -1397,16 +1555,17 @@ class ConfigurationService
                             $property['objectConfiguration']['register'] = $this->registersMap[$registerSlug]->getId();
                         } else {
                             // Try to find existing register in database
+                            // Note: May fail due to organisation filtering during cross-instance import.
                             try {
                                 $existingRegister = $this->registerMapper->find($registerSlug);
                                 $property['objectConfiguration']['register'] = $existingRegister->getId();
                                 // Add to map for future reference
                                 $this->registersMap[$registerSlug] = $existingRegister;
                             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-                                $this->logger->warning(
-                                    sprintf('Register with slug %s not found during schema property import.', $registerSlug)
+                                $this->logger->info(
+                                    sprintf('Register with slug %s not found in current organisation context during schema property import (will be resolved after registers are imported).', $registerSlug)
                                 );
-                                // Remove the register reference if not found
+                                // Remove the register reference if not found - will be resolved in second pass if register is imported
                                 unset($property['objectConfiguration']['register']);
                             }
                         }
@@ -1421,16 +1580,17 @@ class ConfigurationService
                                 $property['objectConfiguration']['schema'] = $this->schemasMap[$schemaSlug]->getId();
                             } else {
                                 // Try to find existing schema in database
+                                // Note: May fail due to organisation filtering during cross-instance import.
                                 try {
                                     $existingSchema = $this->schemaMapper->find($schemaSlug);
                                     $property['objectConfiguration']['schema'] = $existingSchema->getId();
                                     // Add to map for future reference
                                     $this->schemasMap[$schemaSlug] = $existingSchema;
                                 } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-                                    $this->logger->warning(
-                                        sprintf('Schema with slug %s not found during schema property import.', $schemaSlug)
+                                    $this->logger->info(
+                                        sprintf('Schema with slug %s not found in current organisation context during schema property import (will be resolved after schemas are imported).', $schemaSlug)
                                     );
-                                    // Remove the schema reference if not found
+                                    // Remove the schema reference if not found - will be resolved in second pass if schema is imported
                                     unset($property['objectConfiguration']['schema']);
                                 }
                             }
@@ -1457,16 +1617,17 @@ class ConfigurationService
                             $property['items']['objectConfiguration']['register'] = $this->registersMap[$registerSlug]->getId();
                         } else {
                             // Try to find existing register in database
+                            // Note: May fail due to organisation filtering during cross-instance import.
                             try {
                                 $existingRegister = $this->registerMapper->find($registerSlug);
                                 $property['items']['objectConfiguration']['register'] = $existingRegister->getId();
                                 // Add to map for future reference
                                 $this->registersMap[$registerSlug] = $existingRegister;
                             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-                                $this->logger->warning(
-                                    sprintf('Register with slug %s not found during array items schema property import.', $registerSlug)
+                                $this->logger->info(
+                                    sprintf('Register with slug %s not found in current organisation context during array items schema property import (will be resolved after registers are imported).', $registerSlug)
                                 );
-                                // Remove the register reference if not found
+                                // Remove the register reference if not found - will be resolved in second pass if register is imported
                                 unset($property['items']['objectConfiguration']['register']);
                             }
                         }
@@ -1481,16 +1642,17 @@ class ConfigurationService
                                 $property['items']['objectConfiguration']['schema'] = $this->schemasMap[$schemaSlug]->getId();
                             } else {
                                 // Try to find existing schema in database
+                                // Note: May fail due to organisation filtering during cross-instance import.
                                 try {
                                     $existingSchema = $this->schemaMapper->find($schemaSlug);
                                     $property['items']['objectConfiguration']['schema'] = $existingSchema->getId();
                                     // Add to map for future reference
                                     $this->schemasMap[$schemaSlug] = $existingSchema;
                                 } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-                                    $this->logger->warning(
-                                        sprintf('Schema with slug %s not found during array items schema property import.', $schemaSlug)
+                                    $this->logger->info(
+                                        sprintf('Schema with slug %s not found in current organisation context during array items schema property import (will be resolved after schemas are imported).', $schemaSlug)
                                     );
-                                    // Remove the schema reference if not found
+                                    // Remove the schema reference if not found - will be resolved in second pass if schema is imported
                                     unset($property['items']['objectConfiguration']['schema']);
                                 }
                             }
@@ -1519,11 +1681,16 @@ class ConfigurationService
             }//end if
 
             // Check if schema already exists by slug.
+            // Note: The find method applies organisation filtering which may prevent finding
+            // schemas from imported configurations. We treat DoesNotExistException as
+            // "needs to be created" rather than an error.
             $existingSchema = null;
             try {
                 $existingSchema = $this->schemaMapper->find(strtolower($data['slug']));
             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-                // Schema doesn't exist, we'll create a new one.
+                // Schema doesn't exist in current organisation context, we'll create a new one.
+                // This is expected behavior when importing from another instance.
+                $this->logger->info("Schema '{$data['slug']}' not found in current organisation context, will create new one");
             } catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
                 // Multiple schemas found with the same identifier
                 $this->handleDuplicateSchemaError($data['slug'], $appId ?? 'unknown', $version ?? 'unknown');
@@ -1719,6 +1886,341 @@ class ConfigurationService
 
 
     /**
+     * Import configuration from a file path.
+     *
+     * This method reads a configuration file from the filesystem and imports it.
+     * It's designed to be used by apps that store their configurations as JSON files
+     * and want OpenRegister to handle the file reading and import process.
+     *
+     * The file path should be relative to the Nextcloud root (e.g., 'apps-extra/opencatalogi/lib/Settings/publication_register.json')
+     * This enables the cron job to later check if the configuration file has been updated.
+     *
+     * @param string $appId    The application ID (e.g. 'opencatalogi')
+     * @param string $filePath The file path relative to Nextcloud root
+     * @param string $version  The version of the configuration
+     * @param bool   $force    Whether to force import regardless of version checks
+     *
+     * @return array Import result with counts and IDs
+     *
+     * @throws Exception If file cannot be read or import fails
+     *
+     * @since 0.2.10
+     */
+    public function importFromFilePath(string $appId, string $filePath, string $version, bool $force = false): array
+    {
+        try {
+            // Resolve the file path relative to Nextcloud root
+            $fullPath = $this->appDataPath . '/../../../' . $filePath;
+            $fullPath = realpath($fullPath);
+            
+            if ($fullPath === false || !file_exists($fullPath)) {
+                throw new Exception("Configuration file not found: {$filePath}");
+            }
+            
+            // Read the file contents
+            $jsonContent = file_get_contents($fullPath);
+            if ($jsonContent === false) {
+                throw new Exception("Failed to read configuration file: {$filePath}");
+            }
+            
+            // Parse JSON
+            $data = json_decode($jsonContent, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new Exception("Invalid JSON in configuration file: " . json_last_error_msg());
+            }
+            
+            // Set the sourceUrl in the data if not already set
+            // This allows the cron job to track the file location
+            if (!isset($data['x-openregister'])) {
+                $data['x-openregister'] = [];
+            }
+            if (!isset($data['x-openregister']['sourceUrl'])) {
+                $data['x-openregister']['sourceUrl'] = $filePath;
+            }
+            if (!isset($data['x-openregister']['sourceType'])) {
+                $data['x-openregister']['sourceType'] = 'local';
+            }
+            
+            // Call importFromApp with the parsed data
+            return $this->importFromApp(
+                appId: $appId,
+                data: $data,
+                version: $version,
+                force: $force
+            );
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to import configuration from file: ' . $e->getMessage(), [
+                'appId'    => $appId,
+                'filePath' => $filePath,
+            ]);
+            throw new Exception('Failed to import configuration from file: ' . $e->getMessage());
+        }
+    }
+
+
+    /**
+     * Import configuration from an app's JSON data.
+     *
+     * This is a convenience wrapper method for apps that want to import their
+     * configuration without manually managing Configuration entities. It:
+     * - Finds or creates a Configuration entity for the app
+     * - Handles version checking
+     * - Calls importFromJson with proper entity tracking
+     *
+     * @param string $appId   The application ID (e.g. 'opencatalogi')
+     * @param array  $data    The configuration data to import
+     * @param string $version The version of the configuration
+     * @param bool   $force   Whether to force import regardless of version checks
+     *
+     * @return array The import results
+     * @throws Exception If import fails
+     *
+     * @phpstan-return array{
+     *     registers: array<Register>,
+     *     schemas: array<Schema>,
+     *     objects: array<ObjectEntity>,
+     *     endpoints: array,
+     *     sources: array,
+     *     mappings: array,
+     *     jobs: array,
+     *     synchronizations: array,
+     *     rules: array
+     * }
+     */
+    public function importFromApp(string $appId, array $data, string $version, bool $force = false): array
+    {
+        try {
+            // Ensure data is consistently an array by converting any stdClass objects
+            $data = $this->ensureArrayStructure($data);
+
+            // Try to find existing configuration for this app
+            // First check by sourceUrl (unique identifier), then by appId
+            $configuration = null;
+            $xOpenregister = $data['x-openregister'] ?? [];
+            $sourceUrl = $xOpenregister['sourceUrl'] ?? null;
+            
+            // If sourceUrl is provided, try to find by sourceUrl first (ensures uniqueness)
+            if ($sourceUrl !== null) {
+                try {
+                    $configuration = $this->configurationMapper->findBySourceUrl($sourceUrl);
+                    if ($configuration !== null) {
+                        $this->logger->info("Found existing configuration by sourceUrl", [
+                            'sourceUrl'       => $sourceUrl,
+                            'configurationId' => $configuration->getId(),
+                            'currentVersion'  => $configuration->getVersion()
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    // No configuration found by sourceUrl
+                }
+            }
+            
+            // If not found by sourceUrl, try by appId
+            if ($configuration === null) {
+                try {
+                    $configurations = $this->configurationMapper->findByApp($appId);
+                    if (count($configurations) > 0) {
+                        // Use the first (most recent) configuration
+                        $configuration = $configurations[0];
+                        $this->logger->info("Found existing configuration for app {$appId}", [
+                            'configurationId' => $configuration->getId(),
+                            'currentVersion' => $configuration->getVersion()
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    // No existing configuration found, we'll create a new one
+                    $this->logger->info("No existing configuration found for app {$appId}, will create new one");
+                }
+            }
+
+            // Create new configuration if none exists
+            if ($configuration === null) {
+                $configuration = new Configuration();
+                
+                // Extract metadata following OAS standard first, then x-openregister extension
+                $info = $data['info'] ?? [];
+                $xOpenregister = $data['x-openregister'] ?? [];
+                
+                // Standard OAS properties from info section
+                $title = $info['title'] ?? $xOpenregister['title'] ?? $data['title'] ?? "Configuration for {$appId}";
+                $description = $info['description'] ?? $xOpenregister['description'] ?? $data['description'] ?? "Configuration imported by application {$appId}";
+                
+                // OpenRegister-specific properties
+                $type = $xOpenregister['type'] ?? $data['type'] ?? 'app';
+                
+                $configuration->setTitle($title);
+                $configuration->setDescription($description);
+                $configuration->setType($type);
+                $configuration->setApp($appId);
+                $configuration->setVersion($version);
+                
+                // Mark as local configuration (maintained by the app)
+                $configuration->setIsLocal(true);
+                $configuration->setSyncEnabled(false);
+                $configuration->setSyncStatus('never');
+                
+                // Set version requirements from x-openregister if available
+                if (isset($xOpenregister['openregister']) === true) {
+                    $configuration->setOpenregister($xOpenregister['openregister']);
+                }
+                
+                // Set additional metadata from x-openregister if available
+                // Note: Internal properties (autoUpdate, notificationGroups, owner, organisation) 
+                // are not imported as they are instance-specific settings
+                if (isset($xOpenregister['sourceType']) === true) {
+                    $configuration->setSourceType($xOpenregister['sourceType']);
+                }
+                if (isset($xOpenregister['sourceUrl']) === true) {
+                    $configuration->setSourceUrl($xOpenregister['sourceUrl']);
+                }
+                
+                // Support both nested github structure (new) and flat structure (backward compatibility)
+                if (isset($xOpenregister['github']) === true && is_array($xOpenregister['github'])) {
+                    // New nested structure
+                    if (isset($xOpenregister['github']['repo']) === true) {
+                        $configuration->setGithubRepo($xOpenregister['github']['repo']);
+                    }
+                    if (isset($xOpenregister['github']['branch']) === true) {
+                        $configuration->setGithubBranch($xOpenregister['github']['branch']);
+                    }
+                    if (isset($xOpenregister['github']['path']) === true) {
+                        $configuration->setGithubPath($xOpenregister['github']['path']);
+                    }
+                } else {
+                    // Legacy flat structure (backward compatibility)
+                    if (isset($xOpenregister['githubRepo']) === true) {
+                        $configuration->setGithubRepo($xOpenregister['githubRepo']);
+                    }
+                    if (isset($xOpenregister['githubBranch']) === true) {
+                        $configuration->setGithubBranch($xOpenregister['githubBranch']);
+                    }
+                    if (isset($xOpenregister['githubPath']) === true) {
+                        $configuration->setGithubPath($xOpenregister['githubPath']);
+                    }
+                }
+                
+                $configuration->setRegisters([]);
+                $configuration->setSchemas([]);
+                $configuration->setObjects([]);
+                
+                // Insert the configuration to get an ID
+                $configuration = $this->configurationMapper->insert($configuration);
+                
+                $this->logger->info("Created new configuration for app {$appId}", [
+                    'configurationId' => $configuration->getId(),
+                    'version' => $version
+                ]);
+            }
+
+            // Perform the import using the configuration entity
+            $result = $this->importFromJson(
+                data: $data,
+                configuration: $configuration,
+                owner: $appId,
+                appId: $appId,
+                version: $version,
+                force: $force
+            );
+
+            // Update the configuration with the import results
+            if (count($result['registers']) > 0 || count($result['schemas']) > 0 || count($result['objects']) > 0) {
+                // Merge imported entity IDs with existing ones
+                $existingRegisterIds = $configuration->getRegisters();
+                $existingSchemaIds = $configuration->getSchemas();
+                $existingObjectIds = $configuration->getObjects();
+                
+                foreach ($result['registers'] as $register) {
+                    if ($register instanceof Register && !in_array($register->getId(), $existingRegisterIds, true)) {
+                        $existingRegisterIds[] = $register->getId();
+                    }
+                }
+                
+                foreach ($result['schemas'] as $schema) {
+                    if ($schema instanceof Schema && !in_array($schema->getId(), $existingSchemaIds, true)) {
+                        $existingSchemaIds[] = $schema->getId();
+                    }
+                }
+                
+                foreach ($result['objects'] as $object) {
+                    if ($object instanceof ObjectEntity && !in_array($object->getId(), $existingObjectIds, true)) {
+                        $existingObjectIds[] = $object->getId();
+                    }
+                }
+                
+                $configuration->setRegisters($existingRegisterIds);
+                $configuration->setSchemas($existingSchemaIds);
+                $configuration->setObjects($existingObjectIds);
+                $configuration->setVersion($version);
+                
+                // Update metadata following OAS standard first, then x-openregister extension
+                // This ensures sourceUrl and other tracking info stays current
+                $info = $data['info'] ?? [];
+                $xOpenregister = $data['x-openregister'] ?? [];
+                
+                // Standard OAS properties from info section
+                if (isset($info['title']) === true) {
+                    $configuration->setTitle($info['title']);
+                } elseif (isset($xOpenregister['title']) === true) {
+                    $configuration->setTitle($xOpenregister['title']);
+                }
+                if (isset($info['description']) === true) {
+                    $configuration->setDescription($info['description']);
+                } elseif (isset($xOpenregister['description']) === true) {
+                    $configuration->setDescription($xOpenregister['description']);
+                }
+                
+                // OpenRegister-specific properties from x-openregister
+                if (isset($xOpenregister['sourceType']) === true) {
+                    $configuration->setSourceType($xOpenregister['sourceType']);
+                }
+                if (isset($xOpenregister['sourceUrl']) === true) {
+                    $configuration->setSourceUrl($xOpenregister['sourceUrl']);
+                }
+                
+                // Update github properties (nested or flat)
+                if (isset($xOpenregister['github']) === true && is_array($xOpenregister['github'])) {
+                    if (isset($xOpenregister['github']['repo']) === true) {
+                        $configuration->setGithubRepo($xOpenregister['github']['repo']);
+                    }
+                    if (isset($xOpenregister['github']['branch']) === true) {
+                        $configuration->setGithubBranch($xOpenregister['github']['branch']);
+                    }
+                    if (isset($xOpenregister['github']['path']) === true) {
+                        $configuration->setGithubPath($xOpenregister['github']['path']);
+                    }
+                } else {
+                    // Legacy flat structure
+                    if (isset($xOpenregister['githubRepo']) === true) {
+                        $configuration->setGithubRepo($xOpenregister['githubRepo']);
+                    }
+                    if (isset($xOpenregister['githubBranch']) === true) {
+                        $configuration->setGithubBranch($xOpenregister['githubBranch']);
+                    }
+                    if (isset($xOpenregister['githubPath']) === true) {
+                        $configuration->setGithubPath($xOpenregister['githubPath']);
+                    }
+                }
+                
+                $this->configurationMapper->update($configuration);
+                
+                $this->logger->info("Updated configuration entity for app {$appId}", [
+                    'configurationId' => $configuration->getId(),
+                    'totalRegisters' => count($existingRegisterIds),
+                    'totalSchemas' => count($existingSchemaIds),
+                    'totalObjects' => count($existingObjectIds)
+                ]);
+            }
+
+            return $result;
+
+        } catch (\Exception $e) {
+            $this->logger->error("Failed to import configuration for app {$appId}: " . $e->getMessage());
+            throw new Exception("Failed to import configuration for app {$appId}: " . $e->getMessage());
+        }
+    }//end importFromApp()
+
+
+    /**
      * Get the currently configured version for a specific app.
      *
      * This method retrieves the stored version information for an app
@@ -1888,6 +2390,744 @@ class ConfigurationService
         }//end try
 
     }//end getDuplicateRegisterInfo()
+
+
+    /**
+     * Check the remote version of a configuration
+     *
+     * Fetches the configuration from the source URL and extracts its version.
+     * Updates the configuration entity with the remote version and last checked timestamp.
+     *
+     * @param Configuration $configuration The configuration to check
+     *
+     * @return string|null The remote version, or null if check failed
+     * @throws GuzzleException If HTTP request fails
+     */
+    public function checkRemoteVersion(Configuration $configuration): ?string
+    {
+        // Only check remote sources
+        if ($configuration->isRemoteSource() === false) {
+            $this->logger->info('Configuration is not from a remote source, skipping version check');
+            return null;
+        }
+
+        $sourceUrl = $configuration->getSourceUrl();
+        if (empty($sourceUrl) === true) {
+            $this->logger->warning('Configuration has no source URL, cannot check remote version');
+            return null;
+        }
+
+        try {
+            // Fetch the remote configuration
+            $remoteData = $this->getJSONfromURL($sourceUrl);
+            
+            if ($remoteData instanceof JSONResponse) {
+                $this->logger->error('Failed to fetch remote configuration', ['error' => $remoteData->getData()]);
+                return null;
+            }
+
+            // Extract version from remote data
+            $remoteVersion = $remoteData['version'] ?? $remoteData['info']['version'] ?? null;
+
+            if ($remoteVersion === null) {
+                $this->logger->warning('Remote configuration does not contain a version field');
+                return null;
+            }
+
+            // Update the configuration with remote version and last checked time
+            $configuration->setRemoteVersion($remoteVersion);
+            $configuration->setLastChecked(new \DateTime());
+            $this->configurationMapper->update($configuration);
+
+            $this->logger->info("Checked remote version for configuration {$configuration->getId()}: {$remoteVersion}");
+
+            return $remoteVersion;
+        } catch (GuzzleException $e) {
+            $this->logger->error("Failed to check remote version for configuration {$configuration->getId()}: ".$e->getMessage());
+            throw $e;
+        } catch (Exception $e) {
+            $this->logger->error("Unexpected error checking remote version: ".$e->getMessage());
+            return null;
+        }//end try
+
+    }//end checkRemoteVersion()
+
+
+    /**
+     * Compare versions and get update status
+     *
+     * Returns detailed information about version comparison including
+     * whether an update is available and what the versions are.
+     *
+     * @param Configuration $configuration The configuration to compare versions for
+     *
+     * @return array Version comparison details
+     * @phpstan-return array{
+     *     hasUpdate: bool,
+     *     localVersion: string|null,
+     *     remoteVersion: string|null,
+     *     lastChecked: string|null,
+     *     message: string
+     * }
+     */
+    public function compareVersions(Configuration $configuration): array
+    {
+        $localVersion  = $configuration->getLocalVersion();
+        $remoteVersion = $configuration->getRemoteVersion();
+        $lastChecked   = $configuration->getLastChecked();
+
+        // Build result array
+        $result = [
+            'hasUpdate'      => false,
+            'localVersion'   => $localVersion,
+            'remoteVersion'  => $remoteVersion,
+            'lastChecked'    => $lastChecked ? $lastChecked->format('c') : null,
+            'message'        => '',
+        ];
+
+        // Check if we have both versions to compare
+        if ($localVersion === null) {
+            $result['message'] = 'No local version information available';
+            return $result;
+        }
+
+        if ($remoteVersion === null) {
+            $result['message'] = 'No remote version information available. Check remote version first.';
+            return $result;
+        }
+
+        // Compare versions
+        $comparison = version_compare($remoteVersion, $localVersion);
+        
+        if ($comparison > 0) {
+            $result['hasUpdate'] = true;
+            $result['message']   = "Update available: {$localVersion} → {$remoteVersion}";
+        } else if ($comparison === 0) {
+            $result['message'] = 'Local version is up to date';
+        } else {
+            $result['message'] = 'Local version is newer than remote version';
+        }
+
+        return $result;
+
+    }//end compareVersions()
+
+
+    /**
+     * Fetch remote configuration data
+     *
+     * Downloads the configuration file from the source URL and returns
+     * the parsed data as an array.
+     *
+     * @param Configuration $configuration The configuration to fetch
+     *
+     * @return array|JSONResponse The configuration data or error response
+     * @throws GuzzleException If HTTP request fails
+     */
+    public function fetchRemoteConfiguration(Configuration $configuration): array | JSONResponse
+    {
+        // Only fetch from remote sources
+        if ($configuration->isRemoteSource() === false) {
+            return new JSONResponse(
+                data: ['error' => 'Configuration is not from a remote source'],
+                statusCode: 400
+            );
+        }
+
+        $sourceUrl = $configuration->getSourceUrl();
+        if (empty($sourceUrl) === true) {
+            return new JSONResponse(
+                data: ['error' => 'Configuration has no source URL'],
+                statusCode: 400
+            );
+        }
+
+        try {
+            $this->logger->info("Fetching remote configuration from: {$sourceUrl}");
+            
+            // Use existing method to fetch and parse the remote configuration
+            $remoteData = $this->getJSONfromURL($sourceUrl);
+            
+            if ($remoteData instanceof JSONResponse) {
+                return $remoteData;
+            }
+
+            $this->logger->info("Successfully fetched remote configuration with "
+                .count($remoteData['components']['schemas'] ?? [])." schemas and "
+                .count($remoteData['components']['registers'] ?? [])." registers");
+
+            return $remoteData;
+        } catch (GuzzleException $e) {
+            $this->logger->error("Failed to fetch remote configuration: ".$e->getMessage());
+            return new JSONResponse(
+                data: ['error' => 'Failed to fetch remote configuration: '.$e->getMessage()],
+                statusCode: 500
+            );
+        }//end try
+
+    }//end fetchRemoteConfiguration()
+
+
+    /**
+     * Preview configuration changes before importing
+     *
+     * Compares the remote configuration with local entities and returns
+     * a detailed list of changes that would be applied, organized by entity type.
+     * Each change includes the action (create/update/skip), current state,
+     * and proposed state.
+     *
+     * @param Configuration $configuration The configuration to preview
+     *
+     * @return array|JSONResponse Preview of changes or error response
+     * @throws GuzzleException If fetching remote configuration fails
+     *
+     * @phpstan-return array{
+     *     registers: array,
+     *     schemas: array,
+     *     objects: array,
+     *     endpoints: array,
+     *     sources: array,
+     *     mappings: array,
+     *     jobs: array,
+     *     synchronizations: array,
+     *     rules: array
+     * }|JSONResponse
+     */
+    public function previewConfigurationChanges(Configuration $configuration): array | JSONResponse
+    {
+        // Fetch the remote configuration
+        $remoteData = $this->fetchRemoteConfiguration($configuration);
+        
+        if ($remoteData instanceof JSONResponse) {
+            return $remoteData;
+        }
+
+        // Initialize preview result
+        $preview = [
+            'registers'        => [],
+            'schemas'          => [],
+            'objects'          => [],
+            'endpoints'        => [],
+            'sources'          => [],
+            'mappings'         => [],
+            'jobs'             => [],
+            'synchronizations' => [],
+            'rules'            => [],
+        ];
+
+        // Preview registers
+        if (isset($remoteData['components']['registers']) === true && is_array($remoteData['components']['registers']) === true) {
+            foreach ($remoteData['components']['registers'] as $slug => $registerData) {
+                $preview['registers'][] = $this->previewRegisterChange($slug, $registerData);
+            }
+        }
+
+        // Preview schemas
+        if (isset($remoteData['components']['schemas']) === true && is_array($remoteData['components']['schemas']) === true) {
+            foreach ($remoteData['components']['schemas'] as $slug => $schemaData) {
+                $preview['schemas'][] = $this->previewSchemaChange($slug, $schemaData);
+            }
+        }
+
+        // Preview objects
+        if (isset($remoteData['components']['objects']) === true && is_array($remoteData['components']['objects']) === true) {
+            // Build register and schema slug to ID maps
+            $registerSlugToId = [];
+            $schemaSlugToId   = [];
+            
+            // Get existing registers and schemas to build maps
+            $allRegisters = $this->registerMapper->findAll();
+            foreach ($allRegisters as $register) {
+                $registerSlugToId[strtolower($register->getSlug())] = $register->getId();
+            }
+            
+            $allSchemas = $this->schemaMapper->findAll();
+            foreach ($allSchemas as $schema) {
+                $schemaSlugToId[strtolower($schema->getSlug())] = $schema->getId();
+            }
+
+            foreach ($remoteData['components']['objects'] as $objectData) {
+                $preview['objects'][] = $this->previewObjectChange($objectData, $registerSlugToId, $schemaSlugToId);
+            }
+        }
+
+        // Add metadata about the preview
+        $preview['metadata'] = [
+            'configurationId'    => $configuration->getId(),
+            'configurationTitle' => $configuration->getTitle(),
+            'sourceUrl'          => $configuration->getSourceUrl(),
+            'remoteVersion'      => $remoteData['version'] ?? $remoteData['info']['version'] ?? null,
+            'localVersion'       => $configuration->getLocalVersion(),
+            'previewedAt'        => (new \DateTime())->format('c'),
+            'totalChanges'       => (
+                count($preview['registers']) +
+                count($preview['schemas']) +
+                count($preview['objects'])
+            ),
+        ];
+
+        return $preview;
+
+    }//end previewConfigurationChanges()
+
+
+    /**
+     * Preview changes for a single register
+     *
+     * @param string $slug         The register slug
+     * @param array  $registerData The register data from remote configuration
+     *
+     * @return array Preview information for this register
+     *
+     * @phpstan-return array{
+     *     type: string,
+     *     action: string,
+     *     slug: string,
+     *     title: string,
+     *     current: array|null,
+     *     proposed: array,
+     *     changes: array
+     * }
+     */
+    private function previewRegisterChange(string $slug, array $registerData): array
+    {
+        $slug = strtolower($slug);
+        
+        // Try to find existing register
+        $existingRegister = null;
+        try {
+            $existingRegister = $this->registerMapper->find($slug);
+        } catch (\Exception $e) {
+            // Register doesn't exist
+        }
+
+        $preview = [
+            'type'     => 'register',
+            'action'   => $existingRegister === null ? 'create' : 'update',
+            'slug'     => $slug,
+            'title'    => $registerData['title'] ?? $slug,
+            'current'  => null,
+            'proposed' => $registerData,
+            'changes'  => [],
+        ];
+
+        // If register exists, compare versions and build change list
+        if ($existingRegister !== null) {
+            $currentData       = $existingRegister->jsonSerialize();
+            $preview['current'] = $currentData;
+            
+            // Check if version allows update
+            $currentVersion  = $existingRegister->getVersion() ?? '0.0.0';
+            $proposedVersion = $registerData['version'] ?? '0.0.0';
+            
+            if (version_compare($proposedVersion, $currentVersion, '<=') === true) {
+                $preview['action'] = 'skip';
+                $preview['reason'] = "Remote version ({$proposedVersion}) is not newer than current version ({$currentVersion})";
+            } else {
+                // Build list of changed fields
+                $preview['changes'] = $this->compareArrays($currentData, $registerData);
+            }
+        }
+
+        return $preview;
+
+    }//end previewRegisterChange()
+
+
+    /**
+     * Preview changes for a single schema
+     *
+     * @param string $slug       The schema slug
+     * @param array  $schemaData The schema data from remote configuration
+     *
+     * @return array Preview information for this schema
+     *
+     * @phpstan-return array{
+     *     type: string,
+     *     action: string,
+     *     slug: string,
+     *     title: string,
+     *     current: array|null,
+     *     proposed: array,
+     *     changes: array
+     * }
+     */
+    private function previewSchemaChange(string $slug, array $schemaData): array
+    {
+        $slug = strtolower($slug);
+        
+        // Try to find existing schema
+        $existingSchema = null;
+        try {
+            $existingSchema = $this->schemaMapper->find($slug);
+        } catch (\Exception $e) {
+            // Schema doesn't exist
+        }
+
+        $preview = [
+            'type'     => 'schema',
+            'action'   => $existingSchema === null ? 'create' : 'update',
+            'slug'     => $slug,
+            'title'    => $schemaData['title'] ?? $slug,
+            'current'  => null,
+            'proposed' => $schemaData,
+            'changes'  => [],
+        ];
+
+        // If schema exists, compare versions and build change list
+        if ($existingSchema !== null) {
+            $currentData       = $existingSchema->jsonSerialize();
+            $preview['current'] = $currentData;
+            
+            // Check if version allows update
+            $currentVersion  = $existingSchema->getVersion() ?? '0.0.0';
+            $proposedVersion = $schemaData['version'] ?? '0.0.0';
+            
+            if (version_compare($proposedVersion, $currentVersion, '<=') === true) {
+                $preview['action'] = 'skip';
+                $preview['reason'] = "Remote version ({$proposedVersion}) is not newer than current version ({$currentVersion})";
+            } else {
+                // Build list of changed fields
+                $preview['changes'] = $this->compareArrays($currentData, $schemaData);
+            }
+        }
+
+        return $preview;
+
+    }//end previewSchemaChange()
+
+
+    /**
+     * Preview changes for a single object
+     *
+     * @param array $objectData        The object data from remote configuration
+     * @param array $registerSlugToId  Map of register slugs to IDs
+     * @param array $schemaSlugToId    Map of schema slugs to IDs
+     *
+     * @return array Preview information for this object
+     *
+     * @phpstan-return array{
+     *     type: string,
+     *     action: string,
+     *     slug: string,
+     *     title: string,
+     *     register: string,
+     *     schema: string,
+     *     current: array|null,
+     *     proposed: array,
+     *     changes: array
+     * }
+     */
+    private function previewObjectChange(array $objectData, array $registerSlugToId, array $schemaSlugToId): array
+    {
+        $slug         = $objectData['@self']['slug'] ?? null;
+        $registerSlug = $objectData['@self']['register'] ?? null;
+        $schemaSlug   = $objectData['@self']['schema'] ?? null;
+        
+        $preview = [
+            'type'     => 'object',
+            'action'   => 'skip',
+            'slug'     => $slug,
+            'title'    => $objectData['title'] ?? $objectData['name'] ?? $slug ?? 'Unnamed Object',
+            'register' => $registerSlug,
+            'schema'   => $schemaSlug,
+            'current'  => null,
+            'proposed' => $objectData,
+            'changes'  => [],
+        ];
+
+        // Validate required fields
+        if (empty($slug) === true || empty($registerSlug) === true || empty($schemaSlug) === true) {
+            $preview['action'] = 'skip';
+            $preview['reason'] = 'Missing required fields (slug, register, or schema)';
+            return $preview;
+        }
+
+        // Get register and schema IDs
+        $registerId = $registerSlugToId[strtolower($registerSlug)] ?? null;
+        $schemaId   = $schemaSlugToId[strtolower($schemaSlug)] ?? null;
+
+        if ($registerId === null || $schemaId === null) {
+            $preview['action'] = 'skip';
+            $preview['reason'] = 'Register or schema not found locally';
+            return $preview;
+        }
+
+        // Try to find existing object
+        $search = [
+            '@self'  => [
+                'register' => (int) $registerId,
+                'schema'   => (int) $schemaId,
+                'slug'     => $slug,
+            ],
+            '_limit' => 1,
+        ];
+
+        $results = $this->objectService->searchObjects($search, true, true);
+        $existingObject = is_array($results) && count($results) > 0 ? $results[0] : null;
+
+        if ($existingObject === null) {
+            $preview['action'] = 'create';
+        } else {
+            // Object exists, check version
+            $existingObjectData = is_array($existingObject) ? $existingObject : $existingObject->jsonSerialize();
+            $preview['current'] = $existingObjectData;
+            
+            $currentVersion  = $existingObjectData['@self']['version'] ?? $existingObjectData['version'] ?? '1.0.0';
+            $proposedVersion = $objectData['@self']['version'] ?? $objectData['version'] ?? '1.0.0';
+            
+            if (version_compare($proposedVersion, $currentVersion, '<=') === true) {
+                $preview['action'] = 'skip';
+                $preview['reason'] = "Remote version ({$proposedVersion}) is not newer than current version ({$currentVersion})";
+            } else {
+                $preview['action'] = 'update';
+                // Build list of changed fields
+                $preview['changes'] = $this->compareArrays($existingObjectData, $objectData);
+            }
+        }
+
+        return $preview;
+
+    }//end previewObjectChange()
+
+
+    /**
+     * Compare two arrays and return a list of differences
+     *
+     * @param array $current  The current data
+     * @param array $proposed The proposed data
+     * @param string $prefix  Field name prefix for nested comparison
+     *
+     * @return array List of changes
+     *
+     * @phpstan-return array<array{field: string, current: mixed, proposed: mixed}>
+     */
+    private function compareArrays(array $current, array $proposed, string $prefix = ''): array
+    {
+        $changes = [];
+        
+        // Check all keys in proposed data
+        foreach ($proposed as $key => $proposedValue) {
+            $fieldName = $prefix === '' ? $key : "{$prefix}.{$key}";
+            
+            // Skip certain metadata fields
+            if (in_array($key, ['id', 'uuid', 'created', 'updated']) === true) {
+                continue;
+            }
+            
+            // Check if field exists in current data
+            if (array_key_exists($key, $current) === false) {
+                $changes[] = [
+                    'field'    => $fieldName,
+                    'current'  => null,
+                    'proposed' => $proposedValue,
+                ];
+                continue;
+            }
+            
+            $currentValue = $current[$key];
+            
+            // Deep comparison for arrays
+            if (is_array($proposedValue) && is_array($currentValue)) {
+                // For simple arrays, just compare values
+                if ($this->isSimpleArray($proposedValue) || $this->isSimpleArray($currentValue)) {
+                    if ($proposedValue !== $currentValue) {
+                        $changes[] = [
+                            'field'    => $fieldName,
+                            'current'  => $currentValue,
+                            'proposed' => $proposedValue,
+                        ];
+                    }
+                } else {
+                    // For nested arrays, recurse
+                    $nestedChanges = $this->compareArrays($currentValue, $proposedValue, $fieldName);
+                    $changes = array_merge($changes, $nestedChanges);
+                }
+            } else if ($proposedValue !== $currentValue) {
+                // Values are different
+                $changes[] = [
+                    'field'    => $fieldName,
+                    'current'  => $currentValue,
+                    'proposed' => $proposedValue,
+                ];
+            }
+        }
+        
+        return $changes;
+
+    }//end compareArrays()
+
+
+    /**
+     * Check if an array is a simple (non-nested) array
+     *
+     * @param array $array The array to check
+     *
+     * @return bool True if the array contains only scalar values
+     */
+    private function isSimpleArray(array $array): bool
+    {
+        foreach ($array as $value) {
+            if (is_array($value) || is_object($value)) {
+                return false;
+            }
+        }
+        
+        return true;
+
+    }//end isSimpleArray()
+
+
+
+
+    /**
+     * Import configuration with user selection
+     *
+     * Allows importing only selected entities from a configuration.
+     * The selection array specifies which entities to import by type and identifier.
+     *
+     * @param Configuration $configuration The configuration to import from
+     * @param array         $selection     Selection of entities to import
+     *
+     * @return array Import results
+     * @throws Exception If import fails
+     *
+     * @phpstan-param array{
+     *     registers?: array<string>,
+     *     schemas?: array<string>,
+     *     objects?: array<string>
+     * } $selection
+     *
+     * @phpstan-return array{
+     *     registers: array<Register>,
+     *     schemas: array<Schema>,
+     *     objects: array<ObjectEntity>,
+     *     skipped: array
+     * }
+     */
+    public function importConfigurationWithSelection(Configuration $configuration, array $selection): array
+    {
+        $this->logger->info("Starting selective import for configuration {$configuration->getId()}", ['selection' => $selection]);
+        
+        // Fetch the remote configuration
+        $remoteData = $this->fetchRemoteConfiguration($configuration);
+        
+        if ($remoteData instanceof JSONResponse) {
+            throw new Exception('Failed to fetch remote configuration: ' . json_encode($remoteData->getData()));
+        }
+
+        // Filter remote data based on selection
+        $filteredData = [
+            'components' => [
+                'registers' => [],
+                'schemas'   => [],
+                'objects'   => [],
+            ],
+        ];
+
+        // Copy metadata
+        if (isset($remoteData['info']) === true) {
+            $filteredData['info'] = $remoteData['info'];
+        }
+        if (isset($remoteData['version']) === true) {
+            $filteredData['version'] = $remoteData['version'];
+        }
+        if (isset($remoteData['appId']) === true) {
+            $filteredData['appId'] = $remoteData['appId'];
+        }
+
+        // Filter registers
+        if (isset($selection['registers']) === true && is_array($selection['registers']) === true) {
+            foreach ($selection['registers'] as $slug) {
+                $slug = strtolower($slug);
+                if (isset($remoteData['components']['registers'][$slug]) === true) {
+                    $filteredData['components']['registers'][$slug] = $remoteData['components']['registers'][$slug];
+                }
+            }
+        }
+
+        // Filter schemas
+        if (isset($selection['schemas']) === true && is_array($selection['schemas']) === true) {
+            foreach ($selection['schemas'] as $slug) {
+                $slug = strtolower($slug);
+                if (isset($remoteData['components']['schemas'][$slug]) === true) {
+                    $filteredData['components']['schemas'][$slug] = $remoteData['components']['schemas'][$slug];
+                }
+            }
+        }
+
+        // Filter objects - requires matching by slug + register + schema
+        if (isset($selection['objects']) === true && is_array($selection['objects']) === true) {
+            foreach ($remoteData['components']['objects'] ?? [] as $objectData) {
+                $objectSlug = $objectData['@self']['slug'] ?? null;
+                $registerSlug = $objectData['@self']['register'] ?? null;
+                $schemaSlug = $objectData['@self']['schema'] ?? null;
+                
+                // Build unique identifier for object
+                $objectId = "{$registerSlug}:{$schemaSlug}:{$objectSlug}";
+                
+                if (in_array($objectId, $selection['objects'], true) === true) {
+                    $filteredData['components']['objects'][] = $objectData;
+                }
+            }
+        }
+
+        // Import the filtered configuration
+        $result = $this->importFromJson(
+            data: $filteredData,
+            configuration: $configuration,
+            owner: $configuration->getApp(),
+            appId: $configuration->getApp(),
+            version: $remoteData['version'] ?? $remoteData['info']['version'] ?? $configuration->getVersion(),
+            force: false
+        );
+
+        // Update configuration's local version and tracking arrays
+        $remoteVersion = $remoteData['version'] ?? $remoteData['info']['version'] ?? null;
+        if ($remoteVersion !== null) {
+            $configuration->setLocalVersion($remoteVersion);
+        }
+
+        // Update register IDs
+        $existingRegisterIds = $configuration->getRegisters();
+        foreach ($result['registers'] as $register) {
+            if (in_array($register->getId(), $existingRegisterIds, true) === false) {
+                $existingRegisterIds[] = $register->getId();
+            }
+        }
+        $configuration->setRegisters($existingRegisterIds);
+
+        // Update schema IDs
+        $existingSchemaIds = $configuration->getSchemas();
+        foreach ($result['schemas'] as $schema) {
+            if (in_array($schema->getId(), $existingSchemaIds, true) === false) {
+                $existingSchemaIds[] = $schema->getId();
+            }
+        }
+        $configuration->setSchemas($existingSchemaIds);
+
+        // Update object IDs
+        $existingObjectIds = $configuration->getObjects();
+        foreach ($result['objects'] as $object) {
+            if (in_array($object->getId(), $existingObjectIds, true) === false) {
+                $existingObjectIds[] = $object->getId();
+            }
+        }
+        $configuration->setObjects($existingObjectIds);
+
+        // Save the updated configuration
+        $this->configurationMapper->update($configuration);
+
+        $this->logger->info("Selective import completed", [
+            'configurationId'  => $configuration->getId(),
+            'registersImported' => count($result['registers']),
+            'schemasImported'   => count($result['schemas']),
+            'objectsImported'   => count($result['objects']),
+        ]);
+
+        return $result;
+
+    }//end importConfigurationWithSelection()
 
 
 }//end class

@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\ViewMapper;
 use OCA\OpenRegister\Service\FacetService;
 use OCA\OpenRegister\Service\ObjectCacheService;
 use OCA\OpenRegister\Service\SchemaCacheService;
@@ -61,6 +62,7 @@ use OCA\OpenRegister\Service\SolrObjectService;
 use OCP\AppFramework\IAppContainer;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
+use function React\Promise\all;
 
 /**
  * Primary Object Management Service for OpenRegister
@@ -185,6 +187,7 @@ class ObjectService
         private readonly DepublishObject $depublishHandler,
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
+        private readonly ViewMapper $viewMapper,
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly FileService $fileService,
         private readonly IUserSession $userSession,
@@ -419,15 +422,17 @@ class ObjectService
     public function setRegister(Register | string | int $register): self
     {
         if (is_string($register) === true || is_int($register) === true) {
-            // **PERFORMANCE OPTIMIZATION**: Use cached entity lookup
+            // **PERFORMANCE OPTIMIZATION**: Use cached entity lookup.
+            // When deriving register from object context, bypass RBAC and multi-tenancy checks.
+            // If user has access to the object, they should be able to access its register.
             $registers = $this->getCachedEntities('register', [$register], function($ids) {
-                return [$this->registerMapper->find($ids[0])];
+                return [$this->registerMapper->find(id: $ids[0], extend: [], published: null, rbac: false, multi: false)];
             });
             if (isset($registers[0]) && $registers[0] instanceof Register) {
                 $register = $registers[0];
             } else {
-                // Fallback to direct database lookup if cache fails
-                $register = $this->registerMapper->find($register);
+                // Fallback to direct database lookup if cache fails.
+                $register = $this->registerMapper->find(id: $register, extend: [], published: null, rbac: false, multi: false);
             }
         }
 
@@ -447,15 +452,17 @@ class ObjectService
     public function setSchema(Schema | string | int $schema): self
     {
         if (is_string($schema) === true || is_int($schema) === true) {
-            // **PERFORMANCE OPTIMIZATION**: Use cached entity lookup
+            // **PERFORMANCE OPTIMIZATION**: Use cached entity lookup.
+            // When deriving schema from object context, bypass RBAC and multi-tenancy checks.
+            // If user has access to the object, they should be able to access its schema.
             $schemas = $this->getCachedEntities('schema', [$schema], function($ids) {
-                return [$this->schemaMapper->find($ids[0])];
+                return [$this->schemaMapper->find(id: $ids[0], extend: [], published: null, rbac: false, multi: false)];
             });
             if (isset($schemas[0]) && $schemas[0] instanceof Schema) {
                 $schema = $schemas[0];
             } else {
-                // Fallback to direct database lookup if cache fails
-                $schema = $this->schemaMapper->find($schema);
+                // Fallback to direct database lookup if cache fails.
+                $schema = $this->schemaMapper->find(id: $schema, extend: [], published: null, rbac: false, multi: false);
             }
         }
 
@@ -561,7 +568,7 @@ class ObjectService
             return null;
         }
 
-        // If no schema was provided but we have an object, derive the schema from the object
+        // If no schema was provided but we have an object, derive the schema from the object.
         if ($this->currentSchema === null) {
             $this->setSchema($object->getSchema());
         }
@@ -569,7 +576,7 @@ class ObjectService
         // If the object is not published, check the permissions.
         $now = new \DateTime('now');
         if ($object->getPublished() === null || $now < $object->getPublished() || ($object->getDepublished() !== null && $object->getDepublished() <= $now)) {
-            // Check user has permission to read this specific object (includes object owner check)
+            // Check user has permission to read this specific object (includes object owner check).
             $this->checkPermission($this->currentSchema, 'read', null, $object->getOwner(), $rbac);
         }
 
@@ -921,6 +928,7 @@ class ObjectService
         }
 
         // Delegate the findAll operation to the handler.
+        /** @var $objects ObjectEntity[] **/
         $objects = $this->getHandler->findAll(
             limit: $config['limit'] ?? null,
             offset: $config['offset'] ?? null,
@@ -960,18 +968,30 @@ class ObjectService
         }
 
         // Render each object through the object service.
+        $promises = [];
         foreach ($objects as $key => $object) {
-            $objects[$key] = $this->renderHandler->renderEntity(
-                entity: $object,
-                extend: $config['extend'] ?? [],
-                filter: $config['unset'] ?? null,
-                fields: $config['fields'] ?? null,
-                registers: $registers,
-                schemas: $schemas,
-                rbac: $rbac,
-                multi: $multi
+            $promises[$key] = new Promise(
+                function ($resolve, $reject) use ($object, $config, $registers, $schemas, $rbac, $multi) {
+                    try {
+                        $renderedObject = $this->renderHandler->renderEntity(
+                            entity: $object,
+                            extend: $config['extend'] ?? [],
+                            filter: $config['unset'] ?? null,
+                            fields: $config['fields'] ?? null,
+                            registers: $registers,
+                            schemas: $schemas,
+                            rbac: $rbac,
+                            multi: $multi
+                        );
+                        $resolve($renderedObject);
+                    } catch(\Throwable $e) {
+                        $reject($e);
+                    }
+                }
             );
         }
+
+        $objects = Async\await(all($promises));
 
         return $objects;
 
@@ -1750,7 +1770,7 @@ class ObjectService
      * @psalm-param    array<string, mixed> $requestParams
      * @psalm-return   array<string, mixed>
      */
-    public function buildSearchQuery(array $requestParams, int | string | null $register=null, int | string | null $schema=null, ?array $ids=null): array
+    public function buildSearchQuery(array $requestParams, int | string | array | null $register=null, int | string | array | null $schema=null, ?array $ids=null): array
     {
         // STEP 1: Fix PHP's dot-to-underscore mangling in query parameter names
         // PHP converts dots to underscores in parameter names, e.g.:
@@ -1803,13 +1823,24 @@ class ObjectService
         $metadataFields = ['register', 'schema', 'uuid', 'organisation', 'owner', 'application', 'created', 'updated', 'published', 'depublished', 'deleted'];
         $query['@self'] = [];
 
-        // Add register and schema to @self if provided (ensure they are integers)
+        // Add register and schema to @self if provided
+        // Support both single values and arrays for multi-register/schema filtering
         if ($register !== null) {
-            $query['@self']['register'] = (int) $register;
+            if (is_array($register)) {
+                // Convert array values to integers
+                $query['@self']['register'] = array_map('intval', $register);
+            } else {
+                $query['@self']['register'] = (int) $register;
+            }
         }
 
         if ($schema !== null) {
-            $query['@self']['schema'] = (int) $schema;
+            if (is_array($schema)) {
+                // Convert array values to integers
+                $query['@self']['schema'] = array_map('intval', $schema);
+            } else {
+                $query['@self']['schema'] = (int) $schema;
+            }
         }
 
         // Query structure built successfully
@@ -1847,6 +1878,11 @@ class ObjectService
         }
 
         // Add all special parameters (they'll be handled by searchObjectsPaginated)
+        // Convert boolean-like parameters to actual booleans for consistency
+        if (isset($specialParams['_published'])) {
+            $specialParams['_published'] = filter_var($specialParams['_published'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false;
+        }
+        
         $query = array_merge($query, $specialParams);
 
         return $query;
@@ -1854,8 +1890,124 @@ class ObjectService
     }//end buildSearchQuery()
 
 
-    public function searchObjects(array $query=[], bool $rbac=true, bool $multi=true, ?array $ids=null, ?string $uses=null): array|int
+    /**
+     * Apply view filters to a query
+     *
+     * Converts view definitions into query parameters by merging view->query into the base query.
+     * Supports multiple views - their filters are combined (OR logic for same field, AND for different fields).
+     *
+     * @param array $query Base query parameters
+     * @param array $viewIds View IDs to apply
+     *
+     * @return array Query with view filters applied
+     */
+    private function applyViewsToQuery(array $query, array $viewIds): array
     {
+        if (empty($viewIds)) {
+            return $query;
+        }
+
+        $this->logger->debug('[ObjectService] Applying views to query', [
+            'viewIds' => $viewIds,
+            'originalQuery' => array_keys($query),
+        ]);
+
+        foreach ($viewIds as $viewId) {
+            try {
+                $view = $this->viewMapper->find($viewId);
+                $viewQuery = $view->getQuery();
+
+                // Apply registers filter using @self metadata (format ObjectEntityMapper understands)
+                if (!empty($viewQuery['registers'])) {
+                    if (!isset($query['@self'])) {
+                        $query['@self'] = [];
+                    }
+                    $query['@self']['register'] = array_unique(array_merge(
+                        is_array($query['@self']['register'] ?? null) ? $query['@self']['register'] : ($query['@self']['register'] ?? false ? [$query['@self']['register']] : []),
+                        $viewQuery['registers']
+                    ));
+                }
+
+                // Apply schemas filter using @self metadata (format ObjectEntityMapper understands)
+                if (!empty($viewQuery['schemas'])) {
+                    if (!isset($query['@self'])) {
+                        $query['@self'] = [];
+                    }
+                    $query['@self']['schema'] = array_unique(array_merge(
+                        is_array($query['@self']['schema'] ?? null) ? $query['@self']['schema'] : ($query['@self']['schema'] ?? false ? [$query['@self']['schema']] : []),
+                        $viewQuery['schemas']
+                    ));
+                }
+
+                // Apply search terms
+                if (!empty($viewQuery['searchTerms'])) {
+                    $searchTerms = is_array($viewQuery['searchTerms'])
+                        ? implode(' ', $viewQuery['searchTerms'])
+                        : $viewQuery['searchTerms'];
+
+                    $existingSearch = $query['_search'] ?? '';
+                    $query['_search'] = trim($existingSearch . ' ' . $searchTerms);
+                }
+
+                // Apply facet filters (merge with existing filters)
+                if (!empty($viewQuery['facetFilters'])) {
+                    foreach ($viewQuery['facetFilters'] as $facet => $values) {
+                        if (!isset($query[$facet])) {
+                            $query[$facet] = $values;
+                        } else {
+                            // Merge values for the same facet (OR logic)
+                            $query[$facet] = array_unique(array_merge(
+                                is_array($query[$facet]) ? $query[$facet] : [$query[$facet]],
+                                is_array($values) ? $values : [$values]
+                            ));
+                        }
+                    }
+                }
+
+                // Preserve source preference from view
+                if (!empty($viewQuery['source']) && !isset($query['_source'])) {
+                    $query['_source'] = $viewQuery['source'];
+                }
+
+                $this->logger->debug('[ObjectService] Applied view to query', [
+                    'viewId' => $viewId,
+                    'viewName' => $view->getName(),
+                    'addedFilters' => [
+                        'registers' => $viewQuery['registers'] ?? [],
+                        'schemas' => $viewQuery['schemas'] ?? [],
+                        'facets' => array_keys($viewQuery['facetFilters'] ?? []),
+                    ],
+                ]);
+
+            } catch (\Exception $e) {
+                $this->logger->warning('[ObjectService] Failed to apply view', [
+                    'viewId' => $viewId,
+                    'error' => $e->getMessage(),
+                ]);
+                // Continue with other views
+            }
+        }
+
+        $this->logger->info('[ObjectService] Views applied to query', [
+            'viewIds' => $viewIds,
+            'resultingFilters' => [
+                'registers' => $query['@self']['register'] ?? null,
+                'schemas' => $query['@self']['schema'] ?? null,
+                'search' => $query['_search'] ?? null,
+            ],
+        ]);
+
+        return $query;
+
+    }//end applyViewsToQuery()
+
+
+    public function searchObjects(array $query=[], bool $rbac=true, bool $multi=true, ?array $ids=null, ?string $uses=null, ?array $views=null): array|int
+    {
+        // Apply view filters if provided
+        if ($views !== null && !empty($views)) {
+            $query = $this->applyViewsToQuery($query, $views);
+        }
 
         // **CRITICAL PERFORMANCE OPTIMIZATION**: Detect simple vs complex rendering needs
         $hasExtend = !empty($query['_extend'] ?? []);
@@ -2488,8 +2640,13 @@ class ObjectService
      *                              - next: URL for next page (if available)
      *                              - prev: URL for previous page (if available)
      */
-    public function searchObjectsPaginated(array $query=[], bool $rbac=true, bool $multi=true, bool $published=false, bool $deleted=false, ?array $ids=null, ?string $uses=null): array
+    public function searchObjectsPaginated(array $query=[], bool $rbac=true, bool $multi=true, bool $published=false, bool $deleted=false, ?array $ids=null, ?string $uses=null, ?array $views=null): array
     {
+        // Apply view filters if provided
+        if ($views !== null && !empty($views)) {
+            $query = $this->applyViewsToQuery($query, $views);
+        }
+
         // ids and uses are passed as proper parameters, not added to query
 
         $requestedSource = $query['_source'] ?? null;
@@ -3027,16 +3184,17 @@ class ObjectService
             // **CACHE WARMUP**: Preload register and schema if not already cached
             if (isset($query['@self']['register'])) {
                 $registerValue = $query['@self']['register'];
-                // Handle both single values and arrays
+                // Handle both single values and arrays.
                 $registerIds = is_array($registerValue) ? $registerValue : [$registerValue];
                 $this->getCachedEntities('register', $registerIds, function($ids) {
                     $results = [];
                     foreach ($ids as $id) {
                         if (is_string($id) || is_int($id)) {
                             try {
-                                $results[] = $this->registerMapper->find($id);
+                                // Preloading is an internal operation, bypass RBAC and multi-tenancy checks.
+                                $results[] = $this->registerMapper->find(id: $id, extend: [], published: null, rbac: false, multi: false);
                             } catch (\Exception $e) {
-                                // Log and skip invalid IDs
+                                // Log and skip invalid IDs.
                                 $this->logger->warning('Failed to preload register', ['id' => $id, 'error' => $e->getMessage()]);
                             }
                         }
@@ -3047,16 +3205,17 @@ class ObjectService
 
             if (isset($query['@self']['schema'])) {
                 $schemaValue = $query['@self']['schema'];
-                // Handle both single values and arrays
+                // Handle both single values and arrays.
                 $schemaIds = is_array($schemaValue) ? $schemaValue : [$schemaValue];
                 $this->getCachedEntities('schema', $schemaIds, function($ids) {
                     $results = [];
                     foreach ($ids as $id) {
                         if (is_string($id) || is_int($id)) {
                             try {
-                                $results[] = $this->schemaMapper->find($id);
+                                // Preloading is an internal operation, bypass RBAC and multi-tenancy checks.
+                                $results[] = $this->schemaMapper->find(id: $id, extend: [], published: null, rbac: false, multi: false);
                             } catch (\Exception $e) {
-                                // Log and skip invalid IDs
+                                // Log and skip invalid IDs.
                                 $this->logger->warning('Failed to preload schema', ['id' => $id, 'error' => $e->getMessage()]);
                             }
                         }
@@ -3918,98 +4077,6 @@ class ObjectService
         return $text;
     }//end createSlugHelper()
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-    /**
-     * Handle post-save writeBack operations for inverse relations
-     *
-     * This method processes writeBack operations after objects have been saved to the database.
-     * It uses the SaveObject handler's writeBack functionality for properties that have
-     * both inversedBy and writeBack enabled.
-     *
-     * @param array $savedObjects Array of saved ObjectEntity objects
-     * @param array $schemaCache  Cached schemas indexed by schema ID
-     *
-     * @return void
-     */
-    private function handlePostSaveInverseRelations(array $savedObjects, array $schemaCache): void
-    {
-        $writeBackCount = 0;
-        $bulkWriteBackUpdates = []; // PERFORMANCE OPTIMIZATION: Collect updates for bulk processing
-
-        foreach ($savedObjects as $savedObject) {
-            $objectData = $savedObject->getObject();
-            $schemaId   = $savedObject->getSchema();
-
-            if (!isset($schemaCache[$schemaId])) {
-                continue;
-            }
-
-            $schema           = $schemaCache[$schemaId];
-            $schemaProperties = $schema->getProperties();
-
-            foreach ($objectData as $property => $value) {
-                if (!isset($schemaProperties[$property])) {
-                    continue;
-                }
-
-                $propertyConfig = $schemaProperties[$property];
-                $items          = $propertyConfig['items'] ?? [];
-
-                // Check for writeBack enabled properties
-                $writeBack  = $propertyConfig['writeBack'] ?? ($items['writeBack'] ?? false);
-                $inversedBy = $propertyConfig['inversedBy'] ?? ($items['inversedBy'] ?? null);
-
-                if ($writeBack && $inversedBy && !empty($value)) {
-                    // Use SaveObject handler's writeBack functionality
-                    try {
-                        // Create a temporary object data array for writeBack processing
-                        $writeBackData = [$property => $value];
-                        $this->saveHandler->handleInverseRelationsWriteBack($savedObject, $schema, $writeBackData);
-                        $writeBackCount++;
-
-                        // After writeBack, update the source object's property with the current value
-                        // This ensures the source object reflects the relationship
-                        $currentObjectData = $savedObject->getObject();
-                        if (!isset($currentObjectData[$property]) || $currentObjectData[$property] !== $value) {
-                            $currentObjectData[$property] = $value;
-                            $savedObject->setObject($currentObjectData);
-
-                            // PERFORMANCE OPTIMIZATION: Collect for bulk update instead of individual UPDATE
-                            $objectUuid = $savedObject->getUuid();
-                            if (!isset($bulkWriteBackUpdates[$objectUuid])) {
-                                $bulkWriteBackUpdates[$objectUuid] = $savedObject;
-                            }
-                        }
-                    } catch (\Exception $e) {
-                    }
-                }//end if
-            }//end foreach
-        }//end foreach
-
-        // PERFORMANCE OPTIMIZATION: Execute all writeBack updates in a single bulk operation
-        if (!empty($bulkWriteBackUpdates)) {
-            $this->performBulkWriteBackUpdates(array_values($bulkWriteBackUpdates));
-        }
-
-
-    }//end handlePostSaveInverseRelations()
-
-
-
-
-
     /**
      * Filter objects based on RBAC and multi-organization permissions
      *
@@ -4614,9 +4681,9 @@ class ObjectService
                         if (is_array($item) && !$this->isUuid($item)) {
                             // This is a nested object, create it first
                             $createdUuid = $this->createRelatedObject($item, $definition['items'], $uuid);
-                            if ($createdUuid) {
-                                $createdUuids[] = $createdUuid;
-                            }
+
+                            // If creation failed, keep original item to avoid empty array
+                            $createdUuids[] = $createdUuid ?? $item;
                         } else if (is_string($item) && $this->isUuid($item)) {
                             // This is already a UUID, keep it
                             $createdUuids[] = $item;
@@ -4627,13 +4694,13 @@ class ObjectService
                 }
             }
             // Handle single object properties
-            else if (isset($definition['inversedBy']) && !($definition['type'] === 'array')) {
+            else if (isset($definition['inversedBy']) && $definition['type'] !== 'array') {
                 if (is_array($propertyValue) && !$this->isUuid($propertyValue)) {
                     // This is a nested object, create it first
                     $createdUuid = $this->createRelatedObject($propertyValue, $definition, $uuid);
-                    if ($createdUuid) {
-                        $object[$propertyName] = $createdUuid;
-                    }
+
+                    // Only overwrite if creation succeeded
+                    $object[$propertyName] = $createdUuid ?? $propertyValue;
                 }
             }
         }//end foreach

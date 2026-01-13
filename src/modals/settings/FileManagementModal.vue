@@ -1,227 +1,57 @@
 <template>
 	<NcDialog v-if="show"
-		:name="t('openregister', 'File Management')"
+		:name="t('openregister', 'File Vectorization')"
 		size="large"
 		@closing="$emit('closing')">
 		<div class="file-config-content">
-			<!-- Info box -->
+			<!-- Using Pre-Generated Chunks -->
 			<div class="info-box">
 				<InformationOutline :size="20" />
-				<p>
-					{{ t('openregister', 'Configure file processing and vectorization settings for semantic file search.') }}
-				</p>
+				<div>
+					<h4>{{ t('openregister', 'Using Pre-Generated Chunks') }}</h4>
+					<p>{{ t('openregister', 'Text chunks are generated during file extraction and stored in the database. Vectorization reads these pre-chunked files and converts them to embeddings.') }}</p>
+					<p><strong>{{ t('openregister', 'To adjust chunk size or strategy, go to File Configuration → Processing Limits.') }}</strong></p>
+				</div>
 			</div>
 
 			<!-- Vectorization Settings -->
 			<div class="config-section">
-				<h3>{{ t('openregister', 'Vectorization Settings') }}</h3>
+				<h3>{{ t('openregister', '🔢 Vectorization Settings') }}</h3>
 
 				<div class="form-group">
 					<NcCheckboxRadioSwitch
 						v-model="config.vectorizationEnabled"
 						type="switch">
-						{{ t('openregister', 'Enable automatic vectorization') }}
+						{{ t('openregister', 'Enable automatic file vectorization') }}
 					</NcCheckboxRadioSwitch>
-					<small>{{ t('openregister', 'Automatically generate vector embeddings when files are uploaded') }}</small>
-				</div>
-
-				<div v-if="config.vectorizationEnabled" class="form-group">
-					<label>{{ t('openregister', 'Vectorization Provider') }}</label>
-					<NcSelect
-						v-model="config.provider"
-						:options="providerOptions"
-						label="name"
-						:placeholder="t('openregister', 'Select provider')"
-						:label-outside="true" />
+					<small>{{ t('openregister', 'Automatically generate vector embeddings from text chunks when files are uploaded and processed') }}</small>
 				</div>
 			</div>
 
-			<!-- Document Chunking -->
-			<div class="config-section">
-				<h3>{{ t('openregister', 'Document Chunking') }}</h3>
+			<!-- Batch Processing -->
+			<div v-if="config.vectorizationEnabled" class="config-section">
+				<h3>{{ t('openregister', '⚡ Batch Processing') }}</h3>
 
 				<div class="form-group">
-					<label>{{ t('openregister', 'Chunking Strategy') }}</label>
-					<NcSelect
-						v-model="config.chunkingStrategy"
-						:options="chunkingStrategyOptions"
-						label="name"
-						:placeholder="t('openregister', 'Select strategy')"
-						:label-outside="true">
-						<template #option="{ name, description }">
-							<div class="option-with-desc">
-								<strong>{{ name }}</strong>
-								<small>{{ description }}</small>
-							</div>
-						</template>
-					</NcSelect>
-				</div>
-
-				<div class="form-group">
-					<label for="chunk-size">{{ t('openregister', 'Chunk Size') }}</label>
+					<label for="batch-size">{{ t('openregister', 'Batch Size') }}</label>
 					<input
-						id="chunk-size"
-						v-model.number="config.chunkSize"
+						id="batch-size"
+						v-model.number="config.batchSize"
 						type="number"
-						min="100"
-						max="4000"
-						step="100"
+						min="1"
+						max="100"
+						step="1"
 						class="input-field">
-					<small>{{ t('openregister', 'Number of characters per chunk (100-4000)') }}</small>
+					<small>{{ t('openregister', 'Number of chunks to vectorize in one API call. Higher = faster but more memory. Recommended: 10-50.') }}</small>
 				</div>
-
-				<div class="form-group">
-					<label for="chunk-overlap">{{ t('openregister', 'Chunk Overlap') }}</label>
-					<input
-						id="chunk-overlap"
-						v-model.number="config.chunkOverlap"
-						type="number"
-						min="0"
-						:max="Math.floor(config.chunkSize / 2)"
-						step="10"
-						class="input-field">
-					<small>{{ t('openregister', 'Overlap between chunks (0-{max} for current chunk size)', { max: Math.floor(config.chunkSize / 2) }) }}</small>
-				</div>
-			</div>
-
-			<!-- File Type Support -->
-			<div class="config-section">
-				<h3>{{ t('openregister', 'File Type Support') }}</h3>
-
-				<div class="file-types-grid">
-					<div v-for="category in fileCategoriesConfig" :key="category.name" class="file-category">
-						<h4>{{ category.name }}</h4>
-						<div v-for="type in category.types" :key="type.ext" class="file-type-item">
-							<NcCheckboxRadioSwitch
-								v-model="config.enabledFileTypes"
-								:value="type.ext"
-								type="checkbox">
-								{{ type.label }}
-							</NcCheckboxRadioSwitch>
-						</div>
-					</div>
-				</div>
-			</div>
-
-			<!-- OCR Settings -->
-			<div class="config-section">
-				<h3>{{ t('openregister', 'OCR Settings') }}</h3>
 
 				<div class="form-group">
 					<NcCheckboxRadioSwitch
-						v-model="config.ocrEnabled"
+						v-model="config.autoRetry"
 						type="switch">
-						{{ t('openregister', 'Enable OCR for images') }}
+						{{ t('openregister', 'Auto-retry failed vectorizations') }}
 					</NcCheckboxRadioSwitch>
-					<small>{{ t('openregister', 'Extract text from images using Tesseract OCR (requires Tesseract installation)') }}</small>
-				</div>
-			</div>
-
-			<!-- Processing Limits -->
-			<div class="config-section">
-				<h3>{{ t('openregister', 'Processing Limits') }}</h3>
-
-				<div class="form-group">
-					<label for="max-file-size">{{ t('openregister', 'Maximum File Size (MB)') }}</label>
-					<input
-						id="max-file-size"
-						v-model.number="config.maxFileSizeMB"
-						type="number"
-						min="1"
-						max="500"
-						class="input-field">
-					<small>{{ t('openregister', 'Maximum file size to process (1-500 MB)') }}</small>
-				</div>
-			</div>
-
-			<!-- Stats -->
-			<div class="config-section">
-				<h3>{{ t('openregister', 'File Statistics') }}</h3>
-
-				<div class="stats-grid">
-					<div class="stat-card">
-						<div class="stat-value">
-							{{ stats.totalFiles }}
-						</div>
-						<div class="stat-label">
-							{{ t('openregister', 'Total Files') }}
-						</div>
-					</div>
-					<div class="stat-card">
-						<div class="stat-value">
-							{{ stats.vectorizedFiles }}
-						</div>
-						<div class="stat-label">
-							{{ t('openregister', 'Vectorized Files') }}
-						</div>
-					</div>
-					<div class="stat-card">
-						<div class="stat-value">
-							{{ stats.pendingFiles }}
-						</div>
-						<div class="stat-label">
-							{{ t('openregister', 'Pending') }}
-						</div>
-					</div>
-					<div class="stat-card">
-						<div class="stat-value">
-							{{ stats.totalChunks }}
-						</div>
-						<div class="stat-label">
-							{{ t('openregister', 'Total Chunks') }}
-						</div>
-					</div>
-				</div>
-			</div>
-
-			<!-- Vector Embeddings Stats -->
-			<div class="config-section">
-				<h3>{{ t('openregister', 'Vector Embeddings Statistics') }}</h3>
-
-				<div class="stats-grid">
-					<div class="stat-card highlight">
-						<div class="stat-value">
-							{{ vectorStats.totalVectors }}
-						</div>
-						<div class="stat-label">
-							{{ t('openregister', 'Total Vectors') }}
-						</div>
-					</div>
-					<div class="stat-card">
-						<div class="stat-value">
-							{{ vectorStats.objectVectors }}
-						</div>
-						<div class="stat-label">
-							{{ t('openregister', 'Object Vectors') }}
-						</div>
-					</div>
-					<div class="stat-card">
-						<div class="stat-value">
-							{{ vectorStats.fileVectors }}
-						</div>
-						<div class="stat-label">
-							{{ t('openregister', 'File Vectors') }}
-						</div>
-					</div>
-					<div class="stat-card">
-						<div class="stat-value">
-							{{ vectorStats.storageMB }}
-						</div>
-						<div class="stat-label">
-							{{ t('openregister', 'Storage (MB)') }}
-						</div>
-					</div>
-				</div>
-
-				<!-- Vector Models Breakdown -->
-				<div v-if="vectorStats.byModel && Object.keys(vectorStats.byModel).length > 0" class="model-breakdown">
-					<h4>{{ t('openregister', 'Vectors by Model') }}</h4>
-					<div class="model-list">
-						<div v-for="(count, model) in vectorStats.byModel" :key="model" class="model-item">
-							<span class="model-name">{{ model }}</span>
-							<span class="model-count">{{ count }} {{ t('openregister', 'vectors') }}</span>
-						</div>
-					</div>
+					<small>{{ t('openregister', 'Automatically retry failed vectorization attempts (max 3 retries)') }}</small>
 				</div>
 			</div>
 		</div>
@@ -246,7 +76,7 @@
 </template>
 
 <script>
-import { NcDialog, NcButton, NcLoadingIcon, NcSelect, NcCheckboxRadioSwitch } from '@nextcloud/vue'
+import { NcDialog, NcButton, NcLoadingIcon, NcCheckboxRadioSwitch } from '@nextcloud/vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
 import axios from '@nextcloud/axios'
@@ -260,7 +90,6 @@ export default {
 		NcDialog,
 		NcButton,
 		NcLoadingIcon,
-		NcSelect,
 		NcCheckboxRadioSwitch,
 		InformationOutline,
 		ContentSave,
@@ -280,82 +109,21 @@ export default {
 
 			config: {
 				vectorizationEnabled: true,
-				provider: { id: 'openai', name: 'OpenAI' },
-				chunkingStrategy: { id: 'RECURSIVE_CHARACTER', name: 'Recursive Character' },
-				chunkSize: 1000,
-				chunkOverlap: 200,
-				enabledFileTypes: ['pdf', 'docx', 'txt', 'md', 'html', 'json', 'xml'],
-				ocrEnabled: false,
-				maxFileSizeMB: 100,
+				batchSize: 25,
+				autoRetry: true,
 			},
 
-			stats: {
-				totalFiles: 0,
-				vectorizedFiles: 0,
-				pendingFiles: 0,
-				totalChunks: 0,
-			},
-
-			vectorStats: {
-				totalVectors: 0,
-				objectVectors: 0,
-				fileVectors: 0,
-				storageMB: '0.0',
-				byModel: {},
-			},
-
-			providerOptions: [
-				{ id: 'openai', name: 'OpenAI' },
-				{ id: 'ollama', name: 'Ollama (Local)' },
-			],
-
-			chunkingStrategyOptions: [
-				{ id: 'FIXED_SIZE', name: 'Fixed Size', description: 'Split by character count' },
-				{ id: 'RECURSIVE_CHARACTER', name: 'Recursive Character', description: 'Split preserving structure' },
-			],
-
-			fileCategoriesConfig: [
-				{
-					name: 'Office Documents',
-					types: [
-						{ ext: 'pdf', label: 'PDF' },
-						{ ext: 'docx', label: 'Word (DOCX)' },
-						{ ext: 'xlsx', label: 'Excel (XLSX)' },
-						{ ext: 'pptx', label: 'PowerPoint (PPTX)' },
-					],
-				},
-				{
-					name: 'Text Formats',
-					types: [
-						{ ext: 'txt', label: 'Plain Text' },
-						{ ext: 'md', label: 'Markdown' },
-						{ ext: 'html', label: 'HTML' },
-						{ ext: 'json', label: 'JSON' },
-						{ ext: 'xml', label: 'XML' },
-					],
-				},
-				{
-					name: 'Images (OCR)',
-					types: [
-						{ ext: 'jpg', label: 'JPEG' },
-						{ ext: 'png', label: 'PNG' },
-						{ ext: 'gif', label: 'GIF' },
-						{ ext: 'tiff', label: 'TIFF' },
-					],
-				},
-			],
 		}
 	},
 
 	mounted() {
 		this.loadConfiguration()
-		this.loadStats()
 	},
 
 	methods: {
 		async loadConfiguration() {
 			try {
-				// TODO: Load from backend
+				// TODO: Load vectorization config from backend
 				this.loading = false
 			} catch (error) {
 				console.error('Failed to load configuration:', error)
@@ -363,36 +131,12 @@ export default {
 			}
 		},
 
-		async loadStats() {
-			try {
-				const response = await axios.get(generateUrl('/apps/openregister/api/objects/vectorize/stats'))
-				const data = response.data
-
-				// Update file stats
-				if (data.files) {
-					this.stats.totalFiles = data.files.total_files || 0
-					this.stats.vectorizedFiles = data.files.vectorized_files || 0
-					this.stats.pendingFiles = data.files.pending_files || 0
-					this.stats.totalChunks = data.files.total_chunks || 0
-				}
-
-				// Update vector stats
-				this.vectorStats.totalVectors = data.total_vectors || 0
-				this.vectorStats.objectVectors = data.by_type?.object || 0
-				this.vectorStats.fileVectors = data.by_type?.file || 0
-				this.vectorStats.storageMB = data.storage?.total_mb?.toFixed(1) || '0.0'
-				this.vectorStats.byModel = data.by_model || {}
-			} catch (error) {
-				console.error('Failed to load stats:', error)
-			}
-		},
-
 		async saveConfiguration() {
 			this.saving = true
 
 			try {
-				await axios.post(generateUrl('/apps/openregister/api/settings/files'), this.config)
-				showSuccess(this.t('openregister', 'File configuration saved successfully'))
+				await axios.post(generateUrl('/apps/openregister/api/settings/file-vectorization'), this.config)
+				showSuccess(this.t('openregister', 'File vectorization configuration saved successfully'))
 				this.$emit('closing')
 			} catch (error) {
 				showError(this.t('openregister', 'Failed to save configuration: {error}', { error: error.response?.data?.error || error.message }))
@@ -400,6 +144,7 @@ export default {
 				this.saving = false
 			}
 		},
+
 	},
 }
 </script>
@@ -424,6 +169,27 @@ export default {
 		margin: 0;
 		color: var(--color-text-maxcontrast);
 	}
+
+	ul {
+		margin: 8px 0 0 0;
+		padding-left: 20px;
+		color: var(--color-text-maxcontrast);
+
+		li {
+			margin: 4px 0;
+		}
+	}
+
+	&.warning {
+		background: var(--color-warning-light);
+		border-left: 4px solid var(--color-warning);
+
+		strong {
+			color: var(--color-main-text);
+			display: block;
+			margin-bottom: 8px;
+		}
+	}
 }
 
 .config-section {
@@ -440,6 +206,13 @@ export default {
 		font-size: 14px;
 		font-weight: 500;
 		color: var(--color-text-maxcontrast);
+	}
+
+	.section-description {
+		margin: 0 0 16px 0;
+		color: var(--color-text-maxcontrast);
+		font-size: 14px;
+		line-height: 1.5;
 	}
 }
 
@@ -490,15 +263,43 @@ export default {
 	}
 }
 
-.file-types-grid {
+.info-grid {
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-	gap: 24px;
+	gap: 16px;
+	margin-bottom: 16px;
 }
 
-.file-category {
-	.file-type-item {
-		margin-bottom: 8px;
+.info-item {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	padding: 12px;
+	background: var(--color-background-hover);
+	border-radius: 6px;
+
+	.info-label {
+		font-size: 12px;
+		color: var(--color-text-maxcontrast);
+		font-weight: 500;
+	}
+
+	.info-value {
+		font-size: 14px;
+		color: var(--color-main-text);
+		font-weight: 600;
+	}
+}
+
+.info-note {
+	padding: 12px;
+	background: var(--color-background-dark);
+	border-radius: 6px;
+	margin-top: 16px;
+
+	small {
+		color: var(--color-text-maxcontrast);
+		font-size: 13px;
 	}
 }
 
@@ -524,6 +325,15 @@ export default {
 	.stat-label {
 		font-size: 13px;
 		color: var(--color-text-maxcontrast);
+		margin-bottom: 4px;
+	}
+
+	.stat-note {
+		display: block;
+		font-size: 11px;
+		color: var(--color-text-lighter);
+		font-style: italic;
+		margin-top: 4px;
 	}
 
 	&.highlight {
@@ -575,6 +385,40 @@ export default {
 			color: var(--color-text-maxcontrast);
 			font-weight: 600;
 		}
+	}
+}
+
+/* Actions layout */
+:deep(.dialog__actions) {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 16px;
+	flex-wrap: wrap;
+}
+
+.actions-left {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+}
+
+.actions-right {
+	display: flex;
+	gap: 8px;
+	margin-left: auto;
+}
+
+@media (max-width: 768px) {
+	:deep(.dialog__actions) {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.actions-left,
+	.actions-right {
+		width: 100%;
+		justify-content: center;
 	}
 }
 </style>

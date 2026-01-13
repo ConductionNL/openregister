@@ -1,10 +1,10 @@
 <script setup>
-import { schemaStore, navigationStore, registerStore } from '../../store/store.js'
+import { schemaStore, navigationStore } from '../../store/store.js'
 import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.modal === 'validateSchema'"
+	<NcDialog v-if="navigationStore.dialog === 'validateSchema'"
 		name="Validate Schema Objects"
 		size="large"
 		:can-close="false">
@@ -103,9 +103,9 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 								</td>
 								<td class="errors-cell">
 									<div v-if="object.errors && object.errors.length > 0" class="errors-list">
-										<div v-for="error in object.errors" :key="error.path" class="error-item">
-											<strong>{{ error.path }}:</strong> {{ error.message }}
-											<span class="error-keyword">({{ error.keyword }})</span>
+										<div v-for="validationError in object.errors" :key="validationError.path" class="error-item">
+											<strong>{{ validationError.path }}:</strong> {{ validationError.message }}
+											<span class="error-keyword">({{ validationError.keyword }})</span>
 										</div>
 									</div>
 									<span v-else class="no-errors">No errors</span>
@@ -228,19 +228,19 @@ export default {
 		// Watch for changes in schemaItem and reload count if needed
 		'schemaStore.schemaItem': {
 			handler(newSchemaItem) {
-				console.log('Schema item changed in ValidateSchema:', newSchemaItem)
+				console.info('Schema item changed in ValidateSchema:', newSchemaItem)
 				if (newSchemaItem?.id && this.objectCount === 0) {
 					this.loadObjectCount()
 				}
 			},
 			immediate: true,
 		},
-		// Watch for dialog state changes to load count when modal becomes visible
-		'navigationStore.modal': {
-			handler(newModal) {
-				console.log('Modal changed to:', newModal)
-				if (newModal === 'validateSchema' && schemaStore.schemaItem?.id) {
-					console.log('ValidateSchema modal opened, loading object count')
+		// Watch for dialog state changes to load count when dialog becomes visible
+		'navigationStore.dialog': {
+			handler(newDialog) {
+				console.info('Dialog changed to:', newDialog)
+				if (newDialog === 'validateSchema' && schemaStore.schemaItem?.id) {
+					console.info('ValidateSchema dialog opened, loading object count')
 					this.loadObjectCount()
 				}
 			},
@@ -248,24 +248,24 @@ export default {
 		},
 	},
 	async mounted() {
-		console.log('ValidateSchema modal mounted, schemaItem:', schemaStore.schemaItem)
+		console.info('ValidateSchema dialog mounted, schemaItem:', schemaStore.schemaItem)
 		await this.loadObjectCount()
 	},
 	methods: {
 		async loadObjectCount() {
-			console.log('loadObjectCount called, schemaItem:', schemaStore.schemaItem)
+			console.info('loadObjectCount called, schemaItem:', schemaStore.schemaItem)
 			try {
 				if (schemaStore.schemaItem?.id) {
-					console.log('Calling getSchemaStats for schema ID:', schemaStore.schemaItem.id)
+					console.info('Calling getSchemaStats for schema ID:', schemaStore.schemaItem.id)
 					// Use the upgraded stats endpoint to get detailed object counts
 					const stats = await schemaStore.getSchemaStats(schemaStore.schemaItem.id)
-					console.log('Received stats:', stats)
+					console.info('Received stats:', stats)
 					this.objectStats = stats.objects
 					this.objectCount = stats.objects?.total || 0
-					console.log('Set objectCount to:', this.objectCount)
-					console.log('Set objectStats to:', this.objectStats)
+					console.info('Set objectCount to:', this.objectCount)
+					console.info('Set objectStats to:', this.objectStats)
 				} else {
-					console.log('No schema item ID available')
+					console.info('No schema item ID available')
 				}
 			} catch (err) {
 				console.error('Error in loadObjectCount:', err)
@@ -314,11 +314,11 @@ export default {
 		viewObjectDetails(object) {
 			// Navigate to object details view
 			// This would need to be implemented based on your navigation structure
-			console.log('View object details:', object)
+			console.info('View object details:', object)
 		},
 
 		closeDialog() {
-			navigationStore.setModal(false)
+			navigationStore.setDialog(false)
 			this.loading = false
 			this.error = false
 			this.validationResults = null

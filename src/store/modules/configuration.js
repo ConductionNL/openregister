@@ -40,8 +40,18 @@ export const useConfigurationStore = defineStore('configuration', {
 			this.filters = { ...this.filters, ...filters }
 			console.info('Query filters set to', this.filters)
 		},
+		/**
+		 * Refresh the configuration list from the API
+		 *
+		 * @param {string|null} search - Optional search term
+		 * @param {boolean} soft - If true, don't show loading state (default: false)
+		 * @return {Promise} Promise with response and data
+		 */
 		/* istanbul ignore next */ // ignore this for Jest until moved into a service
-		async refreshConfigurationList(search = null) {
+		async refreshConfigurationList(search = null, soft = false) {
+			console.log('ConfigurationStore: Starting refreshConfigurationList (soft=' + soft + ')')
+			// Note: ConfigurationStore doesn't have a loading state, but we log for consistency
+
 			let endpoint = '/index.php/apps/openregister/api/configurations'
 			if (search !== null && search !== '') {
 				endpoint = endpoint + '?_search=' + search
@@ -116,8 +126,8 @@ export const useConfigurationStore = defineStore('configuration', {
 				: `/index.php/apps/openregister/api/configurations/${configurationItem.id}`
 			const method = isNewConfiguration ? 'POST' : 'PUT'
 
-			// change updated to current date as a singular iso date string
-			configurationItem.updated = new Date().toISOString()
+			// Clean the data before sending - remove read-only fields
+			const cleanedData = this.cleanConfigurationForSave(configurationItem)
 
 			try {
 				const response = await fetch(
@@ -127,7 +137,7 @@ export const useConfigurationStore = defineStore('configuration', {
 						headers: {
 							'Content-Type': 'application/json',
 						},
-						body: JSON.stringify(configurationItem),
+						body: JSON.stringify(cleanedData),
 					},
 				)
 
@@ -151,6 +161,18 @@ export const useConfigurationStore = defineStore('configuration', {
 				console.error('Error saving configuration:', error)
 				throw new Error(`Failed to save configuration: ${error.message}`)
 			}
+		},
+		// Clean configuration data for saving - remove read-only fields
+		cleanConfigurationForSave(configurationItem) {
+			const cleaned = { ...configurationItem }
+
+			// Remove read-only/calculated fields that should not be sent to the server
+			delete cleaned.id
+			delete cleaned.uuid
+			delete cleaned.created
+			delete cleaned.updated
+
+			return cleaned
 		},
 		async uploadConfiguration(configuration) {
 			if (!configuration) {
@@ -239,6 +261,154 @@ export const useConfigurationStore = defineStore('configuration', {
 			} catch (error) {
 				console.error('Error importing configuration:', error)
 				throw error // Pass through the original error message
+			}
+		},
+		async discoverConfigurations(source, search = '') {
+			console.log(`ConfigurationStore: Discovering configurations on ${source}`)
+			const endpoint = '/index.php/apps/openregister/api/configurations/discover'
+			const params = new URLSearchParams()
+			params.append('source', source)
+			if (search) params.append('_search', search)
+
+			try {
+				const response = await fetch(`${endpoint}?${params}`, {
+					method: 'GET',
+				})
+
+				// Parse the JSON response first to extract error messages
+				const data = await response.json()
+
+				if (!response.ok) {
+				// If backend returns an error message, use it
+					const errorMessage = data.error || `HTTP error! status: ${response.status}`
+					throw new Error(errorMessage)
+				}
+
+				return data.results || []
+			} catch (error) {
+				console.error('Error discovering configurations:', error)
+				// Re-throw with the error message (which now contains backend's user-friendly message)
+				throw error
+			}
+		},
+		async getBranches(source, params) {
+			console.log(`ConfigurationStore: Fetching branches from ${source}`)
+			const endpoint = `/index.php/apps/openregister/api/configurations/${source}/branches`
+			const query = new URLSearchParams(params)
+
+			try {
+				const response = await fetch(`${endpoint}?${query}`, {
+					method: 'GET',
+				})
+
+				if (!response.ok) {
+					throw new Error(`HTTP error! status: ${response.status}`)
+				}
+
+				const data = await response.json()
+				return data.branches || []
+			} catch (error) {
+				console.error('Error fetching branches:', error)
+				throw error
+			}
+		},
+		async getConfigurationFiles(source, params) {
+			console.log(`ConfigurationStore: Fetching configuration files from ${source}`)
+			const endpoint = `/index.php/apps/openregister/api/configurations/${source}/files`
+			const query = new URLSearchParams(params)
+
+			try {
+				const response = await fetch(`${endpoint}?${query}`, {
+					method: 'GET',
+				})
+
+				if (!response.ok) {
+					throw new Error(`HTTP error! status: ${response.status}`)
+				}
+
+				const data = await response.json()
+				return data.files || []
+			} catch (error) {
+				console.error('Error fetching configuration files:', error)
+				throw error
+			}
+		},
+		async importFromGitHub(params) {
+			console.log('ConfigurationStore: Importing from GitHub')
+			const endpoint = '/index.php/apps/openregister/api/configurations/import/github'
+
+			try {
+				const response = await fetch(endpoint, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify(params),
+				})
+
+				if (!response.ok) {
+					const errorData = await response.json()
+					throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
+				}
+
+				const data = await response.json()
+				await this.refreshConfigurationList()
+				return data
+			} catch (error) {
+				console.error('Error importing from GitHub:', error)
+				throw error
+			}
+		},
+		async importFromGitLab(params) {
+			console.log('ConfigurationStore: Importing from GitLab')
+			const endpoint = '/index.php/apps/openregister/api/configurations/import/gitlab'
+
+			try {
+				const response = await fetch(endpoint, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify(params),
+				})
+
+				if (!response.ok) {
+					const errorData = await response.json()
+					throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
+				}
+
+				const data = await response.json()
+				await this.refreshConfigurationList()
+				return data
+			} catch (error) {
+				console.error('Error importing from GitLab:', error)
+				throw error
+			}
+		},
+		async importFromUrl(params) {
+			console.log('ConfigurationStore: Importing from URL')
+			const endpoint = '/index.php/apps/openregister/api/configurations/import/url'
+
+			try {
+				const response = await fetch(endpoint, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify(params),
+				})
+
+				if (!response.ok) {
+					const errorData = await response.json()
+					throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
+				}
+
+				const data = await response.json()
+				await this.refreshConfigurationList()
+				return data
+			} catch (error) {
+				console.error('Error importing from URL:', error)
+				throw error
 			}
 		},
 	},

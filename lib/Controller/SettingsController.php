@@ -23,6 +23,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCP\IDBConnection;
 use Psr\Container\ContainerInterface;
 use OCP\App\IAppManager;
 use OCA\OpenRegister\Service\SettingsService;
@@ -32,6 +33,86 @@ use OCA\OpenRegister\Service\VectorEmbeddingService;
 
 /**
  * Controller for handling settings-related operations in the OpenRegister.
+ *
+ * This controller serves as a THIN LAYER that validates HTTP requests and delegates
+ * to the appropriate service for business logic execution. It does NOT contain
+ * business logic itself.
+ *
+ * RESPONSIBILITIES:
+ * - Validate HTTP request parameters
+ * - Delegate settings CRUD operations to SettingsService
+ * - Delegate LLM testing to VectorEmbeddingService and ChatService
+ * - Delegate SOLR testing to GuzzleSolrService
+ * - Return appropriate JSONResponse with correct HTTP status codes
+ * - Handle HTTP-level concerns (authentication, CSRF, etc.)
+ *
+ * ARCHITECTURE PATTERN:
+ * - Thin controller: minimal logic, delegates to services
+ * - Services handle business logic and return structured arrays
+ * - Controller converts service responses to JSONResponse
+ * - Service errors are caught and converted to appropriate HTTP responses
+ *
+ * ENDPOINTS ORGANIZED BY CATEGORY:
+ *
+ * GENERAL SETTINGS:
+ * - GET  /api/settings              - Get all settings
+ * - POST /api/settings              - Update all settings
+ * - GET  /api/settings/stats        - Get statistics
+ * - POST /api/settings/rebase       - Rebase objects and logs
+ *
+ * RBAC SETTINGS:
+ * - GET  /api/settings/rbac         - Get RBAC settings
+ * - PUT  /api/settings/rbac         - Update RBAC settings
+ * - PATCH /api/settings/rbac        - Patch RBAC settings
+ *
+ * MULTITENANCY SETTINGS:
+ * - GET  /api/settings/multitenancy - Get multitenancy settings
+ * - PUT  /api/settings/multitenancy - Update multitenancy settings
+ * - PATCH /api/settings/multitenancy - Patch multitenancy settings
+ *
+ * RETENTION SETTINGS:
+ * - GET  /api/settings/retention    - Get retention settings
+ * - PUT  /api/settings/retention    - Update retention settings
+ * - PATCH /api/settings/retention   - Patch retention settings
+ *
+ * SOLR SETTINGS:
+ * - GET  /api/settings/solr         - Get SOLR settings
+ * - PUT  /api/settings/solr         - Update SOLR settings
+ * - PATCH /api/settings/solr        - Patch SOLR settings
+ * - POST /api/settings/solr/test    - Test SOLR connection (delegates to GuzzleSolrService)
+ * - POST /api/settings/solr/warmup  - Warmup SOLR index
+ *
+ * LLM SETTINGS:
+ * - GET  /api/settings/llm          - Get LLM settings
+ * - PUT  /api/settings/llm          - Update LLM settings
+ * - PATCH /api/settings/llm         - Patch LLM settings
+ * - POST /api/vectors/test-embedding - Test embedding generation (delegates to VectorEmbeddingService)
+ * - POST /api/llm/test-chat         - Test chat functionality (delegates to ChatService)
+ *
+ * FILE SETTINGS:
+ * - GET  /api/settings/files        - Get file settings
+ * - PUT  /api/settings/files        - Update file settings
+ * - PATCH /api/settings/files       - Patch file settings
+ *
+ * OBJECT SETTINGS:
+ * - GET  /api/settings/objects      - Get object settings
+ * - PUT  /api/settings/objects      - Update object settings
+ * - PATCH /api/settings/objects     - Patch object settings
+ *
+ * CACHE MANAGEMENT:
+ * - GET  /api/settings/cache/stats  - Get cache statistics
+ * - POST /api/settings/cache/clear  - Clear cache
+ * - POST /api/settings/cache/warmup - Warmup cache
+ *
+ * DELEGATION PATTERN:
+ * - Settings storage/retrieval → SettingsService
+ * - LLM embedding testing → VectorEmbeddingService
+ * - LLM chat testing → ChatService
+ * - SOLR testing → GuzzleSolrService
+ * - Cache operations → Cache services
+ *
+ * @category Controller
+ * @package  OCA\OpenRegister\Controller
  */
 class SettingsController extends Controller
 {
@@ -47,20 +128,24 @@ class SettingsController extends Controller
     /**
      * SettingsController constructor.
      *
-     * @param string             $appName         The name of the app
-     * @param IRequest           $request         The request object
-     * @param IAppConfig         $config          The app configuration
-     * @param ContainerInterface $container       The container
-     * @param IAppManager        $appManager      The app manager
-     * @param SettingsService    $settingsService The settings service
+     * @param string                  $appName                 The name of the app
+     * @param IRequest                $request                 The request object
+     * @param IAppConfig              $config                  The app configuration
+     * @param IDBConnection           $db                      The database connection
+     * @param ContainerInterface      $container               The container
+     * @param IAppManager             $appManager              The app manager
+     * @param SettingsService         $settingsService         The settings service
+     * @param VectorEmbeddingService  $vectorEmbeddingService  The vector embedding service
      */
     public function __construct(
         $appName,
         IRequest $request,
         private readonly IAppConfig $config,
+        private readonly IDBConnection $db,
         private readonly ContainerInterface $container,
         private readonly IAppManager $appManager,
         private readonly SettingsService $settingsService,
+        private readonly VectorEmbeddingService $vectorEmbeddingService,
     ) {
         parent::__construct($appName, $request);
 
@@ -2590,6 +2675,43 @@ class SettingsController extends Controller
     }
 
     /**
+     * Get Organisation settings only
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Organisation configuration
+     */
+    public function getOrganisationSettings(): JSONResponse
+    {
+        try {
+            $data = $this->settingsService->getOrganisationSettingsOnly();
+            return new JSONResponse($data);
+        } catch (\Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Update Organisation settings only
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Updated Organisation configuration
+     */
+    public function updateOrganisationSettings(): JSONResponse
+    {
+        try {
+            $data = $this->request->getParams();
+            $result = $this->settingsService->updateOrganisationSettingsOnly($data);
+            return new JSONResponse($result);
+        } catch (\Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
      * Get Multitenancy settings only
      *
      * @NoAdminRequired
@@ -2645,6 +2767,206 @@ class SettingsController extends Controller
     }
 
     /**
+     * Get Solr information and vector search capabilities
+     *
+     * Returns information about Solr availability, version, and vector search support.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Solr information
+     */
+    public function getSolrInfo(): JSONResponse
+    {
+        try {
+            $solrAvailable = false;
+            $solrVersion = 'Unknown';
+            $vectorSupport = false;
+            $collections = [];
+            $errorMessage = null;
+
+            // Check if Solr service is available
+            try {
+                // Get GuzzleSolrService from container
+                $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+                $solrAvailable = $guzzleSolrService->isAvailable();
+                
+                if ($solrAvailable) {
+                    // Get Solr system info
+                    $stats = $guzzleSolrService->getDashboardStats();
+                    
+                    // Try to detect version from Solr admin API
+                    // For now, assume if it's available, it could support vectors
+                    // TODO: Add actual version detection from Solr admin API
+                    $solrVersion = '9.x (detection pending)';
+                    $vectorSupport = false; // Set to false until we implement it
+                    
+                    // Get list of collections from Solr
+                    try {
+                        $collectionsList = $guzzleSolrService->listCollections();
+                        // Transform to format expected by frontend (array of objects with 'name' and 'id')
+                        $collections = array_map(function($collection) {
+                            return [
+                                'id' => $collection['name'],
+                                'name' => $collection['name'],
+                                'documentCount' => $collection['documentCount'] ?? 0,
+                                'shards' => $collection['shards'] ?? 0,
+                                'health' => $collection['health'] ?? 'unknown',
+                            ];
+                        }, $collectionsList);
+                    } catch (\Exception $e) {
+                        $this->logger->warning('[SettingsController] Failed to list Solr collections', [
+                            'error' => $e->getMessage(),
+                        ]);
+                        $collections = [];
+                    }
+                }
+            } catch (\Exception $e) {
+                $errorMessage = $e->getMessage();
+            }
+
+            return new JSONResponse([
+                'success' => true,
+                'solr' => [
+                    'available' => $solrAvailable,
+                    'version' => $solrVersion,
+                    'vectorSupport' => $vectorSupport,
+                    'collections' => $collections,
+                    'error' => $errorMessage,
+                ],
+            ]);
+            
+        } catch (\Exception $e) {
+            $this->logger->error('[SettingsController] Failed to get Solr info', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            
+            return new JSONResponse([
+                'success' => false,
+                'error' => 'Failed to get Solr information: ' . $e->getMessage(),
+            ], 500);
+        }
+    }//end getSolrInfo()
+
+    /**
+     * Get database information and vector search capabilities
+     *
+     * Returns information about the current database system and whether it
+     * supports native vector operations for optimal semantic search performance.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Database information
+     */
+    public function getDatabaseInfo(): JSONResponse
+    {
+        try {
+            // Get database platform information
+            $platform = $this->db->getDatabasePlatform();
+            $platformName = $platform->getName();
+            
+            // Determine database type and version
+            $dbType = 'Unknown';
+            $dbVersion = 'Unknown';
+            $vectorSupport = false;
+            $recommendedPlugin = null;
+            $performanceNote = null;
+            
+            if (strpos($platformName, 'mysql') !== false || strpos($platformName, 'mariadb') !== false) {
+                // Check if it's MariaDB or MySQL
+                try {
+                    $stmt = $this->db->prepare('SELECT VERSION()');
+                    $result = $stmt->execute();
+                    $version = $result->fetchOne();
+                    
+                    if (stripos($version, 'MariaDB') !== false) {
+                        $dbType = 'MariaDB';
+                        preg_match('/\d+\.\d+\.\d+/', $version, $matches);
+                        $dbVersion = $matches[0] ?? $version;
+                    } else {
+                        $dbType = 'MySQL';
+                        preg_match('/\d+\.\d+\.\d+/', $version, $matches);
+                        $dbVersion = $matches[0] ?? $version;
+                    }
+                } catch (\Exception $e) {
+                    $dbType = 'MySQL/MariaDB';
+                    $dbVersion = 'Unknown';
+                }
+                
+                // MariaDB/MySQL do not support native vector operations
+                $vectorSupport = false;
+                $recommendedPlugin = 'pgvector for PostgreSQL';
+                $performanceNote = 'Current: Similarity calculated in PHP (slow). Recommended: Migrate to PostgreSQL + pgvector for 10-100x speedup.';
+                
+            } elseif (strpos($platformName, 'postgres') !== false) {
+                $dbType = 'PostgreSQL';
+                
+                try {
+                    $stmt = $this->db->prepare('SELECT VERSION()');
+                    $result = $stmt->execute();
+                    $version = $result->fetchOne();
+                    preg_match('/PostgreSQL (\d+\.\d+)/', $version, $matches);
+                    $dbVersion = $matches[1] ?? 'Unknown';
+                } catch (\Exception $e) {
+                    $dbVersion = 'Unknown';
+                }
+                
+                // Check if pgvector extension is installed
+                try {
+                    $stmt = $this->db->prepare("SELECT COUNT(*) FROM pg_extension WHERE extname = 'vector'");
+                    $result = $stmt->execute();
+                    $hasVector = $result->fetchOne() > 0;
+                    
+                    if ($hasVector) {
+                        $vectorSupport = true;
+                        $recommendedPlugin = 'pgvector (installed ✓)';
+                        $performanceNote = 'Optimal: Using database-level vector operations for fast semantic search.';
+                    } else {
+                        $vectorSupport = false;
+                        $recommendedPlugin = 'pgvector (not installed)';
+                        $performanceNote = 'Install pgvector extension: CREATE EXTENSION vector;';
+                    }
+                } catch (\Exception $e) {
+                    $vectorSupport = false;
+                    $recommendedPlugin = 'pgvector (not found)';
+                    $performanceNote = 'Unable to detect pgvector. Install with: CREATE EXTENSION vector;';
+                }
+                
+            } elseif (strpos($platformName, 'sqlite') !== false) {
+                $dbType = 'SQLite';
+                $vectorSupport = false;
+                $recommendedPlugin = 'sqlite-vss or migrate to PostgreSQL';
+                $performanceNote = 'SQLite not recommended for production vector search.';
+            }
+            
+            return new JSONResponse([
+                'success' => true,
+                'database' => [
+                    'type' => $dbType,
+                    'version' => $dbVersion,
+                    'platform' => $platformName,
+                    'vectorSupport' => $vectorSupport,
+                    'recommendedPlugin' => $recommendedPlugin,
+                    'performanceNote' => $performanceNote,
+                ],
+            ]);
+            
+        } catch (\Exception $e) {
+            $this->logger->error('[SettingsController] Failed to get database info', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            
+            return new JSONResponse([
+                'success' => false,
+                'error' => 'Failed to get database information: ' . $e->getMessage(),
+            ], 500);
+        }
+    }//end getDatabaseInfo()
+
+    /**
      * Update LLM (Large Language Model) settings
      *
      * @NoAdminRequired
@@ -2689,7 +3011,141 @@ class SettingsController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
-    }
+    }//end updateLLMSettings()
+
+
+    /**
+     * Patch LLM settings (partial update)
+     *
+     * This is an alias for updateLLMSettings but specifically for PATCH requests.
+     * It provides the same functionality but is registered under a different route name
+     * to ensure PATCH verb is properly registered in Nextcloud routing.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Updated LLM settings
+     */
+    public function patchLLMSettings(): JSONResponse
+    {
+        return $this->updateLLMSettings();
+
+    }//end patchLLMSettings()
+
+
+    /**
+     * Test LLM embedding functionality
+     *
+     * Tests if the configured embedding provider works correctly
+     * by generating a test embedding vector.
+     * Accepts provider and config from the request to allow testing
+     * before saving the configuration.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Test result with embedding info
+     */
+    public function testEmbedding(): JSONResponse
+    {
+        try {
+            // Get parameters from request
+            $provider = (string) $this->request->getParam('provider');
+            $config = $this->request->getParam('config', []);
+            $testText = (string) $this->request->getParam('testText', 'This is a test embedding to verify the LLM configuration.');
+            
+            // Validate input
+            if (empty($provider) === true) {
+                return new JSONResponse([
+                    'success' => false,
+                    'error' => 'Missing provider',
+                    'message' => 'Provider is required for testing',
+                ], 400);
+            }
+            
+            if (empty($config) === true || is_array($config) === false) {
+                return new JSONResponse([
+                    'success' => false,
+                    'error' => 'Invalid config',
+                    'message' => 'Config must be provided as an object',
+                ], 400);
+            }
+            
+            // Delegate to VectorEmbeddingService for testing
+            $vectorService = $this->container->get('OCA\OpenRegister\Service\VectorEmbeddingService');
+            $result = $vectorService->testEmbedding($provider, $config, $testText);
+            
+            // Return appropriate status code
+            $statusCode = $result['success'] ? 200 : 400;
+            return new JSONResponse($result, $statusCode);
+
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'message' => 'Failed to generate embedding: ' . $e->getMessage(),
+            ], 400);
+        }//end try
+
+    }//end testEmbedding()
+
+
+    /**
+     * Test LLM chat functionality
+     *
+     * Tests if the configured chat provider works correctly
+     * by sending a simple test message and receiving a response.
+     * Accepts provider and config from the request to allow testing
+     * before saving the configuration.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Test result with chat response
+     */
+    public function testChat(): JSONResponse
+    {
+        try {
+            // Get parameters from request
+            $provider = (string) $this->request->getParam('provider');
+            $config = $this->request->getParam('config', []);
+            $testMessage = (string) $this->request->getParam('testMessage', 'Hello! Please respond with a brief greeting.');
+            
+            // Validate input
+            if (empty($provider) === true) {
+                return new JSONResponse([
+                    'success' => false,
+                    'error' => 'Missing provider',
+                    'message' => 'Provider is required for testing',
+                ], 400);
+            }
+            
+            if (empty($config) === true || is_array($config) === false) {
+                return new JSONResponse([
+                    'success' => false,
+                    'error' => 'Invalid config',
+                    'message' => 'Config must be provided as an object',
+                ], 400);
+            }
+            
+            // Delegate to ChatService for testing
+            $chatService = $this->container->get('OCA\OpenRegister\Service\ChatService');
+            $result = $chatService->testChat($provider, $config, $testMessage);
+            
+            // Return appropriate status code
+            $statusCode = $result['success'] ? 200 : 400;
+            return new JSONResponse($result, $statusCode);
+
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'message' => 'Failed to test chat: ' . $e->getMessage(),
+            ], 400);
+        }//end try
+
+    }//end testChat()
+
 
     /**
      * Get File Management settings
@@ -2707,7 +3163,8 @@ class SettingsController extends Controller
         } catch (\Exception $e) {
             return new JSONResponse(['error' => $e->getMessage()], 500);
         }
-    }
+
+    }//end getFileSettings()
 
     /**
      * Test Dolphin API connection
@@ -2774,6 +3231,151 @@ class SettingsController extends Controller
     }
 
     /**
+     * Get available Ollama models from the configured Ollama instance
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse List of available models
+     */
+    public function getOllamaModels(): JSONResponse
+    {
+        try {
+            // Get Ollama URL from settings
+            $settings = $this->settingsService->getLLMSettingsOnly();
+            $ollamaUrl = $settings['ollamaConfig']['url'] ?? 'http://localhost:11434';
+            
+            // Call Ollama API to get available models
+            $apiUrl = rtrim($ollamaUrl, '/') . '/api/tags';
+            
+            $ch = curl_init($apiUrl);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT => 5,
+                CURLOPT_FOLLOWLOCATION => true,
+            ]);
+            
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlError = curl_error($ch);
+            curl_close($ch);
+            
+            if ($curlError) {
+                return new JSONResponse([
+                    'success' => false,
+                    'error' => 'Failed to connect to Ollama: ' . $curlError,
+                    'models' => []
+                ]);
+            }
+            
+            if ($httpCode !== 200) {
+                return new JSONResponse([
+                    'success' => false,
+                    'error' => "Ollama API returned HTTP {$httpCode}",
+                    'models' => []
+                ]);
+            }
+            
+            $data = json_decode($response, true);
+            if (!isset($data['models']) || !is_array($data['models'])) {
+                return new JSONResponse([
+                    'success' => false,
+                    'error' => 'Unexpected response from Ollama API',
+                    'models' => []
+                ]);
+            }
+            
+            // Format models for frontend dropdown
+            $models = array_map(function($model) {
+                $name = $model['name'] ?? 'unknown';
+                $size = isset($model['size']) ? $this->formatBytes($model['size']) : '';
+                $family = $model['details']['family'] ?? '';
+                
+                // Build description
+                $description = $family;
+                if ($size) {
+                    $description .= ($description ? ' • ' : '') . $size;
+                }
+                
+                return [
+                    'id' => $name,
+                    'name' => $name,
+                    'description' => $description,
+                    'size' => $model['size'] ?? 0,
+                    'modified' => $model['modified_at'] ?? null,
+                ];
+            }, $data['models']);
+            
+            // Sort by name
+            usort($models, function($a, $b) {
+                return strcmp($a['name'], $b['name']);
+            });
+            
+            return new JSONResponse([
+                'success' => true,
+                'models' => $models,
+                'count' => count($models),
+            ]);
+            
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'models' => []
+            ], 500);
+        }
+    }
+
+    /**
+     * Check if embedding model has changed and vectors need regeneration
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Mismatch status
+     */
+    public function checkEmbeddingModelMismatch(): JSONResponse
+    {
+        try {
+            $result = $this->vectorEmbeddingService->checkEmbeddingModelMismatch();
+            
+            return new JSONResponse($result);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'has_vectors' => false,
+                'mismatch' => false,
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Clear all embeddings from the database
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Result with deleted count
+     */
+    public function clearAllEmbeddings(): JSONResponse
+    {
+        try {
+            $result = $this->vectorEmbeddingService->clearAllEmbeddings();
+            
+            if ($result['success']) {
+                return new JSONResponse($result);
+            } else {
+                return new JSONResponse($result, 500);
+            }
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Update File Management settings
      *
      * @NoAdminRequired
@@ -2799,6 +3401,30 @@ class SettingsController extends Controller
                 'success' => true,
                 'message' => 'File settings updated successfully',
                 'data' => $result
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get Object settings only
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Object configuration
+     */
+    public function getObjectSettings(): JSONResponse
+    {
+        try {
+            $settings = $this->settingsService->getObjectSettingsOnly();
+            return new JSONResponse([
+                'success' => true,
+                'data' => $settings
             ]);
         } catch (\Exception $e) {
             return new JSONResponse([
@@ -2838,6 +3464,19 @@ class SettingsController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * PATCH Object settings (delegates to updateObjectSettings)
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Updated settings
+     */
+    public function patchObjectSettings(): JSONResponse
+    {
+        return $this->updateObjectSettings();
     }
 
     /**
@@ -3834,6 +4473,281 @@ class SettingsController extends Controller
                 'message' => 'Failed to get statistics: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Get file extraction statistics
+     * 
+     * Combines multiple data sources for comprehensive file statistics:
+     * - FileMapper: Total files in Nextcloud (from oc_filecache, bypasses rights logic)
+     * - FileTextMapper: Extraction status (from oc_openregister_file_texts)
+     * - GuzzleSolrService: Chunk statistics (from SOLR index)
+     * 
+     * This provides accurate statistics without dealing with Nextcloud's extensive rights logic.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse File extraction statistics including:
+     *                      - totalFiles: All files in Nextcloud (from oc_filecache)
+     *                      - processedFiles: Files tracked in extraction system (from oc_openregister_file_texts)
+     *                      - pendingFiles: Files discovered and waiting for extraction (status='pending')
+     *                      - untrackedFiles: Files in Nextcloud not yet discovered
+     *                      - totalChunks: Number of text chunks in SOLR (one file = multiple chunks)
+     *                      - completed, failed, indexed, processing, vectorized: Detailed processing status counts
+     */
+    public function getFileExtractionStats(): JSONResponse
+    {
+        try {
+            // Get total files from Nextcloud filecache (bypasses rights logic)
+            $fileMapper = $this->container->get(\OCA\OpenRegister\Db\FileMapper::class);
+            $totalFilesInNextcloud = $fileMapper->countAllFiles();
+            $totalFilesSize = $fileMapper->getTotalFilesSize();
+
+            // Get extraction statistics from our file_texts table
+            $fileTextMapper = $this->container->get(\OCA\OpenRegister\Db\FileTextMapper::class);
+            $dbStats = $fileTextMapper->getStats();
+
+            // Get SOLR statistics
+            $guzzleSolrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
+            $solrStats = $guzzleSolrService->getFileIndexStats();
+
+            // Calculate storage in MB
+            $extractedTextStorageMB = round($dbStats['total_text_size'] / 1024 / 1024, 2);
+            $totalFilesStorageMB = round($totalFilesSize / 1024 / 1024, 2);
+
+            // Calculate untracked files (files in Nextcloud not yet discovered)
+            $untrackedFiles = $totalFilesInNextcloud - $dbStats['total'];
+            
+            return new JSONResponse([
+                'success' => true,
+                'totalFiles' => $totalFilesInNextcloud,
+                'processedFiles' => $dbStats['completed'], // Files successfully extracted (status='completed')
+                'pendingFiles' => $dbStats['pending'], // Files discovered and waiting for extraction
+                'untrackedFiles' => max(0, $untrackedFiles), // Files not yet discovered
+                'totalChunks' => $solrStats['total_chunks'] ?? 0,
+                'extractedTextStorageMB' => number_format($extractedTextStorageMB, 2),
+                'totalFilesStorageMB' => number_format($totalFilesStorageMB, 2),
+                'completed' => $dbStats['completed'],
+                'failed' => $dbStats['failed'],
+                'indexed' => $dbStats['indexed'],
+                'processing' => $dbStats['processing'],
+                'vectorized' => $dbStats['vectorized'],
+            ]);
+
+        } catch (\Exception $e) {
+            // Return zeros instead of error to avoid breaking UI
+            return new JSONResponse([
+                'success' => true,
+                'totalFiles' => 0,
+                'processedFiles' => 0,
+                'pendingFiles' => 0,
+                'untrackedFiles' => 0,
+                'totalChunks' => 0,
+                'extractedTextStorageMB' => '0.00',
+                'totalFilesStorageMB' => '0.00',
+                'completed' => 0,
+                'failed' => 0,
+                'indexed' => 0,
+                'processing' => 0,
+                'vectorized' => 0,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Get API tokens for GitHub and GitLab
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse The API tokens
+     */
+    public function getApiTokens(): JSONResponse
+    {
+        try {
+            $githubToken = $this->config->getValueString('openregister', 'github_api_token', '');
+            $gitlabToken = $this->config->getValueString('openregister', 'gitlab_api_token', '');
+            $gitlabUrl = $this->config->getValueString('openregister', 'gitlab_api_url', '');
+
+            // Mask tokens for security (only show first/last few characters)
+            $maskedGithubToken = $githubToken ? $this->maskToken($githubToken) : '';
+            $maskedGitlabToken = $gitlabToken ? $this->maskToken($gitlabToken) : '';
+
+            return new JSONResponse([
+                'github_token' => $maskedGithubToken,
+                'gitlab_token' => $maskedGitlabToken,
+                'gitlab_url' => $gitlabUrl,
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'error' => 'Failed to retrieve API tokens: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Save API tokens for GitHub and GitLab
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Success or error message
+     */
+    public function saveApiTokens(): JSONResponse
+    {
+        try {
+            $data = $this->request->getParams();
+
+            if (isset($data['github_token'])) {
+                // Only save if not masked
+                if (!str_contains($data['github_token'], '***')) {
+                    $this->config->setValueString('openregister', 'github_api_token', $data['github_token']);
+                }
+            }
+
+            if (isset($data['gitlab_token'])) {
+                // Only save if not masked
+                if (!str_contains($data['gitlab_token'], '***')) {
+                    $this->config->setValueString('openregister', 'gitlab_api_token', $data['gitlab_token']);
+                }
+            }
+
+            if (isset($data['gitlab_url'])) {
+                $this->config->setValueString('openregister', 'gitlab_api_url', $data['gitlab_url']);
+            }
+
+            return new JSONResponse([
+                'success' => true,
+                'message' => 'API tokens saved successfully'
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'error' => 'Failed to save API tokens: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Test GitHub API token
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Test result
+     */
+    public function testGitHubToken(): JSONResponse
+    {
+        try {
+            $data = $this->request->getParams();
+            $token = $data['token'] ?? $this->config->getValueString('openregister', 'github_api_token', '');
+            
+            if (empty($token)) {
+                return new JSONResponse([
+                    'success' => false,
+                    'message' => 'No GitHub token provided'
+                ], 400);
+            }
+
+            // Test the token by making a simple API call
+            $client = \OC::$server->get(\OCP\Http\Client\IClientService::class)->newClient();
+            $response = $client->get('https://api.github.com/user', [
+                'headers' => [
+                    'Accept' => 'application/vnd.github+json',
+                    'Authorization' => 'Bearer ' . $token,
+                    'X-GitHub-Api-Version' => '2022-11-28',
+                ]
+            ]);
+
+            $data = json_decode($response->getBody(), true);
+            
+            return new JSONResponse([
+                'success' => true,
+                'message' => 'GitHub token is valid',
+                'username' => $data['login'] ?? 'Unknown',
+                'scopes' => $response->getHeader('X-OAuth-Scopes') ?? []
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'message' => 'GitHub token test failed: ' . $e->getMessage()
+            ], 400);
+        }
+    }
+
+    /**
+     * Test GitLab API token
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Test result
+     */
+    public function testGitLabToken(): JSONResponse
+    {
+        try {
+            $data = $this->request->getParams();
+            $token = $data['token'] ?? $this->config->getValueString('openregister', 'gitlab_api_token', '');
+            $apiUrl = $data['url'] ?? $this->config->getValueString('openregister', 'gitlab_api_url', 'https://gitlab.com/api/v4');
+            
+            if (empty($token)) {
+                return new JSONResponse([
+                    'success' => false,
+                    'message' => 'No GitLab token provided'
+                ], 400);
+            }
+
+            // Ensure API URL doesn't end with slash
+            $apiUrl = rtrim($apiUrl, '/');
+            
+            // Default to gitlab.com if no URL provided
+            if (empty($apiUrl)) {
+                $apiUrl = 'https://gitlab.com/api/v4';
+            }
+
+            // Test the token by making a simple API call
+            $client = \OC::$server->get(\OCP\Http\Client\IClientService::class)->newClient();
+            $response = $client->get($apiUrl . '/user', [
+                'headers' => [
+                    'PRIVATE-TOKEN' => $token,
+                ]
+            ]);
+
+            $data = json_decode($response->getBody(), true);
+            
+            return new JSONResponse([
+                'success' => true,
+                'message' => 'GitLab token is valid',
+                'username' => $data['username'] ?? 'Unknown',
+                'instance' => $apiUrl
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'success' => false,
+                'message' => 'GitLab token test failed: ' . $e->getMessage()
+            ], 400);
+        }
+    }
+
+    /**
+     * Mask sensitive token for display
+     *
+     * @param string $token The token to mask
+     *
+     * @return string The masked token
+     */
+    private function maskToken(string $token): string
+    {
+        if (strlen($token) <= 8) {
+            return str_repeat('*', strlen($token));
+        }
+
+        $start = substr($token, 0, 4);
+        $end = substr($token, -4);
+        $middle = str_repeat('*', min(20, strlen($token) - 8));
+
+        return $start . $middle . $end;
     }
 
 }//end class

@@ -64,25 +64,6 @@ class DeletedController extends Controller
 
     }//end __construct()
 
-	/**
-	 * This returns the template of the main app's page
-	 * It adds some data to the template (app version)
-	 *
-	 * @NoAdminRequired
-	 * @NoCSRFRequired
-	 *
-	 * @return TemplateResponse
-	 */
-	public function page(): TemplateResponse
-	{
-        return new TemplateResponse(
-            //Application::APP_ID,
-            'openregister',
-            'index',
-            []
-        );
-	}
-
     /**
      * Helper method to extract request parameters for deleted objects
      *

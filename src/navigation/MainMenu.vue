@@ -1,9 +1,17 @@
 <template>
 	<NcAppNavigation>
+		<NcAppNavigationNew
+			:text="activeOrganisationName"
+			@click="handleNavigate('/')">
+			<template #icon>
+				<Finance :size="20" />
+			</template>
+		</NcAppNavigationNew>
+
 		<NcAppNavigationList>
-			<NcAppNavigationItem :active="$route.path === '/'" :name="t('openregister', 'Dashboard')" @click="handleNavigate('/')">
+			<NcAppNavigationItem :active="$route.path.startsWith('/chat')" :name="t('openregister', 'AI Chat')" @click="handleNavigate('/chat')">
 				<template #icon>
-					<Finance :size="20" />
+					<MessageTextOutline :size="20" />
 				</template>
 			</NcAppNavigationItem>
 			<NcAppNavigationItem :active="$route.path.startsWith('/registers')" :name="t('openregister', 'Registers')" @click="handleNavigate('/registers')">
@@ -16,27 +24,37 @@
 					<FileTreeOutline :size="20" />
 				</template>
 			</NcAppNavigationItem>
-			<NcAppNavigationItem :active="$route.path.startsWith('/tables')" :name="t('openregister', 'Tables')" @click="handleNavigate('/tables')">
+			<NcAppNavigationItem :active="$route.path.startsWith('/tables')" :name="t('openregister', 'Search / Views')" @click="handleNavigate('/tables')">
 				<template #icon>
-					<TableMultiple :size="20" />
+					<Magnify :size="20" />
 				</template>
 			</NcAppNavigationItem>
-			<NcAppNavigationItem :active="$route.path.startsWith('/chat')" :name="t('openregister', 'AI Chat')" @click="handleNavigate('/chat')">
+			<NcAppNavigationItem :active="$route.path.startsWith('/files')" :name="t('openregister', 'Files')" @click="handleNavigate('/files')">
 				<template #icon>
-					<Robot :size="20" />
+					<FileDocumentMultipleOutline :size="20" />
 				</template>
 			</NcAppNavigationItem>
-			<!-- <NcAppNavigationItem :active="$route.path.startsWith('/search')" name="Search" @click="handleNavigate('/search')">
+			<NcAppNavigationItem :active="$route.path.startsWith('/agents')" :name="t('openregister', 'Agents')" @click="handleNavigate('/agents')">
 				<template #icon>
-					<LayersSearchOutline :size="20" />
+					<RobotOutline :size="20" />
 				</template>
-			</NcAppNavigationItem> -->
+			</NcAppNavigationItem>
+		<!-- <NcAppNavigationItem :active="$route.path.startsWith('/search')" name="Search" @click="handleNavigate('/search')">
+			<template #icon>
+				<LayersSearchOutline :size="20" />
+			</template>
+		</NcAppNavigationItem> -->
 		</NcAppNavigationList>
 
 		<NcAppNavigationSettings>
 			<NcAppNavigationItem :active="$route.path.startsWith('/organisation')" :name="t('openregister', 'Organisations')" @click="handleNavigate('/organisation')">
 				<template #icon>
 					<OfficeBuildingOutline :size="20" />
+				</template>
+			</NcAppNavigationItem>
+			<NcAppNavigationItem :active="$route.path.startsWith('/applications')" :name="t('openregister', 'Applications')" @click="handleNavigate('/applications')">
+				<template #icon>
+					<ApplicationOutline :size="20" />
 				</template>
 			</NcAppNavigationItem>
 			<NcAppNavigationItem :active="$route.path.startsWith('/sources')" :name="t('openregister', 'Data sources')" @click="handleNavigate('/sources')">
@@ -75,6 +93,7 @@ import {
 	NcAppNavigationList,
 	NcAppNavigationSettings,
 	NcAppNavigationItem,
+	NcAppNavigationNew,
 } from '@nextcloud/vue'
 
 // Icons
@@ -82,14 +101,19 @@ import Finance from 'vue-material-design-icons/Finance.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
 import OfficeBuildingOutline from 'vue-material-design-icons/OfficeBuildingOutline.vue'
+import ApplicationOutline from 'vue-material-design-icons/ApplicationOutline.vue'
 import DatabaseArrowRightOutline from 'vue-material-design-icons/DatabaseArrowRightOutline.vue'
-// import LayersSearchOutline from 'vue-material-design-icons/LayersSearchOutline.vue'
-import TableMultiple from 'vue-material-design-icons/TableMultiple.vue'
-import Robot from 'vue-material-design-icons/Robot.vue'
+import Magnify from 'vue-material-design-icons/Magnify.vue'
+import MessageTextOutline from 'vue-material-design-icons/MessageTextOutline.vue'
+import RobotOutline from 'vue-material-design-icons/RobotOutline.vue'
+import FileDocumentMultipleOutline from 'vue-material-design-icons/FileDocumentMultipleOutline.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import DeleteRestore from 'vue-material-design-icons/DeleteRestore.vue'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 import MagnifyPlus from 'vue-material-design-icons/MagnifyPlus.vue'
+
+// Store
+import { organisationStore } from '../store/store.js'
 
 export default {
 	name: 'MainMenu',
@@ -99,19 +123,38 @@ export default {
 		NcAppNavigationList,
 		NcAppNavigationItem,
 		NcAppNavigationSettings,
+		NcAppNavigationNew,
 		// icons
 		Finance,
 		DatabaseOutline,
 		DatabaseArrowRightOutline,
 		FileTreeOutline,
 		OfficeBuildingOutline,
-		TableMultiple,
-		Robot,
-		// LayersSearchOutline,
+		ApplicationOutline,
+		Magnify,
+		MessageTextOutline,
+		RobotOutline,
+		FileDocumentMultipleOutline,
 		CogOutline,
 		DeleteRestore,
 		TextBoxOutline,
 		MagnifyPlus,
+	},
+	computed: {
+		/**
+		 * Get the active organisation name to display in navigation.
+		 * Shows the current organisational context for the user.
+		 *
+		 * @return {string} The active organisation name or a fallback
+		 */
+		activeOrganisationName() {
+			const activeOrg = organisationStore.activeOrganisation
+			if (activeOrg && activeOrg.name) {
+				return activeOrg.name
+			}
+			// Fallback if no organisation is active
+			return t('openregister', 'No Organisation')
+		},
 	},
 	methods: {
 		t,

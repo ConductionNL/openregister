@@ -31,6 +31,7 @@ use OCA\OpenRegister\Service\SchemaFacetCacheService;
 use OCA\OpenRegister\Service\SchemaService;
 use OCA\OpenRegister\Service\UploadService;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\DB\Exception as DBException;
@@ -86,35 +87,10 @@ class SchemasController extends Controller
 
     }//end __construct()
 
-
-    /**
-     * Returns the template of the main app's page
-     *
-     * This method renders the main page of the application, adding any necessary data to the template.
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @return TemplateResponse The rendered template response
-     */
-    public function page(): TemplateResponse
-    {
-        return new TemplateResponse(
-            'openregister',
-            'index',
-            []
-        );
-
-    }//end page()
-
-
     /**
      * Retrieves a list of all schemas
      *
      * This method returns a JSON response containing an array of all schemas in the system.
-     *
-     * @param ObjectService $objectService The object service
      *
      * @return JSONResponse A JSON response containing the list of schemas
      *
@@ -122,26 +98,45 @@ class SchemasController extends Controller
      *
      * @NoCSRFRequired
      */
-    public function index(
-        ObjectService $objectService
-    ): JSONResponse {
+    public function index(): JSONResponse {
         // Get request parameters for filtering and searching.
-        $filters = $this->request->getParam(key: 'filters', default: []);
-        $search  = $this->request->getParam(key: '_search', default: '');
-        $extend  = $this->request->getParam(key: '_extend', default: []);
+        $params = $this->request->getParams();
+        
+        // Extract pagination and search parameters
+        $limit  = isset($params['_limit']) ? (int) $params['_limit'] : null;
+        $offset = isset($params['_offset']) ? (int) $params['_offset'] : null;
+        $page   = isset($params['_page']) ? (int) $params['_page'] : null;
+        $search = $params['_search'] ?? '';
+        $extend = $params['_extend'] ?? [];
         if (is_string($extend)) {
             $extend = [$extend];
         }
+        
+        // Convert page to offset if provided
+        if ($page !== null && $limit !== null) {
+            $offset = ($page - 1) * $limit;
+        }
+        
+        // Extract filters
+        $filters = $params['filters'] ?? [];
 
         $schemas    = $this->schemaMapper->findAll(
-            limit: null,
-            offset: null,
+            limit: $limit,
+            offset: $offset,
             filters: $filters,
             searchConditions: [],
             searchParams: [],
             extend: []
         );
         $schemasArr = array_map(fn($schema) => $schema->jsonSerialize(), $schemas);
+        
+        // Add extendedBy property to each schema showing UUIDs of schemas that extend it
+        foreach ($schemasArr as &$schema) {
+            $schema['@self'] = $schema['@self'] ?? [];
+            $schema['@self']['extendedBy'] = $this->schemaMapper->findExtendedBy($schema['id']);
+        }
+        unset($schema); // Break the reference
+        
         // If '@self.stats' is requested, attach statistics to each schema
         if (in_array('@self.stats', $extend, true)) {
             // Get register counts for all schemas in one call
@@ -181,6 +176,11 @@ class SchemasController extends Controller
 
         $schema    = $this->schemaMapper->find($id, []);
         $schemaArr = $schema->jsonSerialize();
+        
+        // Add extendedBy property showing UUIDs of schemas that extend this schema
+        $schemaArr['@self'] = $schemaArr['@self'] ?? [];
+        $schemaArr['@self']['extendedBy'] = $this->schemaMapper->findExtendedBy($id);
+        
         // If '@self.stats' is requested, attach statistics to the schema
         if (in_array('@self.stats', $extend, true)) {
             // Get register counts for all schemas in one call
@@ -306,10 +306,11 @@ class SchemasController extends Controller
             }
         }
 
-        // Remove ID if present to prevent conflicts.
-        if (isset($data['id']) === true) {
-            unset($data['id']);
-        }
+        // Remove immutable fields to prevent tampering
+        unset($data['id']);
+        unset($data['organisation']);
+        unset($data['owner']);
+        unset($data['created']);
 
         try {
             // Update the schema with the provided data.
@@ -361,6 +362,23 @@ class SchemasController extends Controller
         }//end try
 
     }//end update()
+
+
+    /**
+     * Patch (partially update) a schema
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param int $id The ID of the schema to patch
+     *
+     * @return JSONResponse The updated schema data
+     */
+    public function patch(int $id): JSONResponse
+    {
+        return $this->update($id);
+
+    }//end patch()
 
 
     /**
@@ -753,6 +771,115 @@ class SchemasController extends Controller
             return new JSONResponse(['error' => $e->getMessage()], 500);
         }
     }
+
+
+    /**
+     * Publish a schema
+     *
+     * This method publishes a schema by setting its publication date to now or a specified date.
+     *
+     * @param int $id The ID of the schema to publish
+     *
+     * @return JSONResponse A JSON response containing the published schema
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function publish(int $id): JSONResponse
+    {
+        try {
+            // Get the publication date from request if provided, otherwise use now
+            $date = null;
+            if ($this->request->getParam('date') !== null) {
+                $date = new \DateTime($this->request->getParam('date'));
+            } else {
+                $date = new \DateTime();
+            }
+
+            // Get the schema
+            $schema = $this->schemaMapper->find($id);
+            
+            // Set published date and clear depublished date if set
+            $schema->setPublished($date);
+            $schema->setDepublished(null);
+            
+            // Update the schema
+            $updatedSchema = $this->schemaMapper->update($schema);
+            
+            // **CACHE INVALIDATION**: Clear schema cache when publication status changes
+            $this->schemaCacheService->invalidateForSchemaChange($updatedSchema->getId(), 'publish');
+            $this->schemaFacetCacheService->invalidateForSchemaChange($updatedSchema->getId(), 'publish');
+            
+            $this->logger->info('Schema published', [
+                'schema_id' => $id,
+                'published_date' => $date->format('Y-m-d H:i:s')
+            ]);
+
+            return new JSONResponse($updatedSchema->jsonSerialize());
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(['error' => 'Schema not found'], 404);
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to publish schema', [
+                'schema_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+            return new JSONResponse(['error' => $e->getMessage()], 400);
+        }
+    }//end publish()
+
+
+    /**
+     * Depublish a schema
+     *
+     * This method depublishes a schema by setting its depublication date to now or a specified date.
+     *
+     * @param int $id The ID of the schema to depublish
+     *
+     * @return JSONResponse A JSON response containing the depublished schema
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function depublish(int $id): JSONResponse
+    {
+        try {
+            // Get the depublication date from request if provided, otherwise use now
+            $date = null;
+            if ($this->request->getParam('date') !== null) {
+                $date = new \DateTime($this->request->getParam('date'));
+            } else {
+                $date = new \DateTime();
+            }
+
+            // Get the schema
+            $schema = $this->schemaMapper->find($id);
+            
+            // Set depublished date
+            $schema->setDepublished($date);
+            
+            // Update the schema
+            $updatedSchema = $this->schemaMapper->update($schema);
+            
+            // **CACHE INVALIDATION**: Clear schema cache when publication status changes
+            $this->schemaCacheService->invalidateForSchemaChange($updatedSchema->getId(), 'depublish');
+            $this->schemaFacetCacheService->invalidateForSchemaChange($updatedSchema->getId(), 'depublish');
+            
+            $this->logger->info('Schema depublished', [
+                'schema_id' => $id,
+                'depublished_date' => $date->format('Y-m-d H:i:s')
+            ]);
+
+            return new JSONResponse($updatedSchema->jsonSerialize());
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(['error' => 'Schema not found'], 404);
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to depublish schema', [
+                'schema_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+            return new JSONResponse(['error' => $e->getMessage()], 400);
+        }
+    }//end depublish()
 
 
 }//end class

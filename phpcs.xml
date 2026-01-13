@@ -2,13 +2,13 @@
 <ruleset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="PHP_CodeSniffer" xsi:noNamespaceSchemaLocation="phpcs.xsd">
     <description>The coding standard for PHP_CodeSniffer itself, for more config -> for https://github.com/squizlabs/PHP_CodeSniffer/wiki/Configuration-Options.</description>
 
-    <file>README.md</file>
-    <file>src</file>
     <file>lib</file>
 
     <arg name="basepath" value="."/>
     <arg name="colors"/>
     <arg name="parallel" value="75"/>
+    <arg name="extensions" value="php"/>
+    <arg value="p"/>
 
     <!-- Don't hide tokenizer exceptions -->
     <rule ref="Internal.Tokenizer.Exception">

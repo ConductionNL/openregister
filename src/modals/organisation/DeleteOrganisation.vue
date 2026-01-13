@@ -99,11 +99,11 @@ export default {
 			return organisationStore.organisationItem?.owner === currentUser
 		},
 		hasMembers() {
-			// Check if organisation has members (excluding the owner)
-			return (organisationStore.organisationItem?.userCount || 0) > 1
+		// Check if organisation has members (excluding the owner)
+			return (organisationStore.organisationItem?.users?.length || 0) > 1
 		},
 		memberCount() {
-			return organisationStore.organisationItem?.userCount || 0
+			return organisationStore.organisationItem?.users?.length || 0
 		},
 		isActiveOrganisation() {
 			// Check if this is the currently active organisation

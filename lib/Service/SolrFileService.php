@@ -45,6 +45,12 @@ class SolrFileService
     private const DEFAULT_CHUNK_OVERLAP = 200;    // tokens
     private const MAX_CHUNKS_PER_FILE = 1000;     // safety limit
     private const MIN_CHUNK_SIZE = 100;           // tokens
+    
+    /**
+     * Chunking strategies
+     */
+    private const RECURSIVE_CHARACTER = 'RECURSIVE_CHARACTER';
+    private const FIXED_SIZE = 'FIXED_SIZE';
 
     /**
      * Lazy-loaded FileTextService to break circular dependency

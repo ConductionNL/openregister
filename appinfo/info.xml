@@ -47,6 +47,7 @@ Create a [feature request](https://github.com/OpenRegister/.github/issues/new/ch
 
 	<background-jobs>
 		<job>OCA\OpenRegister\Cron\LogCleanUpTask</job>
+		<job>OCA\OpenRegister\Cron\ConfigurationCheckJob</job>
 	</background-jobs>
 
     <navigations>
@@ -55,6 +56,7 @@ Create a [feature request](https://github.com/OpenRegister/.github/issues/new/ch
             <name>Register</name>
             <route>openregister.dashboard.page</route>
             <icon>app.svg</icon>
+            <type>link</type>
         </navigation>
     </navigations>
 
@@ -67,4 +69,8 @@ Create a [feature request](https://github.com/OpenRegister/.github/issues/new/ch
 		<command>OCA\OpenRegister\Command\SolrDebugCommand</command>
 		<command>OCA\OpenRegister\Command\SolrManagementCommand</command>
 	</commands>
+
+	<notification>
+		<service>OCA\OpenRegister\Notification\Notifier</service>
+	</notification>
 </info>

@@ -1,0 +1,144 @@
+version: "3.5"
+volumes:
+  nextcloud:
+  apps:
+  db:
+  config:
+  solr:
+  ollama:
+  presidio-models:
+
+services:
+  db:
+    image: mariadb:10.6
+    restart: always
+    command: --transaction-isolation=READ-COMMITTED --log-bin=binlog --binlog-format=ROW
+    volumes:
+      - db:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD='!ChangeMe!'
+      - MYSQL_PASSWORD='!ChangeMe!'
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+
+  # Solr in standalone mode
+  solr:
+    image: solr:9-slim
+    container_name: openregister-solr
+    restart: always
+    ports:
+      - "8983:8983"
+    volumes:
+      - solr:/var/solr
+    environment:
+      - SOLR_HEAP=512m
+    command:
+      - solr-foreground
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8983/solr/admin/info/system || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Ollama for local LLM inference
+  ollama:
+    image: ollama/ollama:latest
+    container_name: openregister-ollama
+    restart: always
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+      # Development: Allow more concurrent requests for testing
+      - OLLAMA_NUM_PARALLEL=4
+      # Keep models loaded longer during development
+      - OLLAMA_KEEP_ALIVE=30m
+    # Memory limits for larger models (Llama 3.2 8B, Mistral, etc.)
+    # GPU support enabled for NVIDIA GPUs
+    deploy:
+      resources:
+        limits:
+          memory: 16G  # Sufficient for 8B models
+        reservations:
+          memory: 8G   # Minimum required
+          devices:
+            - driver: nvidia
+              count: all  # Use all available GPUs
+              capabilities: [gpu]
+    # Shared memory for model loading
+    shm_size: '2gb'
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:11434/api/tags || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Presidio Analyzer for PII detection and NER (Development)
+  presidio-analyzer:
+    image: mcr.microsoft.com/presidio-analyzer:latest
+    container_name: openregister-presidio-analyzer-dev
+    restart: always
+    ports:
+      - "5001:5001"
+    environment:
+      - GRPC_PORT=5001
+      - LOG_LEVEL=DEBUG  # More verbose logging for development
+      - PRESIDIO_ANALYZER_LANGUAGES=en,nl,de,fr,es
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 512M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5001/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  nextcloud:
+    user: root
+    container_name: nextcloud-dev
+    image: nextcloud
+    restart: always
+    ports:
+      - 8080:80
+    links:
+      - db
+      - solr
+      - ollama
+      - presidio-analyzer
+    volumes:
+      - nextcloud:/var/www/html:rw
+      - ./custom_apps:/var/www/html/custom_apps
+      - .:/var/www/html/custom_apps/openregister
+      - ./docker/entrypoint-openregister-dev.sh:/entrypoint-openregister.sh:ro
+    environment:
+      - MYSQL_PASSWORD='!ChangeMe!'
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+      - MYSQL_HOST=db
+      - TZ=Europe/Amsterdam
+      - NEXTCLOUD_ADMIN_USER=admin
+      - NEXTCLOUD_ADMIN_PASSWORD=admin
+      # PHP Configuration - Match production settings
+      - PHP_MEMORY_LIMIT=4G
+      - PHP_UPLOAD_LIMIT=2G
+      - PHP_POST_MAX_SIZE=2G
+    command: >
+      bash -c "
+      /entrypoint.sh apache2-foreground &
+      NEXTCLOUD_PID=$$!
+      chmod +x /entrypoint-openregister.sh
+      /entrypoint-openregister.sh &
+      wait $$NEXTCLOUD_PID
+      "
+    depends_on:
+      - db
+      - solr
+      - ollama
+

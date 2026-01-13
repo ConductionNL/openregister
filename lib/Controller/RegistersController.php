@@ -31,6 +31,9 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
+use OCA\OpenRegister\Service\GitHubService;
+use OCA\OpenRegister\Service\OasService;
+use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -91,6 +94,27 @@ class RegistersController extends Controller
      */
     private readonly RegisterMapper $registerMapper;
 
+    /**
+     * GitHub service for publishing to GitHub
+     *
+     * @var GitHubService
+     */
+    private readonly GitHubService $githubService;
+
+    /**
+     * App manager for getting app version
+     *
+     * @var IAppManager
+     */
+    private readonly IAppManager $appManager;
+
+    /**
+     * OAS service for generating OpenAPI specifications
+     *
+     * @var OasService
+     */
+    private readonly OasService $oasService;
+
 
     /**
      * Constructor for the RegistersController
@@ -107,6 +131,9 @@ class RegistersController extends Controller
      * @param ImportService        $importService        The import service
      * @param SchemaMapper         $schemaMapper         The schema mapper
      * @param RegisterMapper       $registerMapper       The register mapper
+     * @param GitHubService        $githubService        GitHub service
+     * @param IAppManager          $appManager           App manager
+     * @param OasService           $oasService           OAS service
      *
      * @return void
      */
@@ -123,7 +150,10 @@ class RegistersController extends Controller
         ExportService $exportService,
         ImportService $importService,
         SchemaMapper $schemaMapper,
-        RegisterMapper $registerMapper
+        RegisterMapper $registerMapper,
+        GitHubService $githubService,
+        IAppManager $appManager,
+        OasService $oasService
     ) {
         parent::__construct($appName, $request);
         $this->configurationService = $configurationService;
@@ -132,38 +162,16 @@ class RegistersController extends Controller
         $this->importService        = $importService;
         $this->schemaMapper         = $schemaMapper;
         $this->registerMapper       = $registerMapper;
+        $this->githubService        = $githubService;
+        $this->appManager           = $appManager;
+        $this->oasService           = $oasService;
 
     }//end __construct()
-
-
-    /**
-     * Returns the template of the main app's page
-     *
-     * This method renders the main page of the application, adding any necessary data to the template.
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @return TemplateResponse The rendered template response
-     */
-    public function page(): TemplateResponse
-    {
-        return new TemplateResponse(
-            'openregister',
-            'index',
-            []
-        );
-
-    }//end page()
-
 
     /**
      * Retrieves a list of all registers
      *
      * This method returns a JSON response containing an array of all registers in the system.
-     *
-     * @param ObjectService $objectService The object service
      *
      * @return JSONResponse A JSON response containing the list of registers
      *
@@ -171,19 +179,50 @@ class RegistersController extends Controller
      *
      * @NoCSRFRequired
      */
-    public function index(
-        ObjectService $objectService
-    ): JSONResponse {
+    public function index(): JSONResponse {
         // Get request parameters for filtering and searching.
-        $filters = $this->request->getParam(key: 'filters', default: []);
-        $search  = $this->request->getParam(key: '_search', default: '');
-        $extend  = $this->request->getParam(key: '_extend', default: []);
+        $params = $this->request->getParams();
+        
+        // Extract pagination and search parameters
+        $limit  = isset($params['_limit']) ? (int) $params['_limit'] : null;
+        $offset = isset($params['_offset']) ? (int) $params['_offset'] : null;
+        $page   = isset($params['_page']) ? (int) $params['_page'] : null;
+        $search = $params['_search'] ?? '';
+        $extend = $params['_extend'] ?? [];
         if (is_string($extend)) {
             $extend = [$extend];
         }
-
-        $registers    = $this->registerService->findAll(null, null, $filters, [], [], []);
+        
+        // Convert page to offset if provided
+        if ($page !== null && $limit !== null) {
+            $offset = ($page - 1) * $limit;
+        }
+        
+        // Extract filters
+        $filters = $params['filters'] ?? [];
+        
+        $registers    = $this->registerService->findAll($limit, $offset, $filters, [], [], []);
         $registersArr = array_map(fn($register) => $register->jsonSerialize(), $registers);
+        
+        // If 'schemas' is requested in _extend, expand schema IDs to full schema objects
+        if (in_array('schemas', $extend, true)) {
+            foreach ($registersArr as &$register) {
+                if (isset($register['schemas']) && is_array($register['schemas'])) {
+                    $expandedSchemas = [];
+                    foreach ($register['schemas'] as $schemaId) {
+                        try {
+                            $schema = $this->schemaMapper->find($schemaId);
+                            $expandedSchemas[] = $schema->jsonSerialize();
+                        } catch (DoesNotExistException $e) {
+                            // Schema not found, skip it
+                            $this->logger->warning('Schema not found for expansion', ['schemaId' => $schemaId]);
+                        }
+                    }
+                    $register['schemas'] = $expandedSchemas;
+                }
+            }
+        }
+        
         // If '@self.stats' is requested, attach statistics to each register
         if (in_array('@self.stats', $extend, true)) {
             foreach ($registersArr as &$register) {
@@ -301,10 +340,11 @@ class RegistersController extends Controller
             }
         }
 
-        // Remove ID if present to prevent conflicts.
-        if (isset($data['id']) === true) {
-            unset($data['id']);
-        }
+        // Remove immutable fields to prevent tampering
+        unset($data['id']);
+        unset($data['organisation']);
+        unset($data['owner']);
+        unset($data['created']);
 
         try {
             // Update the register with the provided data.
@@ -319,6 +359,29 @@ class RegistersController extends Controller
         }
 
     }//end update()
+
+
+    /**
+     * Patch (partially update) a register
+     *
+     * This method handles partial updates (PATCH requests) by updating only
+     * the fields provided in the request body. This is different from PUT
+     * which typically requires all fields to be provided.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param int $id The ID of the register to patch
+     *
+     * @return JSONResponse The updated register data
+     */
+    public function patch(int $id): JSONResponse
+    {
+        // PATCH works the same as PUT for this resource
+        // The service layer handles partial updates automatically
+        return $this->update($id);
+
+    }//end patch()
 
 
     /**
@@ -488,6 +551,140 @@ class RegistersController extends Controller
         }//end try
 
     }//end export()
+
+
+    /**
+     * Publish register OAS specification to GitHub
+     *
+     * Exports the register as OpenAPI Specification and publishes it to a GitHub repository.
+     *
+     * @param int $id The ID of the register to publish
+     *
+     * @return JSONResponse Publish result with commit info
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function publishToGitHub(int $id): JSONResponse
+    {
+        try {
+            $register = $this->registerMapper->find($id);
+
+            $data = $this->request->getParams();
+            $owner = $data['owner'] ?? '';
+            $repo = $data['repo'] ?? '';
+            $path = $data['path'] ?? '';
+            $branch = $data['branch'] ?? 'main';
+            $commitMessage = $data['commitMessage'] ?? "Update register OAS: {$register->getTitle()}";
+
+            if (empty($owner) || empty($repo)) {
+                return new JSONResponse(
+                    ['error' => 'Owner and repo parameters are required'],
+                    400
+                );
+            }
+
+            // Strip leading slash from path
+            $path = ltrim($path, '/');
+            
+            // If path is empty, use a default filename based on register slug
+            if (empty($path)) {
+                $slug = $register->getSlug();
+                $path = $slug . '_openregister.json';
+            }
+
+            $this->logger->info('Publishing register OAS to GitHub', [
+                'register_id' => $id,
+                'register_slug' => $register->getSlug(),
+                'owner' => $owner,
+                'repo' => $repo,
+                'path' => $path,
+                'branch' => $branch,
+            ]);
+
+            // Generate real OAS (OpenAPI Specification) for the register
+            // Do NOT add x-openregister metadata - this is a pure OAS file, not a configuration file
+            $oasData = $this->oasService->createOas((string)$register->getId());
+            
+            $jsonContent = json_encode($oasData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+
+            // Check if file already exists (for updates)
+            $fileSha = null;
+            try {
+                $fileSha = $this->githubService->getFileSha($owner, $repo, $path, $branch);
+            } catch (\Exception $e) {
+                // File doesn't exist, which is fine for new files
+                $this->logger->debug('File does not exist, will create new file', ['path' => $path]);
+            }
+
+            // Publish to GitHub
+            $result = $this->githubService->publishConfiguration(
+                $owner,
+                $repo,
+                $path,
+                $branch,
+                $jsonContent,
+                $commitMessage,
+                $fileSha
+            );
+
+            $this->logger->info("Successfully published register OAS {$register->getTitle()} to GitHub", [
+                'owner' => $owner,
+                'repo' => $repo,
+                'branch' => $branch,
+                'path' => $path,
+                'file_url' => $result['file_url'] ?? null,
+            ]);
+
+            // Check if published to default branch (required for Code Search indexing)
+            $defaultBranch = null;
+            try {
+                $repoInfo = $this->githubService->getRepositoryInfo($owner, $repo);
+                $defaultBranch = $repoInfo['default_branch'] ?? 'main';
+            } catch (\Exception $e) {
+                $this->logger->warning('Could not fetch repository default branch', [
+                    'owner' => $owner,
+                    'repo' => $repo,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
+            $message = 'Register OAS published successfully to GitHub';
+            if ($defaultBranch && $branch !== $defaultBranch) {
+                $message .= ". Note: Published to branch '{$branch}' (default is '{$defaultBranch}'). " .
+                           "GitHub Code Search primarily indexes the default branch, so this may not appear in search results immediately.";
+            } else {
+                $message .= ". Note: GitHub Code Search may take a few minutes to index new files.";
+            }
+
+            return new JSONResponse([
+                'success' => true,
+                'message' => $message,
+                'registerId' => $register->getId(),
+                'commit_sha' => $result['commit_sha'],
+                'commit_url' => $result['commit_url'],
+                'file_url' => $result['file_url'],
+                'branch' => $branch,
+                'default_branch' => $defaultBranch,
+                'indexing_note' => $defaultBranch && $branch !== $defaultBranch 
+                    ? "Published to non-default branch. For discovery, publish to '{$defaultBranch}' branch."
+                    : "File published successfully. GitHub Code Search indexing may take a few minutes.",
+            ], 200);
+        } catch (DoesNotExistException $e) {
+            $this->logger->error('Register not found for publishing', ['register_id' => $id]);
+            return new JSONResponse(
+                ['error' => 'Register not found'],
+                404
+            );
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to publish register OAS to GitHub: ' . $e->getMessage());
+            
+            return new JSONResponse(
+                ['error' => 'Failed to publish register OAS: ' . $e->getMessage()],
+                500
+            );
+        }
+    }//end publishToGitHub()
 
 
     /**
@@ -745,6 +942,107 @@ class RegistersController extends Controller
         return $default;
 
     }//end parseBooleanParam()
+
+
+    /**
+     * Publish a register
+     *
+     * This method publishes a register by setting its publication date to now or a specified date.
+     *
+     * @param int $id The ID of the register to publish
+     *
+     * @return JSONResponse A JSON response containing the published register
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function publish(int $id): JSONResponse
+    {
+        try {
+            // Get the publication date from request if provided, otherwise use now
+            $date = null;
+            if ($this->request->getParam('date') !== null) {
+                $date = new \DateTime($this->request->getParam('date'));
+            } else {
+                $date = new \DateTime();
+            }
+
+            // Get the register
+            $register = $this->registerMapper->find($id);
+            
+            // Set published date and clear depublished date if set
+            $register->setPublished($date);
+            $register->setDepublished(null);
+            
+            // Update the register
+            $updatedRegister = $this->registerMapper->update($register);
+            
+            $this->logger->info('Register published', [
+                'register_id' => $id,
+                'published_date' => $date->format('Y-m-d H:i:s')
+            ]);
+
+            return new JSONResponse($updatedRegister->jsonSerialize());
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(['error' => 'Register not found'], 404);
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to publish register', [
+                'register_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+            return new JSONResponse(['error' => $e->getMessage()], 400);
+        }
+    }//end publish()
+
+
+    /**
+     * Depublish a register
+     *
+     * This method depublishes a register by setting its depublication date to now or a specified date.
+     *
+     * @param int $id The ID of the register to depublish
+     *
+     * @return JSONResponse A JSON response containing the depublished register
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function depublish(int $id): JSONResponse
+    {
+        try {
+            // Get the depublication date from request if provided, otherwise use now
+            $date = null;
+            if ($this->request->getParam('date') !== null) {
+                $date = new \DateTime($this->request->getParam('date'));
+            } else {
+                $date = new \DateTime();
+            }
+
+            // Get the register
+            $register = $this->registerMapper->find($id);
+            
+            // Set depublished date
+            $register->setDepublished($date);
+            
+            // Update the register
+            $updatedRegister = $this->registerMapper->update($register);
+            
+            $this->logger->info('Register depublished', [
+                'register_id' => $id,
+                'depublished_date' => $date->format('Y-m-d H:i:s')
+            ]);
+
+            return new JSONResponse($updatedRegister->jsonSerialize());
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(['error' => 'Register not found'], 404);
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to depublish register', [
+                'register_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+            return new JSONResponse(['error' => $e->getMessage()], 400);
+        }
+    }//end depublish()
 
 
 }//end class
