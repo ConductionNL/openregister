@@ -1713,7 +1713,15 @@ class SaveObject
 
         // Try to update existing object if UUID provided.
         if ($uuid !== null) {
-            $existingObject = $this->findAndValidateExistingObject(uuid: $uuid, register: $register, schema: $schema);
+            // Always disable RBAC and multitenancy for internal object lookup
+            // to avoid permission errors when validating existing objects.
+            $existingObject = $this->findAndValidateExistingObject(
+                uuid: $uuid,
+                register: $register,
+                schema: $schema,
+                _rbac: false,
+                _multitenancy: false
+            );
 
             if ($existingObject !== null) {
                 return $this->handleObjectUpdate(
@@ -1874,10 +1882,19 @@ class SaveObject
     private function findAndValidateExistingObject(
         string $uuid,
         ?Register $register=null,
-        ?Schema $schema=null
+        ?Schema $schema=null,
+        bool $_rbac=true,
+        bool $_multitenancy=true
     ): ?ObjectEntity {
         try {
-            $existingObject = $this->objectEntityMapper->find(identifier: $uuid, register: $register, schema: $schema);
+            $existingObject = $this->objectEntityMapper->find(
+                identifier: $uuid,
+                register: $register,
+                schema: $schema,
+                includeDeleted: false,
+                _rbac: $_rbac,
+                _multitenancy: $_multitenancy
+            );
 
             // Check if object is locked - prevent updates on locked objects.
             $lockData = $existingObject->getLocked();

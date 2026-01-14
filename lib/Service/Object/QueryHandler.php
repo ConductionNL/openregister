@@ -397,11 +397,13 @@ class QueryHandler
             $extend = array_filter(array_map('trim', explode(',', $extend)));
         }
 
-        // Remove @self.schema and @self.register from extend - we provide them at response level.
+        // Remove schema and register extensions from extend - we provide them at response level.
+        // This prevents slow per-object extension; instead we batch-load once for all results.
+        // Supports multiple formats: @self.schema, @self.register, _schema, _register.
         $extend = array_filter(
             $extend,
             function (string $item): bool {
-                return $item !== '@self.schema' && $item !== '@self.register';
+                return !in_array($item, ['@self.schema', '@self.register', '_schema', '_register'], true);
             }
         );
 

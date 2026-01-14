@@ -755,23 +755,33 @@ class ConfigurationService
      */
     public function getConfiguredAppVersion(string $appId): string|null
     {
-        // Get the stored version from appconfig.
-        // The key format is: <appId>_config_version.
-        $versionKey = $appId.'_config_version';
-
         try {
-            // Try to get the value from appconfig.
+            // Try to find configuration for this app by appId.
+            $configurations = $this->configurationMapper->findByApp($appId);
+            
+            if (count($configurations) > 0) {
+                // Use the first (most recent) configuration.
+                $configuration = $configurations[0];
+                $version = $configuration->getVersion();
+                
+                if ($version !== null && $version !== '') {
+                    return $version;
+                }
+            }
+            
+            // Fallback: Try to get the value from legacy appconfig.
+            $versionKey = $appId.'_config_version';
             $version = $this->appConfig->getValueString(
                 app: 'openregister',
                 key: $versionKey,
                 default: ''
             );
-
+            
             // Return null if empty string.
             if ($version === '') {
                 return null;
             }
-
+            
             return $version;
         } catch (Exception $e) {
             // Log error and return null.

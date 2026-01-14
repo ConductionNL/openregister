@@ -208,15 +208,17 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         ?Register $register=null,
         ?Schema $schema=null,
         bool $includeDeleted=false,
-        bool $rbac=true,
-        bool $multitenancy=true
+        bool $_rbac=true,
+        bool $_multitenancy=true
     ): ObjectEntity {
         if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
             $this->logger->debug('[UnifiedObjectMapper] Routing find() to MagicMapper');
             return $this->magicMapper->findInRegisterSchemaTable(
                 identifier: $identifier,
                 register: $register,
-                schema: $schema
+                schema: $schema,
+                rbac: $_rbac,
+                multitenancy: $_multitenancy
             );
         }
 
@@ -226,8 +228,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             register: $register,
             schema: $schema,
             includeDeleted: $includeDeleted,
-            _rbac: $rbac,
-            _multitenancy: $multitenancy
+            _rbac: $_rbac,
+            _multitenancy: $_multitenancy
         );
     }//end find()
 
@@ -502,9 +504,101 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             ]
         );
 
+        // MIXED SCHEMA SUPPORT: If schema is null and we have objects with different schemas,
+        // group them by register+schema and process each group separately.
+        if ($schema === null && count($insertObjects) > 0) {
+            $this->logger->info('[UnifiedObjectMapper] Schema is null, checking for mixed schemas');
+
+            // Check if we have mixed schemas by examining all objects.
+            $schemaGroups = [];
+            foreach ($insertObjects as $obj) {
+                $objSchemaId = $obj['@self']['schema'] ?? null;
+                $objRegisterId = $obj['@self']['register'] ?? ($register?->getId());
+                if ($objSchemaId !== null) {
+                    $groupKey = "{$objRegisterId}_{$objSchemaId}";
+                    $schemaGroups[$groupKey][] = $obj;
+                }
+            }
+
+            $this->logger->info(
+                '[UnifiedObjectMapper] Schema grouping result',
+                ['groupCount' => count($schemaGroups), 'groups' => array_keys($schemaGroups)]
+            );
+
+            // If we have multiple schema groups, process each separately.
+            if (count($schemaGroups) > 1) {
+                $this->logger->info(
+                    '[UnifiedObjectMapper] Mixed schema batch detected, processing by schema groups',
+                    ['groupCount' => count($schemaGroups), 'groups' => array_keys($schemaGroups)]
+                );
+
+                $allResults = [];
+                foreach ($schemaGroups as $groupKey => $groupObjects) {
+                    [$groupRegisterId, $groupSchemaId] = explode('_', $groupKey);
+
+                    // Resolve register and schema for this group.
+                    $groupRegister = $register;
+                    $groupSchema = null;
+
+                    if ($groupRegister === null && $groupRegisterId !== null) {
+                        try {
+                            $groupRegister = $this->registerMapper->find(id: (int) $groupRegisterId, _multitenancy: false);
+                        } catch (\Exception $e) {
+                            $this->logger->warning('[UnifiedObjectMapper] Failed to resolve register for group', ['id' => $groupRegisterId]);
+                        }
+                    }
+
+                    if ($groupSchemaId !== null) {
+                        try {
+                            $groupSchema = $this->schemaMapper->find(id: (int) $groupSchemaId, _multitenancy: false);
+                        } catch (\Exception $e) {
+                            $this->logger->warning('[UnifiedObjectMapper] Failed to resolve schema for group', ['id' => $groupSchemaId]);
+                        }
+                    }
+
+                    // Process this group with its specific register+schema.
+                    $groupResults = $this->ultraFastBulkSaveSingleSchema(
+                        insertObjects: $groupObjects,
+                        updateObjects: [],
+                        register: $groupRegister,
+                        schema: $groupSchema
+                    );
+
+                    $allResults = array_merge($allResults, $groupResults);
+                }
+
+                return $allResults;
+            }
+        }
+
+        // Single schema processing (or schema was explicitly provided).
+        return $this->ultraFastBulkSaveSingleSchema(
+            insertObjects: $insertObjects,
+            updateObjects: $updateObjects,
+            register: $register,
+            schema: $schema
+        );
+    }//end ultraFastBulkSave()
+
+    /**
+     * Ultra-fast bulk save for a single schema (internal method).
+     *
+     * @param array         $insertObjects Objects to insert/upsert
+     * @param array         $updateObjects Objects to update
+     * @param Register|null $register      Register context
+     * @param Schema|null   $schema        Schema context
+     *
+     * @return array Array of complete objects with object_status field
+     */
+    private function ultraFastBulkSaveSingleSchema(
+        array $insertObjects,
+        array $updateObjects,
+        ?Register $register,
+        ?Schema $schema
+    ): array {
         // Try to resolve register and schema from object data if not provided.
         if ($register === null || $schema === null) {
-            $this->logger->info('[UnifiedObjectMapper] Resolving register/schema from object data');
+            $this->logger->debug('[UnifiedObjectMapper] Resolving register/schema from object data');
 
             // Extract register and schema IDs from first object.
             $firstObject = $insertObjects[0] ?? [];
@@ -527,7 +621,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                 }
             }
 
-            $this->logger->info(
+            $this->logger->debug(
                 '[UnifiedObjectMapper] Resolved',
                 [
                     'register' => $register?->getId(),
@@ -537,8 +631,6 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         }//end if
 
         // Check if magic mapping should be used.
-        $this->logger->info('[UnifiedObjectMapper] Checking if magic mapping should be used');
-
         if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
             $this->logger->info(
                 '[UnifiedObjectMapper] Routing bulk save to MagicMapper',
@@ -553,20 +645,18 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             $tableName = 'openregister_table_'.$register->getId().'_'.$schema->getId();
 
             // Ensure table exists (create if needed).
-            $this->logger->info('[UnifiedObjectMapper] Ensuring table exists', ['table' => $tableName]);
+            $this->logger->debug('[UnifiedObjectMapper] Ensuring table exists', ['table' => $tableName]);
             $this->magicMapper->ensureTableForRegisterSchema(register: $register, schema: $schema);
-            $this->logger->info('[UnifiedObjectMapper] Table ready');
+            $this->logger->debug('[UnifiedObjectMapper] Table ready');
 
             // Route to MagicBulkHandler via MagicMapper.
-            $this->logger->info('[UnifiedObjectMapper] Calling magicMapper->bulkUpsert');
-
             $result = $this->magicMapper->bulkUpsert(
                 objects: $insertObjects,
                 register: $register,
                 schema: $schema,
                 tableName: $tableName
             );
-            $this->logger->info('[UnifiedObjectMapper] bulkUpsert returned', ['resultCount' => count($result)]);
+            $this->logger->debug('[UnifiedObjectMapper] bulkUpsert returned', ['resultCount' => count($result)]);
 
             return $result;
         }//end if
@@ -585,7 +675,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             insertObjects: $insertObjects,
             updateObjects: $updateObjects
         );
-    }//end ultraFastBulkSave()
+    }//end ultraFastBulkSaveSingleSchema()
 
     /**
      * Delete multiple objects.

@@ -1347,8 +1347,8 @@ class ObjectEntityMapper extends QBMapper
                     register: $register,
                     schema: $schema,
                     includeDeleted: $includeDeleted,
-                    rbac: $_rbac,
-                    multitenancy: $_multitenancy
+                    _rbac: $_rbac,
+                    _multitenancy: $_multitenancy
                 );
             } catch (Exception $e) {
                 $this->logger->error(
@@ -1490,8 +1490,19 @@ class ObjectEntityMapper extends QBMapper
         }
 
         // Apply multitenancy filter if enabled.
+        $this->logger->debug('[ObjectEntityMapper::findDirectBlobStorage] Multitenancy check', [
+            'identifier' => $identifier,
+            '_multitenancy' => $_multitenancy,
+            '_rbac' => $_rbac,
+            'willApplyFilter' => $_multitenancy === true,
+            'backtrace' => debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 3)
+        ]);
+        
         if ($_multitenancy === true) {
-            $this->applyOrganisationFilter($qb, allowNullOrg: true);
+            $this->logger->info('[ObjectEntityMapper::findDirectBlobStorage] APPLYING organisation filter');
+            $this->applyOrganisationFilter($qb, allowNullOrg: true, multiTenancyEnabled: true);
+        } else {
+            $this->logger->info('[ObjectEntityMapper::findDirectBlobStorage] SKIPPING organisation filter');
         }
 
         return $this->findEntity($qb);
@@ -2311,6 +2322,65 @@ class ObjectEntityMapper extends QBMapper
             return [];
         }
 
+        // Search in blob storage (openregister_objects table).
+        $blobResults = $this->findByRelationInBlobStorage(search: $search, partialMatch: $partialMatch);
+
+        // Also search in magic mapper tables.
+        $magicResults = [];
+        try {
+            $magicMapper   = \OC::$server->get(MagicMapper::class);
+            $magicResults  = $magicMapper->findByRelation(uuid: $search);
+            $this->logger->debug(
+                '[ObjectEntityMapper] findByRelation found results in magic mapper',
+                [
+                    'search'            => $search,
+                    'blobResultCount'   => count($blobResults),
+                    'magicResultCount'  => count($magicResults),
+                ]
+            );
+        } catch (Exception $e) {
+            $this->logger->debug(
+                '[ObjectEntityMapper] findByRelation failed to search magic mapper',
+                [
+                    'search' => $search,
+                    'error'  => $e->getMessage(),
+                ]
+            );
+        }
+
+        // Merge results, deduplicating by UUID.
+        $seenUuids = [];
+        $results   = [];
+
+        foreach ($blobResults as $entity) {
+            $uuid = $entity->getUuid();
+            if (isset($seenUuids[$uuid]) === false) {
+                $seenUuids[$uuid] = true;
+                $results[]        = $entity;
+            }
+        }
+
+        foreach ($magicResults as $entity) {
+            $uuid = $entity->getUuid();
+            if (isset($seenUuids[$uuid]) === false) {
+                $seenUuids[$uuid] = true;
+                $results[]        = $entity;
+            }
+        }
+
+        return $results;
+    }//end findByRelation()
+
+    /**
+     * Search for related objects in blob storage (openregister_objects table).
+     *
+     * @param string $search       Search term to find in relationships
+     * @param bool   $partialMatch Whether to allow partial matches
+     *
+     * @return ObjectEntity[] Array of matching objects
+     */
+    private function findByRelationInBlobStorage(string $search, bool $partialMatch): array
+    {
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
             ->from('openregister_objects')
@@ -2346,5 +2416,5 @@ class ObjectEntityMapper extends QBMapper
         $qb->setMaxResults(100);
         // Limit to prevent performance issues.
         return $this->findEntities($qb);
-    }//end findByRelation()
+    }//end findByRelationInBlobStorage()
 }//end class

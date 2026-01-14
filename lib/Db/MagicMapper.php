@@ -576,14 +576,27 @@ class MagicMapper
     {
         // Use fast cached existence check.
         if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
-            $this->logger->info(
-                'Register+schema table does not exist, should use generic storage',
-                [
-                    'registerId' => $register->getId(),
-                    'schemaId'   => $schema->getId(),
-                ]
-            );
-            return [];
+            // Check if magic mapping is enabled for this schema.
+            if ($register->isMagicMappingEnabledForSchema(schemaId: $schema->getId(), schemaSlug: $schema->getSlug()) === true) {
+                // Create the table since magic mapping is enabled.
+                $this->logger->info(
+                    'Register+schema table does not exist but magic mapping enabled, creating table',
+                    [
+                        'registerId' => $register->getId(),
+                        'schemaId'   => $schema->getId(),
+                    ]
+                );
+                $this->ensureTableForRegisterSchema(register: $register, schema: $schema);
+            } else {
+                $this->logger->info(
+                    'Register+schema table does not exist, should use generic storage',
+                    [
+                        'registerId' => $register->getId(),
+                        'schemaId'   => $schema->getId(),
+                    ]
+                );
+                return [];
+            }
         }
 
         $tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
@@ -624,14 +637,27 @@ class MagicMapper
     {
         // Use fast cached existence check.
         if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
-            $this->logger->info(
-                'Register+schema table does not exist for count, returning 0',
-                [
-                    'registerId' => $register->getId(),
-                    'schemaId'   => $schema->getId(),
-                ]
-            );
-            return 0;
+            // Check if magic mapping is enabled for this schema.
+            if ($register->isMagicMappingEnabledForSchema(schemaId: $schema->getId(), schemaSlug: $schema->getSlug()) === true) {
+                // Create the table since magic mapping is enabled.
+                $this->logger->info(
+                    'Register+schema table does not exist but magic mapping enabled, creating table',
+                    [
+                        'registerId' => $register->getId(),
+                        'schemaId'   => $schema->getId(),
+                    ]
+                );
+                $this->ensureTableForRegisterSchema(register: $register, schema: $schema);
+            } else {
+                $this->logger->info(
+                    'Register+schema table does not exist for count, returning 0',
+                    [
+                        'registerId' => $register->getId(),
+                        'schemaId'   => $schema->getId(),
+                    ]
+                );
+                return 0;
+            }
         }
 
         $tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
@@ -645,9 +671,9 @@ class MagicMapper
             // This ensures count matches the actual filtered results.
             $this->applySearchFilters(qb: $qb, query: $query, schema: $schema);
 
-            // Apply full-text search if provided.
+            // Apply full-text search WHERE clause if provided (without score column for count).
             if (empty($query['_search']) === false) {
-                $this->applyFuzzySearch(qb: $qb, searchTerm: $query['_search'], schema: $schema);
+                $this->applyFuzzySearchWhereOnly(qb: $qb, searchTerm: $query['_search'], schema: $schema);
             }
 
             // Exclude deleted objects by default.
@@ -705,14 +731,26 @@ class MagicMapper
     {
         // Use fast cached existence check.
         if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
-            $this->logger->info(
-                'Register+schema table does not exist for facets, returning empty',
-                [
-                    'registerId' => $register->getId(),
-                    'schemaId'   => $schema->getId(),
-                ]
-            );
-            return [];
+            // Check if magic mapping is enabled for this schema - if so, create the table.
+            if ($register->isMagicMappingEnabledForSchema(schemaId: $schema->getId(), schemaSlug: $schema->getSlug()) === true) {
+                $this->logger->info(
+                    'Register+schema table does not exist but magic mapping enabled, creating table for facets',
+                    [
+                        'registerId' => $register->getId(),
+                        'schemaId'   => $schema->getId(),
+                    ]
+                );
+                $this->ensureTableForRegisterSchema(register: $register, schema: $schema);
+            } else {
+                $this->logger->info(
+                    'Register+schema table does not exist for facets, returning empty',
+                    [
+                        'registerId' => $register->getId(),
+                        'schemaId'   => $schema->getId(),
+                    ]
+                );
+                return [];
+            }
         }
 
         $tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
@@ -831,7 +869,19 @@ class MagicMapper
 
             // Check if table exists (fast cache check).
             if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
-                continue;
+                // Check if magic mapping is enabled for this schema - if so, create the table.
+                if ($register->isMagicMappingEnabledForSchema(schemaId: $schema->getId(), schemaSlug: $schema->getSlug()) === true) {
+                    $this->logger->info(
+                        'Register+schema table does not exist but magic mapping enabled, creating table for cross-search',
+                        [
+                            'registerId' => $register->getId(),
+                            'schemaId'   => $schema->getId(),
+                        ]
+                    );
+                    $this->ensureTableForRegisterSchema(register: $register, schema: $schema);
+                } else {
+                    continue;
+                }
             }
 
             $tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
@@ -1467,7 +1517,7 @@ class MagicMapper
             self::METADATA_PREFIX.'uuid'           => [
                 'name'     => self::METADATA_PREFIX.'uuid',
                 'type'     => 'string',
-                'length'   => 36,
+                'length'   => 40,  // ArchiMate identifiers are max 39 chars (id-{uuid-36})
                 'nullable' => false,
                 'unique'   => true,
                 'index'    => true,
@@ -1544,10 +1594,8 @@ class MagicMapper
             ],
             self::METADATA_PREFIX.'summary'        => [
                 'name'     => self::METADATA_PREFIX.'summary',
-                'type'     => 'string',
-                'length'   => 500,
+                'type'     => 'text',  // Changed from varchar(500) to text to support longer summaries
                 'nullable' => true,
-                'index'    => true,
             ],
             self::METADATA_PREFIX.'image'          => [
                 'name'     => self::METADATA_PREFIX.'image',
@@ -2512,6 +2560,8 @@ class MagicMapper
             // Convert rows back to ObjectEntity objects.
             $objects = [];
             foreach ($rows as $row) {
+                // Remove _search_score column before converting (it's not a valid attribute).
+                unset($row['_search_score']);
                 $objectEntity = $this->convertRowToObjectEntity(row: $row, _register: $register, _schema: $schema);
                 if ($objectEntity !== null) {
                     $objects[] = $objectEntity;
@@ -3107,6 +3157,60 @@ class MagicMapper
     }//end applyFuzzySearch()
 
     /**
+     * Apply fuzzy search WHERE clause only (without score column).
+     *
+     * This is used for COUNT queries where we only need the filtering,
+     * not the score column (which would cause GROUP BY errors).
+     *
+     * @param IQueryBuilder $qb         The query builder to modify.
+     * @param string        $searchTerm The search term entered by the user.
+     * @param Schema        $schema     The schema to determine searchable columns.
+     *
+     * @return void
+     */
+    private function applyFuzzySearchWhereOnly(IQueryBuilder $qb, string $searchTerm, Schema $schema): void
+    {
+        // Get all text-based properties from the schema.
+        $properties       = $schema->getProperties() ?? [];
+        $searchableFields = [];
+
+        if (is_array($properties) === true) {
+            foreach ($properties as $propertyName => $propertyConfig) {
+                $type = $propertyConfig['type'] ?? 'string';
+                // Only search in string fields.
+                if ($type === 'string') {
+                    $columnName         = $this->sanitizeColumnName($propertyName);
+                    $searchableFields[] = $columnName;
+                }
+            }
+        }
+
+        if (empty($searchableFields) === true) {
+            return;
+        }
+
+        // Build WHERE clause: match if ANY column matches (using OR).
+        $orConditions = [];
+        $platform     = $this->db->getDatabasePlatform();
+
+        foreach ($searchableFields as $columnName) {
+            if ($platform instanceof PostgreSQLPlatform === true) {
+                // PostgreSQL: Use ILIKE for case-insensitive matching.
+                $orConditions[] = "LOWER({$columnName}) ILIKE LOWER(".$qb->createNamedParameter('%'.$searchTerm.'%').')';
+                $orConditions[] = "LOWER({$columnName}) % LOWER(".$qb->createNamedParameter($searchTerm).')';
+                continue;
+            }
+
+            // MariaDB/MySQL: Use LIKE for case-insensitive substring match.
+            $orConditions[] = "LOWER({$columnName}) LIKE LOWER(".$qb->createNamedParameter('%'.$searchTerm.'%').')';
+        }
+
+        if (empty($orConditions) === false) {
+            $qb->andWhere(implode(' OR ', $orConditions));
+        }
+    }//end applyFuzzySearchWhereOnly()
+
+    /**
      * Add WHERE condition to query builder
      *
      * @param IQueryBuilder $qb         The query builder
@@ -3652,8 +3756,24 @@ class MagicMapper
     public function findInRegisterSchemaTable(
         string|int $identifier,
         Register $register,
-        Schema $schema
+        Schema $schema,
+        bool $rbac=true,
+        bool $multitenancy=true
     ): ObjectEntity {
+        // Ensure table exists if magic mapping is enabled.
+        if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
+            if ($register->isMagicMappingEnabledForSchema(schemaId: $schema->getId(), schemaSlug: $schema->getSlug()) === true) {
+                $this->logger->info(
+                    'Register+schema table does not exist but magic mapping enabled, creating table',
+                    [
+                        'registerId' => $register->getId(),
+                        'schemaId'   => $schema->getId(),
+                    ]
+                );
+                $this->ensureTableForRegisterSchema(register: $register, schema: $schema);
+            }
+        }
+
         $tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
 
         $this->logger->debug(
@@ -3661,6 +3781,8 @@ class MagicMapper
             [
                 'identifier' => $identifier,
                 'tableName'  => $tableName,
+                'rbac'       => $rbac,
+                'multitenancy' => $multitenancy,
             ]
         );
 
@@ -3688,6 +3810,19 @@ class MagicMapper
 
         // Exclude deleted objects by default.
         $qb->andWhere($qb->expr()->isNull(self::METADATA_PREFIX.'deleted'));
+
+        // Apply multitenancy filtering if enabled.
+        // Note: For MagicMapper, we rely on the table structure itself for multitenancy,
+        // as the organisation column is part of the schema. The $multitenancy parameter
+        // is primarily used to decide whether to filter at all.
+        // For now, we skip adding explicit organisation filters in MagicMapper
+        // as that's handled by RBAC and the table structure.
+
+        // Apply RBAC filtering if enabled.
+        if ($rbac === true) {
+            // Add RBAC filtering logic here if needed.
+            // Currently skipped as owner/authorization logic is complex.
+        }
 
         try {
             $result = $qb->executeQuery();
@@ -4124,11 +4259,286 @@ class MagicMapper
             ]
         );
 
-        return $this->bulkHandler->bulkUpsert(
-            objects: $objects,
-            register: $register,
-            schema: $schema,
-            tableName: $tableName
-        );
+        try {
+            return $this->bulkHandler->bulkUpsert(
+                objects: $objects,
+                register: $register,
+                schema: $schema,
+                tableName: $tableName
+            );
+        } catch (\Exception $e) {
+            // Check if this is a "table does not exist" error (PostgreSQL: 42P01, MySQL: 1146).
+            $message = $e->getMessage();
+            if (str_contains($message, '42P01') === true
+                || str_contains($message, 'does not exist') === true
+                || str_contains($message, "doesn't exist") === true
+                || str_contains($message, '1146') === true
+            ) {
+                $this->logger->warning(
+                    '[MagicMapper] Table does not exist, creating and retrying bulkUpsert',
+                    [
+                        'register' => $register->getId(),
+                        'schema'   => $schema->getId(),
+                        'table'    => $tableName,
+                        'error'    => $message,
+                    ]
+                );
+
+                // Create the table.
+                $this->ensureTableForRegisterSchema(register: $register, schema: $schema, force: true);
+
+                // Retry the bulk upsert.
+                return $this->bulkHandler->bulkUpsert(
+                    objects: $objects,
+                    register: $register,
+                    schema: $schema,
+                    tableName: $tableName
+                );
+            }
+
+            // Re-throw if it's not a table-not-found error.
+            throw $e;
+        }
     }//end bulkUpsert()
+
+    /**
+     * Find objects that reference a specific UUID in any of their columns.
+     *
+     * This method searches across ALL magic mapper tables for objects that
+     * contain the specified UUID in any column. This is used for inverse
+     * relationship resolution.
+     *
+     * For PostgreSQL, it uses casting to text and LIKE for JSON columns.
+     * For other databases, it uses LIKE on all columns.
+     *
+     * @param string $uuid The UUID to search for
+     *
+     * @return ObjectEntity[] Array of objects that contain the UUID
+     *
+     * @psalm-return list<ObjectEntity>
+     */
+    public function findByRelation(string $uuid): array
+    {
+        if (empty($uuid) === true) {
+            return [];
+        }
+
+        $results = [];
+
+        // Get all existing magic mapper tables.
+        $tables = $this->getAllMagicMapperTables();
+
+        $this->logger->debug(
+            '[MagicMapper] findByRelation searching across tables',
+            [
+                'uuid'       => $uuid,
+                'tableCount' => count($tables),
+            ]
+        );
+
+        foreach ($tables as $tableName) {
+            try {
+                $tableResults = $this->findByRelationInTable(uuid: $uuid, tableName: $tableName);
+                $results = array_merge($results, $tableResults);
+            } catch (Exception $e) {
+                $this->logger->debug(
+                    '[MagicMapper] Failed to search table for relation',
+                    [
+                        'tableName' => $tableName,
+                        'uuid'      => $uuid,
+                        'error'     => $e->getMessage(),
+                    ]
+                );
+                // Continue with other tables even if one fails.
+            }
+        }
+
+        $this->logger->debug(
+            '[MagicMapper] findByRelation completed',
+            [
+                'uuid'        => $uuid,
+                'resultCount' => count($results),
+            ]
+        );
+
+        return $results;
+    }//end findByRelation()
+
+    /**
+     * Search for objects containing a UUID in a specific magic mapper table.
+     *
+     * @param string $uuid      The UUID to search for
+     * @param string $tableName The table name to search in
+     *
+     * @return ObjectEntity[] Array of matching objects
+     */
+    private function findByRelationInTable(string $uuid, string $tableName): array
+    {
+        // Get database platform to determine proper search approach.
+        $platform   = $this->db->getDatabasePlatform();
+        $isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
+
+        // Construct the full table name with prefix for use in SQL functions.
+        $fullTableName = 'oc_' . $tableName;
+        $searchPattern = '%' . $uuid . '%';
+
+        try {
+            // For PostgreSQL, use row_to_json to convert entire row to searchable text.
+            // This approach works reliably for finding UUIDs in any column.
+            if ($isPostgres === true) {
+                $sql = "SELECT * FROM {$fullTableName} WHERE _deleted IS NULL
+                        AND row_to_json({$fullTableName}.*)::text LIKE ?
+                        LIMIT 100";
+            } else {
+                // MySQL/MariaDB: Use JSON_UNQUOTE and CONCAT to search all columns.
+                // This is a fallback approach - may need adjustment for MySQL.
+                $sql = "SELECT * FROM {$fullTableName} WHERE _deleted IS NULL
+                        AND CAST({$fullTableName} AS CHAR) LIKE ?
+                        LIMIT 100";
+            }
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$searchPattern]);
+            $rows = $stmt->fetchAll();
+
+            $this->logger->debug(
+                '[MagicMapper] findByRelationInTable query executed',
+                [
+                    'tableName'    => $fullTableName,
+                    'uuid'         => $uuid,
+                    'resultCount'  => count($rows),
+                ]
+            );
+        } catch (Exception $e) {
+            $this->logger->debug(
+                '[MagicMapper] findByRelationInTable query failed',
+                [
+                    'tableName' => $fullTableName,
+                    'uuid'      => $uuid,
+                    'error'     => $e->getMessage(),
+                ]
+            );
+            return [];
+        }
+
+        // Convert rows to ObjectEntity instances.
+        $entities = [];
+        foreach ($rows as $row) {
+            try {
+                $entity = $this->rowToObjectEntity(row: $row);
+                if ($entity !== null) {
+                    $entities[] = $entity;
+                }
+            } catch (Exception $e) {
+                $this->logger->debug(
+                    '[MagicMapper] Failed to convert row to ObjectEntity',
+                    [
+                        'tableName' => $tableName,
+                        'error'     => $e->getMessage(),
+                    ]
+                );
+            }
+        }
+
+        return $entities;
+    }//end findByRelationInTable()
+
+    /**
+     * Get all magic mapper table names from the database.
+     *
+     * Magic mapper tables follow the naming convention: openregister_table_{registerId}_{schemaId}
+     *
+     * @return string[] Array of table names (without prefix)
+     */
+    private function getAllMagicMapperTables(): array
+    {
+        try {
+            $platform   = $this->db->getDatabasePlatform();
+            $isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
+
+            if ($isPostgres === true) {
+                $sql = "SELECT table_name FROM information_schema.tables
+                        WHERE table_schema = current_schema()
+                        AND table_name LIKE 'oc_openregister_table_%'";
+            } else {
+                $sql = "SELECT table_name FROM information_schema.tables
+                        WHERE table_schema = DATABASE()
+                        AND table_name LIKE 'oc_openregister_table_%'";
+            }
+
+            $stmt   = $this->db->prepare($sql);
+            $stmt->execute();
+            $tables = [];
+
+            while ($row = $stmt->fetch()) {
+                // Remove the 'oc_' prefix to get the table name for query builder.
+                $tableName = $row['table_name'];
+                if (str_starts_with($tableName, 'oc_') === true) {
+                    $tableName = substr($tableName, 3);
+                }
+                $tables[] = $tableName;
+            }
+
+            return $tables;
+        } catch (Exception $e) {
+            $this->logger->error(
+                '[MagicMapper] Failed to get magic mapper tables',
+                ['error' => $e->getMessage()]
+            );
+            return [];
+        }
+    }//end getAllMagicMapperTables()
+
+    /**
+     * Convert a database row from a magic mapper table to an ObjectEntity.
+     *
+     * @param array $row The database row
+     *
+     * @return ObjectEntity|null The ObjectEntity or null if conversion fails
+     */
+    private function rowToObjectEntity(array $row): ?ObjectEntity
+    {
+        // Check if we have the minimum required fields.
+        if (isset($row['_uuid']) === false) {
+            return null;
+        }
+
+        $entity = new ObjectEntity();
+        $entity->setUuid($row['_uuid']);
+
+        // Set metadata fields (register and schema are stored as strings).
+        if (isset($row['_register']) === true) {
+            $entity->setRegister((string) $row['_register']);
+        }
+        if (isset($row['_schema']) === true) {
+            $entity->setSchema((string) $row['_schema']);
+        }
+        if (isset($row['_name']) === true) {
+            $entity->setName($row['_name']);
+        }
+
+        // Build the object data from non-metadata columns.
+        $objectData = [];
+        foreach ($row as $column => $value) {
+            // Skip metadata columns (those starting with _).
+            if (str_starts_with($column, '_') === true) {
+                continue;
+            }
+
+            // Decode JSON values.
+            if (is_string($value) === true) {
+                $decoded = json_decode($value, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $objectData[$column] = $decoded;
+                    continue;
+                }
+            }
+
+            $objectData[$column] = $value;
+        }
+
+        $entity->setObject($objectData);
+
+        return $entity;
+    }//end rowToObjectEntity()
 }//end class

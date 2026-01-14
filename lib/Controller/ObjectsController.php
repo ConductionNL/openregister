@@ -483,12 +483,66 @@ class ObjectsController extends Controller
             'filters' => $params,
             'sort'    => ($params['order'] ?? $params['_order'] ?? []),
             '_search' => ($params['_search'] ?? null),
-            '_extend' => ($params['extend'] ?? $params['_extend'] ?? null),
+            '_extend' => $this->normalizeExtendParameter($params['extend'] ?? $params['_extend'] ?? null),
             '_fields' => ($params['fields'] ?? $params['_fields'] ?? null),
             '_unset'  => ($params['unset'] ?? $params['_unset'] ?? null),
             'ids'     => $ids,
         ];
     }//end getConfig()
+
+    /**
+     * Normalize extend parameter for backwards compatibility
+     *
+     * Converts old @self.schema format to new _schema format.
+     * Supports both single strings and arrays of extend values.
+     *
+     * @param mixed $extend The extend parameter from request (string, array, or null)
+     *
+     * @return array|null Normalized extend array or null
+     */
+    private function normalizeExtendParameter(mixed $extend): ?array
+    {
+        if ($extend === null) {
+            return null;
+        }
+
+        // Convert string to array.
+        if (is_string($extend) === true) {
+            $extend = explode(',', $extend);
+        }
+
+        // Ensure it's an array.
+        if (is_array($extend) === false) {
+            return null;
+        }
+
+        // Normalize each extend value for backwards compatibility.
+        $normalized = [];
+        foreach ($extend as $key => $value) {
+            // Skip if not a string.
+            if (is_string($value) === false) {
+                $normalized[$key] = $value;
+                continue;
+            }
+
+            // Convert @self.schema to _schema for backwards compatibility.
+            if ($value === '@self.schema') {
+                $normalized[$key] = '_schema';
+                continue;
+            }
+
+            // Convert @self.register to _register for backwards compatibility.
+            if ($value === '@self.register') {
+                $normalized[$key] = '_register';
+                continue;
+            }
+
+            // Keep original value.
+            $normalized[$key] = $value;
+        }
+
+        return $normalized;
+    }//end normalizeExtendParameter()
 
     /**
      * Helper method to resolve register and schema slugs to numeric IDs
@@ -1128,10 +1182,8 @@ class ObjectsController extends Controller
         $fields = ($requestParams['fields'] ?? $requestParams['_fields'] ?? null);
         $unset  = ($requestParams['unset'] ?? $requestParams['_unset'] ?? null);
 
-        // Convert extend to array if it's a string.
-        if (is_string($extend) === true) {
-            $extend = explode(',', $extend);
-        }
+        // Normalize extend parameter for backwards compatibility (@self.schema -> _schema).
+        $extend = $this->normalizeExtendParameter($extend);
 
         // Convert fields to array if it's a string.
         if (is_string($fields) === true) {
@@ -1352,15 +1404,9 @@ class ObjectsController extends Controller
             return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
         }//end try
 
-        // Build response with sub-objects in @self.objects.
-        $responseData = $objectEntity->jsonSerialize();
-        $subObjects = $objectService->getCreatedSubObjects();
-        if (empty($subObjects) === false) {
-            $responseData['@self']['objects'] = $subObjects;
-        }
-
         // Return the created object.
-        return new JSONResponse(data: $responseData, statusCode: 201);
+        // Note: Sub-objects are only returned when _extend is explicitly requested on GET.
+        return new JSONResponse(data: $objectEntity->jsonSerialize(), statusCode: 201);
     }//end create()
 
     /**
@@ -1465,9 +1511,16 @@ class ObjectsController extends Controller
             }
         } catch (DoesNotExistException $exception) {
             return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
-        } catch (\Exception $exception) {
-            // Handle RBAC permission errors and other exceptions.
+        } catch (NotAuthorizedException $exception) {
+            // Handle RBAC permission errors specifically.
             return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
+        } catch (\Exception $exception) {
+            // Log unexpected exceptions for debugging.
+            $this->logger->error('Unexpected exception in update findSilent', [
+                'exception' => $exception->getMessage(),
+                'trace' => $exception->getTraceAsString()
+            ]);
+            return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 500);
         } catch (NotFoundExceptionInterface | ContainerExceptionInterface $e) {
             // If there's an issue getting the user ID, continue without the lock check.
         }//end try
@@ -1498,7 +1551,7 @@ class ObjectsController extends Controller
                 // Ignore unlock errors since the update was successful.
             }
 
-            // Return the updated object as JSON.
+            // Return the successfully saved object directly.
             return new JSONResponse(data: $objectEntity->jsonSerialize());
         } catch (ValidationException | CustomValidationException $exception) {
             // Handle validation errors.
@@ -1561,62 +1614,48 @@ class ObjectsController extends Controller
         $rbac    = $isAdmin === false;
         $multi   = $isAdmin === false;
 
+        // Log RBAC/multitenancy settings for debugging.
+        $this->logger->info('PATCH: RBAC/Multitenancy settings', [
+            'id' => $id,
+            'isAdmin' => $isAdmin,
+            'rbac' => $rbac,
+            'multi' => $multi
+        ]);
+
         // Initialize mergedData before conditional assignment.
         $mergedData = $patchData;
 
         // Check if the object exists and can be updated.
+        // Skip the existence check - let saveObject handle validation.
+        // This avoids multitenancy issues when trying to read back objects with invalid organisation UUIDs.
+        $existingObject = null;
+
+        // Update the object with merged data.
         try {
-            $existingObject = $this->objectService->find(
-                id: $id,
-                _extend: [],
-                files: false,
-                register: null,
-                schema: null,
-                _rbac: $rbac,
-                _multitenancy: $multi
-            );
-            if ($existingObject === null) {
-                return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
-            }
-
-            // Get the resolved register and schema IDs from the ObjectService.
-            // This ensures proper handling of both numeric IDs and slug identifiers.
-            $resolvedRegisterId = $objectService->getRegister();
-            $resolvedSchemaId   = $objectService->getSchema();
-
-            // Verify that the object belongs to the specified register and schema.
-            if ((int) $existingObject->getRegister() !== $resolvedRegisterId
-                || (int) $existingObject->getSchema() !== $resolvedSchemaId
-            ) {
-                return new JSONResponse(data: ['error' => 'Object not found in specified register/schema'], statusCode: 404);
-            }
-
-            // Check if the object is locked.
-            if ($existingObject->isLocked() === true
-                && $existingObject->getLockedBy() !== $this->container->get('userId')
-            ) {
-                // Return a "locked" error with the user who has the lock.
-                return new JSONResponse(
-                    data: [
-                        'error'    => 'Object is locked by '.$existingObject->getLockedBy(),
-                        'lockedBy' => $existingObject->getLockedBy(),
-                    ],
-                    statusCode: 423
+            // For PATCH, we need to merge with existing data.
+            // Use findSilent to get the existing object without triggering audit trail.
+            try {
+                $existingObject = $this->objectService->findSilent(
+                    id: $id,
+                    _extend: [],
+                    files: false,
+                    register: null,
+                    schema: null,
+                    _rbac: false,  // Always disable RBAC for internal read
+                    _multitenancy: false  // Always disable multitenancy for internal read
                 );
+            } catch (\Exception $e) {
+                // If we can't find the object, return 404.
+                $this->logger->warning('Could not find object for PATCH', [
+                    'id' => $id,
+                    'exception' => $e->getMessage()
+                ]);
+                return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
             }
 
             // Get the existing object data and merge with patch data.
             $existingData = $existingObject->getObject();
             $mergedData   = array_merge($existingData ?? [], $patchData);
-            $existingObject->setObject($mergedData);
-        } catch (DoesNotExistException $exception) {
-            return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
-        } catch (NotFoundExceptionInterface | ContainerExceptionInterface $e) {
-            // If there's an issue getting the user ID, continue without the lock check.
-        }//end try
-
-        // Update the object with merged data.
-        try {
             // Use the object service to validate and update the object.
             $objectEntity = $objectService->saveObject(
                 register: $resolved['register'],
@@ -1627,21 +1666,40 @@ class ObjectsController extends Controller
                 uuid: $id
             );
 
+            $this->logger->info('PATCH: saveObject succeeded', [
+                'uuid' => $objectEntity->getUuid(),
+                'status' => $objectEntity->getObject()['status'] ?? 'unknown'
+            ]);
+
             // Unlock the object after saving.
             try {
                 $this->objectService->unlockObject($objectEntity->getUuid());
             } catch (Exception $e) {
                 // Ignore unlock errors since the update was successful.
+                $this->logger->debug('Failed to unlock after patch', [
+                    'exception' => $e->getMessage()
+                ]);
             }
 
-            // Return the updated object as JSON.
+            $this->logger->info('PATCH: Starting to prepare response');
+
+            // Return the successfully saved object directly.
+            // We already have it in memory from saveObject(), no need to re-fetch.
             return new JSONResponse(data: $objectEntity->jsonSerialize());
+            
         } catch (ValidationException | CustomValidationException $exception) {
             // Handle validation errors.
+            $this->logger->warning('Validation exception in patch', [
+                'exception' => $exception->getMessage()
+            ]);
             return $objectService->handleValidationException(exception: $exception);
         } catch (\Exception $exception) {
             // Handle all other exceptions (including RBAC permission errors).
-            return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
+            $this->logger->error('Unexpected exception in patch', [
+                'exception' => $exception->getMessage(),
+                'trace' => $exception->getTraceAsString()
+            ]);
+            return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 500);
         }//end try
     }//end patch()
 

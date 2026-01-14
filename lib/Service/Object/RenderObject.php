@@ -995,15 +995,17 @@ class RenderObject
                         // **PERFORMANCE OPTIMIZATION**: Use preloaded cache instead of individual queries.
                         $object = $this->getObject(id: $identifier);
                         if ($object === null) {
-                            // If not in cache, this object wasn't preloaded - skip it to prevent N+1.
+                            // Object not found - preserve the original UUID instead of returning null.
+                            // This keeps the reference data intact even when the referenced object
+                            // doesn't exist (e.g., data imported from CSV with external references).
                             $this->logger->debug(
-                                'Object not found in preloaded cache - skipping to prevent N+1 query',
+                                'Object not found in preloaded cache - preserving original UUID',
                                 [
                                     'identifier' => $identifier,
                                     'context'    => 'extend_array_processing',
                                 ]
                             );
-                            return null;
+                            return $identifier;
                         }
 
                         if (in_array($object->getUuid(), $visitedIds, true) === true) {
@@ -1148,6 +1150,27 @@ class RenderObject
             $objectData['@self'] = $self;
         }
 
+        // **PERFORMANCE OPTIMIZATION**: Batch preload all UUIDs that will be extended.
+        // This collects all UUIDs from the properties that will be extended and loads
+        // them in a SINGLE database query, instead of one query per UUID.
+        $uuidsToPreload = $this->collectUuidsForExtend(objectData: $objectData, extend: $_extend);
+        if (empty($uuidsToPreload) === false) {
+            $preloadedObjects = $this->objectCacheService->preloadObjects($uuidsToPreload);
+            // Add preloaded objects to local cache for immediate access.
+            foreach ($preloadedObjects as $object) {
+                $this->objectsCache[$object->getUuid()] = $object;
+                $this->objectsCache[$object->getId()] = $object;
+            }
+
+            $this->logger->debug(
+                'Batch preloaded objects for extend',
+                [
+                    'requestedUuids' => count($uuidsToPreload),
+                    'loadedObjects'  => count($preloadedObjects),
+                ]
+            );
+        }
+
         $objectDataDot = $this->handleExtendDot(
             data: $objectData,
             _extend: $_extend,
@@ -1158,6 +1181,57 @@ class RenderObject
 
         return $objectDataDot;
     }//end extendObject()
+
+    /**
+     * Collect all UUIDs from object data for properties that will be extended.
+     *
+     * This method scans the object data for all UUIDs in properties that match
+     * the extend configuration, so they can be batch-loaded in a single query.
+     *
+     * @param array $objectData The object data to scan
+     * @param array $extend     The properties to extend
+     *
+     * @return array Array of UUIDs to preload
+     */
+    private function collectUuidsForExtend(array $objectData, array $extend): array
+    {
+        $uuids = [];
+        $dataDot = new Dot($objectData);
+
+        foreach ($extend as $key) {
+            // Skip special keys.
+            if (str_starts_with($key, '@') === true) {
+                continue;
+            }
+
+            // Get the base property name (before any dots for nested extends).
+            $baseProp = explode('.', $key)[0];
+
+            if ($dataDot->has($baseProp) === false) {
+                continue;
+            }
+
+            $value = $dataDot->get($baseProp);
+
+            // Handle array of UUIDs.
+            if (is_array($value) === true) {
+                foreach ($value as $item) {
+                    if (is_string($item) === true && Uuid::isValid($item) === true) {
+                        $uuids[] = $item;
+                    }
+                }
+
+                continue;
+            }
+
+            // Handle single UUID.
+            if (is_string($value) === true && Uuid::isValid($value) === true) {
+                $uuids[] = $value;
+            }
+        }
+
+        return array_unique($uuids);
+    }//end collectUuidsForExtend()
 
     /**
      * Gets the inversed properties from a schema
@@ -1257,9 +1331,11 @@ class RenderObject
         $this->objectsCache = array_merge($objectsToCache, $this->objectsCache);
 
         // Process each inversed property.
+        // For a property like 'deelnemers' with inversedBy='deelnames':
+        // - Keep the original 'deelnemers' values (forward references to other orgs)
+        // - Find objects that have our UUID in THEIR 'deelnemers' field
+        // - Put those objects' UUIDs in OUR 'deelnames' field (inverse references)
         foreach ($inversedProperties as $propertyName => $propertyConfig) {
-            $objectData[$propertyName] = [];
-
             // Extract inversedBy configuration based on property structure.
             // Check if this is an array property with inversedBy in items.
             $inversedByProperty = null;
@@ -1289,6 +1365,12 @@ class RenderObject
                 continue;
             }
 
+            // Initialize the inverse property (e.g., 'deelnames') - don't touch the source property (e.g., 'deelnemers').
+            // Only initialize if not already set to preserve any existing values.
+            if (isset($objectData[$inversedByProperty]) === false) {
+                $objectData[$inversedByProperty] = $isArray ? [] : null;
+            }
+
             // Resolve schema reference to actual schema ID.
             $schemaId = $entity->getSchema();
             // Use current schema if no target specified.
@@ -1296,18 +1378,20 @@ class RenderObject
                 $schemaId = $this->resolveSchemaReference($targetSchema);
             }
 
+            // Find objects that have our UUID in their $propertyName field (e.g., their 'deelnemers').
+            // These are the objects that should appear in our $inversedByProperty (e.g., our 'deelnames').
             $inversedObjects = array_values(
                 array_filter(
                     $referencingObjects,
-                    function (ObjectEntity $object) use ($inversedByProperty, $schemaId, $entity) {
+                    function (ObjectEntity $object) use ($propertyName, $schemaId, $entity) {
                         $data = $object->getObject();
 
-                        // Check if the referencing object has the inversedBy property.
-                        if (isset($data[$inversedByProperty]) === false) {
+                        // Check if the referencing object has our UUID in the source property.
+                        if (isset($data[$propertyName]) === false) {
                             return false;
                         }
 
-                        $referenceValue = $data[$inversedByProperty];
+                        $referenceValue = $data[$propertyName];
 
                         // Handle both array and single value references.
                         if (is_array($referenceValue) === true) {
@@ -1329,15 +1413,15 @@ class RenderObject
                 $inversedObjects
             );
 
-            // Set the inversed property value based on whether it's an array or single value.
+            // Set the inverse property value (e.g., 'deelnames') based on whether it's an array or single value.
             if ($isArray === true) {
-                $objectData[$propertyName] = $inversedUuids;
+                $objectData[$inversedByProperty] = $inversedUuids;
                 continue;
             }
 
-            $objectData[$propertyName] = null;
+            $objectData[$inversedByProperty] = null;
             if (empty($inversedUuids) === false) {
-                $objectData[$propertyName] = end($inversedUuids);
+                $objectData[$inversedByProperty] = end($inversedUuids);
             }
         }//end foreach
 

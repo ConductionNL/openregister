@@ -292,35 +292,9 @@ class CacheHandler
         // Get index service using factory pattern (performance optimized).
         $indexService = $this->getIndexService();
 
-        // Determine index availability for logging.
-        $indexIsAvailable = false;
-        if ($indexService !== null) {
-            $indexIsAvailable = $indexService->isAvailable();
-        }
-
-        $this->logger->info(
-            '🔥 DEBUGGING: indexObjectInSolr called',
-            [
-                'app'                     => 'openregister',
-                'object_id'               => $object->getId(),
-                'object_uuid'             => $object->getUuid(),
-                'object_name'             => $object->getName(),
-                'index_service_available' => $indexService !== null,
-                'index_is_available'      => $indexIsAvailable,
-            ]
-        );
-
         if ($indexService === null || $indexService->isAvailable() === false) {
-            $this->logger->debug(
-                'Index service unavailable, skipping indexing',
-                [
-                    'object_id'               => $object->getId(),
-                    'index_service_available' => $indexService !== null,
-                    'index_is_available'      => $indexIsAvailable,
-                ]
-            );
             return true;
-            // Graceful degradation.
+            // Graceful degradation - index service unavailable.
         }
 
         // Index the object.
@@ -1312,16 +1286,20 @@ class CacheHandler
                 $magicNamesLoaded = $this->loadNamesFromMagicTables();
             }
 
+            // STEP 4: Persist to distributed cache for cross-request availability.
+            $distributedCount = $this->persistNameCacheToDistributed();
+
             $executionTime = round((microtime(true) - $startTime) * 1000, 2);
 
             $this->logger->info(
                 '🔥 NAME CACHE WARMED UP',
                 [
-                    'organisations_processed' => count($organisations),
-                    'objects_processed'       => count($objects),
-                    'magic_names_loaded'      => $magicNamesLoaded,
-                    'total_names_cached'      => count($this->nameCache),
-                    'execution_time'          => $executionTime.'ms',
+                    'organisations_processed'  => count($organisations),
+                    'objects_processed'        => count($objects),
+                    'magic_names_loaded'       => $magicNamesLoaded,
+                    'distributed_cache_stored' => $distributedCount,
+                    'total_names_cached'       => count($this->nameCache),
+                    'execution_time'           => $executionTime.'ms',
                 ]
             );
 
@@ -1418,6 +1396,46 @@ class CacheHandler
 
         return $loadedCount;
     }//end loadNamesFromMagicTables()
+
+    /**
+     * Persist in-memory name cache to distributed cache.
+     *
+     * Iterates through all entries in the in-memory name cache and stores them
+     * in the distributed cache (APCu) for cross-request availability.
+     * This ensures that warmed-up names are available to subsequent requests
+     * without requiring a fresh database query.
+     *
+     * @return int Number of entries stored in distributed cache.
+     */
+    private function persistNameCacheToDistributed(): int
+    {
+        if ($this->nameDistributedCache === null) {
+            return 0;
+        }
+
+        $storedCount = 0;
+        $ttl         = self::MAX_CACHE_TTL;
+
+        foreach ($this->nameCache as $identifier => $name) {
+            try {
+                $this->nameDistributedCache->set('name_'.$identifier, $name, $ttl);
+                $storedCount++;
+            } catch (\Exception $e) {
+                // Log once per batch, not per entry to avoid log spam.
+                if ($storedCount === 0) {
+                    $this->logger->warning(
+                        'Failed to persist name cache entry to distributed cache',
+                        [
+                            'identifier' => $identifier,
+                            'error'      => $e->getMessage(),
+                        ]
+                    );
+                }
+            }
+        }
+
+        return $storedCount;
+    }//end persistNameCacheToDistributed()
 
     /**
      * Clear object name caches
