@@ -235,6 +235,17 @@ Based on actual import tests with Magic Mapper storage:
 
 ## Troubleshooting
 
+### Schema Dropdown Not Populated
+
+If the schema dropdown is empty when importing a CSV file:
+
+1. **Select a register first**: The schema dropdown only shows schemas that belong to the selected register
+2. **Wait for loading**: The modal refreshes register and schema lists when opened - wait for the loading spinner to complete
+3. **Check register schemas**: Ensure the selected register has schemas associated with it
+4. **Refresh the page**: If the issue persists, try refreshing the browser page
+
+**Note**: The schema dropdown is only visible for CSV files. Excel files can contain multiple sheets with different schemas, so schema selection happens automatically based on sheet names.
+
 ### Import Not Working
 
 1. **Check file format**: Ensure your file is a valid CSV or Excel file
