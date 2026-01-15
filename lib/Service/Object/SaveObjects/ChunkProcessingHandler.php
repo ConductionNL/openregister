@@ -232,14 +232,18 @@ class ChunkProcessingHandler
             $firstItem = reset($bulkResult);
 
             if (is_array($firstItem) === true
-                && (($firstItem['created'] ?? null) !== null)
-                && (($firstItem['updated'] ?? null) !== null)
+                && isset($firstItem['object_status'])
             ) {
                 // NEW APPROACH: Complete objects with database-computed classification returned.
                 $this->logger->info("[SaveObjects] Processing complete objects with database-computed classification");
 
                 foreach ($bulkResult as $completeObject) {
                     $savedObjectIds[] = $completeObject['uuid'];
+
+                    // Convert to ObjectEntity for consistent response format.
+                    $objEntity = new ObjectEntity();
+                    $objEntity->hydrate($completeObject);
+                    $reconstructedObjects[] = $objEntity;
 
                     // DATABASE-COMPUTED CLASSIFICATION: Use the object_status calculated by database.
                     $objectStatus = $completeObject['object_status'] ?? 'unknown';
@@ -248,18 +252,21 @@ class ChunkProcessingHandler
                         case 'created':
                             // 🆕 CREATED: Object was created during this operation (database-computed).
                             $createdObjects[] = $completeObject;
+                            $result['saved'][] = $objEntity;
                             $result['statistics']['saved']++;
                             break;
 
                         case 'updated':
                             // 📝 UPDATED: Existing object was modified during this operation (database-computed).
                             $updatedObjects[] = $completeObject;
+                            $result['updated'][] = $objEntity;
                             $result['statistics']['updated']++;
                             break;
 
                         case 'unchanged':
                             // ⏸️ UNCHANGED: Existing object was not modified (database-computed).
                             $unchangedObjects[] = $completeObject;
+                            $result['unchanged'][] = $objEntity;
                             $result['statistics']['unchanged']++;
                             break;
 
@@ -273,13 +280,9 @@ class ChunkProcessingHandler
                                 ]
                             );
                             $unchangedObjects[] = $completeObject;
+                            $result['unchanged'][] = $objEntity;
                             $result['statistics']['unchanged']++;
                     }//end switch
-
-                    // Convert to ObjectEntity for consistent response format.
-                    $objEntity = new ObjectEntity();
-                    $objEntity->hydrate($completeObject);
-                    $reconstructedObjects[] = $objEntity;
                 }//end foreach
 
                 $this->logger->info(
@@ -313,21 +316,9 @@ class ChunkProcessingHandler
             }
         }//end if
 
-        // STEP 5: ENHANCED OBJECT RESPONSE - Use pre-classified objects or reconstruct.
+        // STEP 5: ENHANCED OBJECT RESPONSE - Already populated in STEP 4.
+        // The result arrays (saved, updated, unchanged) were populated during the classification loop above.
         if (empty($reconstructedObjects) === false) {
-            // NEW APPROACH: Use already reconstructed objects from timestamp classification.
-            foreach ($createdObjects as $createdObj) {
-                $result['saved'][] = $createdObj;
-            }
-
-            foreach ($updatedObjects as $updatedObj) {
-                $result['updated'][] = $updatedObj;
-            }
-
-            foreach ($unchangedObjects as $unchangedObj) {
-                $result['unchanged'][] = $unchangedObj;
-            }
-
             $this->logger->info(
                 "[SaveObjects] Using database-computed pre-classified objects for response",
                 [

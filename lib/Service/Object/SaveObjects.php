@@ -306,6 +306,11 @@ class SaveObjects
             unchangedCount: count($result['unchanged'])
         );
 
+        // Add aggregate statistics keys for compatibility with callers expecting objectsCreated/Updated/Unchanged.
+        $result['statistics']['objectsCreated']   = $result['statistics']['saved'] ?? 0;
+        $result['statistics']['objectsUpdated']   = $result['statistics']['updated'] ?? 0;
+        $result['statistics']['objectsUnchanged'] = $result['statistics']['unchanged'] ?? 0;
+
         return $result;
     }//end saveObjects()
 
@@ -497,16 +502,18 @@ class SaveObjects
         int $chunkCount
     ): array {
         // Merge arrays.
-        $result['saved']   = array_merge($result['saved'], $chunkResult['saved']);
-        $result['updated'] = array_merge($result['updated'], $chunkResult['updated']);
-        $result['invalid'] = array_merge($result['invalid'], $chunkResult['invalid']);
-        $result['errors']  = array_merge($result['errors'], $chunkResult['errors']);
+        $result['saved']     = array_merge($result['saved'], $chunkResult['saved']);
+        $result['updated']   = array_merge($result['updated'], $chunkResult['updated']);
+        $result['unchanged'] = array_merge($result['unchanged'], $chunkResult['unchanged'] ?? []);
+        $result['invalid']   = array_merge($result['invalid'], $chunkResult['invalid']);
+        $result['errors']    = array_merge($result['errors'], $chunkResult['errors']);
 
         // Update statistics.
-        $result['statistics']['saved']   += $chunkResult['statistics']['saved'] ?? 0;
-        $result['statistics']['updated'] += $chunkResult['statistics']['updated'] ?? 0;
-        $result['statistics']['invalid'] += $chunkResult['statistics']['invalid'] ?? 0;
-        $result['statistics']['errors']  += $chunkResult['statistics']['errors'] ?? 0;
+        $result['statistics']['saved']     += $chunkResult['statistics']['saved'] ?? 0;
+        $result['statistics']['updated']   += $chunkResult['statistics']['updated'] ?? 0;
+        $result['statistics']['unchanged'] += $chunkResult['statistics']['unchanged'] ?? 0;
+        $result['statistics']['invalid']   += $chunkResult['statistics']['invalid'] ?? 0;
+        $result['statistics']['errors']    += $chunkResult['statistics']['errors'] ?? 0;
 
         // Store per-chunk statistics.
         if (isset($result['chunkStatistics']) === false) {
@@ -518,6 +525,7 @@ class SaveObjects
             'count'      => $chunkCount,
             'saved'      => $chunkResult['statistics']['saved'] ?? 0,
             'updated'    => $chunkResult['statistics']['updated'] ?? 0,
+            'unchanged'  => $chunkResult['statistics']['unchanged'] ?? 0,
             'invalid'    => $chunkResult['statistics']['invalid'] ?? 0,
         ];
 
