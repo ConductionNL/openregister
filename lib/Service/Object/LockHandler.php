@@ -5,6 +5,7 @@
  *
  * Handles object locking and unlocking operations.
  * Locks prevent concurrent modifications to objects.
+ * Supports both blob storage and magic table objects.
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Objects\Handlers
@@ -24,7 +25,10 @@ namespace OCA\OpenRegister\Service\Object;
 
 use DateTime;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\LockedException;
 use Psr\Log\LoggerInterface;
 
@@ -32,6 +36,7 @@ use Psr\Log\LoggerInterface;
  * LockHandler
  *
  * Responsible for managing object locks to prevent concurrent modifications.
+ * Works with both blob storage and magic table objects.
  *
  * RESPONSIBILITIES:
  * - Lock objects with optional process ID and duration
@@ -48,21 +53,59 @@ class LockHandler
      * Constructor
      *
      * @param ObjectEntityMapper $objectEntityMapper Object entity mapper
+     * @param MagicMapper        $magicMapper        Magic mapper for magic table operations
      * @param AuditTrailMapper   $auditTrailMapper   Audit trail mapper for logging actions
      * @param LoggerInterface    $logger             PSR-3 logger
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
+        private readonly MagicMapper $magicMapper,
         private readonly AuditTrailMapper $auditTrailMapper,
         private readonly LoggerInterface $logger
     ) {
     }//end __construct()
 
     /**
+     * Find an object across all storage sources and get its context.
+     *
+     * @param string $identifier Object ID or UUID
+     *
+     * @return array{object: \OCA\OpenRegister\Db\ObjectEntity, register: Register|null, schema: Schema|null, isMagic: bool}
+     *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found.
+     */
+    private function findObjectWithContext(string $identifier): array
+    {
+        $result = $this->objectEntityMapper->findAcrossAllSources(
+            identifier: $identifier,
+            includeDeleted: false,
+            _rbac: false,
+            _multitenancy: false
+        );
+
+        // Determine if this is a magic table object.
+        $isMagic = false;
+        if ($result['register'] !== null && $result['schema'] !== null) {
+            $isMagic = $result['register']->isMagicMappingEnabledForSchema(
+                schemaId: $result['schema']->getId(),
+                schemaSlug: $result['schema']->getSlug()
+            );
+        }
+
+        return [
+            'object' => $result['object'],
+            'register' => $result['register'],
+            'schema' => $result['schema'],
+            'isMagic' => $isMagic,
+        ];
+    }
+
+    /**
      * Lock an object
      *
      * Locks an object to prevent concurrent modifications.
      * The lock can be associated with a process and have a duration.
+     * Works with both blob storage and magic table objects.
      *
      * @param string      $identifier Object ID or UUID
      * @param string|null $process    Process ID (for tracking who locked it)
@@ -85,15 +128,31 @@ class LockHandler
         );
 
         try {
-            // Get the object before locking for audit trail.
-            $objectBefore = $this->objectEntityMapper->find($identifier);
+            // Find the object and determine its storage type.
+            $context = $this->findObjectWithContext($identifier);
+            $objectBefore = $context['object'];
 
-            // NOTE: lockObject is deprecated - this will throw BadMethodCallException.
-            // Should use LockingHandler through ObjectService instead.
-            $lockResult = $this->objectEntityMapper->lockObject($identifier, $duration);
+            if ($context['isMagic'] === true) {
+                // Use MagicMapper for magic table objects.
+                $objectAfter = $this->magicMapper->lockObjectEntity(
+                    entity: $objectBefore,
+                    register: $context['register'],
+                    schema: $context['schema'],
+                    lockDuration: $duration
+                );
 
-            // Reload the object after locking to get updated state.
-            $objectAfter = $this->objectEntityMapper->find($identifier);
+                $lockResult = [
+                    'uuid' => $objectAfter->getUuid(),
+                    'locked' => $objectAfter->getLocked(),
+                ];
+            } else {
+                // Use ObjectEntityMapper for blob storage objects.
+                $lockResult = $this->objectEntityMapper->lockObject($identifier, $duration);
+
+                // Reload the object after locking to get updated state.
+                $reloadContext = $this->findObjectWithContext($identifier);
+                $objectAfter = $reloadContext['object'];
+            }
 
             // Record lock action in audit trail.
             $this->auditTrailMapper->createAuditTrail(old: $objectBefore, new: $objectAfter, action: 'lock');
@@ -103,6 +162,7 @@ class LockHandler
                 context: [
                     'identifier' => $identifier,
                     'process'    => $process,
+                    'isMagic'    => $context['isMagic'],
                 ]
             );
 
@@ -132,6 +192,7 @@ class LockHandler
      * Unlock an object
      *
      * Removes the lock from an object, allowing other processes to modify it.
+     * Works with both blob storage and magic table objects.
      *
      * @param string $identifier Object ID or UUID
      *
@@ -147,21 +208,35 @@ class LockHandler
         );
 
         try {
-            // Get the object before unlocking for audit trail.
-            $objectBefore = $this->objectEntityMapper->find($identifier);
+            // Find the object and determine its storage type.
+            $context = $this->findObjectWithContext($identifier);
+            $objectBefore = $context['object'];
 
-            // Call the mapper's unlock method.
-            $this->objectEntityMapper->unlockObject(uuid: $identifier);
+            if ($context['isMagic'] === true) {
+                // Use MagicMapper for magic table objects.
+                $objectAfter = $this->magicMapper->unlockObjectEntity(
+                    entity: $objectBefore,
+                    register: $context['register'],
+                    schema: $context['schema']
+                );
+            } else {
+                // Use ObjectEntityMapper for blob storage objects.
+                $this->objectEntityMapper->unlockObject(uuid: $identifier);
 
-            // Reload the object after unlocking to get updated state.
-            $objectAfter = $this->objectEntityMapper->find($identifier);
+                // Reload the object after unlocking to get updated state.
+                $reloadContext = $this->findObjectWithContext($identifier);
+                $objectAfter = $reloadContext['object'];
+            }
 
             // Record unlock action in audit trail.
             $this->auditTrailMapper->createAuditTrail(old: $objectBefore, new: $objectAfter, action: 'unlock');
 
             $this->logger->info(
                 message: '[LockHandler] Object unlocked successfully',
-                context: ['identifier' => $identifier]
+                context: [
+                    'identifier' => $identifier,
+                    'isMagic'    => $context['isMagic'],
+                ]
             );
 
             return true;
@@ -180,6 +255,8 @@ class LockHandler
     /**
      * Check if an object is locked
      *
+     * Works with both blob storage and magic table objects.
+     *
      * @param string $identifier Object ID or UUID
      *
      * @return bool True if locked, false otherwise
@@ -187,22 +264,21 @@ class LockHandler
     public function isLocked(string $identifier): bool
     {
         try {
-            $object = $this->objectEntityMapper->find($identifier);
+            $context = $this->findObjectWithContext($identifier);
+            $object = $context['object'];
 
-            // Check if object has a lock_date and it's still valid.
-            if (empty($object['lock_date']) === true) {
+            // Check the locked property on the ObjectEntity.
+            $locked = $object->getLocked();
+
+            if (empty($locked) === true) {
                 return false;
             }
 
-            // Check if lock has expired (if lock_duration is set).
-            if (empty($object['lock_duration']) === false) {
-                $lockDate     = new DateTime($object['lock_date']);
-                $lockDuration = (int) $object['lock_duration'];
-                $expiryDate   = $lockDate->modify("+{$lockDuration} seconds");
-
+            // Check if lock has expired.
+            if (isset($locked['expiresAt']) === true) {
+                $expiryDate = new DateTime($locked['expiresAt']);
                 if ($expiryDate < new DateTime()) {
-                    return false;
-                    // Lock expired.
+                    return false; // Lock expired.
                 }
             }
 
@@ -223,37 +299,31 @@ class LockHandler
      * Get lock information for an object
      *
      * Returns details about the lock including process ID and expiry.
+     * Works with both blob storage and magic table objects.
      *
      * @param string $identifier Object ID or UUID
      *
-     * @return array|null Lock info array or null if not found.
+     * @return array|null Lock info array or null if not locked.
      */
     public function getLockInfo(string $identifier): array|null
     {
         try {
-            $object = $this->objectEntityMapper->find($identifier);
+            $context = $this->findObjectWithContext($identifier);
+            $object = $context['object'];
 
-            if (empty($object['lock_date']) === true) {
+            $locked = $object->getLocked();
+
+            if (empty($locked) === true) {
                 return null;
             }
 
-            $lockInfo = [
-                'locked_at' => $object['lock_date'],
-                'process'   => $object['lock_process'] ?? null,
-                'duration'  => $object['lock_duration'] ?? null,
+            return [
+                'locked_at'  => $locked['lockedAt'] ?? null,
+                'locked_by'  => $locked['userId'] ?? null,
+                'process'    => $locked['process'] ?? null,
+                'expires_at' => $locked['expiresAt'] ?? null,
+                'is_magic'   => $context['isMagic'],
             ];
-
-            // Calculate expiry if duration is set.
-            if (empty($object['lock_duration']) === false) {
-                $lockDate   = new DateTime($object['lock_date']);
-                $duration   = (int) $object['lock_duration'];
-                $expiryDate = $lockDate->modify("+{$duration} seconds");
-
-                $lockInfo['expires_at'] = $expiryDate->format('Y-m-d H:i:s');
-                $lockInfo['is_expired'] = $expiryDate < new DateTime();
-            }
-
-            return $lockInfo;
         } catch (\Exception $e) {
             $this->logger->warning(
                 message: '[LockHandler] Failed to get lock info',
@@ -265,4 +335,5 @@ class LockHandler
             return null;
         }//end try
     }//end getLockInfo()
+
 }//end class

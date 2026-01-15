@@ -25,6 +25,8 @@ namespace OCA\OpenRegister\Service\Object;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
 use Psr\Log\LoggerInterface;
 use DateTime;
 
@@ -57,6 +59,30 @@ class PublishHandler
         private readonly LoggerInterface $logger
     ) {
     }//end __construct()
+
+    /**
+     * Find an object across all storage sources and get its context.
+     *
+     * @param string $identifier Object ID or UUID
+     * @param bool   $_rbac      Apply RBAC filters
+     * @param bool   $_multitenancy Apply multitenancy filters
+     *
+     * @return array{object: ObjectEntity, register: Register|null, schema: Schema|null}
+     *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found.
+     */
+    private function findObjectWithContext(
+        string $identifier,
+        bool $_rbac=true,
+        bool $_multitenancy=true
+    ): array {
+        return $this->objectEntityMapper->findAcrossAllSources(
+            identifier: $identifier,
+            includeDeleted: false,
+            _rbac: $_rbac,
+            _multitenancy: $_multitenancy
+        );
+    }//end findObjectWithContext()
 
     /**
      * Publish an object
@@ -92,12 +118,15 @@ class PublishHandler
         );
 
         try {
-            // Fetch object before modification.
-            $objectBefore = $this->objectEntityMapper->find(
-                $uuid,
+            // Fetch object with full context (finds in both blob and magic tables).
+            $context = $this->findObjectWithContext(
+                identifier: $uuid,
                 _rbac: $_rbac,
                 _multitenancy: $_multitenancy
             );
+            $objectBefore = $context['object'];
+            $register = $context['register'];
+            $schema = $context['schema'];
 
             // Clone the object to preserve the old state.
             $objectBeforeClone = clone $objectBefore;
@@ -109,8 +138,12 @@ class PublishHandler
             // Clear depublication date if set.
             $objectBefore->setDepublished(null);
 
-            // Save object.
-            $object = $this->objectEntityMapper->update(entity: $objectBefore);
+            // Save object (with register/schema context for magic mapper routing).
+            $object = $this->objectEntityMapper->update(
+                entity: $objectBefore,
+                register: $register,
+                schema: $schema
+            );
 
             // Record publish action in audit trail (with before/after states).
             try {
@@ -180,12 +213,15 @@ class PublishHandler
         );
 
         try {
-            // Fetch object before modification.
-            $objectBefore = $this->objectEntityMapper->find(
-                $uuid,
+            // Fetch object with full context (finds in both blob and magic tables).
+            $context = $this->findObjectWithContext(
+                identifier: $uuid,
                 _rbac: $_rbac,
                 _multitenancy: $_multitenancy
             );
+            $objectBefore = $context['object'];
+            $register = $context['register'];
+            $schema = $context['schema'];
 
             // Clone the object to preserve the old state.
             $objectBeforeClone = clone $objectBefore;
@@ -196,7 +232,13 @@ class PublishHandler
 
             // Clear publication date if set.
             $objectBefore->setPublished(null);
-            $object = $this->objectEntityMapper->update(entity: $objectBefore);
+
+            // Save object (with register/schema context for magic mapper routing).
+            $object = $this->objectEntityMapper->update(
+                entity: $objectBefore,
+                register: $register,
+                schema: $schema
+            );
 
             // Record depublish action in audit trail (with before/after states).
             $this->auditTrailMapper->createAuditTrail(old: $objectBeforeClone, new: $object, action: 'depublish');

@@ -16,6 +16,8 @@ namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\FileService;
 use OCP\IUserSession;
 use OCP\AppFramework\Db\DoesNotExistException as OcpDoesNotExistException;
@@ -121,26 +123,44 @@ class MergeHandler
         ];
 
         try {
-            // Fetch both objects directly from mapper for updating (not rendered).
+            // Fetch both objects with context (searches both blob and magic tables).
+            $sourceContext = null;
+            $targetContext = null;
+
             try {
-                $sourceObject = $this->objectEntityMapper->find($sourceObjectId);
+                $sourceContext = $this->objectEntityMapper->findAcrossAllSources(
+                    identifier: $sourceObjectId,
+                    includeDeleted: false,
+                    _rbac: false,
+                    _multitenancy: false
+                );
             } catch (Exception $e) {
-                $sourceObject = null;
+                $sourceContext = null;
             }
 
             try {
-                $targetObject = $this->objectEntityMapper->find($targetObjectId);
+                $targetContext = $this->objectEntityMapper->findAcrossAllSources(
+                    identifier: $targetObjectId,
+                    includeDeleted: false,
+                    _rbac: false,
+                    _multitenancy: false
+                );
             } catch (Exception $e) {
-                $targetObject = null;
+                $targetContext = null;
             }
 
-            if ($sourceObject === null) {
+            if ($sourceContext === null) {
                 throw new OcpDoesNotExistException('Source object not found');
             }
 
-            if ($targetObject === null) {
+            if ($targetContext === null) {
                 throw new OcpDoesNotExistException('Target object not found');
             }
+
+            $sourceObject = $sourceContext['object'];
+            $targetObject = $targetContext['object'];
+            $register = $targetContext['register'];
+            $schema = $targetContext['schema'];
 
             // Store original objects in report.
             $mergeReport['sourceObject'] = $sourceObject->jsonSerialize();
@@ -233,7 +253,11 @@ class MergeHandler
 
             // Update target object with merged data.
             $targetObject->setObject($targetObjectData);
-            $updatedObject = $this->objectEntityMapper->update($targetObject);
+            $updatedObject = $this->objectEntityMapper->update(
+                entity: $targetObject,
+                register: $register,
+                schema: $schema
+            );
 
             // Update references to source object.
             $referencingObjects = $this->objectEntityMapper->findByRelation(
@@ -272,7 +296,11 @@ class MergeHandler
                 userSession: $this->userSession,
                 deletedReason: 'Merged into object '.$targetObject->getUuid()
             );
-            $this->objectEntityMapper->update($sourceObject);
+            $this->objectEntityMapper->update(
+                entity: $sourceObject,
+                register: $register,
+                schema: $schema
+            );
 
             // Set success and add merged object to report.
             $mergeReport['success']      = true;

@@ -1509,6 +1509,101 @@ class ObjectEntityMapper extends QBMapper
     }//end findDirectBlobStorage()
 
     /**
+     * Find an object across all storage sources (blob storage and magic tables).
+     *
+     * This method searches both blob storage and all magic tables to find an object
+     * by its identifier (UUID, slug, or URI) without requiring register/schema context.
+     * This is useful for operations like lock/unlock where the caller may not know
+     * which storage backend contains the object.
+     *
+     * @param string|int $identifier     Object identifier (ID, UUID, slug, or URI).
+     * @param bool       $includeDeleted Whether to include deleted objects.
+     * @param bool       $_rbac          Whether to apply RBAC checks.
+     * @param bool       $_multitenancy  Whether to apply multitenancy filtering.
+     *
+     * @return array{object: ObjectEntity, register: Register|null, schema: Schema|null}
+     *               The found object with its register and schema context.
+     *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found in any source.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
+     */
+    public function findAcrossAllSources(
+        string|int $identifier,
+        bool $includeDeleted=false,
+        bool $_rbac=true,
+        bool $_multitenancy=true
+    ): array {
+        $this->logger->debug('[ObjectEntityMapper::findAcrossAllSources] Starting search', [
+            'identifier' => $identifier,
+        ]);
+
+        // First, try to find in blob storage (fast path for non-magic objects).
+        try {
+            $object = $this->findDirectBlobStorage(
+                identifier: $identifier,
+                register: null,
+                schema: null,
+                includeDeleted: $includeDeleted,
+                _rbac: $_rbac,
+                _multitenancy: $_multitenancy
+            );
+
+            $this->logger->debug('[ObjectEntityMapper::findAcrossAllSources] Found in blob storage', [
+                'uuid' => $object->getUuid(),
+            ]);
+
+            // Get register and schema entities if available.
+            $register = null;
+            $schema = null;
+            try {
+                $registerMapper = \OC::$server->get(RegisterMapper::class);
+                $schemaMapper = \OC::$server->get(SchemaMapper::class);
+                if ($object->getRegister() !== null) {
+                    $register = $registerMapper->find(id: $object->getRegister(), _multitenancy: false);
+                }
+                if ($object->getSchema() !== null) {
+                    $schema = $schemaMapper->find(id: $object->getSchema(), _multitenancy: false);
+                }
+            } catch (\Exception $e) {
+                // Ignore - register/schema lookup is optional.
+            }
+
+            return [
+                'object' => $object,
+                'register' => $register,
+                'schema' => $schema,
+            ];
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            // Not found in blob storage, continue to search magic tables.
+            $this->logger->debug('[ObjectEntityMapper::findAcrossAllSources] Not in blob storage, searching magic tables');
+        }
+
+        // Search magic tables via MagicMapper.
+        try {
+            $magicMapper = \OC::$server->get(MagicMapper::class);
+            $result = $magicMapper->findAcrossAllMagicTables(
+                identifier: $identifier,
+                includeDeleted: $includeDeleted,
+                _rbac: $_rbac,
+                _multitenancy: $_multitenancy
+            );
+
+            $this->logger->debug('[ObjectEntityMapper::findAcrossAllSources] Found in magic table', [
+                'uuid' => $result['object']->getUuid(),
+                'registerId' => $result['register']?->getId(),
+                'schemaId' => $result['schema']?->getId(),
+            ]);
+
+            return $result;
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            // Not found in any magic table either.
+            $this->logger->debug('[ObjectEntityMapper::findAcrossAllSources] Not found in any source');
+            throw $e;
+        }
+    }//end findAcrossAllSources()
+
+    /**
      * Find multiple objects by their IDs or UUIDs.
      *
      * @param array $ids Array of IDs or UUIDs.

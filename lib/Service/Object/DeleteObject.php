@@ -122,8 +122,18 @@ class DeleteObject
      */
     public function delete(array | JsonSerializable $object): bool
     {
+        // Find object with context (searches both blob and magic tables).
         // @psalm-suppress UndefinedInterfaceMethod
-        $objectEntity = $this->objectEntityMapper->find($object['id']);
+        $context = $this->objectEntityMapper->findAcrossAllSources(
+            identifier: $object['id'],
+            includeDeleted: false,
+            _rbac: false,
+            _multitenancy: false
+        );
+        $objectEntity = $context['object'];
+        $registerEntity = $context['register'];
+        $schemaEntity = $context['schema'];
+
         if ($object instanceof JsonSerializable === true) {
             $objectEntity = $object;
             $object->jsonSerialize();
@@ -162,10 +172,15 @@ class DeleteObject
 
         /*
          * Update the object in database (soft delete - keeps record with deleted metadata).
+         * Pass register/schema context for magic mapper routing.
          * @psalm-suppress InvalidArgument - ObjectEntity extends Entity
          */
 
-        $result = $this->objectEntityMapper->update($objectEntity) !== null;
+        $result = $this->objectEntityMapper->update(
+            entity: $objectEntity,
+            register: $registerEntity,
+            schema: $schemaEntity
+        ) !== null;
 
         // **CACHE INVALIDATION**: Clear collection and facet caches so soft-deleted objects disappear from regular queries.
         if ($result === true) {
@@ -238,7 +253,14 @@ class DeleteObject
         bool $_multitenancy=true
     ): bool {
         try {
-            $object = $this->objectEntityMapper->find($uuid, null, null, true);
+            // Find object with context (searches both blob and magic tables).
+            $context = $this->objectEntityMapper->findAcrossAllSources(
+                identifier: $uuid,
+                includeDeleted: true,
+                _rbac: $_rbac,
+                _multitenancy: $_multitenancy
+            );
+            $object = $context['object'];
 
             // Handle cascading deletes if this is the root object.
             if ($originalObjectId === null) {

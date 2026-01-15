@@ -3862,6 +3862,154 @@ class MagicMapper
     }//end findInRegisterSchemaTable()
 
     /**
+     * Find an object across all magic tables without knowing register/schema upfront.
+     *
+     * This method searches all existing magic tables for an object by its identifier.
+     * It's useful for operations like lock/unlock where the caller doesn't know
+     * which storage backend contains the object.
+     *
+     * @param string|int $identifier     Object identifier (ID, UUID, slug, or URI).
+     * @param bool       $includeDeleted Whether to include deleted objects.
+     * @param bool       $_rbac          Whether to apply RBAC checks.
+     * @param bool       $_multitenancy  Whether to apply multitenancy filtering.
+     *
+     * @return array{object: ObjectEntity, register: Register|null, schema: Schema|null}
+     *               The found object with its register and schema context.
+     *
+     * @throws DoesNotExistException If object not found in any magic table.
+     */
+    public function findAcrossAllMagicTables(
+        string|int $identifier,
+        bool $includeDeleted=false,
+        bool $_rbac=true,
+        bool $_multitenancy=true
+    ): array {
+        $this->logger->debug('[MagicMapper::findAcrossAllMagicTables] Starting search', [
+            'identifier' => $identifier,
+        ]);
+
+        // Get all magic tables from information_schema.
+        $prefix = 'oc_';
+        $tablePattern = $prefix.'openregister_table_%';
+
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('table_name')
+            ->from('information_schema.tables')
+            ->where($qb->expr()->like('table_name', $qb->createNamedParameter($tablePattern)));
+
+        $result = $qb->executeQuery();
+        $tables = $result->fetchAll();
+        $result->closeCursor();
+
+        $this->logger->debug('[MagicMapper::findAcrossAllMagicTables] Found magic tables', [
+            'count' => count($tables),
+        ]);
+
+        // Get register and schema mappers.
+        $registerMapper = \OC::$server->get(RegisterMapper::class);
+        $schemaMapper = \OC::$server->get(SchemaMapper::class);
+
+        // Search each magic table.
+        foreach ($tables as $tableRow) {
+            $fullTableName = $tableRow['table_name'] ?? $tableRow['TABLE_NAME'] ?? null;
+            if ($fullTableName === null) {
+                continue;
+            }
+
+            // Extract register and schema IDs from table name: oc_openregister_table_{registerId}_{schemaId}
+            $tableName = str_replace($prefix, '', $fullTableName);
+            if (preg_match('/^openregister_table_(\d+)_(\d+)$/', $tableName, $matches) !== 1) {
+                continue;
+            }
+
+            $registerId = (int) $matches[1];
+            $schemaId = (int) $matches[2];
+
+            try {
+                // Build query to search this table.
+                $searchQb = $this->db->getQueryBuilder();
+                $searchQb->select('*')->from($fullTableName);
+
+                // Build identifier conditions.
+                $idCol = self::METADATA_PREFIX.'id';
+                $uuidCol = self::METADATA_PREFIX.'uuid';
+                $slugCol = self::METADATA_PREFIX.'slug';
+                $uriCol = self::METADATA_PREFIX.'uri';
+                $deletedCol = self::METADATA_PREFIX.'deleted';
+
+                $idParam = -1;
+                if (is_numeric($identifier) === true) {
+                    $idParam = (int) $identifier;
+                }
+
+                $searchQb->where(
+                    $searchQb->expr()->orX(
+                        $searchQb->expr()->eq($idCol, $searchQb->createNamedParameter($idParam, IQueryBuilder::PARAM_INT)),
+                        $searchQb->expr()->eq($uuidCol, $searchQb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
+                        $searchQb->expr()->eq($slugCol, $searchQb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
+                        $searchQb->expr()->eq($uriCol, $searchQb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR))
+                    )
+                );
+
+                // Exclude deleted unless requested.
+                if ($includeDeleted === false) {
+                    $searchQb->andWhere($searchQb->expr()->isNull($deletedCol));
+                }
+
+                $searchResult = $searchQb->executeQuery();
+                $row = $searchResult->fetch();
+                $searchResult->closeCursor();
+
+                if ($row !== false) {
+                    // Found the object! Get register and schema entities.
+                    $register = null;
+                    $schema = null;
+
+                    try {
+                        $register = $registerMapper->find(id: $registerId, _multitenancy: false);
+                        $schema = $schemaMapper->find(id: $schemaId, _multitenancy: false);
+                    } catch (\Exception $e) {
+                        $this->logger->warning('[MagicMapper::findAcrossAllMagicTables] Could not load register/schema', [
+                            'registerId' => $registerId,
+                            'schemaId' => $schemaId,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+
+                    // Convert row to ObjectEntity.
+                    $object = $this->convertRowToObjectEntity(
+                        row: $row,
+                        register: $register,
+                        schema: $schema
+                    );
+
+                    $this->logger->debug('[MagicMapper::findAcrossAllMagicTables] Found object', [
+                        'uuid' => $object->getUuid(),
+                        'registerId' => $registerId,
+                        'schemaId' => $schemaId,
+                    ]);
+
+                    return [
+                        'object' => $object,
+                        'register' => $register,
+                        'schema' => $schema,
+                    ];
+                }
+            } catch (\Exception $e) {
+                // Table might not have the expected structure, skip it.
+                $this->logger->debug('[MagicMapper::findAcrossAllMagicTables] Error searching table', [
+                    'table' => $fullTableName,
+                    'error' => $e->getMessage(),
+                ]);
+                continue;
+            }
+        }
+
+        // Not found in any magic table.
+        throw new DoesNotExistException("Object with identifier '$identifier' not found in any magic table");
+    }//end findAcrossAllMagicTables()
+
+    /**
      * Find all objects in register+schema table with filtering and pagination.
      *
      * @param Register   $register  The register context.

@@ -1639,8 +1639,8 @@ class ObjectsController extends Controller
                     id: $id,
                     _extend: [],
                     files: false,
-                    register: null,
-                    schema: null,
+                    register: $resolved['registerEntity'],
+                    schema: $resolved['schemaEntity'],
                     _rbac: false,  // Always disable RBAC for internal read
                     _multitenancy: false  // Always disable multitenancy for internal read
                 );
@@ -1674,8 +1674,8 @@ class ObjectsController extends Controller
             // Unlock the object after saving.
             try {
                 $this->objectService->unlockObject($objectEntity->getUuid());
-            } catch (Exception $e) {
-                // Ignore unlock errors since the update was successful.
+            } catch (\Exception $e) {
+                // Ignore unlock errors since the update was successful (e.g., magic table objects).
                 $this->logger->debug('Failed to unlock after patch', [
                     'exception' => $e->getMessage()
                 ]);

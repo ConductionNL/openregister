@@ -22,7 +22,9 @@ namespace OCA\OpenRegister\Service\Object;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectRevertedEvent;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
@@ -91,8 +93,16 @@ class RevertHandler
         mixed $until,
         bool $overwriteVersion=false
     ): ObjectEntity {
-        // Get the object.
-        $object = $this->objectEntityMapper->find(identifier: $id);
+        // Get the object with context (searches both blob and magic tables).
+        $context = $this->objectEntityMapper->findAcrossAllSources(
+            identifier: $id,
+            includeDeleted: false,
+            _rbac: false,
+            _multitenancy: false
+        );
+        $object = $context['object'];
+        $registerEntity = $context['register'];
+        $schemaEntity = $context['schema'];
 
         // Verify that the object belongs to the specified register and schema.
         if ($object->getRegister() !== $register || $object->getSchema() !== $schema) {
@@ -116,8 +126,12 @@ class RevertHandler
             overwriteVersion: $overwriteVersion
         );
 
-        // Save the reverted object.
-        $savedObject = $this->objectEntityMapper->update($revertedObject);
+        // Save the reverted object (with register/schema context for magic mapper routing).
+        $savedObject = $this->objectEntityMapper->update(
+            entity: $revertedObject,
+            register: $registerEntity,
+            schema: $schemaEntity
+        );
 
         // Dispatch revert event.
         $this->eventDispatcher->dispatchTyped(new ObjectRevertedEvent(object: $savedObject, until: $until));
