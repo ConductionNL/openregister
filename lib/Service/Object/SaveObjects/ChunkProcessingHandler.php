@@ -238,7 +238,7 @@ class ChunkProcessingHandler
                 $this->logger->info("[SaveObjects] Processing complete objects with database-computed classification");
 
                 foreach ($bulkResult as $completeObject) {
-                    $savedObjectIds[] = $completeObject['uuid'];
+                    $savedObjectIds[] = $completeObject['_uuid'];
 
                     // Convert to ObjectEntity for consistent response format.
                     $objEntity = new ObjectEntity();
@@ -252,21 +252,21 @@ class ChunkProcessingHandler
                         case 'created':
                             // 🆕 CREATED: Object was created during this operation (database-computed).
                             $createdObjects[] = $completeObject;
-                            $result['saved'][] = $objEntity;
+                            $result['saved'][] = $objEntity->jsonSerialize();
                             $result['statistics']['saved']++;
                             break;
 
                         case 'updated':
                             // 📝 UPDATED: Existing object was modified during this operation (database-computed).
                             $updatedObjects[] = $completeObject;
-                            $result['updated'][] = $objEntity;
+                            $result['updated'][] = $objEntity->jsonSerialize();
                             $result['statistics']['updated']++;
                             break;
 
                         case 'unchanged':
                             // ⏸️ UNCHANGED: Existing object was not modified (database-computed).
                             $unchangedObjects[] = $completeObject;
-                            $result['unchanged'][] = $objEntity;
+                            $result['unchanged'][] = $objEntity->jsonSerialize();
                             $result['statistics']['unchanged']++;
                             break;
 
@@ -279,7 +279,7 @@ class ChunkProcessingHandler
                                     'object_status' => $objectStatus,
                                 ]
                             );
-                            $unchangedObjects[] = $completeObject;
+                            $unchangedObjects[] = $completeObject->jsonSerialize();
                             $result['unchanged'][] = $objEntity;
                             $result['statistics']['unchanged']++;
                     }//end switch
