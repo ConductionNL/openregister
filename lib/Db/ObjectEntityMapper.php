@@ -2467,7 +2467,7 @@ class ObjectEntityMapper extends QBMapper
     }//end findByRelation()
 
     /**
-     * Search for related objects in blob storage (openregister_objects table).
+     * Search for related objects in blob storage (openregister_objects table). 
      *
      * @param string $search       Search term to find in relationships
      * @param bool   $partialMatch Whether to allow partial matches
