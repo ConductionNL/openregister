@@ -2495,16 +2495,14 @@ class ObjectEntityMapper extends QBMapper
         }
 
         if ($partialMatch === true) {
-            // @psalm-suppress UndefinedInterfaceMethod
             $qb->andWhere(
-                $qb->expr()->like($objectColumn, $qb->createNamedParameter('%'.$qb->escapeLikeParameter($search).'%'))
+                $qb->expr()->like($objectColumn, $qb->createNamedParameter('%'.$this->$qb->escapeLikeParameter($search).'%'))
             );
         }
 
         if ($partialMatch === false) {
-            // @psalm-suppress UndefinedInterfaceMethod
             $qb->andWhere(
-                $qb->expr()->like($objectColumn, $qb->createNamedParameter('%"'.$qb->escapeLikeParameter($search).'"%'))
+                $qb->expr()->like($objectColumn, $qb->createNamedParameter('%"'.$this->$qb->escapeLikeParameter($search).'"%'))
             );
         }
 
