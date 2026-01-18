@@ -958,6 +958,12 @@ class ImportService
 
         // Single pass through row data with proper column filtering.
         $isAdmin = $this->isUserAdmin($currentUser);
+        
+        // Debug log to verify admin status
+        $this->logger->debug('[ImportService] Processing CSV row', [
+            'isAdmin' => $isAdmin,
+            'username' => $currentUser ? $currentUser->getUID() : 'null'
+        ]);
 
         foreach ($rowData as $key => $value) {
             // Skip empty values early.
@@ -1070,9 +1076,11 @@ class ImportService
      */
     private function transformSelfProperty(string $propertyName, string $value): string
     {
-        // Transform published property to MySQL datetime format.
-        if ($propertyName === 'published') {
-            return $this->transformDateTimeValue($value);
+        // Transform datetime properties to MySQL datetime format.
+        if (in_array($propertyName, ['published', 'created', 'updated'], true)) {
+            $transformed = $this->transformDateTimeValue($value);
+            error_log("[ImportService] transformSelfProperty: $propertyName = '$value' -> '$transformed'");
+            return $transformed;
         }
 
         // Transform organisation property - ensure it's a valid UUID.
