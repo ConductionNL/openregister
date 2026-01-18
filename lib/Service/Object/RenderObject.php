@@ -810,19 +810,43 @@ class RenderObject
             $entity->setObject($objectData);
         }
 
-        // Handle inversed properties if depth limit not reached.
-        if ($depth < 10) {
-            $objectData = $this->handleInversedProperties(
-                entity: $entity,
-                objectData: $objectData,
-                _depth: $depth,
-                _filter: $filter,
-                _fields: $fields,
-                _unset: $unset,
-                _registers: $registers,
-                _schemas: $schemas,
-                _objects: $objects
-            );
+        // Handle inversed properties ONLY if we're extending an inverse property.
+        // This is a performance optimization: inverse lookups are expensive (search all magic tables),
+        // so we only do them when explicitly requested via _extend.
+        if ($depth < 10 && empty($_extend) === false) {
+            $schema = $this->getSchema($entity->getSchema());
+            if ($schema !== null) {
+                $inversedProperties = $this->getInversedProperties($schema);
+                // Get the inversedBy values (the property names that will be populated with inverse data).
+                $inversePropertyNames = [];
+                foreach ($inversedProperties as $propName => $propConfig) {
+                    $inversedBy = $propConfig['inversedBy'] ?? ($propConfig['items']['inversedBy'] ?? null);
+                    if ($inversedBy !== null) {
+                        $inversePropertyNames[] = $inversedBy;
+                    }
+                }
+
+                // Normalize extend to array.
+                $extendArray = is_array($_extend) ? $_extend : explode(',', $_extend);
+
+                // Check if any inverse property is being extended (or 'all' is specified).
+                $shouldHandleInverse = in_array('all', $extendArray, true)
+                    || array_intersect($inversePropertyNames, $extendArray) !== [];
+
+                if ($shouldHandleInverse === true) {
+                    $objectData = $this->handleInversedProperties(
+                        entity: $entity,
+                        objectData: $objectData,
+                        _depth: $depth,
+                        _filter: $filter,
+                        _fields: $fields,
+                        _unset: $unset,
+                        _registers: $registers,
+                        _schemas: $schemas,
+                        _objects: $objects
+                    );
+                }
+            }
         }
 
         // Convert extend to an array if it's a string.

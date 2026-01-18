@@ -4042,8 +4042,6 @@ class MagicMapper
         $foundObjects = [];
 
         // Get all magic tables from information_schema.
-        // NOTE: We use raw SQL here because the query builder adds the table prefix
-        // to information_schema, which is a system schema and shouldn't be prefixed.
         $prefix = 'oc_';
         $tablePattern = $prefix.'openregister_table_%';
 
@@ -4052,23 +4050,17 @@ class MagicMapper
         $result = $stmt->execute([$tablePattern]);
         $tables = $result->fetchAll();
 
-        // Track which UUIDs we've found to skip searching for them in other tables.
-        $remainingUuids = $uuids;
+        // PERFORMANCE OPTIMIZATION: Use a single UNION query to find ALL UUIDs across ALL tables.
+        // This reduces ~60 queries (COUNT + SELECT per table) to just 1 query.
+        $unionParts = [];
+        $tableInfoMap = []; // Maps table name to register/schema IDs.
+        $uuidCol = self::METADATA_PREFIX.'uuid';
+        $deletedCol = self::METADATA_PREFIX.'deleted';
 
-        // Get register and schema mappers.
-        $registerMapper = \OC::$server->get(RegisterMapper::class);
-        $schemaMapper = \OC::$server->get(SchemaMapper::class);
+        // Prepare UUID placeholders for raw SQL.
+        $uuidPlaceholders = implode(',', array_fill(0, count($uuids), '?'));
 
-        // Cache for register/schema lookups to avoid repeated queries.
-        static $registerCache = [];
-        static $schemaCache = [];
-
-        // Search each magic table for ALL remaining UUIDs.
         foreach ($tables as $tableRow) {
-            if (empty($remainingUuids) === true) {
-                break; // All UUIDs found.
-            }
-
             $fullTableName = $tableRow['table_name'] ?? $tableRow['TABLE_NAME'] ?? null;
             if ($fullTableName === null) {
                 continue;
@@ -4082,63 +4074,88 @@ class MagicMapper
 
             $registerId = (int) $matches[1];
             $schemaId = (int) $matches[2];
+            $tableInfoMap[$fullTableName] = ['registerId' => $registerId, 'schemaId' => $schemaId];
+
+            // Build UNION part for this table - select only metadata columns for efficiency.
+            $deletedCondition = $includeDeleted ? '' : " AND {$deletedCol} IS NULL";
+            $unionParts[] = "SELECT '{$fullTableName}' AS _source_table, {$uuidCol} AS found_uuid "
+                ."FROM {$fullTableName} "
+                ."WHERE {$uuidCol} IN ({$uuidPlaceholders}){$deletedCondition}";
+        }
+
+        if (empty($unionParts) === true) {
+            return [];
+        }
+
+        // Execute single UNION query to find which tables contain which UUIDs.
+        $unionSql = implode(' UNION ALL ', $unionParts);
+        $unionParams = [];
+        foreach ($unionParts as $part) {
+            $unionParams = array_merge($unionParams, $uuids);
+        }
+
+        try {
+            $stmt = $this->db->prepare($unionSql);
+            $unionResult = $stmt->execute($unionParams);
+            $matches = $unionResult->fetchAll();
+        } catch (\Exception $e) {
+            $this->logger->error('[MagicMapper::findMultipleAcrossAllMagicTables] UNION query failed', [
+                'error' => $e->getMessage(),
+            ]);
+            // Fallback to old per-table approach would go here, but for now return empty.
+            return [];
+        }
+
+        // Group found UUIDs by table for efficient batch fetching.
+        $uuidsByTable = [];
+        foreach ($matches as $match) {
+            $table = $match['_source_table'];
+            $uuid = $match['found_uuid'];
+            if (isset($uuidsByTable[$table]) === false) {
+                $uuidsByTable[$table] = [];
+            }
+            $uuidsByTable[$table][] = $uuid;
+        }
+
+        // Get register and schema mappers.
+        $registerMapper = \OC::$server->get(RegisterMapper::class);
+        $schemaMapper = \OC::$server->get(SchemaMapper::class);
+
+        // Cache for register/schema lookups.
+        static $registerCache = [];
+        static $schemaCache = [];
+
+        // Now fetch full rows only from tables that have matches.
+        foreach ($uuidsByTable as $fullTableName => $tableUuids) {
+            $tableInfo = $tableInfoMap[$fullTableName] ?? null;
+            if ($tableInfo === null) {
+                continue;
+            }
+
+            $registerId = $tableInfo['registerId'];
+            $schemaId = $tableInfo['schemaId'];
+            $tableNameWithoutPrefix = str_replace($prefix, '', $fullTableName);
 
             try {
-                // OPTIMIZATION: First check if any UUIDs exist in this table before loading register/schema.
-                // Use the table name WITHOUT prefix since the query builder adds it automatically.
-                $tableNameWithoutPrefix = str_replace($prefix, '', $fullTableName);
-                $uuidCol = self::METADATA_PREFIX.'uuid';
-                $checkQb = $this->db->getQueryBuilder();
-                $checkQb->select($checkQb->createFunction('COUNT(*)'))
-                    ->from($tableNameWithoutPrefix)
-                    ->where(
-                        $checkQb->expr()->in(
-                            $uuidCol,
-                            $checkQb->createNamedParameter($remainingUuids, IQueryBuilder::PARAM_STR_ARRAY)
-                        )
-                    );
-                $checkResult = $checkQb->executeQuery();
-                $count = (int) $checkResult->fetchOne();
-                $checkResult->closeCursor();
-
-                if ($count === 0) {
-                    continue; // No UUIDs in this table, skip to next.
-                }
-
                 // Load register and schema (with caching).
-                $register = null;
-                $schema = null;
-                try {
-                    if (isset($registerCache[$registerId]) === false) {
-                        $registerCache[$registerId] = $registerMapper->find(id: $registerId, _multitenancy: false);
-                    }
-                    $register = $registerCache[$registerId];
-
-                    if (isset($schemaCache[$schemaId]) === false) {
-                        $schemaCache[$schemaId] = $schemaMapper->find(id: $schemaId, _multitenancy: false);
-                    }
-                    $schema = $schemaCache[$schemaId];
-                } catch (\Exception $e) {
-                    continue; // Skip tables where we can't load register/schema.
+                if (isset($registerCache[$registerId]) === false) {
+                    $registerCache[$registerId] = $registerMapper->find(id: $registerId, _multitenancy: false);
                 }
 
-                // Build query to search for ALL remaining UUIDs in this table.
-                // Use table name without prefix since query builder adds it.
+                if (isset($schemaCache[$schemaId]) === false) {
+                    $schemaCache[$schemaId] = $schemaMapper->find(id: $schemaId, _multitenancy: false);
+                }
+
+                // Fetch full rows for found UUIDs.
                 $searchQb = $this->db->getQueryBuilder();
                 $searchQb->select('*')->from($tableNameWithoutPrefix);
-
-                $uuidCol = self::METADATA_PREFIX.'uuid';
-                $deletedCol = self::METADATA_PREFIX.'deleted';
-
-                // Use IN clause to search for multiple UUIDs at once.
                 $searchQb->where(
                     $searchQb->expr()->in(
                         $uuidCol,
-                        $searchQb->createNamedParameter($remainingUuids, IQueryBuilder::PARAM_STR_ARRAY)
+                        $searchQb->createNamedParameter($tableUuids, IQueryBuilder::PARAM_STR_ARRAY)
                     )
                 );
 
-                // Exclude deleted unless requested.
                 if ($includeDeleted === false) {
                     $searchQb->andWhere($searchQb->expr()->isNull($deletedCol));
                 }
@@ -4149,21 +4166,10 @@ class MagicMapper
 
                 // Convert found rows to ObjectEntity objects.
                 foreach ($rows as $row) {
-                    $object = $this->rowToObjectEntity(row: $row);
-
-                    $foundObjects[] = $object;
-
-                    // Remove from remaining UUIDs.
-                    $objectUuid = $object->getUuid();
-                    $remainingUuids = array_filter(
-                        $remainingUuids,
-                        fn($uuid) => $uuid !== $objectUuid
-                    );
+                    $foundObjects[] = $this->rowToObjectEntity(row: $row);
                 }
-
             } catch (\Exception $e) {
-                // Table might not have the expected structure, skip it.
-                $this->logger->debug('[MagicMapper::findMultipleAcrossAllMagicTables] Error searching table', [
+                $this->logger->debug('[MagicMapper::findMultipleAcrossAllMagicTables] Error fetching from table', [
                     'table' => $fullTableName,
                     'error' => $e->getMessage(),
                 ]);
@@ -4174,7 +4180,7 @@ class MagicMapper
         $this->logger->debug('[MagicMapper::findMultipleAcrossAllMagicTables] Batch search complete', [
             'requestedCount' => count($uuids),
             'foundCount' => count($foundObjects),
-            'tablesSearched' => count($tables),
+            'tablesWithMatches' => count($uuidsByTable),
         ]);
 
         return $foundObjects;

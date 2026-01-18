@@ -129,10 +129,18 @@ class MagicBulkHandler
             $preparedObject['_schema']       = $schema->getId();
             $preparedObject['_owner']        = $selfData['owner'] ?? $object['owner'] ?? null;
             $preparedObject['_organisation'] = $selfData['organisation'] ?? $object['organisation'] ?? null;
-            $preparedObject['_created']      = $selfData['created'] ?? $object['created'] ?? $now->format('Y-m-d H:i:s');
-            $preparedObject['_updated']      = $now->format('Y-m-d H:i:s');
-            $preparedObject['_published']    = $selfData['published'] ?? $object['published'] ?? null;
-            $preparedObject['_depublished']  = $selfData['depublished'] ?? $object['depublished'] ?? null;
+            
+            // Format datetime fields to MySQL-compatible format (Y-m-d H:i:s)
+            $createdValue = $selfData['created'] ?? $object['created'] ?? $now->format('Y-m-d H:i:s');
+            $preparedObject['_created'] = $this->formatDateTimeForDatabase($createdValue, $now->format('Y-m-d H:i:s'));
+            
+            $preparedObject['_updated'] = $now->format('Y-m-d H:i:s');
+            
+            $publishedValue = $selfData['published'] ?? $object['published'] ?? null;
+            $preparedObject['_published'] = $publishedValue ? $this->formatDateTimeForDatabase($publishedValue, null) : null;
+            
+            $depublishedValue = $selfData['depublished'] ?? $object['depublished'] ?? null;
+            $preparedObject['_depublished'] = $depublishedValue ? $this->formatDateTimeForDatabase($depublishedValue, null) : null;
             $preparedObject['_name']         = $selfData['name'] ?? $object['name'] ?? null;
             $preparedObject['_description']  = $selfData['description'] ?? $object['description'] ?? null;
             $preparedObject['_summary']      = $selfData['summary'] ?? $object['summary'] ?? null;
@@ -651,4 +659,43 @@ class MagicBulkHandler
             return [];
         }//end try
     }//end getTableColumns()
+
+    /**
+     * Format a datetime value to MySQL-compatible format
+     *
+     * Converts ISO 8601 datetime strings (with 'T' and timezone) to MySQL format (Y-m-d H:i:s).
+     *
+     * @param mixed       $value   The datetime value (string, DateTime object, or null)
+     * @param string|null $default Default value if conversion fails
+     *
+     * @return string|null Formatted datetime string or default value
+     */
+    private function formatDateTimeForDatabase(mixed $value, ?string $default): ?string
+    {
+        // If already a DateTime object, format it.
+        if ($value instanceof DateTime) {
+            return $value->format('Y-m-d H:i:s');
+        }
+
+        // If it's a string, try to parse and reformat.
+        if (is_string($value) === true) {
+            try {
+                $dateTime = new DateTime($value);
+                return $dateTime->format('Y-m-d H:i:s');
+            } catch (\Exception $e) {
+                // If parsing fails, return the default.
+                $this->logger->debug(
+                    '[MagicBulkHandler] Failed to parse datetime value',
+                    [
+                        'value' => $value,
+                        'error' => $e->getMessage(),
+                    ]
+                );
+                return $default;
+            }
+        }
+
+        // For any other type, return the default.
+        return $default;
+    }//end formatDateTimeForDatabase()
 }//end class
