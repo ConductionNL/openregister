@@ -828,8 +828,7 @@ class OptimizedBulkOperations
                 $entity = $this->createEntityFromData($objectData);
 
                 if ($entity !== null) {
-                    $this->eventDispatcher->dispatch(
-                        ObjectCreatedEvent::class,
+                    $this->eventDispatcher->dispatchTyped(
                         new ObjectCreatedEvent(object: $entity)
                     );
                     $createdCount++;
@@ -853,8 +852,7 @@ class OptimizedBulkOperations
                     // For bulk updates, we don't have the old object.
                     // Pass the entity as both old and new (best approximation for bulk context).
                     // @psalm-suppress NullArgument Entity is validated by instanceof check above.
-                    $this->eventDispatcher->dispatch(
-                        ObjectUpdatedEvent::class,
+                    $this->eventDispatcher->dispatchTyped(
                         new ObjectUpdatedEvent(newObject: $entity, oldObject: $entity)
                     );
                     $updatedCount++;

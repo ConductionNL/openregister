@@ -371,7 +371,7 @@ class ObjectEntityMapper extends QBMapper
     public function insert(Entity $entity, ?Register $register=null, ?Schema $schema=null): Entity
     {
         // Dispatch creating event.
-        $this->eventDispatcher->dispatch(ObjectCreatingEvent::class, new ObjectCreatingEvent($entity));
+        $this->eventDispatcher->dispatchTyped(new ObjectCreatingEvent($entity));
 
         // Check if this entity should use magic mapping.
         if ($entity instanceof ObjectEntity && $this->shouldUseMagicMapper($entity) === true) {
@@ -381,7 +381,7 @@ class ObjectEntityMapper extends QBMapper
                 $result        = $unifiedMapper->insert(entity: $entity, register: $register, schema: $schema);
 
                 // Dispatch created event.
-                $this->eventDispatcher->dispatch(ObjectCreatedEvent::class, new ObjectCreatedEvent($result));
+                $this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent($result));
 
                 return $result;
             } catch (Exception $e) {
@@ -402,7 +402,7 @@ class ObjectEntityMapper extends QBMapper
         $result = parent::insert($entity);
 
         // Dispatch created event.
-        $this->eventDispatcher->dispatch(ObjectCreatedEvent::class, new ObjectCreatedEvent($result));
+        $this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent($result));
 
         return $result;
     }//end insert()
@@ -420,13 +420,13 @@ class ObjectEntityMapper extends QBMapper
     public function insertDirectBlobStorage(\OCP\AppFramework\Db\Entity $entity): ObjectEntity
     {
         // Dispatch creating event.
-        $this->eventDispatcher->dispatch(ObjectCreatingEvent::class, new ObjectCreatingEvent($entity));
+        $this->eventDispatcher->dispatchTyped(new ObjectCreatingEvent($entity));
 
         // Call parent QBMapper insert directly (blob storage).
         $result = parent::insert($entity);
 
         // Dispatch created event.
-        $this->eventDispatcher->dispatch(ObjectCreatedEvent::class, new ObjectCreatedEvent($result));
+        $this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent($result));
 
         return $result;
     }//end insertDirectBlobStorage()
@@ -556,8 +556,7 @@ class ObjectEntityMapper extends QBMapper
             $this->logger->debug('[ObjectEntityMapper] Could not fetch old object for event', ['error' => $e->getMessage()]);
         }
 
-        $this->eventDispatcher->dispatch(
-            ObjectUpdatingEvent::class,
+        $this->eventDispatcher->dispatchTyped(
             new ObjectUpdatingEvent(
                 newObject: $entity,
                 oldObject: $oldObject
@@ -586,7 +585,7 @@ class ObjectEntityMapper extends QBMapper
                 $result        = $unifiedMapper->update(entity: $entity, register: $register, schema: $schema);
 
                 // Dispatch updated event with correct oldObject.
-                $this->eventDispatcher->dispatch(ObjectUpdatedEvent::class, new ObjectUpdatedEvent($result, $oldObject));
+                $this->eventDispatcher->dispatchTyped(new ObjectUpdatedEvent($result, $oldObject));
 
                 return $result;
             } catch (Exception $e) {
@@ -607,7 +606,7 @@ class ObjectEntityMapper extends QBMapper
         $result = parent::update($entity);
 
         // Dispatch updated event with correct oldObject.
-        $this->eventDispatcher->dispatch(ObjectUpdatedEvent::class, new ObjectUpdatedEvent($result, $oldObject));
+        $this->eventDispatcher->dispatchTyped(new ObjectUpdatedEvent($result, $oldObject));
 
         return $result;
     }//end update()
@@ -630,8 +629,7 @@ class ObjectEntityMapper extends QBMapper
         }
         
         // Dispatch updating event.
-        $this->eventDispatcher->dispatch(
-            ObjectUpdatingEvent::class,
+        $this->eventDispatcher->dispatchTyped(
             new ObjectUpdatingEvent(
                 newObject: $entity,
                 oldObject: $oldEntity
@@ -642,7 +640,7 @@ class ObjectEntityMapper extends QBMapper
         $result = parent::update($entity);
 
         // Dispatch updated event with correct old object.
-        $this->eventDispatcher->dispatch(ObjectUpdatedEvent::class, new ObjectUpdatedEvent($result, $oldEntity));
+        $this->eventDispatcher->dispatchTyped(new ObjectUpdatedEvent($result, $oldEntity));
 
         return $result;
     }//end updateDirectBlobStorage()
@@ -659,13 +657,13 @@ class ObjectEntityMapper extends QBMapper
     public function delete(\OCP\AppFramework\Db\Entity $entity): \OCP\AppFramework\Db\Entity
     {
         // Dispatch deleting event.
-        $this->eventDispatcher->dispatch(ObjectDeletingEvent::class, new ObjectDeletingEvent($entity));
+        $this->eventDispatcher->dispatchTyped(new ObjectDeletingEvent($entity));
 
         // Call parent QBMapper delete directly (CrudHandler has circular dependency).
         $result = parent::delete($entity);
 
         // Dispatch deleted event.
-        $this->eventDispatcher->dispatch(ObjectDeletedEvent::class, new ObjectDeletedEvent($result));
+        $this->eventDispatcher->dispatchTyped(new ObjectDeletedEvent($result));
 
         return $result;
     }//end delete()

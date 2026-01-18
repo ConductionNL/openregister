@@ -4500,7 +4500,7 @@ class MagicMapper
         Schema $schema
     ): ObjectEntity {
         // Dispatch creating event for audit trails.
-        $this->eventDispatcher->dispatch(ObjectCreatingEvent::class, new ObjectCreatingEvent(object: $entity));
+        $this->eventDispatcher->dispatchTyped(new ObjectCreatingEvent(object: $entity));
 
         // Ensure table exists.
         $this->ensureTableForRegisterSchema(register: $register, schema: $schema);
@@ -4567,7 +4567,7 @@ class MagicMapper
         }
 
         // Dispatch created event for audit trails with fresh entity.
-        $this->eventDispatcher->dispatch(ObjectCreatedEvent::class, new ObjectCreatedEvent(object: $insertedEntity));
+        $this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent(object: $insertedEntity));
 
         return $insertedEntity;
     }//end insertObjectEntity()
@@ -4600,7 +4600,7 @@ class MagicMapper
 
         // Dispatch updating event for audit trails.
         $event = new ObjectUpdatingEvent(newObject: $entity, oldObject: $oldObject);
-        $this->eventDispatcher->dispatch(ObjectUpdatingEvent::class, $event);
+        $this->eventDispatcher->dispatchTyped($event);
 
         $tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
         $uuid      = $entity->getUuid();
@@ -4651,7 +4651,7 @@ class MagicMapper
         ]);
         
         $event = new ObjectUpdatedEvent(newObject: $updatedEntity, oldObject: $oldObject);
-        $this->eventDispatcher->dispatch(ObjectUpdatedEvent::class, $event);
+        $this->eventDispatcher->dispatchTyped($event);
         
         $this->logger->critical('[MagicMapper] ObjectUpdatedEvent dispatched', [
             'app' => 'openregister',
@@ -4684,7 +4684,7 @@ class MagicMapper
         bool $hardDelete=false
     ): ObjectEntity {
         // Dispatch deleting event for audit trails.
-        $this->eventDispatcher->dispatch(ObjectDeletingEvent::class, new ObjectDeletingEvent(object: $entity));
+        $this->eventDispatcher->dispatchTyped(new ObjectDeletingEvent(object: $entity));
 
         $tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
         $uuid      = $entity->getUuid();
@@ -4738,7 +4738,7 @@ class MagicMapper
         }
 
         // Dispatch deleted event for audit trails.
-        $this->eventDispatcher->dispatch(ObjectDeletedEvent::class, new ObjectDeletedEvent(object: $entity));
+        $this->eventDispatcher->dispatchTyped(new ObjectDeletedEvent(object: $entity));
 
         return $entity;
     }//end deleteObjectEntity()
@@ -4776,7 +4776,7 @@ class MagicMapper
         );
 
         // Dispatch locked event for audit trails.
-        $this->eventDispatcher->dispatch(ObjectLockedEvent::class, new ObjectLockedEvent(object: $entity));
+        $this->eventDispatcher->dispatchTyped(new ObjectLockedEvent(object: $entity));
 
         return $entity;
     }//end lockObjectEntity()
@@ -4809,7 +4809,7 @@ class MagicMapper
         );
 
         // Dispatch unlocked event for audit trails.
-        $this->eventDispatcher->dispatch(ObjectUnlockedEvent::class, new ObjectUnlockedEvent(object: $entity));
+        $this->eventDispatcher->dispatchTyped(new ObjectUnlockedEvent(object: $entity));
 
         return $entity;
     }//end unlockObjectEntity()
@@ -5324,6 +5324,29 @@ class MagicMapper
             $entity->setName($row['_name']);
         }
 
+        // Build column-to-property mapping from schema if available.
+        // This allows us to restore original property names (e.g., 'e-mailadres')
+        // from their sanitized column names (e.g., 'e_mailadres').
+        $columnToPropertyMap = [];
+        if (isset($row['_schema']) === true) {
+            try {
+                $schema = $this->schemaMapper->find((int) $row['_schema']);
+                if ($schema !== null) {
+                    $properties = $schema->getProperties() ?? [];
+                    foreach ($properties as $propertyName => $propertyDef) {
+                        $columnName = $this->sanitizeColumnName($propertyName);
+                        $columnToPropertyMap[$columnName] = $propertyName;
+                    }
+                }
+            } catch (\Exception $e) {
+                // Schema not found - will fall back to column names as-is.
+                $this->logger->debug('[MagicMapper] Could not load schema for property mapping', [
+                    'schemaId' => $row['_schema'],
+                    'error'    => $e->getMessage(),
+                ]);
+            }
+        }
+
         // Build the object data from non-metadata columns.
         $objectData = [];
         foreach ($row as $column => $value) {
@@ -5332,16 +5355,19 @@ class MagicMapper
                 continue;
             }
 
+            // Map column name back to original property name if we have a mapping.
+            $propertyName = $columnToPropertyMap[$column] ?? $column;
+
             // Decode JSON values.
             if (is_string($value) === true) {
                 $decoded = json_decode($value, true);
                 if (json_last_error() === JSON_ERROR_NONE) {
-                    $objectData[$column] = $decoded;
+                    $objectData[$propertyName] = $decoded;
                     continue;
                 }
             }
 
-            $objectData[$column] = $value;
+            $objectData[$propertyName] = $value;
         }
 
         $entity->setObject($objectData);
