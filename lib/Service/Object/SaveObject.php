@@ -875,6 +875,9 @@ class SaveObject
         }//end foreach
 
         // Render twig templated default values.
+        // Merge incoming $data with existing object data so Twig templates can reference
+        // both newly submitted values and existing object properties.
+        $twigContext = array_merge($objectEntity->getObjectArray(), $data);
         $renderedDefaults = [];
         foreach ($defaultValues as $key => $defaultValue) {
             try {
@@ -883,8 +886,7 @@ class SaveObject
                     && str_contains(haystack: $defaultValue, needle: '}}') === true
                 ) {
                     $template    = $this->twig->createTemplate($defaultValue);
-                    $objectArray = $objectEntity->getObjectArray();
-                    $renderedDefaults[$key] = $template->render($objectArray);
+                    $renderedDefaults[$key] = $template->render($twigContext);
                 }
 
                 if (is_string($defaultValue) === false
