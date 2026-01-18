@@ -122,21 +122,30 @@ class DeleteObject
      */
     public function delete(array | JsonSerializable $object): bool
     {
-        // Find object with context (searches both blob and magic tables).
-        // @psalm-suppress UndefinedInterfaceMethod
-        $context = $this->objectEntityMapper->findAcrossAllSources(
-            identifier: $object['id'],
-            includeDeleted: false,
-            _rbac: false,
-            _multitenancy: false
-        );
-        $objectEntity = $context['object'];
-        $registerEntity = $context['register'];
-        $schemaEntity = $context['schema'];
-
-        if ($object instanceof JsonSerializable === true) {
+        // Handle ObjectEntity passed from deleteObject() - skip redundant lookup.
+        if ($object instanceof ObjectEntity === true) {
             $objectEntity = $object;
-            $object->jsonSerialize();
+            // Get register/schema context for this object.
+            $context = $this->objectEntityMapper->findAcrossAllSources(
+                identifier: $objectEntity->getUuid(),
+                includeDeleted: true,
+                _rbac: false,
+                _multitenancy: false
+            );
+            $registerEntity = $context['register'];
+            $schemaEntity = $context['schema'];
+        } else {
+            // Handle array input - find object with context (searches both blob and magic tables).
+            // @psalm-suppress UndefinedInterfaceMethod
+            $context = $this->objectEntityMapper->findAcrossAllSources(
+                identifier: $object['id'],
+                includeDeleted: false,
+                _rbac: false,
+                _multitenancy: false
+            );
+            $objectEntity = $context['object'];
+            $registerEntity = $context['register'];
+            $schemaEntity = $context['schema'];
         }
 
         // **SOFT DELETE**: Mark object as deleted instead of removing from database.
@@ -245,8 +254,8 @@ class DeleteObject
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function deleteObject(
-        Register | int | string $register,
-        Schema | int | string $schema,
+        Register | int | string | null $register,
+        Schema | int | string | null $schema,
         string $uuid,
         ?string $originalObjectId=null,
         bool $_rbac=true,
@@ -263,12 +272,28 @@ class DeleteObject
             $object = $context['object'];
 
             // Handle cascading deletes if this is the root object.
+            // Use register and schema from context if provided, otherwise use passed parameters.
             if ($originalObjectId === null) {
-                $this->cascadeDeleteObjects(register: $register, schema: $schema, object: $object, originalObjectId: $uuid);
+                $contextRegister = $context['register'] ?? null;
+                $contextSchema   = $context['schema'] ?? null;
+
+                // Only cascade if we have valid Register and Schema objects.
+                if ($contextRegister instanceof Register && $contextSchema instanceof Schema) {
+                    $this->cascadeDeleteObjects(
+                        register: $contextRegister,
+                        schema: $contextSchema,
+                        object: $object,
+                        originalObjectId: $uuid
+                    );
+                }
             }
 
             return $this->delete($object);
         } catch (Exception $e) {
+            $this->logger->warning('[DeleteObject] Delete failed', [
+                'uuid'  => $uuid,
+                'error' => $e->getMessage(),
+            ]);
             return false;
         }
     }//end deleteObject()

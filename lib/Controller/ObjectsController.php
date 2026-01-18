@@ -1255,7 +1255,7 @@ class ObjectsController extends Controller
                         $registers[$registerId] = $resolved['registerEntity']->jsonSerialize();
                     }
 
-                    $renderedObject['@self']['registers'] = $registers;
+                    $renderedData['@self']['registers'] = $registers;
                 }
 
                 // Add schemas if _schemas or _schema is in _extend.
@@ -1268,18 +1268,18 @@ class ObjectsController extends Controller
                         $schemas[$schemaId] = $resolved['schemaEntity']->jsonSerialize();
                     }
 
-                    $renderedObject['@self']['schemas'] = $schemas;
+                    $renderedData['@self']['schemas'] = $schemas;
                 }
 
                 // Get extended objects indexed by UUID (for _extend lookups).
                 // Always include objects if any _extend is requested.
                 if (empty($extendArray) === false) {
                     $extendedObjects = $objectService->getExtendedObjects();
-                    $renderedObject['@self']['objects'] = $extendedObjects;
+                    $renderedData['@self']['objects'] = $extendedObjects;
                 }
             }//end if
 
-            return new JSONResponse(data: $renderedObject);
+            return new JSONResponse(data: $renderedData);
         } catch (DoesNotExistException $exception) {
             return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
         }//end try

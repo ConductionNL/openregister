@@ -3937,8 +3937,9 @@ class MagicMapper
 
             try {
                 // Build query to search this table.
+                // NOTE: Use $tableName (without prefix) because QueryBuilder adds prefix automatically.
                 $searchQb = $this->db->getQueryBuilder();
-                $searchQb->select('*')->from($fullTableName);
+                $searchQb->select('*')->from($tableName);
 
                 // Build identifier conditions.
                 $idCol = self::METADATA_PREFIX.'id';
@@ -3989,8 +3990,8 @@ class MagicMapper
                     // Convert row to ObjectEntity.
                     $object = $this->convertRowToObjectEntity(
                         row: $row,
-                        register: $register,
-                        schema: $schema
+                        _register: $register,
+                        _schema: $schema
                     );
 
                     $this->logger->debug('[MagicMapper::findAcrossAllMagicTables] Found object', [
