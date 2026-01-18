@@ -43,6 +43,7 @@ Retrieves a paginated list of objects that match the specified register and sche
     - `_registers`: Include full register object(s) in `@self.registers`
     - `_schemas`: Include full schema object(s) in `@self.schemas`
   - When any `_extend` is requested, `@self.objects` will contain all extended objects indexed by UUID
+  - **Performance note**: Using `_extend` adds approximately 300ms overhead per request due to additional database queries for related objects. For performance-critical applications, consider fetching related objects separately or using caching strategies.
 - **`_fields`**: Fields to include (comma-separated)
 - **`_filter`**: Fields to filter (comma-separated)
 - **`_unset`**: Fields to exclude (comma-separated)
