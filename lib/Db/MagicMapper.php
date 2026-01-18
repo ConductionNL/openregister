@@ -4800,6 +4800,128 @@ class MagicMapper
     }//end findByRelationUsingRelationsColumn()
 
     /**
+     * Batch find objects in a specific schema that reference ANY of the given UUIDs.
+     *
+     * This is a CRITICAL performance optimization for inverse relationship preloading.
+     * Instead of N queries (one per entity), we do ONE query per target schema to find
+     * ALL objects that reference ANY of our entities.
+     *
+     * Uses the _relations GIN index for efficient containment queries.
+     *
+     * @param array  $uuids      Array of UUIDs to search for in _relations
+     * @param int    $schemaId   The target schema ID to search in
+     * @param int    $registerId The register ID for the magic table
+     * @param string $fieldName  The field name to check (for logging/debugging)
+     *
+     * @return ObjectEntity[] Array of objects that have ANY of the UUIDs in _relations
+     *
+     * @psalm-return list<ObjectEntity>
+     */
+    public function findByRelationBatchInSchema(
+        array $uuids,
+        int $schemaId,
+        int $registerId,
+        string $fieldName
+    ): array {
+        if (empty($uuids) === true) {
+            return [];
+        }
+
+        // Construct the magic table name directly: openregister_table_{registerId}_{schemaId}
+        $tableName     = self::TABLE_PREFIX.$registerId.'_'.$schemaId;
+        $fullTableName = 'oc_'.$tableName;
+
+        // Check if the table exists.
+        if ($this->checkTableExistsInDatabase($tableName) === false) {
+            $this->logger->debug(
+                '[MagicMapper] findByRelationBatchInSchema: table does not exist',
+                [
+                    'tableName'  => $fullTableName,
+                    'schemaId'   => $schemaId,
+                    'registerId' => $registerId,
+                ]
+            );
+            return [];
+        }
+
+        $platform   = $this->db->getDatabasePlatform();
+        $isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
+
+        $startTime = microtime(true);
+        $results   = [];
+
+        try {
+            // Build a query that finds objects whose _relations contains ANY of the given UUIDs.
+            // For PostgreSQL with GIN index, we use @> operator with OR conditions.
+            // For MySQL, we use JSON_CONTAINS with OR conditions.
+            $conditions = [];
+            $params     = [];
+
+            foreach ($uuids as $uuid) {
+                if ($isPostgres === true) {
+                    $conditions[] = '_relations @> ?';
+                    $params[]     = json_encode([$uuid]);
+                } else {
+                    $conditions[] = 'JSON_CONTAINS(_relations, ?)';
+                    $params[]     = json_encode($uuid);
+                }
+            }
+
+            $conditionSql = implode(' OR ', $conditions);
+
+            $sql = "SELECT * FROM {$fullTableName}
+                    WHERE _deleted IS NULL
+                    AND ({$conditionSql})
+                    LIMIT 1000";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            $rows = $stmt->fetchAll();
+
+            foreach ($rows as $row) {
+                try {
+                    $entity = $this->rowToObjectEntity(row: $row);
+                    if ($entity !== null) {
+                        $results[] = $entity;
+                    }
+                } catch (Exception $e) {
+                    // Skip rows that can't be converted.
+                    continue;
+                }
+            }
+
+            $executionTime = round((microtime(true) - $startTime) * 1000, 2);
+
+            $this->logger->info(
+                '[MagicMapper] findByRelationBatchInSchema completed',
+                [
+                    'tableName'     => $fullTableName,
+                    'schemaId'      => $schemaId,
+                    'registerId'    => $registerId,
+                    'fieldName'     => $fieldName,
+                    'uuidCount'     => count($uuids),
+                    'resultCount'   => count($results),
+                    'executionTime' => $executionTime.'ms',
+                ]
+            );
+        } catch (Exception $e) {
+            $this->logger->warning(
+                '[MagicMapper] findByRelationBatchInSchema failed',
+                [
+                    'tableName'  => $fullTableName,
+                    'schemaId'   => $schemaId,
+                    'registerId' => $registerId,
+                    'fieldName'  => $fieldName,
+                    'uuidCount'  => count($uuids),
+                    'error'      => $e->getMessage(),
+                ]
+            );
+        }//end try
+
+        return $results;
+    }//end findByRelationBatchInSchema()
+
+    /**
      * Search for objects containing a UUID in a specific magic mapper table.
      *
      * @param string $uuid      The UUID to search for

@@ -1237,7 +1237,9 @@ class ObjectsController extends Controller
             // Add registers, schemas, and extended objects to @self for single object responses.
             // Only include when explicitly requested via _extend parameter.
             // Supports both singular (_register, _schema) and plural (_registers, _schemas) forms.
-            if (isset($renderedObject['@self']) === true) {
+            // Note: renderEntity returns an array (already serialized), not an ObjectEntity.
+            $renderedData = $renderedObject;
+            if (isset($renderedData['@self']) === true) {
                 $extendArray = [];
                 if (is_array($extend) === true) {
                     $extendArray = $extend;

@@ -96,6 +96,13 @@ class RenderObject
      */
     private array $ultraPreloadCache = [];
 
+    /**
+     * Cache of inverse relationships: maps entity UUID to array of referencing objects.
+     * Used to batch-load inverse relationships for performance optimization.
+     *
+     * @var array<string, ObjectEntity[]>
+     */
+    private array $inverseRelationCache = [];
 
     /**
      * Constructor for RenderObject handler.
@@ -817,14 +824,9 @@ class RenderObject
             $schema = $this->getSchema($entity->getSchema());
             if ($schema !== null) {
                 $inversedProperties = $this->getInversedProperties($schema);
-                // Get the inversedBy values (the property names that will be populated with inverse data).
-                $inversePropertyNames = [];
-                foreach ($inversedProperties as $propName => $propConfig) {
-                    $inversedBy = $propConfig['inversedBy'] ?? ($propConfig['items']['inversedBy'] ?? null);
-                    if ($inversedBy !== null) {
-                        $inversePropertyNames[] = $inversedBy;
-                    }
-                }
+                // Get the property names that have inversedBy configs (e.g., "contactpersonen").
+                // These are the properties that need inverse lookups to populate their data.
+                $inversePropertyNames = array_keys($inversedProperties);
 
                 // Normalize extend to array.
                 $extendArray = is_array($_extend) ? $_extend : explode(',', $_extend);
@@ -1259,6 +1261,148 @@ class RenderObject
     }//end collectUuidsForExtend()
 
     /**
+     * Batch preload inverse relationships for all entities.
+     *
+     * This is a CRITICAL performance optimization that prevents N+1 queries when extending
+     * inverse properties like 'contactpersonen'. Instead of searching all magic tables
+     * for each entity, we:
+     * 1. Identify which inverse properties are being extended
+     * 2. Determine the target schema for each inverse property
+     * 3. Do ONE batch query per target schema to find ALL referencing objects
+     * 4. Cache the results for use during individual entity rendering
+     *
+     * @param array $entities Array of ObjectEntity instances being rendered
+     * @param array $extend   The _extend parameter specifying which properties to extend
+     *
+     * @return void
+     */
+    private function preloadInverseRelationships(array $entities, array $extend): void
+    {
+        if (empty($entities) === true || empty($extend) === true) {
+            return;
+        }
+
+        // Get the first entity to determine the schema (all entities should have the same schema).
+        $firstEntity = reset($entities);
+        if ($firstEntity instanceof \OCA\OpenRegister\Db\ObjectEntity === false) {
+            return;
+        }
+
+        $schema = $this->getSchema($firstEntity->getSchema());
+        if ($schema === null) {
+            return;
+        }
+
+        // Get properties that have inversedBy configurations.
+        $inversedProperties = $this->getInversedProperties($schema);
+        if (empty($inversedProperties) === true) {
+            return;
+        }
+
+        // Filter to only inverse properties that are being extended.
+        $inversePropertiesToExtend = [];
+        foreach ($inversedProperties as $propName => $propConfig) {
+            if (in_array($propName, $extend, true) === true || in_array('all', $extend, true) === true) {
+                $inversePropertiesToExtend[$propName] = $propConfig;
+            }
+        }
+
+        if (empty($inversePropertiesToExtend) === true) {
+            return;
+        }
+
+        // Collect all entity UUIDs.
+        $entityUuids = [];
+        foreach ($entities as $entity) {
+            if ($entity instanceof \OCA\OpenRegister\Db\ObjectEntity === true && $entity->getUuid() !== null) {
+                $entityUuids[] = $entity->getUuid();
+            }
+        }
+
+        if (empty($entityUuids) === true) {
+            return;
+        }
+
+        $this->logger->info('[INVERSE_PRELOAD] Starting batch inverse preload', [
+            'entityCount' => count($entityUuids),
+            'inverseProperties' => array_keys($inversePropertiesToExtend),
+        ]);
+
+        // For each inverse property, determine target schema and batch-load referencing objects.
+        foreach ($inversePropertiesToExtend as $propName => $propConfig) {
+            // Extract target schema reference.
+            $targetSchemaRef = $propConfig['items']['$ref'] ?? $propConfig['$ref'] ?? null;
+            $inversedByField = $propConfig['items']['inversedBy'] ?? $propConfig['inversedBy'] ?? null;
+
+            if ($targetSchemaRef === null || $inversedByField === null) {
+                continue;
+            }
+
+            // Resolve schema reference to ID.
+            $targetSchemaId = $this->resolveSchemaReference($targetSchemaRef);
+            if (empty($targetSchemaId) === true) {
+                continue;
+            }
+
+            // Get the target schema to find its register.
+            $targetSchema = $this->getSchema($targetSchemaId);
+            if ($targetSchema === null) {
+                continue;
+            }
+
+            // Batch find all objects of the target schema that reference ANY of our entity UUIDs.
+            // This uses the _relations column with GIN index for efficiency.
+            try {
+                $magicMapper = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
+                $referencingObjects = $magicMapper->findByRelationBatchInSchema(
+                    uuids: $entityUuids,
+                    schemaId: (int) $targetSchemaId,
+                    registerId: (int) $firstEntity->getRegister(),
+                    fieldName: $inversedByField
+                );
+
+                // **CRITICAL**: Pre-initialize cache entries for ALL entities with empty arrays.
+                // This ensures that entities without any referencing objects also use the fast path
+                // (returning empty array) instead of falling back to the slow per-entity query.
+                foreach ($entityUuids as $entityUuid) {
+                    $cacheKey = $entityUuid.'_'.$propName;
+                    $this->inverseRelationCache[$cacheKey] = [];
+                }
+
+                // Index the results by which entity UUID they reference.
+                foreach ($referencingObjects as $refObject) {
+                    $refData = $refObject->getObject();
+                    $referencedUuid = $refData[$inversedByField] ?? null;
+
+                    // Handle both single UUID and array of UUIDs.
+                    $referencedUuids = is_array($referencedUuid) ? $referencedUuid : [$referencedUuid];
+
+                    foreach ($referencedUuids as $uuid) {
+                        if ($uuid !== null && in_array($uuid, $entityUuids, true) === true) {
+                            $cacheKey = $uuid.'_'.$propName;
+                            $this->inverseRelationCache[$cacheKey][] = $refObject;
+
+                            // Also add to objects cache for extended rendering.
+                            $this->objectsCache[$refObject->getUuid()] = $refObject;
+                        }
+                    }
+                }
+
+                $this->logger->info('[INVERSE_PRELOAD] Batch loaded inverse relationships', [
+                    'property' => $propName,
+                    'targetSchema' => $targetSchemaId,
+                    'foundObjects' => count($referencingObjects),
+                ]);
+            } catch (\Exception $e) {
+                $this->logger->warning('[INVERSE_PRELOAD] Batch preload failed, falling back to per-entity lookup', [
+                    'property' => $propName,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+    }//end preloadInverseRelationships()
+
+    /**
      * Gets the inversed properties from a schema
      *
      * TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property
@@ -1331,8 +1475,28 @@ class RenderObject
             return $objectData;
         }
 
-        // Find objects that reference this object.
-        $referencingObjects = $this->objectEntityMapper->findByRelation($entity->getUuid());
+        // **PERFORMANCE OPTIMIZATION**: Check if we have preloaded cache for this entity.
+        // If yes, we can skip the expensive findByRelation call entirely.
+        $entityUuid    = $entity->getUuid();
+        $hasCache      = false;
+        $propertyNames = array_keys($inversedProperties);
+
+        foreach ($propertyNames as $propName) {
+            $cacheKey = $entityUuid.'_'.$propName;
+            if (isset($this->inverseRelationCache[$cacheKey]) === true) {
+                $hasCache = true;
+                break;
+            }
+        }
+
+        // If we have preloaded cache, use it directly instead of querying.
+        if ($hasCache === true) {
+            return $this->handleInversedPropertiesFromCache($entity, $objectData, $inversedProperties);
+        }
+
+        // Fallback: Query for referencing objects (original slower path).
+        // This happens when preloading wasn't done (e.g., single entity render).
+        $referencingObjects = $this->objectEntityMapper->findByRelation($entityUuid);
 
         // Set all found objects to the objectsCache.
         $ids = array_map(
@@ -1390,12 +1554,6 @@ class RenderObject
                 continue;
             }
 
-            // Initialize the inverse property (e.g., 'deelnames') - don't touch the source property (e.g., 'deelnemers').
-            // Only initialize if not already set to preserve any existing values.
-            if (isset($objectData[$inversedByProperty]) === false) {
-                $objectData[$inversedByProperty] = $isArray ? [] : null;
-            }
-
             // Resolve schema reference to actual schema ID.
             $schemaId = $entity->getSchema();
             // Use current schema if no target specified.
@@ -1403,20 +1561,34 @@ class RenderObject
                 $schemaId = $this->resolveSchemaReference($targetSchema);
             }
 
-            // Find objects that have our UUID in their $propertyName field (e.g., their 'deelnemers').
-            // These are the objects that should appear in our $inversedByProperty (e.g., our 'deelnames').
+            // Determine which property to populate:
+            // - For same-schema (e.g., deelnemers→deelnames): use $inversedByProperty
+            // - For cross-schema (e.g., organisatie→contactpersonen): use $propertyName
+            $targetProperty = $schemaId === $entity->getSchema() ? $inversedByProperty : $propertyName;
+
+            // Initialize the target property if not already set to preserve any existing values.
+            if (isset($objectData[$targetProperty]) === false) {
+                $objectData[$targetProperty] = $isArray ? [] : null;
+            }
+
+            // Find objects that have our UUID in their inversedBy field.
+            // For self-referential (same schema): look in $propertyName (e.g., 'deelnemers' → 'deelnemers')
+            // For cross-schema: look in $inversedByProperty (e.g., contactpersoon has 'organisatie' pointing to us)
             $inversedObjects = array_values(
                 array_filter(
                     $referencingObjects,
-                    function (ObjectEntity $object) use ($propertyName, $schemaId, $entity) {
+                    function (ObjectEntity $object) use ($propertyName, $inversedByProperty, $schemaId, $entity) {
                         $data = $object->getObject();
 
-                        // Check if the referencing object has our UUID in the source property.
-                        if (isset($data[$propertyName]) === false) {
+                        // For cross-schema relationships, check the inversedBy field on the related object.
+                        // For same-schema relationships, check the propertyName field.
+                        $fieldToCheck = $object->getSchema() === $entity->getSchema() ? $propertyName : $inversedByProperty;
+
+                        if (isset($data[$fieldToCheck]) === false) {
                             return false;
                         }
 
-                        $referenceValue = $data[$propertyName];
+                        $referenceValue = $data[$fieldToCheck];
 
                         // Handle both array and single value references.
                         if (is_array($referenceValue) === true) {
@@ -1438,20 +1610,92 @@ class RenderObject
                 $inversedObjects
             );
 
-            // Set the inverse property value (e.g., 'deelnames') based on whether it's an array or single value.
+            // Set the target property value based on whether it's an array or single value.
             if ($isArray === true) {
-                $objectData[$inversedByProperty] = $inversedUuids;
+                $objectData[$targetProperty] = $inversedUuids;
                 continue;
             }
 
-            $objectData[$inversedByProperty] = null;
+            $objectData[$targetProperty] = null;
             if (empty($inversedUuids) === false) {
-                $objectData[$inversedByProperty] = end($inversedUuids);
+                $objectData[$targetProperty] = end($inversedUuids);
             }
         }//end foreach
 
         return $objectData;
     }//end handleInversedProperties()
+
+    /**
+     * Handle inversed properties using the preloaded cache.
+     *
+     * This is the FAST path that uses batch-preloaded inverse relationships
+     * instead of querying for each entity individually.
+     *
+     * @param ObjectEntity $entity             The entity to process
+     * @param array        $objectData         The current object data
+     * @param array        $inversedProperties The inversed property configurations
+     *
+     * @return array The updated object data with inversed properties populated
+     */
+    private function handleInversedPropertiesFromCache(
+        ObjectEntity $entity,
+        array $objectData,
+        array $inversedProperties
+    ): array {
+        $entityUuid = $entity->getUuid();
+
+        foreach ($inversedProperties as $propertyName => $propertyConfig) {
+            // Extract configuration.
+            $isArray = false;
+
+            if (($propertyConfig['type'] ?? null) !== null
+                && ($propertyConfig['type'] === 'array') === true
+                && (($propertyConfig['items']['inversedBy'] ?? null) !== null) === true
+            ) {
+                $targetSchema = $propertyConfig['items']['$ref'] ?? null;
+                $isArray      = true;
+            } else if (($propertyConfig['inversedBy'] ?? null) !== null) {
+                $targetSchema = $propertyConfig['$ref'] ?? null;
+                if ($propertyConfig['type'] === 'array') {
+                    $isArray = true;
+                }
+            } else {
+                continue;
+            }
+
+            // Resolve schema reference.
+            $schemaId = $entity->getSchema();
+            if ($targetSchema !== null) {
+                $schemaId = $this->resolveSchemaReference($targetSchema);
+            }
+
+            // Determine target property name.
+            $targetProperty = $schemaId === $entity->getSchema()
+                ? ($propertyConfig['items']['inversedBy'] ?? $propertyConfig['inversedBy'])
+                : $propertyName;
+
+            // Get cached objects for this entity+property combination.
+            $cacheKey      = $entityUuid.'_'.$propertyName;
+            $cachedObjects = $this->inverseRelationCache[$cacheKey] ?? [];
+
+            // Extract UUIDs from cached objects.
+            $inversedUuids = array_map(
+                function (ObjectEntity $object) {
+                    return $object->getUuid();
+                },
+                $cachedObjects
+            );
+
+            // Set the target property value.
+            if ($isArray === true) {
+                $objectData[$targetProperty] = $inversedUuids;
+            } else {
+                $objectData[$targetProperty] = empty($inversedUuids) === false ? end($inversedUuids) : null;
+            }
+        }
+
+        return $objectData;
+    }//end handleInversedPropertiesFromCache()
 
     /**
      * Resolve schema reference to actual schema ID
@@ -1616,6 +1860,10 @@ class RenderObject
                     ]
                 );
             }
+
+            // **INVERSE RELATIONSHIP OPTIMIZATION**: Batch preload objects that REFERENCE our entities.
+            // This prevents N+1 queries when extending inverse properties like 'contactpersonen'.
+            $this->preloadInverseRelationships($entities, $_extend);
         }
 
         $renderedEntities = [];
