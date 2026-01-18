@@ -2726,6 +2726,16 @@ class MagicMapper
             $objectEntity->setRegister((string) $_register->getId());
             $objectEntity->setSchema((string) $_schema->getId());
 
+            // Build column-to-property mapping from schema.
+            // This allows us to restore original property names (e.g., 'e-mailadres')
+            // from their sanitized column names (e.g., 'e_mailadres').
+            $columnToPropertyMap = [];
+            $properties = $_schema->getProperties() ?? [];
+            foreach ($properties as $propertyName => $propertyDef) {
+                $columnName = $this->sanitizeColumnName($propertyName);
+                $columnToPropertyMap[$columnName] = $propertyName;
+            }
+
             // Extract metadata fields (remove prefix).
             $metadata   = [];
             $objectData = [];
@@ -2778,8 +2788,9 @@ class MagicMapper
                 }//end if
 
                 // This is a schema property.
-                // Convert snake_case column name back to camelCase property name.
-                $propertyName = $this->columnNameToPropertyName($columnName);
+                // Map column name back to original property name using schema mapping.
+                // Falls back to camelCase conversion if not found in mapping.
+                $propertyName = $columnToPropertyMap[$columnName] ?? $this->columnNameToPropertyName($columnName);
 
                 // Decode JSON values if they're JSON strings.
                 $objectData[$propertyName] = $value;
