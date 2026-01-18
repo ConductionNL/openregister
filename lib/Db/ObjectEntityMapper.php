@@ -2521,7 +2521,7 @@ class ObjectEntityMapper extends QBMapper
 
         if ($partialMatch === true) {
             $qb->andWhere(
-                $qb->expr()->like($objectColumn, $qb->createNamedParameter('%'.$this->$qb->escapeLikeParameter($search).'%'))
+                $qb->expr()->like($objectColumn, $qb->createNamedParameter('%'.$qb->escapeLikeParameter($search).'%'))
             );
         }
 
