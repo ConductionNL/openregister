@@ -542,10 +542,11 @@ class ObjectEntityMapper extends QBMapper
         // Dispatch updating event.
         // Pass includeDeleted=true to allow fetching the old state even if the object is being restored from deleted.
         // CRITICAL: Pass register/schema for magic mapper routing.
+        // CRITICAL: Use UUID (not numeric ID) to ensure we get the correct object.
         $oldObject = null;
         try {
             $oldObject = $this->find(
-                identifier: $entity->getId(),
+                identifier: $entity->getUuid(),  // Use UUID instead of ID!
                 register: $register,
                 schema: $schema,
                 includeDeleted: true
@@ -584,8 +585,8 @@ class ObjectEntityMapper extends QBMapper
                 $unifiedMapper = \OC::$server->get(UnifiedObjectMapper::class);
                 $result        = $unifiedMapper->update(entity: $entity, register: $register, schema: $schema);
 
-                // Dispatch updated event.
-                $this->eventDispatcher->dispatch(ObjectUpdatedEvent::class, new ObjectUpdatedEvent($result, $entity));
+                // Dispatch updated event with correct oldObject.
+                $this->eventDispatcher->dispatch(ObjectUpdatedEvent::class, new ObjectUpdatedEvent($result, $oldObject));
 
                 return $result;
             } catch (Exception $e) {
@@ -605,8 +606,8 @@ class ObjectEntityMapper extends QBMapper
         // Call parent QBMapper update directly (CrudHandler has circular dependency).
         $result = parent::update($entity);
 
-        // Dispatch updated event.
-        $this->eventDispatcher->dispatch(ObjectUpdatedEvent::class, new ObjectUpdatedEvent($result, $entity));
+        // Dispatch updated event with correct oldObject.
+        $this->eventDispatcher->dispatch(ObjectUpdatedEvent::class, new ObjectUpdatedEvent($result, $oldObject));
 
         return $result;
     }//end update()
@@ -616,26 +617,32 @@ class ObjectEntityMapper extends QBMapper
      *
      * This method is used by UnifiedObjectMapper to avoid circular calls.
      *
-     * @param \OCP\AppFramework\Db\Entity $entity Entity to update.
+     * @param \OCP\AppFramework\Db\Entity $entity    Entity to update.
+     * @param \OCP\AppFramework\Db\Entity $oldEntity The entity state before update (for events).
      *
      * @return ObjectEntity Updated entity.
      */
-    public function updateDirectBlobStorage(\OCP\AppFramework\Db\Entity $entity): ObjectEntity
+    public function updateDirectBlobStorage(\OCP\AppFramework\Db\Entity $entity, \OCP\AppFramework\Db\Entity $oldEntity = null): ObjectEntity
     {
+        // Use provided oldEntity or fallback to current entity.
+        if ($oldEntity === null) {
+            $oldEntity = $entity;
+        }
+        
         // Dispatch updating event.
         $this->eventDispatcher->dispatch(
             ObjectUpdatingEvent::class,
             new ObjectUpdatingEvent(
                 newObject: $entity,
-                oldObject: $this->find($entity->getId(), null, null, true)
+                oldObject: $oldEntity
             )
         );
 
         // Call parent QBMapper update directly (blob storage).
         $result = parent::update($entity);
 
-        // Dispatch updated event.
-        $this->eventDispatcher->dispatch(ObjectUpdatedEvent::class, new ObjectUpdatedEvent($result, $entity));
+        // Dispatch updated event with correct old object.
+        $this->eventDispatcher->dispatch(ObjectUpdatedEvent::class, new ObjectUpdatedEvent($result, $oldEntity));
 
         return $result;
     }//end updateDirectBlobStorage()
@@ -1618,7 +1625,7 @@ class ObjectEntityMapper extends QBMapper
             return [];
         }
 
-            $qb = $this->db->getQueryBuilder();
+        $qb = $this->db->getQueryBuilder();
 
         // Separate numeric IDs from UUIDs.
         $numericIds = [];
@@ -1651,7 +1658,42 @@ class ObjectEntityMapper extends QBMapper
         // Exclude deleted objects.
         $qb->andWhere($qb->expr()->isNull('deleted'));
 
-        return $this->findEntities($qb);
+        // First, search blob storage.
+        $blobResults = $this->findEntities($qb);
+
+        // Track which UUIDs were found in blob storage.
+        $foundUuids = array_map(
+            fn($obj) => $obj->getUuid(),
+            $blobResults
+        );
+
+        // Find UUIDs that weren't in blob storage - they might be in magic tables.
+        $missingUuids = array_filter(
+            $uuids,
+            fn($uuid) => in_array($uuid, $foundUuids, true) === false
+        );
+
+        // If we have missing UUIDs, search magic tables.
+        if (empty($missingUuids) === false) {
+            try {
+                $magicMapper = \OC::$server->get(MagicMapper::class);
+                $magicResults = $magicMapper->findMultipleAcrossAllMagicTables(
+                    uuids: array_values($missingUuids),
+                    includeDeleted: false
+                );
+
+                // Merge results from both sources.
+                $blobResults = array_merge($blobResults, $magicResults);
+            } catch (\Exception $e) {
+                // Log error but continue with blob results only.
+                $this->logger->warning('Failed to search magic tables in findMultiple', [
+                    'error' => $e->getMessage(),
+                    'missingUuids' => count($missingUuids),
+                ]);
+            }
+        }
+
+        return $blobResults;
     }//end findMultiple()
 
     /**
@@ -2411,59 +2453,42 @@ class ObjectEntityMapper extends QBMapper
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Partial match toggle controls search behavior
      */
-    public function findByRelation(string $search, bool $partialMatch=true): array
+    public function findByRelation(string $search, bool $partialMatch=true, bool $includeMagicTables=true): array
     {
         if (empty($search) === true) {
             return [];
         }
 
         // Search in blob storage (openregister_objects table).
-        $blobResults = $this->findByRelationInBlobStorage(search: $search, partialMatch: $partialMatch);
+        $blobResults = $this->findByRelationInBlobStorage($search, $partialMatch);
 
-        // Also search in magic mapper tables.
-        $magicResults = [];
-        try {
-            $magicMapper   = \OC::$server->get(MagicMapper::class);
-            $magicResults  = $magicMapper->findByRelation(uuid: $search);
-            $this->logger->debug(
-                '[ObjectEntityMapper] findByRelation found results in magic mapper',
-                [
-                    'search'            => $search,
-                    'blobResultCount'   => count($blobResults),
-                    'magicResultCount'  => count($magicResults),
-                ]
-            );
-        } catch (Exception $e) {
-            $this->logger->debug(
-                '[ObjectEntityMapper] findByRelation failed to search magic mapper',
-                [
-                    'search' => $search,
-                    'error'  => $e->getMessage(),
-                ]
-            );
-        }
+        // Optionally search in magic tables using the efficient _relations column.
+        if ($includeMagicTables === true) {
+            try {
+                $magicMapper  = \OC::$server->get(MagicMapper::class);
+                $magicResults = $magicMapper->findByRelationUsingRelationsColumn($search);
 
-        // Merge results, deduplicating by UUID.
-        $seenUuids = [];
-        $results   = [];
+                // Merge results, deduplicating by UUID.
+                $seenUuids = [];
+                foreach ($blobResults as $entity) {
+                    $seenUuids[$entity->getUuid()] = true;
+                }
 
-        foreach ($blobResults as $entity) {
-            $uuid = $entity->getUuid();
-            if (isset($seenUuids[$uuid]) === false) {
-                $seenUuids[$uuid] = true;
-                $results[]        = $entity;
+                foreach ($magicResults as $entity) {
+                    if (isset($seenUuids[$entity->getUuid()]) === false) {
+                        $blobResults[] = $entity;
+                        $seenUuids[$entity->getUuid()] = true;
+                    }
+                }
+            } catch (Exception $e) {
+                $this->logger->debug(
+                    '[ObjectEntityMapper] findByRelation failed to search magic tables',
+                    ['error' => $e->getMessage()]
+                );
             }
         }
 
-        foreach ($magicResults as $entity) {
-            $uuid = $entity->getUuid();
-            if (isset($seenUuids[$uuid]) === false) {
-                $seenUuids[$uuid] = true;
-                $results[]        = $entity;
-            }
-        }
-
-        return $results;
+        return $blobResults;
     }//end findByRelation()
 
     /**

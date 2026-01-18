@@ -401,13 +401,34 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             [$register, $schema] = $this->resolveRegisterAndSchema($entity);
         }
 
+        // Fetch the old object state BEFORE any updates for event dispatching.
+        // Use the UUID (not numeric ID) to ensure we get the correct object.
+        try {
+            $oldEntity = $this->find(
+                identifier: $entity->getUuid(),  // Use UUID, not ID!
+                register: $register,
+                schema: $schema,
+                includeDeleted: false,
+                _rbac: false,  // Skip RBAC for internal fetch
+                _multitenancy: false  // Skip multitenancy for internal fetch
+            );
+        } catch (\Exception $e) {
+            // If old object doesn't exist (shouldn't happen in update), use current entity.
+            $this->logger->warning('[UnifiedObjectMapper] Could not fetch old entity for update event', [
+                'entityId' => $entity->getId(),
+                'entityUuid' => $entity->getUuid(),
+                'error' => $e->getMessage()
+            ]);
+            $oldEntity = $entity;
+        }
+
         if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
             $this->logger->debug('[UnifiedObjectMapper] Routing update() to MagicMapper');
-            return $this->magicMapper->updateObjectEntity(entity: $entity, register: $register, schema: $schema);
+            return $this->magicMapper->updateObjectEntity(entity: $entity, register: $register, schema: $schema, oldEntity: $oldEntity);
         }
 
         $this->logger->debug('[UnifiedObjectMapper] Using blob storage (via ObjectEntityMapper parent::update)');
-        return $this->objectEntityMapper->updateDirectBlobStorage($entity);
+        return $this->objectEntityMapper->updateDirectBlobStorage($entity, $oldEntity);
     }//end update()
 
     /**

@@ -34,6 +34,7 @@ use RuntimeException;
 use ReflectionClass;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -154,6 +155,7 @@ class SaveObject
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
+        private readonly UnifiedObjectMapper $unifiedObjectMapper,
         private readonly MetadataHydrationHandler $metaHydrationHandler,
         private readonly FilePropertyHandler $filePropertyHandler,
         private readonly IUserSession $userSession,
@@ -2530,8 +2532,23 @@ class SaveObject
         $preparedObject->setSchema((string) $schemaId);
         $preparedObject->setUpdated(new DateTime());
 
-        // Save the object to database.
-        $updatedEntity = $this->objectEntityMapper->update(entity: $preparedObject, register: $register, schema: $schema);
+        // Log that we're about to update using UnifiedObjectMapper
+        $this->logger->critical('[SaveObject] About to update object using UnifiedObjectMapper', [
+            'app' => 'openregister',
+            'uuid' => $preparedObject->getUuid(),
+            'oldStatus' => $oldObject->getObject()['status'] ?? 'unknown',
+            'newStatus' => $preparedObject->getObject()['status'] ?? 'unknown',
+            'mapperClass' => get_class($this->unifiedObjectMapper)
+        ]);
+
+        // Save the object to database using UnifiedObjectMapper.
+        // This ensures proper event dispatching for both magic-mapped and blob storage objects.
+        $updatedEntity = $this->unifiedObjectMapper->update(entity: $preparedObject, register: $register, schema: $schema);
+
+        $this->logger->critical('[SaveObject] Object updated successfully', [
+            'app' => 'openregister',
+            'uuid' => $updatedEntity->getUuid()
+        ]);
 
         // Create audit trail for update if audit trails are enabled and not in silent mode.
         if ($silent === false && $this->isAuditTrailsEnabled() === true) {

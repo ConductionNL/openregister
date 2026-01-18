@@ -96,6 +96,7 @@ class RenderObject
      */
     private array $ultraPreloadCache = [];
 
+
     /**
      * Constructor for RenderObject handler.
      *
@@ -1532,9 +1533,70 @@ class RenderObject
         bool $_rbac=true,
         bool $_multitenancy=true
     ): array {
+        // Convert extend to array if it's a string.
+        if (is_string($_extend) === true) {
+            $_extend = explode(',', $_extend);
+        }
+
+        $_extend = $_extend ?? [];
+
+        // **PERFORMANCE OPTIMIZATION**: Batch preload ALL related objects BEFORE rendering.
+        // This prevents N+1 query problem when extending relations across multiple entities.
+        $this->logger->info('[BATCH_PRELOAD] Starting batch preload check', [
+            'extendParam' => $_extend,
+            'entityCount' => count($entities),
+        ]);
+
+        if (empty($_extend) === false && empty($entities) === false) {
+            $allUuidsToPreload = [];
+
+            // Collect ALL UUIDs from ALL entities that need to be extended.
+            foreach ($entities as $entity) {
+                if ($entity instanceof \OCA\OpenRegister\Db\ObjectEntity === false) {
+                    continue;
+                }
+
+                $objectData = $entity->getObject();
+                if (is_array($objectData) === false) {
+                    continue;
+                }
+
+                // Use the existing collectUuidsForExtend method to extract UUIDs.
+                $entityUuids = $this->collectUuidsForExtend($objectData, $_extend);
+                $allUuidsToPreload = array_merge($allUuidsToPreload, $entityUuids);
+            }
+
+            // Remove duplicates and batch preload ALL related objects in ONE query.
+            $allUuidsToPreload = array_unique($allUuidsToPreload);
+
+            $this->logger->info('[BATCH_PRELOAD] UUIDs collected', [
+                'uuidCount' => count($allUuidsToPreload),
+                'sampleUuids' => array_slice($allUuidsToPreload, 0, 3),
+            ]);
+
+            if (empty($allUuidsToPreload) === false) {
+                $preloadedObjects = $this->objectCacheService->preloadObjects($allUuidsToPreload);
+
+                // Add preloaded objects to local cache for immediate access during rendering.
+                foreach ($preloadedObjects as $object) {
+                    $this->objectsCache[$object->getUuid()] = $object;
+                    $this->objectsCache[$object->getId()] = $object;
+                }
+
+                $this->logger->debug(
+                    'Batch preloaded objects for renderEntities',
+                    [
+                        'entityCount'      => count($entities),
+                        'requestedUuids'   => count($allUuidsToPreload),
+                        'loadedObjects'    => count($preloadedObjects),
+                    ]
+                );
+            }
+        }
+
         $renderedEntities = [];
 
-        // Render each entity individually.
+        // Render each entity (now using warm cache for forward relations).
         foreach ($entities as $entity) {
             $renderedEntities[] = $this->renderEntity(
                 entity: $entity,

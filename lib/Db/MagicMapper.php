@@ -2245,11 +2245,23 @@ class MagicMapper
                 );
             }
 
+            // Create GIN index on _relations for fast relationship lookups.
+            // This enables O(log n) containment queries with @> operator.
+            $platform   = $this->db->getDatabasePlatform();
+            $isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
+
+            if ($isPostgres === true) {
+                $relationsIdx = "{$tableName}_relations_gin_idx";
+                $this->db->executeStatement(
+                    "CREATE INDEX IF NOT EXISTS {$relationsIdx} ON {$fullTableName} USING GIN (_relations)"
+                );
+            }
+
             $this->logger->debug(
                 'Created table indexes',
                 [
                     'tableName'  => $tableName,
-                    'indexCount' => 4 + count($idxMetaFields),
+                    'indexCount' => 5 + count($idxMetaFields),
                 ]
             );
         } catch (Exception $e) {
@@ -3889,17 +3901,15 @@ class MagicMapper
         ]);
 
         // Get all magic tables from information_schema.
+        // NOTE: We use raw SQL here because the query builder adds the table prefix
+        // to information_schema, which is a system schema and shouldn't be prefixed.
         $prefix = 'oc_';
         $tablePattern = $prefix.'openregister_table_%';
 
-        $qb = $this->db->getQueryBuilder();
-        $qb->select('table_name')
-            ->from('information_schema.tables')
-            ->where($qb->expr()->like('table_name', $qb->createNamedParameter($tablePattern)));
-
-        $result = $qb->executeQuery();
+        $sql = "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?";
+        $stmt = $this->db->prepare($sql);
+        $result = $stmt->execute([$tablePattern]);
         $tables = $result->fetchAll();
-        $result->closeCursor();
 
         $this->logger->debug('[MagicMapper::findAcrossAllMagicTables] Found magic tables', [
             'count' => count($tables),
@@ -4008,6 +4018,167 @@ class MagicMapper
         // Not found in any magic table.
         throw new DoesNotExistException("Object with identifier '$identifier' not found in any magic table");
     }//end findAcrossAllMagicTables()
+
+    /**
+     * Find multiple objects by UUIDs across ALL magic tables.
+     *
+     * This method efficiently searches all magic tables for multiple UUIDs in batch.
+     * It's optimized for performance by searching all UUIDs in each table with a single query.
+     *
+     * @param array $uuids         Array of UUIDs to search for.
+     * @param bool  $includeDeleted Whether to include soft-deleted objects.
+     *
+     * @return ObjectEntity[] Array of found objects (may be fewer than requested if some not found).
+     */
+    public function findMultipleAcrossAllMagicTables(
+        array $uuids,
+        bool $includeDeleted=false
+    ): array {
+        if (empty($uuids) === true) {
+            return [];
+        }
+
+        $uuids = array_unique($uuids);
+        $foundObjects = [];
+
+        // Get all magic tables from information_schema.
+        // NOTE: We use raw SQL here because the query builder adds the table prefix
+        // to information_schema, which is a system schema and shouldn't be prefixed.
+        $prefix = 'oc_';
+        $tablePattern = $prefix.'openregister_table_%';
+
+        $sql = "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?";
+        $stmt = $this->db->prepare($sql);
+        $result = $stmt->execute([$tablePattern]);
+        $tables = $result->fetchAll();
+
+        // Track which UUIDs we've found to skip searching for them in other tables.
+        $remainingUuids = $uuids;
+
+        // Get register and schema mappers.
+        $registerMapper = \OC::$server->get(RegisterMapper::class);
+        $schemaMapper = \OC::$server->get(SchemaMapper::class);
+
+        // Cache for register/schema lookups to avoid repeated queries.
+        static $registerCache = [];
+        static $schemaCache = [];
+
+        // Search each magic table for ALL remaining UUIDs.
+        foreach ($tables as $tableRow) {
+            if (empty($remainingUuids) === true) {
+                break; // All UUIDs found.
+            }
+
+            $fullTableName = $tableRow['table_name'] ?? $tableRow['TABLE_NAME'] ?? null;
+            if ($fullTableName === null) {
+                continue;
+            }
+
+            // Extract register and schema IDs from table name.
+            $tableName = str_replace($prefix, '', $fullTableName);
+            if (preg_match('/^openregister_table_(\d+)_(\d+)$/', $tableName, $matches) !== 1) {
+                continue;
+            }
+
+            $registerId = (int) $matches[1];
+            $schemaId = (int) $matches[2];
+
+            try {
+                // OPTIMIZATION: First check if any UUIDs exist in this table before loading register/schema.
+                // Use the table name WITHOUT prefix since the query builder adds it automatically.
+                $tableNameWithoutPrefix = str_replace($prefix, '', $fullTableName);
+                $uuidCol = self::METADATA_PREFIX.'uuid';
+                $checkQb = $this->db->getQueryBuilder();
+                $checkQb->select($checkQb->createFunction('COUNT(*)'))
+                    ->from($tableNameWithoutPrefix)
+                    ->where(
+                        $checkQb->expr()->in(
+                            $uuidCol,
+                            $checkQb->createNamedParameter($remainingUuids, IQueryBuilder::PARAM_STR_ARRAY)
+                        )
+                    );
+                $checkResult = $checkQb->executeQuery();
+                $count = (int) $checkResult->fetchOne();
+                $checkResult->closeCursor();
+
+                if ($count === 0) {
+                    continue; // No UUIDs in this table, skip to next.
+                }
+
+                // Load register and schema (with caching).
+                $register = null;
+                $schema = null;
+                try {
+                    if (isset($registerCache[$registerId]) === false) {
+                        $registerCache[$registerId] = $registerMapper->find(id: $registerId, _multitenancy: false);
+                    }
+                    $register = $registerCache[$registerId];
+
+                    if (isset($schemaCache[$schemaId]) === false) {
+                        $schemaCache[$schemaId] = $schemaMapper->find(id: $schemaId, _multitenancy: false);
+                    }
+                    $schema = $schemaCache[$schemaId];
+                } catch (\Exception $e) {
+                    continue; // Skip tables where we can't load register/schema.
+                }
+
+                // Build query to search for ALL remaining UUIDs in this table.
+                // Use table name without prefix since query builder adds it.
+                $searchQb = $this->db->getQueryBuilder();
+                $searchQb->select('*')->from($tableNameWithoutPrefix);
+
+                $uuidCol = self::METADATA_PREFIX.'uuid';
+                $deletedCol = self::METADATA_PREFIX.'deleted';
+
+                // Use IN clause to search for multiple UUIDs at once.
+                $searchQb->where(
+                    $searchQb->expr()->in(
+                        $uuidCol,
+                        $searchQb->createNamedParameter($remainingUuids, IQueryBuilder::PARAM_STR_ARRAY)
+                    )
+                );
+
+                // Exclude deleted unless requested.
+                if ($includeDeleted === false) {
+                    $searchQb->andWhere($searchQb->expr()->isNull($deletedCol));
+                }
+
+                $searchResult = $searchQb->executeQuery();
+                $rows = $searchResult->fetchAll();
+                $searchResult->closeCursor();
+
+                // Convert found rows to ObjectEntity objects.
+                foreach ($rows as $row) {
+                    $object = $this->rowToObjectEntity(row: $row);
+
+                    $foundObjects[] = $object;
+
+                    // Remove from remaining UUIDs.
+                    $objectUuid = $object->getUuid();
+                    $remainingUuids = array_filter(
+                        $remainingUuids,
+                        fn($uuid) => $uuid !== $objectUuid
+                    );
+                }
+
+            } catch (\Exception $e) {
+                // Table might not have the expected structure, skip it.
+                $this->logger->debug('[MagicMapper::findMultipleAcrossAllMagicTables] Error searching table', [
+                    'table' => $fullTableName,
+                    'error' => $e->getMessage(),
+                ]);
+                continue;
+            }
+        }
+
+        $this->logger->debug('[MagicMapper::findMultipleAcrossAllMagicTables] Batch search complete', [
+            'requestedCount' => count($uuids),
+            'foundCount' => count($foundObjects),
+            'tablesSearched' => count($tables),
+        ]);
+
+        return $foundObjects;
+    }//end findMultipleAcrossAllMagicTables()
 
     /**
      * Find all objects in register+schema table with filtering and pagination.
@@ -4167,10 +4338,15 @@ class MagicMapper
     public function updateObjectEntity(
         ObjectEntity $entity,
         Register $register,
-        Schema $schema
+        Schema $schema,
+        ?ObjectEntity $oldEntity = null
     ): ObjectEntity {
-        // Fetch old object for event dispatching.
-        $oldObject = $this->findInRegisterSchemaTable(identifier: $entity->getUuid(), register: $register, schema: $schema);
+        // Use provided oldEntity or fetch from database.
+        if ($oldEntity === null) {
+            $oldObject = $this->findInRegisterSchemaTable(identifier: $entity->getUuid(), register: $register, schema: $schema);
+        } else {
+            $oldObject = $oldEntity;
+        }
 
         $this->logger->debug('[MagicMapper] updateObjectEntity called - UUID: '.$entity->getUuid());
 
@@ -4219,8 +4395,20 @@ class MagicMapper
         }
 
         // Dispatch updated event for audit trails with fresh entity.
+        $this->logger->critical('[MagicMapper] About to dispatch ObjectUpdatedEvent', [
+            'app' => 'openregister',
+            'uuid' => $updatedEntity->getUuid(),
+            'oldStatus' => $oldObject->getObject()['status'] ?? 'unknown',
+            'newStatus' => $updatedEntity->getObject()['status'] ?? 'unknown'
+        ]);
+        
         $event = new ObjectUpdatedEvent(newObject: $updatedEntity, oldObject: $oldObject);
         $this->eventDispatcher->dispatch(ObjectUpdatedEvent::class, $event);
+        
+        $this->logger->critical('[MagicMapper] ObjectUpdatedEvent dispatched', [
+            'app' => 'openregister',
+            'uuid' => $updatedEntity->getUuid()
+        ]);
 
         return $updatedEntity;
     }//end updateObjectEntity()
@@ -4511,6 +4699,99 @@ class MagicMapper
 
         return $results;
     }//end findByRelation()
+
+    /**
+     * Find objects that reference a UUID using the _relations column.
+     *
+     * This is a PERFORMANT alternative to findByRelation() that uses
+     * PostgreSQL's JSONB @> operator on the indexed _relations column
+     * instead of slow full-text LIKE searches.
+     *
+     * The _relations column stores an array of UUIDs that the object references,
+     * making containment queries very efficient (O(log n) with GIN index).
+     *
+     * @param string $uuid The UUID to search for in _relations
+     *
+     * @return ObjectEntity[] Array of objects that have this UUID in their _relations
+     *
+     * @psalm-return list<ObjectEntity>
+     */
+    public function findByRelationUsingRelationsColumn(string $uuid): array
+    {
+        if (empty($uuid) === true) {
+            return [];
+        }
+
+        $results = [];
+        $tables  = $this->getAllMagicMapperTables();
+
+        $platform   = $this->db->getDatabasePlatform();
+        $isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
+
+        $startTime = microtime(true);
+
+        foreach ($tables as $tableName) {
+            try {
+                $fullTableName = 'oc_'.$tableName;
+
+                // Use PostgreSQL's JSONB @> (contains) operator for efficient indexed lookup.
+                // This is O(log n) with a GIN index vs O(n) for LIKE searches.
+                if ($isPostgres === true) {
+                    $sql = "SELECT * FROM {$fullTableName}
+                            WHERE _deleted IS NULL
+                            AND _relations @> ?
+                            LIMIT 100";
+                    $param = json_encode([$uuid]);
+                } else {
+                    // MySQL: Use JSON_CONTAINS for similar functionality.
+                    $sql = "SELECT * FROM {$fullTableName}
+                            WHERE _deleted IS NULL
+                            AND JSON_CONTAINS(_relations, ?)
+                            LIMIT 100";
+                    $param = json_encode($uuid);
+                }
+
+                $stmt = $this->db->prepare($sql);
+                $stmt->execute([$param]);
+                $rows = $stmt->fetchAll();
+
+                foreach ($rows as $row) {
+                    try {
+                        $entity = $this->rowToObjectEntity(row: $row);
+                        if ($entity !== null) {
+                            $results[] = $entity;
+                        }
+                    } catch (Exception $e) {
+                        // Skip rows that can't be converted.
+                        continue;
+                    }
+                }
+            } catch (Exception $e) {
+                $this->logger->debug(
+                    '[MagicMapper] findByRelationUsingRelationsColumn table query failed',
+                    [
+                        'tableName' => $tableName,
+                        'error'     => $e->getMessage(),
+                    ]
+                );
+                continue;
+            }//end try
+        }//end foreach
+
+        $executionTime = round((microtime(true) - $startTime) * 1000, 2);
+
+        $this->logger->debug(
+            '[MagicMapper] findByRelationUsingRelationsColumn completed',
+            [
+                'uuid'          => $uuid,
+                'tableCount'    => count($tables),
+                'resultCount'   => count($results),
+                'executionTime' => $executionTime.'ms',
+            ]
+        );
+
+        return $results;
+    }//end findByRelationUsingRelationsColumn()
 
     /**
      * Search for objects containing a UUID in a specific magic mapper table.
