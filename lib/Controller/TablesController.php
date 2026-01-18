@@ -3,7 +3,7 @@
 /**
  * TablesController
  *
- * Controller for managing database tables view.
+ * Controller for managing database tables view and magic table operations.
  *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
@@ -17,15 +17,20 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use Exception;
+use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http\TemplateResponse;
+use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IRequest;
+use Psr\Log\LoggerInterface;
 
 /**
  * TablesController class.
  *
- * Controller for managing table operations.
+ * Controller for managing table operations including magic table synchronization.
  *
  * @psalm-suppress UnusedClass
  */
@@ -34,15 +39,181 @@ class TablesController extends Controller
     /**
      * Constructor
      *
-     * @param string     $appName Application name
-     * @param IRequest   $request Request object
-     * @param IAppConfig $config  Application config
+     * @param string          $appName        Application name
+     * @param IRequest        $request        Request object
+     * @param IAppConfig      $config         Application config
+     * @param MagicMapper     $magicMapper    Magic mapper for table operations
+     * @param RegisterMapper  $registerMapper Register mapper
+     * @param SchemaMapper    $schemaMapper   Schema mapper
+     * @param LoggerInterface $logger         Logger
      */
     public function __construct(
         $appName,
         IRequest $request,
-        private readonly IAppConfig $config
+        private readonly IAppConfig $config,
+        private readonly MagicMapper $magicMapper,
+        private readonly RegisterMapper $registerMapper,
+        private readonly SchemaMapper $schemaMapper,
+        private readonly LoggerInterface $logger
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
+
+    /**
+     * Sync magic table for a register/schema combination.
+     *
+     * This triggers the magic table update process which:
+     * - Adds missing columns
+     * - De-requires columns that are no longer required in schema
+     * - Drops duplicate camelCase columns when snake_case exists
+     * - Makes obsolete columns nullable
+     * - Updates indexes for relations and facetable fields
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param int|string $registerId The register ID or slug
+     * @param int|string $schemaId   The schema ID or slug
+     *
+     * @return JSONResponse
+     */
+    public function sync(int|string $registerId, int|string $schemaId): JSONResponse
+    {
+        try {
+            // Find register.
+            $register = null;
+            if (is_numeric($registerId) === true) {
+                $register = $this->registerMapper->find((int) $registerId);
+            } else {
+                $register = $this->registerMapper->findBySlug($registerId);
+            }
+
+            if ($register === null) {
+                return new JSONResponse(['error' => 'Register not found'], 404);
+            }
+
+            // Find schema.
+            $schema = null;
+            if (is_numeric($schemaId) === true) {
+                $schema = $this->schemaMapper->find((int) $schemaId);
+            } else {
+                $schema = $this->schemaMapper->findBySlug($schemaId);
+            }
+
+            if ($schema === null) {
+                return new JSONResponse(['error' => 'Schema not found'], 404);
+            }
+
+            // Trigger table sync (without dropping/recreating).
+            // This updates the table structure to match the schema without losing data.
+            $result = $this->magicMapper->syncTableForRegisterSchema(
+                register: $register,
+                schema: $schema
+            );
+
+            $this->logger->info(
+                '[TablesController] Magic table sync completed',
+                [
+                    'registerId' => $register->getId(),
+                    'schemaId'   => $schema->getId(),
+                    'result'     => $result,
+                ]
+            );
+
+            return new JSONResponse([
+                'success'    => true,
+                'message'    => 'Magic table synchronized successfully',
+                'register'   => $register->getId(),
+                'schema'     => $schema->getId(),
+                'tableName'  => 'openregister_table_'.$register->getId().'_'.$schema->getId(),
+            ]);
+        } catch (Exception $e) {
+            $this->logger->error(
+                '[TablesController] Magic table sync failed',
+                [
+                    'registerId' => $registerId,
+                    'schemaId'   => $schemaId,
+                    'error'      => $e->getMessage(),
+                ]
+            );
+
+            return new JSONResponse([
+                'error'   => 'Failed to sync magic table',
+                'message' => $e->getMessage(),
+            ], 500);
+        }//end try
+    }//end sync()
+
+    /**
+     * Sync all magic tables for all register/schema combinations.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse
+     */
+    public function syncAll(): JSONResponse
+    {
+        try {
+            $registers = $this->registerMapper->findAll();
+            $results   = [];
+            $errors    = [];
+
+            foreach ($registers as $register) {
+                $schemas = $register->getSchemas();
+                if (is_array($schemas) === false) {
+                    continue;
+                }
+
+                foreach ($schemas as $schemaRef) {
+                    // Schema reference can be ID or slug.
+                    $schemaId = is_array($schemaRef) ? ($schemaRef['id'] ?? $schemaRef) : $schemaRef;
+
+                    try {
+                        $schema = null;
+                        if (is_numeric($schemaId) === true) {
+                            $schema = $this->schemaMapper->find((int) $schemaId);
+                        } else {
+                            $schema = $this->schemaMapper->findBySlug((string) $schemaId);
+                        }
+
+                        if ($schema === null) {
+                            continue;
+                        }
+
+                        $this->magicMapper->syncTableForRegisterSchema(
+                            register: $register,
+                            schema: $schema
+                        );
+
+                        $results[] = [
+                            'register' => $register->getId(),
+                            'schema'   => $schema->getId(),
+                            'status'   => 'success',
+                        ];
+                    } catch (Exception $e) {
+                        $errors[] = [
+                            'register' => $register->getId(),
+                            'schema'   => $schemaId,
+                            'error'    => $e->getMessage(),
+                        ];
+                    }//end try
+                }//end foreach
+            }//end foreach
+
+            return new JSONResponse([
+                'success'      => count($errors) === 0,
+                'message'      => 'Sync completed for '.count($results).' tables',
+                'synced'       => $results,
+                'errors'       => $errors,
+                'totalSynced'  => count($results),
+                'totalErrors'  => count($errors),
+            ]);
+        } catch (Exception $e) {
+            return new JSONResponse([
+                'error'   => 'Failed to sync magic tables',
+                'message' => $e->getMessage(),
+            ], 500);
+        }//end try
+    }//end syncAll()
 }//end class

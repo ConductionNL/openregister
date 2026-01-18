@@ -1352,6 +1352,29 @@ class MagicMapper
      */
     private function updateTableForRegisterSchema(Register $register, Schema $schema): bool
     {
+        return $this->syncTableForRegisterSchema(register: $register, schema: $schema);
+    }//end updateTableForRegisterSchema()
+
+    /**
+     * Synchronize table structure with schema definition.
+     *
+     * This is a public method that can be called to update an existing magic table
+     * to match the current schema definition. It will:
+     * - Add missing columns
+     * - De-require columns that are no longer required in schema
+     * - Drop duplicate camelCase columns when snake_case exists
+     * - Make obsolete columns nullable
+     * - Update indexes for relations and facetable fields
+     *
+     * @param Register $register The register context
+     * @param Schema   $schema   The schema definition
+     *
+     * @return bool True if sync completed successfully
+     *
+     * @throws Exception If table sync fails
+     */
+    public function syncTableForRegisterSchema(Register $register, Schema $schema): bool
+    {
         $tableName  = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
         $registerId = $register->getId();
         $schemaId   = $schema->getId();
@@ -2257,11 +2280,75 @@ class MagicMapper
                 );
             }
 
+            // Create indexes for schema-specific properties.
+            $schemaProperties = $_schema->getProperties();
+            $relationIndexes  = [];
+            $facetIndexes     = [];
+
+            if (is_array($schemaProperties) === true) {
+                foreach ($schemaProperties as $propertyName => $propertyConfig) {
+                    $columnName = $this->sanitizeColumnName($propertyName);
+
+                    // Create indexes on relation properties (object references) for _extend queries.
+                    $hasRef       = isset($propertyConfig['$ref']);
+                    $objectConfig = $propertyConfig['objectConfiguration'] ?? [];
+                    $handling     = $objectConfig['handling'] ?? null;
+                    $type         = $propertyConfig['type'] ?? 'string';
+
+                    // Index single object references (stored as VARCHAR UUID).
+                    if ($type === 'object' && $hasRef === true && $handling === 'related-object') {
+                        $idxName = "{$tableName}_{$columnName}_rel_idx";
+                        try {
+                            $this->db->executeStatement(
+                                "CREATE INDEX IF NOT EXISTS {$idxName} ON {$fullTableName} ({$columnName})"
+                            );
+                            $relationIndexes[] = $columnName;
+                        } catch (Exception $e) {
+                            // Index may already exist or column type incompatible.
+                        }
+                    }
+
+                    // For array of object references with inversedBy, create GIN index on PostgreSQL.
+                    if ($type === 'array' && $isPostgres === true) {
+                        $items     = $propertyConfig['items'] ?? [];
+                        $itemsRef  = $items['$ref'] ?? null;
+                        $inversedBy = $items['inversedBy'] ?? ($propertyConfig['inversedBy'] ?? null);
+
+                        if ($itemsRef !== null || $inversedBy !== null) {
+                            $idxName = "{$tableName}_{$columnName}_arr_gin_idx";
+                            try {
+                                $this->db->executeStatement(
+                                    "CREATE INDEX IF NOT EXISTS {$idxName} ON {$fullTableName} USING GIN ({$columnName})"
+                                );
+                                $relationIndexes[] = $columnName.' (GIN)';
+                            } catch (Exception $e) {
+                                // Index may already exist or column type incompatible.
+                            }
+                        }
+                    }
+
+                    // Create indexes on facetable fields for efficient facet queries.
+                    if (($propertyConfig['facetable'] ?? false) === true) {
+                        $idxName = "{$tableName}_{$columnName}_facet_idx";
+                        try {
+                            $this->db->executeStatement(
+                                "CREATE INDEX IF NOT EXISTS {$idxName} ON {$fullTableName} ({$columnName})"
+                            );
+                            $facetIndexes[] = $columnName;
+                        } catch (Exception $e) {
+                            // Index may already exist or column type incompatible.
+                        }
+                    }
+                }//end foreach
+            }//end if
+
             $this->logger->debug(
                 'Created table indexes',
                 [
-                    'tableName'  => $tableName,
-                    'indexCount' => 5 + count($idxMetaFields),
+                    'tableName'        => $tableName,
+                    'baseIndexCount'   => 5 + count($idxMetaFields),
+                    'relationIndexes'  => $relationIndexes,
+                    'facetIndexes'     => $facetIndexes,
                 ]
             );
         } catch (Exception $e) {
@@ -3434,7 +3521,6 @@ class MagicMapper
      */
     private function updateTableStructure(string $tableName, array $currentColumns, array $requiredColumns): void
     {
-        // Find columns to add.
         $platform      = $this->db->getDatabasePlatform();
         $isPostgres    = ($platform->getName() === 'postgresql');
         $tablePrefix   = $this->config->getSystemValue('dbtableprefix', 'oc_');
@@ -3445,26 +3531,32 @@ class MagicMapper
             $tableNameQuoted = '"'.$fullTableName.'"';
         }
 
-        foreach ($requiredColumns as $columnName => $columnDef) {
+        $columnsAdded      = [];
+        $columnsDeRequired = [];
+        $columnsDropped    = [];
+
+        // 1. Add missing columns.
+        // NOTE: $requiredColumns is keyed by property name (camelCase), but the actual
+        // column name to use is in $columnDef['name'] (snake_case). We must use
+        // $columnDef['name'] to check for existing columns and create new ones.
+        foreach ($requiredColumns as $propertyName => $columnDef) {
+            // Get the actual column name (snake_case) from the column definition.
+            $columnName = $columnDef['name'] ?? $this->sanitizeColumnName($propertyName);
+
             if (isset($currentColumns[$columnName]) === false) {
                 $this->logger->info(
                     'Adding new column to schema table',
                     [
-                        'tableName'  => $tableName,
-                        'columnName' => $columnName,
-                        'columnType' => $columnDef['type'],
+                        'tableName'    => $tableName,
+                        'propertyName' => $propertyName,
+                        'columnName'   => $columnName,
+                        'columnType'   => $columnDef['type'],
                     ]
                 );
 
-                // Build ALTER TABLE ADD COLUMN SQL.
-                $colNameQuoted = '`'.$columnName.'`';
-                if ($isPostgres === true) {
-                    $colNameQuoted = '"'.$columnName.'"';
-                }
-
-                $colType = $this->mapColumnTypeToSQL(type: $columnDef['type'], column: $columnDef);
-
-                $sql = 'ALTER TABLE '.$tableNameQuoted.' ADD COLUMN '.$colNameQuoted.' '.$colType;
+                $colNameQuoted = $isPostgres ? '"'.$columnName.'"' : '`'.$columnName.'`';
+                $colType       = $this->mapColumnTypeToSQL(type: $columnDef['type'], column: $columnDef);
+                $sql           = 'ALTER TABLE '.$tableNameQuoted.' ADD COLUMN '.$colNameQuoted.' '.$colType;
 
                 // Add NOT NULL if specified.
                 if (($columnDef['nullable'] ?? true) === false) {
@@ -3473,35 +3565,184 @@ class MagicMapper
 
                 // Add DEFAULT if specified.
                 if (isset($columnDef['default']) === true) {
-                    $defaultValue = $columnDef['default'];
-                    if (is_bool($columnDef['default']) === true) {
-                        // Boolean values need special handling for SQL.
-                        $defaultValue = 'FALSE';
-                        if ($columnDef['default'] === true) {
-                            $defaultValue = 'TRUE';
-                        }
-                    } else if (is_string($columnDef['default']) === true) {
-                        $defaultValue = "'".$columnDef['default']."'";
-                    } else if ($columnDef['default'] === null) {
-                        $defaultValue = 'NULL';
-                    }
-
-                    $sql .= ' DEFAULT '.$defaultValue;
+                    $defaultValue = $this->formatDefaultValueForSQL($columnDef['default']);
+                    $sql         .= ' DEFAULT '.$defaultValue;
                 }
 
-                // Execute ALTER TABLE.
                 $this->db->executeStatement($sql);
+                $columnsAdded[] = $columnName;
             }//end if
+        }//end foreach
+
+        // 2. De-require columns that are now nullable in schema but NOT NULL in table.
+        foreach ($requiredColumns as $propertyName => $columnDef) {
+            // Get the actual column name (snake_case) from the column definition.
+            $columnName = $columnDef['name'] ?? $this->sanitizeColumnName($propertyName);
+
+            if (isset($currentColumns[$columnName]) === false) {
+                continue;
+            }
+
+            $currentCol       = $currentColumns[$columnName];
+            $schemaIsNullable = ($columnDef['nullable'] ?? true);
+            $tableIsNullable  = ($currentCol['nullable'] ?? true);
+
+            // If schema says nullable but table says NOT NULL, make column nullable.
+            if ($schemaIsNullable === true && $tableIsNullable === false) {
+                $this->logger->info(
+                    'Making column nullable (no longer required)',
+                    [
+                        'tableName'  => $tableName,
+                        'columnName' => $columnName,
+                    ]
+                );
+
+                $colNameQuoted = $isPostgres ? '"'.$columnName.'"' : '`'.$columnName.'`';
+
+                if ($isPostgres === true) {
+                    $sql = 'ALTER TABLE '.$tableNameQuoted.' ALTER COLUMN '.$colNameQuoted.' DROP NOT NULL';
+                } else {
+                    // MySQL syntax - need to specify full column definition.
+                    $colType = $this->mapColumnTypeToSQL(type: $columnDef['type'], column: $columnDef);
+                    $sql     = 'ALTER TABLE '.$tableNameQuoted.' MODIFY COLUMN '.$colNameQuoted.' '.$colType.' NULL';
+                }
+
+                try {
+                    $this->db->executeStatement($sql);
+                    $columnsDeRequired[] = $columnName;
+                } catch (Exception $e) {
+                    $this->logger->warning(
+                        'Failed to make column nullable',
+                        ['columnName' => $columnName, 'error' => $e->getMessage()]
+                    );
+                }
+            }//end if
+        }//end foreach
+
+        // 3. Handle duplicate columns (camelCase versions when snake_case exists).
+        // Build map of snake_case column names from required columns.
+        $snakeCaseColumns = [];
+        foreach ($requiredColumns as $propertyName => $colDef) {
+            $actualColName                   = $colDef['name'] ?? $this->sanitizeColumnName($propertyName);
+            $snakeCaseColumns[$actualColName] = true;
+        }
+
+        // Find camelCase duplicates in current columns.
+        foreach ($currentColumns as $colName => $colDef) {
+            // Skip metadata columns (start with _).
+            if (str_starts_with($colName, '_') === true) {
+                continue;
+            }
+
+            // Check if this looks like a camelCase version of a snake_case column.
+            $snakeVersion = $this->sanitizeColumnName($colName);
+            if ($snakeVersion !== $colName && isset($snakeCaseColumns[$snakeVersion]) === true) {
+                // This is a camelCase duplicate - drop it.
+                $this->logger->info(
+                    'Dropping duplicate camelCase column (snake_case version exists)',
+                    [
+                        'tableName'       => $tableName,
+                        'camelCaseCol'    => $colName,
+                        'snakeCaseCol'    => $snakeVersion,
+                    ]
+                );
+
+                $colNameQuoted = $isPostgres ? '"'.$colName.'"' : '`'.$colName.'`';
+                $sql           = 'ALTER TABLE '.$tableNameQuoted.' DROP COLUMN IF EXISTS '.$colNameQuoted;
+
+                try {
+                    $this->db->executeStatement($sql);
+                    $columnsDropped[] = $colName;
+                } catch (Exception $e) {
+                    $this->logger->warning(
+                        'Failed to drop duplicate column',
+                        ['columnName' => $colName, 'error' => $e->getMessage()]
+                    );
+                }
+            }//end if
+        }//end foreach
+
+        // 4. Make obsolete columns nullable (columns in table but not in schema).
+        // This is safer than dropping them - data is preserved.
+        foreach ($currentColumns as $colName => $colDef) {
+            // Skip metadata columns.
+            if (str_starts_with($colName, '_') === true) {
+                continue;
+            }
+
+            // Skip if column is a schema column (exists in snakeCaseColumns map).
+            if (isset($snakeCaseColumns[$colName]) === true) {
+                continue;
+            }
+
+            // Skip if column is already nullable.
+            if (($colDef['nullable'] ?? true) === true) {
+                continue;
+            }
+
+            // This is an obsolete column - make it nullable.
+            $this->logger->info(
+                'Making obsolete column nullable',
+                [
+                    'tableName'  => $tableName,
+                    'columnName' => $colName,
+                ]
+            );
+
+            $colNameQuoted = $isPostgres ? '"'.$colName.'"' : '`'.$colName.'`';
+
+            if ($isPostgres === true) {
+                $sql = 'ALTER TABLE '.$tableNameQuoted.' ALTER COLUMN '.$colNameQuoted.' DROP NOT NULL';
+            } else {
+                $colType = $colDef['type'] ?? 'text';
+                $sql     = 'ALTER TABLE '.$tableNameQuoted.' MODIFY COLUMN '.$colNameQuoted.' '.$colType.' NULL';
+            }
+
+            try {
+                $this->db->executeStatement($sql);
+                $columnsDeRequired[] = $colName.' (obsolete)';
+            } catch (Exception $e) {
+                $this->logger->warning(
+                    'Failed to make obsolete column nullable',
+                    ['columnName' => $colName, 'error' => $e->getMessage()]
+                );
+            }
         }//end foreach
 
         $this->logger->info(
             'Successfully updated table structure',
             [
-                'tableName'    => $tableName,
-                'columnsAdded' => array_diff(array_keys($requiredColumns), array_keys($currentColumns)),
+                'tableName'          => $tableName,
+                'columnsAdded'       => $columnsAdded,
+                'columnsDeRequired'  => $columnsDeRequired,
+                'columnsDropped'     => $columnsDropped,
             ]
         );
     }//end updateTableStructure()
+
+    /**
+     * Format a default value for SQL statement.
+     *
+     * @param mixed $default The default value
+     *
+     * @return string SQL-formatted default value
+     */
+    private function formatDefaultValueForSQL(mixed $default): string
+    {
+        if (is_bool($default) === true) {
+            return $default === true ? 'TRUE' : 'FALSE';
+        }
+
+        if (is_string($default) === true) {
+            return "'".$default."'";
+        }
+
+        if ($default === null) {
+            return 'NULL';
+        }
+
+        return (string) $default;
+    }//end formatDefaultValueForSQL()
 
     /**
      * Update table indexes
