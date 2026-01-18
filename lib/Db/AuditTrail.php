@@ -222,7 +222,7 @@ class AuditTrail extends Entity implements JsonSerializable
      *
      * @var string|null The URL where the processing activity is registered
      */
-    protected ?string $procActivityUrl = null;
+    protected ?string $processingActivityUrl = null;
 
     /**
      * The unique identifier for this specific processing operation
@@ -419,7 +419,7 @@ class AuditTrail extends Entity implements JsonSerializable
             'organisationId'        => $this->organisationId,
             'organisationIdType'    => $this->organisationIdType,
             'processingActivityId'  => $this->processingActivityId,
-            'processingActivityUrl' => $this->procActivityUrl,
+            'processingActivityUrl' => $this->processingActivityUrl,
             'processingId'          => $this->processingId,
             'confidentiality'       => $this->confidentiality,
             'retentionPeriod'       => $this->retentionPeriod,

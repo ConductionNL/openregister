@@ -234,6 +234,44 @@ class UnifiedObjectMapper extends AbstractObjectMapper
     }//end find()
 
     /**
+     * Find an object across all storage sources (blob storage and magic tables).
+     *
+     * This method searches both blob storage and all magic tables to find an object
+     * by its identifier (UUID, slug, or URI) without requiring register/schema context.
+     * This is useful for operations like audit trails, files, lock/unlock where the
+     * caller may not know which storage backend contains the object.
+     *
+     * @param string|int $identifier     Object identifier (ID, UUID, slug, or URI).
+     * @param bool       $includeDeleted Whether to include deleted objects.
+     * @param bool       $_rbac          Whether to apply RBAC checks.
+     * @param bool       $_multitenancy  Whether to apply multitenancy filtering.
+     *
+     * @return array{object: ObjectEntity, register: Register|null, schema: Schema|null}
+     *               The found object with its register and schema context.
+     *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found in any source.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
+     */
+    public function findAcrossAllSources(
+        string|int $identifier,
+        bool $includeDeleted=false,
+        bool $_rbac=true,
+        bool $_multitenancy=true
+    ): array {
+        $this->logger->debug('[UnifiedObjectMapper] findAcrossAllSources called', [
+            'identifier' => $identifier,
+        ]);
+
+        return $this->objectEntityMapper->findAcrossAllSources(
+            identifier: $identifier,
+            includeDeleted: $includeDeleted,
+            _rbac: $_rbac,
+            _multitenancy: $_multitenancy
+        );
+    }//end findAcrossAllSources()
+
+    /**
      * Find all ObjectEntities with filtering, pagination, and search.
      *
      * @param int|null      $limit            The number of objects to return.

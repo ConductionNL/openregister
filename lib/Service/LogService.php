@@ -153,8 +153,14 @@ class LogService
     {
         // Step 1: Get the object to ensure it exists.
         // Include deleted objects so audit trail is accessible even after soft-delete.
-        // Use UnifiedObjectMapper to support both magic tables and blob storage.
-        $object = $this->unifiedObjectMapper->find(identifier: $id, _multitenancy: false, _rbac: false);
+        // Use findAcrossAllSources to search both blob storage AND magic tables.
+        $result = $this->unifiedObjectMapper->findAcrossAllSources(
+            identifier: $id,
+            includeDeleted: true,
+            _multitenancy: false,
+            _rbac: false
+        );
+        $object = $result['object'];
 
         // Step 2: Validate object belongs to specified register/schema by comparing stored IDs.
         // We skip entity resolution to allow access even if register/schema are soft-deleted.
@@ -214,8 +220,14 @@ class LogService
     {
         // Step 1: Get the object to ensure it exists.
         // Include deleted objects so audit trail count is accessible even after soft-delete.
-        // Use UnifiedObjectMapper to support both magic tables and blob storage.
-        $object = $this->unifiedObjectMapper->find(identifier: $id, _multitenancy: false, _rbac: false);
+        // Use findAcrossAllSources to search both blob storage AND magic tables.
+        $result = $this->unifiedObjectMapper->findAcrossAllSources(
+            identifier: $id,
+            includeDeleted: true,
+            _multitenancy: false,
+            _rbac: false
+        );
+        $object = $result['object'];
 
         // Step 2: Validate object belongs to specified register/schema by comparing stored IDs.
         // We skip entity resolution to allow access even if register/schema are soft-deleted.

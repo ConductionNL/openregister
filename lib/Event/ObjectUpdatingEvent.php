@@ -39,19 +39,19 @@ class ObjectUpdatingEvent extends Event
     /**
      * The previous object entity state
      *
-     * @var ObjectEntity The object entity before update
+     * @var ObjectEntity|null The object entity before update (null if not available)
      */
-    private ObjectEntity $oldObject;
+    private ?ObjectEntity $oldObject;
 
     /**
      * Constructor for ObjectUpdatedEvent
      *
-     * @param ObjectEntity $newObject The object entity after update
-     * @param ObjectEntity $oldObject The object entity before update
+     * @param ObjectEntity      $newObject The object entity after update
+     * @param ObjectEntity|null $oldObject The object entity before update (null if not available)
      *
      * @return void
      */
-    public function __construct(ObjectEntity $newObject, ObjectEntity $oldObject)
+    public function __construct(ObjectEntity $newObject, ?ObjectEntity $oldObject=null)
     {
         parent::__construct();
         $this->newObject = $newObject;
@@ -71,9 +71,9 @@ class ObjectUpdatingEvent extends Event
     /**
      * Get the original object entity
      *
-     * @return ObjectEntity The object entity before update
+     * @return ObjectEntity|null The object entity before update (null if not available)
      */
-    public function getOldObject(): ObjectEntity
+    public function getOldObject(): ?ObjectEntity
     {
         return $this->oldObject;
     }//end getOldObject()

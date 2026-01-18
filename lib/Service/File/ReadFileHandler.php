@@ -248,9 +248,14 @@ class ReadFileHandler
     public function getFiles(ObjectEntity|string $object, ?bool $sharedFilesOnly=false): array
     {
         // If string ID provided, try to find the object entity.
-        // Use UnifiedObjectMapper to support both magic tables and blob storage.
+        // Use findAcrossAllSources to search both blob storage AND magic tables.
         if (is_string($object) === true) {
-            $object = $this->unifiedObjectMapper->find(identifier: $object, _multitenancy: false, _rbac: false);
+            $result = $this->unifiedObjectMapper->findAcrossAllSources(
+                identifier: $object,
+                _multitenancy: false,
+                _rbac: false
+            );
+            $object = $result['object'];
         }
 
         // Use the new ID-based folder approach.
