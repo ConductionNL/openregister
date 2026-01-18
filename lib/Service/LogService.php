@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 
 /**
  * LogService handles audit trail logs
@@ -70,6 +71,15 @@ class LogService
     private readonly ObjectEntityMapper $objectEntityMapper;
 
     /**
+     * Unified object mapper for both magic tables and blob storage
+     *
+     * Used to find objects regardless of storage type.
+     *
+     * @var UnifiedObjectMapper Unified object mapper instance
+     */
+    private readonly UnifiedObjectMapper $unifiedObjectMapper;
+
+    /**
      * Register mapper
      *
      * Reserved for future use in log filtering and validation.
@@ -103,13 +113,15 @@ class LogService
     public function __construct(
         AuditTrailMapper $auditTrailMapper,
         ObjectEntityMapper $objectEntityMapper,
+        UnifiedObjectMapper $unifiedObjectMapper,
         RegisterMapper $registerMapper,
         SchemaMapper $schemaMapper
     ) {
-        $this->auditTrailMapper   = $auditTrailMapper;
-        $this->objectEntityMapper = $objectEntityMapper;
-        $this->registerMapper     = $registerMapper;
-        $this->schemaMapper       = $schemaMapper;
+        $this->auditTrailMapper     = $auditTrailMapper;
+        $this->objectEntityMapper   = $objectEntityMapper;
+        $this->unifiedObjectMapper  = $unifiedObjectMapper;
+        $this->registerMapper       = $registerMapper;
+        $this->schemaMapper         = $schemaMapper;
     }//end __construct()
 
     /**
@@ -141,7 +153,8 @@ class LogService
     {
         // Step 1: Get the object to ensure it exists.
         // Include deleted objects so audit trail is accessible even after soft-delete.
-        $object = $this->objectEntityMapper->find($id, null, null, true);
+        // Use UnifiedObjectMapper to support both magic tables and blob storage.
+        $object = $this->unifiedObjectMapper->find(identifier: $id, _multitenancy: false, _rbac: false);
 
         // Step 2: Validate object belongs to specified register/schema by comparing stored IDs.
         // We skip entity resolution to allow access even if register/schema are soft-deleted.
@@ -201,7 +214,8 @@ class LogService
     {
         // Step 1: Get the object to ensure it exists.
         // Include deleted objects so audit trail count is accessible even after soft-delete.
-        $object = $this->objectEntityMapper->find($id, null, null, true);
+        // Use UnifiedObjectMapper to support both magic tables and blob storage.
+        $object = $this->unifiedObjectMapper->find(identifier: $id, _multitenancy: false, _rbac: false);
 
         // Step 2: Validate object belongs to specified register/schema by comparing stored IDs.
         // We skip entity resolution to allow access even if register/schema are soft-deleted.

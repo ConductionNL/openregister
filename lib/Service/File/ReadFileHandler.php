@@ -19,6 +19,7 @@ namespace OCA\OpenRegister\Service\File;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Service\FileService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Files\File;
@@ -72,6 +73,7 @@ class ReadFileHandler
         private readonly FileValidationHandler $fileValidHandler,
         private readonly FileOwnershipHandler $fileOwnershipHandler,
         private readonly ObjectEntityMapper $objectEntityMapper,
+        private readonly UnifiedObjectMapper $unifiedObjectMapper,
         private readonly LoggerInterface $logger
     ) {
     }//end __construct()
@@ -246,8 +248,9 @@ class ReadFileHandler
     public function getFiles(ObjectEntity|string $object, ?bool $sharedFilesOnly=false): array
     {
         // If string ID provided, try to find the object entity.
+        // Use UnifiedObjectMapper to support both magic tables and blob storage.
         if (is_string($object) === true) {
-            $object = $this->objectEntityMapper->find($object);
+            $object = $this->unifiedObjectMapper->find(identifier: $object, _multitenancy: false, _rbac: false);
         }
 
         // Use the new ID-based folder approach.
