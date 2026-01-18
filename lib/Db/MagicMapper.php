@@ -4982,21 +4982,27 @@ class MagicMapper
             try {
                 $fullTableName = 'oc_'.$tableName;
 
-                // Use PostgreSQL's JSONB @> (contains) operator for efficient indexed lookup.
-                // This is O(log n) with a GIN index vs O(n) for LIKE searches.
+                // Search for the UUID as a VALUE within the _relations JSONB object.
+                // The _relations column stores {"propertyName": "uuid", ...} format.
+                // We need to find rows where ANY value in the object equals our UUID.
                 if ($isPostgres === true) {
+                    // PostgreSQL: Use jsonb_each_text to search values in the object.
+                    // This finds rows where any value in _relations equals the UUID.
                     $sql = "SELECT * FROM {$fullTableName}
                             WHERE _deleted IS NULL
-                            AND _relations @> ?
+                            AND EXISTS (
+                                SELECT 1 FROM jsonb_each_text(_relations) AS kv
+                                WHERE kv.value = ?
+                            )
                             LIMIT 100";
-                    $param = json_encode([$uuid]);
+                    $param = $uuid;
                 } else {
-                    // MySQL: Use JSON_CONTAINS for similar functionality.
+                    // MySQL: Use JSON_SEARCH to find the UUID as a value anywhere in the object.
                     $sql = "SELECT * FROM {$fullTableName}
                             WHERE _deleted IS NULL
-                            AND JSON_CONTAINS(_relations, ?)
+                            AND JSON_SEARCH(_relations, 'one', ?) IS NOT NULL
                             LIMIT 100";
-                    $param = json_encode($uuid);
+                    $param = $uuid;
                 }
 
                 $stmt = $this->db->prepare($sql);
@@ -5094,18 +5100,20 @@ class MagicMapper
 
         try {
             // Build a query that finds objects whose _relations contains ANY of the given UUIDs.
-            // For PostgreSQL with GIN index, we use @> operator with OR conditions.
-            // For MySQL, we use JSON_CONTAINS with OR conditions.
+            // The _relations column stores {"propertyName": "uuid", ...} format.
+            // We need to find rows where ANY value in the object matches one of our UUIDs.
             $conditions = [];
             $params     = [];
 
             foreach ($uuids as $uuid) {
                 if ($isPostgres === true) {
-                    $conditions[] = '_relations @> ?';
-                    $params[]     = json_encode([$uuid]);
+                    // PostgreSQL: Use jsonb_each_text to search values in the object.
+                    $conditions[] = 'EXISTS (SELECT 1 FROM jsonb_each_text(_relations) AS kv WHERE kv.value = ?)';
+                    $params[]     = $uuid;
                 } else {
-                    $conditions[] = 'JSON_CONTAINS(_relations, ?)';
-                    $params[]     = json_encode($uuid);
+                    // MySQL: Use JSON_SEARCH to find the UUID as a value anywhere in the object.
+                    $conditions[] = 'JSON_SEARCH(_relations, \'one\', ?) IS NOT NULL';
+                    $params[]     = $uuid;
                 }
             }
 
