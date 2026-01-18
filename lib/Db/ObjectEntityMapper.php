@@ -2492,7 +2492,7 @@ class ObjectEntityMapper extends QBMapper
     }//end findByRelation()
 
     /**
-     * Search for related objects in blob storage (openregister_objects table).
+     * Search for related objects in blob storage (openregister_objects table). 
      *
      * @param string $search       Search term to find in relationships
      * @param bool   $partialMatch Whether to allow partial matches
@@ -2520,16 +2520,14 @@ class ObjectEntityMapper extends QBMapper
         }
 
         if ($partialMatch === true) {
-            // @psalm-suppress UndefinedInterfaceMethod
             $qb->andWhere(
-                $qb->expr()->like($objectColumn, $qb->createNamedParameter('%'.$qb->escapeLikeParameter($search).'%'))
+                $qb->expr()->like($objectColumn, $qb->createNamedParameter('%'.$this->$qb->escapeLikeParameter($search).'%'))
             );
         }
 
         if ($partialMatch === false) {
-            // @psalm-suppress UndefinedInterfaceMethod
             $qb->andWhere(
-                $qb->expr()->like($objectColumn, $qb->createNamedParameter('%"'.$qb->escapeLikeParameter($search).'"%'))
+                $qb->expr()->like($objectColumn, $qb->createNamedParameter('%"'.$this->$qb->escapeLikeParameter($search).'"%'))
             );
         }
 
