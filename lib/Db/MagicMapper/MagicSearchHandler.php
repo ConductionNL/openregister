@@ -40,6 +40,8 @@ namespace OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -61,12 +63,16 @@ class MagicSearchHandler
     /**
      * Constructor for MagicSearchHandler
      *
-     * @param IDBConnection   $db     Database connection for queries
-     * @param LoggerInterface $logger Logger for debugging and error reporting
+     * @param IDBConnection           $db                  Database connection for queries
+     * @param LoggerInterface         $logger              Logger for debugging and error reporting
+     * @param MagicRbacHandler        $rbacHandler         RBAC handler for access control
+     * @param MagicOrganizationHandler $organizationHandler Organization handler for multi-tenancy
      */
     public function __construct(
         private readonly IDBConnection $db,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly MagicRbacHandler $rbacHandler,
+        private readonly MagicOrganizationHandler $organizationHandler
     ) {
     }//end __construct()
 
@@ -105,6 +111,8 @@ class MagicSearchHandler
         $published      = $query['_published'] ?? false;
         $ids            = $query['_ids'] ?? null;
         $count          = $query['_count'] ?? false;
+        $rbac           = $query['_rbac'] ?? true;
+        $multitenancy   = $query['_multitenancy'] ?? true;
 
         // Extract metadata from @self.
         $metadataFilters = $query['@self'] ?? [];
@@ -135,6 +143,20 @@ class MagicSearchHandler
 
         // Apply basic filters (deleted, published, etc.).
         $this->applyBasicFilters(qb: $queryBuilder, includeDeleted: $includeDeleted, published: $published);
+
+        // Apply multi-tenancy (organization) filtering if enabled.
+        if ($multitenancy === true) {
+            $this->organizationHandler->applyOrganizationFilter(
+                qb: $queryBuilder,
+                allowPublishedAccess: true,
+                adminBypassEnabled: true
+            );
+        }
+
+        // Apply RBAC filtering if enabled.
+        if ($rbac === true) {
+            $this->rbacHandler->applyRbacFilters(qb: $queryBuilder, schema: $schema, action: 'read');
+        }
 
         // Apply metadata filters.
         if (empty($metadataFilters) === false) {
@@ -279,6 +301,12 @@ class MagicSearchHandler
                 }
 
                 $qb->andWhere($qb->expr()->eq("t.{$columnName}", $qb->createNamedParameter($value)));
+            } else {
+                // Property doesn't exist in this schema but a filter was requested.
+                // Add a condition that always evaluates to false to return zero results.
+                // This ensures multi-schema searches don't return unfiltered results
+                // from schemas that lack the filtered property.
+                $qb->andWhere('1 = 0');
             }//end if
         }//end foreach
     }//end applyObjectFilters()
@@ -471,6 +499,12 @@ class MagicSearchHandler
             $metadataData = [];
             $objectData   = [];
 
+            // Build property type map from schema for type conversion.
+            $propertyTypes = [];
+            foreach ($schema->getProperties() as $propName => $propDef) {
+                $propertyTypes[$propName] = $propDef['type'] ?? 'string';
+            }
+
             foreach ($row as $column => $value) {
                 if (str_starts_with($column, '_') === true) {
                     // Metadata column - remove prefix and map to ObjectEntity.
@@ -479,8 +513,12 @@ class MagicSearchHandler
                     continue;
                 }
 
-                // Schema property column - add to object data.
-                $objectData[$column] = $value;
+                // Convert column name from snake_case to camelCase property name.
+                $propertyName = $this->columnNameToPropertyName($column);
+
+                // Convert value based on schema property type.
+                $propertyType = $propertyTypes[$propertyName] ?? 'string';
+                $objectData[$propertyName] = $this->convertValueByType($value, $propertyType);
             }
 
             // Set metadata properties.
@@ -578,15 +616,101 @@ class MagicSearchHandler
      */
     private function sanitizeColumnName(string $name): string
     {
-        // Convert to lowercase and replace non-alphanumeric with underscores.
-        $sanitized = strtolower(preg_replace('/[^a-zA-Z0-9_]/', '_', $name));
+        // Convert camelCase to snake_case (must match MagicMapper::sanitizeColumnName).
+        // Insert underscore before uppercase letters, then lowercase everything.
+        $name = preg_replace('/([a-z0-9])([A-Z])/', '$1_$2', $name);
+        $name = strtolower($name);
+
+        // Replace any remaining invalid characters with underscore.
+        $name = preg_replace('/[^a-z0-9_]/', '_', $name);
 
         // Ensure it starts with a letter or underscore.
-        if (preg_match('/^[a-zA-Z_]/', $sanitized) === 0) {
-            $sanitized = 'col_'.$sanitized;
+        if (preg_match('/^[a-z_]/', $name) === 0) {
+            $name = 'col_'.$name;
         }
 
+        // Remove consecutive underscores.
+        $name = preg_replace('/_+/', '_', $name);
+
+        // Remove trailing underscores.
+        $name = rtrim($name, '_');
+
         // Limit length to 64 characters (MySQL limit).
-        return substr($sanitized, 0, 64);
+        return substr($name, 0, 64);
     }//end sanitizeColumnName()
+
+    /**
+     * Convert snake_case column name to camelCase property name
+     *
+     * @param string $columnName Column name in snake_case
+     *
+     * @return string Property name in camelCase
+     */
+    private function columnNameToPropertyName(string $columnName): string
+    {
+        // Convert snake_case to camelCase.
+        return lcfirst(str_replace('_', '', ucwords($columnName, '_')));
+    }//end columnNameToPropertyName()
+
+    /**
+     * Convert value based on schema property type
+     *
+     * Schema type determines the conversion, not the data format.
+     *
+     * @param mixed  $value Value to convert
+     * @param string $type  Schema property type (string, number, boolean, array, object, integer)
+     *
+     * @return mixed Converted value
+     */
+    private function convertValueByType(mixed $value, string $type): mixed
+    {
+        // Handle null values.
+        if ($value === null) {
+            return null;
+        }
+
+        // Convert based on schema type (schema is authoritative, not data format).
+        switch ($type) {
+            case 'array':
+            case 'object':
+                // Schema says this should be array/object - decode if it's a JSON string.
+                if (is_string($value) === true) {
+                    $decoded = json_decode($value, true);
+                    if (json_last_error() === JSON_ERROR_NONE) {
+                        return $decoded;
+                    }
+                }
+                // Already an array/object or failed to decode - return as-is.
+                return $value;
+
+            case 'number':
+                // Schema says this should be a number (float).
+                if (is_numeric($value) === true) {
+                    return (float) $value;
+                }
+                return $value;
+
+            case 'integer':
+                // Schema says this should be an integer.
+                if (is_numeric($value) === true) {
+                    return (int) $value;
+                }
+                return $value;
+
+            case 'boolean':
+                // Schema says this should be a boolean.
+                if (is_bool($value) === true) {
+                    return $value;
+                }
+                if (is_string($value) === true) {
+                    return in_array(strtolower($value), ['true', '1', 'yes'], true);
+                }
+                return (bool) $value;
+
+            case 'string':
+            default:
+                // Schema says string or unknown type - return as-is.
+                return $value;
+        }
+    }//end convertValueByType()
 }//end class

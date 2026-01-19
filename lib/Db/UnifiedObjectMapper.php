@@ -1122,8 +1122,12 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                 }
 
                 // Get count for this schema.
+                // Add RBAC and multitenancy flags to count query for MagicSearchHandler.
+                $schemaCountQuery                  = $countQuery;
+                $schemaCountQuery['_rbac']         = $rbac;
+                $schemaCountQuery['_multitenancy'] = $multitenancy;
                 $schemaCount = $this->magicMapper->countObjectsInRegisterSchemaTable(
-                    query: $countQuery,
+                    query: $schemaCountQuery,
                     register: $register,
                     schema: $schema
                 );
@@ -1131,9 +1135,12 @@ class UnifiedObjectMapper extends AbstractObjectMapper
 
                 // For results, we need to fetch enough to cover pagination.
                 // Fetch up to (offset + limit) from each table to ensure we have enough results.
-                $schemaSearchQuery            = $searchQuery;
-                $schemaSearchQuery['_limit']  = $offset + $limit;
-                $schemaSearchQuery['_offset'] = 0;
+                $schemaSearchQuery                  = $searchQuery;
+                $schemaSearchQuery['_limit']        = $offset + $limit;
+                $schemaSearchQuery['_offset']       = 0;
+                // Add RBAC and multitenancy flags to query for MagicSearchHandler.
+                $schemaSearchQuery['_rbac']         = $rbac;
+                $schemaSearchQuery['_multitenancy'] = $multitenancy;
 
                 $schemaResults = $this->magicMapper->searchObjectsInRegisterSchemaTable(
                     query: $schemaSearchQuery,
@@ -1243,6 +1250,9 @@ class UnifiedObjectMapper extends AbstractObjectMapper
 
                 if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
                     $this->logger->info('[UnifiedObjectMapper] Routing searchObjects() to MagicMapper');
+                    // Add RBAC and multitenancy flags to query for MagicSearchHandler.
+                    $query['_rbac']         = $rbac;
+                    $query['_multitenancy'] = $multitenancy;
                     return $this->magicMapper->searchObjectsInRegisterSchemaTable(
                         query: $query,
                         register: $register,
@@ -1428,11 +1438,17 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         // Perform search and count using the appropriate mapper.
         $canUseMagicMapper = $useMagicMapper === true && $register !== null && $schema !== null;
         if ($canUseMagicMapper === true) {
+            // Add RBAC and multitenancy flags to query for MagicSearchHandler.
+            $searchQuery['_rbac']         = $rbac;
+            $searchQuery['_multitenancy'] = $multitenancy;
             $results = $this->magicMapper->searchObjectsInRegisterSchemaTable(
                 query: $searchQuery,
                 register: $register,
                 schema: $schema
             );
+            // Add RBAC and multitenancy flags to count query for MagicSearchHandler.
+            $countQuery['_rbac']         = $rbac;
+            $countQuery['_multitenancy'] = $multitenancy;
             $total   = $this->magicMapper->countObjectsInRegisterSchemaTable(
                 query: $countQuery,
                 register: $register,

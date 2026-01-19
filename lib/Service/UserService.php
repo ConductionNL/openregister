@@ -489,6 +489,14 @@ class UserService
             $additionalInfo['organisation'] = $organizationUuid;
         }
 
+        // Fallback: check for 'functie' in user config if not found via AccountManager's 'role'
+        if (empty($additionalInfo['role']) === true) {
+            $functie = $this->config->getUserValue($userId, 'core', 'functie', '');
+            if (empty($functie) === false) {
+                $additionalInfo['role'] = $functie;
+            }
+        }
+
         return $additionalInfo;
     }//end getAdditionalProfileInfo()
 

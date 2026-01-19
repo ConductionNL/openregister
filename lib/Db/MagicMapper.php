@@ -70,6 +70,7 @@ use OCP\IGroupManager;
 use OCP\IUserManager;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
+use Psr\Container\ContainerInterface;
 use Symfony\Component\Uid\Uuid;
 use Doctrine\DBAL\Schema\Schema as DoctrineSchema;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
@@ -247,6 +248,7 @@ class MagicMapper
      * @param IAppConfig         $appConfig          App configuration for feature flags
      * @param LoggerInterface    $logger             Logger for debugging and monitoring
      * @param SettingsService    $settingsService    Settings service for configuration
+     * @param ContainerInterface $container          Container for lazy loading services
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      */
@@ -262,7 +264,8 @@ class MagicMapper
         private readonly IUserManager $userManager,
         private readonly IAppConfig $appConfig,
         private readonly LoggerInterface $logger,
-        private readonly SettingsService $settingsService
+        private readonly SettingsService $settingsService,
+        private readonly ContainerInterface $container
     ) {
         // Initialize specialized handlers for modular functionality.
         $this->initializeHandlers();
@@ -278,29 +281,33 @@ class MagicMapper
      */
     private function initializeHandlers(): void
     {
-        $this->searchHandler = new MagicSearchHandler(
-            db: $this->db,
-            logger: $this->logger
-        );
-
         $this->rbacHandler = new MagicRbacHandler(
             userSession: $this->userSession,
             groupManager: $this->groupManager,
             userManager: $this->userManager,
-            appConfig: $this->appConfig
-        );
-
-        $this->bulkHandler = new MagicBulkHandler(
-            db: $this->db,
-            logger: $this->logger,
-            eventDispatcher: $this->eventDispatcher
+            appConfig: $this->appConfig,
+            logger: $this->logger
         );
 
         $this->organizationHandler = new MagicOrganizationHandler(
             userSession: $this->userSession,
             groupManager: $this->groupManager,
             appConfig: $this->appConfig,
+            container: $this->container,
             logger: $this->logger
+        );
+
+        $this->searchHandler = new MagicSearchHandler(
+            db: $this->db,
+            logger: $this->logger,
+            rbacHandler: $this->rbacHandler,
+            organizationHandler: $this->organizationHandler
+        );
+
+        $this->bulkHandler = new MagicBulkHandler(
+            db: $this->db,
+            logger: $this->logger,
+            eventDispatcher: $this->eventDispatcher
         );
 
         $this->facetHandler = new MagicFacetHandler(
@@ -602,12 +609,20 @@ class MagicMapper
         $tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
 
         try {
-            return $this->executeRegisterSchemaTableSearch(
+            // Use MagicSearchHandler for search with RBAC and multi-tenancy support.
+            $result = $this->searchHandler->searchObjects(
                 query: $query,
                 register: $register,
                 schema: $schema,
                 tableName: $tableName
             );
+
+            // If result is an integer (count), return empty array.
+            if (is_int($result) === true) {
+                return [];
+            }
+
+            return $result;
         } catch (Exception $e) {
             $this->logger->error(
                 'Failed to search register+schema table',
@@ -663,31 +678,18 @@ class MagicMapper
         $tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
 
         try {
-            $qb = $this->db->getQueryBuilder();
-            $qb->select($qb->createFunction('COUNT(*) as count'))
-                ->from($tableName);
+            // Add _count flag to use MagicSearchHandler with RBAC and multi-tenancy filters.
+            $countQuery           = $query;
+            $countQuery['_count'] = true;
 
-            // Apply all filters (including object field filters) using the same logic as search.
-            // This ensures count matches the actual filtered results.
-            $this->applySearchFilters(qb: $qb, query: $query, schema: $schema);
+            $result = $this->searchHandler->searchObjects(
+                query: $countQuery,
+                register: $register,
+                schema: $schema,
+                tableName: $tableName
+            );
 
-            // Apply full-text search WHERE clause if provided (without score column for count).
-            if (empty($query['_search']) === false) {
-                $this->applyFuzzySearchWhereOnly(qb: $qb, searchTerm: $query['_search'], schema: $schema);
-            }
-
-            // Exclude deleted objects by default.
-            if (isset($query['@self.deleted']) === false) {
-                $qb->andWhere($qb->expr()->isNull('_deleted'));
-            } else if ($query['@self.deleted'] === 'IS NOT NULL') {
-                $qb->andWhere($qb->expr()->isNotNull('_deleted'));
-            }
-
-            $result = $qb->executeQuery();
-            $row    = $result->fetch();
-            $result->closeCursor();
-
-            $count = (int) ($row['count'] ?? 0);
+            $count = is_int($result) ? $result : 0;
 
             $this->logger->debug(
                 '[MagicMapper] Count query completed',
@@ -2559,6 +2561,18 @@ class MagicMapper
 
         // Map schema properties to columns.
         $schemaProperties = $schema->getProperties();
+
+        // DEBUG: Log schema property mapping for gemmaType
+        if ($schema->getSlug() === 'element' && isset($schemaProperties['gemmaType'])) {
+            $this->logger->error('MAGIC_MAPPER_DEBUG: Mapping element properties', [
+                'has_gemmaType_in_schema' => isset($schemaProperties['gemmaType']),
+                'has_gemmaType_in_data' => isset($data['gemmaType']),
+                'gemmaType_value' => $data['gemmaType'] ?? 'NOT IN DATA',
+                'data_keys' => array_keys($data),
+                'objectData_keys' => array_keys($objectData)
+            ]);
+        }
+
         if (is_array($schemaProperties) === true) {
             foreach (array_keys($schemaProperties) as $propertyName) {
                 if (($data[$propertyName] ?? null) !== null) {

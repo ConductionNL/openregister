@@ -31,6 +31,7 @@ use OCP\IUserSession;
 use OCP\IUserManager;
 use OCP\IGroupManager;
 use Psr\Log\LoggerInterface;
+use Psr\Container\ContainerInterface;
 
 /**
  * PermissionHandler class
@@ -55,6 +56,7 @@ class PermissionHandler
      * @param SchemaMapper       $schemaMapper       Mapper for schema operations.
      * @param ObjectEntityMapper $objectEntityMapper Mapper for object entity operations.
      * @param LoggerInterface    $logger             Logger for permission auditing.
+     * @param ContainerInterface $container          Container for lazy loading services.
      */
     public function __construct(
         private readonly IUserSession $userSession,
@@ -62,7 +64,8 @@ class PermissionHandler
         private readonly IGroupManager $groupManager,
         private readonly SchemaMapper $schemaMapper,
         private readonly ObjectEntityMapper $objectEntityMapper,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly ContainerInterface $container
     ) {
     }//end __construct()
 
@@ -365,21 +368,33 @@ class PermissionHandler
     /**
      * Get the active organisation UUID for the current context
      *
-     * @return null The active organisation UUID or null if none set
+     * @return string|null The active organisation UUID or null if none set
      */
-    public function getActiveOrganisationForContext()
+    public function getActiveOrganisationForContext(): ?string
     {
         try {
-            // TODO: Get active organisation without service dependency.
-            // $activeOrganisation = ... implementation needed ...
-            // If (is_array($activeOrganisation) === true && isset($activeOrganisation['uuid']) === true) {
-            // Return $activeOrganisation['uuid'];
-            // }
-            // If (is_string($activeOrganisation) === true) {
-            // Return $activeOrganisation;.
-            // }.
+            // Use container to lazy load OrganisationService to avoid circular dependencies.
+            $organisationService = $this->container->get('OCA\\OpenRegister\\Service\\OrganisationService');
+
+            // Get active organisation including parent chain.
+            $orgUuids = $organisationService->getUserActiveOrganisations();
+
+            if (empty($orgUuids) === false) {
+                // Return the first (primary) active organisation.
+                return $orgUuids[0];
+            }
+
+            // Fallback: try to get just the active organisation.
+            $activeOrg = $organisationService->getActiveOrganisation();
+            if ($activeOrg !== null) {
+                return $activeOrg->getUuid();
+            }
+
             return null;
         } catch (Exception $e) {
+            $this->logger->warning('PermissionHandler: Failed to get active organisation', [
+                'error' => $e->getMessage()
+            ]);
             return null;
         }
     }//end getActiveOrganisationForContext()

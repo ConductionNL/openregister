@@ -441,8 +441,16 @@ class MagicBulkHandler
             return [];
         }
 
-        // Get columns from first filtered object.
-        $columns    = array_keys($filteredChunk[0]);
+        // Get ALL unique columns from ALL objects in the chunk (not just the first one).
+        // This ensures that properties present in some objects but not others are included.
+        $columns = [];
+        foreach ($filteredChunk as $objectData) {
+            foreach (array_keys($objectData) as $column) {
+                if (in_array($column, $columns, true) === false) {
+                    $columns[] = $column;
+                }
+            }
+        }
         $uuids      = array_column($filteredChunk, '_uuid');
         $platform   = $this->db->getDatabasePlatform();
         $isPostgres = $platform->getName() === 'postgresql';
