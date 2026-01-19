@@ -545,7 +545,8 @@ trait MultiTenancyTrait
             $orgConditions->add($this->buildPublishedBypassCondition(qb: $qb, tableAlias: $tableAlias));
         }
 
-        if ($allowNullOrg === true) {
+        // Only allow null organisation for admin users - non-admins should not see objects without organisation
+        if ($allowNullOrg === true && $isAdmin === true) {
             $orgConditions->add($qb->expr()->isNull($organisationColumn));
         }
 

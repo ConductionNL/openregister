@@ -216,6 +216,21 @@ class RenderObject
     }//end getSchema()
 
     /**
+     * Check if a string looks like a UUID (using regex, not strict RFC 4122 validation).
+     *
+     * This allows non-RFC 4122 compliant UUIDs like those from GEMMA ArchiMate exports
+     * which may have non-standard variant bits.
+     *
+     * @param string $value The string to check
+     *
+     * @return bool True if the string matches UUID format
+     */
+    private function isUuidLike(string $value): bool
+    {
+        return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === 1;
+    }
+
+    /**
      * Get an object from cache or database
      *
      * @param int|string $id The object ID or UUID
@@ -1015,7 +1030,12 @@ class RenderObject
                 );
                 $renderedValue = array_map(
                     function ($identifier) use ($depth, $keyExtends, $allFlag, $visitedIds) {
+                        // If already an extended object (has 'id' and '@self' keys), return as-is.
+                        // This prevents double-processing when extend is called multiple times.
                         if (is_array($identifier) === true) {
+                            if (isset($identifier['id']) === true || isset($identifier['@self']) === true) {
+                                return $identifier;
+                            }
                             return null;
                         }
 
@@ -1243,7 +1263,9 @@ class RenderObject
             // Handle array of UUIDs.
             if (is_array($value) === true) {
                 foreach ($value as $item) {
-                    if (is_string($item) === true && Uuid::isValid($item) === true) {
+                    // Use regex-based UUID validation to support non-RFC 4122 compliant UUIDs
+                    // (e.g., GEMMA ArchiMate UUIDs which have non-standard variant bits)
+                    if (is_string($item) === true && $this->isUuidLike($item) === true) {
                         $uuids[] = $item;
                     }
                 }
@@ -1252,7 +1274,8 @@ class RenderObject
             }
 
             // Handle single UUID.
-            if (is_string($value) === true && Uuid::isValid($value) === true) {
+            // Use regex-based UUID validation to support non-RFC 4122 compliant UUIDs
+            if (is_string($value) === true && $this->isUuidLike($value) === true) {
                 $uuids[] = $value;
             }
         }
@@ -1566,10 +1589,11 @@ class RenderObject
                 $schemaId = $this->resolveSchemaReference($targetSchema);
             }
 
-            // Determine which property to populate:
-            // - For same-schema (e.g., deelnemers→deelnames): use $inversedByProperty
-            // - For cross-schema (e.g., organisatie→contactpersonen): use $propertyName
-            $targetProperty = $schemaId === $entity->getSchema() ? $inversedByProperty : $propertyName;
+            // Always use $propertyName as the target property to populate.
+            // This is the property being extended (e.g., 'standaardVersies').
+            // The $inversedByProperty (e.g., 'standaard') is the field on related objects
+            // that points back to this entity.
+            $targetProperty = $propertyName;
 
             // Initialize the target property if not already set to preserve any existing values.
             if (isset($objectData[$targetProperty]) === false) {
@@ -1577,17 +1601,17 @@ class RenderObject
             }
 
             // Find objects that have our UUID in their inversedBy field.
-            // For self-referential (same schema): look in $propertyName (e.g., 'deelnemers' → 'deelnemers')
-            // For cross-schema: look in $inversedByProperty (e.g., contactpersoon has 'organisatie' pointing to us)
+            // The $inversedByProperty (e.g., 'standaard') is the field on related objects
+            // that should contain our UUID.
             $inversedObjects = array_values(
                 array_filter(
                     $referencingObjects,
-                    function (ObjectEntity $object) use ($propertyName, $inversedByProperty, $schemaId, $entity) {
+                    function (ObjectEntity $object) use ($inversedByProperty, $schemaId, $entity) {
                         $data = $object->getObject();
 
-                        // For cross-schema relationships, check the inversedBy field on the related object.
-                        // For same-schema relationships, check the propertyName field.
-                        $fieldToCheck = $object->getSchema() === $entity->getSchema() ? $propertyName : $inversedByProperty;
+                        // Check the inversedBy field on the related object.
+                        // This field should contain the UUID of the current entity.
+                        $fieldToCheck = $inversedByProperty;
 
                         if (isset($data[$fieldToCheck]) === false) {
                             return false;
@@ -1608,22 +1632,31 @@ class RenderObject
                 )
             );
 
-            $inversedUuids = array_map(
+            // Render each inversed object to get full object data (not just UUIDs).
+            // This makes inversedBy behave like regular _extend - returning full objects.
+            $renderedObjects = array_map(
                 function (ObjectEntity $object) {
-                    return $object->getUuid();
+                    return $this->renderEntity(
+                        entity: $object,
+                        _extend: [],
+                        depth: 1,
+                        filter: [],
+                        fields: [],
+                        unset: []
+                    )->jsonSerialize();
                 },
                 $inversedObjects
             );
 
             // Set the target property value based on whether it's an array or single value.
             if ($isArray === true) {
-                $objectData[$targetProperty] = $inversedUuids;
+                $objectData[$targetProperty] = $renderedObjects;
                 continue;
             }
 
             $objectData[$targetProperty] = null;
-            if (empty($inversedUuids) === false) {
-                $objectData[$targetProperty] = end($inversedUuids);
+            if (empty($renderedObjects) === false) {
+                $objectData[$targetProperty] = end($renderedObjects);
             }
         }//end foreach
 
@@ -1674,28 +1707,34 @@ class RenderObject
                 $schemaId = $this->resolveSchemaReference($targetSchema);
             }
 
-            // Determine target property name.
-            $targetProperty = $schemaId === $entity->getSchema()
-                ? ($propertyConfig['items']['inversedBy'] ?? $propertyConfig['inversedBy'])
-                : $propertyName;
+            // Always use $propertyName as the target property to populate.
+            $targetProperty = $propertyName;
 
             // Get cached objects for this entity+property combination.
             $cacheKey      = $entityUuid.'_'.$propertyName;
             $cachedObjects = $this->inverseRelationCache[$cacheKey] ?? [];
 
-            // Extract UUIDs from cached objects.
-            $inversedUuids = array_map(
+            // Render each cached object to get full object data (not just UUIDs).
+            // This makes inversedBy behave like regular _extend - returning full objects.
+            $renderedObjects = array_map(
                 function (ObjectEntity $object) {
-                    return $object->getUuid();
+                    return $this->renderEntity(
+                        entity: $object,
+                        _extend: [],
+                        depth: 1,
+                        filter: [],
+                        fields: [],
+                        unset: []
+                    )->jsonSerialize();
                 },
                 $cachedObjects
             );
 
-            // Set the target property value.
+            // Set the target property value with full rendered objects.
             if ($isArray === true) {
-                $objectData[$targetProperty] = $inversedUuids;
+                $objectData[$targetProperty] = $renderedObjects;
             } else {
-                $objectData[$targetProperty] = empty($inversedUuids) === false ? end($inversedUuids) : null;
+                $objectData[$targetProperty] = empty($renderedObjects) === false ? end($renderedObjects) : null;
             }
         }
 

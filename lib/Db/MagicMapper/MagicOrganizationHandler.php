@@ -101,28 +101,34 @@ class MagicOrganizationHandler
     ): void {
         $user = $this->userSession->getUser();
 
-        // Check if admin bypass is enabled
-        if ($adminBypassEnabled === true && $user !== null) {
+        // Check if user is admin - admins can see all objects including those with null organization
+        $isAdmin = false;
+        if ($user !== null) {
             $userGroups = $this->groupManager->getUserGroupIds($user);
-            if (in_array('admin', $userGroups, true) === true) {
-                $this->logger->debug('MagicOrganizationHandler: Admin bypass enabled, skipping org filter');
-                return;
-            }
+            $isAdmin    = in_array('admin', $userGroups, true);
+        }
+
+        // Check if admin bypass is enabled
+        if ($adminBypassEnabled === true && $isAdmin === true) {
+            $this->logger->debug('MagicOrganizationHandler: Admin bypass enabled, skipping org filter');
+            return;
         }
 
         // Get the active organization UUID(s) for the current user
         $activeOrgUuids = $this->getActiveOrganizationUuids();
 
         if (empty($activeOrgUuids) === true) {
-            $this->logger->debug('MagicOrganizationHandler: No active organization, applying public/null filter');
+            $this->logger->debug('MagicOrganizationHandler: No active organization, applying public filter');
 
-            // No active organization - only show objects with null organization or published objects
+            // No active organization - only show published objects (NOT null org objects for non-admins)
             $conditions = [];
 
-            // Condition 1: Objects with null organization (legacy/global data)
-            $conditions[] = $qb->expr()->isNull('t._organisation');
+            // Admins can see objects with null organization
+            if ($isAdmin === true) {
+                $conditions[] = $qb->expr()->isNull('t._organisation');
+            }
 
-            // Condition 2: Published objects (if allowed)
+            // Published objects (if allowed)
             if ($allowPublishedAccess === true) {
                 $now = (new DateTime())->format('Y-m-d H:i:s');
                 $conditions[] = $qb->expr()->andX(
@@ -133,6 +139,12 @@ class MagicOrganizationHandler
                         $qb->expr()->gt('t._depublished', $qb->createNamedParameter($now))
                     )
                 );
+            }
+
+            // If no conditions (non-admin, no published access), return no results
+            if (empty($conditions) === true) {
+                $qb->andWhere('1 = 0');
+                return;
             }
 
             $qb->andWhere($qb->expr()->orX(...$conditions));
@@ -155,8 +167,10 @@ class MagicOrganizationHandler
             );
         }
 
-        // Condition 2: Objects with null organization (legacy/global data)
-        $conditions[] = $qb->expr()->isNull('t._organisation');
+        // Condition 2: Objects with null organization - ONLY for admin users
+        if ($isAdmin === true) {
+            $conditions[] = $qb->expr()->isNull('t._organisation');
+        }
 
         // Condition 3: Published objects from other organizations (if allowed)
         if ($allowPublishedAccess === true) {
@@ -177,7 +191,8 @@ class MagicOrganizationHandler
         $this->logger->debug('MagicOrganizationHandler: Applied organization filter', [
             'activeOrgUuids' => $activeOrgUuids,
             'allowPublishedAccess' => $allowPublishedAccess,
-            'conditionsCount' => count($conditions)
+            'conditionsCount' => count($conditions),
+            'isAdmin' => $isAdmin
         ]);
     }//end applyOrganizationFilter()
 
@@ -247,8 +262,13 @@ class MagicOrganizationHandler
     public function belongsToActiveOrganization(?string $objectOrganisation): bool
     {
         if ($objectOrganisation === null) {
-            // Objects with null organization are accessible to all
-            return true;
+            // Objects with null organization are only accessible to admin users
+            $user = $this->userSession->getUser();
+            if ($user !== null) {
+                $userGroups = $this->groupManager->getUserGroupIds($user);
+                return in_array('admin', $userGroups, true);
+            }
+            return false;
         }
 
         $activeOrgUuids = $this->getActiveOrganizationUuids();
