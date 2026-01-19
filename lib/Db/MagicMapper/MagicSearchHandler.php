@@ -388,20 +388,33 @@ class MagicSearchHandler
         $properties       = $schema->getProperties();
         $searchConditions = $qb->expr()->orX();
 
-        // Search in text-based schema properties.
+        // Use lowercase search for case-insensitive matching.
+        $lowerSearch      = strtolower($search);
+        $searchPattern    = $qb->createNamedParameter('%'.$lowerSearch.'%');
+
+        // Search in text-based schema properties (case-insensitive using LOWER()).
         foreach ($properties ?? [] as $field => $propertyConfig) {
             if (($propertyConfig['type'] ?? '') === 'string') {
                 $columnName = $this->sanitizeColumnName($field);
                 $searchConditions->add(
-                    $qb->expr()->like("t.{$columnName}", $qb->createNamedParameter('%'.$search.'%'))
+                    $qb->expr()->like(
+                        $qb->createFunction("LOWER(t.{$columnName})"),
+                        $searchPattern
+                    )
                 );
             }
         }
 
-        // Also search in metadata text fields.
-        $searchConditions->add($qb->expr()->like('t._name', $qb->createNamedParameter('%'.$search.'%')));
-        $searchConditions->add($qb->expr()->like('t._description', $qb->createNamedParameter('%'.$search.'%')));
-        $searchConditions->add($qb->expr()->like('t._summary', $qb->createNamedParameter('%'.$search.'%')));
+        // Also search in metadata text fields (case-insensitive using LOWER()).
+        $searchConditions->add(
+            $qb->expr()->like($qb->createFunction('LOWER(t._name)'), $searchPattern)
+        );
+        $searchConditions->add(
+            $qb->expr()->like($qb->createFunction('LOWER(t._description)'), $searchPattern)
+        );
+        $searchConditions->add(
+            $qb->expr()->like($qb->createFunction('LOWER(t._summary)'), $searchPattern)
+        );
 
         $qb->andWhere($searchConditions);
     }//end applyFullTextSearch()

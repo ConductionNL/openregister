@@ -1121,6 +1121,89 @@ class MagicFacetHandler
             return "Schema $value";
         }
 
+        // For organisation field, try to get the organisation name.
+        if ($field === self::METADATA_PREFIX.'organisation' && is_string($value) === true && $value !== '') {
+            // First try system organisations table.
+            try {
+                $qb = $this->db->getQueryBuilder();
+                $qb->select('name')
+                    ->from('openregister_organisations')
+                    ->where($qb->expr()->eq('uuid', $qb->createNamedParameter($value)));
+                $result = $qb->executeQuery();
+                $name   = $result->fetchOne();
+                if ($name !== false && $name !== null) {
+                    return (string) $name;
+                }
+            } catch (\Exception $e) {
+                // Fall through to schema object lookup.
+            }
+
+            // Try to find organisation name from Organisation schema objects.
+            // Organisation objects may be stored in magic tables with different name columns.
+            $orgName = $this->getOrganisationNameFromSchemaObjects($value);
+            if ($orgName !== null) {
+                return $orgName;
+            }
+
+            // Return shortened UUID if name not found.
+            return substr($value, 0, 8).'...';
+        }
+
         return (string) $value;
     }//end getFieldLabel()
+
+    /**
+     * Get organisation name from Organisation schema objects.
+     *
+     * Looks up the organisation UUID in known Organisation schema magic tables
+     * and returns the organisation name if found. Uses direct SQL for reliability.
+     *
+     * @param string $uuid The organisation UUID to look up.
+     *
+     * @return string|null The organisation name or null if not found.
+     */
+    private function getOrganisationNameFromSchemaObjects(string $uuid): ?string
+    {
+        // Known organisation tables with their name columns.
+        // Table: openregister_table_{register}_{schema} with column 'naam' or 'name'.
+        $orgTables = [
+            ['table' => 'oc_openregister_table_2_24', 'column' => 'naam'],
+            // Organisatie in Voorzieningen register
+            ['table' => 'oc_openregister_table_1_4', 'column' => 'name'],
+            // Organization in Publication register
+            ['table' => 'oc_openregister_table_3_4', 'column' => 'name'],
+            // Organization in AMEF register (if exists)
+        ];
+
+        foreach ($orgTables as $tableInfo) {
+            $tableName  = $tableInfo['table'];
+            $nameColumn = $tableInfo['column'];
+
+            try {
+                // Check if table and column exist.
+                $checkSql = "SELECT 1 FROM information_schema.columns
+                             WHERE table_name = ? AND column_name = ? LIMIT 1";
+                $stmt     = $this->db->prepare($checkSql);
+                $stmt->execute([strtolower($tableName), strtolower($nameColumn)]);
+                if ($stmt->fetch() === false) {
+                    continue;
+                }
+
+                // Query for the organisation name.
+                $sql  = "SELECT {$nameColumn} FROM {$tableName} WHERE _uuid = ? LIMIT 1";
+                $stmt = $this->db->prepare($sql);
+                $stmt->execute([$uuid]);
+                $name = $stmt->fetchOne();
+
+                if ($name !== false && $name !== null && trim((string) $name) !== '') {
+                    return (string) $name;
+                }
+            } catch (\Exception $e) {
+                // Table doesn't exist or query failed, try next.
+                continue;
+            }
+        }//end foreach
+
+        return null;
+    }//end getOrganisationNameFromSchemaObjects()
 }//end class
