@@ -200,7 +200,7 @@ This monorepo is a Nextcloud app, it is based on the following structure:
     ├── templates/    # Template files for rendering app views
     └── website/      # Documentation website source files
 
-When running locally, or in development mode the folders nodus_modules and vendor are added. Thes shoudl however not be commited.
+When running locally, or in development mode the folders node_modules and vendor are added. These should however not be commited.
 
 ## Contributing
 
