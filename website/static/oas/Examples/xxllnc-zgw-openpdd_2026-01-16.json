@@ -3208,7 +3208,8 @@
         "inputMapping": null,
         "outputMapping": null,
         "rules": [
-          "zgw-authenticatie-put"
+          "zgw-authenticatie-put",
+          "zgw-write-file"
         ],
         "configurations": [],
         "slug": "enkelvoudiginformatieobject-put",
@@ -3236,7 +3237,8 @@
         "inputMapping": null,
         "outputMapping": null,
         "rules": [
-          "zgw-authenticatie-patch"
+          "zgw-authenticatie-patch",
+          "zgw-write-file"
         ],
         "configurations": [],
         "slug": "enkelvoudiginformatieobject-patch",
