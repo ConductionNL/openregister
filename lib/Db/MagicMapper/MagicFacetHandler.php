@@ -459,6 +459,31 @@ class MagicFacetHandler
             $sql .= " AND ".$filterSql;
         }
 
+        // Add search filter if provided (CRITICAL FIX: was missing for array fields).
+        $search = $baseQuery['_search'] ?? null;
+        if ($search !== null && trim($search) !== '') {
+            $searchPattern = '%'.strtolower(trim($search)).'%';
+            $searchConditions = [];
+            
+            // Search in common metadata columns that exist in the table.
+            $searchColumns = [
+                '_uuid',
+                '_name',
+                '_summary',
+            ];
+            
+            foreach ($searchColumns as $column) {
+                if ($this->columnExists(tableName: $tableName, columnName: $column) === true) {
+                    $searchConditions[] = "LOWER($column) LIKE ?";
+                    $params[] = $searchPattern;
+                }
+            }
+            
+            if (count($searchConditions) > 0) {
+                $sql .= " AND (".implode(" OR ", $searchConditions).")";
+            }
+        }
+
         $sql .= " GROUP BY elem ORDER BY doc_count DESC";
 
         try {
