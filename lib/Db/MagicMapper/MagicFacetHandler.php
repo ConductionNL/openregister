@@ -60,9 +60,19 @@ use Psr\Log\LoggerInterface;
 class MagicFacetHandler
 {
     /**
+     * Maximum number of buckets to return per facet for performance.
+     */
+    private const MAX_FACET_BUCKETS = 50;
+
+    /**
      * Metadata column prefix used in MagicMapper tables.
      */
     private const METADATA_PREFIX = '_';
+
+    /**
+     * In-memory cache for facet results within a single request
+     */
+    private array $facetCache = [];
 
     /**
      * Constructor for MagicFacetHandler
@@ -98,6 +108,8 @@ class MagicFacetHandler
         Register $register,
         Schema $schema
     ): array {
+        $startTime = microtime(true);
+        
         // Extract facet configuration.
         $facetConfig = $query['_facets'] ?? [];
         if (empty($facetConfig) === true) {
@@ -114,11 +126,13 @@ class MagicFacetHandler
         unset($baseQuery['_facets']);
 
         $facets = [];
+        $facetTimes = []; // Track time per facet for optimization
 
         // Process metadata facets (@self).
         if (($facetConfig['@self'] ?? null) !== null && is_array($facetConfig['@self']) === true) {
             $facets['@self'] = [];
             foreach ($facetConfig['@self'] as $field => $config) {
+                $facetStart = microtime(true);
                 $type = $config['type'] ?? 'terms';
 
                 if ($type === 'terms') {
@@ -140,6 +154,8 @@ class MagicFacetHandler
                         schema: $schema
                     );
                 }
+                
+                $facetTimes['@self.'.$field] = round((microtime(true) - $facetStart) * 1000, 2);
             }//end foreach
         }//end if
 
@@ -153,6 +169,7 @@ class MagicFacetHandler
         );
 
         foreach ($objectFacetConfig as $field => $config) {
+            $facetStart = microtime(true);
             $type = $config['type'] ?? 'terms';
             // Sanitize field name to match database column (camelCase -> snake_case).
             $columnName = $this->sanitizeColumnName($field);
@@ -176,7 +193,19 @@ class MagicFacetHandler
                     schema: $schema
                 );
             }
+            
+            $facetTimes[$field] = round((microtime(true) - $facetStart) * 1000, 2);
         }//end foreach
+
+        $totalTime = round((microtime(true) - $startTime) * 1000, 2);
+        $this->logger->info(
+            'MagicFacetHandler: Facet performance',
+            [
+                'total_time_ms' => $totalTime,
+                'facet_count' => count($facetTimes),
+                'facet_times' => $facetTimes,
+            ]
+        );
 
         return $facets;
     }//end getSimpleFacets()
@@ -335,16 +364,24 @@ class MagicFacetHandler
         Register $register,
         Schema $schema
     ): array {
+        // Create cache key
+        $cacheKey = md5(json_encode([$tableName, $field, $baseQuery, $isMetadata]));
+        if (isset($this->facetCache[$cacheKey])) {
+            return $this->facetCache[$cacheKey];
+        }
+
         // Check if column exists in table before querying.
         if ($this->columnExists(tableName: $tableName, columnName: $field) === false) {
             $this->logger->debug(
                 'MagicFacetHandler: Column does not exist for facet',
                 ['tableName' => $tableName, 'field' => $field]
             );
-            return [
+            $result = [
                 'type'    => 'terms',
                 'buckets' => [],
             ];
+            $this->facetCache[$cacheKey] = $result;
+            return $result;
         }
 
         // Check if this is an array field by looking at the schema property.
@@ -352,7 +389,7 @@ class MagicFacetHandler
 
         if ($isArrayField === true) {
             // Use JSON array unnesting for array fields.
-            return $this->getTermsFacetForArrayField(
+            $result = $this->getTermsFacetForArrayField(
                 tableName: $tableName,
                 field: $field,
                 baseQuery: $baseQuery,
@@ -360,6 +397,8 @@ class MagicFacetHandler
                 register: $register,
                 schema: $schema
             );
+            $this->facetCache[$cacheKey] = $result;
+            return $result;
         }
 
         // Standard terms facet for non-array fields.
@@ -370,7 +409,8 @@ class MagicFacetHandler
             ->from($tableName)
             ->where($queryBuilder->expr()->isNotNull($field))
             ->groupBy($field)
-            ->orderBy('doc_count', 'DESC');
+            ->orderBy('doc_count', 'DESC')
+            ->setMaxResults(self::MAX_FACET_BUCKETS); // Limit for performance
 
         // Apply base filters (including object field filters for facet filtering).
         $this->applyBaseFilters(
@@ -403,10 +443,16 @@ class MagicFacetHandler
             ];
         }
 
-        return [
+        $result = [
             'type'    => 'terms',
             'buckets' => $buckets,
         ];
+        
+        // Cache the result
+        $cacheKey = md5(json_encode([$tableName, $field, $baseQuery, $isMetadata]));
+        $this->facetCache[$cacheKey] = $result;
+        
+        return $result;
     }//end getTermsFacet()
 
     /**
@@ -460,23 +506,39 @@ class MagicFacetHandler
         }
 
         // Add search filter if provided (CRITICAL FIX: was missing for array fields).
+        // Use same logic as MagicMapper: search all string properties in schema.
         $search = $baseQuery['_search'] ?? null;
         if ($search !== null && trim($search) !== '') {
-            $searchPattern = '%'.strtolower(trim($search)).'%';
+            $searchTerm = trim($search);
             $searchConditions = [];
             
-            // Search in common metadata columns that exist in the table.
-            $searchColumns = [
-                '_uuid',
-                '_name',
-                '_summary',
-            ];
-            
-            foreach ($searchColumns as $column) {
-                if ($this->columnExists(tableName: $tableName, columnName: $column) === true) {
-                    $searchConditions[] = "LOWER($column) LIKE ?";
-                    $params[] = $searchPattern;
+            // Get all text-based properties from the schema (matching MagicMapper logic).
+            $searchableColumns = [];
+            if ($schema !== null) {
+                $properties = $schema->getProperties() ?? [];
+                if (is_array($properties) === true) {
+                    foreach ($properties as $propertyName => $propertyConfig) {
+                        $type = $propertyConfig['type'] ?? 'string';
+                        // Only search in string fields (same as MagicMapper).
+                        if ($type === 'string') {
+                            $columnName = $this->sanitizeColumnName($propertyName);
+                            $searchableColumns[] = $columnName;
+                        }
+                    }
                 }
+            }
+            
+            // If no schema properties, fall back to metadata columns.
+            if (empty($searchableColumns) === true) {
+                $searchableColumns = ['_name', '_summary', '_uuid'];
+            }
+            
+            // Build search conditions (matching MagicMapper's ACTUAL behavior).
+            // Use ILIKE only, not trigram % operator.
+            foreach ($searchableColumns as $column) {
+                // ILIKE for case-insensitive substring match.
+                $searchConditions[] = "LOWER($column) ILIKE ?";
+                $params[] = '%'.strtolower($searchTerm).'%';
             }
             
             if (count($searchConditions) > 0) {
@@ -484,7 +546,7 @@ class MagicFacetHandler
             }
         }
 
-        $sql .= " GROUP BY elem ORDER BY doc_count DESC";
+        $sql .= " GROUP BY elem ORDER BY doc_count DESC LIMIT ".self::MAX_FACET_BUCKETS;
 
         try {
             $stmt = $this->db->prepare($sql);
@@ -885,7 +947,8 @@ class MagicFacetHandler
             $this->applySearchFilter(
                 queryBuilder: $queryBuilder,
                 searchTerm: trim($search),
-                tableName: $tableName
+                tableName: $tableName,
+                schema: $schema
             );
         }
     }//end applyBaseFilters()
@@ -1035,26 +1098,80 @@ class MagicFacetHandler
      *
      * @return void
      */
-    private function applySearchFilter(IQueryBuilder $queryBuilder, string $searchTerm, string $tableName): void
-    {
-        $searchPattern = '%'.strtolower($searchTerm).'%';
-        $orConditions  = $queryBuilder->expr()->orX();
+    /**
+     * Apply search filter to query builder using same logic as MagicMapper.
+     *
+     * This ensures facet counts match the main search results by using identical
+     * search logic: searches all string properties in the schema using ILIKE and
+     * trigram similarity (for PostgreSQL).
+     *
+     * @param IQueryBuilder $queryBuilder The query builder.
+     * @param string        $searchTerm   The search term.
+     * @param string        $tableName    The table name.
+     * @param Schema|null   $schema       The schema for determining searchable columns.
+     *
+     * @return void
+     */
+    private function applySearchFilter(
+        IQueryBuilder $queryBuilder,
+        string $searchTerm,
+        string $tableName,
+        ?Schema $schema = null
+    ): void {
+        $orConditions = $queryBuilder->expr()->orX();
 
-        // Search in common metadata columns.
-        $searchColumns = [
-            self::METADATA_PREFIX.'uuid',
-            self::METADATA_PREFIX.'name',
-            self::METADATA_PREFIX.'summary',
-        ];
+        // Get all text-based properties from the schema (matching MagicMapper logic).
+        $searchableColumns = [];
+        
+        if ($schema !== null) {
+            $properties = $schema->getProperties() ?? [];
+            if (is_array($properties) === true) {
+                foreach ($properties as $propertyName => $propertyConfig) {
+                    $type = $propertyConfig['type'] ?? 'string';
+                    // Only search in string fields (same as MagicMapper).
+                    if ($type === 'string') {
+                        $columnName = $this->sanitizeColumnName($propertyName);
+                        if ($this->columnExists(tableName: $tableName, columnName: $columnName) === true) {
+                            $searchableColumns[] = $columnName;
+                        }
+                    }
+                }
+            }
+        }
 
-        foreach ($searchColumns as $column) {
+        // If no schema properties, fall back to metadata columns.
+        if (empty($searchableColumns) === true) {
+            $searchableColumns = [
+                self::METADATA_PREFIX.'name',
+                self::METADATA_PREFIX.'summary',
+                self::METADATA_PREFIX.'uuid',
+            ];
+        }
+
+        // Build search conditions (matching MagicMapper's ACTUAL behavior, not intended).
+        // NOTE: Even though MagicMapper's applyFuzzySearch() includes trigram % operator,
+        // in practice it seems to only use ILIKE. We match the actual behavior for consistency.
+        $platform = $this->db->getDatabasePlatform();
+        $searchPattern = '%'.$searchTerm.'%';
+
+        foreach ($searchableColumns as $column) {
             if ($this->columnExists(tableName: $tableName, columnName: $column) === true) {
-                $orConditions->add(
-                    $queryBuilder->expr()->like(
-                        $queryBuilder->createFunction("LOWER($column)"),
-                        $queryBuilder->createNamedParameter($searchPattern)
-                    )
-                );
+                // Use ILIKE only (matching actual behavior, not the % operator).
+                if ($platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform === true) {
+                    $orConditions->add(
+                        $queryBuilder->createFunction(
+                            "LOWER($column) ILIKE LOWER(".$queryBuilder->createNamedParameter($searchPattern).')'
+                        )
+                    );
+                } else {
+                    // MariaDB/MySQL: Use LIKE for case-insensitive substring match.
+                    $orConditions->add(
+                        $queryBuilder->expr()->like(
+                            $queryBuilder->createFunction("LOWER($column)"),
+                            $queryBuilder->createNamedParameter(strtolower($searchPattern))
+                        )
+                    );
+                }
             }
         }
 
