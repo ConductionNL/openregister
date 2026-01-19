@@ -442,7 +442,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      *
      * @throws Exception If update fails.
      */
-    public function update(Entity $entity, ?Register $register=null, ?Schema $schema=null): Entity
+    public function update(Entity $entity, ?Register $register=null, ?Schema $schema=null, ?ObjectEntity $oldEntity=null): Entity
     {
         if ($entity instanceof ObjectEntity === false) {
             throw new Exception('Entity must be an instance of ObjectEntity');
@@ -453,25 +453,29 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             [$register, $schema] = $this->resolveRegisterAndSchema($entity);
         }
 
-        // Fetch the old object state BEFORE any updates for event dispatching.
-        // Use the UUID (not numeric ID) to ensure we get the correct object.
-        try {
-            $oldEntity = $this->find(
-                identifier: $entity->getUuid(),  // Use UUID, not ID!
-                register: $register,
-                schema: $schema,
-                includeDeleted: false,
-                _rbac: false,  // Skip RBAC for internal fetch
-                _multitenancy: false  // Skip multitenancy for internal fetch
-            );
-        } catch (\Exception $e) {
-            // If old object doesn't exist (shouldn't happen in update), use current entity.
-            $this->logger->warning('[UnifiedObjectMapper] Could not fetch old entity for update event', [
-                'entityId' => $entity->getId(),
-                'entityUuid' => $entity->getUuid(),
-                'error' => $e->getMessage()
-            ]);
-            $oldEntity = $entity;
+        // Use provided oldEntity (preferred) or fetch from DB as fallback.
+        // The caller (SaveObject) should capture oldEntity BEFORE modifying the entity.
+        if ($oldEntity === null) {
+            // Fetch the old object state BEFORE any updates for event dispatching.
+            // Use the UUID (not numeric ID) to ensure we get the correct object.
+            try {
+                $oldEntity = $this->find(
+                    identifier: $entity->getUuid(),  // Use UUID, not ID!
+                    register: $register,
+                    schema: $schema,
+                    includeDeleted: false,
+                    _rbac: false,  // Skip RBAC for internal fetch
+                    _multitenancy: false  // Skip multitenancy for internal fetch
+                );
+            } catch (\Exception $e) {
+                // If old object doesn't exist (shouldn't happen in update), use current entity.
+                $this->logger->warning('[UnifiedObjectMapper] Could not fetch old entity for update event', [
+                    'entityId' => $entity->getId(),
+                    'entityUuid' => $entity->getUuid(),
+                    'error' => $e->getMessage()
+                ]);
+                $oldEntity = $entity;
+            }
         }
 
         if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {

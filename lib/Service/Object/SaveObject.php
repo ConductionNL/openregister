@@ -1949,6 +1949,14 @@ class SaveObject
         bool $persist,
         bool $silent
     ): ObjectEntity {
+        // IMPORTANT: Capture the old state BEFORE prepareObjectForUpdate modifies the entity.
+        // This is critical for event dispatching - the old status must be captured here,
+        // not after preparation when the entity has already been modified.
+        $oldObjectData = $existingObject->getObject();
+        $oldObject = clone $existingObject;
+        // Deep clone the object data array to prevent reference issues.
+        $oldObject->setObject($oldObjectData);
+
         // Prepare the object for update.
         $preparedObject = $this->prepareObjectForUpdate(
             existingObject: $existingObject,
@@ -1963,14 +1971,15 @@ class SaveObject
             return $preparedObject;
         }
 
-        // Update the object.
+        // Update the object, passing the captured old state.
         return $this->updateObject(
             register: $register,
             schema: $schema,
             data: $data,
             existingObject: $preparedObject,
             folderId: $folderId,
-            silent: $silent
+            silent: $silent,
+            oldObject: $oldObject
         );
     }//end handleObjectUpdate()
 
@@ -2492,11 +2501,17 @@ class SaveObject
         array $data,
         ObjectEntity $existingObject,
         ?int $folderId=null,
-        bool $silent=false
+        bool $silent=false,
+        ?ObjectEntity $oldObject=null
     ): ObjectEntity {
 
-        // Store the old state for audit trail.
-        $oldObject = clone $existingObject;
+        // Use provided oldObject or clone the existing object for audit trail.
+        // Note: If oldObject is not provided, the clone here may have modified data
+        // since prepareObjectForUpdate already modified existingObject in place.
+        // Always prefer passing oldObject from the caller (handleObjectUpdate).
+        if ($oldObject === null) {
+            $oldObject = clone $existingObject;
+        }
 
         // Extract @self data if present.
         $selfData = [];
@@ -2545,7 +2560,8 @@ class SaveObject
 
         // Save the object to database using UnifiedObjectMapper.
         // This ensures proper event dispatching for both magic-mapped and blob storage objects.
-        $updatedEntity = $this->unifiedObjectMapper->update(entity: $preparedObject, register: $register, schema: $schema);
+        // Pass the oldObject to ensure accurate status change detection in events.
+        $updatedEntity = $this->unifiedObjectMapper->update(entity: $preparedObject, register: $register, schema: $schema, oldEntity: $oldObject);
 
         $this->logger->critical('[SaveObject] Object updated successfully', [
             'app' => 'openregister',
