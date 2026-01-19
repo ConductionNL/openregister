@@ -483,7 +483,9 @@ trait MultiTenancyTrait
 
         $conditions = [];
 
-        if ($isAdmin === true && $allowNullOrg === true) {
+        // Allow null organisation entities when explicitly permitted by the caller.
+        // This is used for system-wide resources like Registers and Schemas.
+        if ($allowNullOrg === true) {
             $conditions[] = $qb->expr()->isNull($organisationColumn);
         }
 
@@ -545,8 +547,9 @@ trait MultiTenancyTrait
             $orgConditions->add($this->buildPublishedBypassCondition(qb: $qb, tableAlias: $tableAlias));
         }
 
-        // Only allow null organisation for admin users - non-admins should not see objects without organisation
-        if ($allowNullOrg === true && $isAdmin === true) {
+        // Allow null organisation entities when explicitly permitted by the caller.
+        // This is used for system-wide resources like Registers and Schemas.
+        if ($allowNullOrg === true) {
             $orgConditions->add($qb->expr()->isNull($organisationColumn));
         }
 
@@ -652,6 +655,15 @@ trait MultiTenancyTrait
         $activeOrgUuid = $this->getActiveOrganisationUuid();
         if ($activeOrgUuid !== null) {
             $entity->setOrganisation($activeOrgUuid);
+            return;
+        }
+
+        // Fall back to default organisation if no active organisation and entity has no org set.
+        if ($entity->getOrganisation() === null && isset($this->appConfig) === true) {
+            $defaultOrgUuid = $this->appConfig->getValueString('openregister', 'defaultOrganisation', '');
+            if (empty($defaultOrgUuid) === false) {
+                $entity->setOrganisation($defaultOrgUuid);
+            }
         }
     }//end setOrganisationOnCreate()
 

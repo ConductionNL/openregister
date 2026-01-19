@@ -364,7 +364,8 @@ class Application extends App implements IBootstrap
                     magicMapper: $container->get(MagicMapper::class),
                     registerMapper: $container->get(RegisterMapper::class),
                     schemaMapper: $container->get(SchemaMapper::class),
-                    logger: $container->get('Psr\Log\LoggerInterface')
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                    eventDispatcher: $container->get(\OCP\EventDispatcher\IEventDispatcher::class)
                 );
             }
         );

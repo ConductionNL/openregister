@@ -29,6 +29,10 @@ use DateTime;
 use Exception;
 use OCP\AppFramework\Db\Entity;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\EventDispatcher\IEventDispatcher;
+use OCA\OpenRegister\Event\ObjectCreatedEvent;
+use OCA\OpenRegister\Event\ObjectUpdatedEvent;
+use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -73,13 +77,15 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      * @param RegisterMapper     $registerMapper     Register mapper for configuration.
      * @param SchemaMapper       $schemaMapper       Schema mapper for metadata.
      * @param LoggerInterface    $logger             Logger for debugging.
+     * @param IEventDispatcher   $eventDispatcher    Event dispatcher for lifecycle events.
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly MagicMapper $magicMapper,
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly IEventDispatcher $eventDispatcher
     ) {
     }//end __construct()
 
@@ -405,14 +411,22 @@ class UnifiedObjectMapper extends AbstractObjectMapper
 
         if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
             $this->logger->debug('[UnifiedObjectMapper] Routing insert() to MagicMapper');
-            return $this->magicMapper->insertObjectEntity(entity: $entity, register: $register, schema: $schema);
+            $insertedEntity = $this->magicMapper->insertObjectEntity(entity: $entity, register: $register, schema: $schema);
+        } else {
+            $this->logger->debug('[UnifiedObjectMapper] Using blob storage (via ObjectEntityMapper parent::insert)');
+            // Call ObjectEntityMapper's blob storage insert directly by using its parent insert.
+            // This avoids the circular loop where ObjectEntityMapper->insert() calls us back.
+            // We replicate the blob storage logic here: parent::insert() + events.
+            $insertedEntity = $this->objectEntityMapper->insertDirectBlobStorage($entity);
         }
 
-        $this->logger->debug('[UnifiedObjectMapper] Using blob storage (via ObjectEntityMapper parent::insert)');
-        // Call ObjectEntityMapper's blob storage insert directly by using its parent insert.
-        // This avoids the circular loop where ObjectEntityMapper->insert() calls us back.
-        // We replicate the blob storage logic here: parent::insert() + events.
-        return $this->objectEntityMapper->insertDirectBlobStorage($entity);
+        // Dispatch ObjectCreatedEvent after successful insert.
+        $this->logger->debug('[UnifiedObjectMapper] Dispatching ObjectCreatedEvent', [
+            'entityUuid' => $insertedEntity->getUuid()
+        ]);
+        $this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent($insertedEntity));
+
+        return $insertedEntity;
     }//end insert()
 
     /**
@@ -462,11 +476,22 @@ class UnifiedObjectMapper extends AbstractObjectMapper
 
         if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
             $this->logger->debug('[UnifiedObjectMapper] Routing update() to MagicMapper');
-            return $this->magicMapper->updateObjectEntity(entity: $entity, register: $register, schema: $schema, oldEntity: $oldEntity);
+            $updatedEntity = $this->magicMapper->updateObjectEntity(entity: $entity, register: $register, schema: $schema, oldEntity: $oldEntity);
+        } else {
+            $this->logger->debug('[UnifiedObjectMapper] Using blob storage (via ObjectEntityMapper parent::update)');
+            $updatedEntity = $this->objectEntityMapper->updateDirectBlobStorage($entity, $oldEntity);
         }
 
-        $this->logger->debug('[UnifiedObjectMapper] Using blob storage (via ObjectEntityMapper parent::update)');
-        return $this->objectEntityMapper->updateDirectBlobStorage($entity, $oldEntity);
+        // Dispatch ObjectUpdatedEvent after successful update.
+        $this->logger->critical('[UnifiedObjectMapper] Dispatching ObjectUpdatedEvent', [
+            'app' => 'openregister',
+            'entityUuid' => $updatedEntity->getUuid(),
+            'oldStatus' => $oldEntity->getObject()['status'] ?? null,
+            'newStatus' => $updatedEntity->getObject()['status'] ?? null
+        ]);
+        $this->eventDispatcher->dispatchTyped(new ObjectUpdatedEvent($updatedEntity, $oldEntity));
+
+        return $updatedEntity;
     }//end update()
 
     /**
@@ -490,16 +515,24 @@ class UnifiedObjectMapper extends AbstractObjectMapper
 
         if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
             $this->logger->debug('[UnifiedObjectMapper] Routing delete() to MagicMapper');
-            return $this->magicMapper->deleteObjectEntity(
+            $deletedEntity = $this->magicMapper->deleteObjectEntity(
                 entity: $entity,
                 register: $register,
                 schema: $schema,
                 hardDelete: true
             );
+        } else {
+            $this->logger->debug('[UnifiedObjectMapper] Routing delete() to ObjectEntityMapper');
+            $deletedEntity = $this->objectEntityMapper->delete(entity: $entity);
         }
 
-        $this->logger->debug('[UnifiedObjectMapper] Routing delete() to ObjectEntityMapper');
-        return $this->objectEntityMapper->delete(entity: $entity);
+        // Dispatch ObjectDeletedEvent after successful delete.
+        $this->logger->debug('[UnifiedObjectMapper] Dispatching ObjectDeletedEvent', [
+            'entityUuid' => $deletedEntity->getUuid()
+        ]);
+        $this->eventDispatcher->dispatchTyped(new ObjectDeletedEvent($deletedEntity));
+
+        return $deletedEntity;
     }//end delete()
 
     /**

@@ -683,9 +683,17 @@ class SaveObjects
             $defaultOwner = $currentUser->getUID();
         }
 
-        // NO ERROR SUPPRESSION: Let organisation service errors bubble up immediately!
+        // Get default organisation UUID for objects without explicit organisation.
         $defaultOrganisation = null;
-        // TODO.
+        try {
+            $defaultOrg = $this->organisationService->ensureDefaultOrganisation();
+            $defaultOrganisation = $defaultOrg->getUuid();
+        } catch (Exception $e) {
+            $this->logger->warning(
+                'Could not get default organisation, objects will have null organisation',
+                ['error' => $e->getMessage()]
+            );
+        }
         $now = new DateTime();
         $now->format('c');
 
