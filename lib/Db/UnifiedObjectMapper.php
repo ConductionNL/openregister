@@ -525,16 +525,18 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                 schema: $schema,
                 hardDelete: true
             );
+
+            // Dispatch ObjectDeletedEvent after successful delete (MagicMapper doesn't dispatch events).
+            $this->logger->debug('[UnifiedObjectMapper] Dispatching ObjectDeletedEvent', [
+                'entityUuid' => $deletedEntity->getUuid()
+            ]);
+            $this->eventDispatcher->dispatchTyped(new ObjectDeletedEvent($deletedEntity));
         } else {
             $this->logger->debug('[UnifiedObjectMapper] Routing delete() to ObjectEntityMapper');
+            // NOTE: ObjectEntityMapper.delete() handles its own event dispatching for blob storage.
+            // Do NOT dispatch ObjectDeletedEvent here to avoid duplicates.
             $deletedEntity = $this->objectEntityMapper->delete(entity: $entity);
         }
-
-        // Dispatch ObjectDeletedEvent after successful delete.
-        $this->logger->debug('[UnifiedObjectMapper] Dispatching ObjectDeletedEvent', [
-            'entityUuid' => $deletedEntity->getUuid()
-        ]);
-        $this->eventDispatcher->dispatchTyped(new ObjectDeletedEvent($deletedEntity));
 
         return $deletedEntity;
     }//end delete()

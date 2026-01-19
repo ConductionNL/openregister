@@ -4591,8 +4591,8 @@ class MagicMapper
             $insertedEntity = $entity;
         }
 
-        // Dispatch created event for audit trails with fresh entity.
-        $this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent(object: $insertedEntity));
+        // NOTE: Event dispatching is handled by UnifiedObjectMapper (the facade) to avoid duplicate events.
+        // Do NOT dispatch ObjectCreatedEvent here.
 
         return $insertedEntity;
     }//end insertObjectEntity()
@@ -4667,21 +4667,8 @@ class MagicMapper
             $updatedEntity = $entity;
         }
 
-        // Dispatch updated event for audit trails with fresh entity.
-        $this->logger->critical('[MagicMapper] About to dispatch ObjectUpdatedEvent', [
-            'app' => 'openregister',
-            'uuid' => $updatedEntity->getUuid(),
-            'oldStatus' => $oldObject->getObject()['status'] ?? 'unknown',
-            'newStatus' => $updatedEntity->getObject()['status'] ?? 'unknown'
-        ]);
-        
-        $event = new ObjectUpdatedEvent(newObject: $updatedEntity, oldObject: $oldObject);
-        $this->eventDispatcher->dispatchTyped($event);
-        
-        $this->logger->critical('[MagicMapper] ObjectUpdatedEvent dispatched', [
-            'app' => 'openregister',
-            'uuid' => $updatedEntity->getUuid()
-        ]);
+        // NOTE: Event dispatching is handled by UnifiedObjectMapper (the facade) to avoid duplicate events.
+        // Do NOT dispatch ObjectUpdatedEvent here.
 
         return $updatedEntity;
     }//end updateObjectEntity()
@@ -4762,8 +4749,8 @@ class MagicMapper
             );
         }
 
-        // Dispatch deleted event for audit trails.
-        $this->eventDispatcher->dispatchTyped(new ObjectDeletedEvent(object: $entity));
+        // NOTE: Event dispatching is handled by UnifiedObjectMapper (the facade) to avoid duplicate events.
+        // Do NOT dispatch ObjectDeletedEvent here.
 
         return $entity;
     }//end deleteObjectEntity()

@@ -377,11 +377,9 @@ class ObjectEntityMapper extends QBMapper
         if ($entity instanceof ObjectEntity && $this->shouldUseMagicMapper($entity) === true) {
             try {
                 // Get UnifiedObjectMapper and delegate insertion.
+                // NOTE: UnifiedObjectMapper handles event dispatching, so we don't dispatch here.
                 $unifiedMapper = \OC::$server->get(UnifiedObjectMapper::class);
                 $result        = $unifiedMapper->insert(entity: $entity, register: $register, schema: $schema);
-
-                // Dispatch created event.
-                $this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent($result));
 
                 return $result;
             } catch (Exception $e) {
@@ -419,14 +417,14 @@ class ObjectEntityMapper extends QBMapper
      */
     public function insertDirectBlobStorage(\OCP\AppFramework\Db\Entity $entity): ObjectEntity
     {
-        // Dispatch creating event.
+        // Dispatch creating event (pre-save hook).
         $this->eventDispatcher->dispatchTyped(new ObjectCreatingEvent($entity));
 
         // Call parent QBMapper insert directly (blob storage).
         $result = parent::insert($entity);
 
-        // Dispatch created event.
-        $this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent($result));
+        // NOTE: ObjectCreatedEvent is dispatched by UnifiedObjectMapper (the facade) to avoid duplicate events.
+        // Do NOT dispatch ObjectCreatedEvent here.
 
         return $result;
     }//end insertDirectBlobStorage()
@@ -581,11 +579,9 @@ class ObjectEntityMapper extends QBMapper
         if ($useMagic === true) {
             try {
                 // Get UnifiedObjectMapper and delegate update.
+                // NOTE: UnifiedObjectMapper handles event dispatching, so we don't dispatch here.
                 $unifiedMapper = \OC::$server->get(UnifiedObjectMapper::class);
                 $result        = $unifiedMapper->update(entity: $entity, register: $register, schema: $schema);
-
-                // Dispatch updated event with correct oldObject.
-                $this->eventDispatcher->dispatchTyped(new ObjectUpdatedEvent($result, $oldObject));
 
                 return $result;
             } catch (Exception $e) {
@@ -628,7 +624,7 @@ class ObjectEntityMapper extends QBMapper
             $oldEntity = $entity;
         }
         
-        // Dispatch updating event.
+        // Dispatch updating event (pre-save hook).
         $this->eventDispatcher->dispatchTyped(
             new ObjectUpdatingEvent(
                 newObject: $entity,
@@ -639,8 +635,8 @@ class ObjectEntityMapper extends QBMapper
         // Call parent QBMapper update directly (blob storage).
         $result = parent::update($entity);
 
-        // Dispatch updated event with correct old object.
-        $this->eventDispatcher->dispatchTyped(new ObjectUpdatedEvent($result, $oldEntity));
+        // NOTE: ObjectUpdatedEvent is dispatched by UnifiedObjectMapper (the facade) to avoid duplicate events.
+        // Do NOT dispatch ObjectUpdatedEvent here.
 
         return $result;
     }//end updateDirectBlobStorage()
