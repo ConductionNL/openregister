@@ -11,8 +11,21 @@ jobs:
     steps:
       - name: Check branch
         run: |
-          if [[ ${GITHUB_HEAD_REF} != development ]] && [[ ${GITHUB_HEAD_REF} != documentation ]] && ! [[ ${GITHUB_HEAD_REF} =~ ^hotfix/ ]]; 
+          echo "=== Branch Check Debug Info ==="
+          echo "GITHUB_HEAD_REF: '${GITHUB_HEAD_REF}'"
+          echo "GITHUB_HEAD_REF length: ${#GITHUB_HEAD_REF}"
+          echo ""
+          echo "Condition checks:"
+          [[ "${GITHUB_HEAD_REF}" == "development" ]] && echo "  ✓ Is 'development' branch" || echo "  ✗ Is NOT 'development' branch"
+          [[ "${GITHUB_HEAD_REF}" == "documentation" ]] && echo "  ✓ Is 'documentation' branch" || echo "  ✗ Is NOT 'documentation' branch"
+          [[ "${GITHUB_HEAD_REF}" =~ ^hotfix/ ]] && echo "  ✓ Starts with 'hotfix/'" || echo "  ✗ Does NOT start with 'hotfix/'"
+          echo ""
+          
+          if [[ "${GITHUB_HEAD_REF}" != "development" ]] && [[ "${GITHUB_HEAD_REF}" != "documentation" ]] && ! [[ "${GITHUB_HEAD_REF}" =~ ^hotfix/ ]]; 
           then
-            echo "Error: Pull request must come from 'development', 'documentation' or 'hotfix/' branch"
+            echo "❌ Error: Pull request must come from 'development', 'documentation' or 'hotfix/' branch"
+            echo "   Current branch: '${GITHUB_HEAD_REF}'"
             exit 1
+          else
+            echo "✅ Branch check passed!"
           fi
