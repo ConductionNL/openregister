@@ -34,6 +34,14 @@ use Psr\Log\LoggerInterface;
  * - Description and summary extraction
  * - Slug generation from configured sources
  * - Twig-like template processing for metadata (regex-based, not full Twig)
+ * - Pipe-based fallback syntax for field chains
+ *
+ * Supported objectNameField formats:
+ * - Simple field: "naam"
+ * - Nested path: "contact.email"
+ * - Fallback chain: "name | ggm_naam | identifier" (tries each until one has value)
+ * - Template: "{{ voornaam }} {{ achternaam }}"
+ * - Template with fallbacks: "{{ name | ggm_naam }} ({{ type }})"
  *
  * @category Handler
  * @package  OCA\OpenRegister\Service\Objects\SaveObject
@@ -65,7 +73,9 @@ class MetadataHydrationHandler
      * Metadata can be configured in schema using:
      * - Direct field paths: "title", "description"
      * - Nested paths: "contact.name", "profile.bio"
+     * - Fallback chains: "name | ggm_naam | identifier" (tries each until one has value)
      * - Twig templates: "{{ firstName }} {{ lastName }}"
+     * - Twig with fallbacks: "{{ name | ggm_naam }} ({{ type }})"
      *
      * @param ObjectEntity $entity The object entity to hydrate.
      * @param Schema       $schema The schema containing metadata configuration.
@@ -210,17 +220,19 @@ class MetadataHydrationHandler
     }//end getValueFromPath()
 
     /**
-     * Extracts metadata value from object data with support for twig-like concatenation.
+     * Extracts metadata value from object data with support for twig-like concatenation and fallbacks.
      *
-     * This method supports two formats:
+     * This method supports multiple formats:
      * 1. Simple dot notation paths: "naam", "contact.email"
-     * 2. Twig-like templates: "{{ voornaam }} {{ tussenvoegsel }} {{ achternaam }}"
+     * 2. Pipe-separated fallbacks: "name | ggm_naam | identifier" (tries each until one has a value)
+     * 3. Twig-like templates: "{{ voornaam }} {{ tussenvoegsel }} {{ achternaam }}"
+     * 4. Twig templates with fallbacks: "{{ name | ggm_naam }} - {{ type }}"
      *
      * For twig-like templates, it extracts field names from {{ }} syntax and concatenates
      * their values with spaces, handling empty/null values gracefully.
      *
      * @param array  $data      The object data.
-     * @param string $fieldPath The field path or twig-like template.
+     * @param string $fieldPath The field path, fallback chain, or twig-like template.
      *
      * @return string|null The extracted/concatenated value, or null if not found.
      */
@@ -231,9 +243,45 @@ class MetadataHydrationHandler
             return $this->processTwigLikeTemplate(data: $data, template: $fieldPath);
         }
 
+        // Check if this is a pipe-separated fallback chain (without {{ }} syntax).
+        if (str_contains($fieldPath, '|') === true) {
+            return $this->processFieldWithFallbacks(data: $data, fieldChain: $fieldPath);
+        }
+
         // Simple field path - use existing method.
         return $this->getValueFromPath(data: $data, path: $fieldPath);
     }//end extractMetadataValue()
+
+    /**
+     * Processes a pipe-separated fallback chain and returns the first non-empty value.
+     *
+     * This method parses strings like "name | ggm_naam | identifier" and tries each
+     * field in order, returning the first one that has a non-empty value.
+     *
+     * @param array  $data       The object data.
+     * @param string $fieldChain The pipe-separated field chain (e.g., "name | ggm_naam | identifier").
+     *
+     * @return string|null The first non-empty value found, or null if none found.
+     */
+    public function processFieldWithFallbacks(array $data, string $fieldChain): ?string
+    {
+        // Split by pipe and trim each field name.
+        $fields = array_map('trim', explode('|', $fieldChain));
+
+        foreach ($fields as $field) {
+            if ($field === '') {
+                continue;
+            }
+
+            $value = $this->getValueFromPath(data: $data, path: $field);
+
+            if ($value !== null && trim((string) $value) !== '') {
+                return trim((string) $value);
+            }
+        }
+
+        return null;
+    }//end processFieldWithFallbacks()
 
     /**
      * Processes twig-like templates by extracting field values and concatenating them.
@@ -241,6 +289,10 @@ class MetadataHydrationHandler
      * This method parses templates like "{{ voornaam }} {{ tussenvoegsel }} {{ achternaam }}"
      * and replaces each {{ fieldName }} with the corresponding value from the data.
      * Empty or null values are handled gracefully and excess whitespace is cleaned up.
+     *
+     * Supports fallback syntax within {{ }} blocks:
+     * - "{{ name | ggm_naam | identifier }}" tries each field until one has a value
+     * - "{{ name | ggm_naam }} - {{ type }}" combines fallbacks with concatenation
      *
      * @param array  $data     The object data.
      * @param string $template The twig-like template string.
@@ -261,8 +313,14 @@ class MetadataHydrationHandler
 
         // Replace each {{ fieldName }} with its value.
         foreach ($matches[0] as $index => $fullMatch) {
-            $fieldName = trim($matches[1][$index]);
-            $value     = $this->getValueFromPath(data: $data, path: $fieldName);
+            $fieldExpression = trim($matches[1][$index]);
+
+            // Check if this expression contains pipe (fallback syntax).
+            if (str_contains($fieldExpression, '|') === true) {
+                $value = $this->processFieldWithFallbacks(data: $data, fieldChain: $fieldExpression);
+            } else {
+                $value = $this->getValueFromPath(data: $data, path: $fieldExpression);
+            }
 
             if ($value !== null && trim((string) $value) !== '') {
                 $result    = str_replace($fullMatch, trim((string) $value), $result);

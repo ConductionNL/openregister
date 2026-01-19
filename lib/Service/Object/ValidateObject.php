@@ -303,7 +303,7 @@ class ValidateObject
     {
         // Handle inversedBy relationships for validation.
         // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items to config.
-        if (($propertySchema->inversedBy ?? null) !== null) {
+        if (($propertySchema->inversedBy ?? null) !== null && $propertySchema->inversedBy !== '') {
             // Check if this is an array property.
             $isArrayType = ($propertySchema->type ?? null) !== null
                 && $propertySchema->type === 'array';
@@ -842,7 +842,7 @@ class ValidateObject
     {
 
         // If items don't have a type or aren't objects, return as-is.
-        if (isset($itemsSchema->type) === true || $itemsSchema->type !== 'object') {
+        if (isset($itemsSchema->type) === false || $itemsSchema->type !== 'object') {
             return $itemsSchema;
         }
 
