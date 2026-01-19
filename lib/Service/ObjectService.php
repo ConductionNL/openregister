@@ -2758,7 +2758,7 @@ class ObjectService
     }//end mergeObjects()
 
     /**
-     * Validate objects by schema using ValidationHandler.
+     * Validate objects by schema using ValidationHandler (for testing - does not save).
      *
      * @param int $schemaId Schema ID
      *
@@ -2768,4 +2768,25 @@ class ObjectService
     {
         return $this->validationHandler->validateObjectsBySchema(schemaId: $schemaId, saveCallback: [$this, 'saveObject']);
     }//end validateObjectsBySchema()
+
+    /**
+     * Validate and save all objects by schema, updating metadata like _name.
+     *
+     * This method validates all objects belonging to the specified schema and saves them
+     * to update metadata fields. This is useful for bulk updating object metadata after
+     * schema changes or imports.
+     *
+     * @param int $registerId Register ID
+     * @param int $schemaId   Schema ID
+     *
+     * @return array{processed: int, updated: int, failed: int, errors: array} Validation statistics
+     */
+    public function validateAndSaveObjectsBySchema(int $registerId, int $schemaId): array
+    {
+        return $this->validationHandler->validateAndSaveObjectsBySchema(
+            registerId: $registerId,
+            schemaId: $schemaId,
+            saveCallback: [$this, 'saveObject']
+        );
+    }//end validateAndSaveObjectsBySchema()
 }//end class

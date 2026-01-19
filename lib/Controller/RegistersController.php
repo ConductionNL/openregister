@@ -322,6 +322,35 @@ class RegistersController extends Controller
                     }
 
                     $register['schemas'] = $expandedSchemas;
+
+                    // If schemas were expanded and stats are requested, add schema-level stats
+                    if (in_array('@self.stats', $extend, true) === true && empty($expandedSchemas) === false) {
+                        // Get object counts per schema using optimized query
+                        $schemaCounts = $this->registerService->getSchemaObjectCounts(
+                            registerId: $register['id'],
+                            schemas: $expandedSchemas
+                        );
+
+                        $this->logger->debug('RegistersController: Schema counts for register '.$register['id'].': '.json_encode($schemaCounts));
+
+                        // Add stats to each expanded schema
+                        foreach ($register['schemas'] as &$schema) {
+                            $schemaId = $schema['id'] ?? null;
+                            $this->logger->debug("RegistersController: Processing schema {$schemaId}, has count: ".(isset($schemaCounts[$schemaId]) ? 'yes' : 'no'));
+                            if ($schemaId !== null && isset($schemaCounts[$schemaId]) === true) {
+                                $schema['stats'] = [
+                                    'objects' => $schemaCounts[$schemaId],
+                                ];
+                                $this->logger->debug("RegistersController: Set stats for schema {$schemaId}: ".json_encode($schema['stats']));
+                            } else {
+                                // No objects found for this schema
+                                $schema['stats'] = [
+                                    'objects' => ['total' => 0],
+                                ];
+                                $this->logger->debug("RegistersController: No count for schema {$schemaId}, set to 0");
+                            }
+                        }
+                    }
                 }
             }
         }

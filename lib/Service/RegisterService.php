@@ -25,8 +25,10 @@ namespace OCA\OpenRegister\Service;
 use Exception;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -61,6 +63,24 @@ class RegisterService
     private readonly RegisterMapper $registerMapper;
 
     /**
+     * Schema mapper
+     *
+     * Handles database operations for schema entities.
+     *
+     * @var SchemaMapper Schema mapper instance
+     */
+    private readonly SchemaMapper $schemaMapper;
+
+    /**
+     * Database connection
+     *
+     * Direct database connection for custom queries.
+     *
+     * @var IDBConnection Database connection instance
+     */
+    private readonly IDBConnection $db;
+
+    /**
      * File service
      *
      * Handles file operations related to registers.
@@ -93,6 +113,8 @@ class RegisterService
      * Initializes service with required dependencies for register operations.
      *
      * @param RegisterMapper      $registerMapper      Register mapper for database operations
+     * @param SchemaMapper        $schemaMapper        Schema mapper for schema operations
+     * @param IDBConnection       $db                  Database connection for custom queries
      * @param FileService         $fileService         File service for file operations
      * @param OrganisationService $organisationService Organisation service for permissions
      * @param LoggerInterface     $logger              Logger for error tracking
@@ -101,6 +123,8 @@ class RegisterService
      */
     public function __construct(
         RegisterMapper $registerMapper,
+        SchemaMapper $schemaMapper,
+        IDBConnection $db,
         FileService $fileService,
         OrganisationService $organisationService,
         LoggerInterface $logger
@@ -109,6 +133,8 @@ class RegisterService
         $this->logger->debug('RegisterService constructor started.');
         // Store dependencies for use in service methods.
         $this->registerMapper      = $registerMapper;
+        $this->schemaMapper        = $schemaMapper;
+        $this->db                  = $db;
         $this->fileService         = $fileService;
         $this->organisationService = $organisationService;
         $this->logger->debug('RegisterService constructor completed.');
@@ -292,4 +318,140 @@ class RegisterService
             }//end try
         }//end if
     }//end ensureRegisterFolderExists()
+
+    /**
+     * Get object counts per schema for a register using optimized SQL
+     *
+     * This method builds a single SQL query that counts objects for each schema,
+     * handling both magic table and blob storage configurations efficiently.
+     *
+     * @param int   $registerId The register ID to get counts for
+     * @param array $schemas    Array of schema objects with their configurations
+     *
+     * @return array<int, array{total: int}> Associative array mapping schema IDs to counts
+     *
+     * @psalm-return array<int, array{total: int}>
+     */
+    public function getSchemaObjectCounts(int $registerId, array $schemas): array
+    {
+        // Initialize result array
+        $result = [];
+
+        if (empty($schemas) === true) {
+            return $result;
+        }
+
+        try {
+            $this->logger->debug('GetSchemaObjectCounts: Processing '.count($schemas).' schemas for register '.$registerId);
+
+            // Build a UNION query that counts objects for each schema
+            $unionQueries = [];
+            $blobSchemas  = [];
+
+            foreach ($schemas as $schema) {
+                $schemaId = $schema['id'] ?? null;
+                if ($schemaId === null) {
+                    $this->logger->warning('Schema without ID found, skipping');
+                    continue;
+                }
+
+                $this->logger->debug("Processing schema ID: {$schemaId}");
+
+                // Check if this schema uses magic table (has 'table' configuration in properties)
+                $isMagicTable = false;
+                if (isset($schema['properties']) === true && is_array($schema['properties']) === true) {
+                    foreach ($schema['properties'] as $property) {
+                        if (isset($property['table']) === true && is_array($property['table']) === true) {
+                            $isMagicTable = true;
+                            break;
+                        }
+                    }
+                }
+
+                $this->logger->debug("Schema {$schemaId} is magic table: ".($isMagicTable ? 'yes' : 'no'));
+
+                if ($isMagicTable === true) {
+                    // Magic table: check if table exists, then query it
+                    // Note: Nextcloud's IDBConnection doesn't have getPrefix(), we use the table name directly
+                    $tableName = 'openregister_table_'.$registerId.'_'.$schemaId;
+
+                    // Check if table exists
+                    $tableExists = $this->db->tableExists($tableName);
+
+                    if ($tableExists === true) {
+                        $quotedTableName = $this->db->getQueryBuilder()->getTableName($tableName);
+                        // Magic tables store data in flat columns (not in an 'object' column)
+                        // The _deleted column is JSONB and should be NULL for non-deleted objects
+                        // Cast schema_id to VARCHAR to match blob storage query type
+                        $unionQueries[]  = "
+                            SELECT 
+                                CAST({$schemaId} AS VARCHAR) as schema_id,
+                                COUNT(*) as total
+                            FROM {$quotedTableName}
+                            WHERE (_deleted IS NULL)
+                        ";
+                    } else {
+                        // Table doesn't exist yet, return 0
+                        $result[$schemaId] = ['total' => 0];
+                    }
+                } else {
+                    // Blob storage: add to blob schemas list
+                    $blobSchemas[] = (int) $schemaId;
+                }
+            }//end foreach
+
+            // Add blob storage query if there are any blob schemas
+            if (empty($blobSchemas) === false) {
+                $schemaIdsList = implode("','", $blobSchemas);
+                $qb            = $this->db->getQueryBuilder();
+                $tableName     = $qb->getTableName('openregister_objects');
+                $unionQueries[] = "
+                    SELECT 
+                        schema as schema_id,
+                        COUNT(*) as total
+                    FROM {$tableName}
+                    WHERE register = '{$registerId}'
+                      AND schema IN ('{$schemaIdsList}')
+                      AND deleted IS NULL
+                    GROUP BY schema
+                ";
+            }
+
+            if (empty($unionQueries) === true) {
+                return $result;
+            }
+
+            // Combine all queries with UNION ALL
+            $sql = implode(' UNION ALL ', $unionQueries);
+
+            // Log the SQL for debugging
+            $this->logger->debug('Schema object counts SQL: '.$sql);
+
+            // Execute the query
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute();
+
+            // Process results
+            while ($row = $stmt->fetch(\PDO::FETCH_ASSOC)) {
+                $result[(int) $row['schema_id']] = [
+                    'total' => (int) $row['total'],
+                ];
+            }
+
+            $stmt->closeCursor();
+
+            // Ensure all blob schemas have an entry (even if 0)
+            foreach ($blobSchemas as $schemaId) {
+                if (isset($result[$schemaId]) === false) {
+                    $result[$schemaId] = ['total' => 0];
+                }
+            }
+        } catch (\Exception $e) {
+            // Log error but don't fail - return empty counts
+            $this->logger->error('Error getting schema object counts: '.$e->getMessage());
+            $this->logger->error('Stack trace: '.$e->getTraceAsString());
+        }//end try
+
+        return $result;
+    }//end getSchemaObjectCounts()
 }//end class

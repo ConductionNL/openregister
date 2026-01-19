@@ -139,6 +139,9 @@ return [
         ['name' => 'objects#getObjectVectorizationCount', 'url' => '/api/objects/vectorize/count', 'verb' => 'GET'],
         ['name' => 'objects#getObjectVectorizationStats', 'url' => '/api/objects/vectorize/stats', 'verb' => 'GET'],
         
+        // Object validation endpoint.
+        ['name' => 'objects#validate', 'url' => '/api/objects/validate', 'verb' => 'POST'],
+        
         // Core file extraction endpoints (use fileExtraction controller to avoid conflict with files controller).
         // NOTE: Specific routes MUST come before parameterized routes like {id}
         ['name' => 'fileExtraction#index', 'url' => '/api/files', 'verb' => 'GET'],

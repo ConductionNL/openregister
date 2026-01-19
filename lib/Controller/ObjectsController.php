@@ -2658,4 +2658,92 @@ class ObjectsController extends Controller
             );
         }//end try
     }//end getObjectVectorizationCount()
+
+    /**
+     * Validate all objects for a register/schema combination
+     *
+     * This endpoint validates all objects in a specific schema, ensuring they conform
+     * to the schema definition and updating metadata like name, description, etc.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with validation results
+     *
+     * @psalm-return JSONResponse
+     */
+    public function validate(): JSONResponse
+    {
+        try {
+            // Get request parameters
+            $register = $this->request->getParam(key: 'register');
+            $schemaId = $this->request->getParam(key: 'schema');
+
+            if ($register === null || $schemaId === null) {
+                return new JSONResponse(
+                    data: [
+                        'success' => false,
+                        'error'   => 'Register and schema parameters are required',
+                    ],
+                    statusCode: 400
+                );
+            }
+
+            $this->logger->info(
+                message: 'Starting bulk validation for schema',
+                context: [
+                    'register' => $register,
+                    'schema'   => $schemaId,
+                ]
+            );
+
+            // Validate and save all objects in the schema to update metadata
+            $result = $this->objectService->validateAndSaveObjectsBySchema(
+                registerId: (int) $register,
+                schemaId: (int) $schemaId
+            );
+
+            $this->logger->info(
+                message: 'Bulk validation and save completed',
+                context: [
+                    'register'  => $register,
+                    'schema'    => $schemaId,
+                    'processed' => $result['processed'] ?? 0,
+                    'updated'   => $result['updated'] ?? 0,
+                    'failed'    => $result['failed'] ?? 0,
+                ]
+            );
+
+            return new JSONResponse(
+                data: [
+                    'success'    => true,
+                    'message'    => 'Validation completed successfully',
+                    'statistics' => [
+                        'processed' => $result['processed'] ?? 0,
+                        'updated'   => $result['updated'] ?? 0,
+                        'failed'    => $result['failed'] ?? 0,
+                    ],
+                    'errors' => $result['errors'] ?? [],
+                ]
+            );
+        } catch (Exception $e) {
+            $this->logger->error(
+                message: 'Bulk validation failed',
+                context: [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                ]
+            );
+
+            return new JSONResponse(
+                data: [
+                    'success' => false,
+                    'error'   => $e->getMessage(),
+                    'message' => 'Validation failed',
+                ],
+                statusCode: 500
+            );
+        }//end try
+    }//end validate()
+
 }//end class

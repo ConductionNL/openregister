@@ -79,6 +79,12 @@ import { dashboardStore, registerStore, navigationStore, configurationStore } fr
 							</template>
 							View APIs
 						</NcActionButton>
+						<NcActionButton close-after-click @click="warmupNamesCache">
+							<template #icon>
+								<CloudUploadOutline :size="20" />
+							</template>
+							{{ t('openregister', 'Warmup Names Cache') }}
+						</NcActionButton>
 					</NcActions>
 				</div>
 			</div>
@@ -116,32 +122,26 @@ import { dashboardStore, registerStore, navigationStore, configurationStore } fr
 										<CogOutline :size="16" />
 										{{ t('openregister', 'Local') }}
 									</span>
-								</h2>
-								<NcActions :primary="true" menu-name="Actions">
+							</h2>
+							<NcActions :primary="true" menu-name="Actions">
+								<template #icon>
+									<DotsHorizontal :size="20" />
+								</template>
+								<NcActionButton
+									v-tooltip="isManagedByExternalConfig(register) ? 'Cannot edit: This register is managed by external configuration ' + getManagingConfiguration(register).title : ''"
+									close-after-click
+									:disabled="isManagedByExternalConfig(register)"
+									@click="registerStore.setRegisterItem({
+										...register,
+										schemas: Array.isArray(register.schemas)
+											? register.schemas.map(schema => typeof schema === 'object' ? schema.id : schema)
+											: []
+									}); navigationStore.setModal('editRegister')">
 									<template #icon>
-										<DotsHorizontal :size="20" />
+										<Pencil :size="20" />
 									</template>
-									<NcActionButton close-after-click :disabled="calculating === register.id" @click="calculateSizes(register)">
-										<template #icon>
-											<Calculator :size="20" />
-										</template>
-										Calculate Sizes
-									</NcActionButton>
-									<NcActionButton
-										v-tooltip="isManagedByExternalConfig(register) ? 'Cannot edit: This register is managed by external configuration ' + getManagingConfiguration(register).title : ''"
-										close-after-click
-										:disabled="isManagedByExternalConfig(register)"
-										@click="registerStore.setRegisterItem({
-											...register,
-											schemas: Array.isArray(register.schemas)
-												? register.schemas.map(schema => typeof schema === 'object' ? schema.id : schema)
-												: []
-										}); navigationStore.setModal('editRegister')">
-										<template #icon>
-											<Pencil :size="20" />
-										</template>
-										Edit
-									</NcActionButton>
+									Edit
+								</NcActionButton>
 									<NcActionButton close-after-click @click="registerStore.setRegisterItem(register); navigationStore.setModal('exportRegister')">
 										<template #icon>
 											<Export :size="20" />
@@ -220,16 +220,68 @@ import { dashboardStore, registerStore, navigationStore, configurationStore } fr
 								<thead>
 									<tr>
 										<th>{{ t('openregister', 'Schema Name') }}</th>
-										<th>{{ t('openregister', 'Type') }}</th>
+										<th>{{ t('openregister', 'Objects') }}</th>
+										<th>{{ t('openregister', 'Configuration') }}</th>
 									</tr>
 								</thead>
 								<tbody>
 									<tr v-for="schema in getDisplayedSchemas(register)" :key="schema.id">
-										<td>{{ schema.title }}</td>
-										<td>{{ schema.type || 'object' }}</td>
+										<td class="schemaNameCell">
+											<Table v-if="hasMagicMapping(schema)" v-tooltip="'Magic Table'" :size="18" class="schemaIcon schemaIcon--magic" />
+											<DatabaseOutline v-else v-tooltip="'Blob Storage'" :size="18" class="schemaIcon schemaIcon--blob" />
+											{{ schema.title }}
+										</td>
+										<td>{{ schema.stats?.objects?.total || 0 }}</td>
+										<td class="tableColumnActions">
+											<NcActions :primary="false">
+												<template #icon>
+													<DotsHorizontal :size="20" />
+												</template>
+												<NcActionButton close-after-click @click="setSchemaConfiguration(register, schema, 'magic')">
+													<template #icon>
+														<Table :size="20" />
+													</template>
+													{{ hasMagicMapping(schema) ? '✓ ' : '' }}Use Magic Table
+												</NcActionButton>
+												<NcActionButton close-after-click @click="setSchemaConfiguration(register, schema, 'blob')">
+													<template #icon>
+														<DatabaseOutline :size="20" />
+													</template>
+													{{ !hasMagicMapping(schema) ? '✓ ' : '' }}Use Blob Storage
+												</NcActionButton>
+												<NcActionButton 
+													v-tooltip="!hasMagicMapping(schema) ? t('openregister', 'This schema must use Magic Table configuration to sync') : ''"
+													:disabled="!hasMagicMapping(schema)"
+													close-after-click 
+													@click="syncMagicTable(register, schema)">
+													<template #icon>
+														<Sync :size="20" />
+													</template>
+													{{ t('openregister', 'Sync Table') }}
+												</NcActionButton>
+												<NcActionButton 
+													close-after-click 
+													@click="validateSchemaObjects(register, schema)">
+													<template #icon>
+														<CheckCircle :size="20" />
+													</template>
+													{{ t('openregister', 'Validate') }}
+												</NcActionButton>
+												<NcActionButton 
+													v-tooltip="getSchemaObjectCount(schema) > 0 ? t('openregister', 'Cannot remove schema with existing objects ({count} objects)', { count: getSchemaObjectCount(schema) }) : ''"
+													:disabled="getSchemaObjectCount(schema) > 0"
+													close-after-click 
+													@click="removeSchemaFromRegister(register, schema)">
+													<template #icon>
+														<TrashCanOutline :size="20" />
+													</template>
+													{{ t('openregister', 'Remove') }}
+												</NcActionButton>
+											</NcActions>
+										</td>
 									</tr>
 									<tr v-if="!register.schemas || register.schemas.length === 0">
-										<td colspan="2" class="emptyText">
+										<td colspan="3" class="emptyText">
 											{{ t('openregister', 'No schemas found') }}
 										</td>
 									</tr>
@@ -311,32 +363,26 @@ import { dashboardStore, registerStore, navigationStore, configurationStore } fr
 									</td>
 									<td>{{ register.created ? new Date(register.created).toLocaleDateString({day: '2-digit', month: '2-digit', year: 'numeric'}) + ', ' + new Date(register.created).toLocaleTimeString({hour: '2-digit', minute: '2-digit', second: '2-digit'}) : '-' }}</td>
 									<td>{{ register.updated ? new Date(register.updated).toLocaleDateString({day: '2-digit', month: '2-digit', year: 'numeric'}) + ', ' + new Date(register.updated).toLocaleTimeString({hour: '2-digit', minute: '2-digit', second: '2-digit'}) : '-' }}</td>
-									<td class="tableColumnActions">
-										<NcActions :primary="false">
+								<td class="tableColumnActions">
+									<NcActions :primary="false">
+										<template #icon>
+											<DotsHorizontal :size="20" />
+										</template>
+										<NcActionButton
+											v-tooltip="isManagedByExternalConfig(register) ? 'Cannot edit: This register is managed by external configuration ' + getManagingConfiguration(register).title : ''"
+											close-after-click
+											:disabled="isManagedByExternalConfig(register)"
+											@click="registerStore.setRegisterItem({
+												...register,
+												schemas: Array.isArray(register.schemas)
+													? register.schemas.map(schema => typeof schema === 'object' ? schema.id : schema)
+													: []
+											}); navigationStore.setModal('editRegister')">
 											<template #icon>
-												<DotsHorizontal :size="20" />
+												<Pencil :size="20" />
 											</template>
-											<NcActionButton close-after-click :disabled="calculating === register.id" @click="calculateSizes(register)">
-												<template #icon>
-													<Calculator :size="20" />
-												</template>
-												Calculate Sizes
-											</NcActionButton>
-											<NcActionButton
-												v-tooltip="isManagedByExternalConfig(register) ? 'Cannot edit: This register is managed by external configuration ' + getManagingConfiguration(register).title : ''"
-												close-after-click
-												:disabled="isManagedByExternalConfig(register)"
-												@click="registerStore.setRegisterItem({
-													...register,
-													schemas: Array.isArray(register.schemas)
-														? register.schemas.map(schema => typeof schema === 'object' ? schema.id : schema)
-														: []
-												}); navigationStore.setModal('editRegister')">
-												<template #icon>
-													<Pencil :size="20" />
-												</template>
-												Edit
-											</NcActionButton>
+											Edit
+										</NcActionButton>
 											<NcActionButton close-after-click @click="registerStore.setRegisterItem(register); navigationStore.setModal('exportRegister')">
 												<template #icon>
 													<Export :size="20" />
@@ -433,7 +479,6 @@ import Upload from 'vue-material-design-icons/Upload.vue'
 import Export from 'vue-material-design-icons/Export.vue'
 import ApiIcon from 'vue-material-design-icons/Api.vue'
 import Download from 'vue-material-design-icons/Download.vue'
-import Calculator from 'vue-material-design-icons/Calculator.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
@@ -443,6 +488,9 @@ import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import CloudUploadOutline from 'vue-material-design-icons/CloudUploadOutline.vue'
 import Publish from 'vue-material-design-icons/Publish.vue'
 import PublishOff from 'vue-material-design-icons/PublishOff.vue'
+import Sync from 'vue-material-design-icons/Sync.vue'
+import Table from 'vue-material-design-icons/Table.vue'
+import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import axios from '@nextcloud/axios'
 import { showError, showSuccess } from '@nextcloud/dialogs'
 import PaginationComponent from '../../components/PaginationComponent.vue'
@@ -465,7 +513,6 @@ export default {
 		Export,
 		ApiIcon,
 		Download,
-		Calculator,
 		Refresh,
 		Plus,
 		InformationOutline,
@@ -475,11 +522,13 @@ export default {
 		CloudUploadOutline,
 		Publish,
 		PublishOff,
+		Sync,
+		Table,
+		CheckCircle,
 		PaginationComponent,
 	},
 	data() {
 		return {
-			calculating: null,
 			selectedRegisters: [],
 			expandedRegisters: [], // Track which registers are expanded
 			expandedDescriptions: [], // Track which descriptions are expanded
@@ -717,6 +766,47 @@ export default {
 			window.open(`https://redocly.github.io/redoc/?url=${encodeURIComponent(apiUrl)}`, '_blank')
 		},
 
+		/**
+		 * Warmup the names cache
+		 *
+		 * @return {Promise<void>}
+		 */
+		async warmupNamesCache() {
+			const baseUrl = window.location.origin
+			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/names/warmup`
+
+			try {
+				showSuccess(t('openregister', 'Starting names cache warmup...'))
+				
+				const response = await axios.post(apiUrl, {}, {
+					headers: {
+						'Content-Type': 'application/json',
+						'Accept': 'application/json',
+					},
+				})
+
+				if (response.data && response.data.success) {
+					const loadedCount = response.data.loaded_names || 0
+					const executionTime = response.data.execution_time || '0ms'
+					
+					showSuccess(t('openregister', 'Names cache warmed up successfully: {count} names loaded in {time}', {
+						count: loadedCount,
+						time: executionTime
+					}))
+					
+					console.log('Names cache warmup completed:', response.data)
+				} else {
+					showSuccess(t('openregister', 'Names cache warmup completed'))
+				}
+			} catch (error) {
+				console.error('Error warming up names cache:', error)
+				const errorMessage = error.response?.data?.message || error.message || 'Unknown error'
+				showError(t('openregister', 'Failed to warmup names cache: {error}', { 
+					error: errorMessage 
+				}))
+			}
+		},
+
 		viewRegisterDetails(register) {
 			// Set the register ID in the register store for reference
 			registerStore.setRegisterItem({ id: register.id })
@@ -755,6 +845,301 @@ export default {
 			} catch (error) {
 				console.error('Error depublishing register:', error)
 				showError(t('openregister', 'Failed to depublish register: {error}', { error: error.message }))
+			}
+		},
+
+		/**
+		 * Check if a schema has magic mapping configuration
+		 *
+		 * @param {object} schema - Schema object
+		 * @return {boolean} True if schema has magic mapping
+		 */
+		hasMagicMapping(schema) {
+			if (!schema || !schema.properties) {
+				return false
+			}
+
+			// Check if any property has a table configuration (magic mapping)
+			return Object.values(schema.properties).some(property => 
+				property && property.table && typeof property.table === 'object'
+			)
+		},
+
+		/**
+		 * Sync magic table for a schema
+		 * Calls the /api/tables/sync/{register}/{schema} endpoint
+		 *
+		 * @param {object} register - Register object
+		 * @param {object} schema - Schema object
+		 * @return {Promise<void>}
+		 */
+		async syncMagicTable(register, schema) {
+			const baseUrl = window.location.origin
+			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/tables/sync/${register.id}/${schema.id}`
+
+			try {
+				showSuccess(t('openregister', 'Syncing magic table for {schema}...', { schema: schema.title }))
+				
+				const response = await axios.post(apiUrl, {}, {
+					headers: {
+						'Content-Type': 'application/json',
+						'Accept': 'application/json',
+					},
+				})
+
+				if (response.data && response.data.success) {
+					const stats = response.data.statistics
+					
+					// Build detailed message
+					const details = []
+					
+					// Metadata and properties summary
+					if (stats.metadata && stats.properties) {
+						details.push(`${stats.metadata.count} metadata columns, ${stats.properties.count} property columns`)
+					}
+					
+					// Column changes
+					if (stats.columns) {
+						const changes = []
+						if (stats.columns.added.count > 0) {
+							changes.push(`${stats.columns.added.count} added`)
+						}
+						if (stats.columns.removed.count > 0) {
+							changes.push(`${stats.columns.removed.count} removed`)
+						}
+						if (stats.columns.deRequired.count > 0) {
+							changes.push(`${stats.columns.deRequired.count} de-required`)
+						}
+						if (stats.columns.unchanged.count > 0) {
+							changes.push(`${stats.columns.unchanged.count} unchanged`)
+						}
+						
+						if (changes.length > 0) {
+							details.push(`Columns: ${changes.join(', ')}`)
+						}
+					}
+					
+					const message = details.length > 0 
+						? `Magic table synced: ${details.join(' • ')}`
+						: `Magic table synced successfully for ${schema.title}`
+					
+					showSuccess(t('openregister', message))
+					
+					// Log detailed stats to console for debugging
+					console.log('Magic table sync statistics:', stats)
+				} else {
+					showSuccess(t('openregister', 'Magic table sync completed for {schema}', { schema: schema.title }))
+				}
+			} catch (error) {
+				console.error('Error syncing magic table:', error)
+				const errorMessage = error.response?.data?.message || error.message || 'Unknown error'
+				showError(t('openregister', 'Failed to sync magic table for {schema}: {error}', { 
+					schema: schema.title, 
+					error: errorMessage 
+				}))
+			}
+		},
+
+		/**
+		 * Set schema configuration (magic table or blob storage)
+		 *
+		 * @param {object} register - Register object
+		 * @param {object} schema - Schema object
+		 * @param {string} configurationType - 'magic' or 'blob'
+		 * @return {Promise<void>}
+		 */
+		async setSchemaConfiguration(register, schema, configurationType) {
+			const baseUrl = window.location.origin
+			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/schemas/${schema.id}`
+
+			try {
+				// First, fetch the current schema from the API to get clean data
+				const fetchResponse = await axios.get(apiUrl, {
+					headers: {
+						'Accept': 'application/json',
+					},
+				})
+
+				const currentSchema = fetchResponse.data
+
+				// Prepare the schema data for update
+				const updatedSchema = {
+					title: currentSchema.title,
+					type: currentSchema.type || 'object',
+					properties: currentSchema.properties || {},
+					required: currentSchema.required || [],
+					description: currentSchema.description || '',
+				}
+
+				if (configurationType === 'magic') {
+					// Convert to magic table: ensure all properties have table configuration
+					if (!updatedSchema.properties || typeof updatedSchema.properties !== 'object') {
+						updatedSchema.properties = {}
+					}
+
+					// Add basic table configuration to all properties if they don't have it
+					Object.keys(updatedSchema.properties).forEach(key => {
+						if (!updatedSchema.properties[key].table) {
+							updatedSchema.properties[key].table = {
+								enabled: true,
+								indexed: false,
+								searchable: false,
+							}
+						}
+					})
+
+					showSuccess(t('openregister', 'Converting {schema} to magic table...', { schema: schema.title }))
+				} else {
+					// Convert to blob storage: remove all table configurations
+					if (updatedSchema.properties && typeof updatedSchema.properties === 'object') {
+						Object.keys(updatedSchema.properties).forEach(key => {
+							if (updatedSchema.properties[key].table) {
+								delete updatedSchema.properties[key].table
+							}
+						})
+					}
+
+					showSuccess(t('openregister', 'Converting {schema} to blob storage...', { schema: schema.title }))
+				}
+
+				// Send the update to the backend
+				await axios.put(apiUrl, updatedSchema, {
+					headers: {
+						'Content-Type': 'application/json',
+						'Accept': 'application/json',
+					},
+				})
+
+				showSuccess(t('openregister', 'Schema configuration updated successfully for {schema}', { schema: schema.title }))
+
+				// Refresh the register list to reflect changes
+				await registerStore.refreshRegisterList()
+			} catch (error) {
+				console.error('Error updating schema configuration:', error)
+				const errorMessage = error.response?.data?.message || error.message || 'Unknown error'
+				showError(t('openregister', 'Failed to update schema configuration for {schema}: {error}', { 
+					schema: schema.title, 
+					error: errorMessage 
+				}))
+			}
+		},
+
+		/**
+		 * Get the object count for a schema
+		 *
+		 * @param {object} schema - Schema object
+		 * @return {number} - Number of objects in the schema
+		 */
+		getSchemaObjectCount(schema) {
+			if (!schema || !schema.stats || !schema.stats.objects) {
+				return 0
+			}
+			return schema.stats.objects.total || 0
+		},
+
+		/**
+		 * Remove a schema from a register
+		 *
+		 * @param {object} register - Register object
+		 * @param {object} schema - Schema object
+		 * @return {Promise<void>}
+		 */
+		async removeSchemaFromRegister(register, schema) {
+			const objectCount = this.getSchemaObjectCount(schema)
+			
+			if (objectCount > 0) {
+				showError(t('openregister', 'Cannot remove schema {schema} because it contains {count} objects', { 
+					schema: schema.title,
+					count: objectCount 
+				}))
+				return
+			}
+
+			// Confirm deletion
+			if (!confirm(t('openregister', 'Are you sure you want to remove the schema "{schema}" from register "{register}"? This action cannot be undone.', {
+				schema: schema.title,
+				register: register.title
+			}))) {
+				return
+			}
+
+			const baseUrl = window.location.origin
+			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/schemas/${schema.id}`
+
+			try {
+				showSuccess(t('openregister', 'Removing schema {schema}...', { schema: schema.title }))
+				
+				// Delete the schema
+				await axios.delete(apiUrl, {
+					headers: {
+						'Accept': 'application/json',
+					},
+				})
+
+				showSuccess(t('openregister', 'Schema {schema} removed successfully', { schema: schema.title }))
+
+				// Refresh the register list to reflect changes
+				await registerStore.refreshRegisterList()
+			} catch (error) {
+				console.error('Error removing schema:', error)
+				const errorMessage = error.response?.data?.message || error.message || 'Unknown error'
+				showError(t('openregister', 'Failed to remove schema {schema}: {error}', { 
+					schema: schema.title, 
+					error: errorMessage 
+				}))
+			}
+		},
+
+		/**
+		 * Validate all objects in a schema
+		 *
+		 * @param {object} register - Register object
+		 * @param {object} schema - Schema object
+		 * @return {Promise<void>}
+		 */
+		async validateSchemaObjects(register, schema) {
+			const baseUrl = window.location.origin
+			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/objects/validate`
+
+			try {
+				showSuccess(t('openregister', 'Starting validation for {schema}...', { schema: schema.title }))
+				
+				const response = await axios.post(apiUrl, {
+					register: register.id,
+					schema: schema.id,
+				}, {
+					headers: {
+						'Content-Type': 'application/json',
+						'Accept': 'application/json',
+					},
+				})
+
+			if (response.data && response.data.success) {
+				const stats = response.data.statistics
+				showSuccess(t('openregister', 'Validation completed for {schema}: {processed} processed, {updated} updated, {failed} failed', {
+					schema: schema.title,
+					processed: stats.processed,
+					updated: stats.updated,
+					failed: stats.failed
+				}))
+				
+				console.log('Validation completed:', stats)
+				if (stats.errors && stats.errors.length > 0) {
+					console.warn('Validation errors:', stats.errors)
+				}
+				
+				// Refresh the register list to reflect updated counts
+				await registerStore.refreshRegisterList()
+			} else {
+				showSuccess(t('openregister', 'Validation completed for {schema}', { schema: schema.title }))
+			}
+			} catch (error) {
+				console.error('Error validating schema objects:', error)
+				const errorMessage = error.response?.data?.message || error.message || 'Unknown error'
+				showError(t('openregister', 'Failed to validate {schema}: {error}', { 
+					schema: schema.title, 
+					error: errorMessage 
+				}))
 			}
 		},
 	},
@@ -904,5 +1289,25 @@ export default {
 .managedBadge--local {
 	background: var(--color-warning);
 	color: var(--color-main-background);
+}
+
+/* Schema icons */
+.schemaNameCell {
+	display: table-cell;
+	vertical-align: middle;
+}
+
+.schemaNameCell .schemaIcon {
+	margin-right: 8px;
+	vertical-align: middle;
+	display: inline-block;
+}
+
+.schemaIcon--magic {
+	color: var(--color-success);
+}
+
+.schemaIcon--blob {
+	color: var(--color-primary);
 }
 </style>

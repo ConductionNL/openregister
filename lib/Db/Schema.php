@@ -1002,6 +1002,11 @@ class Schema extends Entity implements JsonSerializable
             return null;
         }
 
+        // If it's already an array, return it directly.
+        if (is_array($this->configuration) === true) {
+            return $this->configuration;
+        }
+
         // If it's a JSON string, decode it.
         if (is_string($this->configuration) === true) {
             $decoded = json_decode($this->configuration, true);

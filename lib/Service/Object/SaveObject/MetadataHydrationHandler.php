@@ -80,17 +80,22 @@ class MetadataHydrationHandler
         $config     = $schema->getConfiguration() ?? [];
         $objectData = $entity->getObject();
 
+        // CRITICAL FIX: Extract business data from correct location.
+        // If object data has 'object' key (structured format), use that for property access.
+        // Otherwise use the objectData directly (flat format).
+        $businessData = $objectData['object'] ?? $objectData;
+
         // Name field mapping - use configured field or fallback to common names.
         $nameField = $config['objectNameField'] ?? null;
         $name      = null;
 
         if ($nameField !== null) {
-            $name = $this->extractMetadataValue(data: $objectData, fieldPath: $nameField);
+            $name = $this->extractMetadataValue(data: $businessData, fieldPath: $nameField);
         }
 
         // Fallback: try common name fields if not configured or configured field is empty.
         if ($name === null || trim($name) === '') {
-            $name = $this->tryCommonFields(data: $objectData, fieldNames: ['naam', 'name', 'title', 'label', 'titel']);
+            $name = $this->tryCommonFields(data: $businessData, fieldNames: ['naam', 'name', 'title', 'label', 'titel']);
         }
 
         if ($name !== null && trim($name) !== '') {
@@ -102,13 +107,13 @@ class MetadataHydrationHandler
         $description = null;
 
         if ($descField !== null) {
-            $description = $this->extractMetadataValue(data: $objectData, fieldPath: $descField);
+            $description = $this->extractMetadataValue(data: $businessData, fieldPath: $descField);
         }
 
         // Fallback: try common description fields.
         if ($description === null || trim($description) === '') {
             $description = $this->tryCommonFields(
-                data: $objectData,
+                data: $businessData,
                 fieldNames: ['beschrijvingLang', 'description', 'beschrijving', 'omschrijving']
             );
         }
@@ -122,13 +127,13 @@ class MetadataHydrationHandler
         $summary      = null;
 
         if ($summaryField !== null) {
-            $summary = $this->extractMetadataValue(data: $objectData, fieldPath: $summaryField);
+            $summary = $this->extractMetadataValue(data: $businessData, fieldPath: $summaryField);
         }
 
         // Fallback: try common summary fields.
         if ($summary === null || trim($summary) === '') {
             $summary = $this->tryCommonFields(
-                data: $objectData,
+                data: $businessData,
                 fieldNames: ['beschrijvingKort', 'summary', 'samenvatting', 'shortDescription']
             );
         }
@@ -139,7 +144,7 @@ class MetadataHydrationHandler
 
         // Slug field mapping.
         if (($config['objectSlugField'] ?? null) !== null) {
-            $slug = $this->extractMetadataValue(data: $objectData, fieldPath: $config['objectSlugField']);
+            $slug = $this->extractMetadataValue(data: $businessData, fieldPath: $config['objectSlugField']);
             if ($slug !== null && trim($slug) !== '') {
                 // Generate URL-friendly slug.
                 $generatedSlug = $this->createSlugFromValue(trim($slug));

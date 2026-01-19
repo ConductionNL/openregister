@@ -369,7 +369,8 @@ class MagicMapper
                 }
 
                 // Schema changed, update table.
-                return $this->updateTableForRegisterSchema(register: $register, schema: $schema);
+                $result = $this->updateTableForRegisterSchema(register: $register, schema: $schema);
+                return $result['success'] ?? true;
             }
 
             // Create new table or recreate if forced.
@@ -1350,9 +1351,9 @@ class MagicMapper
      *
      * @throws Exception If table update fails
      *
-     * @return true True if table updated successfully
+     * @return array Statistics about what was changed
      */
-    private function updateTableForRegisterSchema(Register $register, Schema $schema): bool
+    private function updateTableForRegisterSchema(Register $register, Schema $schema): array
     {
         return $this->syncTableForRegisterSchema(register: $register, schema: $schema);
     }//end updateTableForRegisterSchema()
@@ -1371,11 +1372,11 @@ class MagicMapper
      * @param Register $register The register context
      * @param Schema   $schema   The schema definition
      *
-     * @return bool True if sync completed successfully
+     * @return array Statistics about what was changed
      *
      * @throws Exception If table sync fails
      */
-    public function syncTableForRegisterSchema(Register $register, Schema $schema): bool
+    public function syncTableForRegisterSchema(Register $register, Schema $schema): array
     {
         $tableName  = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
         $registerId = $register->getId();
@@ -1383,7 +1384,7 @@ class MagicMapper
         $cacheKey   = $this->getCacheKey(registerId: $registerId, schemaId: $schemaId);
 
         $this->logger->info(
-            'Updating existing register+schema table',
+            'Syncing register+schema table',
             [
                 'registerId' => $registerId,
                 'schemaId'   => $schemaId,
@@ -1392,14 +1393,67 @@ class MagicMapper
         );
 
         try {
+            // Check if table exists - if not, create it instead of trying to update
+            $tableExists = $this->tableExistsForRegisterSchema(register: $register, schema: $schema);
+            
+            if ($tableExists === false) {
+                $this->logger->info(
+                    'Table does not exist, creating it',
+                    [
+                        'registerId' => $registerId,
+                        'schemaId'   => $schemaId,
+                        'tableName'  => $tableName,
+                    ]
+                );
+                
+                // Create the table
+                $this->createTableForRegisterSchema(register: $register, schema: $schema);
+                
+                // Get the columns that were created
+                $requiredColumns = $this->buildTableColumnsFromSchema($schema);
+                $metadataColumns = ['id', 'uuid', 'register', 'schema', 'object', 'deleted', 'locked', 'published', 'updated', 'created', 'version'];
+                $metadataCount   = count(array_intersect(array_keys($requiredColumns), $metadataColumns));
+                $regularPropertiesCount = count($requiredColumns) - $metadataCount;
+                
+                // Return statistics for newly created table
+                return [
+                    'success'              => true,
+                    'created'              => true,
+                    'metadataProperties'   => $metadataCount,
+                    'regularProperties'    => $regularPropertiesCount,
+                    'totalProperties'      => count($requiredColumns),
+                    'columnsAdded'         => count($requiredColumns),
+                    'columnsDeRequired'    => 0,
+                    'columnsDropped'       => 0,
+                    'columnsUnchanged'     => 0,
+                    'columnsAddedList'     => array_keys($requiredColumns),
+                    'columnsDeRequiredList' => [],
+                    'columnsDroppedList'   => [],
+                ];
+            }
+            
+            // Table exists, update its structure
+            $this->logger->info(
+                'Table exists, updating structure',
+                [
+                    'registerId' => $registerId,
+                    'schemaId'   => $schemaId,
+                    'tableName'  => $tableName,
+                ]
+            );
+            
             // Get current table structure.
             $currentColumns = $this->getExistingTableColumns($tableName);
 
             // Get required columns from schema.
             $requiredColumns = $this->buildTableColumnsFromSchema($schema);
 
-            // Compare and update table structure.
-            $this->updateTableStructure(
+            // Count metadata properties (non-schema columns)
+            $metadataColumns = ['id', 'uuid', 'register', 'schema', 'object', 'deleted', 'locked', 'published', 'updated', 'created', 'version'];
+            $metadataCount   = count(array_intersect(array_keys($requiredColumns), $metadataColumns));
+
+            // Compare and update table structure - this returns statistics
+            $columnStats = $this->updateTableStructure(
                 tableName: $tableName,
                 currentColumns: $currentColumns,
                 requiredColumns: $requiredColumns
@@ -1412,15 +1466,34 @@ class MagicMapper
             $this->storeRegisterSchemaVersion(register: $register, schema: $schema);
             self::$tableExistsCache[$cacheKey] = time();
             // Refresh cache timestamp.
+            
+            // Calculate regular properties (excluding metadata)
+            $regularPropertiesCount = count($requiredColumns) - $metadataCount;
+
+            $result = [
+                'success'              => true,
+                'metadataProperties'   => $metadataCount,
+                'regularProperties'    => $regularPropertiesCount,
+                'totalProperties'      => count($requiredColumns),
+                'columnsAdded'         => count($columnStats['columnsAdded']),
+                'columnsDeRequired'    => count($columnStats['columnsDeRequired']),
+                'columnsDropped'       => count($columnStats['columnsDropped']),
+                'columnsUnchanged'     => count($currentColumns) - count($columnStats['columnsAdded']) - count($columnStats['columnsDropped']),
+                'columnsAddedList'     => $columnStats['columnsAdded'],
+                'columnsDeRequiredList' => $columnStats['columnsDeRequired'],
+                'columnsDroppedList'   => $columnStats['columnsDropped'],
+            ];
+
             $this->logger->info(
                 'Successfully updated register+schema table',
                 [
                     'tableName' => $tableName,
                     'cacheKey'  => $cacheKey,
+                    'stats'     => $result,
                 ]
             );
 
-            return true;
+            return $result;
         } catch (Exception $e) {
             $this->logger->error(
                 'Failed to update register+schema table',
@@ -1454,8 +1527,38 @@ class MagicMapper
         // Get schema properties and convert to SQL columns.
         $schemaProperties = $schema->getProperties();
 
+        // List of metadata/configuration fields that should NOT be treated as properties
+        $metadataFields = [
+            'objectNameField',
+            'objectDescriptionField',
+            'objectSummaryField',
+            'title',
+            'description',
+            'type',
+            'required',
+            '$schema',
+            '$id',
+        ];
+
         if (is_array($schemaProperties) === true) {
             foreach ($schemaProperties as $propertyName => $propertyConfig) {
+                // Skip metadata/configuration fields that are not actual properties
+                if (in_array($propertyName, $metadataFields, true) === true) {
+                    continue;
+                }
+
+                // Skip if propertyConfig is not an array (it should be an object/array for real properties)
+                if (is_array($propertyConfig) === false) {
+                    $this->logger->debug(
+                        message: 'Skipping non-array property in schema',
+                        context: [
+                            'propertyName' => $propertyName,
+                            'propertyType' => gettype($propertyConfig),
+                        ]
+                    );
+                    continue;
+                }
+
                 // Note: Schema properties do NOT conflict with metadata columns.
                 // Metadata columns have '_' prefix, schema properties don't.
                 // Both '_name' (metadata) and 'name' (schema property) can coexist.
@@ -3544,7 +3647,7 @@ class MagicMapper
      *
      * @return void
      */
-    private function updateTableStructure(string $tableName, array $currentColumns, array $requiredColumns): void
+    private function updateTableStructure(string $tableName, array $currentColumns, array $requiredColumns): array
     {
         $platform      = $this->db->getDatabasePlatform();
         $isPostgres    = ($platform->getName() === 'postgresql');
@@ -3743,6 +3846,13 @@ class MagicMapper
                 'columnsDropped'     => $columnsDropped,
             ]
         );
+
+        // Return statistics about what was changed
+        return [
+            'columnsAdded'       => $columnsAdded,
+            'columnsDeRequired'  => $columnsDeRequired,
+            'columnsDropped'     => $columnsDropped,
+        ];
     }//end updateTableStructure()
 
     /**

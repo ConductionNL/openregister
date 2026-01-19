@@ -1412,7 +1412,10 @@ class ObjectEntityMapper extends QBMapper
             );
         }
 
-        return $this->findEntity($qb);
+        $entity = $this->findEntity($qb);
+        // Set source to indicate data came from blob storage.
+        $entity->setSource('blob');
+        return $entity;
     }//end find()
 
     /**
@@ -1554,6 +1557,9 @@ class ObjectEntityMapper extends QBMapper
                 'uuid' => $object->getUuid(),
             ]);
 
+            // Set source to indicate data came from blob storage.
+            $object->setSource('blob');
+
             // Get register and schema entities if available.
             $register = null;
             $schema = null;
@@ -1595,6 +1601,9 @@ class ObjectEntityMapper extends QBMapper
                 'registerId' => $result['register']?->getId(),
                 'schemaId' => $result['schema']?->getId(),
             ]);
+
+            // Set source to indicate data came from magic tables (ORM).
+            $result['object']->setSource('orm');
 
             return $result;
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
@@ -1655,6 +1664,11 @@ class ObjectEntityMapper extends QBMapper
         // First, search blob storage.
         $blobResults = $this->findEntities($qb);
 
+        // Set source to indicate data came from blob storage.
+        foreach ($blobResults as $entity) {
+            $entity->setSource('blob');
+        }
+
         // Track which UUIDs were found in blob storage.
         $foundUuids = array_map(
             fn($obj) => $obj->getUuid(),
@@ -1675,6 +1689,11 @@ class ObjectEntityMapper extends QBMapper
                     uuids: array_values($missingUuids),
                     includeDeleted: false
                 );
+
+                // Set source to indicate data came from magic tables (ORM).
+                foreach ($magicResults as $entity) {
+                    $entity->setSource('orm');
+                }
 
                 // Merge results from both sources.
                 $blobResults = array_merge($blobResults, $magicResults);

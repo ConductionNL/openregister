@@ -219,17 +219,20 @@ class UnifiedObjectMapper extends AbstractObjectMapper
     ): ObjectEntity {
         if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
             $this->logger->debug('[UnifiedObjectMapper] Routing find() to MagicMapper');
-            return $this->magicMapper->findInRegisterSchemaTable(
+            $entity = $this->magicMapper->findInRegisterSchemaTable(
                 identifier: $identifier,
                 register: $register,
                 schema: $schema,
                 rbac: $_rbac,
                 multitenancy: $_multitenancy
             );
+            // Set source to indicate data came from magic tables (ORM).
+            $entity->setSource('orm');
+            return $entity;
         }
 
         $this->logger->debug('[UnifiedObjectMapper] Routing find() to ObjectEntityMapper (blob storage direct)');
-        return $this->objectEntityMapper->findDirectBlobStorage(
+        $entity = $this->objectEntityMapper->findDirectBlobStorage(
             identifier: $identifier,
             register: $register,
             schema: $schema,
@@ -237,6 +240,9 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             _rbac: $_rbac,
             _multitenancy: $_multitenancy
         );
+        // Set source to indicate data came from blob storage.
+        $entity->setSource('blob');
+        return $entity;
     }//end find()
 
     /**
@@ -320,7 +326,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
     ): array {
         if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
             $this->logger->debug('[UnifiedObjectMapper] Routing findAll() to MagicMapper');
-            return $this->magicMapper->findAllInRegisterSchemaTable(
+            $entities = $this->magicMapper->findAllInRegisterSchemaTable(
                 register: $register,
                 schema: $schema,
                 limit: $limit,
@@ -329,10 +335,16 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                 sort: $sort,
                 published: $published
             );
+            // Set source to indicate data came from magic tables (ORM).
+            foreach ($entities as $entity) {
+                $entity->setSource('orm');
+            }
+
+            return $entities;
         }
 
         $this->logger->debug('[UnifiedObjectMapper] Routing findAll() to ObjectEntityMapper (blob storage direct)');
-        return $this->objectEntityMapper->findAllDirectBlobStorage(
+        $entities = $this->objectEntityMapper->findAllDirectBlobStorage(
             limit: $limit,
             offset: $offset,
             filters: $filters,
@@ -347,6 +359,12 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             schema: $schema,
             published: $published
         );
+        // Set source to indicate data came from blob storage.
+        foreach ($entities as $entity) {
+            $entity->setSource('blob');
+        }
+
+        return $entities;
     }//end findAll()
 
     /**

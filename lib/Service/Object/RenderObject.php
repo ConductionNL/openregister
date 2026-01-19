@@ -1929,7 +1929,7 @@ class RenderObject
 
         // Render each entity (now using warm cache for forward relations).
         foreach ($entities as $entity) {
-            $renderedEntities[] = $this->renderEntity(
+            $renderedEntity = $this->renderEntity(
                 entity: $entity,
                 _extend: $_extend,
                 depth: 0,
@@ -1939,6 +1939,13 @@ class RenderObject
                 _rbac: $_rbac,
                 _multitenancy: $_multitenancy
             );
+
+            // Remove source from @self in list responses.
+            // The source property is only included in individual object responses,
+            // not in collection/list responses for cleaner output.
+            $renderedEntity->setSource(null);
+
+            $renderedEntities[] = $renderedEntity;
         }
 
         return $renderedEntities;

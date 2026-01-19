@@ -333,6 +333,18 @@ class ObjectEntity extends Entity implements JsonSerializable
     private ?array $lastLog = null;
 
     /**
+     * Source of the object data (not persisted, runtime only)
+     *
+     * Indicates where this object was loaded from:
+     * - "orm": Magic tables (structured storage)
+     * - "blob": Blob storage (openregister_objects table)
+     * - "index": Search index
+     *
+     * @var string|null
+     */
+    private ?string $source = null;
+
+    /**
      * Name of the object.
      *
      * This field is automatically populated via schema metadata mapping configuration.
@@ -688,6 +700,7 @@ class ObjectEntity extends Entity implements JsonSerializable
             'published'     => $this->getFormattedDate($this->published),
             'depublished'   => $this->getFormattedDate($this->depublished),
             'deleted'       => $this->getDeleted(),
+            'source'        => $this->source,
         ];
 
         // Check for '@self' in the provided object array (this is the case if the object metadata is extended).
@@ -969,6 +982,33 @@ class ObjectEntity extends Entity implements JsonSerializable
     {
         $this->lastLog = $log;
     }//end setLastLog()
+
+    /**
+     * Get the source of this object data (runtime only)
+     *
+     * Returns where this object was loaded from:
+     * - "orm": Magic tables (structured storage)
+     * - "blob": Blob storage (openregister_objects table)
+     * - "index": Search index
+     *
+     * @return string|null The source identifier, or null if not set
+     */
+    public function getSource(): ?string
+    {
+        return $this->source;
+    }//end getSource()
+
+    /**
+     * Set the source of this object data (runtime only)
+     *
+     * @param string|null $source The source identifier ("orm", "blob", or "index")
+     *
+     * @return void
+     */
+    public function setSource(?string $source=null): void
+    {
+        $this->source = $source;
+    }//end setSource()
 
     /**
      * String representation of the object entity

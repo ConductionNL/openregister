@@ -123,9 +123,44 @@ class TablesController extends Controller
             return new JSONResponse([
                 'success'    => true,
                 'message'    => 'Magic table synchronized successfully',
-                'register'   => $register->getId(),
-                'schema'     => $schema->getId(),
-                'tableName'  => 'openregister_table_'.$register->getId().'_'.$schema->getId(),
+                'register'   => [
+                    'id'    => $register->getId(),
+                    'title' => $register->getTitle(),
+                ],
+                'schema'     => [
+                    'id'    => $schema->getId(),
+                    'title' => $schema->getTitle(),
+                ],
+                'tableName'  => 'openregister_objects_'.$register->getId().'_'.$schema->getId(),
+                'statistics' => [
+                    'metadata' => [
+                        'count' => $result['metadataProperties'] ?? 0,
+                        'description' => 'Built-in system columns (id, uuid, register, schema, etc.)',
+                    ],
+                    'properties' => [
+                        'count' => $result['regularProperties'] ?? 0,
+                        'description' => 'Schema-defined properties',
+                    ],
+                    'columns' => [
+                        'added' => [
+                            'count' => $result['columnsAdded'] ?? 0,
+                            'list' => $result['columnsAddedList'] ?? [],
+                        ],
+                        'removed' => [
+                            'count' => $result['columnsDropped'] ?? 0,
+                            'list' => $result['columnsDroppedList'] ?? [],
+                        ],
+                        'deRequired' => [
+                            'count' => $result['columnsDeRequired'] ?? 0,
+                            'list' => $result['columnsDeRequiredList'] ?? [],
+                            'description' => 'Columns made nullable (no longer required)',
+                        ],
+                        'unchanged' => [
+                            'count' => $result['columnsUnchanged'] ?? 0,
+                        ],
+                        'total' => $result['totalProperties'] ?? 0,
+                    ],
+                ],
             ]);
         } catch (Exception $e) {
             $this->logger->error(
