@@ -2123,6 +2123,8 @@ class ObjectService
                 // **ULTRA-FAST**: Get object data and add minimal @self metadata
                 $objectData = $object->getObject();
 
+
+
                 // Add essential @self metadata without additional database queries
                 $objectData['@self'] = [
                     'id' => $object->getId(),
@@ -2147,8 +2149,12 @@ class ObjectService
                     $objectData['@self']['depublished'] = $object->getDepublished()->format('Y-m-d\TH:i:s\Z');
                 }
 
+                $objectData = $this->renderHandler->sortObjectData(objectData: $objectData, objectEntity: $object);
+
                 $object->setObject($objectData);
                 $objects[$key] = $object;
+
+
             }
 
             $simpleRenderTime = round((microtime(true) - $startSimpleRender) * 1000, 2);
@@ -2161,7 +2167,6 @@ class ObjectService
 
             return $objects;
         }
-
         // **COMPLEX RENDERING PATH**: Full operations for requests needing extensions/filtering
         $this->logger->debug('Complex rendering path - loading additional context', [
             'objectCount' => count($objects),

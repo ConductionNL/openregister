@@ -32,25 +32,25 @@ use OCP\IUserSession;
  *
  * This class handles storage and manipulation of objects including their metadata,
  * locking mechanisms, and serialization for API responses.
- * 
+ *
  * ⚠️  BULK OPERATIONS INTEGRATION:
  * When adding new database fields to this entity, consider whether they should be
  * excluded from bulk operation change detection in:
  * - OptimizedBulkOperations::buildMassiveInsertOnDuplicateKeyUpdateSQL()
- * 
+ *
  * Database-managed fields (auto-populated/controlled by DB) should be added to the
  * $databaseManagedFields array to prevent false change detection:
  * - id, uuid: Primary identifiers (never change)
- * - created: Set by database DEFAULT CURRENT_TIMESTAMP  
+ * - created: Set by database DEFAULT CURRENT_TIMESTAMP
  * - updated: Set by database ON UPDATE CURRENT_TIMESTAMP
  * - published: Auto-managed by schema autoPublish logic
- * 
+ *
  * User/application-managed fields that CAN trigger updates:
- * - name, description, summary, image: Extracted metadata 
+ * - name, description, summary, image: Extracted metadata
  * - object: The actual data payload
  * - register, schema: Context fields
  * - owner, organisation: Ownership fields
- * 
+ *
  * Adding fields? Check if they should trigger change detection or be database-managed.
  */
 class ObjectEntity extends Entity implements JsonSerializable
@@ -210,7 +210,7 @@ class ObjectEntity extends Entity implements JsonSerializable
 
     /**
      * Last update timestamp.
-     * 
+     *
      * 🔒 DATABASE-MANAGED: Set by database ON UPDATE CURRENT_TIMESTAMP
      * This field should NOT be set during bulk preparation to avoid false change detection.
      *
@@ -220,8 +220,8 @@ class ObjectEntity extends Entity implements JsonSerializable
 
     /**
      * Creation timestamp.
-     * 
-     * 🔒 DATABASE-MANAGED: Set by database DEFAULT CURRENT_TIMESTAMP  
+     *
+     * 🔒 DATABASE-MANAGED: Set by database DEFAULT CURRENT_TIMESTAMP
      * This field should NOT be set during bulk preparation to avoid false change detection.
      *
      * @var DateTime|null Creation timestamp
@@ -234,7 +234,7 @@ class ObjectEntity extends Entity implements JsonSerializable
      * This field can be automatically populated via schema metadata mapping configuration.
      * Configure in schema: { "configuration": { "objectPublishedField": "publicatieDatum" } }
      * Supports various datetime formats which will be parsed to DateTime objects.
-     * 
+     *
      * ⚠️  PARTIALLY DATABASE-MANAGED: Auto-publish logic sets this for NEW objects only.
      * Excluded from bulk change detection to avoid false updates on existing objects.
      *
@@ -383,10 +383,10 @@ class ObjectEntity extends Entity implements JsonSerializable
 
     /**
      * Override getter to provide default empty arrays for JSON array fields
-     * 
+     *
      * We only override this one method from parent Entity - everything else
      * (setters, type conversion, change tracking) uses parent's implementation.
-     * 
+     *
      * The ONLY difference: we return [] instead of null for specific JSON fields
      * that represent collections, making code cleaner throughout the app.
      *
@@ -527,7 +527,9 @@ class ObjectEntity extends Entity implements JsonSerializable
         // Backwards compatibility for old objects.
         $object = ($this->object ?? []);
         // Default to an empty array if $this->object is null.
-        $object['@self'] = $this->getObjectArray($object);
+        $self['@self'] = $this->getObjectArray($object);
+
+        $object = $self + $object;
 
         // Check if name is empty and set uuid as fallback
         if (empty($object['@self']['name'])) {
