@@ -2678,6 +2678,8 @@ class ObjectsController extends Controller
             // Get request parameters
             $register = $this->request->getParam(key: 'register');
             $schemaId = $this->request->getParam(key: 'schema');
+            $limit    = $this->request->getParam(key: 'limit');
+            $offset   = $this->request->getParam(key: 'offset');
 
             if ($register === null || $schemaId === null) {
                 return new JSONResponse(
@@ -2689,18 +2691,26 @@ class ObjectsController extends Controller
                 );
             }
 
+            // Parse limit/offset with sensible defaults for chunked processing
+            $limitInt  = $limit !== null ? (int) $limit : null;
+            $offsetInt = $offset !== null ? (int) $offset : 0;
+
             $this->logger->info(
                 message: 'Starting bulk validation for schema',
                 context: [
                     'register' => $register,
                     'schema'   => $schemaId,
+                    'limit'    => $limitInt,
+                    'offset'   => $offsetInt,
                 ]
             );
 
-            // Validate and save all objects in the schema to update metadata
+            // Validate and save objects in the schema to update metadata
             $result = $this->objectService->validateAndSaveObjectsBySchema(
                 registerId: (int) $register,
-                schemaId: (int) $schemaId
+                schemaId: (int) $schemaId,
+                limit: $limitInt,
+                offset: $offsetInt
             );
 
             $this->logger->info(
@@ -2722,6 +2732,11 @@ class ObjectsController extends Controller
                         'processed' => $result['processed'] ?? 0,
                         'updated'   => $result['updated'] ?? 0,
                         'failed'    => $result['failed'] ?? 0,
+                        'total'     => $result['total'] ?? null,
+                    ],
+                    'pagination' => [
+                        'limit'  => $limitInt,
+                        'offset' => $offsetInt,
                     ],
                     'errors' => $result['errors'] ?? [],
                 ]

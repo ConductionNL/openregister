@@ -250,18 +250,26 @@ class ValidationHandler
      * @param int      $registerId   The ID of the register containing the schema
      * @param int      $schemaId     The ID of the schema whose objects should be validated
      * @param callable $saveCallback Callback to save objects (unused - uses ObjectService directly)
+     * @param int|null $limit        Maximum number of objects to process (null = all)
+     * @param int      $offset       Number of objects to skip before processing
      *
-     * @return array{processed: int, updated: int, failed: int, errors: array}
+     * @return array{processed: int, updated: int, failed: int, total: int, errors: array}
      *               Statistics about the validation and save operation:
-     *               - processed: Total number of objects processed
+     *               - processed: Total number of objects processed in this batch
      *               - updated: Number of objects successfully updated
      *               - failed: Number of objects that failed validation/save
+     *               - total: Total number of objects in the schema (for pagination)
      *               - errors: Array of error details (currently empty)
      *
      * @throws \Exception If schema/register loading fails or object retrieval fails
      */
-    public function validateAndSaveObjectsBySchema(int $registerId, int $schemaId, callable $saveCallback): array
-    {
+    public function validateAndSaveObjectsBySchema(
+        int $registerId,
+        int $schemaId,
+        callable $saveCallback,
+        ?int $limit = null,
+        int $offset = 0
+    ): array {
         // Get the schema and register entities
         try {
             $schema = $this->schemaMapper->find($schemaId);
@@ -293,18 +301,18 @@ class ValidationHandler
             }
         }
 
-        // MEMORY-EFFICIENT APPROACH: Load all objects once, process in chunks with aggressive cleanup
-        // For very large datasets (671K objects), we use small chunks and aggressive GC
-        
+        // Load objects with optional limit/offset for API-level chunking
         $this->logger->info(
             message: 'Loading objects for validation',
             context: [
                 'schema_id'    => $schemaId,
                 'storage_type' => $usesMagic ? 'magic_table' : 'blob_storage',
+                'limit'        => $limit,
+                'offset'       => $offset,
             ]
         );
-        
-        // Load all objects once
+
+        // Load objects based on storage type
         $allObjects = [];
         if ($usesMagic === true) {
             try {
@@ -321,6 +329,7 @@ class ValidationHandler
                     'processed' => 0,
                     'updated'   => 0,
                     'failed'    => 0,
+                    'total'     => 0,
                     'errors'    => [['error' => 'Failed to get objects from magic table: ' . $e->getMessage()]],
                 ];
             }
@@ -340,35 +349,54 @@ class ValidationHandler
                     'processed' => 0,
                     'updated'   => 0,
                     'failed'    => 0,
+                    'total'     => 0,
                     'errors'    => [['error' => 'Failed to get objects: ' . $e->getMessage()]],
                 ];
             }
         }
 
         $totalObjects = count($allObjects);
-        
-        // Calculate chunk size based on dataset size
-        // Use smaller chunks for large datasets to manage memory within 8GB PHP limit
-        if ($totalObjects <= 1000) {
-            $chunkSize = $totalObjects; // Process all at once
-        } elseif ($totalObjects <= 10000) {
+
+        // Apply limit/offset for API-level chunking (allows processing in smaller batches via API calls)
+        if ($limit !== null || $offset > 0) {
+            $allObjects = array_slice($allObjects, $offset, $limit);
+            $this->logger->info(
+                message: 'Applied limit/offset for chunked validation',
+                context: [
+                    'schema_id'       => $schemaId,
+                    'total_objects'   => $totalObjects,
+                    'offset'          => $offset,
+                    'limit'           => $limit,
+                    'objects_to_process' => count($allObjects),
+                ]
+            );
+        }
+
+        $objectsToProcess = count($allObjects);
+
+        // Calculate chunk size based on batch size (for internal memory management)
+        // When limit is provided, use smaller internal chunks
+        if ($objectsToProcess <= 1000) {
+            $chunkSize = $objectsToProcess; // Process all at once
+        } elseif ($objectsToProcess <= 10000) {
             $chunkSize = 2000;
-        } elseif ($totalObjects <= 50000) {
+        } elseif ($objectsToProcess <= 50000) {
             $chunkSize = 3000;
-        } elseif ($totalObjects <= 200000) {
+        } elseif ($objectsToProcess <= 200000) {
             $chunkSize = 2000; // Smaller chunks for better memory management
         } else {
             $chunkSize = 1000; // Very small chunks for 671K+ datasets
         }
-        
-        $estimatedChunks = ceil($totalObjects / $chunkSize);
-        
+
+        $estimatedChunks = $objectsToProcess > 0 ? ceil($objectsToProcess / $chunkSize) : 0;
+
         $this->logger->info(
             message: 'Starting chunked validation',
             context: [
-                'schema_id'        => $schemaId,
-                'total_objects'    => $totalObjects,
-                'chunk_size'       => $chunkSize,
+                'schema_id'          => $schemaId,
+                'total_objects'      => $totalObjects,
+                'objects_to_process' => $objectsToProcess,
+                'chunk_size'         => $chunkSize,
                 'estimated_chunks' => $estimatedChunks,
             ]
         );
@@ -378,12 +406,13 @@ class ValidationHandler
         $totalFailed = 0;
 
         // Process in chunks with aggressive memory cleanup
-        for ($offset = 0; $offset < $totalObjects; $offset += $chunkSize) {
-            $currentChunk = ($offset / $chunkSize) + 1;
-            
+        // Use $chunkOffset to avoid conflict with $offset parameter
+        for ($chunkOffset = 0; $chunkOffset < $objectsToProcess; $chunkOffset += $chunkSize) {
+            $currentChunk = ($chunkOffset / $chunkSize) + 1;
+
             // Extract just this chunk
-            $objectsChunk = array_slice($allObjects, $offset, $chunkSize);
-            
+            $objectsChunk = array_slice($allObjects, $chunkOffset, $chunkSize);
+
             if (empty($objectsChunk) === true) {
                 break;
             }
@@ -406,7 +435,7 @@ class ValidationHandler
                     'schema_id'     => $schemaId,
                     'chunk'         => $currentChunk . '/' . $estimatedChunks,
                     'chunk_size'    => count($objectsChunk),
-                    'progress_pct'  => round(($offset / $totalObjects) * 100, 1),
+                    'progress_pct'  => $objectsToProcess > 0 ? round(($chunkOffset / $objectsToProcess) * 100, 1) : 100,
                     'memory_usage'  => round(memory_get_usage(true) / 1024 / 1024) . ' MB',
                 ]
             );
@@ -450,7 +479,7 @@ class ValidationHandler
                         'chunk_processed' => $chunkProcessed,
                         'chunk_updated'   => $chunkUpdated,
                         'chunk_failed'    => $chunkFailed,
-                        'total_progress'  => $totalProcessed . '/' . $totalObjects,
+                        'total_progress'  => $totalProcessed . '/' . $objectsToProcess,
                         'memory_after'    => round(memory_get_usage(true) / 1024 / 1024) . ' MB',
                     ]
                 );
@@ -459,10 +488,10 @@ class ValidationHandler
                 $this->logger->error(
                     message: 'Chunk validation failed',
                     context: [
-                        'schema_id' => $schemaId,
-                        'chunk'     => $currentChunk . '/' . $estimatedChunks,
-                        'offset'    => $offset,
-                        'error'     => $e->getMessage(),
+                        'schema_id'   => $schemaId,
+                        'chunk'       => $currentChunk . '/' . $estimatedChunks,
+                        'chunkOffset' => $chunkOffset,
+                        'error'       => $e->getMessage(),
                     ]
                 );
                 // Continue with next chunk despite error
@@ -481,18 +510,20 @@ class ValidationHandler
         $this->logger->info(
             message: 'Validation and save completed',
             context: [
-                'schema_id' => $schemaId,
-                'total_processed' => $totalProcessed,
-                'total_updated' => $totalUpdated,
-                'total_failed' => $totalFailed,
+                'schema_id'         => $schemaId,
+                'total_in_schema'   => $totalObjects,
+                'objects_processed' => $totalProcessed,
+                'objects_updated'   => $totalUpdated,
+                'objects_failed'    => $totalFailed,
             ]
         );
 
         return [
             'processed' => $totalProcessed,
-            'updated' => $totalUpdated,
-            'failed' => $totalFailed,
-            'errors' => [],
+            'updated'   => $totalUpdated,
+            'failed'    => $totalFailed,
+            'total'     => $totalObjects,
+            'errors'    => [],
         ];
     }//end validateAndSaveObjectsBySchema()
 

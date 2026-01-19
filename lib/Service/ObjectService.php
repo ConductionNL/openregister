@@ -2776,17 +2776,21 @@ class ObjectService
      * to update metadata fields. This is useful for bulk updating object metadata after
      * schema changes or imports.
      *
-     * @param int $registerId Register ID
-     * @param int $schemaId   Schema ID
+     * @param int      $registerId Register ID
+     * @param int      $schemaId   Schema ID
+     * @param int|null $limit      Maximum number of objects to process (null = all)
+     * @param int      $offset     Number of objects to skip before processing
      *
-     * @return array{processed: int, updated: int, failed: int, errors: array} Validation statistics
+     * @return array{processed: int, updated: int, failed: int, total: int, errors: array} Validation statistics
      */
-    public function validateAndSaveObjectsBySchema(int $registerId, int $schemaId): array
+    public function validateAndSaveObjectsBySchema(int $registerId, int $schemaId, ?int $limit = null, int $offset = 0): array
     {
         return $this->validationHandler->validateAndSaveObjectsBySchema(
             registerId: $registerId,
             schemaId: $schemaId,
-            saveCallback: [$this, 'saveObject']
+            saveCallback: [$this, 'saveObject'],
+            limit: $limit,
+            offset: $offset
         );
     }//end validateAndSaveObjectsBySchema()
 }//end class
