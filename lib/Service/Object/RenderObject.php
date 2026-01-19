@@ -884,6 +884,21 @@ class RenderObject
             $_extend = explode(',', $_extend);
         }
 
+        // Normalize shorthand extend parameters to their @self equivalents.
+        // This allows both _schema and @self.schema to work the same way.
+        if (is_array($_extend) === true) {
+            $normalizeMap = [
+                '_schema'   => '@self.schema',
+                '_register' => '@self.register',
+            ];
+            foreach ($normalizeMap as $shorthand => $full) {
+                $key = array_search($shorthand, $_extend, true);
+                if ($key !== false) {
+                    $_extend[$key] = $full;
+                }
+            }
+        }
+
         // Handle extensions if depth limit not reached.
         if (empty($_extend) === false && $depth < 10) {
             $objectData = $this->extendObject(

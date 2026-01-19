@@ -103,16 +103,17 @@ class MagicSearchHandler
     public function searchObjects(array $query, Register $register, Schema $schema, string $tableName): array|int
     {
         // Extract options from query (prefixed with _).
-        $limit          = $query['_limit'] ?? null;
-        $offset         = $query['_offset'] ?? null;
-        $order          = $query['_order'] ?? [];
-        $search         = $query['_search'] ?? null;
-        $includeDeleted = $query['_includeDeleted'] ?? false;
-        $published      = $query['_published'] ?? false;
-        $ids            = $query['_ids'] ?? null;
-        $count          = $query['_count'] ?? false;
-        $rbac           = $query['_rbac'] ?? true;
-        $multitenancy   = $query['_multitenancy'] ?? true;
+        $limit             = $query['_limit'] ?? null;
+        $offset            = $query['_offset'] ?? null;
+        $order             = $query['_order'] ?? [];
+        $search            = $query['_search'] ?? null;
+        $includeDeleted    = $query['_includeDeleted'] ?? false;
+        $published         = $query['_published'] ?? false;
+        $ids               = $query['_ids'] ?? null;
+        $count             = $query['_count'] ?? false;
+        $rbac              = $query['_rbac'] ?? true;
+        $multitenancy      = $query['_multitenancy'] ?? true;
+        $relationsContains = $query['_relations_contains'] ?? null;
 
         // Extract metadata from @self.
         $metadataFilters = $query['@self'] ?? [];
@@ -176,6 +177,11 @@ class MagicSearchHandler
         // Apply full-text search if provided.
         if ($search !== null && trim($search) !== '') {
             $this->applyFullTextSearch(qb: $queryBuilder, search: trim($search), schema: $schema);
+        }
+
+        // Apply relations contains filter if provided.
+        if ($relationsContains !== null && empty($relationsContains) === false) {
+            $this->applyRelationsContainsFilter(qb: $queryBuilder, uuid: $relationsContains);
         }
 
         // Apply sorting (skip for count queries).
@@ -373,6 +379,25 @@ class MagicSearchHandler
         $orX->add($qb->expr()->in('t._slug', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
         $qb->andWhere($orX);
     }//end applyIdFilters()
+
+    /**
+     * Apply relations contains filter to find objects referencing a specific UUID
+     *
+     * This uses PostgreSQL's JSONB @> operator to check if the _relations array
+     * contains the specified UUID.
+     *
+     * @param IQueryBuilder $qb   Query builder to modify
+     * @param string        $uuid UUID to search for in relations
+     *
+     * @return void
+     */
+    private function applyRelationsContainsFilter(IQueryBuilder $qb, string $uuid): void
+    {
+        // Use PostgreSQL JSONB @> operator to check if _relations array contains the UUID.
+        $qb->andWhere(
+            't._relations @> '.$qb->createNamedParameter(json_encode([$uuid]))
+        );
+    }//end applyRelationsContainsFilter()
 
     /**
      * Apply full-text search across relevant columns
