@@ -4993,32 +4993,44 @@ class MagicMapper
             try {
                 $fullTableName = 'oc_'.$tableName;
 
-                // Search for the UUID as a VALUE within the _relations JSONB object.
-                // The _relations column stores {"propertyName": "uuid", ...} format.
-                // We need to find rows where ANY value in the object equals our UUID.
+                // Search for the UUID as a VALUE within the _relations JSONB.
+                // The _relations column can be either:
+                // - An object: {"propertyName": "uuid", ...} (new format)
+                // - An array: ["uuid1", "uuid2", ...] (legacy format)
+                // We need to find rows where the UUID appears in either format.
                 if ($isPostgres === true) {
-                    // PostgreSQL: Use jsonb_each_text to search values in the object.
-                    // This finds rows where any value in _relations equals the UUID.
+                    // PostgreSQL: Handle both object and array formats.
+                    // - For objects: use jsonb_each_text to search values
+                    // - For arrays: use @> containment operator (can't use ? as it conflicts with PDO placeholders)
+                    // Note: We use @> with a JSON array literal instead of ? operator
                     $sql = "SELECT * FROM {$fullTableName}
-                            WHERE _deleted IS NULL
-                            AND EXISTS (
-                                SELECT 1 FROM jsonb_each_text(_relations) AS kv
-                                WHERE kv.value = ?
+                            WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb)
+                            AND (
+                                -- Array format: check if UUID is in the array using @> containment
+                                (jsonb_typeof(_relations) = 'array' AND _relations @> to_jsonb(?::text))
+                                OR
+                                -- Object format: check if UUID is a value in the object
+                                (jsonb_typeof(_relations) = 'object' AND EXISTS (
+                                    SELECT 1 FROM jsonb_each_text(_relations) AS kv
+                                    WHERE kv.value = ?
+                                ))
                             )
                             LIMIT 100";
-                    $param = $uuid;
+                    // Need to pass UUID twice for both checks.
+                    $stmt = $this->db->prepare($sql);
+                    $stmt->execute([$uuid, $uuid]);
+                    $rows = $stmt->fetchAll();
                 } else {
-                    // MySQL: Use JSON_SEARCH to find the UUID as a value anywhere in the object.
+                    // MySQL: Use JSON_SEARCH to find the UUID as a value anywhere.
+                    // This works for both arrays and objects.
                     $sql = "SELECT * FROM {$fullTableName}
                             WHERE _deleted IS NULL
                             AND JSON_SEARCH(_relations, 'one', ?) IS NOT NULL
                             LIMIT 100";
-                    $param = $uuid;
+                    $stmt = $this->db->prepare($sql);
+                    $stmt->execute([$uuid]);
+                    $rows = $stmt->fetchAll();
                 }
-
-                $stmt = $this->db->prepare($sql);
-                $stmt->execute([$param]);
-                $rows = $stmt->fetchAll();
 
                 foreach ($rows as $row) {
                     try {
@@ -5111,18 +5123,24 @@ class MagicMapper
 
         try {
             // Build a query that finds objects whose _relations contains ANY of the given UUIDs.
-            // The _relations column stores {"propertyName": "uuid", ...} format.
-            // We need to find rows where ANY value in the object matches one of our UUIDs.
+            // The _relations column can be either:
+            // - An object: {"propertyName": "uuid", ...} (new format)
+            // - An array: ["uuid1", "uuid2", ...] (legacy format)
+            // We need to find rows where ANY UUID appears in either format.
             $conditions = [];
             $params     = [];
 
             foreach ($uuids as $uuid) {
                 if ($isPostgres === true) {
-                    // PostgreSQL: Use jsonb_each_text to search values in the object.
-                    $conditions[] = 'EXISTS (SELECT 1 FROM jsonb_each_text(_relations) AS kv WHERE kv.value = ?)';
+                    // PostgreSQL: Handle both array and object formats.
+                    // - For arrays: use @> containment operator (can't use ? as it conflicts with PDO placeholders)
+                    // - For objects: use jsonb_each_text to search values
+                    $conditions[] = '((jsonb_typeof(_relations) = \'array\' AND _relations @> to_jsonb(?::text)) OR (jsonb_typeof(_relations) = \'object\' AND EXISTS (SELECT 1 FROM jsonb_each_text(_relations) AS kv WHERE kv.value = ?)))';
+                    $params[]     = $uuid;
                     $params[]     = $uuid;
                 } else {
-                    // MySQL: Use JSON_SEARCH to find the UUID as a value anywhere in the object.
+                    // MySQL: Use JSON_SEARCH to find the UUID as a value anywhere.
+                    // This works for both arrays and objects.
                     $conditions[] = 'JSON_SEARCH(_relations, \'one\', ?) IS NOT NULL';
                     $params[]     = $uuid;
                 }
@@ -5130,8 +5148,13 @@ class MagicMapper
 
             $conditionSql = implode(' OR ', $conditions);
 
+            // Build the WHERE clause for _deleted check (different syntax for PostgreSQL vs MySQL).
+            $deletedCheck = $isPostgres
+                ? "(_deleted IS NULL OR _deleted = 'null'::jsonb)"
+                : '_deleted IS NULL';
+
             $sql = "SELECT * FROM {$fullTableName}
-                    WHERE _deleted IS NULL
+                    WHERE {$deletedCheck}
                     AND ({$conditionSql})
                     LIMIT 1000";
 

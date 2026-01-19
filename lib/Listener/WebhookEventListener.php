@@ -167,7 +167,7 @@ class WebhookEventListener implements IEventListener
                 'objectType' => 'object',
                 'action'     => 'updating',
                 'newObject'  => $newObject->jsonSerialize(),
-                'oldObject'  => $oldObject->jsonSerialize(),
+                'oldObject'  => $oldObject?->jsonSerialize(),
                 'register'   => $newObject->getRegister(),
                 'schema'     => $newObject->getSchema(),
             ];

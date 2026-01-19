@@ -1225,8 +1225,15 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         ?string $uses=null
     ): array|int {
         // Check if register and schema are specified in query for magic mapper routing.
-        $registerId = $query['_register'] ?? $query['register'] ?? null;
-        $schemaId   = $query['_schema'] ?? $query['schema'] ?? null;
+        // Support both top-level keys (_register, register) and @self nested keys.
+        $registerId = $query['@self']['register']
+            ?? $query['_register']
+            ?? $query['register']
+            ?? null;
+        $schemaId   = $query['@self']['schema']
+            ?? $query['_schema']
+            ?? $query['schema']
+            ?? null;
 
         if ($registerId !== null && $schemaId !== null) {
             try {
@@ -1285,8 +1292,15 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         ?string $uses=null
     ): int {
         // Check if register and schema are specified in query for magic mapper routing.
-        $registerId = $query['_register'] ?? $query['register'] ?? null;
-        $schemaId   = $query['_schema'] ?? $query['schema'] ?? null;
+        // Support both top-level keys (_register, register) and @self nested keys.
+        $registerId = $query['@self']['register']
+            ?? $query['_register']
+            ?? $query['register']
+            ?? null;
+        $schemaId   = $query['@self']['schema']
+            ?? $query['_schema']
+            ?? $query['schema']
+            ?? null;
 
         if ($registerId !== null && $schemaId !== null) {
             try {
@@ -1352,9 +1366,18 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         ?string $uses=null
     ): array {
         // Extract register and schema IDs from query.
-        $registerId = $searchQuery['_register'] ?? $searchQuery['register'] ?? null;
-        $schemaId   = $searchQuery['_schema'] ?? $searchQuery['schema'] ?? null;
-        $schemaIds  = $searchQuery['_schemas'] ?? null;
+        // Support both top-level keys (_register, register) and @self nested keys.
+        $registerId = $searchQuery['@self']['register']
+            ?? $searchQuery['_register']
+            ?? $searchQuery['register']
+            ?? null;
+        $schemaId   = $searchQuery['@self']['schema']
+            ?? $searchQuery['_schema']
+            ?? $searchQuery['schema']
+            ?? null;
+        $schemaIds  = $searchQuery['@self']['schemas']
+            ?? $searchQuery['_schemas']
+            ?? null;
 
         $register       = null;
         $schema         = null;

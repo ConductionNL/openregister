@@ -179,7 +179,7 @@ class SolrEventListener implements IEventListener
                 'objectId'      => $newObject->getId(),
                 'objectUuid'    => $newObject->getUuid(),
                 'objectName'    => $newObject->getName(),
-                'oldObjectName' => $oldObject->getName(),
+                'oldObjectName' => $oldObject?->getName(),
                 'app'           => 'openregister',
             ]
         );

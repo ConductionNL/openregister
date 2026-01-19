@@ -166,11 +166,30 @@ class UserService
         $result['firstName']  = $result['firstName'] ?? null;
         $result['lastName']   = $result['lastName'] ?? null;
         $result['middleName'] = $result['middleName'] ?? null;
+        // 'functie' is the Dutch term for job title/role - map from 'role' property.
+        $result['functie']    = $result['functie'] ?? $additionalInfo['role'] ?? null;
 
-        // Add organization information.
+        // Add organization information in the format expected by the frontend.
+        // Frontend expects: { active: { uuid, naam, id, slug }, all: [...] }
         $organisationStats = $this->organisationService->getUserOrganisationStats();
-        $organisationStats['available'] = true;
-        $result['organisations']        = $organisationStats;
+
+        // Transform organisation data to include 'naam' field (Dutch) alongside 'name'.
+        $transformOrg = function (?array $org): ?array {
+            if ($org === null) {
+                return null;
+            }
+            // Add 'naam' field that mirrors 'name' for Dutch frontend compatibility.
+            $org['naam'] = $org['name'] ?? null;
+            return $org;
+        };
+
+        // Build the organisations structure expected by the frontend.
+        $result['organisations'] = [
+            'active'    => $transformOrg($organisationStats['active'] ?? null),
+            'all'       => array_map($transformOrg, $organisationStats['results'] ?? []),
+            'total'     => $organisationStats['total'] ?? 0,
+            'available' => true,
+        ];
 
         return $result;
     }//end buildUserDataArray()

@@ -508,6 +508,8 @@ services:
       - nextcloud:/var/www/html:rw
       - ./custom_apps:/var/www/html/custom_apps
       - .:/var/www/html/custom_apps/openregister
+      - ../opencatalogi:/var/www/html/custom_apps/opencatalogi
+      - ../softwarecatalog:/var/www/html/custom_apps/softwarecatalog
     environment:
       # Database configuration (PostgreSQL)
       - POSTGRES_DB=nextcloud
