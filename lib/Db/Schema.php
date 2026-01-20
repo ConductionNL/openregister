@@ -757,6 +757,20 @@ class Schema extends Entity implements JsonSerializable
                 continue;
             }//end if
 
+            // Convert datetime strings to DateTime objects for datetime fields.
+            if (in_array($key, ['published', 'depublished', 'created', 'updated', 'deleted'], true) === true) {
+                if (is_string($value) === true && $value !== '') {
+                    try {
+                        $value = new \DateTime($value);
+                    } catch (\Exception $e) {
+                        // If parsing fails, set to null.
+                        $value = null;
+                    }
+                } elseif ($value !== null && ($value instanceof \DateTime) === false) {
+                    $value = null;
+                }
+            }
+
             $method = 'set'.ucfirst($key);
 
             try {
