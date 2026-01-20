@@ -4576,7 +4576,10 @@ class MagicMapper
                 $searchResult->closeCursor();
 
                 // Convert found rows to ObjectEntity objects.
+                // Add register and schema IDs to row since they're derived from table name, not stored in columns.
                 foreach ($rows as $row) {
+                    $row['_register'] = (string) $registerId;
+                    $row['_schema'] = (string) $schemaId;
                     $foundObjects[] = $this->rowToObjectEntity(row: $row);
                 }
             } catch (\Exception $e) {

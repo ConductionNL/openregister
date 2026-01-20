@@ -1749,12 +1749,14 @@ class ObjectService
         ?array $views=null
     ): array {
         // Add register and schema context to query for magic mapper routing.
-        if ($this->currentRegister !== null && isset($query['_register']) === false) {
+        // Use array_key_exists to allow explicit null values to disable auto-setting.
+        if ($this->currentRegister !== null && array_key_exists('_register', $query) === false) {
             $query['_register'] = $this->currentRegister->getId();
         }
 
         // Don't auto-set _schema when _schemas is provided (multi-schema search).
-        if ($this->currentSchema !== null && isset($query['_schema']) === false && isset($query['_schemas']) === false) {
+        // Use array_key_exists to allow explicit null values to disable auto-setting.
+        if ($this->currentSchema !== null && array_key_exists('_schema', $query) === false && array_key_exists('_schemas', $query) === false) {
             $query['_schema'] = $this->currentSchema->getId();
         }
 

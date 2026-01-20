@@ -451,15 +451,21 @@ class QueryHandler
             $extend = explode(',', $extend);
         }
 
-        if ((in_array('_registers', $extend, true) === true || in_array('_register', $extend, true) === true)
-            && empty($registers) === false
-        ) {
+        // Check for register extension - supports multiple formats.
+        $wantsRegisters = in_array('_registers', $extend, true) === true
+            || in_array('_register', $extend, true) === true
+            || in_array('@self.registers', $extend, true) === true
+            || in_array('@self.register', $extend, true) === true;
+        if ($wantsRegisters === true && empty($registers) === false) {
             $paginatedResults['@self']['registers'] = $registers;
         }
 
-        if ((in_array('_schemas', $extend, true) === true || in_array('_schema', $extend, true) === true)
-            && empty($schemas) === false
-        ) {
+        // Check for schema extension - supports multiple formats.
+        $wantsSchemas = in_array('_schemas', $extend, true) === true
+            || in_array('_schema', $extend, true) === true
+            || in_array('@self.schemas', $extend, true) === true
+            || in_array('@self.schema', $extend, true) === true;
+        if ($wantsSchemas === true && empty($schemas) === false) {
             $paginatedResults['@self']['schemas'] = $schemas;
         }
 

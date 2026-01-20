@@ -1521,6 +1521,25 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             ];
         }
 
+        // Check if this is a global ID search (no register/schema but _ids provided).
+        // In this case, search across ALL magic tables to find the objects.
+        $queryIds = $searchQuery['_ids'] ?? null;
+        $isGlobalIdSearch = $registerId === null
+            && $schemaId === null
+            && $queryIds !== null
+            && is_array($queryIds) === true
+            && count($queryIds) > 0;
+
+        if ($isGlobalIdSearch === true) {
+            return $this->searchObjectsGloballyByIds(
+                ids: $queryIds,
+                searchQuery: $searchQuery,
+                activeOrgUuid: $activeOrgUuid,
+                rbac: $rbac,
+                multitenancy: $multitenancy
+            );
+        }
+
         // Use objectEntityMapper for blob storage.
         $results = $this->objectEntityMapper->searchObjects(
             query: $searchQuery,
@@ -1621,4 +1640,93 @@ class UnifiedObjectMapper extends AbstractObjectMapper
     {
         return $this->objectEntityMapper->getMaxAllowedPacketSize();
     }//end getMaxAllowedPacketSize()
+
+    /**
+     * Search for objects globally by IDs across ALL magic tables.
+     *
+     * This method is used when searching for objects by UUID without knowing
+     * which register/schema they belong to. It searches all magic tables efficiently.
+     *
+     * @param array       $ids           Array of UUIDs to search for.
+     * @param array       $searchQuery   The original search query (for limit/offset).
+     * @param string|null $activeOrgUuid Active organization UUID for multitenancy.
+     * @param bool        $rbac          Whether to apply RBAC checks.
+     * @param bool        $multitenancy  Whether to apply multitenancy filtering.
+     *
+     * @return array Search results with pagination info.
+     */
+    private function searchObjectsGloballyByIds(
+        array $ids,
+        array $searchQuery,
+        ?string $activeOrgUuid=null,
+        bool $rbac=true,
+        bool $multitenancy=true
+    ): array {
+        $this->logger->debug('[UnifiedObjectMapper] searchObjectsGloballyByIds starting', [
+            'idsCount' => count($ids),
+        ]);
+
+        // Use MagicMapper's efficient batch search across all magic tables.
+        $results = $this->magicMapper->findMultipleAcrossAllMagicTables(
+            uuids: $ids,
+            includeDeleted: false
+        );
+
+        // Also check blob storage for any objects not found in magic tables.
+        $foundUuids = array_map(fn($obj) => $obj->getUuid(), $results);
+        $missingUuids = array_diff($ids, $foundUuids);
+
+        if (empty($missingUuids) === false) {
+            $blobResults = $this->objectEntityMapper->findMultiple(ids: $missingUuids);
+            $results = array_merge($results, $blobResults);
+        }
+
+        $total = count($results);
+
+        // Apply limit/offset from query.
+        $limit = $searchQuery['_limit'] ?? 1000;
+        $offset = $searchQuery['_offset'] ?? 0;
+        $results = array_slice($results, $offset, $limit);
+
+        // Collect register/schema info for frontend.
+        $registersCache = [];
+        $schemasCache = [];
+
+        foreach ($results as $result) {
+            if ($result instanceof ObjectEntity) {
+                $regId = $result->getRegister();
+                $schId = $result->getSchema();
+
+                if ($regId !== null && isset($registersCache[$regId]) === false) {
+                    try {
+                        $reg = $this->registerMapper->find(id: (int) $regId, _multitenancy: false, _rbac: false);
+                        $registersCache[$reg->getId()] = $reg->jsonSerialize();
+                    } catch (\Exception $e) {
+                        // Skip if register not found.
+                    }
+                }
+
+                if ($schId !== null && isset($schemasCache[$schId]) === false) {
+                    try {
+                        $sch = $this->schemaMapper->find((int) $schId, _multitenancy: false, _rbac: false);
+                        $schemasCache[$sch->getId()] = $sch->jsonSerialize();
+                    } catch (\Exception $e) {
+                        // Skip if not found.
+                    }
+                }
+            }
+        }
+
+        $this->logger->debug('[UnifiedObjectMapper] searchObjectsGloballyByIds complete', [
+            'requestedCount' => count($ids),
+            'foundCount' => $total,
+        ]);
+
+        return [
+            'results'   => $results,
+            'total'     => $total,
+            'registers' => $registersCache,
+            'schemas'   => $schemasCache,
+        ];
+    }//end searchObjectsGloballyByIds()
 }//end class
