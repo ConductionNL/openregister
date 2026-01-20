@@ -1044,10 +1044,19 @@ export const useSettingsStore = defineStore('settings', {
 				if (response.data.success) {
 					const loadedCount = response.data.loaded_names || 0
 					const executionTime = response.data.execution_time || '0ms'
-					const oldCacheSize = response.data.old_cache?.name_cache_size || 0
-					const newCacheSize = response.data.new_cache?.name_cache_size || 0
+					const oldCacheSize = response.data.old_cache?.distributed_name_cache_size || 0
+					const newCacheSize = response.data.new_cache?.distributed_name_cache_size || 0
 					
-					showSuccess(`Names cache warmed up successfully: ${loadedCount} names loaded in ${executionTime}. Cache grew from ${oldCacheSize} to ${newCacheSize} entries.`)
+					let cacheMessage = ''
+					if (newCacheSize > oldCacheSize) {
+						cacheMessage = `Cache grew from ${oldCacheSize} to ${newCacheSize} entries.`
+					} else if (newCacheSize < oldCacheSize) {
+						cacheMessage = `Cache shrunk from ${oldCacheSize} to ${newCacheSize} entries.`
+					} else {
+						cacheMessage = `Cache stayed the same at ${newCacheSize} entries.`
+					}
+					
+					showSuccess(`Names cache warmed up successfully: ${loadedCount} names loaded in ${executionTime}. ${cacheMessage}`)
 				} else {
 					showError('Failed to warmup names cache: ' + (response.data.error || 'Unknown error'))
 				}

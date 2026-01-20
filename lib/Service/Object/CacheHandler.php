@@ -600,15 +600,19 @@ class CacheHandler
             $nameHitRate = ($this->stats['name_hits'] / $totalNameRequests) * 100;
         }
 
+        // Get distributed cache count (persists across requests)
+        $distributedNameCacheCount = $this->getDistributedNameCacheCount();
+
         return array_merge(
             $this->stats,
             [
-                'hit_rate'         => round($hitRate, 2),
-                'query_hit_rate'   => round($queryHitRate, 2),
-                'name_hit_rate'    => round($nameHitRate, 2),
-                'cache_size'       => count($this->objectCache),
-                'query_cache_size' => count($this->inMemoryQueryCache),
-                'name_cache_size'  => count($this->nameCache),
+                'hit_rate'                      => round($hitRate, 2),
+                'query_hit_rate'                => round($queryHitRate, 2),
+                'name_hit_rate'                 => round($nameHitRate, 2),
+                'cache_size'                    => count($this->objectCache),
+                'query_cache_size'              => count($this->inMemoryQueryCache),
+                'name_cache_size'               => count($this->nameCache),
+                'distributed_name_cache_size'   => $distributedNameCacheCount,
             ]
         );
     }//end getStats()
@@ -1434,8 +1438,37 @@ class CacheHandler
             }
         }
 
+        // Store metadata with the count for cross-request stats
+        try {
+            $this->nameDistributedCache->set('_metadata_count', $storedCount, $ttl);
+        } catch (\Exception $e) {
+            // Ignore metadata storage failures
+        }
+
         return $storedCount;
     }//end persistNameCacheToDistributed()
+
+    /**
+     * Get the name cache count from distributed cache metadata
+     *
+     * Returns the count of names stored in the distributed cache,
+     * useful for cross-request statistics.
+     *
+     * @return int The number of names in distributed cache, or 0 if unavailable
+     */
+    public function getDistributedNameCacheCount(): int
+    {
+        if ($this->nameDistributedCache === null) {
+            return 0;
+        }
+
+        try {
+            $count = $this->nameDistributedCache->get('_metadata_count');
+            return $count !== null ? (int) $count : 0;
+        } catch (\Exception $e) {
+            return 0;
+        }
+    }//end getDistributedNameCacheCount()
 
     /**
      * Clear object name caches

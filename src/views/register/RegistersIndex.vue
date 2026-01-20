@@ -818,14 +818,30 @@ export default {
 				if (response.data && response.data.success) {
 					const loadedCount = response.data.loaded_names || 0
 					const executionTime = response.data.execution_time || '0ms'
-					const oldCacheSize = response.data.old_cache?.name_cache_size || 0
-					const newCacheSize = response.data.new_cache?.name_cache_size || 0
+					const oldCacheSize = response.data.old_cache?.distributed_name_cache_size || 0
+					const newCacheSize = response.data.new_cache?.distributed_name_cache_size || 0
 					
-					showSuccess(t('openregister', 'Names cache warmed up successfully: {count} names loaded in {time}. Cache grew from {old} to {new} entries.', {
+					let cacheMessage = ''
+					if (newCacheSize > oldCacheSize) {
+						cacheMessage = t('openregister', 'Cache grew from {old} to {new} entries.', {
+							old: oldCacheSize,
+							new: newCacheSize
+						})
+					} else if (newCacheSize < oldCacheSize) {
+						cacheMessage = t('openregister', 'Cache shrunk from {old} to {new} entries.', {
+							old: oldCacheSize,
+							new: newCacheSize
+						})
+					} else {
+						cacheMessage = t('openregister', 'Cache stayed the same at {size} entries.', {
+							size: newCacheSize
+						})
+					}
+					
+					showSuccess(t('openregister', 'Names cache warmed up successfully: {count} names loaded in {time}. {cache}', {
 						count: loadedCount,
 						time: executionTime,
-						old: oldCacheSize,
-						new: newCacheSize
+						cache: cacheMessage
 					}))
 					
 					console.log('Names cache warmup completed:', response.data)
