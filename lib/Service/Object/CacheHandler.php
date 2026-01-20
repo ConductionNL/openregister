@@ -1428,18 +1428,19 @@ class CacheHandler
                         // Check if table exists and has the name column.
                         // Magic table columns have underscore prefix: _id, _name, _deleted, _published, _depublished.
                         // Note: _id is bigint (internal DB ID), we need _uuid (the UUID) for mapping.
-                        // Filter: not deleted, is published, not depublished
-                        $now = (new \DateTime())->format('Y-m-d H:i:s');
-                        $sql = 'SELECT "_uuid", "_name" FROM '.$tableName.' WHERE "_name" IS NOT NULL AND "_name" != \'\' AND "_deleted" IS NULL AND "_published" IS NOT NULL AND "_published" <= \''.$now.'\' AND ("_depublished" IS NULL OR "_depublished" > \''.$now.'\')';
+                        // Filter: only exclude deleted objects. Include all others regardless of publish status.
+                        $sql = 'SELECT "_uuid", "_name" FROM '.$tableName.' WHERE "_deleted" IS NULL';
                         $result = $this->db->executeQuery($sql);
 
                         while (($row = $result->fetch()) !== false) {
                             $uuid = $row['_uuid'] ?? null;
                             $name = $row['_name'] ?? null;
 
-                            if ($uuid !== null && $name !== null && trim($name) !== '') {
+                            if ($uuid !== null) {
+                                // Use name if available, otherwise fall back to UUID.
+                                $effectiveName = (($name !== null) && trim($name) !== '') ? $name : $uuid;
                                 // Overwrite any existing name (magic table has enriched names).
-                                $this->nameCache[$uuid] = $name;
+                                $this->nameCache[$uuid] = $effectiveName;
                                 $loadedCount++;
                             }
                         }
