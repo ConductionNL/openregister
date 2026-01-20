@@ -192,6 +192,14 @@ class MagicMapper
     private static array $tableStructureCache = [];
 
     /**
+     * Cache for calculated schema versions (avoids recalculating MD5 hash)
+     * Key format: 'registerId_schemaId' => 'calculated_version_hash'
+     *
+     * @var array<string, string>
+     */
+    private static array $calculatedVersionCache = [];
+
+    /**
      * Handler instances for specialized functionality
      */
 
@@ -1285,6 +1293,7 @@ class MagicMapper
         unset(self::$tableExistsCache[$cacheKey]);
         unset(self::$regSchemaTableCache[$cacheKey]);
         unset(self::$tableStructureCache[$cacheKey]);
+        unset(self::$calculatedVersionCache[$cacheKey]);
 
         $this->logger->debug('Invalidated table cache', ['cacheKey' => $cacheKey]);
     }//end invalidateTableCache()
@@ -3134,13 +3143,23 @@ class MagicMapper
      */
     private function getStoredRegisterSchemaVersion(int $registerId, int $schemaId): string|null
     {
-        $cacheKey  = $this->getCacheKey(registerId: $registerId, schemaId: $schemaId);
-        $configKey = 'table_version_'.$cacheKey;
+        $cacheKey = $this->getCacheKey(registerId: $registerId, schemaId: $schemaId);
 
-        $version = $this->appConfig->getValueString('openregister', $configKey, '');
+        // Check in-memory cache first to avoid database query.
+        if (isset(self::$tableStructureCache[$cacheKey]) === true) {
+            return self::$tableStructureCache[$cacheKey];
+        }
+
+        // Fall back to appConfig (database).
+        $configKey = 'table_version_'.$cacheKey;
+        $version   = $this->appConfig->getValueString('openregister', $configKey, '');
+
         if ($version === '') {
             return null;
         }
+
+        // Store in cache for future calls.
+        self::$tableStructureCache[$cacheKey] = $version;
 
         return $version;
     }//end getStoredRegisterSchemaVersion()
@@ -3155,14 +3174,23 @@ class MagicMapper
      */
     private function calculateRegisterSchemaVersion(Register $register, Schema $schema): string
     {
+        $registerId = $register->getId();
+        $schemaId   = $schema->getId();
+        $cacheKey   = $this->getCacheKey(registerId: $registerId, schemaId: $schemaId);
+
+        // Check cache first to avoid expensive json_encode + md5.
+        if (isset(self::$calculatedVersionCache[$cacheKey]) === true) {
+            return self::$calculatedVersionCache[$cacheKey];
+        }
+
         $combinedData = [
             'register' => [
-                'id'      => $register->getId(),
+                'id'      => $registerId,
                 'title'   => $register->getTitle(),
                 'version' => $register->getVersion(),
             ],
             'schema'   => [
-                'id'         => $schema->getId(),
+                'id'         => $schemaId,
                 'properties' => $schema->getProperties(),
                 'required'   => $schema->getRequired(),
                 'title'      => $schema->getTitle(),
@@ -3170,7 +3198,12 @@ class MagicMapper
             ],
         ];
 
-        return md5(json_encode($combinedData));
+        $version = md5(json_encode($combinedData));
+
+        // Cache for future calls within this request.
+        self::$calculatedVersionCache[$cacheKey] = $version;
+
+        return $version;
     }//end calculateRegisterSchemaVersion()
 
     /**
@@ -3974,9 +4007,10 @@ class MagicMapper
     {
         if ($registerId === null || $schemaId === null) {
             // Clear all caches.
-            self::$tableExistsCache    = [];
-            self::$regSchemaTableCache = [];
-            self::$tableStructureCache = [];
+            self::$tableExistsCache       = [];
+            self::$regSchemaTableCache    = [];
+            self::$tableStructureCache    = [];
+            self::$calculatedVersionCache = [];
 
             $this->logger->debug('Cleared all MagicMapper caches');
             return;

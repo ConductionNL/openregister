@@ -455,6 +455,45 @@ class MagicBulkHandler
         $platform   = $this->db->getDatabasePlatform();
         $isPostgres = $platform->getName() === 'postgresql';
 
+        // Get full table name with hardcoded prefix.
+        $fullTableName = 'oc_'.$tableName;
+
+        // ACCURATE CLASSIFICATION: Query which UUIDs already exist BEFORE the upsert.
+        // This allows us to correctly classify created vs updated regardless of timestamp values.
+        // Important for CSV imports that preserve historical _created dates.
+        $existingUuids = [];
+        if (empty($uuids) === false) {
+            $placeholders = implode(',', array_fill(0, count($uuids), '?'));
+            $existsSql    = "SELECT `_uuid` FROM `{$fullTableName}` WHERE `_uuid` IN ({$placeholders})";
+            if ($isPostgres === true) {
+                $existsSql = "SELECT \"_uuid\" FROM \"{$fullTableName}\" WHERE \"_uuid\" IN ({$placeholders})";
+            }
+
+            try {
+                $existsStmt = $this->db->prepare($existsSql);
+                $existsStmt->execute(array_values($uuids));
+                $existingRows = $existsStmt->fetchAll();
+                foreach ($existingRows as $row) {
+                    $existingUuids[$row['_uuid']] = true;
+                }
+
+                $this->logger->debug(
+                    '[MagicBulkHandler] Pre-upsert UUID check',
+                    [
+                        'chunk'         => $chunkNumber,
+                        'total_uuids'   => count($uuids),
+                        'existing_uuids' => count($existingUuids),
+                        'new_uuids'     => count($uuids) - count($existingUuids),
+                    ]
+                );
+            } catch (\Exception $e) {
+                $this->logger->warning(
+                    '[MagicBulkHandler] Failed to check existing UUIDs, will use timestamp-based classification',
+                    ['error' => $e->getMessage()]
+                );
+            }
+        }//end if
+
         // Build column list with proper quoting.
         $columnList = '`'.implode('`, `', $columns).'`';
         if ($isPostgres === true) {
@@ -478,11 +517,7 @@ class MagicBulkHandler
             $valuesClause[] = '('.implode(',', $rowValues).')';
         }
 
-        // Build UPSERT SQL.
-        // NOTE: tableName doesn't include 'oc_' prefix, we must add it manually for raw SQL.
-        // Using hardcoded 'oc_' prefix as IDBConnection doesn't expose getPrefix() in Nextcloud 32.
-        $fullTableName = 'oc_'.$tableName;
-
+        // Build UPSERT SQL ($fullTableName already defined above for pre-upsert UUID check).
         // MySQL/MariaDB: INSERT...ON DUPLICATE KEY UPDATE.
         $sql  = "INSERT INTO `{$fullTableName}` ({$columnList}) VALUES ".implode(',', $valuesClause);
         $sql .= ' ON DUPLICATE KEY UPDATE ';
@@ -547,51 +582,63 @@ class MagicBulkHandler
             throw $e;
         }//end try
 
-        // Query back complete objects with classification.
+        // Query back complete objects and apply classification based on pre-upsert UUID check.
         $completeObjects = [];
 
         if (empty($uuids) === false) {
-            // Get full table name with hardcoded prefix.
-            $fullTableName = 'oc_'.$tableName;
-
             $placeholders = implode(',', array_fill(0, count($uuids), '?'));
 
-            // Build SELECT query with object_status classification.
-            $selectSql = "
-                SELECT *,
-                       '{$operationStartTime}' as operation_start_time,
-                       CASE
-                           WHEN `_created` >= '{$operationStartTime}' THEN 'created'
-                           WHEN `_updated` >= '{$operationStartTime}' THEN 'updated'
-                           ELSE 'unchanged'
-                       END as object_status
-                FROM `{$fullTableName}`
-                WHERE `_uuid` IN ({$placeholders})
-            ";
+            // Simple SELECT - classification will be done in PHP using $existingUuids.
+            $selectSql = "SELECT * FROM `{$fullTableName}` WHERE `_uuid` IN ({$placeholders})";
             if ($isPostgres === true) {
-                $selectSql = "
-                    SELECT *,
-                           '{$operationStartTime}' as operation_start_time,
-                           CASE
-                               WHEN \"_created\" >= '{$operationStartTime}' THEN 'created'
-                               WHEN \"_updated\" >= '{$operationStartTime}' THEN 'updated'
-                               ELSE 'unchanged'
-                           END as object_status
-                    FROM \"{$fullTableName}\"
-                    WHERE \"_uuid\" IN ({$placeholders})
-                ";
+                $selectSql = "SELECT * FROM \"{$fullTableName}\" WHERE \"_uuid\" IN ({$placeholders})";
             }
 
             $stmt = $this->db->prepare($selectSql);
             $stmt->execute(array_values($uuids));
-            $completeObjects = $stmt->fetchAll();
+            $rawObjects = $stmt->fetchAll();
+
+            // Apply accurate classification based on pre-upsert UUID check.
+            // - 'created': UUID was NOT in existingUuids (new record inserted)
+            // - 'updated': UUID WAS in existingUuids AND _updated changed (record modified)
+            // - 'unchanged': UUID WAS in existingUuids AND _updated didn't change (no modification)
+            $createdCount   = 0;
+            $updatedCount   = 0;
+            $unchangedCount = 0;
+
+            foreach ($rawObjects as $obj) {
+                $objUuid = $obj['_uuid'] ?? null;
+
+                if (isset($existingUuids[$objUuid]) === false) {
+                    // UUID didn't exist before upsert - this is a newly created record.
+                    $obj['object_status'] = 'created';
+                    $createdCount++;
+                } else {
+                    // UUID existed before - check if it was actually updated.
+                    // Compare _updated timestamp with operation start time.
+                    $updatedTime = $obj['_updated'] ?? null;
+                    if ($updatedTime !== null && $updatedTime >= $operationStartTime) {
+                        $obj['object_status'] = 'updated';
+                        $updatedCount++;
+                    } else {
+                        $obj['object_status'] = 'unchanged';
+                        $unchangedCount++;
+                    }
+                }
+
+                $obj['operation_start_time'] = $operationStartTime;
+                $completeObjects[]           = $obj;
+            }//end foreach
 
             $this->logger->info(
-                '[MagicBulkHandler] Retrieved complete objects for classification',
+                '[MagicBulkHandler] Classification complete (using pre-upsert UUID check)',
                 [
                     'chunk'            => $chunkNumber,
                     'uuids_requested'  => count($uuids),
                     'objects_returned' => count($completeObjects),
+                    'created'          => $createdCount,
+                    'updated'          => $updatedCount,
+                    'unchanged'        => $unchangedCount,
                 ]
             );
         }//end if
