@@ -478,15 +478,22 @@ class NamesController extends Controller
         $startTime = microtime(true);
 
         try {
+            // Capture old cache stats before clearing
+            $oldStats = $this->objectCacheService->getStats();
+
             // Clear existing name cache before warmup
             $this->objectCacheService->clearNameCache();
 
+            // Warmup and capture new stats
             $loadedCount   = $this->objectCacheService->warmupNameCache();
+            $newStats      = $this->objectCacheService->getStats();
             $executionTime = round((microtime(true) - $startTime) * 1000, 2);
 
             $this->logger->info(
                 message: 'Manual name cache warmup completed',
                 context: [
+                    'old_cache_size' => $oldStats['name_cache_size'] ?? 0,
+                    'new_cache_size' => $newStats['name_cache_size'] ?? 0,
                     'loaded_names'   => $loadedCount,
                     'execution_time' => $executionTime.'ms',
                 ]
@@ -497,7 +504,8 @@ class NamesController extends Controller
                     'success'        => true,
                     'loaded_names'   => $loadedCount,
                     'execution_time' => $executionTime.'ms',
-                    'cache_stats'    => $this->objectCacheService->getStats(),
+                    'old_cache'      => $oldStats,
+                    'new_cache'      => $newStats,
                 ]
             );
         } catch (\Exception $e) {

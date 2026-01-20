@@ -226,13 +226,20 @@ import { dashboardStore, registerStore, navigationStore, configurationStore } fr
 								</thead>
 								<tbody>
 									<tr v-for="schema in getDisplayedSchemas(register)" :key="schema.id">
-										<td class="schemaNameCell">
-											<Table v-if="hasMagicMapping(schema)" v-tooltip="'Magic Table'" :size="18" class="schemaIcon schemaIcon--magic" />
-											<DatabaseOutline v-else v-tooltip="'Blob Storage'" :size="18" class="schemaIcon schemaIcon--blob" />
-											{{ schema.title }}
-										</td>
-										<td>{{ schema.stats?.objects?.total || 0 }}</td>
-										<td class="tableColumnActions">
+									<td class="schemaNameCell">
+										<Table v-if="hasMagicMapping(schema)" v-tooltip="'Magic Table'" :size="18" class="schemaIcon schemaIcon--magic" />
+										<DatabaseOutline v-else v-tooltip="'Blob Storage'" :size="18" class="schemaIcon schemaIcon--blob" />
+										{{ schema.title }}
+									</td>
+									<td>
+										<span v-if="schema.stats?.objects?.deleted > 0" v-tooltip="t('openregister', '{active} active, {deleted} deleted', { active: (schema.stats.objects.total - schema.stats.objects.deleted), deleted: schema.stats.objects.deleted })">
+											{{ (schema.stats.objects.total - schema.stats.objects.deleted) || 0 }} <span class="deletedCount">({{ schema.stats?.objects?.deleted || 0 }} deleted)</span>
+										</span>
+										<span v-else>
+											{{ schema.stats?.objects?.total || 0 }}
+										</span>
+									</td>
+									<td class="tableColumnActions">
 											<NcActions :primary="false">
 												<template #icon>
 													<DotsHorizontal :size="20" />
@@ -268,14 +275,25 @@ import { dashboardStore, registerStore, navigationStore, configurationStore } fr
 													{{ t('openregister', 'Validate') }}
 												</NcActionButton>
 												<NcActionButton 
-													v-tooltip="getSchemaObjectCount(schema) === 0 ? t('openregister', 'No objects to delete') : t('openregister', 'Delete all {count} objects for this schema', { count: getSchemaObjectCount(schema) })"
+													v-tooltip="(schema.stats?.objects?.total || 0) === 0 ? t('openregister', 'No objects to delete') : t('openregister', 'Soft delete all objects for this schema ({active} active, {deleted} already deleted)', { active: getSchemaObjectCount(schema), deleted: (schema.stats?.objects?.deleted || 0) })"
 													:disabled="getSchemaObjectCount(schema) === 0"
 													close-after-click 
-													@click="deleteSchemaObjects(register, schema)">
+													@click="deleteSchemaObjects(register, schema, false)">
 													<template #icon>
 														<DeleteOutline :size="20" />
 													</template>
 													{{ t('openregister', 'Delete Objects') }}
+												</NcActionButton>
+												<NcActionButton 
+													v-if="(schema.stats?.objects?.deleted || 0) > 0"
+													v-tooltip="t('openregister', 'Permanently delete all {count} soft-deleted objects. This cannot be undone!', { count: (schema.stats?.objects?.deleted || 0) })"
+													type="error"
+													close-after-click 
+													@click="deleteSchemaObjects(register, schema, true)">
+													<template #icon>
+														<DeleteOutline :size="20" />
+													</template>
+													{{ t('openregister', 'Permanently Delete ({count})', { count: (schema.stats?.objects?.deleted || 0) }) }}
 												</NcActionButton>
 												<NcActionButton 
 													v-tooltip="getSchemaObjectCount(schema) > 0 ? t('openregister', 'Cannot remove schema with existing objects ({count} objects)', { count: getSchemaObjectCount(schema) }) : ''"
@@ -800,10 +818,14 @@ export default {
 				if (response.data && response.data.success) {
 					const loadedCount = response.data.loaded_names || 0
 					const executionTime = response.data.execution_time || '0ms'
+					const oldCacheSize = response.data.old_cache?.name_cache_size || 0
+					const newCacheSize = response.data.new_cache?.name_cache_size || 0
 					
-					showSuccess(t('openregister', 'Names cache warmed up successfully: {count} names loaded in {time}', {
+					showSuccess(t('openregister', 'Names cache warmed up successfully: {count} names loaded in {time}. Cache grew from {old} to {new} entries.', {
 						count: loadedCount,
-						time: executionTime
+						time: executionTime,
+						old: oldCacheSize,
+						new: newCacheSize
 					}))
 					
 					console.log('Names cache warmup completed:', response.data)
@@ -1037,16 +1059,18 @@ export default {
 		},
 
 		/**
-		 * Get the object count for a schema
+		 * Get the active object count for a schema (excluding deleted objects).
 		 *
 		 * @param {object} schema - Schema object
-		 * @return {number} - Number of objects in the schema
+		 * @return {number} - Number of active objects in the schema
 		 */
 		getSchemaObjectCount(schema) {
 			if (!schema || !schema.stats || !schema.stats.objects) {
 				return 0
 			}
-			return schema.stats.objects.total || 0
+			const total = schema.stats.objects.total || 0
+			const deleted = schema.stats.objects.deleted || 0
+			return total - deleted
 		},
 
 		/**
@@ -1163,24 +1187,53 @@ export default {
 		 *
 		 * @param {object} register - Register object.
 		 * @param {object} schema - Schema object.
+		 * @param {boolean} hardDelete - Whether to permanently delete (true) or soft delete (false).
 		 * @return {Promise<void>}
 		 */
-		async deleteSchemaObjects(register, schema) {
-			const objectCount = this.getSchemaObjectCount(schema)
+		async deleteSchemaObjects(register, schema, hardDelete = false) {
+			const totalObjects = schema.stats?.objects?.total || 0
+			const activeObjects = this.getSchemaObjectCount(schema)
+			const deletedObjects = schema.stats?.objects?.deleted || 0
 			
-			if (objectCount === 0) {
+			if (totalObjects === 0) {
 				showError(t('openregister', 'No objects to delete for schema {schema}', { 
 					schema: schema.title
 				}))
 				return
 			}
 
+			// Build confirmation message based on operation type.
+			let confirmMessage = ''
+			if (hardDelete) {
+				if (activeObjects > 0 && deletedObjects > 0) {
+					confirmMessage = t('openregister', '⚠️ PERMANENT DELETION WARNING ⚠️\n\nYou are about to PERMANENTLY delete ALL objects for schema "{schema}":\n\n• Active objects: {active}\n• Soft-deleted objects: {deleted}\n• Total: {total}\n\nThese objects will be completely removed from the database and CANNOT be recovered.\n\nAre you absolutely sure?', {
+						active: activeObjects,
+						deleted: deletedObjects,
+						total: totalObjects,
+						schema: schema.title
+					})
+				} else {
+					confirmMessage = t('openregister', '⚠️ PERMANENT DELETION WARNING ⚠️\n\nYou are about to PERMANENTLY delete {count} soft-deleted objects for schema "{schema}".\n\nThese objects will be completely removed from the database and CANNOT be recovered.\n\nAre you absolutely sure?', {
+						count: deletedObjects,
+						schema: schema.title
+					})
+				}
+			} else {
+				// Soft delete - only works on active objects.
+				if (activeObjects === 0) {
+					showError(t('openregister', 'No active objects to soft-delete for schema {schema}. Use "Permanently Delete" to remove soft-deleted objects.', {
+						schema: schema.title
+					}))
+					return
+				}
+				confirmMessage = t('openregister', 'Are you sure you want to soft-delete {count} active objects for schema "{schema}"?\n\nThey will be marked as deleted but can be permanently removed later.', {
+					count: activeObjects,
+					schema: schema.title
+				})
+			}
+
 			// Confirm deletion.
-			if (!confirm(t('openregister', 'Are you sure you want to delete all {count} objects for schema "{schema}" in register "{register}"? This action cannot be undone.', {
-				count: objectCount,
-				schema: schema.title,
-				register: register.title
-			}))) {
+			if (!confirm(confirmMessage)) {
 				return
 			}
 
@@ -1188,13 +1241,14 @@ export default {
 			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/bulk/${register.id}/${schema.id}/delete-objects`
 
 			try {
-				showSuccess(t('openregister', 'Deleting {count} objects for {schema}...', { 
-					count: objectCount,
+				const actionType = hardDelete ? 'permanently deleting' : 'soft-deleting'
+				showSuccess(t('openregister', 'Starting {action} for {schema}...', { 
+					action: actionType,
 					schema: schema.title 
 				}))
 				
 				const response = await axios.post(apiUrl, {
-					hardDelete: false, // Soft delete by default.
+					hardDelete: hardDelete,
 				}, {
 					headers: {
 						'Content-Type': 'application/json',
@@ -1401,5 +1455,11 @@ export default {
 
 .schemaIcon--blob {
 	color: var(--color-primary);
+}
+
+.deletedCount {
+	color: var(--color-text-maxcontrast);
+	font-size: 0.9em;
+	font-style: italic;
 }
 </style>

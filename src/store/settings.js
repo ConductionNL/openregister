@@ -1042,12 +1042,17 @@ export const useSettingsStore = defineStore('settings', {
 				const response = await axios.post(generateUrl('/apps/openregister/api/settings/cache/warmup-names'))
 
 				if (response.data.success) {
-					showSuccess('Names cache warmed up successfully')
+					const loadedCount = response.data.loaded_names || 0
+					const executionTime = response.data.execution_time || '0ms'
+					const oldCacheSize = response.data.old_cache?.name_cache_size || 0
+					const newCacheSize = response.data.new_cache?.name_cache_size || 0
+					
+					showSuccess(`Names cache warmed up successfully: ${loadedCount} names loaded in ${executionTime}. Cache grew from ${oldCacheSize} to ${newCacheSize} entries.`)
 				} else {
 					showError('Failed to warmup names cache: ' + (response.data.error || 'Unknown error'))
 				}
 
-				// Reload cache stats to reflect changes
+				// Reload cache stats to reflect changes.
 				await this.loadCacheStats()
 
 				return response.data

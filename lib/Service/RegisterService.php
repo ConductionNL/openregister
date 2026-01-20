@@ -380,19 +380,30 @@ class RegisterService
 
                     if ($tableExists === true) {
                         $quotedTableName = $this->db->getQueryBuilder()->getTableName($tableName);
-                        // Magic tables store data in flat columns (not in an 'object' column)
-                        // The _deleted column is JSONB and should be NULL for non-deleted objects
-                        // Cast schema_id to VARCHAR to match blob storage query type
+                        // Magic tables store data in flat columns (not in an 'object' column).
+                        // The _deleted column is JSONB and should be NULL for non-deleted objects.
+                        // Cast schema_id to VARCHAR to match blob storage query type.
                         $unionQueries[]  = "
                             SELECT 
                                 CAST({$schemaId} AS VARCHAR) as schema_id,
-                                COUNT(*) as total
+                                COUNT(*) as total,
+                                COUNT(CASE WHEN _deleted IS NOT NULL THEN 1 END) as deleted,
+                                0 as invalid,
+                                0 as locked,
+                                0 as published,
+                                0 as size
                             FROM {$quotedTableName}
-                            WHERE (_deleted IS NULL)
                         ";
                     } else {
-                        // Table doesn't exist yet, return 0
-                        $result[$schemaId] = ['total' => 0];
+                        // Table doesn't exist yet, return 0 for all stats.
+                        $result[$schemaId] = [
+                            'total'     => 0,
+                            'deleted'   => 0,
+                            'invalid'   => 0,
+                            'locked'    => 0,
+                            'published' => 0,
+                            'size'      => 0,
+                        ];
                     }
                 } else {
                     // Blob storage: add to blob schemas list
@@ -400,7 +411,7 @@ class RegisterService
                 }
             }//end foreach
 
-            // Add blob storage query if there are any blob schemas
+            // Add blob storage query if there are any blob schemas.
             if (empty($blobSchemas) === false) {
                 $schemaIdsList = implode("','", $blobSchemas);
                 $qb            = $this->db->getQueryBuilder();
@@ -408,11 +419,16 @@ class RegisterService
                 $unionQueries[] = "
                     SELECT 
                         schema as schema_id,
-                        COUNT(*) as total
+                        COUNT(*) as total,
+                        COUNT(CASE WHEN deleted IS NOT NULL THEN 1 END) as deleted,
+                        COUNT(CASE WHEN validation IS NOT NULL THEN 1 END) as invalid,
+                        COUNT(CASE WHEN locked IS NOT NULL THEN 1 END) as locked,
+                        COUNT(CASE WHEN published IS NOT NULL AND published <= NOW() 
+                              AND (depublished IS NULL OR depublished > NOW()) THEN 1 END) as published,
+                        COALESCE(SUM(size), 0) as size
                     FROM {$tableName}
                     WHERE register = '{$registerId}'
                       AND schema IN ('{$schemaIdsList}')
-                      AND deleted IS NULL
                     GROUP BY schema
                 ";
             }
@@ -431,19 +447,31 @@ class RegisterService
             $stmt = $this->db->prepare($sql);
             $stmt->execute();
 
-            // Process results
+            // Process results.
             while ($row = $stmt->fetch(\PDO::FETCH_ASSOC)) {
                 $result[(int) $row['schema_id']] = [
-                    'total' => (int) $row['total'],
+                    'total'     => (int) $row['total'],
+                    'deleted'   => (int) $row['deleted'],
+                    'invalid'   => (int) $row['invalid'],
+                    'locked'    => (int) $row['locked'],
+                    'published' => (int) $row['published'],
+                    'size'      => (int) $row['size'],
                 ];
             }
 
             $stmt->closeCursor();
 
-            // Ensure all blob schemas have an entry (even if 0)
+            // Ensure all blob schemas have an entry (even if 0).
             foreach ($blobSchemas as $schemaId) {
                 if (isset($result[$schemaId]) === false) {
-                    $result[$schemaId] = ['total' => 0];
+                    $result[$schemaId] = [
+                        'total'     => 0,
+                        'deleted'   => 0,
+                        'invalid'   => 0,
+                        'locked'    => 0,
+                        'published' => 0,
+                        'size'      => 0,
+                    ];
                 }
             }
         } catch (\Exception $e) {
