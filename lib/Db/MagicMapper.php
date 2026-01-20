@@ -4601,6 +4601,171 @@ class MagicMapper
     }//end findMultipleAcrossAllMagicTables()
 
     /**
+     * Find all objects across ALL magic tables that have the given UUID in their relations.
+     *
+     * This method searches across all magic tables to find objects that reference the given UUID.
+     * Relations are stored as JSON objects like {"fieldName": "uuid", ...}.
+     *
+     * @param string $uuid           The UUID to search for in relations.
+     * @param bool   $includeDeleted Whether to include deleted objects.
+     *
+     * @return ObjectEntity[] Array of found ObjectEntity objects.
+     */
+    public function findByRelationAcrossAllMagicTables(
+        string $uuid,
+        bool $includeDeleted=false
+    ): array {
+        if (empty($uuid) === true) {
+            return [];
+        }
+
+        $foundObjects = [];
+
+        // Get all magic tables from information_schema.
+        $prefix = 'oc_';
+        $tablePattern = $prefix.'openregister_table_%';
+
+        $sql = "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?";
+        $stmt = $this->db->prepare($sql);
+        $result = $stmt->execute([$tablePattern]);
+        $tables = $result->fetchAll();
+
+        // PERFORMANCE OPTIMIZATION: Use a single UNION query to find objects across ALL tables.
+        $unionParts = [];
+        $tableInfoMap = []; // Maps table name to register/schema IDs.
+        $uuidCol = self::METADATA_PREFIX.'uuid';
+        $deletedCol = self::METADATA_PREFIX.'deleted';
+        $relationsCol = self::METADATA_PREFIX.'relations';
+
+        foreach ($tables as $tableRow) {
+            $fullTableName = $tableRow['table_name'] ?? $tableRow['TABLE_NAME'] ?? null;
+            if ($fullTableName === null) {
+                continue;
+            }
+
+            // Extract register and schema IDs from table name.
+            $tableName = str_replace($prefix, '', $fullTableName);
+            if (preg_match('/^openregister_table_(\d+)_(\d+)$/', $tableName, $matches) !== 1) {
+                continue;
+            }
+
+            $registerId = (int) $matches[1];
+            $schemaId = (int) $matches[2];
+            $tableInfoMap[$fullTableName] = ['registerId' => $registerId, 'schemaId' => $schemaId];
+
+            // Build UNION part - search for UUID in relation VALUES using text search.
+            // This is more reliable than jsonb_each_text as it handles various JSON formats.
+            $deletedCondition = $includeDeleted ? '' : " AND {$deletedCol} IS NULL";
+            $unionParts[] = "SELECT '{$fullTableName}' AS _source_table, {$uuidCol} AS found_uuid "
+                ."FROM {$fullTableName} "
+                ."WHERE {$relationsCol}::text LIKE ?"
+                ."{$deletedCondition}";
+        }
+
+        if (empty($unionParts) === true) {
+            return [];
+        }
+
+        // Execute single UNION query.
+        $unionSql = implode(' UNION ALL ', $unionParts);
+        // Use LIKE pattern to match UUID anywhere in the JSON text.
+        $likePattern = '%"' . $uuid . '"%';
+        $unionParams = array_fill(0, count($unionParts), $likePattern);
+
+        try {
+            $stmt = $this->db->prepare($unionSql);
+            $unionResult = $stmt->execute($unionParams);
+            $matches = $unionResult->fetchAll();
+        } catch (\Exception $e) {
+            $this->logger->error('[MagicMapper::findByRelationAcrossAllMagicTables] UNION query failed', [
+                'error' => $e->getMessage(),
+            ]);
+            return [];
+        }
+
+        // Group found UUIDs by table for efficient batch fetching.
+        $uuidsByTable = [];
+        foreach ($matches as $match) {
+            $table = $match['_source_table'];
+            $foundUuid = $match['found_uuid'];
+            if (isset($uuidsByTable[$table]) === false) {
+                $uuidsByTable[$table] = [];
+            }
+            $uuidsByTable[$table][] = $foundUuid;
+        }
+
+        // Get register and schema mappers.
+        $registerMapper = \OC::$server->get(RegisterMapper::class);
+        $schemaMapper = \OC::$server->get(SchemaMapper::class);
+
+        // Cache for register/schema lookups.
+        static $registerCache = [];
+        static $schemaCache = [];
+
+        // Fetch full rows only from tables that have matches.
+        foreach ($uuidsByTable as $fullTableName => $tableUuids) {
+            $tableInfo = $tableInfoMap[$fullTableName] ?? null;
+            if ($tableInfo === null) {
+                continue;
+            }
+
+            $registerId = $tableInfo['registerId'];
+            $schemaId = $tableInfo['schemaId'];
+            $tableNameWithoutPrefix = str_replace($prefix, '', $fullTableName);
+
+            try {
+                // Load register and schema (with caching).
+                if (isset($registerCache[$registerId]) === false) {
+                    $registerCache[$registerId] = $registerMapper->find(id: $registerId, _multitenancy: false);
+                }
+
+                if (isset($schemaCache[$schemaId]) === false) {
+                    $schemaCache[$schemaId] = $schemaMapper->find(id: $schemaId, _multitenancy: false);
+                }
+
+                // Fetch full rows for found UUIDs.
+                $searchQb = $this->db->getQueryBuilder();
+                $searchQb->select('*')->from($tableNameWithoutPrefix);
+                $searchQb->where(
+                    $searchQb->expr()->in(
+                        $uuidCol,
+                        $searchQb->createNamedParameter($tableUuids, IQueryBuilder::PARAM_STR_ARRAY)
+                    )
+                );
+
+                if ($includeDeleted === false) {
+                    $searchQb->andWhere($searchQb->expr()->isNull($deletedCol));
+                }
+
+                $searchResult = $searchQb->executeQuery();
+                $rows = $searchResult->fetchAll();
+                $searchResult->closeCursor();
+
+                // Convert found rows to ObjectEntity objects.
+                foreach ($rows as $row) {
+                    $row['_register'] = (string) $registerId;
+                    $row['_schema'] = (string) $schemaId;
+                    $foundObjects[] = $this->rowToObjectEntity(row: $row);
+                }
+            } catch (\Exception $e) {
+                $this->logger->debug('[MagicMapper::findByRelationAcrossAllMagicTables] Error fetching from table', [
+                    'table' => $fullTableName,
+                    'error' => $e->getMessage(),
+                ]);
+                continue;
+            }
+        }
+
+        $this->logger->debug('[MagicMapper::findByRelationAcrossAllMagicTables] Search complete', [
+            'uuid' => $uuid,
+            'foundCount' => count($foundObjects),
+            'tablesWithMatches' => count($uuidsByTable),
+        ]);
+
+        return $foundObjects;
+    }//end findByRelationAcrossAllMagicTables()
+
+    /**
      * Find all objects in register+schema table with filtering and pagination.
      *
      * @param Register   $register  The register context.

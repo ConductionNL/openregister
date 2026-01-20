@@ -1540,7 +1540,27 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             );
         }
 
+        // Check if this is a global relations search (no register/schema but _relations_contains provided).
+        // In this case, search across ALL magic tables to find objects that reference the given UUID.
+        $relationsContains = $searchQuery['_relations_contains'] ?? null;
+        $isGlobalRelationsSearch = $registerId === null
+            && $schemaId === null
+            && $relationsContains !== null
+            && is_string($relationsContains) === true
+            && empty($relationsContains) === false;
+
+        if ($isGlobalRelationsSearch === true) {
+            return $this->searchObjectsGloballyByRelations(
+                uuid: $relationsContains,
+                searchQuery: $searchQuery,
+                activeOrgUuid: $activeOrgUuid,
+                rbac: $rbac,
+                multitenancy: $multitenancy
+            );
+        }
+
         // Use objectEntityMapper for blob storage.
+        // DEBUG: Return debug info about why we reached blob storage path.
         $results = $this->objectEntityMapper->searchObjects(
             query: $searchQuery,
             _activeOrgUuid: $activeOrgUuid,
@@ -1729,4 +1749,73 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             'schemas'   => $schemasCache,
         ];
     }//end searchObjectsGloballyByIds()
+
+    /**
+     * Search for objects across ALL magic tables that contain the given UUID in their relations.
+     *
+     * This method is used when no register/schema is specified but _relations_contains is provided.
+     * It searches across all magic tables to find objects that reference the given UUID.
+     *
+     * @param string      $uuid           The UUID to search for in relations.
+     * @param array       $searchQuery    The original search query parameters.
+     * @param string|null $activeOrgUuid  The active organisation UUID for multitenancy.
+     * @param bool        $rbac           Whether to apply RBAC filtering.
+     * @param bool        $multitenancy   Whether to apply multitenancy filtering.
+     *
+     * @return array Search results with pagination info.
+     */
+    private function searchObjectsGloballyByRelations(
+        string $uuid,
+        array $searchQuery,
+        ?string $activeOrgUuid=null,
+        bool $rbac=true,
+        bool $multitenancy=true
+    ): array {
+        $this->logger->debug('[UnifiedObjectMapper] searchObjectsGloballyByRelations starting', [
+            'uuid' => $uuid,
+        ]);
+
+        // Use MagicMapper to search across all magic tables for objects with this UUID in relations.
+        $results = $this->magicMapper->findByRelationAcrossAllMagicTables(
+            uuid: $uuid,
+            includeDeleted: false
+        );
+
+        $total = count($results);
+
+        // Collect unique register/schema info for @self metadata.
+        $registersCache = [];
+        $schemasCache = [];
+
+        foreach ($results as $object) {
+            $regId = $object->getRegister();
+            $schId = $object->getSchema();
+
+            if ($regId !== null && isset($registersCache[$regId]) === false) {
+                $register = $this->registerMapper->find((int) $regId);
+                if ($register !== null) {
+                    $registersCache[$regId] = $register->jsonSerialize();
+                }
+            }
+
+            if ($schId !== null && isset($schemasCache[$schId]) === false) {
+                $schema = $this->schemaMapper->find((int) $schId);
+                if ($schema !== null) {
+                    $schemasCache[$schId] = $schema->jsonSerialize();
+                }
+            }
+        }
+
+        $this->logger->debug('[UnifiedObjectMapper] searchObjectsGloballyByRelations complete', [
+            'uuid' => $uuid,
+            'foundCount' => $total,
+        ]);
+
+        return [
+            'results'   => $results,
+            'total'     => $total,
+            'registers' => $registersCache,
+            'schemas'   => $schemasCache,
+        ];
+    }//end searchObjectsGloballyByRelations()
 }//end class
