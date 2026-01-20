@@ -1041,9 +1041,15 @@ class CacheHandler
                 // Organisation not found, continue to objects.
             }
 
-            // STEP 2: Try to find as object.
-            $object = $this->objectEntityMapper->find($identifier);
-            if ($object !== null) {
+            // STEP 2: Try to find as object using unified interface (searches both blob and magic tables).
+            $result = $this->objectEntityMapper->findAcrossAllSources(
+                identifier: $identifier,
+                includeDeleted: false,
+                _rbac: false,
+                _multitenancy: false
+            );
+            if (($result['object'] ?? null) !== null) {
+                $object = $result['object'];
                 $name = $object->getName() ?? $object->getUuid();
                 $this->setObjectName(identifier: $identifier, name: $name);
                 return $name;
@@ -1142,7 +1148,7 @@ class CacheHandler
                     $missingIdentifiers = array_diff($missingIdentifiers, [$key]);
                 }
 
-                // STEP 2: Try to find remaining identifiers as objects.
+                // STEP 2: Try to find remaining identifiers as objects in blob storage.
                 if (empty($missingIdentifiers) === false) {
                     $objects = $this->objectEntityMapper->findMultiple($missingIdentifiers);
                     foreach ($objects as $object) {
@@ -1152,6 +1158,34 @@ class CacheHandler
 
                         // Cache for future use (UUID only).
                         $this->setObjectName(identifier: $key, name: $name);
+
+                        // Remove from missing list since we found it.
+                        $missingIdentifiers = array_diff($missingIdentifiers, [$key]);
+                    }
+                }
+
+                // STEP 3: Try to find any still-missing identifiers in magic tables.
+                if (empty($missingIdentifiers) === false) {
+                    foreach ($missingIdentifiers as $identifier) {
+                        try {
+                            $result = $this->objectEntityMapper->findAcrossAllSources(
+                                identifier: $identifier,
+                                includeDeleted: false,
+                                _rbac: false,
+                                _multitenancy: false
+                            );
+                            if (($result['object'] ?? null) !== null) {
+                                $object        = $result['object'];
+                                $name          = $object->getName() ?? $object->getUuid();
+                                $key           = $object->getUuid();
+                                $results[$key] = $name;
+
+                                // Cache for future use.
+                                $this->setObjectName(identifier: $key, name: $name);
+                            }
+                        } catch (\Exception $e) {
+                            // Object not found in any source, continue.
+                        }
                     }
                 }
             } catch (\Exception $e) {
