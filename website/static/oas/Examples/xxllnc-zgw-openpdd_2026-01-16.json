@@ -4,7 +4,7 @@
     "id": 0,
     "title": "Xxllnc ZGW config",
     "description": "Merged configuration containing components for Zaken (ZRC), Catalogi (ZTC) and Documenten (DRC).",
-    "version": "0.0.1",
+    "version": "0.0.1"
   },
   "components": {
     "mappings": {
