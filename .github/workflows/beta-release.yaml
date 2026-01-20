@@ -59,7 +59,9 @@ jobs:
           echo "Using beta version: $beta_version"
 
       # Stap 4: Genereer changelog entries vanaf laatste release met PR descriptions
+      # DISABLED: Taking too long (5+ minutes). Remove "if: false" to re-enable.
       - name: Generate changelog entries from PRs
+        if: false
         id: generate_changelog
         run: |
           # Get the date for the changelog entry
@@ -276,8 +278,9 @@ jobs:
           echo "RELEASE_DATE=$RELEASE_DATE" >> $GITHUB_ENV
 
       # Stap 5: Update CHANGELOG.md met nieuwe entries
+      # DISABLED: Changelog generation is disabled. Remove "if: false" to re-enable.
       - name: Update CHANGELOG.md
-        if: steps.generate_changelog.outputs.HAS_CHANGES == 'true'
+        if: false
         run: |
           # Read changelog entry file path
           if [ -f "changelog_entry_path.txt" ]; then
