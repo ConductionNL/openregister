@@ -1307,6 +1307,14 @@ class CacheHandler
                 ]
             );
 
+            // Store breakdown for diagnostics
+            $this->stats['warmup_breakdown'] = [
+                'organisations' => count($organisations),
+                'objects_table' => count($objects),
+                'magic_tables'  => $magicNamesLoaded,
+                'total_unique'  => count($this->nameCache),
+            ];
+
             return count($this->nameCache);
         } catch (\Exception $e) {
             $this->logger->error(
@@ -1360,9 +1368,11 @@ class CacheHandler
 
                     try {
                         // Check if table exists and has the name column.
-                        // Magic table columns have underscore prefix: _id, _name.
+                        // Magic table columns have underscore prefix: _id, _name, _deleted, _published, _depublished.
                         // Note: _id is bigint (internal DB ID), we need _uuid (the UUID) for mapping.
-                        $sql    = 'SELECT "_uuid", "_name" FROM '.$tableName.' WHERE "_name" IS NOT NULL AND "_name" != \'\'';
+                        // Filter: not deleted, is published, not depublished
+                        $now = (new \DateTime())->format('Y-m-d H:i:s');
+                        $sql = 'SELECT "_uuid", "_name" FROM '.$tableName.' WHERE "_name" IS NOT NULL AND "_name" != \'\' AND "_deleted" IS NULL AND "_published" IS NOT NULL AND "_published" <= \''.$now.'\' AND ("_depublished" IS NULL OR "_depublished" > \''.$now.'\')';
                         $result = $this->db->executeQuery($sql);
 
                         while (($row = $result->fetch()) !== false) {
