@@ -214,50 +214,6 @@ class RegistersController extends Controller
      *
      * @return JSONResponse The JSON response containing the list of registers
      *
-     * @psalm-return JSONResponse<
-     *     200,
-     *     array{
-     *         results: array<array{
-     *             id: int,
-     *             uuid: null|string,
-     *             slug: null|string,
-     *             title: null|string,
-     *             version: null|string,
-     *             description: null|string,
-     *             schemas: array<int|string>,
-     *             source: null|string,
-     *             tablePrefix: null|string,
-     *             folder: null|string,
-     *             updated: null|string,
-     *             created: null|string,
-     *             owner: null|string,
-     *             application: null|string,
-     *             organisation: null|string,
-     *             authorization: array|null,
-     *             groups: array<string, list<string>>,
-     *             configuration: array|null,
-     *             quota: array{
-     *                 storage: null,
-     *                 bandwidth: null,
-     *                 requests: null,
-     *                 users: null,
-     *                 groups: null
-     *             },
-     *             usage: array{
-     *                 storage: 0,
-     *                 bandwidth: 0,
-     *                 requests: 0,
-     *                 users: 0,
-     *                 groups: int<0, max>
-     *             },
-     *             deleted: null|string,
-     *             published: null|string,
-     *             depublished: null|string
-     *         }>
-     *     },
-     *     array<never, never>
-     * >
-     *
      * @SuppressWarnings(PHPMD.NPathComplexity)      Complex request parameter handling for flexible API
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */

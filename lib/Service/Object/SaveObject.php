@@ -2563,7 +2563,7 @@ class SaveObject
         // Pass the oldObject to ensure accurate status change detection in events.
         $updatedEntity = $this->unifiedObjectMapper->update(entity: $preparedObject, register: $register, schema: $schema, oldEntity: $oldObject);
 
-        $this->logger->critical('[SaveObject] Object updated successfully', [
+        $this->logger->info('[SaveObject] Object updated successfully', [
             'app' => 'openregister',
             'uuid' => $updatedEntity->getUuid()
         ]);
