@@ -1129,7 +1129,8 @@ class ValidateObject
              * @psalm-suppress TypeDoesNotContainType
              */
 
-            if (isset($properties) === true && is_array($properties) === true) {
+            // Handle both array and object (stdClass) types for properties
+            if (isset($properties) === true && (is_array($properties) === true || is_object($properties) === true)) {
                 foreach ($properties as $propertyName => $propertySchema) {
                     // Skip required fields - they should not allow null unless explicitly defined.
                     if (in_array($propertyName, $requiredFields) === true) {

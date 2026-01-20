@@ -16,9 +16,12 @@ namespace OCA\OpenRegister\Service\Object;
 
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObjects;
@@ -50,6 +53,9 @@ class BulkOperationsHandler
      * @param ObjectEntityMapper $objectEntityMapper Mapper for object entities.
      * @param PermissionHandler  $permissionHandler  Handler for permission operations.
      * @param CacheHandler       $cacheHandler       Handler for cache operations.
+     * @param MagicMapper        $magicMapper        Mapper for magic table operations.
+     * @param SchemaMapper       $schemaMapper       Mapper for schema entities.
+     * @param RegisterMapper     $registerMapper     Mapper for register entities.
      * @param LoggerInterface    $logger             Logger for logging operations.
      */
     public function __construct(
@@ -57,6 +63,9 @@ class BulkOperationsHandler
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly PermissionHandler $permissionHandler,
         private readonly CacheHandler $cacheHandler,
+        private readonly MagicMapper $magicMapper,
+        private readonly SchemaMapper $schemaMapper,
+        private readonly RegisterMapper $registerMapper,
         private readonly LoggerInterface $logger
     ) {
     }//end __construct()
@@ -502,6 +511,11 @@ class BulkOperationsHandler
     /**
      * Delete all objects belonging to a specific schema.
      *
+     * Objects are stored EITHER in blob storage OR in magic tables (not both).
+     * This method checks if the schema uses magic tables and deletes from the
+     * appropriate storage. Blob storage is deprecated.
+     *
+     * @param int  $registerId The ID of the register.
      * @param int  $schemaId   The ID of the schema whose objects should be deleted.
      * @param bool $hardDelete Whether to force hard delete (default: false).
      *
@@ -514,18 +528,95 @@ class BulkOperationsHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) - Boolean flag controls hard vs soft delete behavior
      */
-    public function deleteObjectsBySchema(int $schemaId, bool $hardDelete=false): array
+    public function deleteObjectsBySchema(int $registerId, int $schemaId, bool $hardDelete=false): array
     {
-        // Use the mapper's schema deletion operation.
-        $result = $this->objectEntityMapper->deleteObjectsBySchema(schemaId: $schemaId, hardDelete: $hardDelete);
+        $totalDeletedCount = 0;
+        $totalDeletedUuids = [];
+
+        try {
+            $schema = $this->schemaMapper->find($schemaId);
+            $register = $this->registerMapper->find($registerId);
+
+            // Check if magic mapping is enabled for this schema.
+            $usesMagicTable = $register->isMagicMappingEnabledForSchema(
+                schemaId: $schema->getId(),
+                schemaSlug: $schema->getSlug()
+            );
+
+            if ($usesMagicTable === true) {
+                // Objects are in MAGIC TABLE - delete from there.
+                $this->logger->info(
+                    message: 'Schema uses magic table, deleting from magic table',
+                    context: [
+                        'schemaId'   => $schemaId,
+                        'registerId' => $register->getId(),
+                        'hardDelete' => $hardDelete,
+                    ]
+                );
+
+                // Delete from magic table using optimized bulk query.
+                $magicDeleteCount = $this->magicMapper->deleteObjectsBySchema(
+                    register: $register,
+                    schema: $schema,
+                    hardDelete: $hardDelete
+                );
+
+                $totalDeletedCount = $magicDeleteCount;
+
+                $this->logger->info(
+                    message: 'Objects deleted from magic table',
+                    context: [
+                        'magicDeleteCount' => $magicDeleteCount,
+                        'schemaId'         => $schemaId,
+                        'hardDelete'       => $hardDelete,
+                    ]
+                );
+
+                // For magic tables, we return the count but no UUIDs since magic tables don't always track them individually.
+                $totalDeletedUuids = [];
+            } else {
+                // Objects are in BLOB STORAGE - delete from there.
+                $this->logger->info(
+                    message: 'Schema uses blob storage, deleting from blob storage',
+                    context: [
+                        'schemaId'   => $schemaId,
+                        'hardDelete' => $hardDelete,
+                    ]
+                );
+
+                $result = $this->objectEntityMapper->deleteObjectsBySchema(schemaId: $schemaId, hardDelete: $hardDelete);
+
+                $totalDeletedCount = $result['deleted_count'];
+                $totalDeletedUuids = $result['deleted_uuids'];
+
+                $this->logger->info(
+                    message: 'Objects deleted from blob storage',
+                    context: [
+                        'deletedCount' => $totalDeletedCount,
+                        'schemaId'     => $schemaId,
+                        'hardDelete'   => $hardDelete,
+                    ]
+                );
+            }//end if
+        } catch (Exception $e) {
+            $this->logger->error(
+                message: 'Failed to delete objects for schema',
+                context: [
+                    'error'     => $e->getMessage(),
+                    'schemaId'  => $schemaId,
+                    'hardDelete' => $hardDelete,
+                ]
+            );
+            throw $e;
+        }//end try
 
         // **BULK CACHE INVALIDATION**: Clear collection caches after bulk delete operations.
-        if ($result['deleted_count'] > 0) {
+        if ($totalDeletedCount > 0) {
             try {
                 $this->logger->debug(
                     message: 'Schema objects deletion cache invalidation starting',
                     context: [
-                        'deletedCount' => $result['deleted_count'],
+                        'deletedCount' => $totalDeletedCount,
                         'schemaId'     => $schemaId,
                         'operation'    => 'schema_delete',
                         'hardDelete'   => $hardDelete,
@@ -542,7 +633,7 @@ class BulkOperationsHandler
                 $this->logger->debug(
                     message: 'Schema objects deletion cache invalidation completed',
                     context: [
-                        'deletedCount' => $result['deleted_count'],
+                        'deletedCount' => $totalDeletedCount,
                         'schemaId'     => $schemaId,
                         'hardDelete'   => $hardDelete,
                     ]
@@ -553,14 +644,18 @@ class BulkOperationsHandler
                     context: [
                         'error'        => $e->getMessage(),
                         'schemaId'     => $schemaId,
-                        'deletedCount' => $result['deleted_count'],
+                        'deletedCount' => $totalDeletedCount,
                         'hardDelete'   => $hardDelete,
                     ]
                 );
             }//end try
         }//end if
 
-        return $result;
+        return [
+            'deleted_count' => $totalDeletedCount,
+            'deleted_uuids' => $totalDeletedUuids,
+            'schema_id'     => $schemaId,
+        ];
     }//end deleteObjectsBySchema()
 
     /**

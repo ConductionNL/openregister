@@ -2367,6 +2367,7 @@ class ObjectService
      * This method efficiently deletes all objects that belong to the specified schema.
      * It uses bulk operations for optimal performance and maintains data integrity.
      *
+     * @param int  $registerId The ID of the register
      * @param int  $schemaId   The ID of the schema whose objects should be deleted
      * @param bool $hardDelete Whether to force hard delete (default: false)
      *
@@ -2378,10 +2379,11 @@ class ObjectService
      *
      * @psalm-return array{deleted_count: int<min, max>, deleted_uuids: array<int, string>, schema_id: int}
      */
-    public function deleteObjectsBySchema(int $schemaId, bool $hardDelete=false): array
+    public function deleteObjectsBySchema(int $registerId, int $schemaId, bool $hardDelete=false): array
     {
         // ARCHITECTURAL DELEGATION: Delegate to BulkOperationsHandler for schema-wide delete.
         return $this->bulkOpsHandler->deleteObjectsBySchema(
+            registerId: $registerId,
             schemaId: $schemaId,
             hardDelete: $hardDelete
         );

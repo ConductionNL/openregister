@@ -493,6 +493,69 @@ class BulkController extends Controller
     }//end deleteSchema()
 
     /**
+     * Delete all objects belonging to a specific register and schema combination.
+     *
+     * This endpoint provides a convenient way to delete all objects for a given
+     * register/schema combination from the frontend action menu. It uses optimized
+     * SQL queries to delete objects efficiently from both blob storage and magic tables.
+     *
+     * @param string $register The register identifier (ID or slug).
+     * @param string $schema   The schema identifier (ID or slug).
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with deletion result.
+     */
+    public function deleteSchemaObjects(string $register, string $schema): JSONResponse
+    {
+        try {
+            // Resolve register and schema slugs/IDs to numeric IDs.
+            try {
+                $resolved = $this->resolveRegisterSchemaIds(
+                    register: $register,
+                    schema: $schema,
+                    objectService: $this->objectService
+                );
+            } catch (RegisterNotFoundException | SchemaNotFoundException $e) {
+                return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_NOT_FOUND);
+            }
+
+            // Get request data.
+            $data       = $this->request->getParams();
+            $hardDelete = $data['hardDelete'] ?? false;
+
+            // Set register and schema context using resolved IDs.
+            $this->objectService->setRegister((string) $resolved['register']);
+            $this->objectService->setSchema((string) $resolved['schema']);
+
+            // Perform optimized deletion operation for this register/schema combination.
+            $result = $this->objectService->deleteObjectsBySchema(
+                registerId: $resolved['register'],
+                schemaId: $resolved['schema'],
+                hardDelete: $hardDelete
+            );
+
+            return new JSONResponse(
+                data: [
+                    'success'       => true,
+                    'message'       => 'Objects deletion completed successfully',
+                    'deleted_count' => $result['deleted_count'],
+                    'deleted_uuids' => $result['deleted_uuids'],
+                    'register_id'   => $resolved['register'],
+                    'schema_id'     => $result['schema_id'],
+                    'hard_delete'   => $hardDelete,
+                ]
+            );
+        } catch (Exception $e) {
+            return new JSONResponse(
+                data: ['error' => 'Objects deletion failed: '.$e->getMessage()],
+                statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }//end try
+    }//end deleteSchemaObjects()
+
+    /**
      * Delete all objects belonging to a specific register
      *
      * @param string $register The register identifier

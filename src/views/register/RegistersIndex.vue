@@ -268,6 +268,16 @@ import { dashboardStore, registerStore, navigationStore, configurationStore } fr
 													{{ t('openregister', 'Validate') }}
 												</NcActionButton>
 												<NcActionButton 
+													v-tooltip="getSchemaObjectCount(schema) === 0 ? t('openregister', 'No objects to delete') : t('openregister', 'Delete all {count} objects for this schema', { count: getSchemaObjectCount(schema) })"
+													:disabled="getSchemaObjectCount(schema) === 0"
+													close-after-click 
+													@click="deleteSchemaObjects(register, schema)">
+													<template #icon>
+														<DeleteOutline :size="20" />
+													</template>
+													{{ t('openregister', 'Delete Objects') }}
+												</NcActionButton>
+												<NcActionButton 
 													v-tooltip="getSchemaObjectCount(schema) > 0 ? t('openregister', 'Cannot remove schema with existing objects ({count} objects)', { count: getSchemaObjectCount(schema) }) : ''"
 													:disabled="getSchemaObjectCount(schema) > 0"
 													close-after-click 
@@ -491,6 +501,7 @@ import PublishOff from 'vue-material-design-icons/PublishOff.vue'
 import Sync from 'vue-material-design-icons/Sync.vue'
 import Table from 'vue-material-design-icons/Table.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
+import DeleteOutline from 'vue-material-design-icons/DeleteOutline.vue'
 import axios from '@nextcloud/axios'
 import { showError, showSuccess } from '@nextcloud/dialogs'
 import PaginationComponent from '../../components/PaginationComponent.vue'
@@ -525,6 +536,7 @@ export default {
 		Sync,
 		Table,
 		CheckCircle,
+		DeleteOutline,
 		PaginationComponent,
 	},
 	data() {
@@ -1128,7 +1140,7 @@ export default {
 					console.warn('Validation errors:', stats.errors)
 				}
 				
-				// Refresh the register list to reflect updated counts
+				// Refresh the register list to reflect updated counts.
 				await registerStore.refreshRegisterList()
 			} else {
 				showSuccess(t('openregister', 'Validation completed for {schema}', { schema: schema.title }))
@@ -1137,6 +1149,86 @@ export default {
 				console.error('Error validating schema objects:', error)
 				const errorMessage = error.response?.data?.message || error.message || 'Unknown error'
 				showError(t('openregister', 'Failed to validate {schema}: {error}', { 
+					schema: schema.title, 
+					error: errorMessage 
+				}))
+			}
+		},
+
+		/**
+		 * Delete all objects for a specific register/schema combination.
+		 *
+		 * This method uses an optimized API endpoint that efficiently deletes all objects
+		 * for the given register/schema from both blob storage and magic tables.
+		 *
+		 * @param {object} register - Register object.
+		 * @param {object} schema - Schema object.
+		 * @return {Promise<void>}
+		 */
+		async deleteSchemaObjects(register, schema) {
+			const objectCount = this.getSchemaObjectCount(schema)
+			
+			if (objectCount === 0) {
+				showError(t('openregister', 'No objects to delete for schema {schema}', { 
+					schema: schema.title
+				}))
+				return
+			}
+
+			// Confirm deletion.
+			if (!confirm(t('openregister', 'Are you sure you want to delete all {count} objects for schema "{schema}" in register "{register}"? This action cannot be undone.', {
+				count: objectCount,
+				schema: schema.title,
+				register: register.title
+			}))) {
+				return
+			}
+
+			const baseUrl = window.location.origin
+			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/bulk/${register.id}/${schema.id}/delete-objects`
+
+			try {
+				showSuccess(t('openregister', 'Deleting {count} objects for {schema}...', { 
+					count: objectCount,
+					schema: schema.title 
+				}))
+				
+				const response = await axios.post(apiUrl, {
+					hardDelete: false, // Soft delete by default.
+				}, {
+					headers: {
+						'Content-Type': 'application/json',
+						'Accept': 'application/json',
+					},
+				})
+
+			if (response.data && response.data.success) {
+				const deletedCount = response.data.deleted_count || 0
+				
+				showSuccess(t('openregister', 'Successfully deleted {count} objects for {schema}', {
+					count: deletedCount,
+					schema: schema.title
+				}))
+				
+				console.log('Objects deletion completed:', response.data)
+				
+				// Refresh both register list and dashboard to reflect updated counts.
+				await Promise.all([
+					registerStore.refreshRegisterList(),
+					dashboardStore.fetchRegisters()
+				])
+			} else {
+				showSuccess(t('openregister', 'Objects deletion completed for {schema}', { schema: schema.title }))
+				// Refresh both register list and dashboard to reflect updated counts.
+				await Promise.all([
+					registerStore.refreshRegisterList(),
+					dashboardStore.fetchRegisters()
+				])
+			}
+			} catch (error) {
+				console.error('Error deleting schema objects:', error)
+				const errorMessage = error.response?.data?.message || error.message || 'Unknown error'
+				showError(t('openregister', 'Failed to delete objects for {schema}: {error}', { 
 					schema: schema.title, 
 					error: errorMessage 
 				}))

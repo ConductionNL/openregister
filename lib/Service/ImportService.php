@@ -292,7 +292,8 @@ class ImportService
                 _rbac: $_rbac,
                 _multitenancy: $_multitenancy,
                 publish: $publish,
-                currentUser: $currentUser
+                currentUser: $currentUser,
+                enrich: $enrich
             );
         }
 
@@ -307,7 +308,8 @@ class ImportService
             _rbac: $_rbac,
             _multitenancy: $_multitenancy,
             publish: $publish,
-            currentUser: $currentUser
+            currentUser: $currentUser,
+            enrich: $enrich
         );
 
         // Add schema information to the summary (consistent with multi-sheet Excel import).
@@ -450,7 +452,8 @@ class ImportService
         bool $_rbac=true,
         bool $_multitenancy=true,
         bool $publish=false,
-        ?IUser $currentUser=null
+        ?IUser $currentUser=null,
+        bool $enrich=true
     ): array {
         $summary = [];
 
@@ -571,7 +574,7 @@ class ImportService
         bool $_multitenancy=true,
         bool $publish=false,
         ?IUser $currentUser=null,
-        bool $enrich=false
+        bool $enrich=true
     ): array {
         $summary = [
             'found'     => 0,
@@ -737,7 +740,7 @@ class ImportService
         bool $_multitenancy=true,
         bool $publish=false,
         ?IUser $currentUser=null,
-        bool $enrich=false
+        bool $enrich=true
     ): array {
         $summary = [
             'found'     => 0,

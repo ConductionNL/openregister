@@ -4866,6 +4866,106 @@ class MagicMapper
     }//end deleteObjectEntity()
 
     /**
+     * Delete all objects belonging to a specific schema from the magic table.
+     *
+     * This method performs an optimized bulk deletion from the magic table
+     * for all objects belonging to a given register/schema combination.
+     *
+     * @param Register $register   The register context.
+     * @param Schema   $schema     The schema context.
+     * @param bool     $hardDelete Whether to perform a hard delete (default: false for soft delete).
+     *
+     * @throws Exception If deletion fails.
+     *
+     * @return int The number of objects deleted.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Hard delete toggle controls permanent vs soft delete
+     */
+    public function deleteObjectsBySchema(
+        Register $register,
+        Schema $schema,
+        bool $hardDelete=false
+    ): int {
+        $tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
+        $registerId = $register->getId();
+        $schemaId   = $schema->getId();
+
+        $this->logger->info(
+            message: 'Deleting all objects from magic table for schema',
+            context: [
+                'registerId' => $registerId,
+                'schemaId'   => $schemaId,
+                'tableName'  => $tableName,
+                'hardDelete' => $hardDelete,
+            ]
+        );
+
+        // Check if table exists before attempting deletion.
+        if ($this->tableExistsForRegisterSchema(register: $register, schema: $schema) === false) {
+            $this->logger->warning(
+                message: 'Cannot delete from magic table - table does not exist',
+                context: [
+                    'registerId' => $registerId,
+                    'schemaId'   => $schemaId,
+                    'tableName'  => $tableName,
+                ]
+            );
+            return 0;
+        }
+
+        $qb = $this->db->getQueryBuilder();
+
+        if ($hardDelete === true) {
+            // Hard delete - remove all rows for this register+schema combination.
+            $qb->delete($tableName)
+                ->where($qb->expr()->eq(self::METADATA_PREFIX.'register', $qb->createNamedParameter($registerId, \PDO::PARAM_INT)))
+                ->andWhere($qb->expr()->eq(self::METADATA_PREFIX.'schema', $qb->createNamedParameter($schemaId, \PDO::PARAM_INT)));
+
+            $deletedCount = $qb->executeStatement();
+
+            $this->logger->info(
+                message: 'Hard deleted objects from magic table',
+                context: [
+                    'deletedCount' => $deletedCount,
+                    'registerId'   => $registerId,
+                    'schemaId'     => $schemaId,
+                    'tableName'    => $tableName,
+                ]
+            );
+        } else {
+            // Soft delete - set _deleted field for all rows.
+            // Prepare the deletion metadata as JSONB.
+            $deletedMetadata = json_encode([
+                'time'   => (new \DateTime())->format('Y-m-d H:i:s'),
+                'user'   => $this->userSession->getUser()?->getUID() ?? 'system',
+                'reason' => 'Bulk soft delete via deleteObjectsBySchema',
+                'retention' => 30,
+            ]);
+
+            $qb->update($tableName)
+                ->set(self::METADATA_PREFIX.'deleted', $qb->createNamedParameter($deletedMetadata, \PDO::PARAM_STR))
+                ->where($qb->expr()->eq(self::METADATA_PREFIX.'register', $qb->createNamedParameter($registerId, \PDO::PARAM_INT)))
+                ->andWhere($qb->expr()->eq(self::METADATA_PREFIX.'schema', $qb->createNamedParameter($schemaId, \PDO::PARAM_INT)))
+                // Only soft-delete objects that aren't already soft-deleted.
+                ->andWhere($qb->expr()->isNull(self::METADATA_PREFIX.'deleted'));
+
+            $deletedCount = $qb->executeStatement();
+
+            $this->logger->info(
+                message: 'Soft deleted objects in magic table',
+                context: [
+                    'deletedCount' => $deletedCount,
+                    'registerId'   => $registerId,
+                    'schemaId'     => $schemaId,
+                    'tableName'    => $tableName,
+                ]
+            );
+        }//end if
+
+        return $deletedCount;
+    }//end deleteObjectsBySchema()
+
+    /**
      * Lock object in register+schema table.
      *
      * @param ObjectEntity $entity       The object entity to lock.
