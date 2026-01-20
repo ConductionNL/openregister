@@ -1039,8 +1039,13 @@ class ImportService
      */
     private function transformDateTimeValue(string $value): string
     {
+        // Early return if already in MySQL datetime format (Y-m-d H:i:s).
+        if (preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $value) === 1) {
+            return $value;
+        }
+
         // Handle ISO 8601 format with timezone (e.g., "2025-01-01T00:00:00+00:00").
-        if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/', $value) === true) {
+        if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/', $value) === 1) {
             try {
                 $dateTime = new DateTime($value);
                 return $dateTime->format(format: 'Y-m-d H:i:s');
@@ -1051,7 +1056,7 @@ class ImportService
         }
 
         // Handle ISO 8601 format without timezone (e.g., "2025-01-01T00:00:00").
-        if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/', $value) === true) {
+        if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/', $value) === 1) {
             try {
                 $dateTime = new DateTime($value);
                 return $dateTime->format(format: 'Y-m-d H:i:s');
@@ -1062,7 +1067,7 @@ class ImportService
         }
 
         // Handle date-only format (e.g., "2025-01-01").
-        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) === true) {
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) === 1) {
             return $value.' 00:00:00';
         }
 
@@ -1081,10 +1086,8 @@ class ImportService
     private function transformSelfProperty(string $propertyName, string $value): string
     {
         // Transform datetime properties to MySQL datetime format.
-        if (in_array($propertyName, ['published', 'created', 'updated'], true)) {
-            $transformed = $this->transformDateTimeValue($value);
-            error_log("[ImportService] transformSelfProperty: $propertyName = '$value' -> '$transformed'");
-            return $transformed;
+        if (in_array($propertyName, ['published', 'created', 'updated'], true) === true) {
+            return $this->transformDateTimeValue($value);
         }
 
         // Transform organisation property - ensure it's a valid UUID.
