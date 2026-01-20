@@ -517,7 +517,8 @@ class ImportService
                 _rbac: $_rbac,
                 _multitenancy: $_multitenancy,
                 publish: $publish,
-                currentUser: $currentUser
+                currentUser: $currentUser,
+                enrich: $enrich
             );
 
             // Merge the sheet summary with the existing summary (preserve debug info).
