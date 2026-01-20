@@ -242,7 +242,7 @@ class SaveObject
 
         // First, try direct ID lookup (numeric ID or UUID).
         $uuidPattern = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i';
-        if (is_numeric($cleanReference) === true || preg_match($uuidPattern, $cleanReference) === true) {
+        if (is_numeric($cleanReference) === true || preg_match($uuidPattern, $cleanReference) === 1) {
             try {
                 $schema = $this->schemaMapper->find(id: $cleanReference);
                 return (string) $schema->getId();
@@ -325,7 +325,7 @@ class SaveObject
 
         // First, try direct ID lookup (numeric ID or UUID).
         $uuidPattern = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i';
-        if (is_numeric($reference) === true || preg_match($uuidPattern, $reference) === true) {
+        if (is_numeric($reference) === true || preg_match($uuidPattern, $reference) === 1) {
             try {
                 $register = $this->registerMapper->find($reference);
                 return (string) $register->getId();
@@ -413,7 +413,7 @@ class SaveObject
                     $currentPath = $prefix.'.'.$key;
                 }
 
-                if (is_array($value) === true && empty($value) === true) {
+                if (is_array($value) === true && empty($value) === false) {
                     // Check if this is an array property in the schema.
                     $propertyConfig   = $schemaProperties[$key] ?? null;
                     $isArrayOfObjects = $propertyConfig &&
@@ -517,12 +517,12 @@ class SaveObject
         }
 
         // Check for standard UUID pattern (8-4-4-4-12 format).
-        if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === true) {
+        if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === 1) {
             return true;
         }
 
         // Check for prefixed UUID patterns (e.g., "id-uuid", "ref-uuid", etc.).
-        if (preg_match('/^[a-z]+-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === true) {
+        if (preg_match('/^[a-z]+-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === 1) {
             return true;
         }
 
@@ -533,11 +533,11 @@ class SaveObject
 
         // Check for other common ID patterns, but be more selective to avoid false positives.
         // Only consider strings that look like identifiers, not regular text.
-        if (preg_match('/^[a-z0-9][a-z0-9_-]{7,}$/i', $value) === true) {
+        if (preg_match('/^[a-z0-9][a-z0-9_-]{7,}$/i', $value) === 1) {
             // Must contain at least one hyphen or underscore (indicating it's likely an ID).
             // AND must not contain spaces or common text words.
             $hasHyphenUndscr = (strpos($value, '-') !== false || strpos($value, '_') !== false);
-            $hasNoSpaces     = preg_match('/\s/', $value) === false;
+            $hasNoSpaces     = preg_match('/\s/', $value) === 0;
             $commonWords     = ['applicatie', 'systeemsoftware', 'open-source', 'closed-source'];
             $isNotCommonWord = in_array(strtolower($value), $commonWords, true) === false;
             if ($hasHyphenUndscr === true && $hasNoSpaces === true && $isNotCommonWord === true) {
@@ -1153,10 +1153,14 @@ class SaveObject
                 // So we need to preserve existing UUIDs from the original data.
                 if ($isRelatedObject === true) {
                     // Collect existing UUIDs that were passed through (not created, just referenced).
+                    // Use regex instead of Symfony's Uuid::isValid() because some systems use
+                    // non-standard UUIDs that don't follow RFC4122 variant bits (e.g., GEMMA).
+                    $uuidPattern = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
                     $existingUuids = array_filter(
                         $data[$property] ?? [],
-                        fn($item) => is_string($item) && \Symfony\Component\Uid\Uuid::isValid($item)
+                        fn($item) => is_string($item) && preg_match($uuidPattern, $item) === 1
                     );
+
                     // Merge existing UUIDs with newly created ones.
                     $data[$property] = array_values(array_unique(array_merge($existingUuids, $createdUuids)));
                 } else {
@@ -1221,12 +1225,15 @@ class SaveObject
         }
 
         // Filter out empty or invalid objects.
+        // Use regex instead of Symfony's Uuid::isValid() because some systems use
+        // non-standard UUIDs that don't follow RFC4122 variant bits (e.g., GEMMA).
+        $uuidPattern = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
         $validObjects = array_filter(
             $propData,
-            function ($object) {
+            function ($object) use ($uuidPattern) {
                 return (is_array($object) === true && empty($object) === false
                         && !(count($object) === 1 && (($object['id'] ?? null) !== null) && empty($object['id']) === true))
-                    || (is_string($object) === true && Uuid::isValid($object) === true);
+                    || (is_string($object) === true && preg_match($uuidPattern, $object) === 1);
             }
         );
 
@@ -1257,7 +1264,9 @@ class SaveObject
 
         $createdUuids = [];
         foreach ($validObjects as $object) {
-            if (is_string($object) === true && Uuid::isValid($object) === true) {
+            // Skip existing UUIDs - they don't need to be cascaded (created).
+            // Use regex instead of Uuid::isValid() to accept non-RFC4122 UUIDs.
+            if (is_string($object) === true && preg_match($uuidPattern, $object) === 1) {
                 continue;
             }
 
