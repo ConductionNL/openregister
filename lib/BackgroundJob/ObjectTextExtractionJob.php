@@ -70,6 +70,7 @@ class ObjectTextExtractionJob extends QueuedJob
      *
      * Initializes the background job with required services via dependency injection.
      *
+     * @param ITimeFactory          $time          Time factory for parent class
      * @param IAppConfig            $config        Configuration service
      * @param LoggerInterface       $logger        Logger service
      * @param TextExtractionService $textExtractor Text extraction service
@@ -77,10 +78,12 @@ class ObjectTextExtractionJob extends QueuedJob
      * @return void
      */
     public function __construct(
+        ITimeFactory $time,
         IAppConfig $config,
         LoggerInterface $logger,
         TextExtractionService $textExtractor
     ) {
+        parent::__construct($time);
         $this->config        = $config;
         $this->logger        = $logger;
         $this->textExtractor = $textExtractor;

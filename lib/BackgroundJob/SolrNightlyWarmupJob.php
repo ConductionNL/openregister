@@ -63,6 +63,19 @@ class SolrNightlyWarmupJob extends TimedJob
     private const DEFAULT_NIGHTLY_MODE = 'parallel';
 
     /**
+     * Constructor
+     *
+     * Initializes the timed job with the time factory and sets the interval.
+     *
+     * @param ITimeFactory $time Time factory for parent class
+     */
+    public function __construct(ITimeFactory $time)
+    {
+        parent::__construct($time);
+        $this->setInterval(self::DEFAULT_INTERVAL);
+    }
+
+    /**
      * Execute the nightly SOLR warmup job
      *
      * @param mixed $argument Job arguments (unused for recurring jobs)

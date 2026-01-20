@@ -57,6 +57,19 @@ class CronFileTextExtractionJob extends TimedJob
     private const DEFAULT_BATCH_SIZE = 10;
 
     /**
+     * Constructor
+     *
+     * Initializes the timed job with the time factory and sets the interval.
+     *
+     * @param ITimeFactory $time Time factory for parent class
+     */
+    public function __construct(ITimeFactory $time)
+    {
+        parent::__construct($time);
+        $this->setInterval(self::DEFAULT_INTERVAL);
+    }
+
+    /**
      * Execute the cron file text extraction job
      *
      * @param mixed $argument Job arguments (unused for recurring jobs)

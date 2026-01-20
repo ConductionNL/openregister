@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\BackgroundJob;
 use OCA\OpenRegister\Service\IndexService;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\BackgroundJob\QueuedJob;
+use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\ILogger;
 use Psr\Log\LoggerInterface;
 
@@ -64,6 +65,18 @@ class SolrWarmupJob extends QueuedJob
      * @var string Warmup mode: 'serial', 'parallel', or 'hyper' (default: 'serial')
      */
     private const DEFAULT_MODE = 'serial';
+
+    /**
+     * Constructor
+     *
+     * Initializes the queued job with the time factory.
+     *
+     * @param ITimeFactory $time Time factory for parent class
+     */
+    public function __construct(ITimeFactory $time)
+    {
+        parent::__construct($time);
+    }
 
     /**
      * Execute the SOLR warmup job
