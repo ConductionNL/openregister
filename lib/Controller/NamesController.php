@@ -478,6 +478,9 @@ class NamesController extends Controller
         $startTime = microtime(true);
 
         try {
+            // Clear existing name cache before warmup
+            $this->objectCacheService->clearNameCache();
+
             $loadedCount   = $this->objectCacheService->warmupNameCache();
             $executionTime = round((microtime(true) - $startTime) * 1000, 2);
 
