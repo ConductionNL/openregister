@@ -1152,15 +1152,33 @@ class CacheHandler
                 if (empty($missingIdentifiers) === false) {
                     $objects = $this->objectEntityMapper->findMultiple($missingIdentifiers);
                     foreach ($objects as $object) {
-                        $name          = $object->getName() ?? $object->getUuid();
-                        $key           = $object->getUuid();
-                        $results[$key] = $name;
+                        $name = $object->getName() ?? $object->getUuid();
+                        $uuid = $object->getUuid();
 
-                        // Cache for future use (UUID only).
-                        $this->setObjectName(identifier: $key, name: $name);
+                        // Store result with UUID key (for consistent return format).
+                        $results[$uuid] = $name;
+
+                        // Cache with UUID for future lookups.
+                        $this->setObjectName(identifier: $uuid, name: $name);
+
+                        // Also cache with original identifier if it differs from UUID.
+                        // Find the original identifier that matched this object.
+                        foreach ($missingIdentifiers as $originalId) {
+                            if ((string) $originalId === $uuid
+                                || (string) $originalId === (string) $object->getId()
+                                || (string) $originalId === $object->getSlug()
+                                || (string) $originalId === $object->getUri()
+                            ) {
+                                if ((string) $originalId !== $uuid) {
+                                    $this->setObjectName(identifier: $originalId, name: $name);
+                                }
+
+                                break;
+                            }
+                        }
 
                         // Remove from missing list since we found it.
-                        $missingIdentifiers = array_diff($missingIdentifiers, [$key]);
+                        $missingIdentifiers = array_diff($missingIdentifiers, [$uuid]);
                     }
                 }
 
@@ -1175,13 +1193,19 @@ class CacheHandler
                                 _multitenancy: false
                             );
                             if (($result['object'] ?? null) !== null) {
-                                $object        = $result['object'];
-                                $name          = $object->getName() ?? $object->getUuid();
-                                $key           = $object->getUuid();
-                                $results[$key] = $name;
+                                $object = $result['object'];
+                                $name   = $object->getName() ?? $object->getUuid();
+                                $uuid   = $object->getUuid();
 
-                                // Cache for future use.
-                                $this->setObjectName(identifier: $key, name: $name);
+                                // Store result with UUID key (for consistent return format).
+                                $results[$uuid] = $name;
+
+                                // Cache with BOTH the original identifier AND UUID for future lookups.
+                                // This ensures cache hits regardless of which identifier format is used.
+                                $this->setObjectName(identifier: $identifier, name: $name);
+                                if ((string) $identifier !== $uuid) {
+                                    $this->setObjectName(identifier: $uuid, name: $name);
+                                }
                             }
                         } catch (\Exception $e) {
                             // Object not found in any source, continue.
