@@ -613,15 +613,31 @@ class SaveObject
             }
 
             try {
-                // Find the related object (disable multitenancy to ensure we can update it).
-                $relatedObject = $this->objectEntityMapper->find(
-                    identifier: $relatedUuid,
-                    register: null,
-                    schema: null,
-                    includeDeleted: false,
-                    _rbac: false,
-                    _multitenancy: false
+                // Find the related object using the ids parameter which supports UUIDs.
+                // We use findAll with ids filter since find() requires register/schema
+                // for magic table lookups, but the related object might be in any schema.
+                $relatedObjects = $this->objectEntityMapper->findAll(
+                    limit: 1,
+                    offset: 0,
+                    filters: null,
+                    searchConditions: null,
+                    searchParams: null,
+                    sort: [],
+                    search: null,
+                    ids: [$relatedUuid],
+                    uses: null,
+                    includeDeleted: false
                 );
+
+                if (empty($relatedObjects) === true) {
+                    $this->logger->debug(
+                        '[SaveObject] Related object not found for inverse relation update',
+                        ['relatedUuid' => $relatedUuid]
+                    );
+                    continue;
+                }
+
+                $relatedObject = $relatedObjects[0];
 
                 // Get current relations of the related object.
                 $relatedObjectRelations = $relatedObject->getRelations() ?? [];
