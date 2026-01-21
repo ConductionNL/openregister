@@ -52,6 +52,7 @@ export const useSettingsStore = defineStore('settings', {
 		warmingUpCache: false,
 		showClearCacheConfirmation: false,
 		clearCacheType: 'all',
+		clearingAppStoreCache: false,
 
 		// Mass validation states
 		massValidating: false,
@@ -1509,6 +1510,42 @@ export const useSettingsStore = defineStore('settings', {
 		 */
 		retrySetup() {
 			this.setupSolr()
+		},
+
+		// ========================================
+		// App Store Cache Actions
+		// ========================================
+
+		/**
+		 * Invalidate Nextcloud app store cache
+		 * Forces Nextcloud to fetch fresh app data from apps.nextcloud.com
+		 * by setting the cache timestamp to 0 (expired)
+		 * @param {string} type - Type of cache to invalidate: 'apps', 'categories', 'discover', or 'all'
+		 * @return {Promise<object>} The API response
+		 */
+		async clearAppStoreCache(type = 'all') {
+			this.clearingAppStoreCache = true
+
+			try {
+				const response = await axios.delete(generateUrl('/apps/openregister/api/settings/cache/appstore'), {
+					data: { type },
+				})
+
+				if (response.data.success) {
+					const invalidated = response.data.invalidated?.join(', ') || 'cache'
+					showSuccess(`App store cache invalidated: ${invalidated}`)
+				} else {
+					showError('Failed to invalidate app store cache: ' + (response.data.error || 'Unknown error'))
+				}
+
+				return response.data
+			} catch (error) {
+				console.error('Failed to invalidate app store cache:', error)
+				showError('Failed to invalidate app store cache: ' + error.message)
+				throw error
+			} finally {
+				this.clearingAppStoreCache = false
+			}
 		},
 	},
 })

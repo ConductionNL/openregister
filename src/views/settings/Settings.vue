@@ -14,7 +14,20 @@
 			:is-up-to-date="true"
 			:show-update-button="true"
 			title="Version Information"
-			description="Information about the current OpenRegister installation" />
+			description="Information about the current OpenRegister installation">
+			<template #actions>
+				<NcButton
+					type="secondary"
+					:disabled="settingsStore.clearingAppStoreCache"
+					@click="settingsStore.clearAppStoreCache('all')">
+					<template #icon>
+						<NcLoadingIcon v-if="settingsStore.clearingAppStoreCache" :size="20" />
+						<Refresh v-else :size="20" />
+					</template>
+					{{ settingsStore.clearingAppStoreCache ? 'Clearing...' : 'Clear App Store Cache' }}
+				</NcButton>
+			</template>
+		</VersionInfoCard>
 
 		<!-- System Statistics Section -->
 		<StatisticsOverview />
@@ -59,7 +72,8 @@
 import { mapStores } from 'pinia'
 import { useSettingsStore } from '../../store/settings.js'
 
-import { NcSettingsSection } from '@nextcloud/vue'
+import { NcSettingsSection, NcButton, NcLoadingIcon } from '@nextcloud/vue'
+import Refresh from 'vue-material-design-icons/Refresh.vue'
 import VersionInfoCard from '../../components/shared/VersionInfoCard.vue'
 import SolrConfiguration from './sections/SolrConfiguration.vue'
 import StatisticsOverview from './sections/StatisticsOverview.vue'
@@ -83,6 +97,9 @@ export default {
 
 	components: {
 		NcSettingsSection,
+		NcButton,
+		NcLoadingIcon,
+		Refresh,
 		VersionInfoCard,
 		SolrConfiguration,
 		StatisticsOverview,

@@ -16,8 +16,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Settings;
 
+use OC\Files\AppData\Factory;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\Files\NotFoundException;
 use OCP\IRequest;
 use Exception;
 use OCA\OpenRegister\Service\SettingsService;
@@ -45,6 +47,7 @@ class CacheSettingsController extends Controller
      * @param SettingsService $settingsService Settings service.
      * @param IndexService    $indexService    Index service.
      * @param LoggerInterface $logger          Logger.
+     * @param Factory         $appDataFactory  App data factory.
      */
     public function __construct(
         $appName,
@@ -52,6 +55,7 @@ class CacheSettingsController extends Controller
         private readonly SettingsService $settingsService,
         private readonly IndexService $indexService,
         private readonly LoggerInterface $logger,
+        private readonly Factory $appDataFactory,
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
@@ -169,4 +173,100 @@ class CacheSettingsController extends Controller
             );
         }//end try
     }//end clearSpecificCollection()
+
+    /**
+     * Invalidate the Nextcloud app store cache.
+     *
+     * This forces Nextcloud to fetch fresh app data from apps.nextcloud.com
+     * on the next request to Settings > Apps. Instead of deleting the cache
+     * files (which can cause permission issues), this method sets the cached
+     * timestamp to 0, making the cache appear expired.
+     *
+     * The cache files that can be invalidated:
+     * - apps.json: Main app catalog (default)
+     * - categories.json: App categories
+     * - discover.json: Featured/discover section
+     * - all: All app store cache files
+     *
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with invalidation result
+     */
+    public function clearAppStoreCache(): JSONResponse
+    {
+        try {
+            $data = $this->request->getParams();
+            $type = $data['type'] ?? 'apps';
+
+            $appData          = $this->appDataFactory->get('appstore');
+            $folder           = $appData->getFolder('/');
+            $invalidatedFiles = [];
+            $errors           = [];
+
+            // Define which files to invalidate based on type.
+            $filesToInvalidate = match ($type) {
+                'apps'       => ['apps.json'],
+                'categories' => ['categories.json'],
+                'discover'   => ['discover.json'],
+                'all'        => ['apps.json', 'categories.json', 'discover.json'],
+                default      => ['apps.json'],
+            };
+
+            foreach ($filesToInvalidate as $fileName) {
+                try {
+                    $file    = $folder->getFile($fileName);
+                    $content = $file->getContent();
+                    $json    = json_decode($content, true);
+
+                    if (is_array($json) === true && isset($json['timestamp']) === true) {
+                        // Set timestamp to 0 to force cache expiration.
+                        // The Fetcher checks: timestamp > (now - TTL)
+                        // With timestamp=0, this will always be false, triggering a refresh.
+                        $json['timestamp'] = 0;
+                        $file->putContent(json_encode($json));
+                        $invalidatedFiles[] = $fileName;
+                    } else {
+                        $errors[] = $fileName.' (invalid format)';
+                    }
+                } catch (NotFoundException $e) {
+                    // File doesn't exist, nothing to invalidate.
+                    $errors[] = $fileName.' (not found)';
+                }
+            }
+
+            return new JSONResponse(
+                data: [
+                    'success'     => true,
+                    'message'     => 'App store cache invalidated successfully',
+                    'invalidated' => $invalidatedFiles,
+                    'skipped'     => $errors,
+                    'note'        => 'Fresh data will be fetched on the next visit to Settings > Apps',
+                ],
+                statusCode: 200
+            );
+        } catch (NotFoundException $e) {
+            // The appstore folder doesn't exist yet (no cache).
+            return new JSONResponse(
+                data: [
+                    'success'     => true,
+                    'message'     => 'No app store cache exists yet',
+                    'invalidated' => [],
+                    'skipped'     => [],
+                ],
+                statusCode: 200
+            );
+        } catch (Exception $e) {
+            $this->logger->error('Failed to invalidate app store cache: '.$e->getMessage(), [
+                'exception' => $e,
+            ]);
+
+            return new JSONResponse(
+                data: [
+                    'success' => false,
+                    'error'   => 'Failed to invalidate app store cache: '.$e->getMessage(),
+                ],
+                statusCode: 500
+            );
+        }//end try
+    }//end clearAppStoreCache()
 }//end class
