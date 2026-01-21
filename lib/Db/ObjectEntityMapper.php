@@ -2256,17 +2256,35 @@ class ObjectEntityMapper extends QBMapper
         $hasDeletedFilter = isset($query['@self.deleted']);
         $includeDeleted   = $hasDeletedFilter;
 
-        // Pass the entire query array so filters can be applied.
-        return $this->findAll(
+        // Build the query using the existing method.
+        $qb = $this->buildFindAllQuery(
+            filters: $query,
+            includeDeleted: $includeDeleted,
+            register: null,
+            schema: null,
+            ids: $ids,
+            published: null,
+            sort: $sort,
             limit: $limit,
             offset: $offset,
-            filters: $query,
-            // Pass full query so filters like @self.deleted are available.
-            sort: $sort,
-            ids: $ids,
-            uses: $uses,
-            includeDeleted: $includeDeleted
+            uses: $uses
         );
+
+        // Apply organisation filter when multitenancy is enabled.
+        // This ensures users only see objects belonging to their organisation.
+        if ($_multitenancy === true) {
+            $this->logger->debug('[ObjectEntityMapper::searchObjects] Applying organisation filter for multitenancy');
+            $this->applyOrganisationFilter(
+                qb: $qb,
+                columnName: 'organisation',
+                allowNullOrg: false,
+                tableAlias: '',
+                enablePublished: true,
+                multiTenancyEnabled: true
+            );
+        }
+
+        return $this->findEntities($qb);
     }//end searchObjects()
 
     /**
@@ -2348,6 +2366,20 @@ class ObjectEntityMapper extends QBMapper
             $schemaIdsStr = array_map('strval', $schemaIds);
             $qb->andWhere(
                 $qb->expr()->in('schema', $qb->createNamedParameter($schemaIdsStr, IQueryBuilder::PARAM_STR_ARRAY))
+            );
+        }
+
+        // Apply organisation filter when multitenancy is enabled.
+        // This ensures users only see objects belonging to their organisation.
+        if ($_multitenancy === true) {
+            $this->logger->debug('[ObjectEntityMapper::countSearchObjects] Applying organisation filter for multitenancy');
+            $this->applyOrganisationFilter(
+                qb: $qb,
+                columnName: 'organisation',
+                allowNullOrg: false,
+                tableAlias: '',
+                enablePublished: true,
+                multiTenancyEnabled: true
             );
         }
 

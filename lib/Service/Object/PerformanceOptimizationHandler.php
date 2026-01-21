@@ -15,6 +15,8 @@
 namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
+use OCA\OpenRegister\Service\OrganisationService;
+use Psr\Log\LoggerInterface;
 
 /**
  * Handles performance optimization utilities for ObjectService.
@@ -35,37 +37,50 @@ class PerformanceOptimizationHandler
 {
     /**
      * Constructor for PerformanceOptimizationHandler.
+     *
+     * @param OrganisationService $organisationService Organisation service for context.
+     * @param LoggerInterface     $logger              Logger for debugging.
      */
-    public function __construct()
-    {
+    public function __construct(
+        private readonly OrganisationService $organisationService,
+        private readonly LoggerInterface $logger
+    ) {
     }//end __construct()
 
     /**
      * Get the active organization for the current user context.
      *
-     * This method determines the active organization using the same logic as SaveObject
+     * This method determines the active organization using the OrganisationService
      * to ensure consistency between save and retrieval operations.
      *
-     * @return null
+     * @return string|null The active organisation UUID or null if not available.
      *
      * @psalm-return   string|null
      * @phpstan-return string|null
      */
-    public function getActiveOrganisationForContext()
+    public function getActiveOrganisationForContext(): ?string
     {
         try {
-            // TODO: Implement organisation retrieval when service is available.
-            // $activeOrganisation = $this->organisationService->getActiveOrganisation();
-            // If ($activeOrganisation !== null) {
-            // Return $activeOrganisation->getUuid();.
-            // }.
+            $activeOrganisation = $this->organisationService->getActiveOrganisation();
+            if ($activeOrganisation !== null) {
+                $uuid = $activeOrganisation->getUuid();
+                $this->logger->debug(
+                    '[PerformanceOptimizationHandler] Got active organisation for context',
+                    ['organisationUuid' => $uuid, 'organisationName' => $activeOrganisation->getName()]
+                );
+                return $uuid;
+            }
+
+            $this->logger->debug('[PerformanceOptimizationHandler] No active organisation for current user');
             return null;
         } catch (Exception $e) {
             // Log error but continue without organization context.
+            $this->logger->warning(
+                '[PerformanceOptimizationHandler] Failed to get active organisation',
+                ['error' => $e->getMessage()]
+            );
             return null;
         }
-
-        return null;
     }//end getActiveOrganisationForContext()
 
     /**

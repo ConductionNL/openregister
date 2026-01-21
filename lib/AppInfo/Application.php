@@ -67,7 +67,7 @@ use OCA\OpenRegister\Service\ObjectService\MetadataHandler;
 use OCA\OpenRegister\Service\ObjectService\BulkOperationsHandler;
 use OCA\OpenRegister\Service\ObjectService\RelationHandler;
 use OCA\OpenRegister\Service\ObjectService\QueryHandler;
-use OCA\OpenRegister\Service\ObjectService\PerformanceOptimizationHandler;
+use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
 use OCA\OpenRegister\Service\ObjectService\MergeHandler;
 use OCA\OpenRegister\Service\ObjectService\UtilityHandler;
 use OCA\OpenRegister\Service\Object\PublishObject;

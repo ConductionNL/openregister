@@ -419,14 +419,24 @@ class ValidateObject
      */
     private function transformObjectPropertyForOpenRegister(object $objectSchema): void
     {
-        // Check if this has objectConfiguration.
-        $hasConfig   = isset($objectSchema->objectConfiguration);
-        $hasHandling = isset($objectSchema->objectConfiguration->handling);
-        if ($hasConfig === false || $hasHandling === false) {
+        // Check if this has objectConfiguration (can be array or object).
+        if (!isset($objectSchema->objectConfiguration)) {
             return;
         }
 
-        $handling = $objectSchema->objectConfiguration->handling;
+        // Handle both array and object formats for objectConfiguration
+        $config = $objectSchema->objectConfiguration;
+        $handling = null;
+
+        if (is_array($config) && isset($config['handling'])) {
+            $handling = $config['handling'];
+        } elseif (is_object($config) && isset($config->handling)) {
+            $handling = $config->handling;
+        }
+
+        if ($handling === null) {
+            return;
+        }
 
         switch ($handling) {
             case 'related-object':
@@ -594,10 +604,15 @@ class ValidateObject
             // Check if this property has a $ref that references the current schema.
             if ($this->isSelfReference(propertySchema: $propertySchema, schemaSlug: $currentSchemaSlug) === true) {
                 // Check if this is a related-object with objectConfiguration.
-                if (($propertySchema->objectConfiguration ?? null) !== null
-                    && (($propertySchema->objectConfiguration->handling ?? null) !== null) === true
-                    && $propertySchema->objectConfiguration->handling === 'related-object'
-                ) {
+                // Handle both array and object formats for objectConfiguration
+                $config = $propertySchema->objectConfiguration ?? null;
+                $handling = null;
+                if (is_array($config) && isset($config['handling'])) {
+                    $handling = $config['handling'];
+                } elseif (is_object($config) && isset($config->handling)) {
+                    $handling = $config->handling;
+                }
+                if ($config !== null && $handling === 'related-object') {
                     // Handle inversedBy relationships for single objects.
                     if (($propertySchema->inversedBy ?? null) !== null) {
                         // For inversedBy properties, allow objects, UUIDs, or null
@@ -847,11 +862,16 @@ class ValidateObject
         }
 
         // Check if this has objectConfiguration to determine handling.
-        $hasConfig   = ($itemsSchema->objectConfiguration ?? null) !== null;
-        $hasHandling = ($itemsSchema->objectConfiguration->handling ?? null) !== null;
-        if ($hasConfig === true && $hasHandling === true) {
-            $handling = $itemsSchema->objectConfiguration->handling;
+        // Handle both array and object formats for objectConfiguration
+        $config = $itemsSchema->objectConfiguration ?? null;
+        $handling = null;
+        if (is_array($config) && isset($config['handling'])) {
+            $handling = $config['handling'];
+        } elseif (is_object($config) && isset($config->handling)) {
+            $handling = $config->handling;
+        }
 
+        if ($config !== null && $handling !== null) {
             switch ($handling) {
                 case 'related-object':
                     // For related objects, convert to UUID strings.
@@ -1327,6 +1347,11 @@ class ValidateObject
             case 'type':
                 $expectedType = $args['expected'] ?? 'unknown';
                 $actualType   = $this->getValueType($value);
+
+                // Handle array type definitions (e.g., ["array"] or ["string", "null"])
+                if (is_array($expectedType)) {
+                    $expectedType = implode(' or ', $expectedType);
+                }
 
                 // Provide specific guidance for empty values.
                 if ($expectedType === 'object' && (is_array($value) === true && empty($value) === true)) {
