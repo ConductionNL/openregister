@@ -2752,7 +2752,7 @@ class MagicMapper
         }
 
         // Apply filters.
-        $this->applySearchFilters(qb: $qb, query: $query, schema: $schema);
+        $this->applySearchFilters(qb: $qb, query: $query, schema: $schema, tableName: $tableName);
 
         // Apply pagination.
         if (($query['_limit'] ?? null) !== null) {
@@ -3209,13 +3209,14 @@ class MagicMapper
     /**
      * Apply search filters to query builder
      *
-     * @param IQueryBuilder $qb     The query builder.
-     * @param array         $query  The search parameters.
-     * @param Schema|null   $schema The schema for type checking.
+     * @param IQueryBuilder $qb        The query builder.
+     * @param array         $query     The search parameters.
+     * @param Schema|null   $schema    The schema for type checking.
+     * @param string|null   $tableName The table name for column existence checking.
      *
      * @return void
      */
-    private function applySearchFilters(IQueryBuilder $qb, array $query, ?Schema $schema=null): void
+    private function applySearchFilters(IQueryBuilder $qb, array $query, ?Schema $schema=null, ?string $tableName=null): void
     {
         // List of reserved query parameters that should not be used as filters.
         $reservedParams = [
@@ -3316,7 +3317,24 @@ class MagicMapper
             }
 
             // Handle schema property filters.
-            $columnName   = $this->sanitizeColumnName($key);
+            $columnName = $this->sanitizeColumnName($key);
+
+            // Check if property exists in schema - if not, this schema can't match the filter.
+            // This is critical for multi-schema searches where some schemas don't have the property.
+            if (isset($properties[$key]) === false) {
+                // Property doesn't exist in this schema - add impossible condition to return 0 results.
+                $qb->andWhere('1 = 0');
+                return;
+            }
+
+            // Also check if the column actually exists in the database table.
+            // The schema might define the property but the table column might not be synced yet.
+            if ($tableName !== null && $this->columnExistsInTable($tableName, $columnName) === false) {
+                // Column doesn't exist in table - add impossible condition to return 0 results.
+                $qb->andWhere('1 = 0');
+                return;
+            }
+
             $propertyType = $properties[$key]['type'] ?? 'string';
 
             // Check if this is an array-type property (JSON array column).
@@ -3520,14 +3538,15 @@ class MagicMapper
             $values = $value;
         }
 
-        // Use createFunction to avoid quoting of the column name with type cast.
-        $columnCast = $qb->createFunction("{$columnName}::jsonb");
-
         // Multiple values use AND logic: array must contain ALL specified values.
+        // Use raw SQL expression that properly handles the column name and JSONB cast.
+        // Note: We can't use createFunction because QueryBuilder adds table aliases
+        // that interfere with the ::jsonb type cast syntax.
         foreach ($values as $v) {
             $jsonValue = json_encode([$v]);
             $paramName = $qb->createNamedParameter($jsonValue);
-            $qb->andWhere("{$columnCast} @> {$paramName}");
+            // Use COALESCE to handle NULL values and cast to JSONB for containment check.
+            $qb->andWhere("COALESCE({$columnName}, '[]')::jsonb @> {$paramName}");
         }
     }//end addJsonArrayWhereCondition()
 
@@ -5821,4 +5840,47 @@ class MagicMapper
 
         return $entity;
     }//end rowToObjectEntity()
+
+    /**
+     * Check if a column exists in a database table.
+     *
+     * Queries information_schema to verify column existence. Used to prevent
+     * SQL errors when filtering on columns that don't exist in the table.
+     *
+     * @param string $tableName  The table name (without oc_ prefix).
+     * @param string $columnName The column name to check.
+     *
+     * @return bool True if the column exists, false otherwise.
+     */
+    private function columnExistsInTable(string $tableName, string $columnName): bool
+    {
+        try {
+            // Ensure table name has prefix for information_schema lookup.
+            $prefix        = 'oc_';
+            $fullTableName = $tableName;
+            if (str_starts_with($tableName, $prefix) === false) {
+                $fullTableName = $prefix.$tableName;
+            }
+
+            // PostgreSQL stores unquoted identifiers in lowercase.
+            $fullTableNameLower = strtolower($fullTableName);
+            $columnNameLower    = strtolower($columnName);
+
+            $sql = "SELECT 1 FROM information_schema.columns
+                    WHERE LOWER(table_name) = ? AND LOWER(column_name) = ? LIMIT 1";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$fullTableNameLower, $columnNameLower]);
+            $row = $stmt->fetch();
+
+            return $row !== false;
+        } catch (\Exception $e) {
+            $this->logger->warning(
+                '[MagicMapper] Failed to check column existence',
+                ['tableName' => $tableName, 'column' => $columnName, 'error' => $e->getMessage()]
+            );
+            // Return false on error to prevent invalid queries.
+            return false;
+        }
+    }//end columnExistsInTable()
 }//end class

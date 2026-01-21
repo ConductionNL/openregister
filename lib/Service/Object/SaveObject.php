@@ -586,77 +586,74 @@ class SaveObject
         $relations = $savedEntity->getRelations();
         $savedUuid = $savedEntity->getUuid();
 
-        $this->logger->warning(
+        $this->logger->debug(
             '[SaveObject] updateInverseRelations called',
             [
                 'savedObjectUuid' => $savedUuid,
                 'relationsCount'  => $relations !== null ? count($relations) : 0,
-                'relations'       => $relations,
                 'schemaId'        => $schema->getId(),
             ]
         );
 
         if (empty($relations) === true) {
-            $this->logger->warning('[SaveObject] No relations, returning early');
             return;
         }
 
         // Get schema properties to determine target schemas for relations.
         $schemaProperties = $schema->getProperties() ?? [];
-        $this->logger->warning('[SaveObject] Schema properties count: ' . count($schemaProperties));
 
         // Process each relation (key = property path, value = related UUID).
         foreach ($relations as $propertyPath => $relatedUuid) {
-            $this->logger->warning('[SaveObject] Processing relation', ['propertyPath' => $propertyPath, 'relatedUuid' => $relatedUuid]);
-
-            // Skip if not a valid UUID.
+            // Skip if not a valid UUID string.
             if (is_string($relatedUuid) === false || empty($relatedUuid) === true) {
-                $this->logger->warning('[SaveObject] Skipping - not string or empty');
                 continue;
             }
 
             // Skip if doesn't look like a UUID.
             if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $relatedUuid) !== 1) {
-                $this->logger->warning('[SaveObject] Skipping - not valid UUID pattern');
                 continue;
             }
 
             try {
-                // Get the base property name (e.g., "organisatie" from "organisatie.0")
+                // Get the base property name (e.g., "organisatie" from "organisatie.0").
                 $baseProperty = explode('.', $propertyPath)[0];
-                $this->logger->warning('[SaveObject] Base property: ' . $baseProperty);
 
                 // Look up the target schema from the property configuration.
                 $propertyConfig = $schemaProperties[$baseProperty] ?? null;
                 if ($propertyConfig === null) {
-                    $this->logger->warning('[SaveObject] No property config for relation', ['property' => $baseProperty, 'availableProperties' => array_keys($schemaProperties)]);
+                    $this->logger->debug('[SaveObject] No property config for relation', ['property' => $baseProperty]);
                     continue;
                 }
 
-                // Get the target schema from objectConfiguration.
-                $objectConfig = $propertyConfig['objectConfiguration'] ?? null;
-                $this->logger->warning('[SaveObject] objectConfiguration', ['objectConfig' => $objectConfig]);
+                // Get the target schema from $ref field (format: #/components/schemas/schemaslug).
+                // For arrays, the $ref is in items.$ref instead of directly on the property.
+                $ref = $propertyConfig['$ref'] ?? '';
+                if (empty($ref) === true && isset($propertyConfig['items']['$ref']) === true) {
+                    $ref = $propertyConfig['items']['$ref'];
+                }
 
-                if ($objectConfig === null || empty($objectConfig['schema'] ?? '')) {
-                    $this->logger->warning('[SaveObject] No target schema for relation', ['property' => $baseProperty]);
+                // Parse the schema slug from the $ref (e.g., "#/components/schemas/organisatie" -> "organisatie").
+                $targetSchemaSlug = '';
+                if (preg_match('~^\#/components/schemas/(.+)$~', $ref, $matches) === 1) {
+                    $targetSchemaSlug = $matches[1];
+                }
+
+                if (empty($targetSchemaSlug) === true) {
+                    $this->logger->debug('[SaveObject] No target schema in $ref for relation', ['property' => $baseProperty]);
                     continue;
                 }
 
-                $targetSchemaRef = $objectConfig['schema'];
-                $this->logger->warning('[SaveObject] Target schema ref: ' . $targetSchemaRef);
-
-                // Resolve the target schema (could be ID, slug, or UUID).
+                // Resolve the target schema by slug.
                 try {
                     $targetSchema = $this->schemaMapper->find(
-                        id: $targetSchemaRef,
+                        id: $targetSchemaSlug,
                         published: null,
                         _rbac: false,
                         _multitenancy: false
                     );
-                    $this->logger->warning('[SaveObject] Found target schema: ' . $targetSchema->getId());
                 } catch (\Exception $e) {
                     $this->logger->warning('[SaveObject] Could not resolve target schema', [
-                        'targetSchemaRef' => $targetSchemaRef,
+                        'targetSchemaSlug' => $targetSchemaSlug,
                         'error' => $e->getMessage()
                     ]);
                     continue;

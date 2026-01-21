@@ -347,14 +347,10 @@ class MagicSearchHandler
 
         if (count($values) === 1) {
             // Single value: check if JSON array contains this value.
-            // PostgreSQL: column::jsonb ? 'value' (checks if array contains the element).
-            $jsonValue = json_encode($values[0]);
+            // Use COALESCE to handle NULL values and avoid type cast issues with QueryBuilder.
+            $jsonValue = json_encode([$values[0]]);
             $qb->andWhere(
-                $qb->expr()->comparison(
-                    x: "t.{$columnName}::jsonb",
-                    operator: '@>',
-                    y: $qb->createNamedParameter('['.$jsonValue.']')
-                )
+                "COALESCE(t.{$columnName}, '[]')::jsonb @> ".$qb->createNamedParameter($jsonValue)
             );
             return;
         }
@@ -362,13 +358,10 @@ class MagicSearchHandler
         // Multiple values: check if JSON array contains ANY of the values (OR logic).
         $orConditions = $qb->expr()->orX();
         foreach ($values as $v) {
-            $jsonValue = json_encode($v);
+            $jsonValue = json_encode([$v]);
+            // Use raw SQL with COALESCE to handle NULL values properly.
             $orConditions->add(
-                $qb->expr()->comparison(
-                    x: "t.{$columnName}::jsonb",
-                    operator: '@>',
-                    y: $qb->createNamedParameter('['.$jsonValue.']')
-                )
+                "COALESCE(t.{$columnName}, '[]')::jsonb @> ".$qb->createNamedParameter($jsonValue)
             );
         }
 

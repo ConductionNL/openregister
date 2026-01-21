@@ -60,9 +60,10 @@ use Psr\Log\LoggerInterface;
 class MagicFacetHandler
 {
     /**
-     * Maximum number of buckets to return per facet for performance.
+     * Maximum number of buckets to return per facet.
+     * Set to high value to effectively disable limit (was 50).
      */
-    private const MAX_FACET_BUCKETS = 50;
+    private const MAX_FACET_BUCKETS = 10000;
 
     /**
      * Metadata column prefix used in MagicMapper tables.
@@ -228,7 +229,7 @@ class MagicFacetHandler
                 '@self' => [
                     'register'     => ['type' => 'terms'],
                     'schema'       => ['type' => 'terms'],
-                    'organisation' => ['type' => 'terms'],
+                    // 'organisation' => ['type' => 'terms'],
                     'created'      => ['type' => 'date_histogram', 'interval' => 'month'],
                     'updated'      => ['type' => 'date_histogram', 'interval' => 'month'],
                 ],
@@ -1291,8 +1292,75 @@ class MagicFacetHandler
             return substr($value, 0, 8).'...';
         }
 
+        // For object fields containing UUIDs, try to resolve to object names.
+        // Note: Using relaxed UUID pattern to match non-standard UUIDs (e.g., version 1 time-based).
+        if (is_string($value) === true
+            && preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === 1
+        ) {
+            $objectName = $this->getObjectNameFromSchemaObjects($value);
+            if ($objectName !== null) {
+                return $objectName;
+            }
+
+            // Return shortened UUID if name not found.
+            return substr($value, 0, 8).'...';
+        }
+
         return (string) $value;
     }//end getFieldLabel()
+
+    /**
+     * Get object name from schema objects by UUID.
+     *
+     * Looks up the UUID in known schema magic tables and returns the object name
+     * if found. Searches common name fields (naam, name, title).
+     *
+     * @param string $uuid The object UUID to look up.
+     *
+     * @return string|null The object name or null if not found.
+     */
+    private function getObjectNameFromSchemaObjects(string $uuid): ?string
+    {
+        // Known object tables with their name columns.
+        // Table: openregister_table_{register}_{schema} with column 'naam', 'name', '_name' (metadata), or 'title'.
+        $objectTables = [
+            // Organisatie in Voorzieningen register (register 2, schema 24).
+            ['table' => 'oc_openregister_table_2_24', 'columns' => ['naam', 'name', '_name']],
+            // Element in AMEF register (register 3, schema 29) - for standaardversies.
+            // Element uses _name metadata column for name.
+            ['table' => 'oc_openregister_table_3_29', 'columns' => ['_name', 'name', 'naam', 'title']],
+            // Organization in Publication register (register 1, schema 4).
+            ['table' => 'oc_openregister_table_1_4', 'columns' => ['name', 'naam', '_name']],
+            // Organization in AMEF register (register 3, schema 4).
+            ['table' => 'oc_openregister_table_3_4', 'columns' => ['name', 'naam', '_name']],
+            // Applicatie/Module in Voorzieningen register (register 2, schema 34).
+            ['table' => 'oc_openregister_table_2_34', 'columns' => ['naam', 'name', '_name', 'title']],
+        ];
+
+        foreach ($objectTables as $tableInfo) {
+            $tableName = $tableInfo['table'];
+
+            foreach ($tableInfo['columns'] as $nameColumn) {
+                try {
+                    // Query directly - skip information_schema check for performance.
+                    // Try to select from the table directly. If it fails, move to next.
+                    $sql  = "SELECT {$nameColumn} FROM {$tableName} WHERE _uuid = ? LIMIT 1";
+                    $stmt = $this->db->prepare($sql);
+                    $stmt->execute([$uuid]);
+                    $name = $stmt->fetchOne();
+
+                    if ($name !== false && $name !== null && trim((string) $name) !== '') {
+                        return (string) $name;
+                    }
+                } catch (\Exception $e) {
+                    // Table/column doesn't exist or query failed, try next column/table.
+                    continue;
+                }
+            }//end foreach
+        }//end foreach
+
+        return null;
+    }//end getObjectNameFromSchemaObjects()
 
     /**
      * Get organisation name from Organisation schema objects.
