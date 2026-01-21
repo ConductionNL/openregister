@@ -96,7 +96,7 @@ class MagicOrganizationHandler
      */
     public function applyOrganizationFilter(
         IQueryBuilder $qb,
-        bool $allowPublishedAccess = true,
+        bool $allowPublishedAccess = false,
         bool $adminBypassEnabled = false
     ): void {
         $user = $this->userSession->getUser();
@@ -286,4 +286,24 @@ class MagicOrganizationHandler
         $defaultOrgId = $this->appConfig->getValueString('openregister', 'defaultOrganisation', '');
         return $defaultOrgId !== '' ? $defaultOrgId : null;
     }//end getDefaultOrganizationUuid()
+
+    /**
+     * Check if published objects should bypass multi-tenancy filtering
+     *
+     * @return bool True if published objects can be seen across organizations
+     */
+    public function shouldPublishedBypassMultiTenancy(): bool
+    {
+        $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
+        if (empty($multitenancyConfig) === true) {
+            return false;
+        }
+
+        $multitenancyData = json_decode($multitenancyConfig, true);
+        if ($multitenancyData === null) {
+            return false;
+        }
+
+        return $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false;
+    }//end shouldPublishedBypassMultiTenancy()
 }//end class

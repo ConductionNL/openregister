@@ -576,68 +576,101 @@ class SaveObject
      * This ensures bidirectional relationships are maintained.
      *
      * @param ObjectEntity $savedEntity The saved object that has relations
+     * @param Register     $register    The register the saved entity belongs to
+     * @param Schema       $schema      The schema the saved entity belongs to
      *
      * @return void
      */
-    private function updateInverseRelations(ObjectEntity $savedEntity): void
+    private function updateInverseRelations(ObjectEntity $savedEntity, Register $register, Schema $schema): void
     {
         $relations = $savedEntity->getRelations();
-
-        if (empty($relations) === true) {
-            return;
-        }
-
         $savedUuid = $savedEntity->getUuid();
 
-        $this->logger->debug(
-            '[SaveObject] Updating inverse relations',
+        $this->logger->warning(
+            '[SaveObject] updateInverseRelations called',
             [
                 'savedObjectUuid' => $savedUuid,
-                'relationsCount'  => count($relations),
+                'relationsCount'  => $relations !== null ? count($relations) : 0,
                 'relations'       => $relations,
+                'schemaId'        => $schema->getId(),
             ]
         );
 
-        // Extract unique UUIDs from relations (values in the array are UUIDs).
-        $relatedUuids = array_unique(array_values($relations));
+        if (empty($relations) === true) {
+            $this->logger->warning('[SaveObject] No relations, returning early');
+            return;
+        }
 
-        foreach ($relatedUuids as $relatedUuid) {
+        // Get schema properties to determine target schemas for relations.
+        $schemaProperties = $schema->getProperties() ?? [];
+        $this->logger->warning('[SaveObject] Schema properties count: ' . count($schemaProperties));
+
+        // Process each relation (key = property path, value = related UUID).
+        foreach ($relations as $propertyPath => $relatedUuid) {
+            $this->logger->warning('[SaveObject] Processing relation', ['propertyPath' => $propertyPath, 'relatedUuid' => $relatedUuid]);
+
             // Skip if not a valid UUID.
             if (is_string($relatedUuid) === false || empty($relatedUuid) === true) {
+                $this->logger->warning('[SaveObject] Skipping - not string or empty');
                 continue;
             }
 
             // Skip if doesn't look like a UUID.
             if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $relatedUuid) !== 1) {
+                $this->logger->warning('[SaveObject] Skipping - not valid UUID pattern');
                 continue;
             }
 
             try {
-                // Find the related object using the ids parameter which supports UUIDs.
-                // We use findAll with ids filter since find() requires register/schema
-                // for magic table lookups, but the related object might be in any schema.
-                $relatedObjects = $this->objectEntityMapper->findAll(
-                    limit: 1,
-                    offset: 0,
-                    filters: null,
-                    searchConditions: null,
-                    searchParams: null,
-                    sort: [],
-                    search: null,
-                    ids: [$relatedUuid],
-                    uses: null,
-                    includeDeleted: false
-                );
+                // Get the base property name (e.g., "organisatie" from "organisatie.0")
+                $baseProperty = explode('.', $propertyPath)[0];
+                $this->logger->warning('[SaveObject] Base property: ' . $baseProperty);
 
-                if (empty($relatedObjects) === true) {
-                    $this->logger->debug(
-                        '[SaveObject] Related object not found for inverse relation update',
-                        ['relatedUuid' => $relatedUuid]
-                    );
+                // Look up the target schema from the property configuration.
+                $propertyConfig = $schemaProperties[$baseProperty] ?? null;
+                if ($propertyConfig === null) {
+                    $this->logger->warning('[SaveObject] No property config for relation', ['property' => $baseProperty, 'availableProperties' => array_keys($schemaProperties)]);
                     continue;
                 }
 
-                $relatedObject = $relatedObjects[0];
+                // Get the target schema from objectConfiguration.
+                $objectConfig = $propertyConfig['objectConfiguration'] ?? null;
+                $this->logger->warning('[SaveObject] objectConfiguration', ['objectConfig' => $objectConfig]);
+
+                if ($objectConfig === null || empty($objectConfig['schema'] ?? '')) {
+                    $this->logger->warning('[SaveObject] No target schema for relation', ['property' => $baseProperty]);
+                    continue;
+                }
+
+                $targetSchemaRef = $objectConfig['schema'];
+                $this->logger->warning('[SaveObject] Target schema ref: ' . $targetSchemaRef);
+
+                // Resolve the target schema (could be ID, slug, or UUID).
+                try {
+                    $targetSchema = $this->schemaMapper->find(
+                        id: $targetSchemaRef,
+                        published: null,
+                        _rbac: false,
+                        _multitenancy: false
+                    );
+                    $this->logger->warning('[SaveObject] Found target schema: ' . $targetSchema->getId());
+                } catch (\Exception $e) {
+                    $this->logger->warning('[SaveObject] Could not resolve target schema', [
+                        'targetSchemaRef' => $targetSchemaRef,
+                        'error' => $e->getMessage()
+                    ]);
+                    continue;
+                }
+
+                // Find the related object using the resolved target schema.
+                $relatedObject = $this->objectEntityMapper->find(
+                    identifier: $relatedUuid,
+                    register: $register,
+                    schema: $targetSchema,
+                    includeDeleted: false,
+                    _rbac: false,
+                    _multitenancy: false
+                );
 
                 // Get current relations of the related object.
                 $relatedObjectRelations = $relatedObject->getRelations() ?? [];
@@ -2191,7 +2224,7 @@ class SaveObject
 
         // Update inverse relations on related objects (bidirectional relationship management).
         // This ensures that when object A references object B, object B's relations also include A.
-        $this->updateInverseRelations($savedEntity);
+        $this->updateInverseRelations($savedEntity, $register, $schema);
 
         return $savedEntity;
     }//end handleObjectCreation()
@@ -2749,7 +2782,7 @@ class SaveObject
 
         // Update inverse relations on related objects (bidirectional relationship management).
         // This ensures that when object A references object B, object B's relations also include A.
-        $this->updateInverseRelations($updatedEntity);
+        $this->updateInverseRelations($updatedEntity, $register, $schema);
 
         return $updatedEntity;
     }//end updateObject()

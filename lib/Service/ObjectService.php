@@ -1811,11 +1811,22 @@ class ObjectService
             return $result;
         }//end if
 
+        // Bypass multitenancy for schemas with public read access (unless _source=database is explicitly set).
+        // Public schemas should be visible to all users regardless of organisation.
+        $effectiveMultitenancy = $_multitenancy;
+        if ($_multitenancy === true && $requestedSource !== 'database' && $this->currentSchema !== null) {
+            $schemaAuth = $this->currentSchema->getAuthorization();
+            $readGroups = $schemaAuth['read'] ?? [];
+            if (in_array('public', $readGroups, true) === true) {
+                $effectiveMultitenancy = false;
+            }
+        }
+
         // Use database search.
         $result = $this->queryHandler->searchObjectsPaginatedDatabase(
             query: $query,
             _rbac: $_rbac,
-            _multitenancy: $_multitenancy,
+            _multitenancy: $effectiveMultitenancy,
             published: $published,
             deleted: $deleted,
             ids: $ids,

@@ -114,6 +114,17 @@ class MagicSearchHandler
         $rbac              = $query['_rbac'] ?? true;
         $multitenancy      = $query['_multitenancy'] ?? true;
         $relationsContains = $query['_relations_contains'] ?? null;
+        $source            = $query['_source'] ?? null;
+
+        // Bypass multitenancy for schemas with public read access (unless _source=database is explicitly set).
+        // Public schemas should be visible to all users regardless of organisation.
+        if ($multitenancy === true && $source !== 'database') {
+            $schemaAuth = $schema->getAuthorization();
+            $readGroups = $schemaAuth['read'] ?? [];
+            if (in_array('public', $readGroups, true) === true) {
+                $multitenancy = false;
+            }
+        }
 
         // Extract metadata from @self.
         $metadataFilters = $query['@self'] ?? [];
@@ -149,7 +160,7 @@ class MagicSearchHandler
         if ($multitenancy === true) {
             $this->organizationHandler->applyOrganizationFilter(
                 qb: $queryBuilder,
-                allowPublishedAccess: true,
+                allowPublishedAccess: $this->organizationHandler->shouldPublishedBypassMultiTenancy(),
                 adminBypassEnabled: true
             );
         }
