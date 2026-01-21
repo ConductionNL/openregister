@@ -569,6 +569,106 @@ class SaveObject
     }//end updateObjectRelations()
 
     /**
+     * Updates inverse relations on related objects (bidirectional relationship management).
+     *
+     * When an object references another object (e.g., contactpersoon references organisatie),
+     * this method updates the referenced object's relations to include the referencing object.
+     * This ensures bidirectional relationships are maintained.
+     *
+     * @param ObjectEntity $savedEntity The saved object that has relations
+     *
+     * @return void
+     */
+    private function updateInverseRelations(ObjectEntity $savedEntity): void
+    {
+        $relations = $savedEntity->getRelations();
+
+        if (empty($relations) === true) {
+            return;
+        }
+
+        $savedUuid = $savedEntity->getUuid();
+
+        $this->logger->debug(
+            '[SaveObject] Updating inverse relations',
+            [
+                'savedObjectUuid' => $savedUuid,
+                'relationsCount'  => count($relations),
+                'relations'       => $relations,
+            ]
+        );
+
+        // Extract unique UUIDs from relations (values in the array are UUIDs).
+        $relatedUuids = array_unique(array_values($relations));
+
+        foreach ($relatedUuids as $relatedUuid) {
+            // Skip if not a valid UUID.
+            if (is_string($relatedUuid) === false || empty($relatedUuid) === true) {
+                continue;
+            }
+
+            // Skip if doesn't look like a UUID.
+            if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $relatedUuid) !== 1) {
+                continue;
+            }
+
+            try {
+                // Find the related object (disable multitenancy to ensure we can update it).
+                $relatedObject = $this->objectEntityMapper->find(
+                    identifier: $relatedUuid,
+                    register: null,
+                    schema: null,
+                    includeDeleted: false,
+                    _rbac: false,
+                    _multitenancy: false
+                );
+
+                // Get current relations of the related object.
+                $relatedObjectRelations = $relatedObject->getRelations() ?? [];
+
+                // Check if this object's UUID is already in the related object's relations.
+                if (in_array($savedUuid, $relatedObjectRelations, true) === true) {
+                    $this->logger->debug(
+                        '[SaveObject] Object already in related object\'s relations',
+                        [
+                            'savedUuid'   => $savedUuid,
+                            'relatedUuid' => $relatedUuid,
+                        ]
+                    );
+                    continue;
+                }
+
+                // Add this object's UUID to the related object's relations.
+                $relatedObjectRelations[] = $savedUuid;
+                $relatedObject->setRelations($relatedObjectRelations);
+                $relatedObject->setUpdated(new \DateTime());
+
+                // Save the related object.
+                $this->objectEntityMapper->update($relatedObject);
+
+                $this->logger->debug(
+                    '[SaveObject] Updated inverse relation',
+                    [
+                        'savedUuid'             => $savedUuid,
+                        'relatedUuid'           => $relatedUuid,
+                        'newRelationsCount'     => count($relatedObjectRelations),
+                    ]
+                );
+            } catch (\Exception $e) {
+                $this->logger->warning(
+                    '[SaveObject] Failed to update inverse relation',
+                    [
+                        'savedUuid'   => $savedUuid,
+                        'relatedUuid' => $relatedUuid,
+                        'error'       => $e->getMessage(),
+                    ]
+                );
+                // Continue with other relations even if one fails.
+            }//end try
+        }//end foreach
+    }//end updateInverseRelations()
+
+    /**
      * Hydrates object metadata fields based on schema configuration.
      *
      * This method uses the schema configuration to set metadata fields on the object entity
@@ -2073,6 +2173,10 @@ class SaveObject
             $savedEntity->setLastLog($log->jsonSerialize());
         }
 
+        // Update inverse relations on related objects (bidirectional relationship management).
+        // This ensures that when object A references object B, object B's relations also include A.
+        $this->updateInverseRelations($savedEntity);
+
         return $savedEntity;
     }//end handleObjectCreation()
 
@@ -2626,6 +2730,10 @@ class SaveObject
             // Save the updated entity with file IDs back to database.
             $updatedEntity = $this->objectEntityMapper->update(entity: $updatedEntity, register: $register, schema: $schema);
         }//end if
+
+        // Update inverse relations on related objects (bidirectional relationship management).
+        // This ensures that when object A references object B, object B's relations also include A.
+        $this->updateInverseRelations($updatedEntity);
 
         return $updatedEntity;
     }//end updateObject()
