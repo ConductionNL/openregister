@@ -307,6 +307,12 @@ class MagicSearchHandler
                     continue;
                 }
 
+                // Handle object type columns (JSON objects with 'value' key containing UUID).
+                if ($propertyType === 'object') {
+                    $this->applyJsonObjectFilter(qb: $qb, columnName: $columnName, value: $value);
+                    continue;
+                }
+
                 if (is_array($value) === true) {
                     $qb->andWhere(
                         $qb->expr()->in(
@@ -367,6 +373,54 @@ class MagicSearchHandler
 
         $qb->andWhere($orConditions);
     }//end applyJsonArrayFilter()
+
+    /**
+     * Apply filter for object columns (related objects)
+     *
+     * Handles two storage formats:
+     * 1. JSON object (jsonb column): {"value": "uuid"} - extracts value key
+     * 2. Plain string (varchar column): "uuid" - direct comparison
+     *
+     * Uses text-based matching to work with both column types safely.
+     *
+     * @param IQueryBuilder $qb         Query builder to modify
+     * @param string        $columnName Column name to filter
+     * @param mixed         $value      Filter value (UUID string or array of UUIDs)
+     *
+     * @return void
+     */
+    private function applyJsonObjectFilter(IQueryBuilder $qb, string $columnName, mixed $value): void
+    {
+        // Normalize value to array.
+        $values = [$value];
+        if (is_array($value) === true) {
+            $values = $value;
+        }
+
+        if (count($values) === 1) {
+            // Single value: match both plain UUID and JSON format using text comparison.
+            // Plain format: column contains exactly "uuid"
+            // JSON format: column contains "value": "uuid" pattern
+            $param = $qb->createNamedParameter($values[0]);
+            $jsonPattern = $qb->createNamedParameter('%"value": "' . $values[0] . '"%');
+            $qb->andWhere(
+                "(t.{$columnName}::text = {$param} OR t.{$columnName}::text LIKE {$jsonPattern})"
+            );
+            return;
+        }
+
+        // Multiple values: check if value matches ANY of the values (OR logic).
+        $orConditions = $qb->expr()->orX();
+        foreach ($values as $v) {
+            $param = $qb->createNamedParameter($v);
+            $jsonPattern = $qb->createNamedParameter('%"value": "' . $v . '"%');
+            $orConditions->add(
+                "(t.{$columnName}::text = {$param} OR t.{$columnName}::text LIKE {$jsonPattern})"
+            );
+        }
+
+        $qb->andWhere($orConditions);
+    }//end applyJsonObjectFilter()
 
     /**
      * Apply ID-based filtering (UUID, slug, etc.)

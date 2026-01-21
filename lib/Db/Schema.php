@@ -891,6 +891,7 @@ class Schema extends Entity implements JsonSerializable
             'allOf'          => $this->allOf,
             'oneOf'          => $this->oneOf,
             'anyOf'          => $this->anyOf,
+            'facets'         => $this->facets,
         ];
     }//end jsonSerialize()
 

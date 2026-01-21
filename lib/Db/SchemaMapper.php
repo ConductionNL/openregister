@@ -1230,16 +1230,16 @@ class SchemaMapper extends QBMapper
     private function generateFacetConfiguration(Schema $schema): void
     {
         $properties  = $schema->getProperties() ?? [];
-        $facetConfig = [];
-
-        // Add metadata facets (always available).
-        $facetConfig['@self'] = [
-            'register'  => ['type' => 'terms'],
-            'schema'    => ['type' => 'terms'],
-            'created'   => ['type' => 'date_histogram', 'interval' => 'month'],
-            'updated'   => ['type' => 'date_histogram', 'interval' => 'month'],
-            'published' => ['type' => 'date_histogram', 'interval' => 'month'],
-            'owner'     => ['type' => 'terms'],
+        $facetConfig = [
+            '@self'         => [
+                'register'  => ['type' => 'terms'],
+                'schema'    => ['type' => 'terms'],
+                'created'   => ['type' => 'date_histogram', 'interval' => 'month'],
+                'updated'   => ['type' => 'date_histogram', 'interval' => 'month'],
+                'published' => ['type' => 'date_histogram', 'interval' => 'month'],
+                'owner'     => ['type' => 'terms'],
+            ],
+            'object_fields' => [],
         ];
 
         // Analyze properties for facetable fields.
@@ -1248,16 +1248,16 @@ class SchemaMapper extends QBMapper
                 continue;
             }
 
-                $facetType = $this->determineFacetTypeForProperty(
-                    property: $property,
-                    fieldName: $fieldName
-                );
+            $facetType = $this->determineFacetTypeForProperty(
+                property: $property,
+                fieldName: $fieldName
+            );
             if ($facetType !== null) {
-                $facetConfig[$fieldName] = ['type' => $facetType];
+                $facetConfig['object_fields'][$fieldName] = ['type' => $facetType];
 
                 // Add interval for date histograms.
                 if ($facetType === 'date_histogram') {
-                    $facetConfig[$fieldName]['interval'] = 'month';
+                    $facetConfig['object_fields'][$fieldName]['interval'] = 'month';
                 }
             }
         }

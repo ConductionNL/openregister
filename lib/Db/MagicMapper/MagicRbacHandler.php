@@ -129,8 +129,13 @@ class MagicRbacHandler
             return;
         }
 
-        // Check if 'public' is in authorized groups (allows unauthenticated access to published objects)
+        // Check if 'public' is in authorized groups - if so, bypass RBAC entirely
+        // Public schemas are readable by everyone without requiring publication
         $publicAccess = in_array('public', $authorizedGroups, true);
+        if ($publicAccess === true) {
+            $this->logger->debug('MagicRbacHandler: Public access configured, bypassing RBAC filters');
+            return;
+        }
 
         // Check if user has any matching groups
         $hasGroupAccess = false;

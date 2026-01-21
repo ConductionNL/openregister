@@ -2273,7 +2273,6 @@ class ObjectEntityMapper extends QBMapper
         // Apply organisation filter when multitenancy is enabled.
         // This ensures users only see objects belonging to their organisation.
         if ($_multitenancy === true) {
-            $this->logger->debug('[ObjectEntityMapper::searchObjects] Applying organisation filter for multitenancy');
             $this->applyOrganisationFilter(
                 qb: $qb,
                 columnName: 'organisation',
