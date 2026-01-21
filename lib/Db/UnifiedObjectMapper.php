@@ -33,6 +33,7 @@ use OCP\EventDispatcher\IEventDispatcher;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -78,6 +79,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      * @param SchemaMapper       $schemaMapper       Schema mapper for metadata.
      * @param LoggerInterface    $logger             Logger for debugging.
      * @param IEventDispatcher   $eventDispatcher    Event dispatcher for lifecycle events.
+     * @param MagicRbacHandler   $rbacHandler        RBAC handler for permission checks.
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
@@ -85,7 +87,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly LoggerInterface $logger,
-        private readonly IEventDispatcher $eventDispatcher
+        private readonly IEventDispatcher $eventDispatcher,
+        private readonly MagicRbacHandler $rbacHandler
     ) {
     }//end __construct()
 
@@ -1662,6 +1665,147 @@ class UnifiedObjectMapper extends AbstractObjectMapper
     }//end getMaxAllowedPacketSize()
 
     /**
+     * Filter objects by schema RBAC permissions.
+     *
+     * This method filters a list of objects based on schema-level RBAC rules:
+     * - Admin users see everything
+     * - Object owner has full access
+     * - User with matching group in authorization has access
+     * - Schema with 'public' in read authorization = all objects readable (no multitenancy)
+     * - Schema with no authorization = normal RBAC (multitenancy + auth required)
+     * - Published objects = override to make private objects public
+     *
+     * @param array        $objects       Array of ObjectEntity objects to filter.
+     * @param array        $schemasCache  Cache of schema data by ID.
+     * @param bool         $rbac          Whether RBAC is enabled.
+     *
+     * @return array Filtered array of ObjectEntity objects.
+     */
+    private function filterBySchemaRbac(array $objects, array &$schemasCache, bool $rbac): array
+    {
+        // If RBAC is disabled, return all objects.
+        if ($rbac === false) {
+            return $objects;
+        }
+
+        // Admin users see everything.
+        if ($this->rbacHandler->isAdmin() === true) {
+            $this->logger->debug('[UnifiedObjectMapper] filterBySchemaRbac: Admin user, returning all');
+            return $objects;
+        }
+
+        $userId = $this->rbacHandler->getCurrentUserId();
+        $userGroups = $this->rbacHandler->getCurrentUserGroups();
+        $now = new DateTime();
+
+        $filtered = [];
+
+        foreach ($objects as $object) {
+            $schemaId = $object->getSchema();
+
+            // Check if object is published (override to make private objects public).
+            $published = null;
+            $depublished = null;
+            $objectOwner = null;
+
+            if ($object instanceof ObjectEntity) {
+                $published = $object->getPublished();
+                $depublished = $object->getDepublished();
+                $objectOwner = $object->getOwner();
+            }
+
+            $isPublished = $published !== null
+                && $published <= $now
+                && ($depublished === null || $depublished > $now);
+
+            // Published objects are always accessible (override for private objects).
+            if ($isPublished === true) {
+                $filtered[] = $object;
+                continue;
+            }
+
+            // Check if user is the owner of the object.
+            if ($userId !== null && $objectOwner !== null && $objectOwner === $userId) {
+                $filtered[] = $object;
+                continue;
+            }
+
+            if ($schemaId === null) {
+                // No schema - requires authentication.
+                if ($userId !== null) {
+                    $filtered[] = $object;
+                }
+                continue;
+            }
+
+            // Get schema from cache or fetch it.
+            if (isset($schemasCache[$schemaId]) === false) {
+                try {
+                    $schema = $this->schemaMapper->find((int) $schemaId, _multitenancy: false, _rbac: false);
+                    $schemasCache[$schemaId] = $schema->jsonSerialize();
+                } catch (\Exception $e) {
+                    // Schema not found - requires authentication.
+                    if ($userId !== null) {
+                        $filtered[] = $object;
+                    }
+                    continue;
+                }
+            }
+
+            $schemaData = $schemasCache[$schemaId];
+            $authorization = $schemaData['authorization'] ?? [];
+
+            // Get authorized groups for read action.
+            $authorizedGroups = $authorization['read'] ?? [];
+
+            // Check if schema has 'public' in read authorization.
+            // This means ALL objects from this schema are publicly readable (no multitenancy).
+            $hasPublicRead = in_array('public', $authorizedGroups, true);
+            if ($hasPublicRead === true) {
+                $filtered[] = $object;
+                continue;
+            }
+
+            // Check if user has matching group access.
+            $hasGroupAccess = false;
+            foreach ($userGroups as $groupId) {
+                if (in_array($groupId, $authorizedGroups, true) === true) {
+                    $hasGroupAccess = true;
+                    break;
+                }
+            }
+
+            if ($hasGroupAccess === true) {
+                $filtered[] = $object;
+                continue;
+            }
+
+            // Schema has no authorization OR read is not configured = normal RBAC.
+            // Requires authentication (multitenancy applies).
+            if (empty($authorization) === true || empty($authorizedGroups) === true) {
+                if ($userId !== null) {
+                    $filtered[] = $object;
+                }
+                continue;
+            }
+
+            // No access conditions met - object is filtered out.
+            $this->logger->debug('[UnifiedObjectMapper] filterBySchemaRbac: Filtered out object', [
+                'uuid' => $object->getUuid(),
+                'schemaId' => $schemaId,
+                'schemaTitle' => $schemaData['title'] ?? 'unknown',
+            ]);
+        }//end foreach
+
+        $this->logger->debug('[UnifiedObjectMapper] filterBySchemaRbac complete', [
+            'inputCount' => count($objects),
+            'outputCount' => count($filtered),
+        ]);
+
+        return $filtered;
+    }//end filterBySchemaRbac()
+
+    /**
      * Search for objects globally by IDs across ALL magic tables.
      *
      * This method is used when searching for objects by UUID without knowing
@@ -1701,14 +1845,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             $results = array_merge($results, $blobResults);
         }
 
-        $total = count($results);
-
-        // Apply limit/offset from query.
-        $limit = $searchQuery['_limit'] ?? 1000;
-        $offset = $searchQuery['_offset'] ?? 0;
-        $results = array_slice($results, $offset, $limit);
-
-        // Collect register/schema info for frontend.
+        // Collect register/schema info for frontend (needed for RBAC filtering).
         $registersCache = [];
         $schemasCache = [];
 
@@ -1736,6 +1873,33 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                 }
             }
         }
+
+        // Apply RBAC filtering based on schema authorization.
+        $results = $this->filterBySchemaRbac(objects: $results, schemasCache: $schemasCache, rbac: $rbac);
+
+        $total = count($results);
+
+        // Apply limit/offset from query after RBAC filtering.
+        $limit = $searchQuery['_limit'] ?? 1000;
+        $offset = $searchQuery['_offset'] ?? 0;
+        $results = array_slice($results, $offset, $limit);
+
+        // Filter caches to only include schemas/registers actually in the filtered results.
+        $finalSchemaIds = [];
+        $finalRegisterIds = [];
+        foreach ($results as $object) {
+            $schId = $object->getSchema();
+            $regId = $object->getRegister();
+            if ($schId !== null) {
+                $finalSchemaIds[$schId] = true;
+            }
+            if ($regId !== null) {
+                $finalRegisterIds[$regId] = true;
+            }
+        }
+
+        $schemasCache = array_intersect_key($schemasCache, $finalSchemaIds);
+        $registersCache = array_intersect_key($registersCache, $finalRegisterIds);
 
         $this->logger->debug('[UnifiedObjectMapper] searchObjectsGloballyByIds complete', [
             'requestedCount' => count($ids),
@@ -1773,6 +1937,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
     ): array {
         $this->logger->debug('[UnifiedObjectMapper] searchObjectsGloballyByRelations starting', [
             'uuid' => $uuid,
+            'rbac' => $rbac,
         ]);
 
         // Use MagicMapper to search across all magic tables for objects with this UUID in relations.
@@ -1781,9 +1946,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             includeDeleted: false
         );
 
-        $total = count($results);
-
-        // Collect unique register/schema info for @self metadata.
+        // Collect unique register/schema info for @self metadata (needed for RBAC filtering).
         $registersCache = [];
         $schemasCache = [];
 
@@ -1792,19 +1955,54 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             $schId = $object->getSchema();
 
             if ($regId !== null && isset($registersCache[$regId]) === false) {
-                $register = $this->registerMapper->find((int) $regId);
-                if ($register !== null) {
-                    $registersCache[$regId] = $register->jsonSerialize();
+                try {
+                    $register = $this->registerMapper->find((int) $regId, _multitenancy: false, _rbac: false);
+                    if ($register !== null) {
+                        $registersCache[$regId] = $register->jsonSerialize();
+                    }
+                } catch (\Exception $e) {
+                    // Skip if register not found.
                 }
             }
 
             if ($schId !== null && isset($schemasCache[$schId]) === false) {
-                $schema = $this->schemaMapper->find((int) $schId);
-                if ($schema !== null) {
-                    $schemasCache[$schId] = $schema->jsonSerialize();
+                try {
+                    $schema = $this->schemaMapper->find((int) $schId, _multitenancy: false, _rbac: false);
+                    if ($schema !== null) {
+                        $schemasCache[$schId] = $schema->jsonSerialize();
+                    }
+                } catch (\Exception $e) {
+                    // Skip if schema not found.
                 }
             }
         }
+
+        // Apply RBAC filtering based on schema authorization.
+        $results = $this->filterBySchemaRbac(objects: $results, schemasCache: $schemasCache, rbac: $rbac);
+
+        $total = count($results);
+
+        // Apply limit/offset from query after RBAC filtering.
+        $limit = $searchQuery['_limit'] ?? 1000;
+        $offset = $searchQuery['_offset'] ?? 0;
+        $results = array_slice($results, $offset, $limit);
+
+        // Filter caches to only include schemas/registers actually in the filtered results.
+        $finalSchemaIds = [];
+        $finalRegisterIds = [];
+        foreach ($results as $object) {
+            $schId = $object->getSchema();
+            $regId = $object->getRegister();
+            if ($schId !== null) {
+                $finalSchemaIds[$schId] = true;
+            }
+            if ($regId !== null) {
+                $finalRegisterIds[$regId] = true;
+            }
+        }
+
+        $schemasCache = array_intersect_key($schemasCache, $finalSchemaIds);
+        $registersCache = array_intersect_key($registersCache, $finalRegisterIds);
 
         $this->logger->debug('[UnifiedObjectMapper] searchObjectsGloballyByRelations complete', [
             'uuid' => $uuid,

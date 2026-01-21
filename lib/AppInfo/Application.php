@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ViewMapper;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\ChunkMapper;
@@ -365,7 +366,8 @@ class Application extends App implements IBootstrap
                     registerMapper: $container->get(RegisterMapper::class),
                     schemaMapper: $container->get(SchemaMapper::class),
                     logger: $container->get('Psr\Log\LoggerInterface'),
-                    eventDispatcher: $container->get(\OCP\EventDispatcher\IEventDispatcher::class)
+                    eventDispatcher: $container->get(\OCP\EventDispatcher\IEventDispatcher::class),
+                    rbacHandler: $container->get(MagicRbacHandler::class)
                 );
             }
         );

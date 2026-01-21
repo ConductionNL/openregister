@@ -254,7 +254,6 @@ class TextExtractionService
      *
      * @return void
      *
-     * @throws DoesNotExistException If object doesn't exist
      * @throws Exception If extraction fails
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Boolean flag needed for force re-extraction behavior
@@ -265,7 +264,16 @@ class TextExtractionService
         $this->logger->info('[TextExtractionService] Starting object extraction', ['objectId' => $objectId]);
 
         // Get object to check timestamp.
-        $object          = $this->objectEntityMapper->find($objectId);
+        // Handle case where object was deleted between job scheduling and execution.
+        try {
+            $object = $this->objectEntityMapper->find($objectId);
+        } catch (DoesNotExistException $e) {
+            $this->logger->warning(
+                '[TextExtractionService] Object no longer exists, skipping extraction',
+                ['objectId' => $objectId]
+            );
+            return;
+        }
         $sourceTimestamp = $object->getUpdated()?->getTimestamp() ?? time();
 
         // Check if chunks are up-to-date.
