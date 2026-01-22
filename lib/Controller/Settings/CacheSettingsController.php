@@ -19,6 +19,7 @@ namespace OCA\OpenRegister\Controller\Settings;
 use OC\Files\AppData\Factory;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\Files\GenericFileException;
 use OCP\Files\NotFoundException;
 use OCP\IRequest;
 use Exception;
@@ -228,7 +229,7 @@ class CacheSettingsController extends Controller
                     } else {
                         $errors[] = $fileName.' (invalid format)';
                     }
-                } catch (NotFoundException $e) {
+                } catch (NotFoundException|GenericFileException $e) {
                     // File doesn't exist, nothing to invalidate.
                     $errors[] = $fileName.' (not found)';
                 }

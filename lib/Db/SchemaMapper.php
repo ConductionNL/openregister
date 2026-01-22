@@ -660,8 +660,10 @@ class SchemaMapper extends QBMapper
     /**
      * Validate a configuration field value against property keys
      *
-     * Supports both simple property names and Twig-style templates like
-     * "{{ voornaam }} {{ tussenvoegsel }} {{ achternaam }}".
+     * Supports multiple formats:
+     * - Simple property names: "name"
+     * - Twig-style templates: "{{ voornaam }} {{ tussenvoegsel }} {{ achternaam }}"
+     * - Pipe-separated fallbacks: "name | identifier | type" (uses first available)
      *
      * @param string $fieldValue   The field value to validate
      * @param array  $propertyKeys Array of valid property keys
@@ -691,6 +693,28 @@ class SchemaMapper extends QBMapper
                         "The template property '{$prop}' in {$fieldName} does not exist."
                     );
                 }
+            }
+
+            return;
+        }//end if
+
+        // Check if it's a pipe-separated fallback list (e.g., "name | identifier | type").
+        if (strpos($fieldValue, '|') !== false) {
+            $fallbackFields = array_map('trim', explode('|', $fieldValue));
+
+            // Validate that at least one fallback field exists in properties.
+            $hasValidField = false;
+            foreach ($fallbackFields as $field) {
+                if (in_array($field, $propertyKeys, true) === true) {
+                    $hasValidField = true;
+                    break;
+                }
+            }
+
+            if ($hasValidField === false) {
+                throw new Exception(
+                    "None of the fallback fields in {$fieldName} ('{$fieldValue}') exist as properties in the schema."
+                );
             }
 
             return;
