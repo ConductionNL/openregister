@@ -442,6 +442,83 @@ class Schema extends Entity implements JsonSerializable
     }//end getProperties()
 
     /**
+     * Check if any property in the schema has authorization rules defined.
+     *
+     * This is used to determine if property-level RBAC filtering needs to be applied
+     * during object rendering or validation.
+     *
+     * @return bool True if at least one property has non-empty authorization
+     */
+    public function hasPropertyAuthorization(): bool
+    {
+        if (empty($this->properties) === true) {
+            return false;
+        }
+
+        foreach ($this->properties as $propertyConfig) {
+            if (is_array($propertyConfig) === true
+                && isset($propertyConfig['authorization']) === true
+                && empty($propertyConfig['authorization']) === false
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }//end hasPropertyAuthorization()
+
+    /**
+     * Get the authorization rules for a specific property.
+     *
+     * @param string $propertyName The name of the property
+     *
+     * @return array|null The authorization rules or null if none defined
+     */
+    public function getPropertyAuthorization(string $propertyName): ?array
+    {
+        if (empty($this->properties) === true) {
+            return null;
+        }
+
+        $propertyConfig = $this->properties[$propertyName] ?? null;
+        if ($propertyConfig === null || is_array($propertyConfig) === false) {
+            return null;
+        }
+
+        $authorization = $propertyConfig['authorization'] ?? null;
+        if (empty($authorization) === true) {
+            return null;
+        }
+
+        return $authorization;
+    }//end getPropertyAuthorization()
+
+    /**
+     * Get all properties that have authorization rules defined.
+     *
+     * @return array<string, array> Map of property names to their authorization rules
+     */
+    public function getPropertiesWithAuthorization(): array
+    {
+        $result = [];
+
+        if (empty($this->properties) === true) {
+            return $result;
+        }
+
+        foreach ($this->properties as $propertyName => $propertyConfig) {
+            if (is_array($propertyConfig) === true
+                && isset($propertyConfig['authorization']) === true
+                && empty($propertyConfig['authorization']) === false
+            ) {
+                $result[$propertyName] = $propertyConfig['authorization'];
+            }
+        }
+
+        return $result;
+    }//end getPropertiesWithAuthorization()
+
+    /**
      * Get the archive data
      *
      * @return array The archive data or empty array if null
@@ -506,9 +583,7 @@ class Schema extends Entity implements JsonSerializable
      * - Values must be arrays of group IDs (strings)
      * - Group IDs must be non-empty strings
      *
-     * TODO: Add validation for property-level authorization
-     * Properties can have their own authorization arrays that should be validated
-     * using the same structure as schema-level authorization.
+     * Also validates property-level authorization if any properties have authorization defined.
      *
      * @throws \InvalidArgumentException If the authorization structure is invalid
      *
@@ -518,36 +593,154 @@ class Schema extends Entity implements JsonSerializable
      */
     public function validateAuthorization(): bool
     {
-        if (empty($this->authorization) === true) {
-            return true;
+        // Validate schema-level authorization.
+        $this->validateAuthorizationRules(authorization: $this->authorization, context: 'schema');
+
+        // Validate property-level authorization.
+        $this->validatePropertyAuthorization();
+
+        return true;
+    }//end validateAuthorization()
+
+    /**
+     * Validate an authorization rules array
+     *
+     * @param array|null $authorization The authorization rules to validate
+     * @param string     $context       Context for error messages (e.g., 'schema' or 'property "fieldName"')
+     *
+     * @throws \InvalidArgumentException If the authorization structure is invalid
+     *
+     * @return void
+     */
+    private function validateAuthorizationRules(?array $authorization, string $context): void
+    {
+        if (empty($authorization) === true) {
+            return;
         }
 
         $validActions = ['create', 'read', 'update', 'delete'];
 
-        foreach ($this->authorization as $action => $groups) {
+        foreach ($authorization as $action => $rules) {
             // Validate action is a valid CRUD operation.
             if (in_array($action, $validActions) === false) {
                 $validList = implode(', ', $validActions);
-                $msg       = "Invalid authorization action: '{$action}'. Must be one of: ".$validList;
+                $msg       = "Invalid authorization action '{$action}' in {$context}. Must be one of: {$validList}";
                 throw new InvalidArgumentException($msg);
             }
 
-            // Validate groups is an array.
-            if (is_array($groups) === false) {
-                throw new InvalidArgumentException("Authorization groups for action '{$action}' must be an array");
+            // Validate rules is an array.
+            if (is_array($rules) === false) {
+                throw new InvalidArgumentException(
+                    "Authorization rules for action '{$action}' in {$context} must be an array"
+                );
             }
 
-            // Validate each group ID is a non-empty string.
-            foreach ($groups as $groupId) {
-                if (is_string($groupId) === false || trim($groupId) === '') {
-                    $msg = "Group ID in authorization for action '{$action}' must be a non-empty string";
-                    throw new InvalidArgumentException($msg);
-                }
+            // Validate each rule is either a string (simple) or a valid conditional object.
+            foreach ($rules as $rule) {
+                $this->validateAuthorizationRule(rule: $rule, action: $action, context: $context);
             }
         }//end foreach
+    }//end validateAuthorizationRules()
 
-        return true;
-    }//end validateAuthorization()
+    /**
+     * Validate property-level authorization
+     *
+     * Iterates through all properties and validates their authorization rules
+     * using the same structure as schema-level authorization.
+     *
+     * @throws \InvalidArgumentException If any property authorization is invalid
+     *
+     * @return void
+     */
+    private function validatePropertyAuthorization(): void
+    {
+        if (empty($this->properties) === true) {
+            return;
+        }
+
+        foreach ($this->properties as $propertyName => $propertyConfig) {
+            if (is_array($propertyConfig) === false) {
+                continue;
+            }
+
+            $authorization = $propertyConfig['authorization'] ?? null;
+            if (empty($authorization) === true) {
+                continue;
+            }
+
+            if (is_array($authorization) === false) {
+                throw new InvalidArgumentException(
+                    "Authorization for property '{$propertyName}' must be an array"
+                );
+            }
+
+            $this->validateAuthorizationRules(
+                authorization: $authorization,
+                context: "property '{$propertyName}'"
+            );
+        }//end foreach
+    }//end validatePropertyAuthorization()
+
+    /**
+     * Validate a single authorization rule
+     *
+     * Rules can be:
+     * - Simple: a non-empty string (group name)
+     * - Conditional: an array with 'group' (required) and 'match' (optional)
+     *
+     * @param mixed  $rule    The rule to validate
+     * @param string $action  The CRUD action for error messages
+     * @param string $context Context for error messages (default: 'schema')
+     *
+     * @return void
+     *
+     * @throws InvalidArgumentException If the rule is invalid
+     */
+    private function validateAuthorizationRule(mixed $rule, string $action, string $context = 'schema'): void
+    {
+        // Simple rule: non-empty string (group name).
+        if (is_string($rule) === true) {
+            if (trim($rule) === '') {
+                throw new InvalidArgumentException(
+                    "Group ID in authorization for action '{$action}' in {$context} must be a non-empty string"
+                );
+            }
+
+            return;
+        }
+
+        // Conditional rule: array with 'group' key.
+        if (is_array($rule) === true) {
+            // Validate 'group' key exists and is a non-empty string.
+            if (isset($rule['group']) === false) {
+                throw new InvalidArgumentException(
+                    "Conditional authorization rule for action '{$action}' in {$context} must have a 'group' key"
+                );
+            }
+
+            if (is_string($rule['group']) === false || trim($rule['group']) === '') {
+                throw new InvalidArgumentException(
+                    "Conditional authorization 'group' for action '{$action}' in {$context} must be a non-empty string"
+                );
+            }
+
+            // Validate 'match' key if present.
+            if (isset($rule['match']) === true) {
+                if (is_array($rule['match']) === false) {
+                    throw new InvalidArgumentException(
+                        "Conditional authorization 'match' for action '{$action}' in {$context} must be an array"
+                    );
+                }
+            }
+
+            return;
+        }//end if
+
+        // Invalid rule type.
+        throw new InvalidArgumentException(
+            "Authorization rule for action '{$action}' in {$context} must be a string or conditional object"
+        );
+    }//end validateAuthorizationRule()
 
     /**
      * Check if a user group has permission for a specific CRUD action
@@ -766,7 +959,7 @@ class Schema extends Entity implements JsonSerializable
                         // If parsing fails, set to null.
                         $value = null;
                     }
-                } elseif ($value !== null && ($value instanceof \DateTime) === false) {
+                } else if ($value !== null && ($value instanceof \DateTime) === false) {
                     $value = null;
                 }
             }

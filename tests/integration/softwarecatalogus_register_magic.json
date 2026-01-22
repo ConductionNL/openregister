@@ -2253,7 +2253,15 @@
                         "oneOf": [],
                         "facetable": false,
                         "title": "Interne Aantekening",
-                        "example": "Bijvoorbeeld: Interne notitie over het gebruik"
+                        "example": "Bijvoorbeeld: Interne notitie over het gebruik",
+                        "authorization": {
+                            "read": [
+                                { "group": "public", "match": { "_organisation": "$organisation" } }
+                            ],
+                            "update": [
+                                { "group": "public", "match": { "_organisation": "$organisation" } }
+                            ]
+                        }
                     },
                     "module": {
                         "description": "De specifieke applicatie die gebruikt wordt",
@@ -2393,17 +2401,9 @@
                         "aanbod-beheerder"
                     ],
                     "read": [
-                        "public",
-                        "aanbod-beheerder",
-                        "ambtenaar",
-                        "functioneel-beheerder",
                         "gebruik-beheerder",
-                        "vng-raadpleger",
-                        "software-catalog-users",
-                        "software-catalog-admins",
-                        "organisatie-beheerder",
-                        "organisaties-beheerder",
-                        "gebruik-raadpleger"
+                        { "group": "aanbod-beheerder", "match": { "_organisation": "$organisation" } },
+                        { "group": "aanbod-beheerder", "match": { "aanbieder": "$organisation" } }
                     ],
                     "update": [
                         "aanbod-beheerder",

@@ -43,6 +43,7 @@ use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -137,19 +138,20 @@ class SaveObject
     /**
      * Constructor for SaveObject handler.
      *
-     * @param ObjectEntityMapper       $objectEntityMapper   Object entity mapper
-     * @param MetadataHydrationHandler $metaHydrationHandler Handler for metadata extraction
-     * @param FilePropertyHandler      $filePropertyHandler  Handler for file property operations
-     * @param IUserSession             $userSession          User session service
-     * @param AuditTrailMapper         $auditTrailMapper     Audit trail mapper for logging changes
-     * @param SchemaMapper             $schemaMapper         Schema mapper for schema operations
-     * @param RegisterMapper           $registerMapper       Register mapper for register operations
-     * @param IURLGenerator            $urlGenerator         URL generator service
-     * @param OrganisationService      $organisationService  Service for organisation operations
-     * @param CacheHandler             $cacheHandler         Object cache service for entity and query caching
-     * @param SettingsService          $settingsService      Settings service for accessing trail settings
-     * @param LoggerInterface          $logger               Logger interface for logging operations
-     * @param ArrayLoader              $arrayLoader          Twig array loader for template rendering
+     * @param ObjectEntityMapper       $objectEntityMapper    Object entity mapper
+     * @param MetadataHydrationHandler $metaHydrationHandler  Handler for metadata extraction
+     * @param FilePropertyHandler      $filePropertyHandler   Handler for file property operations
+     * @param IUserSession             $userSession           User session service
+     * @param AuditTrailMapper         $auditTrailMapper      Audit trail mapper for logging changes
+     * @param SchemaMapper             $schemaMapper          Schema mapper for schema operations
+     * @param RegisterMapper           $registerMapper        Register mapper for register operations
+     * @param IURLGenerator            $urlGenerator          URL generator service
+     * @param OrganisationService      $organisationService   Service for organisation operations
+     * @param CacheHandler             $cacheHandler          Object cache service for entity and query caching
+     * @param SettingsService          $settingsService       Settings service for accessing trail settings
+     * @param PropertyRbacHandler      $propertyRbacHandler   Property-level RBAC handler
+     * @param LoggerInterface          $logger                Logger interface for logging operations
+     * @param ArrayLoader              $arrayLoader           Twig array loader for template rendering
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      */
@@ -166,6 +168,7 @@ class SaveObject
         private readonly OrganisationService $organisationService,
         private readonly CacheHandler $cacheHandler,
         private readonly SettingsService $settingsService,
+        private readonly PropertyRbacHandler $propertyRbacHandler,
         private readonly LoggerInterface $logger,
         ArrayLoader $arrayLoader,
     ) {
@@ -1869,6 +1872,45 @@ class SaveObject
             schema: $schema,
             register: $register
         );
+
+        // Check property-level authorization for incoming data.
+        // This throws a ValidationException if user tries to modify unauthorized properties.
+        if ($schema->hasPropertyAuthorization() === true) {
+            $isCreate = ($uuid === null);
+            $existingObjectData = [];
+
+            // For updates, get existing object data for matching
+            if ($isCreate === false) {
+                try {
+                    $tempExistingObject = $this->unifiedObjectMapper->find(
+                        identifier: $uuid,
+                        register: $register,
+                        schema: $schema,
+                        _rbac: false,
+                        _multitenancy: false
+                    );
+                    if ($tempExistingObject !== null) {
+                        $existingObjectData = $tempExistingObject->getObject();
+                    }
+                } catch (DoesNotExistException $e) {
+                    // Object doesn't exist, treat as create
+                    $isCreate = true;
+                }
+            }
+
+            $unauthorizedProperties = $this->propertyRbacHandler->getUnauthorizedProperties(
+                schema: $schema,
+                object: $existingObjectData,
+                incomingData: $data,
+                isCreate: $isCreate
+            );
+
+            if (empty($unauthorizedProperties) === false) {
+                throw new Exception(
+                    'You are not authorized to modify the following properties: ' . implode(', ', $unauthorizedProperties)
+                );
+            }
+        }
 
         // Try to update existing object if UUID provided.
         if ($uuid !== null) {

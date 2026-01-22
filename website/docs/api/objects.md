@@ -189,6 +189,44 @@ GET /api/objects/1/3?created=2024-01-01&_limit=10
 - **`aggregations`**: Aggregation data (only when `_aggregations=true`)
 - **`debug`**: Debug information (only when `_debug=true`)
 - **`_source`**: Search source used (`database` or `index`)
+- **`@self.ignoredFilters`**: Array of filter property names that were ignored (only present when filters are ignored)
+
+#### Ignored Filters
+
+When you filter by a property that doesn't exist in the schema, the API will:
+1. Return zero results for that schema (to prevent unfiltered data leakage)
+2. Include the ignored property names in `@self.ignoredFilters`
+
+This is particularly useful for:
+- **Debugging**: Understanding why a query returns unexpected (empty) results
+- **Multi-schema searches**: When filtering by a property that exists in some schemas but not others
+
+**Example Request with Invalid Filter:**
+```bash
+GET /api/objects/1/3?invalidProperty=test&_limit=10
+```
+
+**Response:**
+```json
+{
+  "results": [],
+  "total": 0,
+  "page": 1,
+  "pages": 0,
+  "limit": 10,
+  "@self": {
+    "ignoredFilters": ["invalidProperty"],
+    "source": "database"
+  }
+}
+```
+
+**Note:** In multi-schema searches, a filter is reported as ignored if it doesn't exist in at least one of the searched schemas. This helps identify when a filter only applies to a subset of schemas.
+
+**Common causes for ignored filters:**
+- Typos in property names (e.g., `name` instead of `naam`)
+- Using pagination parameters without underscore prefix (use `_limit` not `limit`)
+- Filtering by a property from a different schema
 
 ### Search All Objects
 

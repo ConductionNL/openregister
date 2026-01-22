@@ -470,9 +470,12 @@ class FacetHandler
 
             $order++;
 
+            // Use schema property title if available, otherwise auto-generate from field name.
+            $title = $facetData['title'] ?? $this->formatFieldTitle($field);
+
             // Create definition for object field.
             $definition = [
-                'title'       => $this->formatFieldTitle($field),
+                'title'       => $title,
                 'description' => 'object field: '.$field,
                 'data_type'   => $this->inferDataType($facetData),
                 'index_field' => $this->sanitizeFieldName($field),

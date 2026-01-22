@@ -539,7 +539,7 @@ class ObjectsController extends Controller
 
             // Keep original value.
             $normalized[$key] = $value;
-        }
+        }//end foreach
 
         return $normalized;
     }//end normalizeExtendParameter()
@@ -872,18 +872,15 @@ class ObjectsController extends Controller
         $schemaEntity   = $resolved['schemaEntity'] ?? null;
 
         if ($registerEntity !== null && $schemaEntity !== null) {
-            // Get register configuration.
-            $registerConfig      = $registerEntity->getConfiguration() ?? [];
-            $enableMagicMapping  = ($registerConfig['enableMagicMapping'] ?? false) === true;
-            $magicMappingSchemas = $registerConfig['magicMappingSchemas'] ?? [];
-            $schemaId            = (string) $schemaEntity->getId();
-            $schemaSlug          = $schemaEntity->getSlug();
+            // Check if this specific schema is magic-mapped using Register method.
+            // This supports both new format {"schemas": {"module": {"magicMapping": true}}}.
+            // and legacy format {"enableMagicMapping": true, "magicMappingSchemas": [...]}.
+            $isMagicMapped = $registerEntity->isMagicMappingEnabledForSchema(
+                schemaId: $schemaEntity->getId(),
+                schemaSlug: $schemaEntity->getSlug()
+            );
 
-            // Check if this specific schema is magic-mapped.
-            if ($enableMagicMapping === true
-                && (in_array($schemaId, $magicMappingSchemas, true) === true
-                || in_array($schemaSlug, $magicMappingSchemas, true) === true)
-            ) {
+            if ($isMagicMapped === true) {
                 // Use MagicMapper for magic-mapped schemas.
                 $magicMapper = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
 
@@ -894,6 +891,10 @@ class ObjectsController extends Controller
                     schema: $resolved['schema']
                 );
 
+                // Pass RBAC and multitenancy settings to the query.
+                $query['_rbac']         = $rbac;
+                $query['_multitenancy'] = $multi;
+
                 // Use MagicMapper search directly.
                 $results = $magicMapper->searchObjectsInRegisterSchemaTable(
                     query: $query,
@@ -901,10 +902,43 @@ class ObjectsController extends Controller
                     schema: $schemaEntity
                 );
 
-                // Convert ObjectEntity array to JSON-serializable format.
-                $serializedResults = [];
-                foreach ($results as $entity) {
-                    $serializedResults[] = $entity->jsonSerialize();
+                // Extract rendering parameters from query.
+                $extend = $query['_extend'] ?? [];
+                if (is_string($extend) === true) {
+                    $extend = array_filter(array_map('trim', explode(',', $extend)));
+                }
+
+                // Remove schema and register extensions - we provide them at response level.
+                $extend = array_filter(
+                    $extend,
+                    function (string $item): bool {
+                        return !in_array($item, ['@self.schema', '@self.register', '_schema', '_register'], true);
+                    }
+                );
+
+                $hasComplexRendering = empty($extend) === false
+                    || empty($query['_fields'] ?? null) === false
+                    || empty($query['_filter'] ?? null) === false
+                    || empty($query['_unset'] ?? null) === false;
+
+                // Apply complex rendering if needed (extensions, fields, filters).
+                if ($hasComplexRendering === true && is_array($results) === true && empty($results) === false) {
+                    $renderHandler = \OC::$server->get(\OCA\OpenRegister\Service\Object\RenderObject::class);
+                    $serializedResults = $renderHandler->renderEntities(
+                        entities: $results,
+                        _extend: $extend,
+                        _filter: $query['_filter'] ?? null,
+                        _fields: $query['_fields'] ?? null,
+                        _unset: $query['_unset'] ?? null,
+                        _rbac: $rbac,
+                        _multitenancy: $multi
+                    );
+                } else {
+                    // Convert ObjectEntity array to JSON-serializable format (no complex rendering).
+                    $serializedResults = [];
+                    foreach ($results as $entity) {
+                        $serializedResults[] = $entity->jsonSerialize();
+                    }
                 }
 
                 // Calculate pagination (MagicMapper returns all matching, we need to paginate in response).
@@ -1518,10 +1552,13 @@ class ObjectsController extends Controller
             return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
         } catch (\Exception $exception) {
             // Log unexpected exceptions for debugging.
-            $this->logger->error('Unexpected exception in update findSilent', [
-                'exception' => $exception->getMessage(),
-                'trace' => $exception->getTraceAsString()
-            ]);
+            $this->logger->error(
+                    'Unexpected exception in update findSilent',
+                    [
+                        'exception' => $exception->getMessage(),
+                        'trace'     => $exception->getTraceAsString(),
+                    ]
+                    );
             return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 500);
         } catch (NotFoundExceptionInterface | ContainerExceptionInterface $e) {
             // If there's an issue getting the user ID, continue without the lock check.
@@ -1617,12 +1654,15 @@ class ObjectsController extends Controller
         $multi   = $isAdmin === false;
 
         // Log RBAC/multitenancy settings for debugging.
-        $this->logger->info('PATCH: RBAC/Multitenancy settings', [
-            'id' => $id,
-            'isAdmin' => $isAdmin,
-            'rbac' => $rbac,
-            'multi' => $multi
-        ]);
+        $this->logger->info(
+                'PATCH: RBAC/Multitenancy settings',
+                [
+                    'id'      => $id,
+                    'isAdmin' => $isAdmin,
+                    'rbac'    => $rbac,
+                    'multi'   => $multi,
+                ]
+                );
 
         // Initialize mergedData before conditional assignment.
         $mergedData = $patchData;
@@ -1643,17 +1683,22 @@ class ObjectsController extends Controller
                     files: false,
                     register: $resolved['registerEntity'],
                     schema: $resolved['schemaEntity'],
-                    _rbac: false,  // Always disable RBAC for internal read
-                    _multitenancy: false  // Always disable multitenancy for internal read
+                    // Always disable RBAC for internal read.
+                    _rbac: false,
+                    // Always disable multitenancy for internal read.
+                    _multitenancy: false
                 );
             } catch (\Exception $e) {
                 // If we can't find the object, return 404.
-                $this->logger->warning('Could not find object for PATCH', [
-                    'id' => $id,
-                    'exception' => $e->getMessage()
-                ]);
+                $this->logger->warning(
+                        'Could not find object for PATCH',
+                        [
+                            'id'        => $id,
+                            'exception' => $e->getMessage(),
+                        ]
+                        );
                 return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
-            }
+            }//end try
 
             // Get the existing object data and merge with patch data.
             $existingData = $existingObject->getObject();
@@ -1668,19 +1713,25 @@ class ObjectsController extends Controller
                 uuid: $id
             );
 
-            $this->logger->info('PATCH: saveObject succeeded', [
-                'uuid' => $objectEntity->getUuid(),
-                'status' => $objectEntity->getObject()['status'] ?? 'unknown'
-            ]);
+            $this->logger->info(
+                    'PATCH: saveObject succeeded',
+                    [
+                        'uuid'   => $objectEntity->getUuid(),
+                        'status' => $objectEntity->getObject()['status'] ?? 'unknown',
+                    ]
+                    );
 
             // Unlock the object after saving.
             try {
                 $this->objectService->unlockObject($objectEntity->getUuid());
             } catch (\Exception $e) {
                 // Ignore unlock errors since the update was successful (e.g., magic table objects).
-                $this->logger->debug('Failed to unlock after patch', [
-                    'exception' => $e->getMessage()
-                ]);
+                $this->logger->debug(
+                        'Failed to unlock after patch',
+                        [
+                            'exception' => $e->getMessage(),
+                        ]
+                        );
             }
 
             $this->logger->info('PATCH: Starting to prepare response');
@@ -1688,19 +1739,24 @@ class ObjectsController extends Controller
             // Return the successfully saved object directly.
             // We already have it in memory from saveObject(), no need to re-fetch.
             return new JSONResponse(data: $objectEntity->jsonSerialize());
-            
         } catch (ValidationException | CustomValidationException $exception) {
             // Handle validation errors.
-            $this->logger->warning('Validation exception in patch', [
-                'exception' => $exception->getMessage()
-            ]);
+            $this->logger->warning(
+                    'Validation exception in patch',
+                    [
+                        'exception' => $exception->getMessage(),
+                    ]
+                    );
             return $objectService->handleValidationException(exception: $exception);
         } catch (\Exception $exception) {
             // Handle all other exceptions (including RBAC permission errors).
-            $this->logger->error('Unexpected exception in patch', [
-                'exception' => $exception->getMessage(),
-                'trace' => $exception->getTraceAsString()
-            ]);
+            $this->logger->error(
+                    'Unexpected exception in patch',
+                    [
+                        'exception' => $exception->getMessage(),
+                        'trace'     => $exception->getTraceAsString(),
+                    ]
+                    );
             return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 500);
         }//end try
     }//end patch()
@@ -2675,7 +2731,7 @@ class ObjectsController extends Controller
     public function validate(): JSONResponse
     {
         try {
-            // Get request parameters
+            // Get request parameters.
             $register = $this->request->getParam(key: 'register');
             $schemaId = $this->request->getParam(key: 'schema');
             $limit    = $this->request->getParam(key: 'limit');
@@ -2691,9 +2747,18 @@ class ObjectsController extends Controller
                 );
             }
 
-            // Parse limit/offset with sensible defaults for chunked processing
-            $limitInt  = $limit !== null ? (int) $limit : null;
-            $offsetInt = $offset !== null ? (int) $offset : 0;
+            // Parse limit/offset with sensible defaults for chunked processing.
+            if ($limit !== null) {
+                $limitInt = (int) $limit;
+            } else {
+                $limitInt = null;
+            }
+
+            if ($offset !== null) {
+                $offsetInt = (int) $offset;
+            } else {
+                $offsetInt = 0;
+            }
 
             $this->logger->info(
                 message: 'Starting bulk validation for schema',
@@ -2705,7 +2770,7 @@ class ObjectsController extends Controller
                 ]
             );
 
-            // Validate and save objects in the schema to update metadata
+            // Validate and save objects in the schema to update metadata.
             $result = $this->objectService->validateAndSaveObjectsBySchema(
                 registerId: (int) $register,
                 schemaId: (int) $schemaId,
@@ -2738,7 +2803,7 @@ class ObjectsController extends Controller
                         'limit'  => $limitInt,
                         'offset' => $offsetInt,
                     ],
-                    'errors' => $result['errors'] ?? [],
+                    'errors'     => $result['errors'] ?? [],
                 ]
             );
         } catch (Exception $e) {
@@ -2760,5 +2825,4 @@ class ObjectsController extends Controller
             );
         }//end try
     }//end validate()
-
 }//end class

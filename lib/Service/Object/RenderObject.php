@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCP\SystemTag\ISystemTagManager;
 use OCP\SystemTag\ISystemTagObjectMapper;
 use Psr\Log\LoggerInterface;
@@ -107,15 +108,16 @@ class RenderObject
     /**
      * Constructor for RenderObject handler.
      *
-     * @param FileMapper             $fileMapper         File mapper for database operations.
-     * @param ObjectEntityMapper     $objectEntityMapper Object entity mapper for database operations.
-     * @param RegisterMapper         $registerMapper     Register mapper for database operations.
-     * @param SchemaMapper           $schemaMapper       Schema mapper for database operations.
-     * @param ISystemTagManager      $systemTagManager   System tag manager for file tags.
-     * @param ISystemTagObjectMapper $systemTagMapper    System tag object mapper for file tags.
-     * @param CacheHandler           $cacheHandler       Cache service for performance optimization.
-     * @param CacheHandler           $objectCacheService Object cache service for optimized loading.
-     * @param LoggerInterface        $logger             Logger for performance monitoring.
+     * @param FileMapper             $fileMapper            File mapper for database operations.
+     * @param ObjectEntityMapper     $objectEntityMapper    Object entity mapper for database operations.
+     * @param RegisterMapper         $registerMapper        Register mapper for database operations.
+     * @param SchemaMapper           $schemaMapper          Schema mapper for database operations.
+     * @param ISystemTagManager      $systemTagManager      System tag manager for file tags.
+     * @param ISystemTagObjectMapper $systemTagMapper       System tag object mapper for file tags.
+     * @param CacheHandler           $cacheHandler          Cache service for performance optimization.
+     * @param CacheHandler           $objectCacheService    Object cache service for optimized loading.
+     * @param PropertyRbacHandler    $propertyRbacHandler   Property-level RBAC handler.
+     * @param LoggerInterface        $logger                Logger for performance monitoring.
      */
     public function __construct(
         private readonly FileMapper $fileMapper,
@@ -126,6 +128,7 @@ class RenderObject
         private readonly ISystemTagObjectMapper $systemTagMapper,
         private readonly CacheHandler $cacheHandler,
         private readonly CacheHandler $objectCacheService,
+        private readonly PropertyRbacHandler $propertyRbacHandler,
         private readonly LoggerInterface $logger
     ) {
     }//end __construct()
@@ -910,6 +913,16 @@ class RenderObject
                 _fields: $fields,
                 _unset: $unset,
                 visitedIds: $visitedIds
+            );
+        }
+
+        // Apply property-level RBAC filtering.
+        // This filters out properties that the current user is not authorized to read.
+        $schema = $this->getSchema($entity->getSchema());
+        if ($schema !== null && $schema->hasPropertyAuthorization() === true) {
+            $objectData = $this->propertyRbacHandler->filterReadableProperties(
+                schema: $schema,
+                object: $objectData
             );
         }
 

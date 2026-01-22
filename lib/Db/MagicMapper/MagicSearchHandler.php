@@ -61,11 +61,19 @@ use DateTime;
 class MagicSearchHandler
 {
     /**
+     * Tracks filter properties that don't exist in the schema during search.
+     * Reset at the start of each searchObjects call.
+     *
+     * @var array<string>
+     */
+    private array $ignoredFilters = [];
+
+    /**
      * Constructor for MagicSearchHandler
      *
-     * @param IDBConnection           $db                  Database connection for queries
-     * @param LoggerInterface         $logger              Logger for debugging and error reporting
-     * @param MagicRbacHandler        $rbacHandler         RBAC handler for access control
+     * @param IDBConnection            $db                  Database connection for queries
+     * @param LoggerInterface          $logger              Logger for debugging and error reporting
+     * @param MagicRbacHandler         $rbacHandler         RBAC handler for access control
      * @param MagicOrganizationHandler $organizationHandler Organization handler for multi-tenancy
      */
     public function __construct(
@@ -75,6 +83,18 @@ class MagicSearchHandler
         private readonly MagicOrganizationHandler $organizationHandler
     ) {
     }//end __construct()
+
+    /**
+     * Get the list of filter properties that were ignored during the last search.
+     *
+     * These are properties that were requested as filters but don't exist in the schema.
+     *
+     * @return array<string> List of ignored filter property names
+     */
+    public function getIgnoredFilters(): array
+    {
+        return $this->ignoredFilters;
+    }//end getIgnoredFilters()
 
     /**
      * Search objects in a specific register-schema table using clean query structure
@@ -102,26 +122,31 @@ class MagicSearchHandler
      */
     public function searchObjects(array $query, Register $register, Schema $schema, string $tableName): array|int
     {
+        // Reset ignored filters tracking for this search.
+        $this->ignoredFilters = [];
+
         // Extract options from query (prefixed with _).
-        $limit             = $query['_limit'] ?? null;
-        $offset            = $query['_offset'] ?? null;
-        $order             = $query['_order'] ?? [];
-        $search            = $query['_search'] ?? null;
-        $includeDeleted    = $query['_includeDeleted'] ?? false;
-        $published         = $query['_published'] ?? false;
-        $ids               = $query['_ids'] ?? null;
-        $count             = $query['_count'] ?? false;
-        $rbac              = $query['_rbac'] ?? true;
-        $multitenancy      = $query['_multitenancy'] ?? true;
+        $limit          = $query['_limit'] ?? null;
+        $offset         = $query['_offset'] ?? null;
+        $order          = $query['_order'] ?? [];
+        $search         = $query['_search'] ?? null;
+        $includeDeleted = $query['_includeDeleted'] ?? false;
+        $published      = $query['_published'] ?? false;
+        $ids            = $query['_ids'] ?? null;
+        $count          = $query['_count'] ?? false;
+        $rbac           = $query['_rbac'] ?? true;
+        $multitenancy   = $query['_multitenancy'] ?? true;
         $relationsContains = $query['_relations_contains'] ?? null;
         $source            = $query['_source'] ?? null;
 
         // Bypass multitenancy for schemas with public read access (unless _source=database is explicitly set).
         // Public schemas should be visible to all users regardless of organisation.
+        // Supports both simple "public" and conditional {"group": "public", ...} rules.
         if ($multitenancy === true && $source !== 'database') {
             $schemaAuth = $schema->getAuthorization();
             $readGroups = $schemaAuth['read'] ?? [];
-            if (in_array('public', $readGroups, true) === true) {
+            $hasPublic  = $this->hasPublicReadAccess($readGroups);
+            if ($hasPublic === true) {
                 $multitenancy = false;
             }
         }
@@ -326,6 +351,9 @@ class MagicSearchHandler
                 $qb->andWhere($qb->expr()->eq("t.{$columnName}", $qb->createNamedParameter($value)));
             } else {
                 // Property doesn't exist in this schema but a filter was requested.
+                // Track the ignored filter for client feedback.
+                $this->ignoredFilters[] = $field;
+
                 // Add a condition that always evaluates to false to return zero results.
                 // This ensures multi-schema searches don't return unfiltered results
                 // from schemas that lack the filtered property.
@@ -399,10 +427,10 @@ class MagicSearchHandler
 
         if (count($values) === 1) {
             // Single value: match both plain UUID and JSON format using text comparison.
-            // Plain format: column contains exactly "uuid"
-            // JSON format: column contains "value": "uuid" pattern
-            $param = $qb->createNamedParameter($values[0]);
-            $jsonPattern = $qb->createNamedParameter('%"value": "' . $values[0] . '"%');
+            // Plain format: column contains exactly "uuid".
+            // JSON format: column contains "value": "uuid" pattern.
+            $param       = $qb->createNamedParameter($values[0]);
+            $jsonPattern = $qb->createNamedParameter('%"value": "'.$values[0].'"%');
             $qb->andWhere(
                 "(t.{$columnName}::text = {$param} OR t.{$columnName}::text LIKE {$jsonPattern})"
             );
@@ -412,8 +440,8 @@ class MagicSearchHandler
         // Multiple values: check if value matches ANY of the values (OR logic).
         $orConditions = $qb->expr()->orX();
         foreach ($values as $v) {
-            $param = $qb->createNamedParameter($v);
-            $jsonPattern = $qb->createNamedParameter('%"value": "' . $v . '"%');
+            $param       = $qb->createNamedParameter($v);
+            $jsonPattern = $qb->createNamedParameter('%"value": "'.$v.'"%');
             $orConditions->add(
                 "(t.{$columnName}::text = {$param} OR t.{$columnName}::text LIKE {$jsonPattern})"
             );
@@ -453,9 +481,9 @@ class MagicSearchHandler
     {
         // Relations are stored as a JSON object like {"fieldName": "uuid", ...}.
         // Use EXISTS with jsonb_each_text to check if any VALUE equals the UUID.
+        $param = $qb->createNamedParameter($uuid);
         $qb->andWhere(
-            'EXISTS (SELECT 1 FROM jsonb_each_text(t._relations) AS kv WHERE kv.value = '
-            .$qb->createNamedParameter($uuid).')'
+            "EXISTS (SELECT 1 FROM jsonb_each_text(t._relations) AS kv WHERE kv.value = {$param})"
         );
     }//end applyRelationsContainsFilter()
 
@@ -474,8 +502,8 @@ class MagicSearchHandler
         $searchConditions = $qb->expr()->orX();
 
         // Use lowercase search for case-insensitive matching.
-        $lowerSearch      = strtolower($search);
-        $searchPattern    = $qb->createNamedParameter('%'.$lowerSearch.'%');
+        $lowerSearch   = strtolower($search);
+        $searchPattern = $qb->createNamedParameter('%'.$lowerSearch.'%');
 
         // Search in text-based schema properties (case-insensitive using LOWER()).
         foreach ($properties ?? [] as $field => $propertyConfig) {
@@ -616,7 +644,7 @@ class MagicSearchHandler
 
                 // Convert value based on schema property type.
                 $propertyType = $propertyTypes[$propertyName] ?? 'string';
-                $objectData[$propertyName] = $this->convertValueByType($value, $propertyType);
+                $objectData[$propertyName] = $this->convertValueByType(value: $value, type: $propertyType);
             }
 
             // Set metadata properties.
@@ -778,6 +806,7 @@ class MagicSearchHandler
                         return $decoded;
                     }
                 }
+
                 // Already an array/object or failed to decode - return as-is.
                 return $value;
 
@@ -800,6 +829,7 @@ class MagicSearchHandler
                 if (is_bool($value) === true) {
                     return $value;
                 }
+
                 if (is_string($value) === true) {
                     return in_array(strtolower($value), ['true', '1', 'yes'], true);
                 }
@@ -809,6 +839,32 @@ class MagicSearchHandler
             default:
                 // Schema says string or unknown type - return as-is.
                 return $value;
-        }
+        }//end switch
     }//end convertValueByType()
+
+    /**
+     * Check if authorization rules include public read access
+     *
+     * Supports both simple "public" and conditional {"group": "public", ...} rules.
+     *
+     * @param array $readRules Array of read authorization rules
+     *
+     * @return bool True if any rule grants public access
+     */
+    private function hasPublicReadAccess(array $readRules): bool
+    {
+        foreach ($readRules as $rule) {
+            // Simple rule: "public" string.
+            if ($rule === 'public') {
+                return true;
+            }
+
+            // Conditional rule: {"group": "public", ...}.
+            if (is_array($rule) === true && ($rule['group'] ?? null) === 'public') {
+                return true;
+            }
+        }
+
+        return false;
+    }//end hasPublicReadAccess()
 }//end class

@@ -1161,8 +1161,9 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             ];
         }
 
-        $allResults = [];
-        $totalCount = 0;
+        $allResults     = [];
+        $totalCount     = 0;
+        $ignoredFilters = [];
 
         // Query each schema.
         foreach ($schemaIds as $schemaId) {
@@ -1208,6 +1209,14 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                     schema: $schema
                 );
 
+                // Collect ignored filters from this schema search.
+                $schemaIgnored = $this->magicMapper->getIgnoredFilters();
+                foreach ($schemaIgnored as $ignored) {
+                    if (in_array($ignored, $ignoredFilters, true) === false) {
+                        $ignoredFilters[] = $ignored;
+                    }
+                }
+
                 // Add schema ID to each result for sorting reference.
                 foreach ($schemaResults as $result) {
                     $allResults[] = $result;
@@ -1246,10 +1255,11 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         }
 
         return [
-            'results'   => $paginatedResults,
-            'total'     => $totalCount,
-            'registers' => $registersCache,
-            'schemas'   => $schemasCache,
+            'results'        => $paginatedResults,
+            'total'          => $totalCount,
+            'registers'      => $registersCache,
+            'schemas'        => $schemasCache,
+            'ignoredFilters' => $ignoredFilters,
         ];
     }//end searchObjectsPaginatedMultiSchema()
 
@@ -1515,12 +1525,16 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                 schema: $schema
             );
 
+            // Get ignored filters from the search (properties that don't exist in schema).
+            $ignoredFilters = $this->magicMapper->getIgnoredFilters();
+
             // Return results with registers/schemas indexed by ID for frontend lookup.
             return [
-                'results'   => $results,
-                'total'     => $total,
-                'registers' => $registersCache,
-                'schemas'   => $schemasCache,
+                'results'        => $results,
+                'total'          => $total,
+                'registers'      => $registersCache,
+                'schemas'        => $schemasCache,
+                'ignoredFilters' => $ignoredFilters,
             ];
         }
 

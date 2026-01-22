@@ -639,19 +639,70 @@ class SchemaMapper extends QBMapper
         $configuration = $schema->getConfiguration() ?? [];
 
         $objectNameField = $configuration['objectNameField'] ?? '';
-        if (empty($objectNameField) === false && in_array($objectNameField, $propertyKeys) === false) {
-            throw new Exception(
-                "The value for objectNameField ('$objectNameField') does not exist as a property in the schema."
+        if (empty($objectNameField) === false) {
+            $this->validateConfigField(
+                fieldValue: $objectNameField,
+                propertyKeys: $propertyKeys,
+                fieldName: 'objectNameField'
             );
         }
 
         $objDescField = $configuration['objectDescriptionField'] ?? '';
-        if (empty($objDescField) === false && in_array($objDescField, $propertyKeys) === false) {
-            throw new Exception(
-                "The value for objectDescriptionField ('$objDescField') does not exist as a property in the schema."
+        if (empty($objDescField) === false) {
+            $this->validateConfigField(
+                fieldValue: $objDescField,
+                propertyKeys: $propertyKeys,
+                fieldName: 'objectDescriptionField'
             );
         }
     }//end validateConfigurationFields()
+
+    /**
+     * Validate a configuration field value against property keys
+     *
+     * Supports both simple property names and Twig-style templates like
+     * "{{ voornaam }} {{ tussenvoegsel }} {{ achternaam }}".
+     *
+     * @param string $fieldValue   The field value to validate
+     * @param array  $propertyKeys Array of valid property keys
+     * @param string $fieldName    Name of the field for error messages
+     *
+     * @throws \Exception If field references non-existent properties
+     *
+     * @return void
+     */
+    private function validateConfigField(string $fieldValue, array $propertyKeys, string $fieldName): void
+    {
+        // Check if it's a Twig-style template (contains {{ ... }}).
+        if (strpos($fieldValue, '{{') !== false && strpos($fieldValue, '}}') !== false) {
+            // Extract property names from template: {{ propName }}.
+            preg_match_all('/\{\{\s*([a-zA-Z0-9_-]+)\s*\}\}/', $fieldValue, $matches);
+            $templateProps = $matches[1] ?? [];
+
+            if (empty($templateProps) === true) {
+                // Template syntax but no valid property references found.
+                return;
+            }
+
+            // Validate each property in the template exists.
+            foreach ($templateProps as $prop) {
+                if (in_array($prop, $propertyKeys, true) === false) {
+                    throw new Exception(
+                        "The template property '{$prop}' in {$fieldName} does not exist."
+                    );
+                }
+            }
+
+            return;
+        }//end if
+
+        // Simple property name - must exist in property keys.
+        if (in_array($fieldValue, $propertyKeys, true) === false) {
+            throw new Exception(
+                "The value for {$fieldName} ('{$fieldValue}') does not exist as a property in the schema."
+            );
+        }
+    }//end validateConfigField()
 
     /**
      * Build required fields array from schema or property flags
@@ -1285,11 +1336,20 @@ class SchemaMapper extends QBMapper
      */
     private function determineFacetTypeForProperty(array $property, string $fieldName): string|null
     {
+        // Check if explicitly marked as not facetable (facetable: false).
+        // This must be checked first to prevent auto-detection from overriding explicit exclusion.
+        $facetable = $property['facetable'] ?? null;
+        if ($facetable === false || $facetable === 'false'
+            || (is_string($facetable) === true && strtolower(trim($facetable)) === 'false')
+        ) {
+            return null;
+        }
+
         // Check if explicitly marked as facetable.
-        $isFacetableString = is_string($property['facetable'] ?? null) === true
-            && strtolower(trim($property['facetable'])) === 'true';
-        if (($property['facetable'] ?? null) !== null
-            && ($property['facetable'] === true || $property['facetable'] === 'true'
+        $isFacetableString = is_string($facetable) === true
+            && strtolower(trim($facetable)) === 'true';
+        if ($facetable !== null
+            && ($facetable === true || $facetable === 'true'
             || $isFacetableString === true) === true
         ) {
             return $this->determineFacetTypeFromProperty($property);

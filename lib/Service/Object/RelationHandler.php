@@ -589,6 +589,23 @@ class RelationHandler
             // Load the related objects from magic tables using cross-table search.
             $uniqueIds = array_unique($relationshipIds);
 
+            // Filter out the object's own UUID to prevent self-references in results.
+            // Sometimes objects may have their own UUID in the relations array.
+            $objectUuid = $object->getUuid();
+            if ($objectUuid !== null) {
+                $uniqueIds = array_filter($uniqueIds, fn($id) => $id !== $objectUuid);
+            }
+
+            // Re-check if we have any IDs left after filtering.
+            if (empty($uniqueIds) === true) {
+                return [
+                    'results' => [],
+                    'total'   => 0,
+                    'limit'   => $query['_limit'] ?? 30,
+                    'offset'  => $query['_offset'] ?? 0,
+                ];
+            }
+
             // Get all register+schema pairs that have magic mapping enabled.
             $registerMapper = \OC::$server->get(\OCA\OpenRegister\Db\RegisterMapper::class);
             $magicMapper    = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);

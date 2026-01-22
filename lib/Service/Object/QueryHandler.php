@@ -189,6 +189,33 @@ class QueryHandler
             return count($result);
         }
 
+        // Check if any result object has a schema with property-level authorization.
+        // If yes, we need to render to filter unauthorized properties.
+        if ($hasComplexRendering === false && is_array($result) === true && empty($result) === false) {
+            $schemaMapper = $this->container->get(\OCA\OpenRegister\Db\SchemaMapper::class);
+            $checkedSchemas = [];
+            foreach ($result as $object) {
+                $schemaId = $object->getSchema();
+                if (isset($checkedSchemas[$schemaId]) === true) {
+                    if ($checkedSchemas[$schemaId] === true) {
+                        $hasComplexRendering = true;
+                        break;
+                    }
+                    continue;
+                }
+                try {
+                    $schema = $schemaMapper->find($schemaId);
+                    $checkedSchemas[$schemaId] = $schema->hasPropertyAuthorization();
+                    if ($checkedSchemas[$schemaId] === true) {
+                        $hasComplexRendering = true;
+                        break;
+                    }
+                } catch (\Exception $e) {
+                    $checkedSchemas[$schemaId] = false;
+                }
+            }
+        }
+
         // Return early if no complex rendering is needed.
         if ($hasComplexRendering === false) {
             return $result;
@@ -385,10 +412,11 @@ class QueryHandler
             uses: $uses
         );
 
-        $results   = $searchResult['results'];
-        $total     = $searchResult['total'];
-        $registers = $searchResult['registers'] ?? [];
-        $schemas   = $searchResult['schemas'] ?? [];
+        $results        = $searchResult['results'];
+        $total          = $searchResult['total'];
+        $registers      = $searchResult['registers'] ?? [];
+        $schemas        = $searchResult['schemas'] ?? [];
+        $ignoredFilters = $searchResult['ignoredFilters'] ?? [];
 
         // Detect if complex rendering is needed (extend, fields, filter, unset).
         // Skip @self.register and @self.schema from extend since we include them in response @self.
@@ -407,10 +435,23 @@ class QueryHandler
             }
         );
 
+        // Check if any schema has property-level authorization.
+        // If yes, we need to render to filter unauthorized properties.
+        $hasPropertyAuthorization = false;
+        foreach ($schemas as $schema) {
+            if ($schema instanceof \OCA\OpenRegister\Db\Schema
+                && $schema->hasPropertyAuthorization() === true
+            ) {
+                $hasPropertyAuthorization = true;
+                break;
+            }
+        }
+
         $hasComplexRendering = empty($extend) === false
             || empty($query['_fields'] ?? null) === false
             || empty($query['_filter'] ?? null) === false
-            || empty($query['_unset'] ?? null) === false;
+            || empty($query['_unset'] ?? null) === false
+            || $hasPropertyAuthorization === true;
 
         // Apply complex rendering if needed.
         if ($hasComplexRendering === true && is_array($results) === true) {
@@ -467,6 +508,12 @@ class QueryHandler
             || in_array('@self.schema', $extend, true) === true;
         if ($wantsSchemas === true && empty($schemas) === false) {
             $paginatedResults['@self']['schemas'] = $schemas;
+        }
+
+        // Add ignored filters to @self if any filters were ignored.
+        // This helps clients understand why they might be getting unexpected results.
+        if (empty($ignoredFilters) === false) {
+            $paginatedResults['@self']['ignoredFilters'] = $ignoredFilters;
         }
 
         // Add facets if requested.

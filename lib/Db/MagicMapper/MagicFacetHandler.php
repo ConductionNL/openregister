@@ -194,7 +194,12 @@ class MagicFacetHandler
                     schema: $schema
                 );
             }
-            
+
+            // Add schema property title if available.
+            if (isset($config['title']) === true && $config['title'] !== null) {
+                $facets[$field]['title'] = $config['title'];
+            }
+
             $facetTimes[$field] = round((microtime(true) - $facetStart) * 1000, 2);
         }//end foreach
 
@@ -228,7 +233,7 @@ class MagicFacetHandler
             $config = [
                 '@self' => [
                     'register'     => ['type' => 'terms'],
-                    'schema'       => ['type' => 'terms'],
+                    // 'schema'       => ['type' => 'terms'],
                     // 'organisation' => ['type' => 'terms'],
                     'created'      => ['type' => 'date_histogram', 'interval' => 'month'],
                     'updated'      => ['type' => 'date_histogram', 'interval' => 'month'],
@@ -236,11 +241,19 @@ class MagicFacetHandler
             ];
 
             // Add schema property facets - try pre-computed facets first.
+            // But always get titles from schema properties since pre-computed facets may not have them.
             $schemaFacets = $schema->getFacets();
+            $properties   = $schema->getProperties() ?? [];
+
             if (($schemaFacets['object_fields'] ?? null) !== null) {
                 foreach ($schemaFacets['object_fields'] as $field => $fieldConfig) {
-                    $facetType      = $fieldConfig['type'] ?? 'terms';
-                    $config[$field] = ['type' => $facetType];
+                    $facetType = $fieldConfig['type'] ?? 'terms';
+                    // Get title from pre-computed facets first, then from schema property, then null.
+                    $title     = $fieldConfig['title'] ?? $properties[$field]['title'] ?? null;
+                    $config[$field] = [
+                        'type'  => $facetType,
+                        'title' => $title,
+                    ];
                 }
 
                 return $config;
@@ -254,7 +267,10 @@ class MagicFacetHandler
                     if (isset($property['facetable']) === true && $property['facetable'] === true) {
                         // Determine facet type based on property type.
                         $facetType            = $this->determineFacetTypeFromProperty($property);
-                        $config[$propertyKey] = ['type' => $facetType];
+                        $config[$propertyKey] = [
+                            'type'  => $facetType,
+                            'title' => $property['title'] ?? null,
+                        ];
                     }
                 }
             }

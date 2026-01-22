@@ -294,6 +294,7 @@ class MagicMapper
             groupManager: $this->groupManager,
             userManager: $this->userManager,
             appConfig: $this->appConfig,
+            container: $this->container,
             logger: $this->logger
         );
 
@@ -644,6 +645,19 @@ class MagicMapper
             throw $e;
         }
     }//end searchObjectsInRegisterSchemaTable()
+
+    /**
+     * Get the list of filter properties that were ignored during the last search.
+     *
+     * These are properties that were requested as filters but don't exist in the schema.
+     * Useful for providing feedback to API clients about invalid filter parameters.
+     *
+     * @return array<string> List of ignored filter property names
+     */
+    public function getIgnoredFilters(): array
+    {
+        return $this->searchHandler->getIgnoredFilters();
+    }//end getIgnoredFilters()
 
     /**
      * Count objects in a register+schema specific table.
