@@ -19,6 +19,7 @@
 
 namespace OCA\OpenRegister\Service;
 
+use DateTime;
 use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
@@ -324,8 +325,8 @@ class ConfigurationService
             // Add OpenRegister-specific metadata as an extension following OpenAPI spec
             // https://swagger.io/docs/specification/v3_0/openapi-extensions/
             // Standard OAS properties (title, description, version) are in the info section above
-            // Note: Internal properties (autoUpdate, notificationGroups, owner, organisation, registers, 
-            // schemas, objects, views, agents, sources, applications) are excluded as they are 
+            // Note: Internal properties (autoUpdate, notificationGroups, owner, organisation, registers,
+            // schemas, objects, views, agents, sources, applications) are excluded as they are
             // instance-specific or automatically managed during import
             $openApiSpec['x-openregister'] = [
                 'type'         => $input->getType(),
@@ -640,13 +641,13 @@ class ConfigurationService
     {
         // Use jsonSerialize to get the JSON representation of the object.
         $objectArray = $object->jsonSerialize();
-        
+
         // Remove organisation if present (though objects typically don't have this at top level)
         // Organisation is instance-specific and should not be exported.
         if (isset($objectArray['organisation']) === true) {
             unset($objectArray['organisation']);
         }
-        
+
         return $objectArray;
 
     }//end exportObject()
@@ -902,11 +903,16 @@ class ConfigurationService
     {
         // ⚠️ CRITICAL: Configuration entity is required for proper tracking
         if ($configuration === null) {
+            $now = new DateTime();
+            $configuration = new Configuration();
+            $configuration->setTitle("imported-configuration-{$now->format('c')}");
+            /*
             throw new Exception(
                 'importFromJson must be called with a Configuration entity. ' .
                 'Direct imports without a Configuration are not allowed to ensure proper entity tracking. ' .
                 'Please create a Configuration entity first before importing.'
             );
+            */
         }
         // Ensure data is consistently an array by converting any stdClass objects
         $data = $this->ensureArrayStructure($data);
@@ -1122,11 +1128,11 @@ class ConfigurationService
                     '_limit' => 1,
                 ];
                 $this->logger->debug('Import object search filter', ['filter' => $search]);
-                
+
                 // Search for existing object
                 $results = $this->objectService->searchObjects($search, true, true);
                 $existingObject = is_array($results) && count($results) > 0 ? $results[0] : null;
-                
+
                 if (!$existingObject) {
                     $this->logger->info(
                         'No existing object found - will create new object',
@@ -1142,7 +1148,7 @@ class ConfigurationService
                 // This prevents any internal lookups from using string slugs
                 $objectData['@self']['register'] = (int) $registerId;
                 $objectData['@self']['schema'] = (int) $schemaId;
-                
+
                 if ($existingObject) {
                     $existingObjectData = is_array($existingObject) ? $existingObject : $existingObject->jsonSerialize();
                     $importedVersion    = $objectData['@self']['version'] ?? $objectData['version'] ?? '1.0.0';
@@ -1249,11 +1255,11 @@ class ConfigurationService
             // Extract metadata following OAS standard first, then x-openregister extension
             $info = $data['info'] ?? [];
             $xOpenregister = $data['x-openregister'] ?? [];
-            
+
             // Standard OAS properties from info section
             $title       = $info['title'] ?? $xOpenregister['title'] ?? $data['title'] ?? "Configuration for {$appId}";
             $description = $info['description'] ?? $xOpenregister['description'] ?? $data['description'] ?? "Imported configuration for application {$appId}";
-            
+
             // OpenRegister-specific properties
             $type        = $xOpenregister['type'] ?? $data['type'] ?? 'imported';
 
@@ -1308,19 +1314,19 @@ class ConfigurationService
                 $configuration->setRegisters($registerIds);
                 $configuration->setSchemas($schemaIds);
                 $configuration->setObjects($objectIds);
-                
+
                 // Mark as local configuration (maintained by the app)
                 $configuration->setIsLocal(true);
                 $configuration->setSyncEnabled(false);
                 $configuration->setSyncStatus('never');
-                
+
                 // Set version requirements from x-openregister if available
                 if (isset($xOpenregister['openregister']) === true) {
                     $configuration->setOpenregister($xOpenregister['openregister']);
                 }
-                
+
                 // Set additional metadata from x-openregister if available
-                // Note: Internal properties (autoUpdate, notificationGroups, owner, organisation) 
+                // Note: Internal properties (autoUpdate, notificationGroups, owner, organisation)
                 // are not imported as they are instance-specific settings
                 if (isset($xOpenregister['sourceType']) === true) {
                     $configuration->setSourceType($xOpenregister['sourceType']);
@@ -1328,7 +1334,7 @@ class ConfigurationService
                 if (isset($xOpenregister['sourceUrl']) === true) {
                     $configuration->setSourceUrl($xOpenregister['sourceUrl']);
                 }
-                
+
                 // Support both nested github structure (new) and flat structure (backward compatibility)
                 if (isset($xOpenregister['github']) === true && is_array($xOpenregister['github'])) {
                     // New nested structure
@@ -1353,7 +1359,7 @@ class ConfigurationService
                         $configuration->setGithubPath($xOpenregister['githubPath']);
                     }
                 }
-                
+
                 // Set owner from parameter if provided (for backward compatibility)
                 if ($owner !== null) {
                     $configuration->setOwner($owner);
@@ -1912,23 +1918,23 @@ class ConfigurationService
             // Resolve the file path relative to Nextcloud root
             $fullPath = $this->appDataPath . '/../../../' . $filePath;
             $fullPath = realpath($fullPath);
-            
+
             if ($fullPath === false || !file_exists($fullPath)) {
                 throw new Exception("Configuration file not found: {$filePath}");
             }
-            
+
             // Read the file contents
             $jsonContent = file_get_contents($fullPath);
             if ($jsonContent === false) {
                 throw new Exception("Failed to read configuration file: {$filePath}");
             }
-            
+
             // Parse JSON
             $data = json_decode($jsonContent, true);
             if (json_last_error() !== JSON_ERROR_NONE) {
                 throw new Exception("Invalid JSON in configuration file: " . json_last_error_msg());
             }
-            
+
             // Set the sourceUrl in the data if not already set
             // This allows the cron job to track the file location
             if (!isset($data['x-openregister'])) {
@@ -1940,7 +1946,7 @@ class ConfigurationService
             if (!isset($data['x-openregister']['sourceType'])) {
                 $data['x-openregister']['sourceType'] = 'local';
             }
-            
+
             // Call importFromApp with the parsed data
             return $this->importFromApp(
                 appId: $appId,
@@ -1998,7 +2004,7 @@ class ConfigurationService
             $configuration = null;
             $xOpenregister = $data['x-openregister'] ?? [];
             $sourceUrl = $xOpenregister['sourceUrl'] ?? null;
-            
+
             // If sourceUrl is provided, try to find by sourceUrl first (ensures uniqueness)
             if ($sourceUrl !== null) {
                 try {
@@ -2014,7 +2020,7 @@ class ConfigurationService
                     // No configuration found by sourceUrl
                 }
             }
-            
+
             // If not found by sourceUrl, try by appId
             if ($configuration === null) {
                 try {
@@ -2036,36 +2042,36 @@ class ConfigurationService
             // Create new configuration if none exists
             if ($configuration === null) {
                 $configuration = new Configuration();
-                
+
                 // Extract metadata following OAS standard first, then x-openregister extension
                 $info = $data['info'] ?? [];
                 $xOpenregister = $data['x-openregister'] ?? [];
-                
+
                 // Standard OAS properties from info section
                 $title = $info['title'] ?? $xOpenregister['title'] ?? $data['title'] ?? "Configuration for {$appId}";
                 $description = $info['description'] ?? $xOpenregister['description'] ?? $data['description'] ?? "Configuration imported by application {$appId}";
-                
+
                 // OpenRegister-specific properties
                 $type = $xOpenregister['type'] ?? $data['type'] ?? 'app';
-                
+
                 $configuration->setTitle($title);
                 $configuration->setDescription($description);
                 $configuration->setType($type);
                 $configuration->setApp($appId);
                 $configuration->setVersion($version);
-                
+
                 // Mark as local configuration (maintained by the app)
                 $configuration->setIsLocal(true);
                 $configuration->setSyncEnabled(false);
                 $configuration->setSyncStatus('never');
-                
+
                 // Set version requirements from x-openregister if available
                 if (isset($xOpenregister['openregister']) === true) {
                     $configuration->setOpenregister($xOpenregister['openregister']);
                 }
-                
+
                 // Set additional metadata from x-openregister if available
-                // Note: Internal properties (autoUpdate, notificationGroups, owner, organisation) 
+                // Note: Internal properties (autoUpdate, notificationGroups, owner, organisation)
                 // are not imported as they are instance-specific settings
                 if (isset($xOpenregister['sourceType']) === true) {
                     $configuration->setSourceType($xOpenregister['sourceType']);
@@ -2073,7 +2079,7 @@ class ConfigurationService
                 if (isset($xOpenregister['sourceUrl']) === true) {
                     $configuration->setSourceUrl($xOpenregister['sourceUrl']);
                 }
-                
+
                 // Support both nested github structure (new) and flat structure (backward compatibility)
                 if (isset($xOpenregister['github']) === true && is_array($xOpenregister['github'])) {
                     // New nested structure
@@ -2098,14 +2104,14 @@ class ConfigurationService
                         $configuration->setGithubPath($xOpenregister['githubPath']);
                     }
                 }
-                
+
                 $configuration->setRegisters([]);
                 $configuration->setSchemas([]);
                 $configuration->setObjects([]);
-                
+
                 // Insert the configuration to get an ID
                 $configuration = $this->configurationMapper->insert($configuration);
-                
+
                 $this->logger->info("Created new configuration for app {$appId}", [
                     'configurationId' => $configuration->getId(),
                     'version' => $version
@@ -2128,35 +2134,35 @@ class ConfigurationService
                 $existingRegisterIds = $configuration->getRegisters();
                 $existingSchemaIds = $configuration->getSchemas();
                 $existingObjectIds = $configuration->getObjects();
-                
+
                 foreach ($result['registers'] as $register) {
                     if ($register instanceof Register && !in_array($register->getId(), $existingRegisterIds, true)) {
                         $existingRegisterIds[] = $register->getId();
                     }
                 }
-                
+
                 foreach ($result['schemas'] as $schema) {
                     if ($schema instanceof Schema && !in_array($schema->getId(), $existingSchemaIds, true)) {
                         $existingSchemaIds[] = $schema->getId();
                     }
                 }
-                
+
                 foreach ($result['objects'] as $object) {
                     if ($object instanceof ObjectEntity && !in_array($object->getId(), $existingObjectIds, true)) {
                         $existingObjectIds[] = $object->getId();
                     }
                 }
-                
+
                 $configuration->setRegisters($existingRegisterIds);
                 $configuration->setSchemas($existingSchemaIds);
                 $configuration->setObjects($existingObjectIds);
                 $configuration->setVersion($version);
-                
+
                 // Update metadata following OAS standard first, then x-openregister extension
                 // This ensures sourceUrl and other tracking info stays current
                 $info = $data['info'] ?? [];
                 $xOpenregister = $data['x-openregister'] ?? [];
-                
+
                 // Standard OAS properties from info section
                 if (isset($info['title']) === true) {
                     $configuration->setTitle($info['title']);
@@ -2168,7 +2174,7 @@ class ConfigurationService
                 } elseif (isset($xOpenregister['description']) === true) {
                     $configuration->setDescription($xOpenregister['description']);
                 }
-                
+
                 // OpenRegister-specific properties from x-openregister
                 if (isset($xOpenregister['sourceType']) === true) {
                     $configuration->setSourceType($xOpenregister['sourceType']);
@@ -2176,7 +2182,7 @@ class ConfigurationService
                 if (isset($xOpenregister['sourceUrl']) === true) {
                     $configuration->setSourceUrl($xOpenregister['sourceUrl']);
                 }
-                
+
                 // Update github properties (nested or flat)
                 if (isset($xOpenregister['github']) === true && is_array($xOpenregister['github'])) {
                     if (isset($xOpenregister['github']['repo']) === true) {
@@ -2200,9 +2206,9 @@ class ConfigurationService
                         $configuration->setGithubPath($xOpenregister['githubPath']);
                     }
                 }
-                
+
                 $this->configurationMapper->update($configuration);
-                
+
                 $this->logger->info("Updated configuration entity for app {$appId}", [
                     'configurationId' => $configuration->getId(),
                     'totalRegisters' => count($existingRegisterIds),
@@ -2420,7 +2426,7 @@ class ConfigurationService
         try {
             // Fetch the remote configuration
             $remoteData = $this->getJSONfromURL($sourceUrl);
-            
+
             if ($remoteData instanceof JSONResponse) {
                 $this->logger->error('Failed to fetch remote configuration', ['error' => $remoteData->getData()]);
                 return null;
@@ -2498,7 +2504,7 @@ class ConfigurationService
 
         // Compare versions
         $comparison = version_compare($remoteVersion, $localVersion);
-        
+
         if ($comparison > 0) {
             $result['hasUpdate'] = true;
             $result['message']   = "Update available: {$localVersion} → {$remoteVersion}";
@@ -2544,10 +2550,10 @@ class ConfigurationService
 
         try {
             $this->logger->info("Fetching remote configuration from: {$sourceUrl}");
-            
+
             // Use existing method to fetch and parse the remote configuration
             $remoteData = $this->getJSONfromURL($sourceUrl);
-            
+
             if ($remoteData instanceof JSONResponse) {
                 return $remoteData;
             }
@@ -2597,7 +2603,7 @@ class ConfigurationService
     {
         // Fetch the remote configuration
         $remoteData = $this->fetchRemoteConfiguration($configuration);
-        
+
         if ($remoteData instanceof JSONResponse) {
             return $remoteData;
         }
@@ -2634,13 +2640,13 @@ class ConfigurationService
             // Build register and schema slug to ID maps
             $registerSlugToId = [];
             $schemaSlugToId   = [];
-            
+
             // Get existing registers and schemas to build maps
             $allRegisters = $this->registerMapper->findAll();
             foreach ($allRegisters as $register) {
                 $registerSlugToId[strtolower($register->getSlug())] = $register->getId();
             }
-            
+
             $allSchemas = $this->schemaMapper->findAll();
             foreach ($allSchemas as $schema) {
                 $schemaSlugToId[strtolower($schema->getSlug())] = $schema->getId();
@@ -2692,7 +2698,7 @@ class ConfigurationService
     private function previewRegisterChange(string $slug, array $registerData): array
     {
         $slug = strtolower($slug);
-        
+
         // Try to find existing register
         $existingRegister = null;
         try {
@@ -2715,11 +2721,11 @@ class ConfigurationService
         if ($existingRegister !== null) {
             $currentData       = $existingRegister->jsonSerialize();
             $preview['current'] = $currentData;
-            
+
             // Check if version allows update
             $currentVersion  = $existingRegister->getVersion() ?? '0.0.0';
             $proposedVersion = $registerData['version'] ?? '0.0.0';
-            
+
             if (version_compare($proposedVersion, $currentVersion, '<=') === true) {
                 $preview['action'] = 'skip';
                 $preview['reason'] = "Remote version ({$proposedVersion}) is not newer than current version ({$currentVersion})";
@@ -2755,7 +2761,7 @@ class ConfigurationService
     private function previewSchemaChange(string $slug, array $schemaData): array
     {
         $slug = strtolower($slug);
-        
+
         // Try to find existing schema
         $existingSchema = null;
         try {
@@ -2778,11 +2784,11 @@ class ConfigurationService
         if ($existingSchema !== null) {
             $currentData       = $existingSchema->jsonSerialize();
             $preview['current'] = $currentData;
-            
+
             // Check if version allows update
             $currentVersion  = $existingSchema->getVersion() ?? '0.0.0';
             $proposedVersion = $schemaData['version'] ?? '0.0.0';
-            
+
             if (version_compare($proposedVersion, $currentVersion, '<=') === true) {
                 $preview['action'] = 'skip';
                 $preview['reason'] = "Remote version ({$proposedVersion}) is not newer than current version ({$currentVersion})";
@@ -2823,7 +2829,7 @@ class ConfigurationService
         $slug         = $objectData['@self']['slug'] ?? null;
         $registerSlug = $objectData['@self']['register'] ?? null;
         $schemaSlug   = $objectData['@self']['schema'] ?? null;
-        
+
         $preview = [
             'type'     => 'object',
             'action'   => 'skip',
@@ -2872,10 +2878,10 @@ class ConfigurationService
             // Object exists, check version
             $existingObjectData = is_array($existingObject) ? $existingObject : $existingObject->jsonSerialize();
             $preview['current'] = $existingObjectData;
-            
+
             $currentVersion  = $existingObjectData['@self']['version'] ?? $existingObjectData['version'] ?? '1.0.0';
             $proposedVersion = $objectData['@self']['version'] ?? $objectData['version'] ?? '1.0.0';
-            
+
             if (version_compare($proposedVersion, $currentVersion, '<=') === true) {
                 $preview['action'] = 'skip';
                 $preview['reason'] = "Remote version ({$proposedVersion}) is not newer than current version ({$currentVersion})";
@@ -2905,16 +2911,16 @@ class ConfigurationService
     private function compareArrays(array $current, array $proposed, string $prefix = ''): array
     {
         $changes = [];
-        
+
         // Check all keys in proposed data
         foreach ($proposed as $key => $proposedValue) {
             $fieldName = $prefix === '' ? $key : "{$prefix}.{$key}";
-            
+
             // Skip certain metadata fields
             if (in_array($key, ['id', 'uuid', 'created', 'updated']) === true) {
                 continue;
             }
-            
+
             // Check if field exists in current data
             if (array_key_exists($key, $current) === false) {
                 $changes[] = [
@@ -2924,9 +2930,9 @@ class ConfigurationService
                 ];
                 continue;
             }
-            
+
             $currentValue = $current[$key];
-            
+
             // Deep comparison for arrays
             if (is_array($proposedValue) && is_array($currentValue)) {
                 // For simple arrays, just compare values
@@ -2952,7 +2958,7 @@ class ConfigurationService
                 ];
             }
         }
-        
+
         return $changes;
 
     }//end compareArrays()
@@ -2972,7 +2978,7 @@ class ConfigurationService
                 return false;
             }
         }
-        
+
         return true;
 
     }//end isSimpleArray()
@@ -3008,10 +3014,10 @@ class ConfigurationService
     public function importConfigurationWithSelection(Configuration $configuration, array $selection): array
     {
         $this->logger->info("Starting selective import for configuration {$configuration->getId()}", ['selection' => $selection]);
-        
+
         // Fetch the remote configuration
         $remoteData = $this->fetchRemoteConfiguration($configuration);
-        
+
         if ($remoteData instanceof JSONResponse) {
             throw new Exception('Failed to fetch remote configuration: ' . json_encode($remoteData->getData()));
         }
@@ -3062,10 +3068,10 @@ class ConfigurationService
                 $objectSlug = $objectData['@self']['slug'] ?? null;
                 $registerSlug = $objectData['@self']['register'] ?? null;
                 $schemaSlug = $objectData['@self']['schema'] ?? null;
-                
+
                 // Build unique identifier for object
                 $objectId = "{$registerSlug}:{$schemaSlug}:{$objectSlug}";
-                
+
                 if (in_array($objectId, $selection['objects'], true) === true) {
                     $filteredData['components']['objects'][] = $objectData;
                 }
