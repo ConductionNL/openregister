@@ -1559,13 +1559,14 @@ class MagicMapper
         // Get schema properties and convert to SQL columns.
         $schemaProperties = $schema->getProperties();
 
-        // List of metadata/configuration fields that should NOT be treated as properties
+        // List of metadata/configuration fields that should NOT be treated as properties.
+        // NOTE: 'title' and 'description' are NOT included here because they are
+        // legitimate schema properties (e.g., catalog.title, publication.title).
+        // The metadata columns _name and _description serve a different purpose.
         $metadataFields = [
             'objectNameField',
             'objectDescriptionField',
             'objectSummaryField',
-            'title',
-            'description',
             'type',
             'required',
             '$schema',
