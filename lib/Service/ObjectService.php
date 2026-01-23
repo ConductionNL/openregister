@@ -1803,9 +1803,33 @@ class ObjectService
             $result['@self']['deleted']   = $deleted;
 
             // Add extended objects only if _extend is requested.
+            // Normalize _extend to array (handles comma-separated string from URL).
             $extend = $query['_extend'] ?? [];
+            if (is_string($extend) === true) {
+                $extend = array_filter(array_map('trim', explode(',', $extend)));
+            }
             if (empty($extend) === false) {
                 $result['@self']['objects'] = $this->getExtendedObjects();
+            }
+
+            // Add names mapping if _names is in _extend.
+            // This provides UUID-to-name mappings for all related objects in the results,
+            // reducing frontend calls to the names service.
+            if (is_array($extend) === true && in_array('_names', $extend, true) === true) {
+                $resultsToProcess = $result['results'] ?? [];
+
+                // Only process if results exist and is an array.
+                if (is_array($resultsToProcess) === false || empty($resultsToProcess) === true) {
+                    $result['@self']['names'] = [];
+                } else {
+                    try {
+                        $result['@self']['names'] = $this->collectNamesForResults($resultsToProcess);
+                    } catch (\Throwable $e) {
+                        $this->logger->error('_names extension failed: '.$e->getMessage().' at '.$e->getFile().':'.$e->getLine());
+                        $result['@self']['names'] = [];
+                        $result['@self']['names_error'] = $e->getMessage();
+                    }
+                }
             }
 
             return $result;
@@ -1840,7 +1864,11 @@ class ObjectService
         $result['@self']['deleted']   = $deleted;
 
         // Add extended objects only if _extend is requested.
+        // Normalize _extend to array (handles comma-separated string from URL).
         $extend = $query['_extend'] ?? [];
+        if (is_string($extend) === true) {
+            $extend = array_filter(array_map('trim', explode(',', $extend)));
+        }
         if (empty($extend) === false) {
             $result['@self']['objects'] = $this->getExtendedObjects();
         }
@@ -2041,6 +2069,17 @@ class ObjectService
                     }
                 }
 
+                // Collect from metadata fields (organisation, owner).
+                // These are UUID references to related objects that the frontend needs names for.
+                $organisation = $result->getOrganisation();
+                if (is_string($organisation) === true && $this->isUuidFormat($organisation) === true) {
+                    $uuids[] = $organisation;
+                }
+                $owner = $result->getOwner();
+                if (is_string($owner) === true && $this->isUuidFormat($owner) === true) {
+                    $uuids[] = $owner;
+                }
+
                 // Get object data directly without triggering full serialization.
                 $objectData = $result->getObject();
                 if (is_array($objectData) === true) {
@@ -2072,6 +2111,16 @@ class ObjectService
                                 }
                             }
                         }
+                    }
+                }
+
+                // Collect from metadata fields in @self (organisation, owner).
+                // These are UUID references to related objects that the frontend needs names for.
+                $metadataFields = ['organisation', 'owner'];
+                foreach ($metadataFields as $field) {
+                    $value = $resultData['@self'][$field] ?? null;
+                    if (is_string($value) === true && $this->isUuidFormat($value) === true) {
+                        $uuids[] = $value;
                     }
                 }
 
