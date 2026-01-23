@@ -122,6 +122,7 @@ use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Search\ObjectsProvider;
 use OCA\OpenRegister\BackgroundJob\SolrWarmupJob;
 use OCA\OpenRegister\BackgroundJob\SolrNightlyWarmupJob;
+use OCA\OpenRegister\BackgroundJob\NameCacheWarmupJob;
 use OCA\OpenRegister\BackgroundJob\CronFileTextExtractionJob;
 use OCA\OpenRegister\Cron\WebhookRetryJob;
 use OCP\AppFramework\App;
@@ -716,6 +717,22 @@ class Application extends App implements IBootstrap
 
             if ($jobList->has(SolrNightlyWarmupJob::class, null) === true) {
                 $logger->debug('SOLR Nightly Warmup Job already registered');
+            }
+
+            // Register recurring name cache warmup job.
+            if ($jobList->has(NameCacheWarmupJob::class, null) === false) {
+                $jobList->add(NameCacheWarmupJob::class);
+                $logger->info(
+                    '🌙 Name Cache Warmup Job registered successfully',
+                    [
+                        'job_class' => NameCacheWarmupJob::class,
+                        'interval'  => '24 hours (daily)',
+                    ]
+                );
+            }
+
+            if ($jobList->has(NameCacheWarmupJob::class, null) === true) {
+                $logger->debug('Name Cache Warmup Job already registered');
             }
 
             // Register recurring cron file text extraction job.

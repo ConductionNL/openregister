@@ -1311,6 +1311,16 @@ class ObjectsController extends Controller
                     $extendedObjects = $objectService->getExtendedObjects();
                     $renderedData['@self']['objects'] = $extendedObjects;
                 }
+
+                // Add names mapping if _names is in _extend.
+                // This provides UUID-to-name mappings for all related objects,
+                // reducing frontend calls to the names service.
+                if (in_array('_names', $extendArray, true) === true) {
+                    $renderedData['@self']['names'] = $this->collectNamesForResponse(
+                        renderedData: $renderedData,
+                        cacheHandler: $objectService->getCacheHandler()
+                    );
+                }
             }//end if
 
             return new JSONResponse(data: $renderedData);
@@ -2825,4 +2835,103 @@ class ObjectsController extends Controller
             );
         }//end try
     }//end validate()
+
+    /**
+     * Collect UUID-to-name mappings for all related objects in a response.
+     *
+     * This method extracts all UUIDs from the response data (relations, extended objects)
+     * and resolves them to human-readable names using the CacheHandler.
+     *
+     * @param array                                              $renderedData The rendered object data.
+     * @param \OCA\OpenRegister\Service\Object\CacheHandler|null $cacheHandler The cache handler for name resolution.
+     *
+     * @return array<string, string> Map of UUID to name.
+     */
+    private function collectNamesForResponse(
+        array $renderedData,
+        ?\OCA\OpenRegister\Service\Object\CacheHandler $cacheHandler
+    ): array {
+        if ($cacheHandler === null) {
+            return [];
+        }
+
+        $uuids = [];
+
+        // Collect UUIDs from @self.relations.
+        $relations = $renderedData['@self']['relations'] ?? [];
+        if (is_array($relations) === true) {
+            foreach ($relations as $relation) {
+                if (is_string($relation) === true && $this->isUuid($relation) === true) {
+                    $uuids[] = $relation;
+                } elseif (is_array($relation) === true) {
+                    // Handle nested relation arrays.
+                    foreach ($relation as $uuid) {
+                        if (is_string($uuid) === true && $this->isUuid($uuid) === true) {
+                            $uuids[] = $uuid;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Collect UUIDs from object properties (for extended relations).
+        $objectData = $renderedData['@self']['object'] ?? $renderedData;
+        if (is_array($objectData) === true) {
+            $this->collectUuidsFromArray($objectData, $uuids);
+        }
+
+        // Remove duplicates.
+        $uuids = array_unique($uuids);
+
+        if (empty($uuids) === true) {
+            return [];
+        }
+
+        // Resolve all UUIDs to names using CacheHandler.
+        return $cacheHandler->getMultipleObjectNames($uuids);
+    }//end collectNamesForResponse()
+
+    /**
+     * Recursively collect UUIDs from an array structure.
+     *
+     * @param array $data  The array to scan for UUIDs.
+     * @param array &$uuids Reference to array collecting UUIDs.
+     *
+     * @return void
+     */
+    private function collectUuidsFromArray(array $data, array &$uuids): void
+    {
+        foreach ($data as $key => $value) {
+            // Skip metadata keys.
+            if ($key === '@self' || $key === 'id' || $key === '_id') {
+                continue;
+            }
+
+            if (is_string($value) === true && $this->isUuid($value) === true) {
+                $uuids[] = $value;
+            } elseif (is_array($value) === true) {
+                // Check if it's an array of UUIDs.
+                foreach ($value as $item) {
+                    if (is_string($item) === true && $this->isUuid($item) === true) {
+                        $uuids[] = $item;
+                    } elseif (is_array($item) === true) {
+                        // Recurse into nested arrays.
+                        $this->collectUuidsFromArray($item, $uuids);
+                    }
+                }
+            }
+        }
+    }//end collectUuidsFromArray()
+
+    /**
+     * Check if a string is a valid UUID format.
+     *
+     * @param string $value The value to check.
+     *
+     * @return bool True if the value is a UUID format.
+     */
+    private function isUuid(string $value): bool
+    {
+        return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === 1;
+    }//end isUuid()
 }//end class

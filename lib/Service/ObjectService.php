@@ -1845,6 +1845,26 @@ class ObjectService
             $result['@self']['objects'] = $this->getExtendedObjects();
         }
 
+        // Add names mapping if _names is in _extend.
+        // This provides UUID-to-name mappings for all related objects in the results,
+        // reducing frontend calls to the names service.
+        if (is_array($extend) === true && in_array('_names', $extend, true) === true) {
+            $resultsToProcess = $result['results'] ?? [];
+
+            // Only process if results exist and is an array.
+            if (is_array($resultsToProcess) === false || empty($resultsToProcess) === true) {
+                $result['@self']['names'] = [];
+            } else {
+                try {
+                    $result['@self']['names'] = $this->collectNamesForResults($resultsToProcess);
+                } catch (\Throwable $e) {
+                    $this->logger->error('_names extension failed: '.$e->getMessage().' at '.$e->getFile().':'.$e->getLine());
+                    $result['@self']['names'] = [];
+                    $result['@self']['names_error'] = $e->getMessage();
+                }
+            }
+        }
+
         return $result;
     }//end searchObjectsPaginated()
 
@@ -1971,6 +1991,162 @@ class ObjectService
     {
         return $this->saveHandler->getCreatedSubObjects();
     }//end getCreatedSubObjects()
+
+    /**
+     * Get the CacheHandler instance for name resolution.
+     *
+     * Used by controllers to resolve UUID-to-name mappings for _names extension.
+     *
+     * @return CacheHandler The cache handler instance.
+     */
+    public function getCacheHandler(): CacheHandler
+    {
+        return $this->cacheHandler;
+    }//end getCacheHandler()
+
+    /**
+     * Collect UUID-to-name mappings for all related objects in search results.
+     *
+     * This method extracts all UUIDs from the search results (relations, object properties)
+     * and resolves them to human-readable names using the CacheHandler.
+     *
+     * @param array $results Array of rendered objects or ObjectEntity instances from search.
+     *
+     * @return array<string, string> Map of UUID to name.
+     */
+    private function collectNamesForResults(array $results): array
+    {
+        $uuids = [];
+
+        $count = 0;
+        foreach ($results as $result) {
+            $count++;
+
+            // For ObjectEntity instances, access relations directly without full serialization.
+            // This avoids triggering expensive render operations.
+            if ($result instanceof \OCA\OpenRegister\Db\ObjectEntity) {
+                // Get relations directly from entity.
+                $relations = $result->getRelations();
+                if (is_array($relations) === true) {
+                    foreach ($relations as $relation) {
+                        if (is_string($relation) === true && $this->isUuidFormat($relation) === true) {
+                            $uuids[] = $relation;
+                        } elseif (is_array($relation) === true) {
+                            foreach ($relation as $uuid) {
+                                if (is_string($uuid) === true && $this->isUuidFormat($uuid) === true) {
+                                    $uuids[] = $uuid;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Get object data directly without triggering full serialization.
+                $objectData = $result->getObject();
+                if (is_array($objectData) === true) {
+                    $this->collectUuidsFromObjectData($objectData, $uuids);
+                }
+                continue;
+            }
+
+            // Handle already-serialized arrays.
+            if (is_array($result) === false) {
+                continue;
+            }
+
+            $resultData = $result;
+
+            // Get the actual object data - handle nested @self structure.
+            $objectData = $resultData;
+            if (isset($resultData['@self']) === true && is_array($resultData['@self']) === true) {
+                // Collect from relations in @self.
+                $relations = $resultData['@self']['relations'] ?? [];
+                if (is_array($relations) === true) {
+                    foreach ($relations as $relation) {
+                        if (is_string($relation) === true && $this->isUuidFormat($relation) === true) {
+                            $uuids[] = $relation;
+                        } elseif (is_array($relation) === true) {
+                            foreach ($relation as $uuid) {
+                                if (is_string($uuid) === true && $this->isUuidFormat($uuid) === true) {
+                                    $uuids[] = $uuid;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Use the object data from @self if present.
+                if (isset($resultData['@self']['object']) === true && is_array($resultData['@self']['object']) === true) {
+                    $objectData = $resultData['@self']['object'];
+                }
+            }
+
+            // Collect UUIDs from object properties.
+            if (is_array($objectData) === true) {
+                $this->collectUuidsFromObjectData($objectData, $uuids);
+            }
+        }
+
+
+        // Remove duplicates.
+        $uuids = array_unique($uuids);
+
+        if (empty($uuids) === true) {
+            return [];
+        }
+
+        // Resolve all UUIDs to names using CacheHandler.
+        $names = $this->cacheHandler->getMultipleObjectNames($uuids);
+        return $names;
+    }//end collectNamesForResults()
+
+    /**
+     * Recursively collect UUIDs from object data.
+     *
+     * @param array $data   The object data to scan.
+     * @param array &$uuids Reference to array collecting UUIDs.
+     *
+     * @return void
+     */
+    private function collectUuidsFromObjectData(array $data, array &$uuids, int $depth = 0): void
+    {
+        // Only process top-level to avoid recursion issues.
+        if ($depth > 0) {
+            return;
+        }
+
+        foreach ($data as $key => $value) {
+            // Skip metadata keys.
+            if ($key === '@self' || $key === 'id' || $key === '_id' || $key === 'object') {
+                continue;
+            }
+
+            // Only look at top-level string UUIDs.
+            if (is_string($value) === true && $this->isUuidFormat($value) === true) {
+                $uuids[] = $value;
+            } elseif (is_array($value) === true) {
+                // Only look at arrays of UUIDs (not nested objects).
+                foreach ($value as $item) {
+                    if (is_string($item) === true && $this->isUuidFormat($item) === true) {
+                        $uuids[] = $item;
+                    }
+                    // Skip nested arrays completely.
+                }
+            }
+        }
+    }//end collectUuidsFromObjectData()
+
+    /**
+     * Check if a string is in UUID format.
+     *
+     * @param string $value The value to check.
+     *
+     * @return bool True if the value matches UUID format.
+     */
+    private function isUuidFormat(string $value): bool
+    {
+        return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === 1;
+    }//end isUuidFormat()
 
     /**
      * Clear the created sub-objects cache.

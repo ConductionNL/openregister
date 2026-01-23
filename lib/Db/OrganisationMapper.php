@@ -208,8 +208,7 @@ class OrganisationMapper extends QBMapper
         $result        = $qb->executeQuery();
         $organisations = [];
 
-        $row = $result->fetch();
-        while ($row !== false) {
+        while (($row = $result->fetch()) !== false) {
             $organisation = new Organisation();
             $organisation = $organisation->fromRow($row);
             $organisations[$row['uuid']] = $organisation;

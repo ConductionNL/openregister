@@ -138,7 +138,48 @@ POST /api/names/warmup
 
 The Names API integrates with paginated search endpoints to provide related object data for frontend optimization.
 
-### Related Data Parameters
+### The `_names` Extension Parameter (Recommended)
+
+The most efficient way to get UUID-to-name mappings is using the `_names` extension parameter. This eliminates the need for separate API calls to the Names service.
+
+**Example Request:**
+```
+GET /api/objects/register/schema?_limit=10&_extend[]=_names
+```
+
+**Enhanced Response:**
+```json
+{
+  "results": [...],
+  "total": 150,
+  "page": 1,
+  "@self": {
+    "source": "database",
+    "names": {
+      "uuid-1": "Organization Alpha",
+      "uuid-2": "Contact John Doe",
+      "uuid-3": "Related Document"
+    }
+  }
+}
+```
+
+**How it works:**
+1. Collects all UUIDs from object relations and properties
+2. Resolves names using the cached name service (24-hour cache)
+3. Returns names in `@self.names` for the entire result set
+
+**Performance:**
+- Uses the same cached name service as direct Names API calls
+- Adds minimal overhead (~10-50ms depending on number of unique UUIDs)
+- Eliminates need for separate frontend calls to `/api/names`
+
+**Best for:**
+- Collection endpoints returning multiple objects with relations
+- Single object endpoints with many related UUIDs
+- Frontend applications that need to display names immediately
+
+### Related Data Parameters (Legacy)
 
 Add these query parameters to any paginated search endpoint:
 
@@ -303,14 +344,34 @@ export function useNames(objectIds) {
 
 ## 🔄 Cache Management
 
+### Cache Configuration
+
+The name cache is configured for optimal performance with long-lived entries:
+
+| Setting | Value | Description |
+|---------|-------|-------------|
+| **Default TTL** | 24 hours | Names rarely change, long cache is safe |
+| **Maximum TTL** | 24 hours | Enforced maximum for all cache entries |
+| **Nightly Warmup** | Automatic | Background job pre-loads all names daily |
+
 ### Automatic Cache Updates
 
 The name cache automatically updates when objects are modified:
 
 - **Create**: New object names are immediately cached
 - **Update**: Modified names are updated in cache
-- **Delete**: Deleted objects are removed from cache
+- **Delete**: Deleted objects are removed from both in-memory and distributed cache
 - **Bulk Operations**: Efficiently handles bulk CRUD operations
+
+### Nightly Cache Warmup
+
+A background job (`NameCacheWarmupJob`) runs every 24 hours to pre-populate the distributed cache with all object names. This ensures:
+
+- First morning requests are fast (no cold cache)
+- Names are loaded from all sources:
+  - Organisations table
+  - Objects table
+  - All magic tables (register+schema combinations)
 
 ### Manual Cache Control
 

@@ -53,18 +53,23 @@ use Psr\Log\LoggerInterface;
 class FacetHandler
 {
     /**
-     * Cache TTL for facet responses (5 minutes).
+     * Cache TTL for facet responses (1 hour).
+     *
+     * Facet counts don't need real-time accuracy - slight staleness is acceptable.
+     * Cache is invalidated when schemas change.
      *
      * @var int
      */
-    private const FACET_CACHE_TTL = 300;
+    private const FACET_CACHE_TTL = 3600;
 
     /**
-     * Cache TTL for collection-wide facets (15 minutes).
+     * Cache TTL for collection-wide facets (1 hour).
+     *
+     * Collection-wide facets change even less frequently.
      *
      * @var int
      */
-    private const COLLECTION_FACET_TTL = 900;
+    private const COLLECTION_FACET_TTL = 3600;
 
     /**
      * Distributed cache for facet responses.
