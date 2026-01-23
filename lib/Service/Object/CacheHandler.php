@@ -76,14 +76,14 @@ class CacheHandler
     private int $maxCacheSize = 1000;
 
     /**
-     * Maximum cache TTL for office environments (8 hours in seconds)
+     * Maximum cache TTL for name caching (24 hours in seconds)
      *
-     * This prevents indefinite cache buildup while maintaining performance
-     * during business hours.
+     * UUIDs and names rarely change, so a longer TTL is appropriate.
+     * Cache is invalidated on object update/delete operations anyway.
      *
      * @var int
      */
-    private const MAX_CACHE_TTL = 28800;
+    private const MAX_CACHE_TTL = 86400;
 
     /**
      * In-memory cache of object names indexed by ID/UUID
@@ -794,9 +794,24 @@ class CacheHandler
                 // Remove from search index with immediate commit for instant visibility.
                 $this->removeObjectFromSolr(object: $object, commit: true);
 
-                // Remove from name cache.
+                // Remove from in-memory name cache.
                 unset($this->nameCache[$object->getUuid()]);
                 unset($this->nameCache[(string) $object->getId()]);
+
+                // Remove from distributed name cache.
+                if ($this->nameDistributedCache !== null) {
+                    try {
+                        $this->nameDistributedCache->remove('name_'.$object->getUuid());
+                        if ($object->getId() !== null) {
+                            $this->nameDistributedCache->remove('name_'.$object->getId());
+                        }
+                    } catch (\Exception $e) {
+                        $this->logger->warning(
+                            'Failed to remove object name from distributed cache',
+                            ['uuid' => $object->getUuid(), 'error' => $e->getMessage()]
+                        );
+                    }
+                }
             }
         }//end if
 
@@ -939,11 +954,11 @@ class CacheHandler
      *
      * @param string|int $identifier Object ID or UUID
      * @param string     $name       Object name to cache
-     * @param int        $ttl        Cache TTL in seconds (default: 1 hour)
+     * @param int        $ttl        Cache TTL in seconds (default: 24 hours)
      *
      * @return void
      */
-    public function setObjectName(string|int $identifier, string $name, int $ttl=3600): void
+    public function setObjectName(string|int $identifier, string $name, int $ttl=86400): void
     {
         $key = (string) $identifier;
 
@@ -1182,34 +1197,13 @@ class CacheHandler
                     }
                 }
 
-                // STEP 3: Try to find any still-missing identifiers in magic tables.
+                // STEP 3: Batch load any still-missing identifiers from magic tables.
+                // This replaces the N+1 individual lookups with batch queries per table.
                 if (empty($missingIdentifiers) === false) {
-                    foreach ($missingIdentifiers as $identifier) {
-                        try {
-                            $result = $this->objectEntityMapper->findAcrossAllSources(
-                                identifier: $identifier,
-                                includeDeleted: false,
-                                _rbac: false,
-                                _multitenancy: false
-                            );
-                            if (($result['object'] ?? null) !== null) {
-                                $object = $result['object'];
-                                $name   = $object->getName() ?? $object->getUuid();
-                                $uuid   = $object->getUuid();
-
-                                // Store result with UUID key (for consistent return format).
-                                $results[$uuid] = $name;
-
-                                // Cache with BOTH the original identifier AND UUID for future lookups.
-                                // This ensures cache hits regardless of which identifier format is used.
-                                $this->setObjectName(identifier: $identifier, name: $name);
-                                if ((string) $identifier !== $uuid) {
-                                    $this->setObjectName(identifier: $uuid, name: $name);
-                                }
-                            }
-                        } catch (\Exception $e) {
-                            // Object not found in any source, continue.
-                        }
+                    $batchResults = $this->batchLoadNamesFromMagicTables($missingIdentifiers);
+                    foreach ($batchResults as $uuid => $name) {
+                        $results[$uuid] = $name;
+                        $this->setObjectName(identifier: $uuid, name: $name);
                     }
                 }
             } catch (\Exception $e) {
@@ -1469,6 +1463,153 @@ class CacheHandler
 
         return $loadedCount;
     }//end loadNamesFromMagicTables()
+
+    /**
+     * Batch load names for specific UUIDs from magic tables.
+     *
+     * Queries all magic tables with a single IN clause per table to efficiently
+     * resolve multiple UUIDs at once. This replaces the N+1 individual lookups.
+     *
+     * @param array $uuids Array of UUIDs to look up.
+     *
+     * @return array<string, string> Map of UUID to name.
+     */
+    private function batchLoadNamesFromMagicTables(array $uuids): array
+    {
+        $results = [];
+
+        if (empty($uuids) === true) {
+            return $results;
+        }
+
+        // Filter to only UUID-like strings.
+        $uuidList = array_filter($uuids, function ($id) {
+            return is_string($id) === true && str_contains($id, '-');
+        });
+
+        if (empty($uuidList) === true) {
+            return $results;
+        }
+
+        try {
+            // Get all registers.
+            $registers = $this->registerMapper->findAll();
+
+            foreach ($registers as $register) {
+                // If we found all UUIDs, stop searching.
+                if (count($results) >= count($uuidList)) {
+                    break;
+                }
+
+                $registerId = $register->getId();
+                $schemaIds  = $register->getSchemas() ?? [];
+
+                foreach ($schemaIds as $schemaId) {
+                    // If we found all UUIDs, stop searching.
+                    if (count($results) >= count($uuidList)) {
+                        break;
+                    }
+
+                    // Get schema for config lookup.
+                    $schemaSlug = null;
+                    try {
+                        $schema     = $this->schemaMapper->find((int) $schemaId);
+                        $schemaSlug = $schema->getSlug();
+                    } catch (\Exception $e) {
+                        continue;
+                    }
+
+                    // Check if this schema has magic mapping enabled.
+                    if ($register->isMagicMappingEnabledForSchema(
+                        schemaId: (int) $schemaId,
+                        schemaSlug: $schemaSlug
+                    ) === false) {
+                        continue;
+                    }
+
+                    // Build table name.
+                    $tableName = 'oc_openregister_table_'.$registerId.'_'.$schemaId;
+
+                    // Find UUIDs we still need to look up.
+                    $remainingUuids = array_diff($uuidList, array_keys($results));
+                    if (empty($remainingUuids) === true) {
+                        break;
+                    }
+
+                    // Batch query this table.
+                    $tableResults = $this->queryTableForNames(
+                        tableName: $tableName,
+                        uuids: array_values($remainingUuids)
+                    );
+
+                    $results = array_merge($results, $tableResults);
+                }//end foreach
+            }//end foreach
+        } catch (\Exception $e) {
+            $this->logger->warning(
+                'Failed to batch load names from magic tables',
+                ['error' => $e->getMessage(), 'uuid_count' => count($uuids)]
+            );
+        }
+
+        return $results;
+    }//end batchLoadNamesFromMagicTables()
+
+    /**
+     * Query a single magic table for names by UUIDs.
+     *
+     * @param string $tableName The table name (with oc_ prefix).
+     * @param array  $uuids     Array of UUIDs to look up.
+     *
+     * @return array<string, string> Map of UUID to name.
+     */
+    private function queryTableForNames(string $tableName, array $uuids): array
+    {
+        $results = [];
+
+        if (empty($uuids) === true) {
+            return $results;
+        }
+
+        // Try different name columns in order of preference.
+        $nameColumns = ['_name', 'naam', 'name', 'title'];
+
+        foreach ($nameColumns as $nameColumn) {
+            try {
+                // Build placeholders for IN clause.
+                $placeholders = implode(',', array_fill(0, count($uuids), '?'));
+
+                $sql = "SELECT _uuid, {$nameColumn} as name_value
+                        FROM {$tableName}
+                        WHERE _uuid IN ({$placeholders})
+                        AND _deleted IS NULL";
+
+                $stmt = $this->db->prepare($sql);
+                foreach ($uuids as $index => $uuid) {
+                    $stmt->bindValue((int) $index + 1, $uuid);
+                }
+                $stmt->execute();
+
+                while (($row = $stmt->fetch()) !== false) {
+                    $uuid = $row['_uuid'];
+                    $name = $row['name_value'];
+                    if ($name !== null && trim((string) $name) !== '') {
+                        $results[$uuid] = (string) $name;
+                    }
+                }
+
+                // If we found results with this column, return them.
+                if (empty($results) === false) {
+                    return $results;
+                }
+            } catch (\Exception $e) {
+                // Column doesn't exist, try next one.
+                continue;
+            }
+        }
+
+        return $results;
+    }//end queryTableForNames()
 
     /**
      * Persist in-memory name cache to distributed cache.

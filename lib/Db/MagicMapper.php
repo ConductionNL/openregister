@@ -319,9 +319,18 @@ class MagicMapper
             eventDispatcher: $this->eventDispatcher
         );
 
+        // Get CacheHandler from container for facet label resolution.
+        $cacheHandler = null;
+        try {
+            $cacheHandler = $this->container->get(\OCA\OpenRegister\Service\Object\CacheHandler::class);
+        } catch (\Exception $e) {
+            $this->logger->debug('CacheHandler not available for MagicFacetHandler: '.$e->getMessage());
+        }
+
         $this->facetHandler = new MagicFacetHandler(
             db: $this->db,
-            logger: $this->logger
+            logger: $this->logger,
+            cacheHandler: $cacheHandler
         );
     }//end initializeHandlers()
 

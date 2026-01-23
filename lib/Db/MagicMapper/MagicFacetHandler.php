@@ -76,15 +76,30 @@ class MagicFacetHandler
     private array $facetCache = [];
 
     /**
+     * In-memory cache for UUID to label mappings (batch-resolved)
+     */
+    private array $uuidLabelCache = [];
+
+    /**
+     * Cache handler for UUID to name resolution
+     *
+     * @var \OCA\OpenRegister\Service\Object\CacheHandler|null
+     */
+    private ?\OCA\OpenRegister\Service\Object\CacheHandler $cacheHandler = null;
+
+    /**
      * Constructor for MagicFacetHandler
      *
-     * @param IDBConnection   $db     Database connection for queries
-     * @param LoggerInterface $logger Logger for debugging and error reporting
+     * @param IDBConnection   $db           Database connection for queries
+     * @param LoggerInterface $logger       Logger for debugging and error reporting
+     * @param \OCA\OpenRegister\Service\Object\CacheHandler|null $cacheHandler Cache handler for name resolution
      */
     public function __construct(
         private readonly IDBConnection $db,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        ?\OCA\OpenRegister\Service\Object\CacheHandler $cacheHandler = null
     ) {
+        $this->cacheHandler = $cacheHandler;
     }//end __construct()
 
     /**
@@ -438,24 +453,64 @@ class MagicFacetHandler
         );
 
         $result  = $queryBuilder->executeQuery();
-        $buckets = [];
+
+        // STEP 1: Collect all bucket keys first (don't resolve labels yet).
+        $rawBuckets = [];
+        $uuidsToResolve = [];
 
         while (($row = $result->fetch()) !== false) {
             $key = $row[$field];
             // Clean up JSON-encoded single values (e.g., "value" -> value).
             $key = $this->cleanJsonValue($key);
 
-            $label = $this->getFieldLabel(
+            $rawBuckets[] = [
+                'key'     => $key,
+                'results' => (int) $row['doc_count'],
+            ];
+
+            // Collect UUIDs that need label resolution.
+            if (is_string($key) === true
+                && preg_match(
+                    '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i',
+                    $key
+                ) === 1
+            ) {
+                $uuidsToResolve[] = $key;
+            }
+        }
+
+        // STEP 2: Batch resolve all UUID labels at once.
+        $labelMap = [];
+        if (empty($uuidsToResolve) === false && $isMetadata === false) {
+            $labelMap = $this->batchResolveUuidLabels(
+                uuids: $uuidsToResolve,
                 field: $field,
-                value: $key,
-                isMetadata: $isMetadata,
-                register: $register,
-                schema: $schema
+                schema: $schema,
+                register: $register
             );
+        }
+
+        // STEP 3: Build final buckets with labels.
+        $buckets = [];
+        foreach ($rawBuckets as $bucket) {
+            $key = $bucket['key'];
+
+            // Use batch-resolved label if available, otherwise fall back to individual lookup.
+            if (isset($labelMap[$key]) === true) {
+                $label = $labelMap[$key];
+            } else {
+                $label = $this->getFieldLabel(
+                    field: $field,
+                    value: $key,
+                    isMetadata: $isMetadata,
+                    register: $register,
+                    schema: $schema
+                );
+            }
 
             $buckets[] = [
                 'key'     => $key,
-                'results' => (int) $row['doc_count'],
+                'results' => $bucket['results'],
                 'label'   => $label,
             ];
         }
@@ -464,11 +519,11 @@ class MagicFacetHandler
             'type'    => 'terms',
             'buckets' => $buckets,
         ];
-        
-        // Cache the result
+
+        // Cache the result.
         $cacheKey = md5(json_encode([$tableName, $field, $baseQuery, $isMetadata]));
         $this->facetCache[$cacheKey] = $result;
-        
+
         return $result;
     }//end getTermsFacet()
 
@@ -573,21 +628,62 @@ class MagicFacetHandler
             }
 
             $stmt->execute();
-            $buckets = [];
+
+            // STEP 1: Collect all bucket keys first (don't resolve labels yet).
+            $rawBuckets = [];
+            $uuidsToResolve = [];
 
             while (($row = $stmt->fetch()) !== false) {
-                $key   = $row['facet_value'];
-                $label = $this->getFieldLabel(
+                $key = $row['facet_value'];
+
+                $rawBuckets[] = [
+                    'key'     => $key,
+                    'results' => (int) $row['doc_count'],
+                ];
+
+                // Collect UUIDs that need label resolution.
+                if (is_string($key) === true
+                    && preg_match(
+                        '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i',
+                        $key
+                    ) === 1
+                ) {
+                    $uuidsToResolve[] = $key;
+                }
+            }
+
+            // STEP 2: Batch resolve all UUID labels at once.
+            $labelMap = [];
+            if (empty($uuidsToResolve) === false && $isMetadata === false) {
+                $labelMap = $this->batchResolveUuidLabels(
+                    uuids: $uuidsToResolve,
                     field: $field,
-                    value: $key,
-                    isMetadata: $isMetadata,
-                    register: $register,
-                    schema: $schema
+                    schema: $schema,
+                    register: $register
                 );
+            }
+
+            // STEP 3: Build final buckets with labels.
+            $buckets = [];
+            foreach ($rawBuckets as $bucket) {
+                $key = $bucket['key'];
+
+                // Use batch-resolved label if available, else fall back.
+                if (isset($labelMap[$key]) === true) {
+                    $label = $labelMap[$key];
+                } else {
+                    $label = $this->getFieldLabel(
+                        field: $field,
+                        value: $key,
+                        isMetadata: $isMetadata,
+                        register: $register,
+                        schema: $schema
+                    );
+                }
 
                 $buckets[] = [
                     'key'     => $key,
-                    'results' => (int) $row['doc_count'],
+                    'results' => $bucket['results'],
                     'label'   => $label,
                 ];
             }
@@ -1223,6 +1319,72 @@ class MagicFacetHandler
     }//end getDateFormatForInterval()
 
     /**
+     * Batch resolve UUID labels using the centralized CacheHandler service.
+     *
+     * Delegates to CacheHandler's getMultipleObjectNames() which provides:
+     * - Distributed cache support (shared across requests)
+     * - Batch queries to magic tables (eliminates N+1 problem)
+     * - Automatic table discovery and name column resolution
+     *
+     * @param array    $uuids    Array of UUIDs to resolve.
+     * @param string   $field    The field name (unused, kept for signature compatibility).
+     * @param Schema   $schema   The current schema context (unused, kept for signature compatibility).
+     * @param Register $register The current register context (unused, kept for signature compatibility).
+     *
+     * @return array<string, string> Map of UUID to label.
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) Parameters kept for backwards compatibility.
+     */
+    private function batchResolveUuidLabels(
+        array $uuids,
+        string $field,
+        Schema $schema,
+        Register $register
+    ): array {
+        if (empty($uuids) === true) {
+            return [];
+        }
+
+        // Check in-memory cache first for this request.
+        $result = [];
+        $uncachedUuids = [];
+        foreach ($uuids as $uuid) {
+            if (isset($this->uuidLabelCache[$uuid]) === true) {
+                $result[$uuid] = $this->uuidLabelCache[$uuid];
+            } else {
+                $uncachedUuids[] = $uuid;
+            }
+        }
+
+        if (empty($uncachedUuids) === true) {
+            return $result;
+        }
+
+        // Use CacheHandler for centralized name resolution with distributed caching.
+        if ($this->cacheHandler !== null) {
+            $batchedLabels = $this->cacheHandler->getMultipleObjectNames($uncachedUuids);
+
+            // Cache results locally and merge.
+            foreach ($batchedLabels as $uuid => $label) {
+                $this->uuidLabelCache[$uuid] = $label;
+                $result[$uuid] = $label;
+            }
+
+            $this->logger->debug(
+                'batchResolveUuidLabels: Resolved labels via CacheHandler',
+                [
+                    'field'     => $field,
+                    'requested' => count($uuids),
+                    'fromLocal' => count($uuids) - count($uncachedUuids),
+                    'fromCache' => count($batchedLabels),
+                ]
+            );
+        }
+
+        return $result;
+    }//end batchResolveUuidLabels()
+
+    /**
      * Get human-readable label for a field value.
      *
      * @param string   $field      The field name.
@@ -1294,14 +1456,15 @@ class MagicFacetHandler
                     return (string) $name;
                 }
             } catch (\Exception $e) {
-                // Fall through to schema object lookup.
+                // Fall through to CacheHandler lookup.
             }
 
-            // Try to find organisation name from Organisation schema objects.
-            // Organisation objects may be stored in magic tables with different name columns.
-            $orgName = $this->getOrganisationNameFromSchemaObjects($value);
-            if ($orgName !== null) {
-                return $orgName;
+            // Try CacheHandler for dynamic object name lookup.
+            if ($this->cacheHandler !== null) {
+                $names = $this->cacheHandler->getMultipleObjectNames([$value]);
+                if (isset($names[$value]) === true) {
+                    return $names[$value];
+                }
             }
 
             // Return shortened UUID if name not found.
@@ -1313,9 +1476,12 @@ class MagicFacetHandler
         if (is_string($value) === true
             && preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === 1
         ) {
-            $objectName = $this->getObjectNameFromSchemaObjects($value);
-            if ($objectName !== null) {
-                return $objectName;
+            // Use CacheHandler for dynamic object name lookup.
+            if ($this->cacheHandler !== null) {
+                $names = $this->cacheHandler->getMultipleObjectNames([$value]);
+                if (isset($names[$value]) === true) {
+                    return $names[$value];
+                }
             }
 
             // Return shortened UUID if name not found.
@@ -1324,112 +1490,4 @@ class MagicFacetHandler
 
         return (string) $value;
     }//end getFieldLabel()
-
-    /**
-     * Get object name from schema objects by UUID.
-     *
-     * Looks up the UUID in known schema magic tables and returns the object name
-     * if found. Searches common name fields (naam, name, title).
-     *
-     * @param string $uuid The object UUID to look up.
-     *
-     * @return string|null The object name or null if not found.
-     */
-    private function getObjectNameFromSchemaObjects(string $uuid): ?string
-    {
-        // Known object tables with their name columns.
-        // Table: openregister_table_{register}_{schema} with column 'naam', 'name', '_name' (metadata), or 'title'.
-        $objectTables = [
-            // Organisatie in Voorzieningen register (register 2, schema 24).
-            ['table' => 'oc_openregister_table_2_24', 'columns' => ['naam', 'name', '_name']],
-            // Element in AMEF register (register 3, schema 29) - for standaardversies.
-            // Element uses _name metadata column for name.
-            ['table' => 'oc_openregister_table_3_29', 'columns' => ['_name', 'name', 'naam', 'title']],
-            // Organization in Publication register (register 1, schema 4).
-            ['table' => 'oc_openregister_table_1_4', 'columns' => ['name', 'naam', '_name']],
-            // Organization in AMEF register (register 3, schema 4).
-            ['table' => 'oc_openregister_table_3_4', 'columns' => ['name', 'naam', '_name']],
-            // Applicatie/Module in Voorzieningen register (register 2, schema 34).
-            ['table' => 'oc_openregister_table_2_34', 'columns' => ['naam', 'name', '_name', 'title']],
-        ];
-
-        foreach ($objectTables as $tableInfo) {
-            $tableName = $tableInfo['table'];
-
-            foreach ($tableInfo['columns'] as $nameColumn) {
-                try {
-                    // Query directly - skip information_schema check for performance.
-                    // Try to select from the table directly. If it fails, move to next.
-                    $sql  = "SELECT {$nameColumn} FROM {$tableName} WHERE _uuid = ? LIMIT 1";
-                    $stmt = $this->db->prepare($sql);
-                    $stmt->execute([$uuid]);
-                    $name = $stmt->fetchOne();
-
-                    if ($name !== false && $name !== null && trim((string) $name) !== '') {
-                        return (string) $name;
-                    }
-                } catch (\Exception $e) {
-                    // Table/column doesn't exist or query failed, try next column/table.
-                    continue;
-                }
-            }//end foreach
-        }//end foreach
-
-        return null;
-    }//end getObjectNameFromSchemaObjects()
-
-    /**
-     * Get organisation name from Organisation schema objects.
-     *
-     * Looks up the organisation UUID in known Organisation schema magic tables
-     * and returns the organisation name if found. Uses direct SQL for reliability.
-     *
-     * @param string $uuid The organisation UUID to look up.
-     *
-     * @return string|null The organisation name or null if not found.
-     */
-    private function getOrganisationNameFromSchemaObjects(string $uuid): ?string
-    {
-        // Known organisation tables with their name columns.
-        // Table: openregister_table_{register}_{schema} with column 'naam' or 'name'.
-        $orgTables = [
-            ['table' => 'oc_openregister_table_2_24', 'column' => 'naam'],
-            // Organisatie in Voorzieningen register
-            ['table' => 'oc_openregister_table_1_4', 'column' => 'name'],
-            // Organization in Publication register
-            ['table' => 'oc_openregister_table_3_4', 'column' => 'name'],
-            // Organization in AMEF register (if exists)
-        ];
-
-        foreach ($orgTables as $tableInfo) {
-            $tableName  = $tableInfo['table'];
-            $nameColumn = $tableInfo['column'];
-
-            try {
-                // Check if table and column exist.
-                $checkSql = "SELECT 1 FROM information_schema.columns
-                             WHERE table_name = ? AND column_name = ? LIMIT 1";
-                $stmt     = $this->db->prepare($checkSql);
-                $stmt->execute([strtolower($tableName), strtolower($nameColumn)]);
-                if ($stmt->fetch() === false) {
-                    continue;
-                }
-
-                // Query for the organisation name.
-                $sql  = "SELECT {$nameColumn} FROM {$tableName} WHERE _uuid = ? LIMIT 1";
-                $stmt = $this->db->prepare($sql);
-                $stmt->execute([$uuid]);
-                $name = $stmt->fetchOne();
-
-                if ($name !== false && $name !== null && trim((string) $name) !== '') {
-                    return (string) $name;
-                }
-            } catch (\Exception $e) {
-                // Table doesn't exist or query failed, try next.
-                continue;
-            }
-        }//end foreach
-
-        return null;
-    }//end getOrganisationNameFromSchemaObjects()
 }//end class
