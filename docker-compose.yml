@@ -427,6 +427,24 @@ services:
       retries: 3
       start_period: 60s
 
+  # Tilburg WOO UI - Public interface for WOO (Wet Open Overheid) documents
+  # Access at: http://localhost:3003
+  # Documentation: https://github.com/ConductionNL/tilburg-woo-ui
+  tilburg-woo-ui:
+    image: ghcr.io/conductionnl/tilburg-woo-ui:performance
+    container_name: openregister-tilburg-woo-ui
+    restart: always
+    ports:
+      - "3003:80"
+    depends_on:
+      - nextcloud
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:80/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
   # OpenLLM Management Interface (Optional - use --profile llm-management)
   # Web UI for managing and downloading language models
   # Access at: http://localhost:3002
