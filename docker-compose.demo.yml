@@ -1,0 +1,157 @@
+services:
+  # PostgreSQL Database
+  db:
+    image: pgvector/pgvector:pg16
+    restart: always
+    container_name: openregister-demo-postgres
+    volumes:
+      - ./docker/postgres/init-extensions.sql:/docker-entrypoint-initdb.d/01-init-extensions.sql:ro
+    environment:
+      - POSTGRES_DB=nextcloud
+      - POSTGRES_USER=nextcloud
+      - POSTGRES_PASSWORD=demo
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nextcloud -d nextcloud"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: >
+      postgres
+      -c shared_preload_libraries=pg_trgm,vector
+      -c max_connections=200
+
+  # Nextcloud with OpenRegister and OpenCatalogi from App Store
+  nextcloud:
+    image: nextcloud
+    container_name: openregister-demo-nextcloud
+    restart: always
+    ports:
+      - "8080:80"
+    environment:
+      # Database configuration
+      - POSTGRES_DB=nextcloud
+      - POSTGRES_USER=nextcloud
+      - POSTGRES_PASSWORD=demo
+      - POSTGRES_HOST=db
+      # Admin credentials
+      - NEXTCLOUD_ADMIN_USER=admin
+      - NEXTCLOUD_ADMIN_PASSWORD=admin
+      # Timezone
+      - TZ=Europe/Amsterdam
+      # PHP Configuration
+      - PHP_MEMORY_LIMIT=2G
+      - PHP_UPLOAD_LIMIT=1G
+    depends_on:
+      db:
+        condition: service_healthy
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        # Start Nextcloud installation in background
+        /entrypoint.sh apache2-foreground &
+        APACHE_PID=$$!
+
+        # Wait for Nextcloud to be installed
+        echo "Waiting for Nextcloud to initialize..."
+        sleep 30
+
+        # Wait until occ is available
+        until php /var/www/html/occ status 2>/dev/null | grep -q "installed: true"; do
+          echo "Waiting for Nextcloud installation to complete..."
+          sleep 10
+        done
+
+        echo "Nextcloud installed, configuring..."
+
+        # Add trusted domains for WOO UI proxy
+        php /var/www/html/occ config:system:set trusted_domains 0 --value="localhost"
+        php /var/www/html/occ config:system:set trusted_domains 1 --value="localhost:8080"
+        php /var/www/html/occ config:system:set trusted_domains 2 --value="localhost:3003"
+        php /var/www/html/occ config:system:set trusted_domains 3 --value="openregister-demo-nextcloud"
+        php /var/www/html/occ config:system:set trusted_domains 4 --value="host.docker.internal"
+
+        # Enable beta/experimental apps from app store
+        php /var/www/html/occ config:system:set appstore.experimental.enabled --value=true --type=boolean
+
+        # Install OpenRegister BETA from app store
+        echo "Installing OpenRegister (beta) from app store..."
+        php /var/www/html/occ app:install openregister --allow-unstable 2>&1 || echo "OpenRegister installation result: $$?"
+        php /var/www/html/occ app:enable openregister 2>&1 || true
+
+        # Install OpenCatalogi BETA from app store
+        echo "Installing OpenCatalogi (beta) from app store..."
+        php /var/www/html/occ app:install opencatalogi --allow-unstable 2>&1 || echo "OpenCatalogi installation result: $$?"
+        php /var/www/html/occ app:enable opencatalogi 2>&1 || true
+
+        # Enable debug mode for development
+        php /var/www/html/occ config:system:set debug --value=true --type=boolean
+        php /var/www/html/occ config:system:set loglevel --value=0 --type=integer
+
+        echo "Demo environment ready!"
+        echo "Access Nextcloud at: http://localhost:8080"
+        echo "Login: admin / admin"
+
+        # Keep container running
+        wait $$APACHE_PID
+
+  # Tilburg WOO UI - Public interface for WOO documents
+  tilburg-woo-ui:
+    image: ghcr.io/conductionnl/tilburg-woo-ui:performance
+    container_name: openregister-demo-woo-ui
+    restart: always
+    ports:
+      - "3003:81"
+    environment:
+      # Nginx proxy configuration
+      - NGINX_ROOT_DIR=/usr/share/nginx/html
+      - NGINX_NEXTCLOUD_UPSTREAM=http://openregister-demo-nextcloud:80
+      - NGINX_TARGET_HOST=openregister-demo-nextcloud
+      # Runtime configuration
+      - SITE_TITLE=OpenRegister Demo
+      - SITE_DESCRIPTION=Demo environment for OpenRegister WOO publications
+      - SITE=localhost:3003
+      - MODE=development
+      - THEME_VARIANT=development
+      - ENVIRONMENT_NAME=demo
+      - BASE_URL=/api/apps
+      - PROVIDER=nextcloud
+      - ENABLE_AUTHENTICATION=false
+      - ENABLE_GEMMA=true
+      - ENABLE_DIRECTORY=true
+      - FOOTER_STYLE=vng
+    depends_on:
+      - nextcloud
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:81/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # n8n Workflow Automation
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: openregister-demo-n8n
+    restart: always
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=admin
+      - N8N_BASIC_AUTH_PASSWORD=admin
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://localhost:5678/
+      - GENERIC_TIMEZONE=Europe/Amsterdam
+      - TZ=Europe/Amsterdam
+      - N8N_DIAGNOSTICS_ENABLED=false
+    depends_on:
+      - db
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:5678/healthz || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s

@@ -601,12 +601,15 @@ class Register extends Entity implements JsonSerializable
     /**
      * Set the publication timestamp
      *
-     * @param DateTime|null $published Publication timestamp
+     * @param DateTime|string|null $published Publication timestamp (DateTime object or ISO 8601 string)
      *
      * @return void
      */
-    public function setPublished(?DateTime $published): void
+    public function setPublished(DateTime|string|null $published): void
     {
+        if (is_string($published) === true) {
+            $published = new DateTime($published);
+        }
         $this->published = $published;
         $this->markFieldUpdated('published');
     }//end setPublished()
@@ -624,12 +627,15 @@ class Register extends Entity implements JsonSerializable
     /**
      * Set the depublication timestamp
      *
-     * @param DateTime|null $depublished Depublication timestamp
+     * @param DateTime|string|null $depublished Depublication timestamp (DateTime object or ISO 8601 string)
      *
      * @return void
      */
-    public function setDepublished(?DateTime $depublished): void
+    public function setDepublished(DateTime|string|null $depublished): void
     {
+        if (is_string($depublished) === true) {
+            $depublished = new DateTime($depublished);
+        }
         $this->depublished = $depublished;
         $this->markFieldUpdated('depublished');
     }//end setDepublished()
