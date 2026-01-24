@@ -1560,14 +1560,15 @@ class MagicMapper
         $schemaProperties = $schema->getProperties();
 
         // List of metadata/configuration fields that should NOT be treated as properties.
-        // NOTE: 'title' and 'description' are NOT included here because they are
-        // legitimate schema properties (e.g., catalog.title, publication.title).
+        // NOTE: 'title', 'description', and 'type' are NOT included here because they are
+        // legitimate schema properties (e.g., catalog.title, module.type).
         // The metadata columns _name and _description serve a different purpose.
+        // Root-level JSON Schema fields like "type": "object" are filtered by checking
+        // if propertyConfig is an array (real properties have array configs).
         $metadataFields = [
             'objectNameField',
             'objectDescriptionField',
             'objectSummaryField',
-            'type',
             'required',
             '$schema',
             '$id',
