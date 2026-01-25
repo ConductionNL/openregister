@@ -306,4 +306,30 @@ class MagicOrganizationHandler
 
         return $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false;
     }//end shouldPublishedBypassMultiTenancy()
+
+    /**
+     * Check if admin users should bypass multi-tenancy filtering
+     *
+     * This reads the adminOverride setting from the multitenancy config,
+     * ensuring consistent behavior with MultiTenancyTrait.
+     *
+     * @return bool True if admin users can bypass organization filtering
+     */
+    public function isAdminOverrideEnabled(): bool
+    {
+        $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
+
+        // Default to true when no config exists (matches ConfigurationSettingsHandler defaults)
+        if (empty($multitenancyConfig) === true) {
+            return true;
+        }
+
+        $multitenancyData = json_decode($multitenancyConfig, true);
+        if ($multitenancyData === null) {
+            return true;
+        }
+
+        // Default to true if not explicitly set (matches ConfigurationSettingsHandler)
+        return $multitenancyData['adminOverride'] ?? true;
+    }//end isAdminOverrideEnabled()
 }//end class

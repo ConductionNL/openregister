@@ -16,9 +16,9 @@ namespace OCA\OpenRegister\Service\Object\SaveObject;
 
 use Exception;
 use finfo;
-use RuntimeException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\FileService;
 use OCP\Files\File;
 use Psr\Log\LoggerInterface;
 
@@ -49,10 +49,12 @@ class FilePropertyHandler
     /**
      * Constructor for FilePropertyHandler.
      *
-     * @param LoggerInterface $logger Logger for logging operations
+     * @param LoggerInterface $logger      Logger for logging operations
+     * @param FileService     $fileService File service for file operations
      */
     public function __construct(
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly FileService $fileService
     ) {
     }//end __construct()
 
@@ -323,6 +325,73 @@ class FilePropertyHandler
     }//end isFileObject()
 
     /**
+     * Generates a unique filename for uploaded files.
+     *
+     * This method creates a unique filename by combining the property name,
+     * timestamp, and random bytes to ensure uniqueness.
+     *
+     * @param string   $propertyName The name of the file property.
+     * @param string   $extension    The file extension.
+     * @param int|null $index        Optional index for array properties.
+     *
+     * @return string The generated unique filename.
+     *
+     * @psalm-return   string
+     * @phpstan-return string
+     */
+    private function generateFileName(
+        string $propertyName,
+        string $extension,
+        ?int $index = null
+    ): string {
+        $timestamp   = time();
+        $random      = bin2hex(random_bytes(4));
+        $indexSuffix = $index !== null ? "_{$index}" : '';
+        return "{$propertyName}{$indexSuffix}_{$timestamp}_{$random}.{$extension}";
+    }//end generateFileName()
+
+    /**
+     * Prepares auto-tags for a file based on the property configuration.
+     *
+     * This method creates an array of tags to be attached to the file,
+     * including the property name tag and any configured auto-tags.
+     *
+     * @param array    $fileConfig   The file property configuration from schema.
+     * @param string   $propertyName The name of the file property.
+     * @param int|null $index        Optional index for array properties.
+     *
+     * @psalm-param   array<string, mixed> $fileConfig
+     * @phpstan-param array<string, mixed> $fileConfig
+     *
+     * @return string[] The prepared tags array.
+     *
+     * @psalm-return   list<string>
+     * @phpstan-return array<int, string>
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) $index kept for API consistency with other methods
+     * @psalm-suppress UnusedParam $index kept for API consistency and future use
+     */
+    private function prepareAutoTags(
+        array $fileConfig,
+        string $propertyName,
+        ?int $index = null
+    ): array {
+        // Note: $index parameter is kept for API consistency with generateFileName() and other methods.
+        // It could be used in the future to add index-specific tags like "array_item:0".
+        $tags = [];
+
+        // Add property name as tag.
+        $tags[] = "property:{$propertyName}";
+
+        // Add configured auto-tags.
+        if (isset($fileConfig['autoTags']) === true && is_array($fileConfig['autoTags']) === true) {
+            $tags = array_merge($tags, $fileConfig['autoTags']);
+        }
+
+        return array_values(array_unique($tags));
+    }//end prepareAutoTags()
+
+    /**
      * Handles a file property during save with validation and proper ID storage.
      *
      * This method processes file properties by:
@@ -397,8 +466,10 @@ class FilePropertyHandler
                     foreach ($existingFileIds as $fileId) {
                         if (is_numeric($fileId) === true) {
                             try {
-                                null;
-                                // TODO->deleteFile(file: (int) $fileId, object: $objectEntity).
+                                $this->fileService->deleteFile(
+                                    file: (int) $fileId,
+                                    object: $objectEntity
+                                );
                             } catch (Exception $e) {
                                 // Log but don't fail - file might already be deleted.
                                 $this->logger->warning("Failed to delete file $fileId: ".$e->getMessage());
@@ -408,8 +479,10 @@ class FilePropertyHandler
                 } else if (is_numeric($existingFileIds) === true) {
                     // Single file ID.
                     try {
-                        null;
-                        // TODO->deleteFile(file: (int) $existingFileIds, object: $objectEntity).
+                        $this->fileService->deleteFile(
+                            file: (int) $existingFileIds,
+                            object: $objectEntity
+                        );
                     } catch (Exception $e) {
                         // Log but don't fail - file might already be deleted.
                         $this->logger->warning("Failed to delete file $existingFileIds: ".$e->getMessage());
@@ -560,7 +633,7 @@ class FilePropertyHandler
      * @phpstan-param array<string, mixed> $fileConfig
      * @phpstan-param int|null $index
      *
-     * @return never
+     * @return int The ID of the created file.
      *
      * @psalm-return   int
      * @phpstan-return int
@@ -597,24 +670,31 @@ class FilePropertyHandler
             index: $index
         );
 
-        // TODO: Implement file creation when fileService is available.
-        // $filename = $this->generateFileName(
-        // propertyName: $propertyName, extension: $fileData['extension'], index: $index
-        // );
-        // $autoTags = $this->prepareAutoTags(fileConfig: $fileConfig, propertyName: $propertyName, index: $index);
-        // $autoPublish = $fileConfig['autoPublish'] ?? false;
-        // $file = $this->fileService->addFile(
-        // ObjectEntity: $objectEntity,
-        // FileName: $filename,
-        // Content: $fileData['content'],
-        // Share: $autoPublish,
-        // Tags: $autoTags
-        // );
-        // return $file->getId();
-        // Placeholder return until file service is implemented.
-        // Suppress unused variable warning for $objectEntity - needed for future file service.
-        unset($objectEntity);
-        throw new RuntimeException('File creation not yet implemented - fileService not available');
+        // Generate filename and prepare tags.
+        $filename = $this->generateFileName(
+            propertyName: $propertyName,
+            extension: $fileData['extension'],
+            index: $index
+        );
+
+        $autoTags = $this->prepareAutoTags(
+            fileConfig: $fileConfig,
+            propertyName: $propertyName,
+            index: $index
+        );
+
+        $autoPublish = $fileConfig['autoPublish'] ?? false;
+
+        // Create the file using FileService.
+        $file = $this->fileService->addFile(
+            objectEntity: $objectEntity,
+            fileName: $filename,
+            content: $fileData['content'],
+            share: $autoPublish,
+            tags: $autoTags
+        );
+
+        return $file->getId();
     }//end processStringFileInput()
 
     /**
@@ -651,14 +731,42 @@ class FilePropertyHandler
         array $fileConfig,
         ?int $index=null
     ): int {
-        // If file object has an ID, try to use the existing file.
-        // TODO: Implement file retrieval when fileService is available.
-        // When implemented, this block should:
-        // 1. Retrieve the file using $fileObject['id']
-        // 2. Validate it against current config
-        // 3. Apply auto tags if needed
-        // 4. Return the file ID if valid
-        // If no ID or existing file not accessible, create a new file.
+        // If file object has a numeric ID, check if it's an existing file that belongs to this object.
+        $fileId = $fileObject['id'] ?? null;
+        if ($fileId !== null && is_numeric($fileId) === true) {
+            try {
+                // Try to retrieve the existing file.
+                $existingFile = $this->fileService->getFile(
+                    object: $objectEntity,
+                    file: (int) $fileId
+                );
+
+                if ($existingFile !== null) {
+                    // File exists and belongs to this object - return the existing ID.
+                    $this->logger->debug(
+                        'Using existing file ID {fileId} for property {property}',
+                        [
+                            'app'      => 'openregister',
+                            'fileId'   => $fileId,
+                            'property' => $propertyName,
+                        ]
+                    );
+                    return (int) $fileId;
+                }
+            } catch (Exception $e) {
+                // File doesn't exist or is not accessible - continue to create new file.
+                $this->logger->debug(
+                    'Could not retrieve existing file {fileId}: {error}',
+                    [
+                        'app'    => 'openregister',
+                        'fileId' => $fileId,
+                        'error'  => $e->getMessage(),
+                    ]
+                );
+            }
+        }//end if
+
+        // No ID or existing file not accessible, create a new file.
         // This requires downloadUrl or accessUrl to fetch content.
         if (($fileObject['downloadUrl'] ?? null) !== null) {
             $fileUrl = $fileObject['downloadUrl'];

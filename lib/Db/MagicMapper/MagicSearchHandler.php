@@ -182,11 +182,13 @@ class MagicSearchHandler
         $this->applyBasicFilters(qb: $queryBuilder, includeDeleted: $includeDeleted, published: $published);
 
         // Apply multi-tenancy (organization) filtering if enabled.
+        // Admin bypass is controlled by config setting, not hardcoded.
+        // This ensures consistent behavior with MultiTenancyTrait.
         if ($multitenancy === true) {
             $this->organizationHandler->applyOrganizationFilter(
                 qb: $queryBuilder,
                 allowPublishedAccess: $this->organizationHandler->shouldPublishedBypassMultiTenancy(),
-                adminBypassEnabled: true
+                adminBypassEnabled: $this->organizationHandler->isAdminOverrideEnabled()
             );
         }
 
