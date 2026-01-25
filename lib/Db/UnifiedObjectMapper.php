@@ -502,6 +502,37 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
             $this->logger->debug('[UnifiedObjectMapper] Routing update() to MagicMapper');
             $updatedEntity = $this->magicMapper->updateObjectEntity(entity: $entity, register: $register, schema: $schema, oldEntity: $oldEntity);
+
+            // IMPORTANT: Also update blob storage to keep both tables in sync.
+            // This ensures that file IDs and other updates are persisted to the blob table.
+            // NOTE: The magic mapper returns an entity with the MAGIC TABLE's ID.
+            // We need to find the BLOB TABLE's entity to update correctly.
+            try {
+                $blobEntity = $this->objectEntityMapper->findDirectBlobStorage(
+                    identifier: $updatedEntity->getUuid(),
+                    register: $register,
+                    schema: $schema,
+                    includeDeleted: false,
+                    _rbac: false,
+                    _multitenancy: false
+                );
+                // Copy the updated object data to the blob entity.
+                $blobEntity->setObject($updatedEntity->getObject());
+
+                $this->logger->debug('[UnifiedObjectMapper] Syncing update to blob storage', [
+                    'app' => 'openregister',
+                    'uuid' => $updatedEntity->getUuid(),
+                    'magicId' => $updatedEntity->getId(),
+                    'blobId' => $blobEntity->getId(),
+                ]);
+                $this->objectEntityMapper->updateDirectBlobStorage($blobEntity, $oldEntity);
+            } catch (\Exception $e) {
+                $this->logger->warning('[UnifiedObjectMapper] Could not sync to blob storage', [
+                    'app' => 'openregister',
+                    'uuid' => $updatedEntity->getUuid(),
+                    'error' => $e->getMessage(),
+                ]);
+            }
         } else {
             $this->logger->debug('[UnifiedObjectMapper] Using blob storage (via ObjectEntityMapper parent::update)');
             $updatedEntity = $this->objectEntityMapper->updateDirectBlobStorage($entity, $oldEntity);

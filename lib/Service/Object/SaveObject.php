@@ -2359,6 +2359,11 @@ class SaveObject
         Register $register,
         Schema $schema
     ): ObjectEntity {
+        $this->logger->error(
+            'DEBUG: processFilePropertiesWithRollback called',
+            ['app' => 'openregister', 'uuid' => $savedEntity->getUuid(), 'dataKeys' => array_keys($data)]
+        );
+
         $filePropsProcessed = false;
 
         try {
@@ -2382,7 +2387,31 @@ class SaveObject
 
             // If files were processed, update the object with file IDs.
             if ($filePropsProcessed === true) {
+                $this->logger->warning(
+                    'File properties processed, updating object with file IDs',
+                    [
+                        'app'  => 'openregister',
+                        'uuid' => $savedEntity->getUuid(),
+                        'data' => json_encode($data),
+                    ]
+                );
+
                 $savedEntity->setObject($data);
+
+                // DEBUG: Verify setObject worked
+                $this->logger->error(
+                    'DEBUG: After setObject - entity object is now',
+                    [
+                        'app' => 'openregister',
+                        'entityObject' => json_encode($savedEntity->getObject()),
+                    ]
+                );
+
+                // DEBUG: About to call update
+                $this->logger->error(
+                    'DEBUG: About to call objectEntityMapper->update()',
+                    ['app' => 'openregister', 'uuid' => $savedEntity->getUuid()]
+                );
 
                 // Clear image metadata if objectImageField is a file property.
                 $this->clearImageMetadataIfFileProperty(
@@ -2391,6 +2420,12 @@ class SaveObject
                 );
 
                 $savedEntity = $this->objectEntityMapper->update(entity: $savedEntity, register: $register, schema: $schema);
+
+                // DEBUG: After update
+                $this->logger->error(
+                    'DEBUG: After objectEntityMapper->update() - result object',
+                    ['app' => 'openregister', 'resultObject' => json_encode($savedEntity->getObject())]
+                );
             }
 
             return $savedEntity;

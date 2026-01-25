@@ -175,12 +175,47 @@ class ObjectsController extends Controller
     {
         $uploadedFiles = [];
 
-        // Get all request parameters to identify potential file field names.
-        $params = $this->request->getParams();
+        // Primary method: iterate through $_FILES directly to get all uploaded file field names.
+        // This is the most reliable way to detect all file uploads regardless of field name.
+        // phpcs:ignore -- $_FILES access is necessary as IRequest doesn't expose all file keys.
+        foreach (array_keys($_FILES) as $fieldName) {
+            // Skip if already processed.
+            if (isset($uploadedFiles[$fieldName]) === true) {
+                continue;
+            }
 
-        // Check each parameter that could potentially be a file field.
-        // File uploads are typically submitted with specific field names.
+            // Skip system parameters.
+            if (str_starts_with((string) $fieldName, '_') === true) {
+                continue;
+            }
+
+            // Use IRequest to get the file data for consistency.
+            $uploadedFile = $this->request->getUploadedFile((string) $fieldName);
+            if ($uploadedFile !== null && isset($uploadedFile['tmp_name']) === true) {
+                // Check if this is an array upload (multiple files).
+                $nameValue = $uploadedFile['name'] ?? null;
+                if (is_array($nameValue) === true) {
+                    // Handle multiple files with indexed keys.
+                    $this->extractMultipleFiles($uploadedFiles, $fieldName, $uploadedFile, $nameValue);
+                    continue;
+                }
+
+                // Single file upload - only add if tmp_name is not empty.
+                if (empty($uploadedFile['tmp_name']) === false) {
+                    $uploadedFiles[(string) $fieldName] = $uploadedFile;
+                }
+            }
+        }
+
+        // Secondary method: also check request params for file fields.
+        // Some frameworks may include file field names in params.
+        $params = $this->request->getParams();
         foreach (array_keys($params) as $fieldName) {
+            // Skip if already processed.
+            if (isset($uploadedFiles[$fieldName]) === true) {
+                continue;
+            }
+
             // Skip system parameters.
             if (str_starts_with((string) $fieldName, '_') === true) {
                 continue;
@@ -188,116 +223,56 @@ class ObjectsController extends Controller
 
             $uploadedFile = $this->request->getUploadedFile((string) $fieldName);
             if ($uploadedFile !== null && isset($uploadedFile['tmp_name']) === true) {
-                // Check if this is an array upload (multiple files).
                 $nameValue = $uploadedFile['name'] ?? null;
                 if (is_array($nameValue) === true) {
-                    // Handle multiple files with indexed keys.
-                    $fileCount = count($nameValue);
-                    for ($i = 0; $i < $fileCount; $i++) {
-                        $typeValue = $uploadedFile['type'] ?? null;
-                        if (is_array($typeValue) === true) {
-                            $typeArray = $typeValue;
-                        } else {
-                            $typeArray = [];
-                        }
-
-                        $tmpNameValue = $uploadedFile['tmp_name'] ?? null;
-                        if (is_array($tmpNameValue) === true) {
-                            $tmpNameArray = $tmpNameValue;
-                        } else {
-                            $tmpNameArray = [];
-                        }
-
-                        $errorValue = $uploadedFile['error'] ?? null;
-                        if (is_array($errorValue) === true) {
-                            $errorArray = $errorValue;
-                        } else {
-                            $errorArray = [];
-                        }
-
-                        $sizeValue = $uploadedFile['size'] ?? null;
-                        if (is_array($sizeValue) === true) {
-                            $sizeArray = $sizeValue;
-                        } else {
-                            $sizeArray = [];
-                        }
-
-                        $uploadedFiles[$fieldName.'['.$i.']'] = [
-                            'name'     => $nameValue[$i] ?? '',
-                            'type'     => $typeArray[$i] ?? '',
-                            'tmp_name' => $tmpNameArray[$i] ?? '',
-                            'error'    => $errorArray[$i] ?? UPLOAD_ERR_NO_FILE,
-                            'size'     => $sizeArray[$i] ?? 0,
-                        ];
-                    }//end for
-
+                    $this->extractMultipleFiles($uploadedFiles, $fieldName, $uploadedFile, $nameValue);
                     continue;
-                }//end if
+                }
 
-                // Single file upload.
-                $uploadedFiles[(string) $fieldName] = $uploadedFile;
-            }//end if
-        }//end foreach
-
-        // Also check common file field names that may not be in params.
-        $commonFileFields = ['file', 'files', 'attachment', 'attachments', 'document', 'documents', 'image', 'images'];
-        foreach ($commonFileFields as $fieldName) {
-            if (isset($uploadedFiles[$fieldName]) === true) {
-                continue;
+                if (empty($uploadedFile['tmp_name']) === false) {
+                    $uploadedFiles[(string) $fieldName] = $uploadedFile;
+                }
             }
-
-            $uploadedFile = $this->request->getUploadedFile($fieldName);
-            if ($uploadedFile !== null && isset($uploadedFile['tmp_name']) === true) {
-                $nameValue = $uploadedFile['name'] ?? null;
-                if (is_array($nameValue) === true) {
-                    $fileCount = count($nameValue);
-                    for ($i = 0; $i < $fileCount; $i++) {
-                        $typeValue2 = $uploadedFile['type'] ?? null;
-                        if (is_array($typeValue2) === true) {
-                            $typeArray = $typeValue2;
-                        } else {
-                            $typeArray = [];
-                        }
-
-                        $tmpNameValue2 = $uploadedFile['tmp_name'] ?? null;
-                        if (is_array($tmpNameValue2) === true) {
-                            $tmpNameArray = $tmpNameValue2;
-                        } else {
-                            $tmpNameArray = [];
-                        }
-
-                        $errorValue2 = $uploadedFile['error'] ?? null;
-                        if (is_array($errorValue2) === true) {
-                            $errorArray = $errorValue2;
-                        } else {
-                            $errorArray = [];
-                        }
-
-                        $sizeValue2 = $uploadedFile['size'] ?? null;
-                        if (is_array($sizeValue2) === true) {
-                            $sizeArray = $sizeValue2;
-                        } else {
-                            $sizeArray = [];
-                        }
-
-                        $uploadedFiles[$fieldName.'['.$i.']'] = [
-                            'name'     => $nameValue[$i] ?? '',
-                            'type'     => $typeArray[$i] ?? '',
-                            'tmp_name' => $tmpNameArray[$i] ?? '',
-                            'error'    => $errorArray[$i] ?? UPLOAD_ERR_NO_FILE,
-                            'size'     => $sizeArray[$i] ?? 0,
-                        ];
-                    }//end for
-
-                    continue;
-                }//end if
-
-                $uploadedFiles[$fieldName] = $uploadedFile;
-            }//end if
-        }//end foreach
+        }
 
         return $uploadedFiles;
     }//end extractAllUploadedFiles()
+
+    /**
+     * Helper method to extract multiple files from an array upload field.
+     *
+     * @param array  $uploadedFiles Reference to the uploaded files array to populate.
+     * @param string $fieldName     The field name for the file upload.
+     * @param array  $uploadedFile  The uploaded file data from IRequest.
+     * @param array  $nameValue     The array of file names.
+     *
+     * @return void
+     */
+    private function extractMultipleFiles(
+        array &$uploadedFiles,
+        string $fieldName,
+        array $uploadedFile,
+        array $nameValue
+    ): void {
+        $fileCount = count($nameValue);
+        for ($i = 0; $i < $fileCount; $i++) {
+            $typeArray    = is_array($uploadedFile['type'] ?? null) ? $uploadedFile['type'] : [];
+            $tmpNameArray = is_array($uploadedFile['tmp_name'] ?? null) ? $uploadedFile['tmp_name'] : [];
+            $errorArray   = is_array($uploadedFile['error'] ?? null) ? $uploadedFile['error'] : [];
+            $sizeArray    = is_array($uploadedFile['size'] ?? null) ? $uploadedFile['size'] : [];
+
+            // Only add if tmp_name is not empty.
+            if (empty($tmpNameArray[$i]) === false) {
+                $uploadedFiles[$fieldName.'['.$i.']'] = [
+                    'name'     => $nameValue[$i] ?? '',
+                    'type'     => $typeArray[$i] ?? '',
+                    'tmp_name' => $tmpNameArray[$i] ?? '',
+                    'error'    => $errorArray[$i] ?? UPLOAD_ERR_NO_FILE,
+                    'size'     => $sizeArray[$i] ?? 0,
+                ];
+            }
+        }
+    }//end extractMultipleFiles()
 
     /**
      * Private helper method to handle pagination of results.

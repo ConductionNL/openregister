@@ -165,14 +165,29 @@ class FilePropertyHandler
             $schemaProperties = $schema->getProperties() ?? [];
 
             if (isset($schemaProperties[$propertyName]) === false) {
+                $this->logger->debug(
+                    'isFileProperty: Property not in schema',
+                    ['app' => 'openregister', 'property' => $propertyName]
+                );
                 return false;
                 // Property not in schema, not a file.
             }
 
             $propertyConfig = $schemaProperties[$propertyName];
+            $propertyType = $propertyConfig['type'] ?? '';
+
+            $this->logger->warning(
+                'isFileProperty: Checking property type',
+                [
+                    'app' => 'openregister',
+                    'property' => $propertyName,
+                    'type' => $propertyType,
+                    'isFile' => ($propertyType === 'file'),
+                ]
+            );
 
             // Check if it's a direct file property.
-            if (($propertyConfig['type'] ?? '') === 'file') {
+            if ($propertyType === 'file') {
                 return true;
             }
 

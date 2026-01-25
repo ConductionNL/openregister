@@ -165,6 +165,19 @@ class PermissionHandler
             }
         }
 
+        // Logged-in users should also have at least the same rights as 'public' users.
+        // If 'public' is in the authorization, logged-in users should have access too.
+        if ($schema->hasPermission(
+                groupId: 'public',
+                action: $action,
+                userId: $userId,
+                userGroup: null,
+                objectOwner: $objectOwner
+            ) === true
+        ) {
+            return true;
+        }
+
         return false;
     }//end hasPermission()
 

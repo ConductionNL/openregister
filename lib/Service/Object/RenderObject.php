@@ -920,10 +920,29 @@ class RenderObject
         // This filters out properties that the current user is not authorized to read.
         $schema = $this->getSchema($entity->getSchema());
         if ($schema !== null && $schema->hasPropertyAuthorization() === true) {
+            // Ensure @self metadata is available for property-level RBAC checks.
+            // Property authorization can reference @self.organisation or _organisation,
+            // which needs to be accessible during filtering (before jsonSerialize adds @self).
+            $objectDataWithSelf = $objectData;
+            if (isset($objectDataWithSelf['@self']) === false) {
+                $objectDataWithSelf['@self'] = [
+                    'organisation' => $entity->getOrganisation(),
+                    'owner'        => $entity->getOwner(),
+                ];
+            }
+
             $objectData = $this->propertyRbacHandler->filterReadableProperties(
                 schema: $schema,
-                object: $objectData
+                object: $objectDataWithSelf
             );
+
+            // Remove the temporary @self if it was added (it will be properly added in jsonSerialize).
+            if (isset($objectData['@self']) === true
+                && count($objectData['@self']) <= 2
+                && isset($objectData['@self']['organisation']) === true
+            ) {
+                unset($objectData['@self']);
+            }
         }
 
         $entity->setObject($objectData);

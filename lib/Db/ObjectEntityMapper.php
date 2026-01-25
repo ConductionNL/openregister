@@ -599,6 +599,14 @@ class ObjectEntityMapper extends QBMapper
         }//end if
 
         // Call parent QBMapper update directly (CrudHandler has circular dependency).
+        $this->logger->error(
+            '[ObjectEntityMapper] DEBUG: About to call parent::update with entity object',
+            [
+                'app' => 'openregister',
+                'uuid' => $entity->getUuid(),
+                'objectData' => json_encode($entity->getObject()),
+            ]
+        );
         $result = parent::update($entity);
 
         // Dispatch updated event with correct oldObject.
@@ -633,7 +641,17 @@ class ObjectEntityMapper extends QBMapper
         );
 
         // Call parent QBMapper update directly (blob storage).
+        $this->logger->error('[ObjectEntityMapper] updateDirectBlobStorage calling parent::update', [
+            'app' => 'openregister',
+            'id' => $entity->getId(),
+            'uuid' => $entity->getUuid(),
+            'objectData' => json_encode($entity->getObject()),
+        ]);
         $result = parent::update($entity);
+        $this->logger->error('[ObjectEntityMapper] updateDirectBlobStorage after parent::update', [
+            'app' => 'openregister',
+            'resultObject' => json_encode($result->getObject()),
+        ]);
 
         // NOTE: ObjectUpdatedEvent is dispatched by UnifiedObjectMapper (the facade) to avoid duplicate events.
         // Do NOT dispatch ObjectUpdatedEvent here.
