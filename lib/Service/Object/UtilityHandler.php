@@ -66,7 +66,22 @@ class UtilityHandler
             return false;
         }
 
-        return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $value) === 1;
+        // Standard UUID with dashes (8-4-4-4-12 format).
+        if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === 1) {
+            return true;
+        }
+
+        // UUID without dashes (32 hex chars).
+        if (preg_match('/^[0-9a-f]{32}$/i', $value) === 1) {
+            return true;
+        }
+
+        // Prefixed UUID (e.g., "id-uuid" with or without dashes).
+        if (preg_match('/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/i', $value) === 1) {
+            return true;
+        }
+
+        return false;
     }//end isUuid()
 
     /**

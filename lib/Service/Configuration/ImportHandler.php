@@ -743,7 +743,7 @@ class ImportHandler
                     }
 
                     // Only set title to key if no title exists, to preserve existing titles.
-                    if (isset($property['title']) === true || empty($property['title']) === true) {
+                    if (isset($property['title']) === false || empty($property['title']) === true) {
                         $property['title'] = $key;
                     }
 

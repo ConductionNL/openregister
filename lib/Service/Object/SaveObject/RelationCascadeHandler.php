@@ -93,7 +93,7 @@ class RelationCascadeHandler
         // First, try direct ID lookup (numeric ID or UUID).
         if (is_numeric($cleanReference) === true
             || preg_match(
-                '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i',
+                '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i',
                 $cleanReference
             ) === true
         ) {
@@ -173,7 +173,7 @@ class RelationCascadeHandler
         // First, try direct ID lookup (numeric ID or UUID).
         if (is_numeric($cleanReference) === true
             || preg_match(
-                '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i',
+                '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i',
                 $cleanReference
             ) === true
         ) {
@@ -319,8 +319,23 @@ class RelationCascadeHandler
      */
     private function looksLikeObjectReference(string $value): bool
     {
-        // UUID pattern.
-        if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $value) === true) {
+        // UUID pattern (with dashes).
+        if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === 1) {
+            return true;
+        }
+
+        // UUID pattern (without dashes - 32 hex chars).
+        if (preg_match('/^[0-9a-f]{32}$/i', $value) === 1) {
+            return true;
+        }
+
+        // Prefixed UUID patterns (e.g., "id-uuid" with or without dashes).
+        if (preg_match('/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/i', $value) === 1) {
+            return true;
+        }
+
+        // Numeric ID.
+        if (preg_match('/^[0-9]+$/', $value) === 1) {
             return true;
         }
 
@@ -336,7 +351,8 @@ class RelationCascadeHandler
      * Determines if a value is a reference to another object.
      *
      * A reference can be:
-     * - A UUID string
+     * - A UUID string (with or without dashes)
+     * - A prefixed UUID (e.g., "id-uuid")
      * - A URL containing /objects/ or /api/
      * - A numeric ID (if > 0)
      *
@@ -346,8 +362,18 @@ class RelationCascadeHandler
      */
     public function isReference(string $value): bool
     {
-        // Check for UUID format.
-        if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $value) === 1) {
+        // Check for UUID format (with dashes).
+        if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === 1) {
+            return true;
+        }
+
+        // Check for UUID format (without dashes - 32 hex chars).
+        if (preg_match('/^[0-9a-f]{32}$/i', $value) === 1) {
+            return true;
+        }
+
+        // Check for prefixed UUID patterns (e.g., "id-uuid" with or without dashes).
+        if (preg_match('/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/i', $value) === 1) {
             return true;
         }
 

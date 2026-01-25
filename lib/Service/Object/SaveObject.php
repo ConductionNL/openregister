@@ -244,7 +244,7 @@ class SaveObject
         $cleanReference = $this->removeQueryParameters($reference);
 
         // First, try direct ID lookup (numeric ID or UUID).
-        $uuidPattern = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i';
+        $uuidPattern = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
         if (is_numeric($cleanReference) === true || preg_match($uuidPattern, $cleanReference) === 1) {
             try {
                 $schema = $this->schemaMapper->find(id: $cleanReference);
@@ -327,7 +327,7 @@ class SaveObject
         }
 
         // First, try direct ID lookup (numeric ID or UUID).
-        $uuidPattern = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i';
+        $uuidPattern = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
         if (is_numeric($reference) === true || preg_match($uuidPattern, $reference) === 1) {
             try {
                 $register = $this->registerMapper->find($reference);
@@ -524,8 +524,23 @@ class SaveObject
             return true;
         }
 
-        // Check for prefixed UUID patterns (e.g., "id-uuid", "ref-uuid", etc.).
+        // Check for UUID without dashes (32 hex chars).
+        if (preg_match('/^[0-9a-f]{32}$/i', $value) === 1) {
+            return true;
+        }
+
+        // Check for prefixed UUID patterns (e.g., "id-uuid", "ref-uuid", etc.) - with dashes.
         if (preg_match('/^[a-z]+-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === 1) {
+            return true;
+        }
+
+        // Check for prefixed UUID patterns without dashes (e.g., "id-32hexchars").
+        if (preg_match('/^[a-z]+-[0-9a-f]{32}$/i', $value) === 1) {
+            return true;
+        }
+
+        // Check for numeric IDs.
+        if (preg_match('/^[0-9]+$/', $value) === 1) {
             return true;
         }
 
@@ -613,7 +628,7 @@ class SaveObject
             }
 
             // Skip if doesn't look like a UUID.
-            if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $relatedUuid) !== 1) {
+            if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $relatedUuid) !== 1) {
                 continue;
             }
 
@@ -1301,13 +1316,32 @@ class SaveObject
                 // Note: cascadeMultipleObjects skips existing UUIDs and returns only newly created ones.
                 // So we need to preserve existing UUIDs from the original data.
                 if ($isRelatedObject === true) {
-                    // Collect existing UUIDs that were passed through (not created, just referenced).
-                    // Use regex instead of Symfony's Uuid::isValid() because some systems use
-                    // non-standard UUIDs that don't follow RFC4122 variant bits (e.g., GEMMA).
-                    $uuidPattern = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
+                    // Collect existing IDs that were passed through (not created, just referenced).
+                    // Supports: standard UUIDs, UUIDs without dashes, prefixed UUIDs, and numeric IDs.
                     $existingUuids = array_filter(
                         $data[$property] ?? [],
-                        fn($item) => is_string($item) && preg_match($uuidPattern, $item) === 1
+                        function ($item) {
+                            if (is_string($item) === false) {
+                                return false;
+                            }
+                            // Standard UUID with dashes.
+                            if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $item) === 1) {
+                                return true;
+                            }
+                            // UUID without dashes (32 hex chars).
+                            if (preg_match('/^[0-9a-f]{32}$/i', $item) === 1) {
+                                return true;
+                            }
+                            // Prefixed UUID (e.g., "id-uuid" with or without dashes).
+                            if (preg_match('/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/i', $item) === 1) {
+                                return true;
+                            }
+                            // Numeric ID.
+                            if (preg_match('/^[0-9]+$/', $item) === 1) {
+                                return true;
+                            }
+                            return false;
+                        }
                     );
 
                     // Merge existing UUIDs with newly created ones.
@@ -1374,15 +1408,36 @@ class SaveObject
         }
 
         // Filter out empty or invalid objects.
-        // Use regex instead of Symfony's Uuid::isValid() because some systems use
-        // non-standard UUIDs that don't follow RFC4122 variant bits (e.g., GEMMA).
-        $uuidPattern = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
+        // Supports: standard UUIDs, UUIDs without dashes, prefixed UUIDs, and numeric IDs.
         $validObjects = array_filter(
             $propData,
-            function ($object) use ($uuidPattern) {
-                return (is_array($object) === true && empty($object) === false
-                        && !(count($object) === 1 && (($object['id'] ?? null) !== null) && empty($object['id']) === true))
-                    || (is_string($object) === true && preg_match($uuidPattern, $object) === 1);
+            function ($object) {
+                if (is_array($object) === true && empty($object) === false
+                    && !(count($object) === 1 && (($object['id'] ?? null) !== null) && empty($object['id']) === true)
+                ) {
+                    return true;
+                }
+
+                if (is_string($object) === true) {
+                    // Standard UUID with dashes.
+                    if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $object) === 1) {
+                        return true;
+                    }
+                    // UUID without dashes (32 hex chars).
+                    if (preg_match('/^[0-9a-f]{32}$/i', $object) === 1) {
+                        return true;
+                    }
+                    // Prefixed UUID (e.g., "id-uuid" with or without dashes).
+                    if (preg_match('/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/i', $object) === 1) {
+                        return true;
+                    }
+                    // Numeric ID.
+                    if (preg_match('/^[0-9]+$/', $object) === 1) {
+                        return true;
+                    }
+                }
+
+                return false;
             }
         );
 
@@ -1413,9 +1468,9 @@ class SaveObject
 
         $createdUuids = [];
         foreach ($validObjects as $object) {
-            // Skip existing UUIDs - they don't need to be cascaded (created).
-            // Use regex instead of Uuid::isValid() to accept non-RFC4122 UUIDs.
-            if (is_string($object) === true && preg_match($uuidPattern, $object) === 1) {
+            // Skip existing IDs (UUIDs, prefixed UUIDs, numeric IDs) - they don't need to be cascaded (created).
+            // Only arrays (nested objects) need to be created via cascading.
+            if (is_string($object) === true) {
                 continue;
             }
 
@@ -1655,13 +1710,31 @@ class SaveObject
                 $targetUuids = [$targetUuids];
             }
 
-            // Filter out empty or invalid UUIDs.
-            $uuidPattern = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i';
+            // Filter out empty or invalid IDs.
+            // Supports: standard UUIDs, UUIDs without dashes, prefixed UUIDs, and numeric IDs.
             $validUuids  = array_filter(
                 $targetUuids,
-                function ($uuid) use ($uuidPattern) {
-                    $isNotEmpty = empty($uuid) === false && is_string($uuid) && trim($uuid) !== '';
-                    return $isNotEmpty && preg_match($uuidPattern, $uuid);
+                function ($uuid) {
+                    if (empty($uuid) === true || is_string($uuid) === false || trim($uuid) === '') {
+                        return false;
+                    }
+                    // Standard UUID with dashes.
+                    if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $uuid) === 1) {
+                        return true;
+                    }
+                    // UUID without dashes (32 hex chars).
+                    if (preg_match('/^[0-9a-f]{32}$/i', $uuid) === 1) {
+                        return true;
+                    }
+                    // Prefixed UUID (e.g., "id-uuid" with or without dashes).
+                    if (preg_match('/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/i', $uuid) === 1) {
+                        return true;
+                    }
+                    // Numeric ID.
+                    if (preg_match('/^[0-9]+$/', $uuid) === 1) {
+                        return true;
+                    }
+                    return false;
                 }
             );
 
