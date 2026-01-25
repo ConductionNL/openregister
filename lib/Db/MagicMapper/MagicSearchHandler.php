@@ -139,16 +139,22 @@ class MagicSearchHandler
         $relationsContains = $query['_relations_contains'] ?? null;
         $source            = $query['_source'] ?? null;
 
-        // Bypass multitenancy for schemas with public read access (unless _source=database is explicitly set).
-        // Public schemas should be visible to all users regardless of organisation.
-        // Supports both simple "public" and conditional {"group": "public", ...} rules.
+        // Public schemas bypass multitenancy by default, UNLESS the user explicitly requests
+        // multitenancy with _multi=true. This allows public data to be visible across orgs
+        // while still giving users the option to filter by their own organisation.
+        $multitenancyExplicit = $query['_multitenancy_explicit'] ?? false;
+
         if ($multitenancy === true && $source !== 'database') {
             $schemaAuth = $schema->getAuthorization();
             $readGroups = $schemaAuth['read'] ?? [];
             $hasPublic  = $this->hasPublicReadAccess($readGroups);
-            if ($hasPublic === true) {
+
+            // Public schemas bypass multitenancy UNLESS user explicitly set _multi=true.
+            if ($hasPublic === true && $multitenancyExplicit === false) {
+                // Public schema without explicit _multi=true - bypass multitenancy.
                 $multitenancy = false;
             }
+            // If _multi=true was explicitly set, enforce multitenancy even on public schemas.
         }
 
         // Extract metadata from @self.

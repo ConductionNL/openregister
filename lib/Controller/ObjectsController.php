@@ -863,7 +863,9 @@ class ObjectsController extends Controller
         // Extract filtering parameters from request.
         $params    = $this->request->getParams();
         $rbac      = filter_var($params['rbac'] ?? true, FILTER_VALIDATE_BOOLEAN);
-        $multi     = filter_var($params['multi'] ?? true, FILTER_VALIDATE_BOOLEAN);
+        // Check both _multi and multi params (URL uses _multi, but we also support multi).
+        $multiExplicitlySet = isset($params['_multi']) || isset($params['multi']);
+        $multi     = filter_var($params['_multi'] ?? $params['multi'] ?? true, FILTER_VALIDATE_BOOLEAN);
         $published = filter_var($params['_published'] ?? false, FILTER_VALIDATE_BOOLEAN);
         $deleted   = filter_var($params['deleted'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
@@ -894,6 +896,8 @@ class ObjectsController extends Controller
                 // Pass RBAC and multitenancy settings to the query.
                 $query['_rbac']         = $rbac;
                 $query['_multitenancy'] = $multi;
+                // Track if _multi was explicitly set - used by public schema bypass logic.
+                $query['_multitenancy_explicit'] = $multiExplicitlySet;
 
                 // Use MagicMapper search directly.
                 $results = $magicMapper->searchObjectsInRegisterSchemaTable(
@@ -952,6 +956,16 @@ class ObjectsController extends Controller
                     $page  = (int) floor($offset / $limit) + 1;
                 }
 
+                // Get active organisation for debugging metadata.
+                $activeOrganisation = null;
+                try {
+                    $organisationService = \OC::$server->get(\OCA\OpenRegister\Service\OrganisationService::class);
+                    $activeOrg = $organisationService->getActiveOrganisation();
+                    $activeOrganisation = $activeOrg?->getUuid();
+                } catch (\Exception $e) {
+                    // Silently ignore if organisation service is not available.
+                }
+
                 // Return in expected format.
                 $response = new JSONResponse(
                     data: [
@@ -961,14 +975,15 @@ class ObjectsController extends Controller
                         'page'    => $page,
                         'limit'   => $limit,
                         '@self'   => [
-                            'source'    => 'magic_mapper',
-                            'register'  => $register,
-                            'schema'    => $schema,
-                            'query'     => $query,
-                            'rbac'      => $rbac,
-                            'multi'     => $multi,
-                            'published' => $published,
-                            'deleted'   => $deleted,
+                            'source'             => 'magic_mapper',
+                            'register'           => $register,
+                            'schema'             => $schema,
+                            'query'              => $query,
+                            'rbac'               => $rbac,
+                            'multi'              => $multi,
+                            'published'          => $published,
+                            'deleted'            => $deleted,
+                            'activeOrganisation' => $activeOrganisation,
                         ],
                     ]
                 );

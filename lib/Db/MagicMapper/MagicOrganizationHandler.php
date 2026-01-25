@@ -332,4 +332,14 @@ class MagicOrganizationHandler
         // Default to true if not explicitly set (matches ConfigurationSettingsHandler)
         return $multitenancyData['adminOverride'] ?? true;
     }//end isAdminOverrideEnabled()
+
+    /**
+     * Check if the current user is logged in (not anonymous)
+     *
+     * @return bool True if a user is logged in, false for anonymous access
+     */
+    public function isUserLoggedIn(): bool
+    {
+        return $this->userSession->getUser() !== null;
+    }//end isUserLoggedIn()
 }//end class
