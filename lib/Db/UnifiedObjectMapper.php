@@ -539,11 +539,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         }
 
         // Dispatch ObjectUpdatedEvent after successful update.
-        $this->logger->critical('[UnifiedObjectMapper] Dispatching ObjectUpdatedEvent', [
-            'app' => 'openregister',
+        $this->logger->debug('[UnifiedObjectMapper] Dispatching ObjectUpdatedEvent', [
             'entityUuid' => $updatedEntity->getUuid(),
-            'oldStatus' => $oldEntity->getObject()['status'] ?? null,
-            'newStatus' => $updatedEntity->getObject()['status'] ?? null
         ]);
         $this->eventDispatcher->dispatchTyped(new ObjectUpdatedEvent($updatedEntity, $oldEntity));
 

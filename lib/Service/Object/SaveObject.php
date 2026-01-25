@@ -2858,13 +2858,9 @@ class SaveObject
         $preparedObject->setSchema((string) $schemaId);
         $preparedObject->setUpdated(new DateTime());
 
-        // Log that we're about to update using UnifiedObjectMapper
-        $this->logger->critical('[SaveObject] About to update object using UnifiedObjectMapper', [
-            'app' => 'openregister',
+        // Log that we're about to update using UnifiedObjectMapper.
+        $this->logger->debug('[SaveObject] Updating object using UnifiedObjectMapper', [
             'uuid' => $preparedObject->getUuid(),
-            'oldStatus' => $oldObject->getObject()['status'] ?? 'unknown',
-            'newStatus' => $preparedObject->getObject()['status'] ?? 'unknown',
-            'mapperClass' => get_class($this->unifiedObjectMapper)
         ]);
 
         // Save the object to database using UnifiedObjectMapper.
