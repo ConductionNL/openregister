@@ -1856,7 +1856,8 @@ class ObjectService
             ids: $ids,
             uses: $uses
         );
-        $result['@self']['source']    = 'database';
+        // Preserve source from result (e.g., magic_mapper for multi-schema), only default to database if not set.
+        $result['@self']['source']    = $result['@self']['source'] ?? 'database';
         $result['@self']['query']     = $query;
         $result['@self']['rbac']      = $_rbac;
         $result['@self']['multi']     = $_multitenancy;

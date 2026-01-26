@@ -940,9 +940,34 @@ class MagicMapper
         // Combine all SELECTs with UNION ALL.
         $unionSql = implode(' UNION ALL ', $parts);
 
-        // Apply global ORDER BY for relevance (if _search is present).
+        // Apply global ORDER BY - supports _order parameter or defaults to search score.
         $hasSearch = isset($query['_search']) === true && empty($query['_search']) === false;
-        if ($hasSearch === true) {
+        $orderParams = $query['_order'] ?? [];
+
+        if (empty($orderParams) === false && is_array($orderParams) === true) {
+            // Use custom ordering from _order parameter.
+            $orderClauses = [];
+            foreach ($orderParams as $field => $direction) {
+                // Translate field name to column name.
+                $columnName = $this->sanitizeColumnName($field);
+                if (str_starts_with($field, '@self.') === true) {
+                    $columnName = self::METADATA_PREFIX.substr($field, 6);
+                } else if (str_starts_with($field, '_') === false) {
+                    // Non-metadata fields - add underscore prefix for metadata columns.
+                    // Note: In UNION, we only have metadata columns, not schema-specific properties.
+                    // For property ordering, the column must exist in the SELECT.
+                    $columnName = $this->sanitizeColumnName($field);
+                }
+
+                $dir = strtoupper($direction) === 'DESC' ? 'DESC' : 'ASC';
+                $orderClauses[] = "{$columnName} {$dir}";
+            }
+
+            if (empty($orderClauses) === false) {
+                $unionSql .= ' ORDER BY '.implode(', ', $orderClauses);
+            }
+        } else if ($hasSearch === true) {
+            // Default to search score ordering when no _order specified but search is present.
             $unionSql .= ' ORDER BY _search_score DESC';
         }
 
@@ -996,12 +1021,13 @@ class MagicMapper
         // Add table prefix.
         $fullTableName = 'oc_'.$tableName;
 
-        // Base SELECT with metadata columns.
-        $selectColumns = [
-            '*',
-            "'{$register->getId()}' AS _union_register_id",
-            "'{$schema->getId()}' AS _union_schema_id",
-        ];
+        // Get metadata column names (common across all tables).
+        $metadataColumns = array_keys($this->getMetadataColumns());
+
+        // Base SELECT with only metadata columns (for UNION compatibility).
+        $selectColumns = $metadataColumns;
+        $selectColumns[] = "'{$register->getId()}' AS _union_register_id";
+        $selectColumns[] = "'{$schema->getId()}' AS _union_schema_id";
 
         // Add search score if _search is present.
         $hasSearch   = isset($query['_search']) === true && empty($query['_search']) === false;
@@ -1086,7 +1112,16 @@ class MagicMapper
         ];
 
         foreach ($query as $key => $value) {
-            if (in_array($key, $reservedParams, true) === true || str_starts_with($key, '_') === true) {
+            // Skip reserved params, underscore-prefixed params, and @ metadata params.
+            if (in_array($key, $reservedParams, true) === true
+                || str_starts_with($key, '_') === true
+                || str_starts_with($key, '@') === true
+            ) {
+                continue;
+            }
+
+            // Skip array values (cannot be used in simple equality check).
+            if (is_array($value) === true) {
                 continue;
             }
 

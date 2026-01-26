@@ -321,7 +321,8 @@ class QueryHandler
             ids: $ids,
             uses: $uses
         );
-        $result['@self']['source']    = 'database';
+        // Use source from result if available (e.g., magic_mapper for multi-schema), otherwise default to database.
+        $result['@self']['source']    = $result['@self']['source'] ?? 'database';
         $result['@self']['query']     = $query;
         $result['@self']['rbac']      = $_rbac;
         $result['@self']['multi']     = $_multitenancy;
@@ -417,6 +418,7 @@ class QueryHandler
         $registers      = $searchResult['registers'] ?? [];
         $schemas        = $searchResult['schemas'] ?? [];
         $ignoredFilters = $searchResult['ignoredFilters'] ?? [];
+        $source         = $searchResult['source'] ?? 'database';
 
         // Detect if complex rendering is needed (extend, fields, filter, unset).
         // Skip @self.register and @self.schema from extend since we include them in response @self.
@@ -481,7 +483,9 @@ class QueryHandler
             'limit'   => $limit,
             'offset'  => $offset,
             'facets'  => [],
-            '@self'   => [],
+            '@self'   => [
+                'source' => $source,
+            ],
         ];
 
         // Add registers and schemas indexed by ID to response @self.

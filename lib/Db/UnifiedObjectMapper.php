@@ -1130,10 +1130,6 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         ?array $ids=null,
         ?string $uses=null
     ): array {
-        // Extract pagination parameters.
-        $limit  = (int) ($searchQuery['_limit'] ?? 20);
-        $offset = (int) ($searchQuery['_offset'] ?? 0);
-
         // Cache for loaded registers and schemas.
         $registersCache = [];
         $schemasCache   = [];
@@ -1158,11 +1154,11 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             ];
         }
 
-        $allResults     = [];
-        $totalCount     = 0;
-        $ignoredFilters = [];
+        // Build register+schema pairs for UNION-based search.
+        $registerSchemaPairs = [];
+        $totalCount          = 0;
+        $ignoredFilters      = [];
 
-        // Query each schema.
         foreach ($schemaIds as $schemaId) {
             try {
                 $schema = $this->schemaMapper->find((int) $schemaId, _multitenancy: false, _rbac: false);
@@ -1172,15 +1168,15 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                 if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === false) {
                     $this->logger->debug(
                         '[UnifiedObjectMapper] Skipping non-magic-mapper schema',
-                        [
-                            'schemaId' => $schemaId,
-                        ]
+                        ['schemaId' => $schemaId]
                     );
                     continue;
                 }
 
-                // Get count for this schema.
-                // Add RBAC and multitenancy flags to count query for MagicSearchHandler.
+                // Add to pairs for UNION search.
+                $registerSchemaPairs[] = ['register' => $register, 'schema' => $schema];
+
+                // Get count for this schema (UNION search doesn't return counts).
                 $schemaCountQuery                  = $countQuery;
                 $schemaCountQuery['_rbac']         = $rbac;
                 $schemaCountQuery['_multitenancy'] = $multitenancy;
@@ -1190,73 +1186,47 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                     schema: $schema
                 );
                 $totalCount += $schemaCount;
-
-                // For results, we need to fetch enough to cover pagination.
-                // Fetch up to (offset + limit) from each table to ensure we have enough results.
-                $schemaSearchQuery                  = $searchQuery;
-                $schemaSearchQuery['_limit']        = $offset + $limit;
-                $schemaSearchQuery['_offset']       = 0;
-                // Add RBAC and multitenancy flags to query for MagicSearchHandler.
-                $schemaSearchQuery['_rbac']         = $rbac;
-                $schemaSearchQuery['_multitenancy'] = $multitenancy;
-
-                $schemaResults = $this->magicMapper->searchObjectsInRegisterSchemaTable(
-                    query: $schemaSearchQuery,
-                    register: $register,
-                    schema: $schema
-                );
-
-                // Collect ignored filters from this schema search.
-                $schemaIgnored = $this->magicMapper->getIgnoredFilters();
-                foreach ($schemaIgnored as $ignored) {
-                    if (in_array($ignored, $ignoredFilters, true) === false) {
-                        $ignoredFilters[] = $ignored;
-                    }
-                }
-
-                // Add schema ID to each result for sorting reference.
-                foreach ($schemaResults as $result) {
-                    $allResults[] = $result;
-                }
             } catch (\Exception $e) {
                 $this->logger->warning(
-                    '[UnifiedObjectMapper] Failed to search schema in multi-schema search',
-                    [
-                        'schemaId' => $schemaId,
-                        'error'    => $e->getMessage(),
-                    ]
+                    '[UnifiedObjectMapper] Failed to load schema for multi-schema search',
+                    ['schemaId' => $schemaId, 'error' => $e->getMessage()]
                 );
-                // Continue with other schemas.
-            }//end try
-        }//end foreach
-
-        // Sort combined results by updated/created date descending (most recent first).
-        usort(
-            $allResults,
-            function ($a, $b) {
-                $aDate = $a->getUpdated() ?? $a->getCreated() ?? new DateTime('1970-01-01');
-                $bDate = $b->getUpdated() ?? $b->getCreated() ?? new DateTime('1970-01-01');
-
-                if ($aDate instanceof DateTime && $bDate instanceof DateTime) {
-                    return $bDate->getTimestamp() - $aDate->getTimestamp();
-                }
-
-                return 0;
             }
-        );
-
-        // Apply final pagination.
-        $paginatedResults = array_slice($allResults, $offset);
-        if ($limit > 0) {
-            $paginatedResults = array_slice($allResults, $offset, $limit);
         }
 
+        // If no valid schema pairs, return empty.
+        if (empty($registerSchemaPairs) === true) {
+            return [
+                'results'        => [],
+                'total'          => 0,
+                'registers'      => $registersCache,
+                'schemas'        => $schemasCache,
+                'ignoredFilters' => [],
+                'source'         => 'magic_mapper',
+            ];
+        }
+
+        // Use UNION-based search for proper SQL-level ordering across all tables.
+        // Add RBAC and multitenancy flags.
+        $unionQuery                  = $searchQuery;
+        $unionQuery['_rbac']         = $rbac;
+        $unionQuery['_multitenancy'] = $multitenancy;
+
+        $results = $this->magicMapper->searchAcrossMultipleTables(
+            query: $unionQuery,
+            registerSchemaPairs: $registerSchemaPairs
+        );
+
+        // Collect ignored filters.
+        $ignoredFilters = $this->magicMapper->getIgnoredFilters();
+
         return [
-            'results'        => $paginatedResults,
+            'results'        => $results,
             'total'          => $totalCount,
             'registers'      => $registersCache,
             'schemas'        => $schemasCache,
             'ignoredFilters' => $ignoredFilters,
+            'source'         => 'magic_mapper',
         ];
     }//end searchObjectsPaginatedMultiSchema()
 
@@ -2027,4 +1997,113 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             'schemas'   => $schemasCache,
         ];
     }//end searchObjectsGloballyByRelations()
+
+    /**
+     * Get a field value from an ObjectEntity for sorting purposes.
+     *
+     * Handles both metadata fields (via getters) and object data properties.
+     *
+     * @param ObjectEntity $object    The object entity to get the value from.
+     * @param string       $fieldName The field name (without _ prefix).
+     *
+     * @return mixed The field value, or null if not found.
+     */
+    private function getObjectFieldValue(ObjectEntity $object, string $fieldName): mixed
+    {
+        // Map common field names to getter methods.
+        $getterMap = [
+            'id'          => 'getId',
+            'uuid'        => 'getUuid',
+            'name'        => 'getName',
+            'slug'        => 'getSlug',
+            'uri'         => 'getUri',
+            'version'     => 'getVersion',
+            'register'    => 'getRegister',
+            'schema'      => 'getSchema',
+            'owner'       => 'getOwner',
+            'organisation'=> 'getOrganisation',
+            'application' => 'getApplication',
+            'folder'      => 'getFolder',
+            'created'     => 'getCreated',
+            'updated'     => 'getUpdated',
+            'published'   => 'getPublished',
+            'description' => 'getDescription',
+            'summary'     => 'getSummary',
+        ];
+
+        // Try getter method first (ObjectEntity may use __call for dynamic getters).
+        if (isset($getterMap[$fieldName]) === true) {
+            $method = $getterMap[$fieldName];
+            try {
+                return $object->$method();
+            } catch (\Exception $e) {
+                // Method doesn't exist, continue to fallback.
+            }
+        }
+
+        // Try dynamic getter (getFieldName).
+        $camelCaseGetter = 'get'.ucfirst($fieldName);
+        try {
+            return $object->$camelCaseGetter();
+        } catch (\Exception $e) {
+            // Method doesn't exist, continue to fallback.
+        }
+
+        // Fall back to object data.
+        $objectData = $object->getObject();
+        if (is_array($objectData) === true && isset($objectData[$fieldName]) === true) {
+            return $objectData[$fieldName];
+        }
+
+        return null;
+    }//end getObjectFieldValue()
+
+    /**
+     * Compare two values for sorting purposes.
+     *
+     * Handles DateTime objects, numeric values, and strings.
+     *
+     * @param mixed $a First value.
+     * @param mixed $b Second value.
+     *
+     * @return int Comparison result (-1, 0, or 1).
+     */
+    private function compareValues(mixed $a, mixed $b): int
+    {
+        // Handle null values.
+        if ($a === null && $b === null) {
+            return 0;
+        }
+
+        if ($a === null) {
+            return -1;
+        }
+
+        if ($b === null) {
+            return 1;
+        }
+
+        // Handle DateTime objects.
+        if ($a instanceof DateTime && $b instanceof DateTime) {
+            return $a->getTimestamp() <=> $b->getTimestamp();
+        }
+
+        // Handle numeric values.
+        if (is_numeric($a) === true && is_numeric($b) === true) {
+            return ((float) $a) <=> ((float) $b);
+        }
+
+        // Handle strings (case-insensitive).
+        if (is_string($a) === true && is_string($b) === true) {
+            return strcasecmp($a, $b);
+        }
+
+        // Handle arrays (compare by count).
+        if (is_array($a) === true && is_array($b) === true) {
+            return count($a) <=> count($b);
+        }
+
+        // Default string comparison.
+        return strcmp((string) $a, (string) $b);
+    }//end compareValues()
 }//end class
