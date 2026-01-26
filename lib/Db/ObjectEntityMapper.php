@@ -374,7 +374,29 @@ class ObjectEntityMapper extends QBMapper
         $this->eventDispatcher->dispatchTyped(new ObjectCreatingEvent($entity));
 
         // Check if this entity should use magic mapping.
-        if ($entity instanceof ObjectEntity && $this->shouldUseMagicMapper($entity) === true) {
+        // IMPORTANT: Use provided register/schema if available, otherwise extract from entity.
+        // This ensures cascade-created objects use the correct routing.
+        $useMagicMapper = false;
+        if ($entity instanceof ObjectEntity === true) {
+            if ($register !== null && $schema !== null) {
+                // Use provided register/schema directly (more reliable).
+                $useMagicMapper = $this->shouldUseMagicMapperForRegisterSchema(
+                    register: $register,
+                    schema: $schema
+                );
+                $this->logger->debug('[ObjectEntityMapper::insert] Using provided register/schema for magic check', [
+                    'registerId' => $register->getId(),
+                    'schemaId' => $schema->getId(),
+                    'schemaSlug' => $schema->getSlug(),
+                    'result' => $useMagicMapper,
+                ]);
+            } else {
+                // Fall back to extracting from entity.
+                $useMagicMapper = $this->shouldUseMagicMapper($entity);
+            }
+        }
+
+        if ($useMagicMapper === true) {
             try {
                 // Get UnifiedObjectMapper and delegate insertion.
                 // NOTE: UnifiedObjectMapper handles event dispatching, so we don't dispatch here.

@@ -1927,13 +1927,27 @@ class MagicMapper
                 $handling     = $objectConfig['handling'] ?? null;
                 $hasRef       = isset($propertyConfig['$ref']);
 
+                // Also check for nested items.oneOf[] pattern (e.g., moduleB with multiple possible types).
+                // Pattern: { "type": "object", "items": { "oneOf": [{ "$ref": "...", "objectConfiguration": {...} }] } }
+                if ($handling === null && isset($propertyConfig['items']['oneOf']) === true) {
+                    foreach ($propertyConfig['items']['oneOf'] as $oneOfItem) {
+                        if (isset($oneOfItem['objectConfiguration']['handling']) === true
+                            && $oneOfItem['objectConfiguration']['handling'] === 'related-object'
+                        ) {
+                            $handling = 'related-object';
+                            $hasRef   = isset($oneOfItem['$ref']);
+                            break;
+                        }
+                    }
+                }
+
                 if ($type === 'object' && $hasRef === true && $handling === 'related-object') {
                     // This is a reference to another object - store as UUID string.
                     $this->logger->debug(
                         'Detected object reference property, using VARCHAR for UUID storage',
                         [
                             'propertyName' => $propertyName,
-                            '$ref'         => $propertyConfig['$ref'],
+                            '$ref'         => $propertyConfig['$ref'] ?? 'nested in items.oneOf',
                             'handling'     => $handling,
                         ]
                     );
