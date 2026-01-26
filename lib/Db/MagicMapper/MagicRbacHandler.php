@@ -580,7 +580,8 @@ class MagicRbacHandler
     ): bool {
         // Simple rule: just a group name string.
         if (is_string($rule) === true) {
-            if ($rule === 'public' && $userId !== null) {
+            // 'public' grants access to anyone, including unauthenticated users.
+            if ($rule === 'public') {
                 return true;
             }
 
@@ -593,8 +594,9 @@ class MagicRbacHandler
             $match = $rule['match'] ?? null;
 
             // Check if user qualifies for the group.
+            // 'public' grants access to anyone, including unauthenticated users.
             $userQualifies = false;
-            if ($group === 'public' && $userId !== null) {
+            if ($group === 'public') {
                 $userQualifies = true;
             } else if (in_array($group, $userGroups, true) === true) {
                 $userQualifies = true;

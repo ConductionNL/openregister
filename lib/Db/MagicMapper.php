@@ -1120,14 +1120,30 @@ class MagicMapper
                 continue;
             }
 
-            // Skip array values (cannot be used in simple equality check).
-            if (is_array($value) === true) {
+            // Check if this property exists in the schema.
+            // If filtering by a property that doesn't exist on this schema, return no results.
+            if (isset($schemaProps[$key]) === false) {
+                // Property doesn't exist on this schema - add impossible condition to return 0 rows.
+                $whereClauses[] = '1=0';
                 continue;
             }
 
             $columnName = $this->sanitizeColumnName($key);
+
+            // Handle array values with IN clause.
+            if (is_array($value) === true) {
+                if (empty($value) === false) {
+                    $quotedValues = array_map(
+                        fn($v) => $qb->getConnection()->quote((string) $v),
+                        $value
+                    );
+                    $whereClauses[] = "{$columnName} IN (".implode(', ', $quotedValues).')';
+                }
+                continue;
+            }
+
             // Simple equality filter.
-            $whereClauses[] = "{$columnName} = '{$qb->getConnection()->quote((string) $value)}'";
+            $whereClauses[] = "{$columnName} = ".$qb->getConnection()->quote((string) $value);
         }
 
         if (empty($whereClauses) === false) {
