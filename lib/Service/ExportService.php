@@ -272,23 +272,33 @@ class ExportService
             $objectFilters[$metaField] = $value;
         }
 
+        // Check if multitenancy was explicitly requested via _multi parameter.
+        $multiExplicitlySet = isset($filters['_multi']) || isset($filters['multi']);
+        $multitenancy       = true;
+        if (isset($filters['_multi'])) {
+            $multitenancy = filter_var($filters['_multi'], FILTER_VALIDATE_BOOLEAN);
+        } else if (isset($filters['multi'])) {
+            $multitenancy = filter_var($filters['multi'], FILTER_VALIDATE_BOOLEAN);
+        }
+
         // Use ObjectService::searchObjects directly with proper RBAC and multi-tenancy filtering.
         // Set a very high limit to get all objects (export needs all data).
         $query = [
-            '@self'           => $objectFilters,
-            '_limit'          => 999999,
-        // Very high limit to get all objects.
-            '_published'      => false,
-        // Export all objects, not just published ones.
-            '_includeDeleted' => false,
+            '@self'                  => $objectFilters,
+            '_limit'                 => 999999,
+            // Very high limit to get all objects.
+            '_published'             => false,
+            // Export all objects, not just published ones.
+            '_includeDeleted'        => false,
+            '_multitenancy_explicit' => $multiExplicitlySet,
         ];
 
         $objects = $this->objectService->searchObjects(
             query: $query,
             _rbac: true,
             // Apply RBAC filtering.
-            _multitenancy: true,
-            // Apply multi-tenancy filtering.
+            _multitenancy: $multitenancy,
+            // Apply multi-tenancy filtering (respects explicit _multi parameter).
             ids: null,
             uses: null
         );

@@ -2201,20 +2201,48 @@ class ObjectsController extends Controller
         $registerEntity = $this->registerMapper->find($register);
         $schemaEntity   = $this->schemaMapper->find($schema);
 
-        // Use ObjectService delegation to ExportHandler.
-        $result = $objectService->exportObjects(
-            _register: $registerEntity,
-            _schema: $schemaEntity,
-            _filters: $filters,
-            _type: $type,
-            _currentUser: $this->userSession->getUser()
+        // Generate filename base.
+        $filenameBase = sprintf(
+            '%s_%s_%s',
+            $registerEntity->getSlug() ?? 'register',
+            $schemaEntity->getSlug() ?? 'schema',
+            (new DateTime())->format('Y-m-d_His')
         );
 
-        // Return download response.
+        // Call ExportService directly (bypassing ObjectService which has circular dependency issues).
+        if ($type === 'csv') {
+            $content = $this->exportService->exportToCsv(
+                register: $registerEntity,
+                schema: $schemaEntity,
+                filters: $filters,
+                currentUser: $this->userSession->getUser()
+            );
+
+            return new DataDownloadResponse(
+                data: $content,
+                filename: "{$filenameBase}.csv",
+                contentType: 'text/csv'
+            );
+        }
+
+        // Default to Excel.
+        $spreadsheet = $this->exportService->exportToExcel(
+            register: $registerEntity,
+            schema: $schemaEntity,
+            filters: $filters,
+            currentUser: $this->userSession->getUser()
+        );
+
+        // Create Excel writer and get content.
+        $writer = new Xlsx($spreadsheet);
+        ob_start();
+        $writer->save('php://output');
+        $content = ob_get_clean();
+
         return new DataDownloadResponse(
-            data: $result['content'],
-            filename: $result['filename'],
-            contentType: $result['mimetype']
+            data: $content,
+            filename: "{$filenameBase}.xlsx",
+            contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         );
     }//end export()
 
