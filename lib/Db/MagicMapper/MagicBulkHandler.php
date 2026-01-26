@@ -157,13 +157,15 @@ class MagicBulkHandler
             $relations = $selfData['relations'] ?? $object['relations'] ?? null;
             if ($relations !== null && is_array($relations) === true) {
                 $preparedObject['_relations'] = json_encode(array_values($relations));
-            } else if ($relations !== null && is_string($relations) === true) {
+            } else if ($relations !== null && is_string($relations) === true && $relations !== '') {
+                // Only use string value if not empty (empty string is invalid JSON for PostgreSQL).
                 $preparedObject['_relations'] = $relations;
             }
 
             // Map ALL object properties to columns (camelCase → snake_case).
             // Properties can be at top level OR in 'object' key (structured format).
             $propertySource = $object['object'] ?? $object;
+            $schemaProperties = $schema->getProperties() ?? [];
 
             foreach ($propertySource as $propertyName => $value) {
                 // Skip metadata (already handled) and @self.
@@ -172,6 +174,16 @@ class MagicBulkHandler
                 }
 
                 $columnName = $this->sanitizeColumnName($propertyName);
+
+                // Get property type from schema to handle JSON columns properly.
+                $propertyConfig = $schemaProperties[$propertyName] ?? [];
+                $propertyType = $propertyConfig['type'] ?? 'string';
+
+                // Handle empty strings for JSON columns (array/object types).
+                // PostgreSQL rejects empty strings as invalid JSON.
+                if ($value === '' && in_array($propertyType, ['array', 'object'], true) === true) {
+                    $value = null;
+                }
 
                 // Convert complex values for database storage.
                 $preparedObject[$columnName] = $value;

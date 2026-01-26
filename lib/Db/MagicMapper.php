@@ -2750,9 +2750,13 @@ class MagicMapper
                 'groups',
             ];
             if (in_array($field, $jsonFields) === true) {
-                // Convert to JSON if not already a string, but treat empty arrays as NULL.
+                // Convert to JSON if not already a string, but treat empty values as NULL.
+                // PostgreSQL rejects empty strings as invalid JSON.
                 if ($value !== null) {
-                    if (is_array($value) === true && empty($value) === true) {
+                    // Empty string should be NULL for JSON columns.
+                    if ($value === '') {
+                        $value = null;
+                    } else if (is_array($value) === true && empty($value) === true) {
                         // Empty array should be NULL for proper IS NULL checks.
                         $value = null;
                     } else if (is_string($value) === false) {
@@ -2783,6 +2787,10 @@ class MagicMapper
                 if (($data[$propertyName] ?? null) !== null) {
                     $value = $data[$propertyName];
 
+                    // Get the property type from schema to handle JSON columns properly.
+                    $propertyConfig = $schemaProperties[$propertyName] ?? [];
+                    $propertyType = $propertyConfig['type'] ?? 'string';
+
                     // Convert boolean values to integers (0/1) for database compatibility.
                     // PHP's false can be incorrectly converted to empty string '' by some drivers.
                     // Using 0/1 integers ensures PostgreSQL and other databases handle booleans correctly.
@@ -2792,6 +2800,13 @@ class MagicMapper
                         } else {
                             $value = 0;
                         }
+                    }
+
+                    // Handle empty strings for JSON columns (array/object types).
+                    // PostgreSQL rejects empty strings as invalid JSON.
+                    // Convert empty strings to NULL for these column types.
+                    if ($value === '' && in_array($propertyType, ['array', 'object'], true) === true) {
+                        $value = null;
                     }
 
                     // Convert complex types to JSON.
