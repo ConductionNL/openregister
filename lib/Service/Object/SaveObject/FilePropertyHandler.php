@@ -468,6 +468,15 @@ class FilePropertyHandler
             throw new Exception("Property '$propertyName' is not configured as a file property");
         }
 
+        // Merge schema-level autoPublish setting if not set at property level.
+        // Schema configuration.autoPublish serves as a default for all file properties.
+        if (isset($fileConfig['autoPublish']) === false) {
+            $schemaConfig = $schema->getConfiguration() ?? [];
+            if (isset($schemaConfig['autoPublish']) === true) {
+                $fileConfig['autoPublish'] = $schemaConfig['autoPublish'];
+            }
+        }
+
         // Handle file deletion: null for single files, empty array for array properties.
         if ($fileValue === null || (is_array($fileValue) === true && empty($fileValue) === true) === true) {
             // Get existing file IDs from the current object data.

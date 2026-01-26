@@ -129,21 +129,29 @@ class FileSharingHandler
      */
     public function createShare(array $shareData): IShare
     {
+        // Use the file's owner as the share creator for better compatibility.
+        // This avoids permission issues when the OpenRegister user doesn't own the file.
         $userId = $this->fileOwnershipHandler->getUser()->getUID();
+
+        // If we have a file object and it has an owner, use that owner as the sharer.
+        if (empty($shareData['file']) === false) {
+            $fileOwner = $shareData['file']->getOwner();
+            if ($fileOwner !== null) {
+                $userId = $fileOwner->getUID();
+            }
+        }
 
         // Create a new share.
         $share = $this->shareManager->newShare();
-        $share->setTarget(target: '/'.$shareData['path']);
 
+        // Use setNode directly when file is available (more reliable than setNodeId).
         if (empty($shareData['file']) === false) {
-            $share->setNodeId(fileId: $shareData['file']->getId());
-        }
-
-        if (empty($shareData['nodeId']) === false) {
+            $share->setNode($shareData['file']);
+        } else if (empty($shareData['nodeId']) === false) {
             $share->setNodeId(fileId: $shareData['nodeId']);
+            $share->setNodeType(type: $shareData['nodeType'] ?? 'file');
         }
 
-        $share->setNodeType(type: $shareData['nodeType'] ?? 'file');
         $share->setShareType(shareType: $shareData['shareType']);
 
         if (($shareData['permissions'] ?? null) !== null) {
@@ -161,11 +169,11 @@ class FileSharingHandler
         try {
             $this->shareManager->createShare($share);
             $this->logger->info(
-                message: "Successfully created share for {$shareData['path']}"
+                message: "Successfully created share for {$shareData['path']} by user {$userId}"
             );
             return $share;
         } catch (Exception $e) {
-            $this->logger->error(message: "Failed to create share for {$shareData['path']}: ".$e->getMessage());
+            $this->logger->error(message: "Failed to create share for {$shareData['path']} by user {$userId}: ".$e->getMessage());
             throw new Exception("Failed to create share: ".$e->getMessage());
         }
     }//end createShare()
