@@ -922,10 +922,21 @@ class ObjectsController extends Controller
                     }
                 }
 
-                // Calculate pagination (MagicMapper returns all matching, we need to paginate in response).
+                // Calculate pagination - need a separate count query since search applies limit/offset.
                 $limit  = $query['_limit'] ?? 20;
                 $offset = $query['_offset'] ?? 0;
-                $total  = count($serializedResults);
+
+                // Build count query (same filters, no pagination).
+                $countQuery = $query;
+                unset($countQuery['_limit'], $countQuery['_offset'], $countQuery['_page']);
+
+                // Get actual total count.
+                $total = $magicMapper->countObjectsInRegisterSchemaTable(
+                    query: $countQuery,
+                    register: $registerEntity,
+                    schema: $schemaEntity
+                );
+
                 $pages  = 1;
                 $page   = 1;
                 if ($limit > 0) {

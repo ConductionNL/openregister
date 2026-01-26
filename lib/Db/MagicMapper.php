@@ -1036,13 +1036,14 @@ class MagicMapper
 
         if ($hasSearch === true && empty($schemaProps) === false) {
             // Build fuzzy search score (same logic as applyFuzzySearch).
+            // Note: quote() already adds quotes, so don't wrap in additional quotes.
             $searchColumns = [];
+            $quotedTerm    = $qb->getConnection()->quote($searchTerm);
             foreach ($schemaProps as $propName => $propDef) {
                 $type = $propDef['type'] ?? 'string';
                 if (in_array($type, ['string', 'text'], true) === true) {
                     $columnName      = $this->sanitizeColumnName($propName);
-                    $quotedTerm      = $qb->getConnection()->quote($searchTerm);
-                    $searchColumns[] = "COALESCE(similarity({$columnName}::text, '{$quotedTerm}'), 0)";
+                    $searchColumns[] = "COALESCE(similarity({$columnName}::text, {$quotedTerm}), 0)";
                 }
             }
 
@@ -1065,13 +1066,15 @@ class MagicMapper
         // Fuzzy search WHERE.
         if ($hasSearch === true && empty($schemaProps) === false) {
             $searchConditions = [];
+            $quotedTerm       = $qb->getConnection()->quote($searchTerm);
+            // Escape % for LIKE pattern (the quoted term already has quotes).
+            $likePattern      = "'%".trim($quotedTerm, "'")."%'";
             foreach ($schemaProps as $propName => $propDef) {
                 $type = $propDef['type'] ?? 'string';
                 if (in_array($type, ['string', 'text'], true) === true) {
                     $columnName         = $this->sanitizeColumnName($propName);
-                    $searchConditions[] = "{$columnName}::text ILIKE '%{$qb->getConnection()->quote($searchTerm)}%'";
-                    $quoted = $qb->getConnection()->quote($searchTerm);
-                    $searchConditions[] = "similarity({$columnName}::text, '{$quoted}') > 0.1";
+                    $searchConditions[] = "{$columnName}::text ILIKE {$likePattern}";
+                    $searchConditions[] = "similarity({$columnName}::text, {$quotedTerm}) > 0.1";
                 }
             }
 

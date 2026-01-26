@@ -1217,15 +1217,18 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             registerSchemaPairs: $registerSchemaPairs
         );
 
-        // Collect ignored filters.
-        $ignoredFilters = $this->magicMapper->getIgnoredFilters();
+        // For multi-schema UNION searches, we don't report ignoredFilters because:
+        // - The UNION query correctly handles missing properties by adding WHERE 1=0
+        // - Each schema is filtered independently - some may have the property, some may not
+        // - Reporting a filter as "ignored" is misleading when it was applied to schemas that have it
+        // Only single-schema searches should report ignoredFilters (when the filter has no effect).
 
         return [
             'results'        => $results,
             'total'          => $totalCount,
             'registers'      => $registersCache,
             'schemas'        => $schemasCache,
-            'ignoredFilters' => $ignoredFilters,
+            'ignoredFilters' => [],
             'source'         => 'magic_mapper',
         ];
     }//end searchObjectsPaginatedMultiSchema()
