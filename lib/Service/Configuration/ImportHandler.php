@@ -180,7 +180,7 @@ class ImportHandler
      *
      * @SuppressWarnings(PHPMD.UnusedPrivateField) Reserved for future OpenConnector integration
      */
-    private mixed $connectorConfigSvc = null;
+    private mixed $openConnectorConfigurationService = null;
 
     /**
      * Constructor for ImportHandler.
