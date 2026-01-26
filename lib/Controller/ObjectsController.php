@@ -780,6 +780,8 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @PublicPage
+     *
      * @psalm-return JSONResponse<200|404, array<string, mixed>, array<never, never>>
      *
      * @SuppressWarnings(PHPMD.NPathComplexity)       Complex request parameter handling for flexible API
@@ -1032,6 +1034,8 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @PublicPage
+     *
      * @psalm-return JSONResponse<200, array<string, mixed>, array<never, never>>
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
@@ -1177,6 +1181,8 @@ class ObjectsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @PublicPage
      *
      * @return JSONResponse JSON response with the object or error
      *
@@ -2952,4 +2958,58 @@ class ObjectsController extends Controller
     {
         return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === 1;
     }//end isUuid()
+
+    /**
+     * Clear all blob storage objects
+     *
+     * This endpoint deletes all objects stored in blob storage mode (openregister_objects table).
+     * Magic Mapper objects are NOT affected by this operation.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with deletion results
+     *
+     * @psalm-return JSONResponse
+     */
+    public function clearBlob(): JSONResponse
+    {
+        try {
+            $this->logger->info('[ObjectsController] Starting clear blob storage objects operation');
+
+            // Use the object entity mapper to delete all blob objects.
+            $result = $this->objectEntityMapper->clearBlobObjects();
+
+            $this->logger->info(
+                '[ObjectsController] Successfully cleared blob storage objects',
+                ['deleted' => $result['deleted'] ?? 0]
+            );
+
+            return new JSONResponse(
+                data: [
+                    'success' => true,
+                    'deleted' => $result['deleted'] ?? 0,
+                    'message' => 'Successfully cleared blob storage objects',
+                ]
+            );
+        } catch (Exception $e) {
+            $this->logger->error(
+                '[ObjectsController] Failed to clear blob storage objects',
+                [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                ]
+            );
+
+            return new JSONResponse(
+                data: [
+                    'success' => false,
+                    'error'   => $e->getMessage(),
+                ],
+                statusCode: 500
+            );
+        }//end try
+    }//end clearBlob()
+
 }//end class
+

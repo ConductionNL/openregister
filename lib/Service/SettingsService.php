@@ -1637,6 +1637,48 @@ class SettingsService
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Statistics aggregation requires comprehensive data collection
      */
+    /**
+     * Get statistics for the settings dashboard.
+     *
+     * This method provides counts and warnings for objects, logs, and other entities
+     * in the OpenRegister system. It uses optimized SQL queries to fetch all counts
+     * in a single database roundtrip for better performance.
+     *
+     * @return array<string, mixed> Statistics array with warnings and totals
+     *
+     * @psalm-return array{
+     *     timestamp: int,
+     *     date: string,
+     *     warnings: array{
+     *         objectsWithoutOwner: int,
+     *         objectsWithoutOrganisation: int,
+     *         auditTrailsWithoutExpiry: int,
+     *         searchTrailsWithoutExpiry: int,
+     *         expiredAuditTrails: int,
+     *         expiredSearchTrails: int,
+     *         expiredObjects: int
+     *     },
+     *     totals: array{
+     *         totalObjects: int,
+     *         totalAuditTrails: int,
+     *         totalSearchTrails: int,
+     *         totalConfigurations: int,
+     *         totalOrganisations: int,
+     *         totalRegisters: int,
+     *         totalSchemas: int,
+     *         totalSources: int,
+     *         totalWebhookLogs: int,
+     *         deletedObjects: int
+     *     },
+     *     solr?: array<string, mixed>,
+     *     cache?: array<string, mixed>,
+     *     system: array{
+     *         php_version: string,
+     *         memory_limit: string,
+     *         max_execution_time: string
+     *     }
+     * }
+     */
     public function getStats(): array
     {
         try {
@@ -1644,6 +1686,42 @@ class SettingsService
                 'timestamp' => time(),
                 'date'      => date('Y-m-d H:i:s'),
             ];
+
+            // Get database statistics using optimized queries.
+            try {
+                $dbStats = $this->getDatabaseStats();
+                $stats['warnings'] = $dbStats['warnings'];
+                $stats['totals']   = $dbStats['totals'];
+            } catch (\Exception $e) {
+                $this->logger->error('[SettingsService] Failed to load database statistics', ['error' => $e->getMessage()]);
+                // Provide default empty stats if DB query fails.
+                $stats['warnings'] = [
+                    'objectsWithoutOwner'          => 0,
+                    'objectsWithoutOrganisation'   => 0,
+                    'auditTrailsWithoutExpiry'     => 0,
+                    'searchTrailsWithoutExpiry'    => 0,
+                    'expiredAuditTrails'           => 0,
+                    'expiredSearchTrails'          => 0,
+                    'expiredObjects'               => 0,
+                ];
+                $stats['totals'] = [
+                    'totalObjects'         => 0,
+                    'totalBlobObjects'     => 0,
+                    'totalMagicObjects'    => 0,
+                    'totalSize'            => 0,
+                    'totalBlobSize'        => 0,
+                    'totalMagicSize'       => 0,
+                    'totalAuditTrails'     => 0,
+                    'totalSearchTrails'    => 0,
+                    'totalConfigurations'  => 0,
+                    'totalOrganisations'   => 0,
+                    'totalRegisters'       => 0,
+                    'totalSchemas'         => 0,
+                    'totalSources'         => 0,
+                    'totalWebhookLogs'     => 0,
+                    'deletedObjects'       => 0,
+                ];
+            }//end try
 
             // Get Solr stats if available.
             try {
@@ -1668,12 +1746,197 @@ class SettingsService
 
             return $stats;
         } catch (\Exception $e) {
+            $this->logger->error('[SettingsService] Failed to retrieve stats', ['error' => $e->getMessage()]);
             return [
                 'error'   => 'Failed to retrieve stats',
                 'message' => $e->getMessage(),
             ];
         }//end try
     }//end getStats()
+
+    /**
+     * Get database statistics using optimized SQL queries.
+     *
+     * This method executes a single optimized query to fetch all counts and warnings
+     * from the database in one roundtrip for better performance.
+     *
+     * @return array<string, array<string, int>> Database statistics with warnings and totals
+     *
+     * @psalm-return array{
+     *     warnings: array{
+     *         objectsWithoutOwner: int,
+     *         objectsWithoutOrganisation: int,
+     *         auditTrailsWithoutExpiry: int,
+     *         searchTrailsWithoutExpiry: int,
+     *         expiredAuditTrails: int,
+     *         expiredSearchTrails: int,
+         *         expiredObjects: int
+     *     },
+     *     totals: array{
+     *         totalObjects: int,
+     *         totalBlobObjects: int,
+     *         totalMagicObjects: int,
+     *         totalAuditTrails: int,
+     *         totalSearchTrails: int,
+     *         totalConfigurations: int,
+     *         totalOrganisations: int,
+     *         totalRegisters: int,
+     *         totalSchemas: int,
+     *         totalSources: int,
+     *         totalWebhookLogs: int,
+     *         deletedObjects: int
+     *     }
+     * }
+     */
+    private function getDatabaseStats(): array
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $this->logger->info('[SettingsService] getDatabaseStats() called');
+
+        // First, get the count of blob objects (stored in openregister_objects).
+        $blobCount = (int) $this->db->executeQuery(
+            "SELECT COUNT(*) as cnt FROM {$qb->getTableName('openregister_objects')} WHERE deleted IS NULL"
+        )->fetch()['cnt'];
+
+        // Get total size of blob objects (size column is INTEGER, no casting needed).
+        $blobSizeQuery = "SELECT COALESCE(SUM(size), 0) as total 
+                          FROM {$qb->getTableName('openregister_objects')} 
+                          WHERE deleted IS NULL AND size IS NOT NULL";
+        $blobSize = (int) $this->db->executeQuery($blobSizeQuery)->fetch()['total'];
+
+        // Then, get the count and size of magic mapper objects by summing from all openregister_table_* tables.
+        $magicCount = 0;
+        $magicSize  = 0;
+        try {
+            // Get database platform to use correct query for listing tables.
+            $platform = $this->db->getDatabasePlatform();
+            $isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
+
+            if ($isPostgres === true) {
+                // PostgreSQL query.
+                $tablesQuery = "SELECT tablename FROM pg_tables 
+                                WHERE schemaname = 'public' 
+                                AND tablename LIKE 'oc_openregister_table_%'";
+            } else {
+                // MySQL/MariaDB query.
+                $tablesQuery = "SELECT table_name as tablename FROM information_schema.tables 
+                                WHERE table_schema = DATABASE() 
+                                AND table_name LIKE 'oc_openregister_table_%'";
+            }
+
+            $tablesResult = $this->db->executeQuery($tablesQuery);
+            $tables       = $tablesResult->fetchAll(\PDO::FETCH_COLUMN);
+
+            // Sum up objects and sizes from all magic mapper tables.
+            foreach ($tables as $fullTableName) {
+                try {
+                    // _size is VARCHAR, so cast it to BIGINT for aggregation (PostgreSQL compatible).
+                    $result = $this->db->executeQuery(
+                        "SELECT COUNT(*) as cnt, 
+                                COALESCE(SUM(
+                                    CASE 
+                                        WHEN _size IS NOT NULL AND _size != '' 
+                                        THEN CAST(_size AS BIGINT) 
+                                        ELSE 0 
+                                    END
+                                ), 0) as total_size 
+                         FROM {$fullTableName} 
+                         WHERE _deleted IS NULL"
+                    )->fetch();
+                    
+                    $magicCount += (int) $result['cnt'];
+                    $magicSize  += (int) $result['total_size'];
+                } catch (\Exception $e) {
+                    // Table query failed, skip it.
+                    $this->logger->debug('[SettingsService] Failed to query magic mapper table', [
+                        'table' => $fullTableName,
+                        'error' => $e->getMessage()
+                    ]);
+                    continue;
+                }
+            }
+        } catch (\Exception $e) {
+            $this->logger->warning('[SettingsService] Failed to count magic mapper objects', ['error' => $e->getMessage()]);
+        }//end try
+
+        // Check if openconnector_sources table exists (openconnector app might not be installed).
+        $sourcesTableExists = false;
+        try {
+            $this->db->executeQuery("SELECT 1 FROM {$qb->getTableName('openconnector_sources')} LIMIT 1");
+            $sourcesTableExists = true;
+        } catch (\Exception $e) {
+            // OpenConnector app is not installed, which is fine.
+            $this->logger->debug('[SettingsService] openconnector_sources table does not exist - OpenConnector app not installed');
+        }
+
+        // Build query for sources count based on table existence.
+        $sourcesCountQuery = $sourcesTableExists
+            ? "(SELECT COUNT(*) FROM {$qb->getTableName('openconnector_sources')})"
+            : '0';
+
+        // Build a single query that gets all other counts at once using subqueries.
+        $query = "SELECT
+            -- Total counts (blob objects only for backward compatibility)
+            (SELECT COUNT(*) FROM {$qb->getTableName('openregister_objects')} WHERE deleted IS NULL) as total_objects,
+            (SELECT COUNT(*) FROM {$qb->getTableName('openregister_objects')} WHERE deleted IS NOT NULL) as deleted_objects,
+            (SELECT COUNT(*) FROM {$qb->getTableName('openregister_audit_trails')}) as total_audit_trails,
+            (SELECT COUNT(*) FROM {$qb->getTableName('openregister_search_trails')}) as total_search_trails,
+            (SELECT COUNT(*) FROM {$qb->getTableName('openregister_configurations')}) as total_configurations,
+            (SELECT COUNT(*) FROM {$qb->getTableName('openregister_organisations')}) as total_organisations,
+            (SELECT COUNT(*) FROM {$qb->getTableName('openregister_registers')}) as total_registers,
+            (SELECT COUNT(*) FROM {$qb->getTableName('openregister_schemas')}) as total_schemas,
+            {$sourcesCountQuery} as total_sources,
+            (SELECT COUNT(*) FROM {$qb->getTableName('openregister_webhook_logs')}) as total_webhook_logs,
+            
+            -- Warning counts (only for blob objects, as magic mapper handles validation differently)
+            (SELECT COUNT(*) FROM {$qb->getTableName('openregister_objects')} WHERE deleted IS NULL AND (owner IS NULL OR owner = '')) as objects_without_owner,
+            (SELECT COUNT(*) FROM {$qb->getTableName('openregister_objects')} WHERE deleted IS NULL AND (organisation IS NULL OR organisation = '')) as objects_without_organisation,
+            (SELECT COUNT(*) FROM {$qb->getTableName('openregister_audit_trails')} WHERE expires IS NULL) as audit_trails_without_expiry,
+            (SELECT COUNT(*) FROM {$qb->getTableName('openregister_search_trails')} WHERE expires IS NULL) as search_trails_without_expiry,
+            (SELECT COUNT(*) FROM {$qb->getTableName('openregister_audit_trails')} WHERE expires IS NOT NULL AND expires < NOW()) as expired_audit_trails,
+            (SELECT COUNT(*) FROM {$qb->getTableName('openregister_search_trails')} WHERE expires IS NOT NULL AND expires < NOW()) as expired_search_trails,
+            (SELECT COUNT(*) FROM {$qb->getTableName('openregister_objects')} WHERE deleted IS NULL AND expires IS NOT NULL AND expires < NOW()) as expired_objects";
+
+        $result = $this->db->executeQuery($query);
+        $row    = $result->fetch();
+
+        if ($row === false) {
+            throw new RuntimeException('Failed to fetch database statistics');
+        }
+
+        $totalObjects = $blobCount + $magicCount;
+        $totalSize    = $blobSize + $magicSize;
+
+        return [
+            'warnings' => [
+                'objectsWithoutOwner'          => (int) ($row['objects_without_owner'] ?? 0),
+                'objectsWithoutOrganisation'   => (int) ($row['objects_without_organisation'] ?? 0),
+                'auditTrailsWithoutExpiry'     => (int) ($row['audit_trails_without_expiry'] ?? 0),
+                'searchTrailsWithoutExpiry'    => (int) ($row['search_trails_without_expiry'] ?? 0),
+                'expiredAuditTrails'           => (int) ($row['expired_audit_trails'] ?? 0),
+                'expiredSearchTrails'          => (int) ($row['expired_search_trails'] ?? 0),
+                'expiredObjects'               => (int) ($row['expired_objects'] ?? 0),
+            ],
+            'totals' => [
+                'totalObjects'         => $totalObjects,
+                'totalBlobObjects'     => $blobCount,
+                'totalMagicObjects'    => $magicCount,
+                'totalSize'            => $totalSize,
+                'totalBlobSize'        => $blobSize,
+                'totalMagicSize'       => $magicSize,
+                'totalAuditTrails'     => (int) ($row['total_audit_trails'] ?? 0),
+                'totalSearchTrails'    => (int) ($row['total_search_trails'] ?? 0),
+                'totalConfigurations'  => (int) ($row['total_configurations'] ?? 0),
+                'totalOrganisations'   => (int) ($row['total_organisations'] ?? 0),
+                'totalRegisters'       => (int) ($row['total_registers'] ?? 0),
+                'totalSchemas'         => (int) ($row['total_schemas'] ?? 0),
+                'totalSources'         => (int) ($row['total_sources'] ?? 0),
+                'totalWebhookLogs'     => (int) ($row['total_webhook_logs'] ?? 0),
+                'deletedObjects'       => (int) ($row['deleted_objects'] ?? 0),
+            ],
+        ];
+    }//end getDatabaseStats()
 
     /**
      * Rebase configuration from source.

@@ -2619,4 +2619,35 @@ class ObjectEntityMapper extends QBMapper
         // Limit to prevent performance issues.
         return $this->findEntities($qb);
     }//end findByRelationInBlobStorage()
+
+    /**
+     * Clear all blob storage objects
+     *
+     * Deletes all objects from the openregister_objects table (blob storage).
+     * This does NOT affect magic mapper tables.
+     *
+     * @return array{deleted: int} The number of deleted objects
+     */
+    public function clearBlobObjects(): array
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        // Count objects before deletion.
+        $countQb = $this->db->getQueryBuilder();
+        $countQb->select($countQb->func()->count('*', 'total'))
+            ->from('openregister_objects')
+            ->where($countQb->expr()->isNull('deleted'));
+        
+        $count = (int) $countQb->execute()->fetch()['total'];
+
+        // Delete all non-deleted blob objects.
+        $qb->delete('openregister_objects')
+            ->where($qb->expr()->isNull('deleted'));
+
+        $qb->execute();
+
+        return ['deleted' => $count];
+    }//end clearBlobObjects()
+
 }//end class
+

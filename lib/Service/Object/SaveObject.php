@@ -136,6 +136,37 @@ class SaveObject
     private array $createdSubObjects = [];
 
     /**
+     * Request-scoped cache for resolved schemas.
+     *
+     * Caches Schema entities by their ID to avoid repeated database lookups
+     * when creating multiple sub-objects of the same type during cascade operations.
+     * This significantly improves POST performance for objects with many sub-objects.
+     *
+     * @var array<int|string, Schema>
+     */
+    private array $schemaCache = [];
+
+    /**
+     * Request-scoped cache for resolved registers.
+     *
+     * Caches Register entities by their ID to avoid repeated database lookups
+     * during cascade operations.
+     *
+     * @var array<int|string, Register>
+     */
+    private array $registerCache = [];
+
+    /**
+     * Request-scoped cache for resolved schema references (slug -> ID).
+     *
+     * Caches the mapping from schema slugs/references to their numeric IDs
+     * to avoid repeated findAll() calls during cascade operations.
+     *
+     * @var array<string, string|null>
+     */
+    private array $schemaReferenceCache = [];
+
+    /**
      * Constructor for SaveObject handler.
      *
      * @param ObjectEntityMapper       $objectEntityMapper    Object entity mapper
@@ -202,6 +233,62 @@ class SaveObject
     }//end clearCreatedSubObjects()
 
     /**
+     * Clear all request-scoped caches.
+     *
+     * Should be called at the start of a new top-level save operation to ensure
+     * caches from previous operations don't interfere. This clears:
+     * - Created sub-objects cache
+     * - Schema entity cache
+     * - Register entity cache
+     * - Schema reference cache
+     *
+     * @return void
+     */
+    public function clearAllCaches(): void
+    {
+        $this->createdSubObjects = [];
+        $this->schemaCache = [];
+        $this->registerCache = [];
+        $this->schemaReferenceCache = [];
+    }//end clearAllCaches()
+
+    /**
+     * Get a cached schema by ID, or fetch and cache it.
+     *
+     * @param int|string $schemaId The schema ID to look up
+     *
+     * @return Schema The schema entity
+     *
+     * @throws DoesNotExistException If schema not found
+     */
+    private function getCachedSchema(int|string $schemaId): Schema
+    {
+        $cacheKey = (string) $schemaId;
+        if (isset($this->schemaCache[$cacheKey]) === false) {
+            $this->schemaCache[$cacheKey] = $this->schemaMapper->find(id: $schemaId);
+        }
+        return $this->schemaCache[$cacheKey];
+    }//end getCachedSchema()
+
+    /**
+     * Get a cached register by ID, or fetch and cache it.
+     *
+     * @param int|string $registerId The register ID to look up
+     *
+     * @return Register The register entity
+     *
+     * @throws DoesNotExistException If register not found
+     */
+    private function getCachedRegister(int|string $registerId): Register
+    {
+        $cacheKey = (string) $registerId;
+        if (isset($this->registerCache[$cacheKey]) === false) {
+            $this->registerCache[$cacheKey] = $this->registerMapper->find(id: $registerId);
+        }
+        return $this->registerCache[$cacheKey];
+    }//end getCachedRegister()
+
+    /**
      * Track a created sub-object for inclusion in @self.objects.
      *
      * This method is called by CascadingHandler when creating related objects
@@ -240,15 +327,29 @@ class SaveObject
             return null;
         }
 
+        // Check the reference cache first (performance optimization for cascade operations).
+        // When creating many sub-objects of the same type, this avoids repeated lookups.
+        if (isset($this->schemaReferenceCache[$reference]) === true) {
+            return $this->schemaReferenceCache[$reference];
+        }
+
         // Remove query parameters if present (e.g., "schema?key=value" -> "schema").
         $cleanReference = $this->removeQueryParameters($reference);
+
+        // Also check cache with cleaned reference.
+        if ($cleanReference !== $reference && isset($this->schemaReferenceCache[$cleanReference]) === true) {
+            $this->schemaReferenceCache[$reference] = $this->schemaReferenceCache[$cleanReference];
+            return $this->schemaReferenceCache[$reference];
+        }
 
         // First, try direct ID lookup (numeric ID or UUID).
         $uuidPattern = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
         if (is_numeric($cleanReference) === true || preg_match($uuidPattern, $cleanReference) === 1) {
             try {
-                $schema = $this->schemaMapper->find(id: $cleanReference);
-                return (string) $schema->getId();
+                $schema = $this->getCachedSchema($cleanReference);
+                $schemaId = (string) $schema->getId();
+                $this->schemaReferenceCache[$reference] = $schemaId;
+                return $schemaId;
             } catch (DoesNotExistException $e) {
                 // Continue with other resolution methods.
             }
@@ -262,11 +363,23 @@ class SaveObject
         }
 
         // Try to find schema by slug (case-insensitive).
+        // Use findAll() once and cache the results for subsequent lookups.
         try {
             $schemas = $this->schemaMapper->findAll();
+            // Cache all schemas by slug for future lookups.
             foreach ($schemas as $schema) {
+                $schemaSlug = strtolower($schema->getSlug());
+                $schemaId = (string) $schema->getId();
+                // Cache the schema entity.
+                $this->schemaCache[$schemaId] = $schema;
+                // Cache the slug -> ID mapping.
+                $this->schemaReferenceCache['#/components/schemas/' . $schema->getSlug()] = $schemaId;
+                $this->schemaReferenceCache[$schema->getSlug()] = $schemaId;
+                $this->schemaReferenceCache[$schemaSlug] = $schemaId;
+
                 if (strcasecmp($schema->getSlug(), $slug) === 0) {
-                    return (string) $schema->getId();
+                    $this->schemaReferenceCache[$reference] = $schemaId;
+                    return $schemaId;
                 }
             }
         } catch (Exception $e) {
@@ -278,12 +391,17 @@ class SaveObject
             // SchemaMapper->find() supports id, uuid, and slug via orX().
             $schema = $this->schemaMapper->find(id: $slug, published: null, _rbac: false, _multitenancy: false);
             if ($schema !== null) {
-                return (string) $schema->getId();
+                $schemaId = (string) $schema->getId();
+                $this->schemaCache[$schemaId] = $schema;
+                $this->schemaReferenceCache[$reference] = $schemaId;
+                return $schemaId;
             }
         } catch (Exception $e) {
             // Schema not found.
         }
 
+        // Cache the null result too to avoid repeated lookups for invalid references.
+        $this->schemaReferenceCache[$reference] = null;
         return null;
     }//end resolveSchemaReference()
 
@@ -1466,14 +1584,29 @@ class SaveObject
             return [];
         }
 
-        $createdUuids = [];
+        // Collect objects that need to be created (filter out existing UUIDs).
+        $objectsToCreate = [];
         foreach ($validObjects as $object) {
             // Skip existing IDs (UUIDs, prefixed UUIDs, numeric IDs) - they don't need to be cascaded (created).
             // Only arrays (nested objects) need to be created via cascading.
             if (is_string($object) === true) {
                 continue;
             }
+            $objectsToCreate[] = $object;
+        }
 
+        // If no objects need to be created, return empty array.
+        if (empty($objectsToCreate) === true) {
+            return [];
+        }
+
+        // Create each sub-object using optimized cascadeSingleObject().
+        // Performance optimizations applied:
+        // - Request-scoped schema/register caching (avoids repeated DB lookups)
+        // - Silent mode (skips audit trails for sub-objects)
+        // - Skipped inverse relation updates (handled via inversedBy property)
+        $createdUuids = [];
+        foreach ($objectsToCreate as $object) {
             try {
                 $uuid = $this->cascadeSingleObject(
                     objectEntity: $objectEntity,
@@ -1571,7 +1704,20 @@ class SaveObject
         }
 
         try {
-            $savedObject = $this->saveObject(register: $register, schema: $schemaId, data: $object, uuid: $uuid);
+            // Use silent mode for cascaded sub-objects to improve performance.
+            // This skips audit trail creation for each sub-object, reducing database writes.
+            // The parent object's audit trail still captures the overall operation.
+            $savedObject = $this->saveObject(
+                register: $register,
+                schema: $schemaId,
+                data: $object,
+                uuid: $uuid,
+                folderId: null,
+                _rbac: true,
+                _multitenancy: true,
+                persist: true,
+                silent: true
+            );
             $savedUuid = $savedObject->getUuid();
 
             // Track the created sub-object for inclusion in @self.objects.
@@ -2092,26 +2238,32 @@ class SaveObject
         $schemaId   = null;
         $registerId = null;
 
-        // Resolve schema.
+        // Resolve schema using request-scoped cache for performance.
+        // This avoids repeated database lookups when creating multiple sub-objects of the same type.
         if ($schema instanceof Schema === true) {
             $schemaId = $schema->getId();
+            // Cache the schema entity for potential reuse.
+            $this->schemaCache[(string) $schemaId] = $schema;
         } else if (is_string($schema) === true) {
-            // Resolve schema reference if it's a string.
+            // Resolve schema reference if it's a string (uses cached reference lookup).
             $schemaId = $this->resolveSchemaReference($schema);
             if ($schemaId === null) {
                 throw new Exception("Could not resolve schema reference: $schema");
             }
 
-            $schema = $this->schemaMapper->find(id: $schemaId);
+            // Use cached schema lookup instead of direct mapper call.
+            $schema = $this->getCachedSchema($schemaId);
         } else if (is_int($schema) === true) {
-            // It's an integer ID.
+            // It's an integer ID - use cached lookup.
             $schemaId = $schema;
-            $schema   = $this->schemaMapper->find(id: $schema);
+            $schema = $this->getCachedSchema($schema);
         }
 
-        // Resolve register.
+        // Resolve register using request-scoped cache for performance.
         if ($register instanceof Register === true) {
             $registerId = $register->getId();
+            // Cache the register entity for potential reuse.
+            $this->registerCache[(string) $registerId] = $register;
         } else if (is_string($register) === true) {
             // Resolve register reference if it's a string.
             $registerId = $this->resolveRegisterReference($register);
@@ -2119,11 +2271,12 @@ class SaveObject
                 throw new Exception("Could not resolve register reference: $register");
             }
 
-            $register = $this->registerMapper->find(id: $registerId);
+            // Use cached register lookup instead of direct mapper call.
+            $register = $this->getCachedRegister($registerId);
         } else if (is_int($register) === true) {
-            // It's an integer ID - fetch the register.
+            // It's an integer ID - use cached lookup.
             $registerId = $register;
-            $register   = $this->registerMapper->find(id: $register);
+            $register = $this->getCachedRegister($register);
         } else if ($register === null) {
             // Register is NULL (e.g., for seedData objects) - leave as NULL.
             $registerId = null;
@@ -2336,7 +2489,12 @@ class SaveObject
 
         // Update inverse relations on related objects (bidirectional relationship management).
         // This ensures that when object A references object B, object B's relations also include A.
-        $this->updateInverseRelations($savedEntity, $register, $schema);
+        // Skip for silent mode (cascaded sub-objects) - the parent object handles the relationship,
+        // and the inversedBy property is already set in cascadeSingleObject before saving.
+        // This optimization significantly improves performance when creating many sub-objects.
+        if ($silent === false) {
+            $this->updateInverseRelations($savedEntity, $register, $schema);
+        }
 
         return $savedEntity;
     }//end handleObjectCreation()
@@ -2925,7 +3083,10 @@ class SaveObject
 
         // Update inverse relations on related objects (bidirectional relationship management).
         // This ensures that when object A references object B, object B's relations also include A.
-        $this->updateInverseRelations($updatedEntity, $register, $schema);
+        // Skip for silent mode (cascaded sub-objects) to improve performance.
+        if ($silent === false) {
+            $this->updateInverseRelations($updatedEntity, $register, $schema);
+        }
 
         return $updatedEntity;
     }//end updateObject()

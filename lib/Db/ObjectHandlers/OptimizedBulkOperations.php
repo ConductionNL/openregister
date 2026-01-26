@@ -531,6 +531,9 @@ class OptimizedBulkOperations
                     $insertObj['uuid'] = (string) \Symfony\Component\Uid\Uuid::v4();
                 }
 
+                // Calculate and store object size (for storage analytics).
+                $insertObj['size'] = (string) strlen(json_encode($insertObj));
+
                 // DATABASE-MANAGED: created and updated are handled by database, don't set to avoid false changes.
                 $allObjects[] = $insertObj;
             }
@@ -547,6 +550,10 @@ class OptimizedBulkOperations
                 // Gets metadata at top level.
                 $newFormatArray['object'] = $updateObj->getObject();
                 // Gets actual object data.
+                
+                // Calculate and store object size (for storage analytics).
+                $newFormatArray['size'] = (string) strlen(json_encode($newFormatArray));
+                
                 // CRITICAL FIX: Ensure UUID is at top level for proper return value handling.
                 // The UUID might be in getObject() data, so extract it to top level.
                 if (method_exists($updateObj, 'getUuid') === true && $updateObj->getUuid() !== null) {

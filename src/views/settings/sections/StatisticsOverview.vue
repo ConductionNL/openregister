@@ -148,7 +148,41 @@
 											{{ stats.totals.totalObjects }}
 										</td>
 										<td class="stats-table-value">
-											-
+											{{ formatBytes(stats.totals.totalSize) }}
+										</td>
+									</tr>
+								<tr class="stats-table-row">
+									<td class="stats-table-label">
+										└─ Blob Storage Objects
+									</td>
+									<td class="stats-table-value">
+										{{ stats.totals.totalBlobObjects }}
+									</td>
+									<td class="stats-table-value">
+										<NcButton
+											v-if="stats.totals.totalBlobObjects > 0"
+											type="error"
+											size="small"
+											:disabled="loading || saving || rebasing || clearingBlobObjects"
+											@click="showClearBlobObjectsDialog">
+											<template #icon>
+												<NcLoadingIcon v-if="clearingBlobObjects" :size="16" />
+												<Delete v-else :size="16" />
+											</template>
+											Clear All
+										</NcButton>
+										<span v-else>-</span>
+									</td>
+								</tr>
+									<tr class="stats-table-row">
+										<td class="stats-table-label">
+											└─ Magic Mapper Objects
+										</td>
+										<td class="stats-table-value">
+											{{ stats.totals.totalMagicObjects }}
+										</td>
+										<td class="stats-table-value">
+											{{ formatBytes(stats.totals.totalMagicSize) }}
 										</td>
 									</tr>
 									<tr class="stats-table-row">
@@ -434,6 +468,38 @@
 				</div>
 			</div>
 		</NcDialog>
+
+		<!-- Clear Blob Objects Confirmation Dialog -->
+		<NcDialog v-if="showClearBlobObjectsConfirmation"
+			:open="showClearBlobObjectsConfirmation"
+			name="Confirm Clear Blob Objects"
+			@closing="hideClearBlobObjectsDialog">
+			<div class="clear-dialog-content">
+				<h3>⚠️ Confirm Clear All Blob Storage Objects</h3>
+				<p>
+					This operation will permanently delete all objects stored in blob storage mode from the database.
+					Magic Mapper objects will NOT be affected.
+				</p>
+				<p><strong>Current blob storage objects: {{ stats.totals.totalBlobObjects }}</strong></p>
+				<p class="warning-text">⚠️ This action cannot be undone!</p>
+				<p><strong>This operation may take some time to complete.</strong></p>
+
+				<div class="dialog-actions">
+					<NcButton @click="hideClearBlobObjectsDialog">
+						Cancel
+					</NcButton>
+					<NcButton type="error"
+						:disabled="clearingBlobObjects"
+						@click="clearAllBlobObjects">
+						<template #icon>
+							<NcLoadingIcon v-if="clearingBlobObjects" :size="20" />
+							<Delete v-else :size="20" />
+						</template>
+						{{ clearingBlobObjects ? 'Clearing...' : 'Confirm Clear All' }}
+					</NcButton>
+				</div>
+			</div>
+		</NcDialog>
 	</div>
 </template>
 
@@ -533,12 +599,20 @@ export default {
 			return this.settingsStore.clearingSearchTrails
 		},
 
+		clearingBlobObjects() {
+			return this.settingsStore.clearingBlobObjects
+		},
+
 		showClearAuditTrailsConfirmation() {
 			return this.settingsStore.showClearAuditTrailsConfirmation
 		},
 
 		showClearSearchTrailsConfirmation() {
 			return this.settingsStore.showClearSearchTrailsConfirmation
+		},
+
+		showClearBlobObjectsConfirmation() {
+			return this.settingsStore.showClearBlobObjectsConfirmation
 		},
 
 		/**
@@ -554,6 +628,22 @@ export default {
 	methods: {
 		loadStats() {
 			this.settingsStore.loadStats()
+		},
+
+		/**
+		 * Format bytes to human-readable size.
+		 *
+		 * @param {number} bytes - The size in bytes
+		 * @return {string} Formatted size string (e.g., '1.5 MB')
+		 */
+		formatBytes(bytes) {
+			if (bytes === 0 || bytes === null || bytes === undefined) return '0 B'
+			
+			const k = 1024
+			const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
+			const i = Math.floor(Math.log(bytes) / Math.log(k))
+			
+			return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 		},
 
 		async openMassValidateModal() {
@@ -657,12 +747,30 @@ export default {
 			try {
 				await this.settingsStore.clearAllSearchTrails()
 				// Reload stats after clearing
-				await this.loadStats()
-			} catch (error) {
-				console.error('Failed to clear search trails:', error)
-			}
-		},
+			await this.loadStats()
+		} catch (error) {
+			console.error('Failed to clear search trails:', error)
+		}
 	},
+
+	showClearBlobObjectsDialog() {
+		this.settingsStore.showClearBlobObjectsDialog()
+	},
+
+	hideClearBlobObjectsDialog() {
+		this.settingsStore.hideClearBlobObjectsDialog()
+	},
+
+	async clearAllBlobObjects() {
+		try {
+			await this.settingsStore.clearAllBlobObjects()
+			// Reload stats after clearing.
+			await this.loadStats()
+		} catch (error) {
+			console.error('Failed to clear blob objects:', error)
+		}
+	},
+},
 }
 </script>
 
@@ -858,5 +966,10 @@ export default {
 	color: var(--color-text-light);
 	line-height: 1.5;
 	margin: 0 0 12px 0;
+}
+
+.clear-dialog-content .warning-text {
+	color: var(--color-error);
+	font-weight: 600;
 }
 </style>

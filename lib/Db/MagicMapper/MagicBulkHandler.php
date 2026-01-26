@@ -148,6 +148,11 @@ class MagicBulkHandler
             $preparedObject['_slug']         = $selfData['slug'] ?? $object['slug'] ?? null;
             $preparedObject['_uri']          = $selfData['uri'] ?? $object['uri'] ?? null;
 
+            // Calculate object size (similar to blob storage).
+            // This is the size of the serialized object data for storage analytics.
+            $objectSize = strlen(json_encode($object));
+            $preparedObject['_size'] = (string) $objectSize;
+
             // Map relations (scanned UUIDs/URLs from object data).
             $relations = $selfData['relations'] ?? $object['relations'] ?? null;
             if ($relations !== null && is_array($relations) === true) {

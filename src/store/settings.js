@@ -62,8 +62,10 @@ export const useSettingsStore = defineStore('settings', {
 		// Clear logs states
 		clearingAuditTrails: false,
 		clearingSearchTrails: false,
+		clearingBlobObjects: false,
 		showClearAuditTrailsConfirmation: false,
 		showClearSearchTrailsConfirmation: false,
+		showClearBlobObjectsConfirmation: false,
 
 		// Settings data
 		solrOptions: {
@@ -162,6 +164,11 @@ export const useSettingsStore = defineStore('settings', {
 			},
 			totals: {
 				totalObjects: 0,
+				totalBlobObjects: 0,
+				totalMagicObjects: 0,
+				totalSize: 0,
+				totalBlobSize: 0,
+				totalMagicSize: 0,
 				totalAuditTrails: 0,
 				totalSearchTrails: 0,
 				totalConfigurations: 0,
@@ -170,6 +177,7 @@ export const useSettingsStore = defineStore('settings', {
 				totalRegisters: 0,
 				totalSchemas: 0,
 				totalSources: 0,
+				totalWebhookLogs: 0,
 				deletedObjects: 0,
 			},
 			lastUpdated: null,
@@ -1249,6 +1257,43 @@ export const useSettingsStore = defineStore('settings', {
 				showError('Failed to clear search trails: ' + error.message)
 			} finally {
 				this.clearingSearchTrails = false
+			}
+		},
+
+		/**
+		 * Show clear blob objects confirmation dialog
+		 */
+		showClearBlobObjectsDialog() {
+			this.showClearBlobObjectsConfirmation = true
+		},
+
+		/**
+		 * Hide clear blob objects confirmation dialog
+		 */
+		hideClearBlobObjectsDialog() {
+			this.showClearBlobObjectsConfirmation = false
+		},
+
+		/**
+		 * Clear all blob storage objects
+		 */
+		async clearAllBlobObjects() {
+			this.clearingBlobObjects = true
+
+			try {
+				const response = await axios.delete(generateUrl('/apps/openregister/api/objects/clear-blob'))
+
+				if (response.data.success) {
+					showSuccess(`Successfully cleared ${response.data.deleted || 0} blob storage objects`)
+					this.hideClearBlobObjectsDialog()
+				} else {
+					showError('Failed to clear blob objects: ' + (response.data.error || 'Unknown error'))
+				}
+			} catch (error) {
+				console.error('Failed to clear blob objects:', error)
+				showError('Failed to clear blob objects: ' + error.message)
+			} finally {
+				this.clearingBlobObjects = false
 			}
 		},
 

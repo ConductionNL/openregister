@@ -1070,6 +1070,10 @@ class ObjectService
         // Ensure folder exists for the object.
         $folderId = $this->ensureObjectFolder($uuid);
 
+        // Clear request-scoped caches before starting a new top-level save operation.
+        // This ensures cascade operations benefit from caching while avoiding stale data.
+        $this->saveHandler->clearAllCaches();
+
         // Delegate to SaveObject handler for actual save operation.
         $savedObject = $this->saveHandler->saveObject(
             register: $this->currentRegister,
