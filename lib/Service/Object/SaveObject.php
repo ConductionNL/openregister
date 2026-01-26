@@ -2471,7 +2471,8 @@ class SaveObject
         }
 
         // Save the object to database FIRST (so it gets an ID).
-        $savedEntity = $this->objectEntityMapper->insert(entity: $preparedObject, register: $register, schema: $schema);
+        // Use UnifiedObjectMapper to route to MagicMapper when magic mapping is enabled.
+        $savedEntity = $this->unifiedObjectMapper->insert(entity: $preparedObject, register: $register, schema: $schema);
 
         // Process file properties with rollback on failure.
         $savedEntity = $this->processFilePropertiesWithRollback(

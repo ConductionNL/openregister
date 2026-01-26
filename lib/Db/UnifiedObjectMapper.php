@@ -101,8 +101,12 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      *
      * Decision flow:
      * 1. If register or schema is null → use blob storage (no context)
-     * 2. Delegate to Register::isMagicMappingEnabledForSchema() which is the
-     *    SINGLE SOURCE OF TRUTH for magic mapping checks.
+     * 2. If both register and schema are provided → always use MagicMapper
+     *
+     * MagicMapper is always used when we have register+schema context because:
+     * - It provides better query performance with proper SQL tables
+     * - It enables UNION queries across multiple schemas
+     * - It supports proper filtering and full-text search
      *
      * @param Register|null $register The register context.
      * @param Schema|null   $schema   The schema context.
@@ -119,23 +123,17 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             return false;
         }
 
-        // Delegate to Register::isMagicMappingEnabledForSchema() - the single source of truth.
-        $result = $register->isMagicMappingEnabledForSchema(
-            schemaId: $schema->getId(),
-            schemaSlug: $schema->getSlug()
-        );
-
+        // Always use MagicMapper when we have register+schema context.
         $this->logger->debug(
-            '[UnifiedObjectMapper] Magic mapping check',
+            '[UnifiedObjectMapper] Using MagicMapper for register+schema combination',
             [
                 'registerId' => $register->getId(),
                 'schemaId'   => $schema->getId(),
                 'schemaSlug' => $schema->getSlug(),
-                'enabled'    => $result,
             ]
         );
 
-        return $result;
+        return true;
     }//end shouldUseMagicMapper()
 
     /**
