@@ -183,6 +183,15 @@ class MagicRbacHandler
         }
 
         // Apply OR of all conditions (access granted if ANY condition matches).
+        $this->logger->debug(
+            'MagicRbacHandler: Applying RBAC conditions',
+            [
+                'conditionCount' => count($conditions),
+                'conditions' => array_map(fn($c) => (string) $c, $conditions),
+                'schemaId' => $schema->getId(),
+                'userId' => $userId,
+            ]
+        );
         $qb->andWhere($qb->expr()->orX(...$conditions));
     }//end applyRbacFilters()
 

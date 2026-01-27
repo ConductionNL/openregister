@@ -423,6 +423,16 @@ class ObjectEntity extends Entity implements JsonSerializable
     protected ?DateTime $expires = null;
 
     /**
+     * Search relevance score (0-100 percentage).
+     *
+     * This is a transient property set during fuzzy search to indicate
+     * how well this object matches the search term. Not persisted to database.
+     *
+     * @var float|null The relevance score as a percentage (0-100)
+     */
+    protected ?float $relevance = null;
+
+    /**
      * Initialize the entity and define field types
      */
     public function __construct()
@@ -702,6 +712,12 @@ class ObjectEntity extends Entity implements JsonSerializable
             'deleted'       => $this->getDeleted(),
             'source'        => $this->source,
         ];
+
+        // Add relevance score if set (from fuzzy search).
+        // Only included when a search was performed with _fuzzy=true.
+        if ($this->relevance !== null) {
+            $objectArray['relevance'] = $this->relevance;
+        }
 
         // Check for '@self' in the provided object array (this is the case if the object metadata is extended).
         if (($object['@self'] ?? null) !== null && is_array($object['@self']) === true) {

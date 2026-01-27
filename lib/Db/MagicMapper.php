@@ -1056,6 +1056,19 @@ class MagicMapper
             // Use custom ordering from _order parameter.
             $orderClauses = [];
             foreach ($orderParams as $field => $direction) {
+                // Special handling for _relevance: map to _search_score in UNION queries.
+                // The _relevance column is used by MagicSearchHandler for single-table queries,
+                // but UNION queries use _search_score for relevance scoring.
+                if ($field === '_relevance') {
+                    // Only use _search_score if we have a search term.
+                    if ($hasSearch === true) {
+                        $dir = strtoupper($direction) === 'DESC' ? 'DESC' : 'ASC';
+                        $orderClauses[] = "_search_score {$dir}";
+                    }
+                    // Skip _relevance ordering if no search term (nothing to order by).
+                    continue;
+                }
+
                 // Translate field name to column name.
                 $columnName = $this->sanitizeColumnName($field);
                 if (str_starts_with($field, '@self.') === true) {
@@ -1995,6 +2008,26 @@ class MagicMapper
                     'default'  => $defaultValue,
                 ];
 
+            case 'file':
+                // File properties store file IDs (integers) after processing by FilePropertyHandler.
+                // Use TEXT to safely store the file ID reference without JSON parsing issues.
+                // This prevents "invalid input syntax for type json" errors if raw base64 data
+                // accidentally gets stored instead of the processed file ID.
+                $required   = $propertyConfig['required'] ?? false;
+                $isRequired = false;
+                if (is_array($required) === true) {
+                    $isRequired = in_array($propertyName, $required);
+                } else if (is_bool($required) === true) {
+                    $isRequired = $required;
+                }
+
+                return [
+                    'name'     => $columnName,
+                    'type'     => 'text',
+                    'nullable' => $isRequired === false,
+                    'comment'  => 'File ID reference',
+                ];
+
             case 'array':
             case 'object':
                 // Handle 'required' - can be boolean (property level) or array (schema level).
@@ -2815,6 +2848,45 @@ class MagicMapper
             foreach (array_keys($schemaProperties) as $propertyName) {
                 if (($data[$propertyName] ?? null) !== null) {
                     $value = $data[$propertyName];
+                    $propertyConfig = $schemaProperties[$propertyName] ?? [];
+                    $propertyType = $propertyConfig['type'] ?? 'string';
+
+                    // Safety check for file properties: if a base64 data URL is still present,
+                    // the FilePropertyHandler didn't process it. Log a warning and set to null
+                    // to prevent "invalid input syntax for type json" errors in PostgreSQL.
+                    $isFileProperty = $propertyType === 'file';
+                    $isArrayOfFiles = $propertyType === 'array'
+                        && (($propertyConfig['items']['type'] ?? '') === 'file');
+
+                    if ($isFileProperty === true && is_string($value) === true && strpos($value, 'data:') === 0) {
+                        $this->logger->warning(
+                            'File property contains unprocessed base64 data URL - setting to null to prevent DB error',
+                            [
+                                'propertyName' => $propertyName,
+                                'valueLength'  => strlen($value),
+                            ]
+                        );
+                        $value = null;
+                    }
+
+                    // Handle array of files - filter out unprocessed base64 data URLs.
+                    if ($isArrayOfFiles === true && is_array($value) === true) {
+                        $cleanedArray = [];
+                        foreach ($value as $item) {
+                            if (is_string($item) === true && strpos($item, 'data:') === 0) {
+                                $this->logger->warning(
+                                    'Array file item contains unprocessed base64 data URL - skipping item',
+                                    [
+                                        'propertyName' => $propertyName,
+                                        'valueLength'  => strlen($item),
+                                    ]
+                                );
+                                continue;
+                            }
+                            $cleanedArray[] = $item;
+                        }
+                        $value = empty($cleanedArray) === true ? null : $cleanedArray;
+                    }
 
                     // Convert boolean values to integers (0/1) for database compatibility.
                     // PHP's false can be incorrectly converted to empty string '' by some drivers.

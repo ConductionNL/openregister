@@ -946,6 +946,55 @@ class ValidateObject
             );
         }
 
+        // Fix misplaced enum on array types: move enum from array level to items level.
+        // This handles the common mistake where enum is placed on the array property
+        // instead of inside items. JSON Schema requires enum to be on items for arrays.
+        if (($cleanedProperty->type ?? null) === 'array'
+            && ($cleanedProperty->enum ?? null) !== null
+            && is_array($cleanedProperty->enum) === true
+            && empty($cleanedProperty->enum) === false
+        ) {
+            // Ensure items object exists.
+            if (($cleanedProperty->items ?? null) === null) {
+                $cleanedProperty->items = new \stdClass();
+                $cleanedProperty->items->type = 'string';
+            }
+
+            // Move enum to items (only if items doesn't already have an enum).
+            if (($cleanedProperty->items->enum ?? null) === null) {
+                $cleanedProperty->items->enum = $cleanedProperty->enum;
+            }
+
+            // Remove enum from array level.
+            unset($cleanedProperty->enum);
+        }
+
+        // Fix misplaced oneOf on array types: move oneOf from array level to items level.
+        // Similar to enum, oneOf should be on items when validating array item values.
+        if (($cleanedProperty->type ?? null) === 'array'
+            && ($cleanedProperty->oneOf ?? null) !== null
+            && (is_array($cleanedProperty->oneOf) === true || is_object($cleanedProperty->oneOf) === true)
+        ) {
+            $oneOfArray = is_object($cleanedProperty->oneOf)
+                ? get_object_vars($cleanedProperty->oneOf)
+                : $cleanedProperty->oneOf;
+
+            if (empty($oneOfArray) === false) {
+                // Ensure items object exists.
+                if (($cleanedProperty->items ?? null) === null) {
+                    $cleanedProperty->items = new \stdClass();
+                }
+
+                // Move oneOf to items (only if items doesn't already have oneOf).
+                if (($cleanedProperty->items->oneOf ?? null) === null) {
+                    $cleanedProperty->items->oneOf = $cleanedProperty->oneOf;
+                }
+
+                // Remove oneOf from array level.
+                unset($cleanedProperty->oneOf);
+            }
+        }
+
         return $cleanedProperty;
     }//end cleanPropertyForValidation()
 
@@ -1050,11 +1099,15 @@ class ValidateObject
     }//end transformArrayItemsForValidation()
 
     /**
-     * Transforms array items to expect UUID strings.
+     * Transforms array items to accept both UUID strings and objects with id field.
+     *
+     * Related objects can be sent as either:
+     * - UUID strings: "uuid-here" or "prefix-uuid-here"
+     * - Objects with id field: {"id": "uuid-here", ...}
      *
      * @param object $itemsSchema The array items schema to transform
      *
-     * @return object The transformed schema expecting UUID strings
+     * @return object The transformed schema accepting UUID strings or objects
      */
     private function transformItemsToUuidStrings(object $itemsSchema): object
     {
@@ -1062,10 +1115,32 @@ class ValidateObject
         // Remove all object-specific properties.
         unset($itemsSchema->properties, $itemsSchema->required, $itemsSchema->{'$ref'});
 
-        // Set to string type with UUID pattern.
-        $itemsSchema->type        = 'string';
-        $itemsSchema->pattern     = '^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$';
-        $itemsSchema->description = 'UUID reference to a related object';
+        // UUID pattern for string validation.
+        $uuidPattern = '^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$';
+
+        // Accept either a UUID string or an object with an id field.
+        // This allows flexibility in how related objects are submitted.
+        unset($itemsSchema->type);
+        $itemsSchema->oneOf = [
+            (object) [
+                'type'        => 'string',
+                'pattern'     => $uuidPattern,
+                'description' => 'UUID reference to a related object',
+            ],
+            (object) [
+                'type'                 => 'object',
+                'description'          => 'Object with id field referencing a related object',
+                'properties'           => (object) [
+                    'id' => (object) [
+                        'type'    => 'string',
+                        'pattern' => $uuidPattern,
+                    ],
+                ],
+                'required'             => ['id'],
+                'additionalProperties' => true,
+            ],
+        ];
+        $itemsSchema->description = 'UUID reference or object with id field';
 
         return $itemsSchema;
     }//end transformItemsToUuidStrings()

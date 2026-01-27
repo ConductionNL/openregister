@@ -968,27 +968,46 @@ class ObjectsController extends Controller
                     // Silently ignore if organisation service is not available.
                 }
 
+                // Build response data.
+                $responseData = [
+                    'results' => $serializedResults,
+                    'total'   => $total,
+                    'pages'   => $pages,
+                    'page'    => $page,
+                    'limit'   => $limit,
+                    '@self'   => [
+                        'source'             => 'magic_mapper',
+                        'register'           => $register,
+                        'schema'             => $schema,
+                        'query'              => $query,
+                        'rbac'               => $rbac,
+                        'multi'              => $multi,
+                        'published'          => $published,
+                        'deleted'            => $deleted,
+                        'activeOrganisation' => $activeOrganisation,
+                    ],
+                ];
+
+                // Add facets if requested via _facets parameter.
+                // Use MagicMapper's facet method for magic-mapped tables.
+                if (empty($query['_facets']) === false) {
+                    try {
+                        $facets = $magicMapper->getSimpleFacetsFromRegisterSchemaTable(
+                            query: $query,
+                            register: $registerEntity,
+                            schema: $schemaEntity
+                        );
+                        if (empty($facets) === false) {
+                            $responseData['facets'] = $facets;
+                        }
+                    } catch (\Exception $e) {
+                        // Log error in @self for debugging.
+                        $responseData['@self']['facet_error'] = $e->getMessage();
+                    }
+                }
+
                 // Return in expected format.
-                $response = new JSONResponse(
-                    data: [
-                        'results' => $serializedResults,
-                        'total'   => $total,
-                        'pages'   => $pages,
-                        'page'    => $page,
-                        'limit'   => $limit,
-                        '@self'   => [
-                            'source'             => 'magic_mapper',
-                            'register'           => $register,
-                            'schema'             => $schema,
-                            'query'              => $query,
-                            'rbac'               => $rbac,
-                            'multi'              => $multi,
-                            'published'          => $published,
-                            'deleted'            => $deleted,
-                            'activeOrganisation' => $activeOrganisation,
-                        ],
-                    ]
-                );
+                $response = new JSONResponse(data: $responseData);
 
                 // Enable gzip compression for large payloads.
                 if (count($serializedResults) > 10) {
