@@ -1337,6 +1337,13 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             ?? $searchQuery['_schemas']
             ?? null;
 
+        // Handle case where @self.schema is an array (multi-schema search via singular key).
+        // This supports opencatalogi which uses @self.schema with array values.
+        if (is_array($schemaId) === true && count($schemaId) > 0) {
+            $schemaIds = $schemaId;
+            $schemaId  = null;
+        }
+
         $register       = null;
         $schema         = null;
         $useMagicMapper = false;

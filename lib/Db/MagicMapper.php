@@ -1210,8 +1210,9 @@ class MagicMapper
      */
     private function convertUnionRowToObjectEntity(array $row): ?ObjectEntity
     {
-        $registerId = $row['_union_register_id'] ?? null;
-        $schemaId   = $row['_union_schema_id'] ?? null;
+        $registerId  = $row['_union_register_id'] ?? null;
+        $schemaId    = $row['_union_schema_id'] ?? null;
+        $searchScore = $row['_search_score'] ?? null;
 
         if ($registerId === null || $schemaId === null) {
             return null;
@@ -1225,11 +1226,20 @@ class MagicMapper
             $register = $this->registerMapper->find((int) $registerId, _multitenancy: false, _rbac: false);
             $schema   = $this->schemaMapper->find((int) $schemaId, _multitenancy: false, _rbac: false);
 
-            return $this->convertRowToObjectEntity(
+            $entity = $this->convertRowToObjectEntity(
                 row: $row,
                 _register: $register,
                 _schema: $schema
             );
+
+            // Set relevance score from UNION search score (converted to percentage 0-100).
+            // The _search_score from UNION is already a similarity score (0-1), convert to percentage.
+            if ($entity !== null && $searchScore !== null) {
+                $relevancePercent = round((float) $searchScore * 100);
+                $entity->setRelevance($relevancePercent);
+            }
+
+            return $entity;
         } catch (\Exception $e) {
             $this->logger->warning('Failed to convert union row', ['error' => $e->getMessage()]);
             return null;

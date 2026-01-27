@@ -183,15 +183,16 @@ class MagicRbacHandler
         }
 
         // Apply OR of all conditions (access granted if ANY condition matches).
-        $this->logger->debug(
-            'MagicRbacHandler: Applying RBAC conditions',
-            [
-                'conditionCount' => count($conditions),
-                'conditions' => array_map(fn($c) => (string) $c, $conditions),
-                'schemaId' => $schema->getId(),
-                'userId' => $userId,
-            ]
-        );
+        // DEBUG: Write conditions to file
+        $debugInfo = [
+            'timestamp' => date('Y-m-d H:i:s'),
+            'conditionCount' => count($conditions),
+            'conditions' => array_map(fn($c) => (string) $c, $conditions),
+            'schemaId' => $schema->getId(),
+            'userId' => $userId,
+        ];
+        file_put_contents('/tmp/rbac_debug.log', json_encode($debugInfo, JSON_PRETTY_PRINT) . "\n", FILE_APPEND);
+
         $qb->andWhere($qb->expr()->orX(...$conditions));
     }//end applyRbacFilters()
 
@@ -304,8 +305,21 @@ class MagicRbacHandler
     {
         $conditions = [];
 
+        $this->logger->warning(
+            'MagicRbacHandler: Building match conditions',
+            ['match' => $match]
+        );
+
         foreach ($match as $property => $value) {
             $condition = $this->buildPropertyCondition(qb: $qb, property: $property, value: $value);
+            $this->logger->warning(
+                'MagicRbacHandler: Built property condition',
+                [
+                    'property' => $property,
+                    'value' => $value,
+                    'condition' => $condition !== null ? (string) $condition : 'null',
+                ]
+            );
             if ($condition !== null) {
                 $conditions[] = $condition;
             }
