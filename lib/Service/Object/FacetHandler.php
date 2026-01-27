@@ -353,17 +353,28 @@ class FacetHandler
             }
         }//end if
 
+        // Extract per-facet metrics before transformation (if available).
+        $perFacetMetrics = $facets['_metrics'] ?? null;
+        unset($facets['_metrics']);
+
         // **OUTPUT FORMAT**: Transform facets to standardized format matching external API.
         $transformedFacets = $this->transformFacetsToStandardFormat($facets);
 
+        $performanceMetadata = [
+            'strategy'                => $strategy,
+            'fallback_used'           => $fallbackUsed,
+            'total_facet_results'     => $this->countFacetResults($facets),
+            'has_restrictive_filters' => $hasRestrictFilter,
+        ];
+
+        // Include per-facet timing if available.
+        if ($perFacetMetrics !== null) {
+            $performanceMetadata['facet_db_ms'] = $perFacetMetrics;
+        }
+
         return [
             'facets'               => $transformedFacets,
-            'performance_metadata' => [
-                'strategy'                => $strategy,
-                'fallback_used'           => $fallbackUsed,
-                'total_facet_results'     => $this->countFacetResults($facets),
-                'has_restrictive_filters' => $hasRestrictFilter,
-            ],
+            'performance_metadata' => $performanceMetadata,
         ];
     }//end calculateFacetsWithFallback()
 

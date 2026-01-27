@@ -923,8 +923,16 @@ class ObjectsController extends Controller
                 }
 
                 // Calculate pagination - need a separate count query since search applies limit/offset.
-                $limit  = $query['_limit'] ?? 20;
-                $offset = $query['_offset'] ?? 0;
+                $limit  = (int) ($query['_limit'] ?? 20);
+                $offset = $query['_offset'] ?? null;
+                $page   = $query['_page'] ?? null;
+
+                // Convert page to offset if page is provided but offset is not.
+                if ($page !== null && $offset === null && $limit > 0) {
+                    $offset = ((int) $page - 1) * $limit;
+                } else {
+                    $offset = (int) ($offset ?? 0);
+                }
 
                 // Build count query (same filters, no pagination).
                 $countQuery = $query;
@@ -937,11 +945,17 @@ class ObjectsController extends Controller
                     schema: $schemaEntity
                 );
 
-                $pages  = 1;
-                $page   = 1;
+                $pages = 1;
                 if ($limit > 0) {
                     $pages = (int) ceil($total / $limit);
-                    $page  = (int) floor($offset / $limit) + 1;
+                    // Calculate page from offset if not explicitly provided.
+                    if ($page === null) {
+                        $page = (int) floor($offset / $limit) + 1;
+                    } else {
+                        $page = (int) $page;
+                    }
+                } else {
+                    $page = 1;
                 }
 
                 // Get active organisation for debugging metadata.

@@ -100,6 +100,17 @@ class MagicFacetHandler
     private array $warmedFields = [];
 
     /**
+     * Cache statistics for performance debugging.
+     * Tracks hits/misses for facet label resolution.
+     */
+    private array $cacheStats = [
+        'field_cache_hits' => 0,
+        'distributed_cache_hits' => 0,
+        'cache_handler_calls' => 0,
+        'total_uuids_resolved' => 0,
+    ];
+
+    /**
      * In-memory cache for column existence checks.
      * Structure: ['tableName' => ['column1' => true, 'column2' => true, ...]]
      * This avoids repeated information_schema queries which add up quickly.
@@ -281,14 +292,13 @@ class MagicFacetHandler
         }//end foreach
 
         $totalTime = round((microtime(true) - $startTime) * 1000, 2);
-        $this->logger->info(
-            'MagicFacetHandler: Facet performance',
-            [
-                'total_time_ms' => $totalTime,
-                'facet_count' => count($facetTimes),
-                'facet_times' => $facetTimes,
-            ]
-        );
+
+        // Add timing metadata to facets for performance debugging.
+        $facets['_metrics'] = [
+            'total_ms' => $totalTime,
+            'per_facet_ms' => $facetTimes,
+            'label_cache' => $this->cacheStats,
+        ];
 
         return $facets;
     }//end getSimpleFacets()
@@ -411,15 +421,14 @@ class MagicFacetHandler
         }
 
         $totalTime = round((microtime(true) - $startTime) * 1000, 2);
-        $this->logger->info(
-            'MagicFacetHandler: UNION facet performance',
-            [
-                'total_time_ms' => $totalTime,
-                'table_count' => count($tableConfigs),
-                'facet_count' => count($facetTimes),
-                'facet_times' => $facetTimes,
-            ]
-        );
+
+        // Add timing metadata to facets for performance debugging.
+        $facets['_metrics'] = [
+            'total_ms' => $totalTime,
+            'table_count' => count($tableConfigs),
+            'per_facet_ms' => $facetTimes,
+            'label_cache' => $this->cacheStats,
+        ];
 
         return $facets;
     }//end getSimpleFacetsUnion()
@@ -738,13 +747,20 @@ class MagicFacetHandler
     {
         if ($facetConfig === 'extend') {
             // Return all facetable metadata fields.
+            // PERFORMANCE: Metadata facets are disabled by default for performance reasons.
+            // Date histograms (@self.created, @self.updated) are particularly slow (~170-200ms each)
+            // because they require grouping and date formatting across all tables.
+            // The @self.register facet requires label resolution (~140ms).
+            // These can be explicitly requested via _facets=@self.created,@self.updated,@self.register
+            // if needed for specific use cases.
             $config = [
                 '@self' => [
-                    'register'     => ['type' => 'terms'],
+                    // Disabled for performance - uncomment if needed:
+                    // 'register'     => ['type' => 'terms'],
                     // 'schema'       => ['type' => 'terms'],
                     // 'organisation' => ['type' => 'terms'],
-                    'created'      => ['type' => 'date_histogram', 'interval' => 'month'],
-                    'updated'      => ['type' => 'date_histogram', 'interval' => 'month'],
+                    // 'created'      => ['type' => 'date_histogram', 'interval' => 'month'],
+                    // 'updated'      => ['type' => 'date_histogram', 'interval' => 'month'],
                 ],
             ];
 
@@ -1574,6 +1590,8 @@ class MagicFacetHandler
 
             // If all UUIDs found in cache, return immediately.
             if (empty($uncachedUuids) === true) {
+                $this->cacheStats['field_cache_hits']++;
+                $this->cacheStats['total_uuids_resolved'] += count($result);
                 $this->logger->debug('batchResolveUuidLabels: All labels from in-memory field cache', [
                     'field' => $field,
                     'count' => count($result),
@@ -1604,6 +1622,8 @@ class MagicFacetHandler
                     }
 
                     if (empty($uncachedUuids) === true) {
+                        $this->cacheStats['distributed_cache_hits']++;
+                        $this->cacheStats['total_uuids_resolved'] += count($result);
                         $this->logger->debug('batchResolveUuidLabels: All labels from distributed cache', [
                             'field' => $field,
                             'count' => count($result),
@@ -1622,7 +1642,9 @@ class MagicFacetHandler
         $uncachedUuids = $uncachedUuids ?? $uuids;
 
         if ($this->cacheHandler !== null && empty($uncachedUuids) === false) {
+            $this->cacheStats['cache_handler_calls']++;
             $batchedLabels = $this->cacheHandler->getMultipleObjectNames($uncachedUuids);
+            $this->cacheStats['total_uuids_resolved'] += count($batchedLabels);
 
             // Merge results.
             foreach ($batchedLabels as $uuid => $label) {

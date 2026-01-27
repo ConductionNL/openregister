@@ -174,8 +174,15 @@ class MagicSearchHandler
         // Extract options from query (prefixed with _).
         $limit  = $query['_limit'] ?? null;
         $offset = $query['_offset'] ?? null;
+        $page   = $query['_page'] ?? null;
         $order  = $query['_order'] ?? [];
         $count  = $query['_count'] ?? false;
+
+        // Convert page to offset if page is provided but offset is not.
+        // Page is 1-indexed, so page 1 = offset 0, page 2 = offset $limit, etc.
+        if ($page !== null && $offset === null && $limit !== null) {
+            $offset = ((int) $page - 1) * (int) $limit;
+        }
 
         // Build filtered query (applies all WHERE conditions).
         $queryBuilder = $this->buildFilteredQuery(
@@ -374,6 +381,8 @@ class MagicSearchHandler
         }
 
         // 4. Full-text search filter with optional fuzzy matching.
+        // Fuzzy matching (pg_trgm similarity) is only applied to _name for performance.
+        // Other columns use ILIKE only.
         if ($search !== null && trim($search) !== '') {
             $searchTerm = trim($search);
             $searchConditions = [];
@@ -381,30 +390,24 @@ class MagicSearchHandler
             $quotedTerm = $connection->quote($searchTerm);
             $hasTrgm = $this->hasPgTrgmExtension();
 
-            // Search in schema string properties.
+            // Search in schema string properties (ILIKE only for performance).
             $properties = $schema->getProperties() ?? [];
             foreach ($properties as $propName => $propDef) {
                 $type = $propDef['type'] ?? 'string';
                 if ($type === 'string') {
                     $columnName = $this->sanitizeColumnName($propName);
-                    // ILIKE for substring matching.
                     $searchConditions[] = "{$columnName}::text ILIKE {$likePattern}";
-                    // Add trigram similarity for fuzzy matching when pg_trgm is available.
-                    if ($hasTrgm === true) {
-                        $searchConditions[] = "similarity({$columnName}::text, {$quotedTerm}) > 0.1";
-                    }
                 }
             }
 
-            // Also search in metadata text fields.
+            // Search in metadata text fields (ILIKE for all).
             $searchConditions[] = "_name::text ILIKE {$likePattern}";
             $searchConditions[] = "_description::text ILIKE {$likePattern}";
             $searchConditions[] = "_summary::text ILIKE {$likePattern}";
-            // Add trigram similarity for metadata fields when pg_trgm is available.
+
+            // Add fuzzy matching ONLY for _name (most important field for typo tolerance).
             if ($hasTrgm === true) {
                 $searchConditions[] = "similarity(_name::text, {$quotedTerm}) > 0.1";
-                $searchConditions[] = "similarity(_description::text, {$quotedTerm}) > 0.1";
-                $searchConditions[] = "similarity(_summary::text, {$quotedTerm}) > 0.1";
             }
 
             if (empty($searchConditions) === false) {
@@ -739,27 +742,20 @@ class MagicSearchHandler
         $hasTrgm = $this->hasPgTrgmExtension();
         $searchTermParam = $qb->createNamedParameter($search);
 
-        // Search in text-based schema properties (case-insensitive using LOWER()).
+        // Search in text-based schema properties (LIKE only for performance).
         foreach ($properties ?? [] as $field => $propertyConfig) {
             if (($propertyConfig['type'] ?? '') === 'string') {
                 $columnName = $this->sanitizeColumnName($field);
-                // Substring matching with LIKE.
                 $searchConditions->add(
                     $qb->expr()->like(
                         $qb->createFunction("LOWER(t.{$columnName})"),
                         $searchPattern
                     )
                 );
-                // Fuzzy matching with trigram similarity when available.
-                if ($hasTrgm === true) {
-                    $searchConditions->add(
-                        $qb->createFunction("similarity(t.{$columnName}::text, {$searchTermParam}) > 0.1")
-                    );
-                }
             }
         }
 
-        // Also search in metadata text fields (case-insensitive using LOWER()).
+        // Search in metadata text fields (LIKE for all).
         $searchConditions->add(
             $qb->expr()->like($qb->createFunction('LOWER(t._name)'), $searchPattern)
         );
@@ -770,16 +766,10 @@ class MagicSearchHandler
             $qb->expr()->like($qb->createFunction('LOWER(t._summary)'), $searchPattern)
         );
 
-        // Add trigram similarity for metadata fields when available.
+        // Add fuzzy matching ONLY for _name (most important field for typo tolerance).
         if ($hasTrgm === true) {
             $searchConditions->add(
                 $qb->createFunction("similarity(t._name::text, {$searchTermParam}) > 0.1")
-            );
-            $searchConditions->add(
-                $qb->createFunction("similarity(t._description::text, {$searchTermParam}) > 0.1")
-            );
-            $searchConditions->add(
-                $qb->createFunction("similarity(t._summary::text, {$searchTermParam}) > 0.1")
             );
         }
 

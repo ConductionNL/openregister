@@ -1389,19 +1389,26 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             // Add RBAC and multitenancy flags to query for MagicSearchHandler.
             $searchQuery['_rbac']         = $rbac;
             $searchQuery['_multitenancy'] = $multitenancy;
+
+            $searchStart = microtime(true);
             $results = $this->magicMapper->searchObjectsInRegisterSchemaTable(
                 query: $searchQuery,
                 register: $register,
                 schema: $schema
             );
+            $searchTime = round((microtime(true) - $searchStart) * 1000, 2);
+
             // Add RBAC and multitenancy flags to count query for MagicSearchHandler.
             $countQuery['_rbac']         = $rbac;
             $countQuery['_multitenancy'] = $multitenancy;
+
+            $countStart = microtime(true);
             $total   = $this->magicMapper->countObjectsInRegisterSchemaTable(
                 query: $countQuery,
                 register: $register,
                 schema: $schema
             );
+            $countTime = round((microtime(true) - $countStart) * 1000, 2);
 
             // Get ignored filters from the search (properties that don't exist in schema).
             $ignoredFilters = $this->magicMapper->getIgnoredFilters();
@@ -1413,6 +1420,10 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                 'registers'      => $registersCache,
                 'schemas'        => $schemasCache,
                 'ignoredFilters' => $ignoredFilters,
+                'metrics'        => [
+                    'search_ms' => $searchTime,
+                    'count_ms'  => $countTime,
+                ],
             ];
         }
 

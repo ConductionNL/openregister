@@ -363,6 +363,7 @@ class QueryHandler
         ?string $uses=null
     ): array {
         $startTime = microtime(true);
+        $metrics = [];
 
         // Set published filter if not already set.
         if (isset($query['_published']) === false) {
@@ -403,6 +404,7 @@ class QueryHandler
         }
 
         // Use optimized combined search+count that loads register/schema once.
+        $searchStart = microtime(true);
         $searchResult = $this->unifiedObjectMapper->searchObjectsPaginated(
             searchQuery: $paginatedQuery,
             countQuery: $countQuery,
@@ -412,6 +414,7 @@ class QueryHandler
             ids: $ids,
             uses: $uses
         );
+        $metrics['search'] = round((microtime(true) - $searchStart) * 1000, 2);
 
         $results        = $searchResult['results'];
         $total          = $searchResult['total'];
@@ -419,6 +422,12 @@ class QueryHandler
         $schemas        = $searchResult['schemas'] ?? [];
         $ignoredFilters = $searchResult['ignoredFilters'] ?? [];
         $source         = $searchResult['source'] ?? 'database';
+
+        // Include detailed metrics from mapper if available.
+        if (isset($searchResult['metrics']) === true) {
+            $metrics['db_search'] = $searchResult['metrics']['search_ms'] ?? null;
+            $metrics['db_count'] = $searchResult['metrics']['count_ms'] ?? null;
+        }
 
         // Detect if complex rendering is needed (extend, fields, filter, unset).
         // Skip @self.register and @self.schema from extend since we include them in response @self.
@@ -457,6 +466,7 @@ class QueryHandler
 
         // Apply complex rendering if needed.
         if ($hasComplexRendering === true && is_array($results) === true) {
+            $renderStart = microtime(true);
             $results = $this->renderHandler->renderEntities(
                 entities: $results,
                 _extend: $extend,
@@ -466,6 +476,7 @@ class QueryHandler
                 _rbac: $_rbac,
                 _multitenancy: $_multitenancy
             );
+            $metrics['render'] = round((microtime(true) - $renderStart) * 1000, 2);
         }
 
         // Calculate total pages (avoid division by zero when limit=0).
@@ -525,23 +536,29 @@ class QueryHandler
         $hasFacetable = ($query['_facetable'] ?? false) === true || ($query['_facetable'] ?? false) === 'true';
 
         if ($hasFacets === true) {
+            $facetStart = microtime(true);
             $facetResult = $this->facetHandler->getFacetsForObjects($countQuery);
             $paginatedResults['facets'] = $facetResult['facets'] ?? [];
+            $metrics['facets'] = round((microtime(true) - $facetStart) * 1000, 2);
+
+            // Include per-facet timing breakdown if available.
+            if (isset($facetResult['performance_metadata']['facet_db_ms']) === true) {
+                $metrics['facets_breakdown'] = $facetResult['performance_metadata']['facet_db_ms'];
+            }
         }
 
         if ($hasFacetable === true) {
+            $facetableStart = microtime(true);
             $paginatedResults['facetable'] = $this->facetHandler->getFacetableFields(
                 baseQuery: $countQuery,
                 _sampleSize: 100
             );
+            $metrics['facetable'] = round((microtime(true) - $facetableStart) * 1000, 2);
         }
 
-        // Add performance metrics if requested.
-        if (($query['_performance'] ?? false) === true || ($query['_performance'] ?? false) === 'true') {
-            $paginatedResults['@performance'] = [
-                'totalTime' => round((microtime(true) - $startTime) * 1000, 2).'ms',
-            ];
-        }
+        // Always add performance metrics to @self for debugging.
+        $metrics['total'] = round((microtime(true) - $startTime) * 1000, 2);
+        $paginatedResults['@self']['metrics'] = $metrics;
 
         return $paginatedResults;
     }//end searchObjectsPaginatedDatabase()
