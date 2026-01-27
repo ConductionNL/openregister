@@ -828,7 +828,7 @@ class FacetHandler
     private function getFacetableFieldsFromSchemas(array $schemas): array
     {
         $facetableFields = [
-            '@self'         => [],
+            '@self'         => $this->getDefaultMetadataFacets(),
             'object_fields' => [],
         ];
 
@@ -839,22 +839,18 @@ class FacetHandler
             }
 
             try {
-                $schemaFacets = $schema->getFacets();
-                if (empty($schemaFacets) === false) {
-                    // Merge @self metadata facets.
-                    if (($schemaFacets['@self'] ?? null) !== null) {
-                        $facetableFields['@self'] = array_merge(
-                            $facetableFields['@self'],
-                            $schemaFacets['@self']
-                        );
-                    }
-
-                    // Merge object field facets.
-                    if (($schemaFacets['object_fields'] ?? null) !== null) {
-                        $facetableFields['object_fields'] = array_merge(
-                            $facetableFields['object_fields'],
-                            $schemaFacets['object_fields']
-                        );
+                // RUNTIME COMPUTATION: Get facetable fields from schema properties.
+                // This is the single source of truth - no pre-computed facets needed.
+                $properties = $schema->getProperties() ?? [];
+                foreach ($properties as $propertyKey => $property) {
+                    // Check if property is marked as facetable.
+                    if (isset($property['facetable']) === true && $property['facetable'] === true) {
+                        // Determine facet type based on property type.
+                        $facetType = $this->determineFacetTypeFromProperty($property);
+                        $facetableFields['object_fields'][$propertyKey] = [
+                            'type'  => $facetType,
+                            'title' => $property['title'] ?? null,
+                        ];
                     }
                 }
             } catch (\Exception $e) {
@@ -865,7 +861,7 @@ class FacetHandler
                 }
 
                 $this->logger->error(
-                    message: 'Failed to get facets from schema',
+                    message: 'Failed to get facetable fields from schema properties',
                     context: [
                         'error'    => $e->getMessage(),
                         'schemaId' => $schemaId,
@@ -877,4 +873,41 @@ class FacetHandler
 
         return $facetableFields;
     }//end getFacetableFieldsFromSchemas()
+
+    /**
+     * Get default metadata facets for @self fields.
+     *
+     * @return array Default metadata facet configuration.
+     */
+    private function getDefaultMetadataFacets(): array
+    {
+        return [
+            'register' => ['type' => 'terms'],
+            'schema'   => ['type' => 'terms'],
+            'created'  => ['type' => 'date_histogram', 'interval' => 'month'],
+            'updated'  => ['type' => 'date_histogram', 'interval' => 'month'],
+            'owner'    => ['type' => 'terms'],
+        ];
+    }//end getDefaultMetadataFacets()
+
+    /**
+     * Determine facet type from property configuration.
+     *
+     * @param array $property The property configuration.
+     *
+     * @return string The facet type ('terms' or 'date_histogram').
+     */
+    private function determineFacetTypeFromProperty(array $property): string
+    {
+        $type   = $property['type'] ?? 'string';
+        $format = $property['format'] ?? null;
+
+        // Date/datetime fields use date_histogram.
+        if ($format === 'date' || $format === 'date-time' || $type === 'date') {
+            return 'date_histogram';
+        }
+
+        // All other types use terms aggregation.
+        return 'terms';
+    }//end determineFacetTypeFromProperty()
 }//end class

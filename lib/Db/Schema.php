@@ -1456,8 +1456,11 @@ class Schema extends Entity implements JsonSerializable
     /**
      * Get the pre-computed facet configuration
      *
-     * **PERFORMANCE OPTIMIZATION**: Returns pre-analyzed facetable fields stored
-     * in the schema to eliminate runtime analysis during _facetable=true requests.
+     * @deprecated Since runtime facet computation was implemented, this method is no longer
+     *             used for faceting. Facets are now computed at runtime from property-level
+     *             `facetable: true` settings. This method is kept for backward compatibility
+     *             but the `facets` column can be considered deprecated.
+     *             Use schema properties with `facetable: true` instead.
      *
      * @return array|null The facet configuration or null if not computed
      *
@@ -1486,6 +1489,10 @@ class Schema extends Entity implements JsonSerializable
 
     /**
      * Set the facet configuration
+     *
+     * @deprecated Since runtime facet computation was implemented, this method is no longer
+     *             needed. Facets are now computed at runtime from property-level `facetable: true`
+     *             settings. Set `facetable: true` on individual properties instead.
      *
      * **TYPE SAFETY**: Handle both array and JSON string inputs for database hydration
      * The database stores facets as JSON strings, but we want to work with arrays in PHP.
@@ -1520,9 +1527,10 @@ class Schema extends Entity implements JsonSerializable
     /**
      * Regenerate facets from current schema properties
      *
-     * **PERFORMANCE OPTIMIZATION**: This method analyzes the current schema properties
-     * and automatically generates facet configurations for fields marked with 'facetable': true.
-     * This eliminates the need for runtime analysis during search operations.
+     * @deprecated This method is no longer needed since facets are now computed at runtime
+     *             from property-level `facetable: true` settings. The system automatically
+     *             reads facetable properties when processing facet requests.
+     *             This method is kept for backward compatibility only.
      *
      * @return void
      *

@@ -1288,15 +1288,10 @@ class SchemaMapper extends QBMapper
     /**
      * Generate facet configuration from schema properties
      *
-     * **PERFORMANCE OPTIMIZATION**: This method automatically generates facet configurations
-     * from schema properties marked with 'facetable': true, eliminating the need for
-     * runtime analysis during _facetable=true requests.
-     *
-     * Facetable fields are detected by:
-     * - Properties with 'facetable': true explicitly set
-     * - Common field names that are typically facetable (type, status, category)
-     * - Enum properties (automatically facetable as terms)
-     * - Date/datetime properties (automatically facetable as date_histogram)
+     * @deprecated This method is no longer needed since facets are now computed at runtime
+     *             from property-level `facetable: true` settings. The system automatically
+     *             reads facetable properties when processing facet requests.
+     *             This method is kept for backward compatibility only.
      *
      * @param Schema $schema The schema to generate facets for
      *

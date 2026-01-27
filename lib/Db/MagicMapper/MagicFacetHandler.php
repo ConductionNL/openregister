@@ -371,11 +371,15 @@ class MagicFacetHandler
                 }
 
                 if (empty($tablesWithColumn) === false) {
+                    // Use first matching table's schema for label resolution.
+                    $firstMatchingConfig = reset($tablesWithColumn);
+                    $schemaForLabels = $firstMatchingConfig['schema'] ?? null;
+
                     $facets[$field] = $this->getTermsFacetUnion(
                         tableConfigs: $tablesWithColumn,
                         field: $columnName,
                         baseQuery: $baseQuery,
-                        schema: $schema
+                        schema: $schemaForLabels
                     );
                 } else {
                     $facets[$field] = ['type' => 'terms', 'buckets' => []];
@@ -765,38 +769,23 @@ class MagicFacetHandler
                 ],
             ];
 
-            // Add schema property facets - try pre-computed facets first.
-            // But always get titles from schema properties since pre-computed facets may not have them.
-            $schemaFacets = $schema->getFacets();
-            $properties   = $schema->getProperties() ?? [];
-
-            if (($schemaFacets['object_fields'] ?? null) !== null) {
-                foreach ($schemaFacets['object_fields'] as $field => $fieldConfig) {
-                    $facetType = $fieldConfig['type'] ?? 'terms';
-                    // Get title from pre-computed facets first, then from schema property, then null.
-                    $title     = $fieldConfig['title'] ?? $properties[$field]['title'] ?? null;
-                    $config[$field] = [
+            // RUNTIME COMPUTATION: Always compute facets from property-level `facetable: true` settings.
+            // This is the single source of truth - no pre-computed facets needed.
+            // Benefits:
+            // - No sync issues between property settings and pre-computed facets
+            // - Changes to facetable take effect immediately (after cache expires)
+            // - Simpler mental model - just set facetable: true on properties
+            // Performance: Comparable or better than pre-computed (~73ms vs ~97ms in benchmarks)
+            $properties = $schema->getProperties() ?? [];
+            foreach ($properties as $propertyKey => $property) {
+                // Check if property is marked as facetable.
+                if (isset($property['facetable']) === true && $property['facetable'] === true) {
+                    // Determine facet type based on property type.
+                    $facetType            = $this->determineFacetTypeFromProperty($property);
+                    $config[$propertyKey] = [
                         'type'  => $facetType,
-                        'title' => $title,
+                        'title' => $property['title'] ?? null,
                     ];
-                }
-
-                return $config;
-            }
-
-            // Fall back to analyzing schema properties directly for facetable fields.
-            $properties = $schema->getProperties();
-            if (empty($properties) === false) {
-                foreach ($properties as $propertyKey => $property) {
-                    // Check if property is marked as facetable.
-                    if (isset($property['facetable']) === true && $property['facetable'] === true) {
-                        // Determine facet type based on property type.
-                        $facetType            = $this->determineFacetTypeFromProperty($property);
-                        $config[$propertyKey] = [
-                            'type'  => $facetType,
-                            'title' => $property['title'] ?? null,
-                        ];
-                    }
                 }
             }
 
