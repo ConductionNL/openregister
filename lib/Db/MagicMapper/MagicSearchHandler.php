@@ -126,14 +126,65 @@ class MagicSearchHandler
         $this->ignoredFilters = [];
 
         // Extract options from query (prefixed with _).
-        $limit          = $query['_limit'] ?? null;
-        $offset         = $query['_offset'] ?? null;
-        $order          = $query['_order'] ?? [];
+        $limit  = $query['_limit'] ?? null;
+        $offset = $query['_offset'] ?? null;
+        $order  = $query['_order'] ?? [];
+        $count  = $query['_count'] ?? false;
+
+        // Build filtered query (applies all WHERE conditions).
+        $queryBuilder = $this->buildFilteredQuery(
+            query: $query,
+            schema: $schema,
+            tableName: $tableName
+        );
+
+        // Add SELECT clause based on count vs search.
+        if ($count === true) {
+            $queryBuilder->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'count');
+        } else {
+            $queryBuilder->select('t.*')
+                ->setMaxResults($limit)
+                ->setFirstResult($offset);
+
+            // Apply sorting (skip for count queries).
+            if (empty($order) === false) {
+                $this->applySorting(qb: $queryBuilder, order: $order, schema: $schema);
+            }
+        }
+
+        // Execute query and return results.
+        if ($count === true) {
+            $result = $queryBuilder->executeQuery();
+            return (int) $result->fetchOne();
+        }
+
+        return $this->executeSearchQuery(qb: $queryBuilder, register: $register, schema: $schema, tableName: $tableName);
+    }//end searchObjects()
+
+    /**
+     * Build a filtered query with all WHERE conditions applied.
+     *
+     * This is the SINGLE SOURCE OF TRUTH for query filtering. Used by:
+     * - searchObjects() for search results
+     * - searchObjects() with _count=true for counting
+     * - getFacetQuery() for facet aggregations
+     *
+     * Returns a QueryBuilder with FROM and WHERE clauses, but NO SELECT.
+     * Caller must add SELECT clause based on their needs.
+     *
+     * @param array  $query     Search parameters including filters.
+     * @param Schema $schema    The schema for property filtering.
+     * @param string $tableName The table to query.
+     *
+     * @return IQueryBuilder QueryBuilder with all filters applied.
+     */
+    public function buildFilteredQuery(array $query, Schema $schema, string $tableName): IQueryBuilder
+    {
+        // Extract options from query (prefixed with _).
         $search         = $query['_search'] ?? null;
         $includeDeleted = $query['_includeDeleted'] ?? false;
         $published      = $query['_published'] ?? false;
         $ids            = $query['_ids'] ?? null;
-        $count          = $query['_count'] ?? false;
         $rbac           = $query['_rbac'] ?? true;
         $multitenancy   = $query['_multitenancy'] ?? true;
         $relationsContains = $query['_relations_contains'] ?? null;
@@ -170,19 +221,7 @@ class MagicSearchHandler
         );
 
         $queryBuilder = $this->db->getQueryBuilder();
-
-        // Build base query - different for count vs search.
-        if ($count === true) {
-            $queryBuilder->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'count')
-                ->from($tableName, 't');
-        }
-
-        if ($count === false) {
-            $queryBuilder->select('t.*')
-                ->from($tableName, 't')
-                ->setMaxResults($limit)
-                ->setFirstResult($offset);
-        }
+        $queryBuilder->from($tableName, 't');
 
         // Apply basic filters (deleted, published, etc.).
         $this->applyBasicFilters(qb: $queryBuilder, includeDeleted: $includeDeleted, published: $published);
@@ -228,19 +267,8 @@ class MagicSearchHandler
             $this->applyRelationsContainsFilter(qb: $queryBuilder, uuid: $relationsContains);
         }
 
-        // Apply sorting (skip for count queries).
-        if ($count === false && empty($order) === false) {
-            $this->applySorting(qb: $queryBuilder, order: $order, schema: $schema);
-        }
-
-        // Execute query and return results.
-        if ($count === true) {
-            $result = $queryBuilder->executeQuery();
-            return (int) $result->fetchOne();
-        }
-
-        return $this->executeSearchQuery(qb: $queryBuilder, register: $register, schema: $schema, tableName: $tableName);
-    }//end searchObjects()
+        return $queryBuilder;
+    }//end buildFilteredQuery()
 
     /**
      * Apply basic filters like deleted and published status

@@ -958,8 +958,6 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      */
     private function getSimpleFacetsMultiSchema(array $query, int $registerId, array $schemaIds): array
     {
-        $mergedFacets = [];
-
         try {
             $register = $this->registerMapper->find($registerId, _multitenancy: false, _rbac: false);
         } catch (\Exception $e) {
@@ -973,127 +971,39 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             return [];
         }
 
+        // Collect all schemas that use magic mapper.
+        $schemas = [];
         foreach ($schemaIds as $schemaId) {
             try {
                 $schema = $this->schemaMapper->find($schemaId, _multitenancy: false, _rbac: false);
 
-                if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === false) {
-                    continue;
+                if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
+                    $schemas[] = $schema;
                 }
-
-                // Get facets for this schema.
-                $schemaFacets = $this->magicMapper->getSimpleFacetsFromRegisterSchemaTable(
-                    query: $query,
-                    register: $register,
-                    schema: $schema
-                );
-
-                // Merge into combined results.
-                $mergedFacets = $this->mergeFacetResults(existing: $mergedFacets, new: $schemaFacets);
             } catch (\Exception $e) {
                 $this->logger->warning(
-                    '[UnifiedObjectMapper] Failed to get facets for schema',
+                    '[UnifiedObjectMapper] Failed to find schema for multi-schema facets',
                     [
                         'schemaId' => $schemaId,
                         'error'    => $e->getMessage(),
                     ]
                 );
                 // Continue with other schemas.
-            }//end try
-        }//end foreach
-
-        return $mergedFacets;
-    }//end getSimpleFacetsMultiSchema()
-
-    /**
-     * Merge facet results from multiple schemas.
-     *
-     * @param array $existing Existing facet results.
-     * @param array $new      New facet results to merge.
-     *
-     * @return array Merged facet results.
-     */
-    private function mergeFacetResults(array $existing, array $new): array
-    {
-        foreach ($new as $facetKey => $facetData) {
-            if (isset($existing[$facetKey]) === false) {
-                $existing[$facetKey] = $facetData;
-                continue;
             }
-
-            // Handle @self metadata facets.
-            if ($facetKey === '@self' && is_array($facetData) === true) {
-                foreach ($facetData as $metaKey => $metaFacet) {
-                    if (isset($existing['@self'][$metaKey]) === false) {
-                        $existing['@self'][$metaKey] = $metaFacet;
-                        continue;
-                    }
-
-                    // Merge buckets.
-                    $existing['@self'][$metaKey] = $this->mergeFacetBuckets(
-                        existing: $existing['@self'][$metaKey],
-                        new: $metaFacet
-                    );
-                }
-
-                continue;
-            }
-
-            // Merge object field facets.
-            if (is_array($facetData) === true && isset($facetData['buckets']) === true) {
-                $existing[$facetKey] = $this->mergeFacetBuckets(existing: $existing[$facetKey], new: $facetData);
-            }
-        }//end foreach
-
-        return $existing;
-    }//end mergeFacetResults()
-
-    /**
-     * Merge facet buckets, combining counts for same keys.
-     *
-     * @param array $existing Existing facet with buckets.
-     * @param array $new      New facet with buckets to merge.
-     *
-     * @return array Merged facet.
-     */
-    private function mergeFacetBuckets(array $existing, array $new): array
-    {
-        $existingBuckets = $existing['buckets'] ?? [];
-        $newBuckets      = $new['buckets'] ?? [];
-
-        // Index existing buckets by key for fast lookup.
-        $bucketIndex = [];
-        foreach ($existingBuckets as $idx => $bucket) {
-            $key = $bucket['key'] ?? '';
-            $bucketIndex[$key] = $idx;
         }
 
-        // Merge new buckets.
-        foreach ($newBuckets as $newBucket) {
-            $key = $newBucket['key'] ?? '';
-            if (isset($bucketIndex[$key]) === true) {
-                // Add counts.
-                $idx = $bucketIndex[$key];
-                $existingBuckets[$idx]['results'] += $newBucket['results'] ?? 0;
-                continue;
-            }
-
-            // Add new bucket.
-            $existingBuckets[] = $newBucket;
-            $bucketIndex[$key] = count($existingBuckets) - 1;
+        if (empty($schemas) === true) {
+            return [];
         }
 
-        // Re-sort by results descending.
-        usort(
-            $existingBuckets,
-            function (array $a, array $b): int {
-                return ($b['results'] ?? 0) - ($a['results'] ?? 0);
-            }
+        // Use optimized UNION-based faceting for better performance.
+        // This executes ONE query per facet field instead of separate queries per schema.
+        return $this->magicMapper->getSimpleFacetsUnion(
+            query: $query,
+            register: $register,
+            schemas: $schemas
         );
-
-        $existing['buckets'] = $existingBuckets;
-        return $existing;
-    }//end mergeFacetBuckets()
+    }//end getSimpleFacetsMultiSchema()
 
     /**
      * Search objects across multiple schemas using magic mapper tables.
@@ -1174,7 +1084,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                 // Add to pairs for UNION search.
                 $registerSchemaPairs[] = ['register' => $register, 'schema' => $schema];
 
-                // Get count for this schema (UNION search doesn't return counts).
+                // Get count for this schema using MagicSearchHandler (applies all filters correctly).
                 $schemaCountQuery                  = $countQuery;
                 $schemaCountQuery['_rbac']         = $rbac;
                 $schemaCountQuery['_multitenancy'] = $multitenancy;
