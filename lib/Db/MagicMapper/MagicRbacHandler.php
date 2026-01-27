@@ -105,9 +105,14 @@ class MagicRbacHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      */
-    public function applyRbacFilters(IQueryBuilder $qb, Schema $schema, string $action='read'): void
-    {
+    public function applyRbacFilters(
+        IQueryBuilder $qb,
+        Schema $schema,
+        string $action = 'read',
+        bool $addOrganisationCondition = false
+    ): void {
         $user   = $this->userSession->getUser();
         $userId = $user?->getUID();
 
@@ -148,6 +153,16 @@ class MagicRbacHandler
             $conditions[] = $qb->expr()->eq('t._owner', $qb->createNamedParameter($userId));
         }
 
+        // When addOrganisationCondition is true, add _organisation = user's active org
+        // as an additional OR condition. This allows users to always see their own
+        // organization's data alongside records they can access via RBAC conditional rules.
+        if ($addOrganisationCondition === true) {
+            $activeOrgUuid = $this->getActiveOrganisationUuid();
+            if ($activeOrgUuid !== null) {
+                $conditions[] = $qb->expr()->eq('t._organisation', $qb->createNamedParameter($activeOrgUuid));
+            }
+        }
+
         // Process each authorization rule.
         foreach ($rules as $rule) {
             $ruleCondition = $this->processAuthorizationRule(
@@ -183,16 +198,6 @@ class MagicRbacHandler
         }
 
         // Apply OR of all conditions (access granted if ANY condition matches).
-        // DEBUG: Write conditions to file
-        $debugInfo = [
-            'timestamp' => date('Y-m-d H:i:s'),
-            'conditionCount' => count($conditions),
-            'conditions' => array_map(fn($c) => (string) $c, $conditions),
-            'schemaId' => $schema->getId(),
-            'userId' => $userId,
-        ];
-        file_put_contents('/tmp/rbac_debug.log', json_encode($debugInfo, JSON_PRETTY_PRINT) . "\n", FILE_APPEND);
-
         $qb->andWhere($qb->expr()->orX(...$conditions));
     }//end applyRbacFilters()
 
@@ -305,21 +310,8 @@ class MagicRbacHandler
     {
         $conditions = [];
 
-        $this->logger->warning(
-            'MagicRbacHandler: Building match conditions',
-            ['match' => $match]
-        );
-
         foreach ($match as $property => $value) {
             $condition = $this->buildPropertyCondition(qb: $qb, property: $property, value: $value);
-            $this->logger->warning(
-                'MagicRbacHandler: Built property condition',
-                [
-                    'property' => $property,
-                    'value' => $value,
-                    'condition' => $condition !== null ? (string) $condition : 'null',
-                ]
-            );
             if ($condition !== null) {
                 $conditions[] = $condition;
             }
@@ -1099,4 +1091,79 @@ class MagicRbacHandler
     {
         return in_array('admin', $this->getCurrentUserGroups(), true);
     }//end isAdmin()
+
+    /**
+     * Check if schema has conditional RBAC rules that match on non-_organisation fields
+     *
+     * When RBAC rules include conditional matching on fields other than _organisation,
+     * the multitenancy filter should be skipped because RBAC already handles the
+     * organization-based access control. This allows users to access records based
+     * on field matches (e.g., aanbieder) even if the _organisation differs.
+     *
+     * @param Schema $schema The schema to check
+     * @param string $action The action to check (default: 'read')
+     *
+     * @return bool True if RBAC has conditional rules that should bypass multitenancy
+     */
+    public function hasConditionalRulesBypassingMultitenancy(Schema $schema, string $action = 'read'): bool
+    {
+        $user = $this->userSession->getUser();
+
+        // Get user groups.
+        $userGroups = [];
+        if ($user !== null) {
+            $userGroups = $this->groupManager->getUserGroupIds($user);
+        }
+
+        // Admin users bypass all RBAC checks anyway.
+        if (in_array('admin', $userGroups, true) === true) {
+            return true;
+        }
+
+        // Get schema authorization configuration.
+        $authorization = $schema->getAuthorization();
+        if (empty($authorization) === true) {
+            return false;
+        }
+
+        // Get authorization rules for this action.
+        $rules = $authorization[$action] ?? [];
+        if (empty($rules) === true) {
+            return false;
+        }
+
+        // Check if any rule has conditional matching on non-_organisation fields
+        // AND the current user qualifies for that rule's group.
+        foreach ($rules as $rule) {
+            // Skip simple rules (just group names).
+            if (is_string($rule) === true) {
+                continue;
+            }
+
+            // Check conditional rules.
+            if (is_array($rule) === true && isset($rule['group']) === true && isset($rule['match']) === true) {
+                $group = $rule['group'];
+                $match = $rule['match'];
+
+                // Check if user qualifies for this group.
+                $userQualifies = false;
+                if ($group === 'public') {
+                    $userQualifies = true;
+                } else if (in_array($group, $userGroups, true) === true) {
+                    $userQualifies = true;
+                }
+
+                // If user qualifies and match contains non-_organisation fields, multitenancy should be bypassed.
+                if ($userQualifies === true && is_array($match) === true) {
+                    foreach (array_keys($match) as $matchField) {
+                        if ($matchField !== '_organisation') {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+
+        return false;
+    }//end hasConditionalRulesBypassingMultitenancy()
 }//end class

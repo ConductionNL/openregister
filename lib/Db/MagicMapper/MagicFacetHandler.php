@@ -323,10 +323,6 @@ class MagicFacetHandler
             return [];
         }
 
-        // Use first schema to expand facet config (all schemas should have similar facet fields).
-        $firstConfig = reset($tableConfigs);
-        $schema = $firstConfig['schema'];
-
         // Extract facet configuration.
         $facetConfig = $query['_facets'] ?? [];
         if (empty($facetConfig) === true) {
@@ -334,8 +330,13 @@ class MagicFacetHandler
         }
 
         // Handle _facets as string (e.g., _facets=extend).
+        // IMPORTANT: Merge facet configs from ALL schemas, not just the first one.
+        // Each schema may have different facetable fields, and we want the union of all.
         if (is_string($facetConfig) === true) {
-            $facetConfig = $this->expandFacetConfig(facetConfig: $facetConfig, schema: $schema);
+            $facetConfig = $this->expandFacetConfigFromAllSchemas(
+                facetConfigString: $facetConfig,
+                tableConfigs: $tableConfigs
+            );
         }
 
         // Extract base query (without facet config).
@@ -822,6 +823,64 @@ class MagicFacetHandler
 
         return $config;
     }//end expandFacetConfig()
+
+    /**
+     * Expand facet config from ALL schemas in a multi-schema search.
+     *
+     * This method merges facet configurations from all schemas to ensure
+     * that facetable fields from every schema are included in the result.
+     * This fixes the bug where only the first schema's facets were used.
+     *
+     * @param string $facetConfigString The facet config string (e.g., "extend").
+     * @param array  $tableConfigs      Array of table configurations with schemas.
+     *
+     * @return array Merged facet configuration from all schemas.
+     */
+    private function expandFacetConfigFromAllSchemas(string $facetConfigString, array $tableConfigs): array
+    {
+        $mergedConfig = [
+            '@self' => [],
+        ];
+
+        foreach ($tableConfigs as $tc) {
+            $schema = $tc['schema'] ?? null;
+            if ($schema === null) {
+                continue;
+            }
+
+            // Get facet config for this schema.
+            $schemaConfig = $this->expandFacetConfig(facetConfig: $facetConfigString, schema: $schema);
+
+            // Merge @self metadata facets (typically same across schemas).
+            if (isset($schemaConfig['@self']) === true && is_array($schemaConfig['@self']) === true) {
+                foreach ($schemaConfig['@self'] as $field => $config) {
+                    if (isset($mergedConfig['@self'][$field]) === false) {
+                        $mergedConfig['@self'][$field] = $config;
+                    }
+                }
+            }
+
+            // Merge object field facets (may differ per schema).
+            foreach ($schemaConfig as $field => $config) {
+                if ($field === '@self') {
+                    continue;
+                }
+
+                // Add field if not already present, or merge if title is missing.
+                if (isset($mergedConfig[$field]) === false) {
+                    $mergedConfig[$field] = $config;
+                } else if (
+                    isset($config['title']) === true
+                    && isset($mergedConfig[$field]['title']) === false
+                ) {
+                    // Use the title from a schema that has it.
+                    $mergedConfig[$field]['title'] = $config['title'];
+                }
+            }
+        }
+
+        return $mergedConfig;
+    }//end expandFacetConfigFromAllSchemas()
 
     /**
      * Sanitize column name for database compatibility.

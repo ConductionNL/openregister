@@ -266,7 +266,11 @@ class MagicSearchHandler
         // Public schemas bypass multitenancy by default, UNLESS the user explicitly requests
         // multitenancy with _multi=true. This allows public data to be visible across orgs
         // while still giving users the option to filter by their own organisation.
-        $multitenancyExplicit = $query['_multitenancy_explicit'] ?? false;
+        $multitenancyExplicitRaw = $query['_multitenancy_explicit'] ?? false;
+        $multitenancyExplicit = $multitenancyExplicitRaw === true
+            || $multitenancyExplicitRaw === 'true'
+            || $multitenancyExplicitRaw === '1'
+            || $multitenancyExplicitRaw === 1;
 
         if ($multitenancy === true && $source !== 'database') {
             $schemaAuth = $schema->getAuthorization();
@@ -302,7 +306,30 @@ class MagicSearchHandler
         // Apply multi-tenancy (organization) filtering if enabled.
         // Admin bypass is controlled by config setting, not hardcoded.
         // This ensures consistent behavior with MultiTenancyTrait.
-        if ($multitenancy === true) {
+        //
+        // IMPORTANT: When RBAC is enabled and has conditional rules that match on
+        // non-_organisation fields (e.g., aanbieder), the multitenancy filter should
+        // NOT be applied as an AND restriction. Instead:
+        // - If _multitenancy_explicit=true: Add _organisation filter as additional OR in RBAC
+        // - If _multitenancy_explicit=false: Skip multitenancy, let RBAC handle it completely
+        //
+        // This allows users to access records based on field matches (e.g., aanbieder)
+        // even if the _organisation differs, while still supporting explicit multitenancy
+        // filtering when requested.
+        $rbacHasConditionalRules = false;
+        if ($rbac === true) {
+            $rbacHasConditionalRules = $this->rbacHandler->hasConditionalRulesBypassingMultitenancy(
+                schema: $schema,
+                action: 'read'
+            );
+        }
+
+        // When RBAC has conditional rules:
+        // - Skip separate multitenancy filter (would conflict with RBAC OR conditions)
+        // - Pass multitenancyExplicit flag to RBAC so it can add _organisation as additional OR
+        // When RBAC doesn't have conditional rules:
+        // - Apply multitenancy filter normally as AND restriction
+        if ($multitenancy === true && $rbacHasConditionalRules === false) {
             $this->organizationHandler->applyOrganizationFilter(
                 qb: $queryBuilder,
                 allowPublishedAccess: $this->organizationHandler->shouldPublishedBypassMultiTenancy(),
@@ -311,8 +338,15 @@ class MagicSearchHandler
         }
 
         // Apply RBAC filtering if enabled.
+        // When multitenancyExplicit=true and RBAC has conditional rules, RBAC will add
+        // _organisation = user's org as an additional OR condition.
         if ($rbac === true) {
-            $this->rbacHandler->applyRbacFilters(qb: $queryBuilder, schema: $schema, action: 'read');
+            $this->rbacHandler->applyRbacFilters(
+                qb: $queryBuilder,
+                schema: $schema,
+                action: 'read',
+                addOrganisationCondition: $multitenancyExplicit === true && $rbacHasConditionalRules === true
+            );
         }
 
         // Apply metadata filters.
