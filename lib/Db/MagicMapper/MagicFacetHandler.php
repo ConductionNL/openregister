@@ -397,6 +397,10 @@ class MagicFacetHandler
         // Process @self metadata facets using UNION.
         if (($facetConfig['@self'] ?? null) !== null && is_array($facetConfig['@self']) === true) {
             $facets['@self'] = [];
+            // Use first table's schema for metadata facets (all tables share same metadata structure).
+            $firstTableConfig = reset($tableConfigs);
+            $metadataSchema = $firstTableConfig['schema'] ?? null;
+
             foreach ($facetConfig['@self'] as $field => $config) {
                 $facetStart = microtime(true);
                 $type = $config['type'] ?? 'terms';
@@ -407,7 +411,7 @@ class MagicFacetHandler
                         tableConfigs: $tableConfigs,
                         field: $columnName,
                         baseQuery: $baseQuery,
-                        schema: $schema,
+                        schema: $metadataSchema,
                         isMetadata: true
                     );
                 } else if ($type === 'date_histogram') {
@@ -445,11 +449,11 @@ class MagicFacetHandler
      * array values in PHP. This is more reliable than trying to detect
      * array fields at SQL level and use jsonb_array_elements_text().
      *
-     * @param array  $tableConfigs Array of table configurations.
-     * @param string $field        The field/column name.
-     * @param array  $baseQuery    Base query filters.
-     * @param Schema $schema       Schema for type checking.
-     * @param bool   $isMetadata   Whether this is a metadata field.
+     * @param array       $tableConfigs Array of table configurations.
+     * @param string      $field        The field/column name.
+     * @param array       $baseQuery    Base query filters.
+     * @param Schema|null $schema       Schema for type checking (nullable for multi-schema).
+     * @param bool        $isMetadata   Whether this is a metadata field.
      *
      * @return array Facet result with merged buckets.
      */
@@ -457,7 +461,7 @@ class MagicFacetHandler
         array $tableConfigs,
         string $field,
         array $baseQuery,
-        Schema $schema,
+        ?Schema $schema,
         bool $isMetadata = false
     ): array {
         if (empty($tableConfigs) === true) {

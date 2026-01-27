@@ -307,45 +307,51 @@ class MagicSearchHandler
         // Admin bypass is controlled by config setting, not hardcoded.
         // This ensures consistent behavior with MultiTenancyTrait.
         //
-        // IMPORTANT: When RBAC is enabled and has conditional rules that match on
-        // non-_organisation fields (e.g., aanbieder), the multitenancy filter should
-        // NOT be applied as an AND restriction. Instead:
-        // - If _multitenancy_explicit=true: Add _organisation filter as additional OR in RBAC
-        // - If _multitenancy_explicit=false: Skip multitenancy, let RBAC handle it completely
-        //
-        // This allows users to access records based on field matches (e.g., aanbieder)
-        // even if the _organisation differs, while still supporting explicit multitenancy
-        // filtering when requested.
-        $rbacHasConditionalRules = false;
+        // Check if user qualifies for any RBAC rule (simple or conditional).
+        // When user has RBAC access, multitenancy is bypassed by default (RBAC controls access).
+        // However, when _multi=true is explicitly set, multitenancy filter is applied AFTER RBAC
+        // to further restrict results to only the user's organisation.
+        $userHasRbacAccess = false;
         if ($rbac === true) {
-            $rbacHasConditionalRules = $this->rbacHandler->hasConditionalRulesBypassingMultitenancy(
+            $userHasRbacAccess = $this->rbacHandler->hasConditionalRulesBypassingMultitenancy(
                 schema: $schema,
                 action: 'read'
             );
         }
 
-        // When RBAC has conditional rules:
-        // - Skip separate multitenancy filter (would conflict with RBAC OR conditions)
-        // - Pass multitenancyExplicit flag to RBAC so it can add _organisation as additional OR
-        // When RBAC doesn't have conditional rules:
-        // - Apply multitenancy filter normally as AND restriction
-        if ($multitenancy === true && $rbacHasConditionalRules === false) {
-            $this->organizationHandler->applyOrganizationFilter(
-                qb: $queryBuilder,
-                allowPublishedAccess: $this->organizationHandler->shouldPublishedBypassMultiTenancy(),
-                adminBypassEnabled: $this->organizationHandler->isAdminOverrideEnabled()
-            );
+        // Apply multitenancy filter:
+        // - When user has NO RBAC access: Apply multitenancy as normal (AND restriction)
+        // - When user HAS RBAC access AND _multi=true: Apply multitenancy AFTER RBAC (AND restriction)
+        // - When user HAS RBAC access AND _multi=false: Skip multitenancy (RBAC handles access)
+        if ($multitenancy === true) {
+            $shouldApplyMultitenancy = false;
+
+            if ($userHasRbacAccess === false) {
+                // No RBAC access - apply multitenancy as normal
+                $shouldApplyMultitenancy = true;
+            } else if ($multitenancyExplicit === true) {
+                // User has RBAC access but explicitly requested _multi=true
+                // Apply multitenancy to further restrict results to their org
+                $shouldApplyMultitenancy = true;
+            }
+            // Otherwise: user has RBAC access and didn't request _multi=true
+            // Skip multitenancy - let RBAC handle access control
+
+            if ($shouldApplyMultitenancy === true) {
+                $this->organizationHandler->applyOrganizationFilter(
+                    qb: $queryBuilder,
+                    allowPublishedAccess: $this->organizationHandler->shouldPublishedBypassMultiTenancy(),
+                    adminBypassEnabled: $this->organizationHandler->isAdminOverrideEnabled()
+                );
+            }
         }
 
         // Apply RBAC filtering if enabled.
-        // When multitenancyExplicit=true and RBAC has conditional rules, RBAC will add
-        // _organisation = user's org as an additional OR condition.
         if ($rbac === true) {
             $this->rbacHandler->applyRbacFilters(
                 qb: $queryBuilder,
                 schema: $schema,
-                action: 'read',
-                addOrganisationCondition: $multitenancyExplicit === true && $rbacHasConditionalRules === true
+                action: 'read'
             );
         }
 

@@ -105,13 +105,11 @@ class MagicRbacHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      */
     public function applyRbacFilters(
         IQueryBuilder $qb,
         Schema $schema,
-        string $action = 'read',
-        bool $addOrganisationCondition = false
+        string $action = 'read'
     ): void {
         $user   = $this->userSession->getUser();
         $userId = $user?->getUID();
@@ -151,16 +149,6 @@ class MagicRbacHandler
         // Condition: User is the owner of the object (owners always have access).
         if ($userId !== null) {
             $conditions[] = $qb->expr()->eq('t._owner', $qb->createNamedParameter($userId));
-        }
-
-        // When addOrganisationCondition is true, add _organisation = user's active org
-        // as an additional OR condition. This allows users to always see their own
-        // organization's data alongside records they can access via RBAC conditional rules.
-        if ($addOrganisationCondition === true) {
-            $activeOrgUuid = $this->getActiveOrganisationUuid();
-            if ($activeOrgUuid !== null) {
-                $conditions[] = $qb->expr()->eq('t._organisation', $qb->createNamedParameter($activeOrgUuid));
-            }
         }
 
         // Process each authorization rule.
@@ -1132,11 +1120,21 @@ class MagicRbacHandler
             return false;
         }
 
-        // Check if any rule has conditional matching on non-_organisation fields
-        // AND the current user qualifies for that rule's group.
+        // Check if user qualifies for any rule that should bypass multitenancy.
+        // This includes:
+        // 1. Simple rules (group name strings) - user in group can see ALL records
+        // 2. Conditional rules with non-_organisation match fields - RBAC handles filtering
         foreach ($rules as $rule) {
-            // Skip simple rules (just group names).
+            // Check simple rules (just group names).
+            // If user qualifies for a simple rule, they can see ALL records,
+            // so multitenancy should be bypassed.
             if (is_string($rule) === true) {
+                if ($rule === 'public') {
+                    return true;
+                }
+                if (in_array($rule, $userGroups, true) === true) {
+                    return true;
+                }
                 continue;
             }
 
