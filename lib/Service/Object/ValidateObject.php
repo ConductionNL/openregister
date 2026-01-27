@@ -919,6 +919,10 @@ class ValidateObject
             }
         }
 
+        // Transform custom OpenRegister types to valid JSON Schema types.
+        // JSON Schema only allows: string, number, integer, boolean, array, object, null.
+        $cleanedProperty = $this->transformCustomTypeToJsonSchemaType($cleanedProperty);
+
         // Special handling for array items - more aggressive transformation.
         if ($isArrayItems === true) {
             return $this->transformArrayItemsForValidation($cleanedProperty);
@@ -944,6 +948,55 @@ class ValidateObject
 
         return $cleanedProperty;
     }//end cleanPropertyForValidation()
+
+    /**
+     * Transforms custom OpenRegister types to valid JSON Schema types.
+     *
+     * JSON Schema only allows: string, number, integer, boolean, array, object, null.
+     * OpenRegister uses custom types like "file" which need to be converted.
+     *
+     * @param object $propertySchema The property schema to transform
+     *
+     * @return object The transformed property schema with valid JSON Schema types
+     */
+    private function transformCustomTypeToJsonSchemaType(object $propertySchema): object
+    {
+        // Map of custom OpenRegister types to their JSON Schema equivalents.
+        $customTypeMap = [
+            'file'     => 'string',  // File references are stored as strings (paths, UUIDs, etc.)
+            'datetime' => 'string',  // Datetime values are stored as ISO 8601 strings
+            'date'     => 'string',  // Date values are stored as strings
+            'time'     => 'string',  // Time values are stored as strings
+            'uuid'     => 'string',  // UUIDs are strings
+            'url'      => 'string',  // URLs are strings
+            'email'    => 'string',  // Emails are strings
+            'phone'    => 'string',  // Phone numbers are strings
+        ];
+
+        // Check if type is set and needs transformation.
+        if (isset($propertySchema->type) === false) {
+            return $propertySchema;
+        }
+
+        $type = $propertySchema->type;
+
+        // Handle single type as string.
+        if (is_string($type) === true && isset($customTypeMap[$type]) === true) {
+            $propertySchema->type = $customTypeMap[$type];
+        }
+
+        // Handle type as array (e.g., ["file", "null"]).
+        if (is_array($type) === true) {
+            $propertySchema->type = array_map(
+                function ($t) use ($customTypeMap) {
+                    return $customTypeMap[$t] ?? $t;
+                },
+                $type
+            );
+        }
+
+        return $propertySchema;
+    }//end transformCustomTypeToJsonSchemaType()
 
     /**
      * Transforms array items for validation by converting object items to appropriate types.

@@ -323,7 +323,8 @@ class MagicSearchHandler
      * - UNION search queries (MagicMapper::buildUnionSelectPart)
      * - UNION facet queries (MagicFacetHandler::getTermsFacetUnion)
      *
-     * Values are quoted inline (not parameterized) for UNION query compatibility.
+     * Includes RBAC filtering when enabled (default). Values are quoted inline
+     * (not parameterized) for UNION query compatibility.
      *
      * @param array  $query  Search parameters including filters.
      * @param Schema $schema The schema for property filtering.
@@ -341,6 +342,7 @@ class MagicSearchHandler
         $search         = $query['_search'] ?? null;
         $includeDeleted = $query['_includeDeleted'] ?? false;
         $published      = $query['_published'] ?? false;
+        $rbac           = $query['_rbac'] ?? true;
 
         // 1. Deleted filter.
         if ($includeDeleted === false) {
@@ -354,7 +356,24 @@ class MagicSearchHandler
             $conditions[] = "(_published IS NOT NULL AND _published <= {$quotedNow} AND (_depublished IS NULL OR _depublished > {$quotedNow}))";
         }
 
-        // 3. Full-text search filter with optional fuzzy matching.
+        // 3. RBAC filter (role-based access control).
+        if ($rbac === true) {
+            $rbacResult = $this->rbacHandler->buildRbacConditionsSql(schema: $schema, action: 'read');
+
+            if ($rbacResult['bypass'] === false) {
+                // User doesn't have unconditional access.
+                if (empty($rbacResult['conditions']) === true) {
+                    // No access conditions met - deny all.
+                    $conditions[] = '1=0';
+                } else {
+                    // OR together all RBAC conditions (access if ANY matches).
+                    $conditions[] = '(' . implode(' OR ', $rbacResult['conditions']) . ')';
+                }
+            }
+            // If bypass=true, no RBAC filtering needed (user has full access).
+        }
+
+        // 4. Full-text search filter with optional fuzzy matching.
         if ($search !== null && trim($search) !== '') {
             $searchTerm = trim($search);
             $searchConditions = [];
@@ -393,7 +412,7 @@ class MagicSearchHandler
             }
         }
 
-        // 4. Object field filters (non-reserved, non-metadata).
+        // 5. Object field filters (non-reserved, non-metadata).
         $reservedParams = [
             '_limit', '_offset', '_page', '_order', '_sort', '_search', '_extend',
             '_fields', '_filter', '_unset', '_facets', '_facetable', '_aggregations',

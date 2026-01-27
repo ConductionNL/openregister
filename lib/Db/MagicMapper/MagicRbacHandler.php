@@ -742,6 +742,307 @@ class MagicRbacHandler
     }//end valueMatchesOperator()
 
     /**
+     * Build RBAC conditions as raw SQL for use in UNION queries.
+     *
+     * This is the raw SQL equivalent of applyRbacFilters() for use in UNION-based
+     * queries where QueryBuilder cannot be used directly.
+     *
+     * @param Schema $schema Schema with authorization configuration.
+     * @param string $action CRUD action to check (default: 'read').
+     *
+     * @return array{bypass: bool, conditions: string[]} Result with:
+     *               - 'bypass' => true means no filtering needed (user has full access)
+     *               - 'conditions' => SQL conditions to OR together, empty array means deny all
+     */
+    public function buildRbacConditionsSql(Schema $schema, string $action = 'read'): array
+    {
+        $user   = $this->userSession->getUser();
+        $userId = $user?->getUID();
+
+        // Get user groups.
+        $userGroups = [];
+        if ($user !== null) {
+            $userGroups = $this->groupManager->getUserGroupIds($user);
+        }
+
+        // Admin users bypass all RBAC checks.
+        if (in_array('admin', $userGroups, true) === true) {
+            return ['bypass' => true, 'conditions' => []];
+        }
+
+        // Get schema authorization configuration.
+        $authorization = $schema->getAuthorization();
+
+        // If no authorization is configured, schema is open to all.
+        if (empty($authorization) === true) {
+            return ['bypass' => true, 'conditions' => []];
+        }
+
+        // Get authorization rules for this action.
+        $rules = $authorization[$action] ?? [];
+
+        // If action is not configured in authorization, it's open to all.
+        if (empty($rules) === true) {
+            return ['bypass' => true, 'conditions' => []];
+        }
+
+        // Build the RBAC filter conditions.
+        $conditions = [];
+
+        // Condition: User is the owner of the object (owners always have access).
+        if ($userId !== null) {
+            $quotedUserId = $this->quoteValue($userId);
+            $conditions[] = "_owner = {$quotedUserId}";
+        }
+
+        // Process each authorization rule.
+        foreach ($rules as $rule) {
+            $ruleResult = $this->processAuthorizationRuleSql(
+                rule: $rule,
+                userGroups: $userGroups,
+                userId: $userId
+            );
+
+            if ($ruleResult === true) {
+                // User has unconditional access via this rule - no filtering needed.
+                return ['bypass' => true, 'conditions' => []];
+            }
+
+            if (is_string($ruleResult) === true) {
+                // Add the SQL condition for this rule.
+                $conditions[] = $ruleResult;
+            }
+        }
+
+        // Return conditions (empty array means deny all).
+        return ['bypass' => false, 'conditions' => $conditions];
+    }//end buildRbacConditionsSql()
+
+    /**
+     * Process a single authorization rule for raw SQL output.
+     *
+     * @param mixed       $rule       Authorization rule (string or array).
+     * @param array       $userGroups User's group IDs.
+     * @param string|null $userId     Current user ID.
+     *
+     * @return mixed True if unconditional access, SQL string for conditional, false if no access.
+     */
+    private function processAuthorizationRuleSql(mixed $rule, array $userGroups, ?string $userId): mixed
+    {
+        // Simple rule: just a group name string.
+        if (is_string($rule) === true) {
+            return $this->processSimpleRule(rule: $rule, userGroups: $userGroups, userId: $userId);
+        }
+
+        // Conditional rule: object with 'group' and optional 'match'.
+        if (is_array($rule) === true && isset($rule['group']) === true) {
+            return $this->processConditionalRuleSql(rule: $rule, userGroups: $userGroups, userId: $userId);
+        }
+
+        return false;
+    }//end processAuthorizationRuleSql()
+
+    /**
+     * Process a conditional authorization rule for raw SQL output.
+     *
+     * @param array       $rule       Rule with 'group' and optional 'match'.
+     * @param array       $userGroups User's group IDs.
+     * @param string|null $userId     Current user ID.
+     *
+     * @return mixed True if unconditional access, SQL string for conditional, false if no access.
+     */
+    private function processConditionalRuleSql(array $rule, array $userGroups, ?string $userId): mixed
+    {
+        $group = $rule['group'];
+        $match = $rule['match'] ?? null;
+
+        // Check if user qualifies for this group.
+        $userQualifies = false;
+        if ($group === 'public') {
+            $userQualifies = true;
+        } else if (in_array($group, $userGroups, true) === true) {
+            $userQualifies = true;
+        }
+
+        // If user doesn't qualify for the group, this rule doesn't apply.
+        if ($userQualifies === false) {
+            return false;
+        }
+
+        // If no match conditions, user has unconditional access via this rule.
+        if ($match === null || empty($match) === true) {
+            return true;
+        }
+
+        // Build SQL conditions for the match criteria.
+        return $this->buildMatchConditionsSql($match);
+    }//end processConditionalRuleSql()
+
+    /**
+     * Build SQL conditions for match criteria.
+     *
+     * @param array $match Match conditions.
+     *
+     * @return string|null SQL expression or null if invalid.
+     */
+    private function buildMatchConditionsSql(array $match): ?string
+    {
+        $conditions = [];
+
+        foreach ($match as $property => $value) {
+            $condition = $this->buildPropertyConditionSql(property: $property, value: $value);
+            if ($condition !== null) {
+                $conditions[] = $condition;
+            }
+        }
+
+        // If no valid conditions, return null.
+        if (empty($conditions) === true) {
+            return null;
+        }
+
+        // All conditions must match (AND logic).
+        if (count($conditions) === 1) {
+            return $conditions[0];
+        }
+
+        return '(' . implode(' AND ', $conditions) . ')';
+    }//end buildMatchConditionsSql()
+
+    /**
+     * Build SQL condition for a single property match.
+     *
+     * @param string $property Property name.
+     * @param mixed  $value    Value or operator object.
+     *
+     * @return string|null SQL expression or null.
+     */
+    private function buildPropertyConditionSql(string $property, mixed $value): ?string
+    {
+        // Convert camelCase property to snake_case column name.
+        $columnName = $this->propertyToColumnName($property);
+
+        // Resolve dynamic variables in the value.
+        $resolvedValue = $this->resolveDynamicValue($value);
+
+        // If dynamic variable resolved to null, this condition cannot be met.
+        if ($value !== $resolvedValue && $resolvedValue === null) {
+            return null;
+        }
+
+        // Simple value: equals comparison.
+        if (is_string($resolvedValue) === true || is_numeric($resolvedValue) === true) {
+            $quotedValue = $this->quoteValue($resolvedValue);
+            return "{$columnName} = {$quotedValue}";
+        }
+
+        // Boolean value.
+        if (is_bool($resolvedValue) === true) {
+            $boolValue = $resolvedValue ? 'TRUE' : 'FALSE';
+            return "{$columnName} = {$boolValue}";
+        }
+
+        // Operator object.
+        if (is_array($resolvedValue) === true) {
+            return $this->buildOperatorConditionSql(columnName: $columnName, operators: $resolvedValue);
+        }
+
+        // Null value: is null check.
+        if ($resolvedValue === null) {
+            return "{$columnName} IS NULL";
+        }
+
+        return null;
+    }//end buildPropertyConditionSql()
+
+    /**
+     * Build SQL condition for operator-based match.
+     *
+     * @param string $columnName Column name.
+     * @param array  $operators  Operator conditions.
+     *
+     * @return string|null SQL expression or null.
+     */
+    private function buildOperatorConditionSql(string $columnName, array $operators): ?string
+    {
+        foreach ($operators as $operator => $operand) {
+            switch ($operator) {
+                case '$eq':
+                    $quotedValue = $this->quoteValue($operand);
+                    return "{$columnName} = {$quotedValue}";
+
+                case '$ne':
+                    $quotedValue = $this->quoteValue($operand);
+                    return "{$columnName} != {$quotedValue}";
+
+                case '$in':
+                    if (is_array($operand) === true && empty($operand) === false) {
+                        $quotedValues = array_map(fn($v) => $this->quoteValue($v), $operand);
+                        return "{$columnName} IN (" . implode(', ', $quotedValues) . ')';
+                    }
+                    break;
+
+                case '$nin':
+                    if (is_array($operand) === true && empty($operand) === false) {
+                        $quotedValues = array_map(fn($v) => $this->quoteValue($v), $operand);
+                        return "{$columnName} NOT IN (" . implode(', ', $quotedValues) . ')';
+                    }
+                    break;
+
+                case '$exists':
+                    if ($operand === true) {
+                        return "{$columnName} IS NOT NULL";
+                    }
+                    return "{$columnName} IS NULL";
+
+                case '$gt':
+                    $quotedValue = $this->quoteValue($operand);
+                    return "{$columnName} > {$quotedValue}";
+
+                case '$gte':
+                    $quotedValue = $this->quoteValue($operand);
+                    return "{$columnName} >= {$quotedValue}";
+
+                case '$lt':
+                    $quotedValue = $this->quoteValue($operand);
+                    return "{$columnName} < {$quotedValue}";
+
+                case '$lte':
+                    $quotedValue = $this->quoteValue($operand);
+                    return "{$columnName} <= {$quotedValue}";
+            }
+        }
+
+        return null;
+    }//end buildOperatorConditionSql()
+
+    /**
+     * Quote a value for safe use in raw SQL.
+     *
+     * @param mixed $value Value to quote.
+     *
+     * @return string Quoted value safe for SQL.
+     */
+    private function quoteValue(mixed $value): string
+    {
+        if ($value === null) {
+            return 'NULL';
+        }
+
+        if (is_bool($value) === true) {
+            return $value ? 'TRUE' : 'FALSE';
+        }
+
+        if (is_int($value) === true || is_float($value) === true) {
+            return (string) $value;
+        }
+
+        // String value - escape single quotes by doubling them.
+        $escaped = str_replace("'", "''", (string) $value);
+        return "'{$escaped}'";
+    }//end quoteValue()
+
+    /**
      * Get the current user ID
      *
      * @return string|null The current user ID or null if not authenticated
