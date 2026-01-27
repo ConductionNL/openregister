@@ -200,6 +200,14 @@ class MagicMapper
     private static array $calculatedVersionCache = [];
 
     /**
+     * Cache for column existence checks to avoid repeated information_schema queries.
+     * Key format: 'tableName' => ['column1' => true, 'column2' => true, ...]
+     *
+     * @var array<string, array<string, bool>>
+     */
+    private static array $columnExistsCache = [];
+
+    /**
      * Handler instances for specialized functionality
      */
 
@@ -237,6 +245,13 @@ class MagicMapper
      * @var MagicFacetHandler|null
      */
     private ?MagicFacetHandler $facetHandler = null;
+
+    /**
+     * Cached result of pg_trgm extension availability check
+     *
+     * @var bool|null null = not checked yet, true/false = checked result
+     */
+    private ?bool $hasPgTrgm = null;
 
     /**
      * Constructor for MagicMapper service
@@ -327,12 +342,60 @@ class MagicMapper
             $this->logger->debug('CacheHandler not available for MagicFacetHandler: '.$e->getMessage());
         }
 
+        // Get ICacheFactory from container for distributed facet label caching.
+        $cacheFactory = null;
+        try {
+            $cacheFactory = $this->container->get(\OCP\ICacheFactory::class);
+        } catch (\Exception $e) {
+            $this->logger->debug('ICacheFactory not available for MagicFacetHandler: '.$e->getMessage());
+        }
+
         $this->facetHandler = new MagicFacetHandler(
             db: $this->db,
             logger: $this->logger,
-            cacheHandler: $cacheHandler
+            cacheHandler: $cacheHandler,
+            cacheFactory: $cacheFactory
         );
     }//end initializeHandlers()
+
+    /**
+     * Check if PostgreSQL pg_trgm extension is available
+     *
+     * This extension provides the similarity() function and % operator
+     * for fuzzy text searching. Result is cached for the request lifetime.
+     *
+     * @return bool True if pg_trgm is available, false otherwise
+     */
+    private function hasPgTrgmExtension(): bool
+    {
+        // Return cached result if available.
+        if ($this->hasPgTrgm !== null) {
+            return $this->hasPgTrgm;
+        }
+
+        // Not PostgreSQL = no pg_trgm.
+        $platform = $this->db->getDatabasePlatform();
+        if ($platform instanceof PostgreSQLPlatform === false) {
+            $this->hasPgTrgm = false;
+            return false;
+        }
+
+        // Check if pg_trgm extension is installed.
+        try {
+            $stmt   = $this->db->prepare("SELECT COUNT(*) FROM pg_extension WHERE extname = 'pg_trgm'");
+            $result = $stmt->execute();
+            $count  = (int) $result->fetchOne();
+            $this->hasPgTrgm = $count > 0;
+        } catch (Exception $e) {
+            $this->logger->warning(
+                'Failed to check pg_trgm extension availability',
+                ['error' => $e->getMessage()]
+            );
+            $this->hasPgTrgm = false;
+        }
+
+        return $this->hasPgTrgm;
+    }//end hasPgTrgmExtension()
 
     /**
      * Create or update table for a specific register+schema combination
@@ -1035,15 +1098,24 @@ class MagicMapper
         $schemaProps = $schema->getProperties() ?? [];
 
         if ($hasSearch === true && empty($schemaProps) === false) {
-            // Build fuzzy search score (same logic as applyFuzzySearch).
+            // Build fuzzy search score.
             // Note: quote() already adds quotes, so don't wrap in additional quotes.
             $searchColumns = [];
             $quotedTerm    = $qb->getConnection()->quote($searchTerm);
+            $hasTrgm       = $this->hasPgTrgmExtension();
+
             foreach ($schemaProps as $propName => $propDef) {
                 $type = $propDef['type'] ?? 'string';
                 if (in_array($type, ['string', 'text'], true) === true) {
-                    $columnName      = $this->sanitizeColumnName($propName);
-                    $searchColumns[] = "COALESCE(similarity({$columnName}::text, {$quotedTerm}), 0)";
+                    $columnName = $this->sanitizeColumnName($propName);
+                    if ($hasTrgm === true) {
+                        // Use similarity() for fuzzy scoring when pg_trgm is available.
+                        $searchColumns[] = "COALESCE(similarity({$columnName}::text, {$quotedTerm}), 0)";
+                    } else {
+                        // Fallback: use CASE with ILIKE for basic relevance scoring.
+                        $likePattern     = "'%".trim($quotedTerm, "'")."%'";
+                        $searchColumns[] = "CASE WHEN {$columnName}::text ILIKE {$likePattern} THEN 1 ELSE 0 END";
+                    }
                 }
             }
 
@@ -1069,12 +1141,17 @@ class MagicMapper
             $quotedTerm       = $qb->getConnection()->quote($searchTerm);
             // Escape % for LIKE pattern (the quoted term already has quotes).
             $likePattern      = "'%".trim($quotedTerm, "'")."%'";
+            $hasTrgm          = $this->hasPgTrgmExtension();
+
             foreach ($schemaProps as $propName => $propDef) {
                 $type = $propDef['type'] ?? 'string';
                 if (in_array($type, ['string', 'text'], true) === true) {
                     $columnName         = $this->sanitizeColumnName($propName);
                     $searchConditions[] = "{$columnName}::text ILIKE {$likePattern}";
-                    $searchConditions[] = "similarity({$columnName}::text, {$quotedTerm}) > 0.1";
+                    if ($hasTrgm === true) {
+                        // Add trigram similarity condition when pg_trgm is available.
+                        $searchConditions[] = "similarity({$columnName}::text, {$quotedTerm}) > 0.1";
+                    }
                 }
             }
 
@@ -2750,13 +2827,10 @@ class MagicMapper
                 'groups',
             ];
             if (in_array($field, $jsonFields) === true) {
-                // Convert to JSON if not already a string, but treat empty values as NULL.
-                // PostgreSQL rejects empty strings as invalid JSON.
+                // Convert to JSON if not already a string.
+                // Note: Empty string → NULL conversion is handled at final insert/update stage.
                 if ($value !== null) {
-                    // Empty string should be NULL for JSON columns.
-                    if ($value === '') {
-                        $value = null;
-                    } else if (is_array($value) === true && empty($value) === true) {
+                    if (is_array($value) === true && empty($value) === true) {
                         // Empty array should be NULL for proper IS NULL checks.
                         $value = null;
                     } else if (is_string($value) === false) {
@@ -2787,29 +2861,15 @@ class MagicMapper
                 if (($data[$propertyName] ?? null) !== null) {
                     $value = $data[$propertyName];
 
-                    // Get the property type from schema to handle JSON columns properly.
-                    $propertyConfig = $schemaProperties[$propertyName] ?? [];
-                    $propertyType = $propertyConfig['type'] ?? 'string';
-
                     // Convert boolean values to integers (0/1) for database compatibility.
                     // PHP's false can be incorrectly converted to empty string '' by some drivers.
                     // Using 0/1 integers ensures PostgreSQL and other databases handle booleans correctly.
                     if (is_bool($value) === true) {
-                        if ($value === true) {
-                            $value = 1;
-                        } else {
-                            $value = 0;
-                        }
-                    }
-
-                    // Handle empty strings for JSON columns (array/object types).
-                    // PostgreSQL rejects empty strings as invalid JSON.
-                    // Convert empty strings to NULL for these column types.
-                    if ($value === '' && in_array($propertyType, ['array', 'object'], true) === true) {
-                        $value = null;
+                        $value = $value === true ? 1 : 0;
                     }
 
                     // Convert complex types to JSON.
+                    // Note: Empty string → NULL conversion is handled at final insert/update stage.
                     if (is_array($value) === true || is_object($value) === true) {
                         $value = json_encode($value);
                     }
@@ -3501,13 +3561,17 @@ class MagicMapper
         // Build WHERE clause: match if ANY column matches (using OR).
         $orConditions = [];
         $platform     = $this->db->getDatabasePlatform();
+        $hasTrgm      = $this->hasPgTrgmExtension();
 
         foreach ($searchableFields as $columnName) {
             if ($platform instanceof PostgreSQLPlatform === true) {
-                // PostgreSQL: Use pg_trgm % operator and ILIKE for fuzzy + case-insensitive.
-                // The % operator uses trigram similarity (requires pg_trgm extension).
+                // PostgreSQL: Always use ILIKE for case-insensitive substring match.
                 $orConditions[] = "LOWER({$columnName}) ILIKE LOWER(".$qb->createNamedParameter('%'.$searchTerm.'%').')';
-                $orConditions[] = "LOWER({$columnName}) % LOWER(".$qb->createNamedParameter($searchTerm).')';
+
+                // Only use pg_trgm % operator if extension is available.
+                if ($hasTrgm === true) {
+                    $orConditions[] = "LOWER({$columnName}) % LOWER(".$qb->createNamedParameter($searchTerm).')';
+                }
                 continue;
             }
 
@@ -3527,6 +3591,13 @@ class MagicMapper
             return;
         }
 
+        // PostgreSQL without pg_trgm: use constant score (ILIKE matched but no ranking).
+        if ($hasTrgm === false) {
+            $qb->addSelect($qb->createFunction('1 AS _search_score'));
+            return;
+        }
+
+        // PostgreSQL with pg_trgm: use similarity() for proper relevance scoring.
         $scoreExpressions = [];
         foreach ($searchableFields as $columnName) {
             // Build similarity expression for each field.
@@ -3578,12 +3649,17 @@ class MagicMapper
         // Build WHERE clause: match if ANY column matches (using OR).
         $orConditions = [];
         $platform     = $this->db->getDatabasePlatform();
+        $hasTrgm      = $this->hasPgTrgmExtension();
 
         foreach ($searchableFields as $columnName) {
             if ($platform instanceof PostgreSQLPlatform === true) {
-                // PostgreSQL: Use ILIKE for case-insensitive matching.
+                // PostgreSQL: Always use ILIKE for case-insensitive matching.
                 $orConditions[] = "LOWER({$columnName}) ILIKE LOWER(".$qb->createNamedParameter('%'.$searchTerm.'%').')';
-                $orConditions[] = "LOWER({$columnName}) % LOWER(".$qb->createNamedParameter($searchTerm).')';
+
+                // Only use pg_trgm % operator if extension is available.
+                if ($hasTrgm === true) {
+                    $orConditions[] = "LOWER({$columnName}) % LOWER(".$qb->createNamedParameter($searchTerm).')';
+                }
                 continue;
             }
 
@@ -3712,6 +3788,12 @@ class MagicMapper
         $qb->insert($tableName);
 
         foreach ($data as $column => $value) {
+            // Convert empty strings to NULL to prevent PostgreSQL JSON/JSONB column errors.
+            // PostgreSQL rejects empty strings for JSON columns with "invalid input syntax for type json".
+            if ($value === '') {
+                $value = null;
+            }
+
             $qb->setValue($column, $qb->createNamedParameter($value));
         }
 
@@ -3737,6 +3819,12 @@ class MagicMapper
         foreach ($data as $column => $value) {
             // Don't update the UUID itself.
             if ($column !== self::METADATA_PREFIX.'uuid') {
+                // Convert empty strings to NULL to prevent PostgreSQL JSON/JSONB column errors.
+                // PostgreSQL rejects empty strings for JSON columns with "invalid input syntax for type json".
+                if ($value === '') {
+                    $value = null;
+                }
+
                 $qb->set($column, $qb->createNamedParameter($value));
             }
         }
@@ -5974,14 +6062,25 @@ class MagicMapper
             $fullTableNameLower = strtolower($fullTableName);
             $columnNameLower    = strtolower($columnName);
 
-            $sql = "SELECT 1 FROM information_schema.columns
-                    WHERE LOWER(table_name) = ? AND LOWER(column_name) = ? LIMIT 1";
+            // OPTIMIZATION: Check in-memory cache first.
+            if (isset(self::$columnExistsCache[$fullTableNameLower]) === true) {
+                return isset(self::$columnExistsCache[$fullTableNameLower][$columnNameLower]);
+            }
+
+            // Load ALL columns for this table in one query (instead of one query per column).
+            $sql = "SELECT LOWER(column_name) as col FROM information_schema.columns
+                    WHERE LOWER(table_name) = ?";
 
             $stmt = $this->db->prepare($sql);
-            $stmt->execute([$fullTableNameLower, $columnNameLower]);
-            $row = $stmt->fetch();
+            $stmt->execute([$fullTableNameLower]);
 
-            return $row !== false;
+            // Cache all columns for this table.
+            self::$columnExistsCache[$fullTableNameLower] = [];
+            while (($row = $stmt->fetch()) !== false) {
+                self::$columnExistsCache[$fullTableNameLower][$row['col']] = true;
+            }
+
+            return isset(self::$columnExistsCache[$fullTableNameLower][$columnNameLower]);
         } catch (\Exception $e) {
             $this->logger->warning(
                 '[MagicMapper] Failed to check column existence',

@@ -541,6 +541,7 @@ class SettingsController extends Controller
      *
      * Returns information about the current database system and whether it
      * supports native vector operations for optimal semantic search performance.
+     * Results are cached in app config and can be refreshed with ?refresh=true.
      *
      * @NoCSRFRequired
      *
@@ -548,10 +549,29 @@ class SettingsController extends Controller
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     public function getDatabaseInfo(): JSONResponse
     {
         try {
+            // Check if refresh is requested or if we should use cached data.
+            $refresh = filter_var(
+                $this->request->getParam('refresh', false),
+                FILTER_VALIDATE_BOOLEAN
+            );
+
+            // Try to get cached database info if not refreshing.
+            if ($refresh === false) {
+                $cachedInfo = $this->config->getValueString('openregister', 'databaseInfo', '');
+                if (empty($cachedInfo) === false) {
+                    $cached = json_decode($cachedInfo, true);
+                    if ($cached !== null && isset($cached['database']) === true) {
+                        $cached['fromCache'] = true;
+                        return new JSONResponse(data: $cached);
+                    }
+                }
+            }
+
             // Get database platform information.
             // Note: getDatabasePlatform() returns a platform instance, but we avoid type hinting it.
             $platform = $this->db->getDatabasePlatform();
@@ -567,6 +587,7 @@ class SettingsController extends Controller
             $vectorSupport     = false;
             $recommendedPlugin = null;
             $performanceNote   = null;
+            $extensions        = [];
 
             if (strpos($platformName, 'mysql') !== false || strpos($platformName, 'mariadb') !== false) {
                 // Check if it's MariaDB or MySQL.
@@ -606,24 +627,39 @@ class SettingsController extends Controller
                     $dbVersion = 'Unknown';
                 }
 
-                // Check if pgvector extension is installed.
+                // Fetch all installed PostgreSQL extensions.
                 try {
-                    $stmt      = $this->db->prepare("SELECT COUNT(*) FROM pg_extension WHERE extname = 'vector'");
-                    $result    = $stmt->execute();
-                    $hasVector = $result->fetchOne() > 0;
-
-                    $vectorSupport     = false;
-                    $recommendedPlugin = 'pgvector (not installed)';
-                    $performanceNote   = 'Install pgvector extension: CREATE EXTENSION vector;';
-                    if ($hasVector === true) {
-                        $vectorSupport     = true;
-                        $recommendedPlugin = 'pgvector (installed ✓)';
-                        $performanceNote   = 'Optimal: Using database-level vector operations for fast semantic search.';
+                    $stmt   = $this->db->prepare('SELECT extname, extversion FROM pg_extension ORDER BY extname');
+                    $result = $stmt->execute();
+                    while ($row = $result->fetch()) {
+                        $extensions[] = [
+                            'name'    => $row['extname'],
+                            'version' => $row['extversion'],
+                        ];
                     }
                 } catch (Exception $e) {
-                    $vectorSupport     = false;
-                    $recommendedPlugin = 'pgvector (not found)';
-                    $performanceNote   = 'Unable to detect pgvector. Install with: CREATE EXTENSION vector;';
+                    $this->logger->warning(
+                        '[SettingsController] Failed to fetch PostgreSQL extensions',
+                        ['error' => $e->getMessage()]
+                    );
+                }
+
+                // Check if pgvector extension is installed.
+                $hasVector = false;
+                foreach ($extensions as $ext) {
+                    if ($ext['name'] === 'vector') {
+                        $hasVector = true;
+                        break;
+                    }
+                }
+
+                $vectorSupport     = false;
+                $recommendedPlugin = 'pgvector (not installed)';
+                $performanceNote   = 'Install pgvector extension: CREATE EXTENSION vector;';
+                if ($hasVector === true) {
+                    $vectorSupport     = true;
+                    $recommendedPlugin = 'pgvector (installed)';
+                    $performanceNote   = 'Optimal: Using database-level vector operations for fast semantic search.';
                 }
             } else if (strpos($platformName, 'sqlite') !== false) {
                 $dbType            = 'SQLite';
@@ -632,19 +668,33 @@ class SettingsController extends Controller
                 $performanceNote   = 'SQLite not recommended for production vector search.';
             }//end if
 
-            return new JSONResponse(
-                data: [
-                    'success'  => true,
-                    'database' => [
-                        'type'              => $dbType,
-                        'version'           => $dbVersion,
-                        'platform'          => $platformName,
-                        'vectorSupport'     => $vectorSupport,
-                        'recommendedPlugin' => $recommendedPlugin,
-                        'performanceNote'   => $performanceNote,
-                    ],
-                ]
+            // Build the database info array.
+            $databaseInfo = [
+                'type'              => $dbType,
+                'version'           => $dbVersion,
+                'platform'          => $platformName,
+                'vectorSupport'     => $vectorSupport,
+                'recommendedPlugin' => $recommendedPlugin,
+                'performanceNote'   => $performanceNote,
+                'extensions'        => $extensions,
+                'lastUpdated'       => (new DateTime())->format('c'),
+            ];
+
+            // Build the response data.
+            $responseData = [
+                'success'   => true,
+                'database'  => $databaseInfo,
+                'fromCache' => false,
+            ];
+
+            // Store in app config for later use.
+            $this->config->setValueString(
+                'openregister',
+                'databaseInfo',
+                json_encode($responseData)
             );
+
+            return new JSONResponse(data: $responseData);
         } catch (Exception $e) {
             $this->logger->error(
                 '[SettingsController] Failed to get database info',
@@ -663,6 +713,25 @@ class SettingsController extends Controller
             );
         }//end try
     }//end getDatabaseInfo()
+
+    /**
+     * Refresh database information
+     *
+     * Forces a refresh of the cached database information including
+     * PostgreSQL extensions. This clears the cache and re-queries the database.
+     *
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with refreshed database info
+     */
+    public function refreshDatabaseInfo(): JSONResponse
+    {
+        // Clear the cached database info to force a refresh.
+        $this->config->deleteKey('openregister', 'databaseInfo');
+
+        // getDatabaseInfo will now fetch fresh data since cache is empty.
+        return $this->getDatabaseInfo();
+    }//end refreshDatabaseInfo()
 
     /**
      * Get version information only

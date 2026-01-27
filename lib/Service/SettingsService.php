@@ -845,6 +845,68 @@ class SettingsService
     }//end getVersionInfoOnly()
 
     /**
+     * Get cached database information
+     *
+     * Returns the cached database info including type, version, and extensions.
+     * Returns null if no cached data is available.
+     *
+     * @return array|null Database information or null if not cached
+     */
+    public function getDatabaseInfo(): ?array
+    {
+        $cachedInfo = $this->config->getAppValue('openregister', 'databaseInfo', '');
+        if (empty($cachedInfo) === true) {
+            return null;
+        }
+
+        $data = json_decode($cachedInfo, true);
+        if ($data === null || isset($data['database']) === false) {
+            return null;
+        }
+
+        return $data['database'];
+    }//end getDatabaseInfo()
+
+    /**
+     * Check if a specific PostgreSQL extension is installed
+     *
+     * @param string $extensionName The name of the extension to check (e.g., 'vector', 'pg_trgm')
+     *
+     * @return bool True if the extension is installed, false otherwise
+     */
+    public function hasPostgresExtension(string $extensionName): bool
+    {
+        $dbInfo = $this->getDatabaseInfo();
+        if ($dbInfo === null || ($dbInfo['type'] ?? '') !== 'PostgreSQL') {
+            return false;
+        }
+
+        $extensions = $dbInfo['extensions'] ?? [];
+        foreach ($extensions as $ext) {
+            if (($ext['name'] ?? '') === $extensionName) {
+                return true;
+            }
+        }
+
+        return false;
+    }//end hasPostgresExtension()
+
+    /**
+     * Get list of installed PostgreSQL extensions
+     *
+     * @return array List of extension names, empty array if not PostgreSQL or no extensions
+     */
+    public function getPostgresExtensions(): array
+    {
+        $dbInfo = $this->getDatabaseInfo();
+        if ($dbInfo === null || ($dbInfo['type'] ?? '') !== 'PostgreSQL') {
+            return [];
+        }
+
+        return $dbInfo['extensions'] ?? [];
+    }//end getPostgresExtensions()
+
+    /**
      * Validate all objects in the system
      *
      * Triggers validation logic for all objects without re-saving them.

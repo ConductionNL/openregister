@@ -42,6 +42,8 @@ use DateTime;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\ICache;
+use OCP\ICacheFactory;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
@@ -71,6 +73,12 @@ class MagicFacetHandler
     private const METADATA_PREFIX = '_';
 
     /**
+     * TTL for facet label cache (24 hours).
+     * Labels rarely change, so long TTL is appropriate.
+     */
+    private const FACET_LABEL_CACHE_TTL = 86400;
+
+    /**
      * In-memory cache for facet results within a single request
      */
     private array $facetCache = [];
@@ -81,6 +89,24 @@ class MagicFacetHandler
     private array $uuidLabelCache = [];
 
     /**
+     * In-memory cache for field-level label maps (persistent across searches).
+     * Structure: ['tableName:fieldName' => ['uuid1' => 'label1', ...]]
+     */
+    private array $fieldLabelCache = [];
+
+    /**
+     * Tracks which fields have been warmed in the distributed cache.
+     */
+    private array $warmedFields = [];
+
+    /**
+     * In-memory cache for column existence checks.
+     * Structure: ['tableName' => ['column1' => true, 'column2' => true, ...]]
+     * This avoids repeated information_schema queries which add up quickly.
+     */
+    private array $columnCache = [];
+
+    /**
      * Cache handler for UUID to name resolution
      *
      * @var \OCA\OpenRegister\Service\Object\CacheHandler|null
@@ -88,18 +114,44 @@ class MagicFacetHandler
     private ?\OCA\OpenRegister\Service\Object\CacheHandler $cacheHandler = null;
 
     /**
+     * Distributed cache factory for persistent label caching
+     *
+     * @var ICacheFactory|null
+     */
+    private ?ICacheFactory $cacheFactory = null;
+
+    /**
+     * Distributed cache instance for facet labels
+     *
+     * @var ICache|null
+     */
+    private ?ICache $distributedLabelCache = null;
+
+    /**
      * Constructor for MagicFacetHandler
      *
      * @param IDBConnection   $db           Database connection for queries
      * @param LoggerInterface $logger       Logger for debugging and error reporting
      * @param \OCA\OpenRegister\Service\Object\CacheHandler|null $cacheHandler Cache handler for name resolution
+     * @param ICacheFactory|null $cacheFactory Cache factory for distributed caching
      */
     public function __construct(
         private readonly IDBConnection $db,
         private readonly LoggerInterface $logger,
-        ?\OCA\OpenRegister\Service\Object\CacheHandler $cacheHandler = null
+        ?\OCA\OpenRegister\Service\Object\CacheHandler $cacheHandler = null,
+        ?ICacheFactory $cacheFactory = null
     ) {
         $this->cacheHandler = $cacheHandler;
+        $this->cacheFactory = $cacheFactory;
+
+        // Initialize distributed cache for facet labels.
+        if ($this->cacheFactory !== null) {
+            try {
+                $this->distributedLabelCache = $this->cacheFactory->createDistributed('openregister_facet_labels');
+            } catch (\Exception $e) {
+                $this->logger->warning('Failed to create distributed facet label cache: ' . $e->getMessage());
+            }
+        }
     }//end __construct()
 
     /**
@@ -956,6 +1008,10 @@ class MagicFacetHandler
     /**
      * Check if a column exists in the table.
      *
+     * PERFORMANCE OPTIMIZATION: Uses in-memory cache to avoid repeated
+     * information_schema queries. Loads ALL columns for a table on first
+     * access (one query), then subsequent checks are instant array lookups.
+     *
      * @param string $tableName  The table name.
      * @param string $columnName The column name.
      *
@@ -976,14 +1032,25 @@ class MagicFacetHandler
             $fullTableNameLower = strtolower($fullTableName);
             $columnNameLower    = strtolower($columnName);
 
-            $sql = "SELECT 1 FROM information_schema.columns
-                    WHERE LOWER(table_name) = ? AND LOWER(column_name) = ? LIMIT 1";
+            // OPTIMIZATION: Check in-memory cache first.
+            if (isset($this->columnCache[$fullTableNameLower]) === true) {
+                return isset($this->columnCache[$fullTableNameLower][$columnNameLower]);
+            }
+
+            // Load ALL columns for this table in one query (instead of one query per column).
+            $sql = "SELECT LOWER(column_name) as col FROM information_schema.columns
+                    WHERE LOWER(table_name) = ?";
 
             $stmt = $this->db->prepare($sql);
-            $stmt->execute([$fullTableNameLower, $columnNameLower]);
-            $row = $stmt->fetch();
+            $stmt->execute([$fullTableNameLower]);
 
-            return $row !== false;
+            // Cache all columns for this table.
+            $this->columnCache[$fullTableNameLower] = [];
+            while (($row = $stmt->fetch()) !== false) {
+                $this->columnCache[$fullTableNameLower][$row['col']] = true;
+            }
+
+            return isset($this->columnCache[$fullTableNameLower][$columnNameLower]);
         } catch (\Exception $e) {
             $this->logger->warning(
                 'MagicFacetHandler: Failed to check column existence',
@@ -1319,66 +1386,140 @@ class MagicFacetHandler
     }//end getDateFormatForInterval()
 
     /**
-     * Batch resolve UUID labels using the centralized CacheHandler service.
+     * Batch resolve UUID labels with field-level caching optimization.
      *
-     * Delegates to CacheHandler's getMultipleObjectNames() which provides:
-     * - Distributed cache support (shared across requests)
-     * - Batch queries to magic tables (eliminates N+1 problem)
-     * - Automatic table discovery and name column resolution
+     * PERFORMANCE OPTIMIZATION:
+     * Instead of resolving labels per search query, we cache ALL labels for a field
+     * in distributed cache with a long TTL. This means:
+     * - First request for a field: loads all labels (may be slow)
+     * - Subsequent requests: instant lookup from cache
+     * - Labels rarely change, so long TTL (24h) is safe
      *
      * @param array    $uuids    Array of UUIDs to resolve.
-     * @param string   $field    The field name (unused, kept for signature compatibility).
-     * @param Schema   $schema   The current schema context (unused, kept for signature compatibility).
-     * @param Register $register The current register context (unused, kept for signature compatibility).
+     * @param string   $field    The field name for cache key.
+     * @param Schema   $schema   The current schema context.
+     * @param Register $register The current register context.
+     * @param string   $tableName The magic mapper table name (optional, for cache key).
      *
      * @return array<string, string> Map of UUID to label.
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter) Parameters kept for backwards compatibility.
      */
     private function batchResolveUuidLabels(
         array $uuids,
         string $field,
         Schema $schema,
-        Register $register
+        Register $register,
+        string $tableName = ''
     ): array {
         if (empty($uuids) === true) {
             return [];
         }
 
-        // Check in-memory cache first for this request.
-        $result = [];
-        $uncachedUuids = [];
-        foreach ($uuids as $uuid) {
-            if (isset($this->uuidLabelCache[$uuid]) === true) {
-                $result[$uuid] = $this->uuidLabelCache[$uuid];
-            } else {
-                $uncachedUuids[] = $uuid;
+        $startTime = microtime(true);
+
+        // Generate field-level cache key.
+        $fieldCacheKey = 'facet_labels_' . $register->getId() . '_' . $schema->getId() . '_' . $field;
+
+        // STEP 1: Check in-memory field-level cache (fastest).
+        if (isset($this->fieldLabelCache[$fieldCacheKey]) === true) {
+            $cachedLabels = $this->fieldLabelCache[$fieldCacheKey];
+            $result = [];
+            $uncachedUuids = [];
+
+            foreach ($uuids as $uuid) {
+                if (isset($cachedLabels[$uuid]) === true) {
+                    $result[$uuid] = $cachedLabels[$uuid];
+                } else {
+                    $uncachedUuids[] = $uuid;
+                }
+            }
+
+            // If all UUIDs found in cache, return immediately.
+            if (empty($uncachedUuids) === true) {
+                $this->logger->debug('batchResolveUuidLabels: All labels from in-memory field cache', [
+                    'field' => $field,
+                    'count' => count($result),
+                    'time_ms' => round((microtime(true) - $startTime) * 1000, 2),
+                ]);
+                return $result;
             }
         }
 
-        if (empty($uncachedUuids) === true) {
-            return $result;
+        // STEP 2: Check distributed cache for field-level labels.
+        if ($this->distributedLabelCache !== null && isset($this->warmedFields[$fieldCacheKey]) === false) {
+            try {
+                $distributedLabels = $this->distributedLabelCache->get($fieldCacheKey);
+                if ($distributedLabels !== null && is_array($distributedLabels) === true) {
+                    // Store in in-memory cache for this request.
+                    $this->fieldLabelCache[$fieldCacheKey] = $distributedLabels;
+                    $this->warmedFields[$fieldCacheKey] = true;
+
+                    // Try again with the loaded cache.
+                    $result = [];
+                    $uncachedUuids = [];
+                    foreach ($uuids as $uuid) {
+                        if (isset($distributedLabels[$uuid]) === true) {
+                            $result[$uuid] = $distributedLabels[$uuid];
+                        } else {
+                            $uncachedUuids[] = $uuid;
+                        }
+                    }
+
+                    if (empty($uncachedUuids) === true) {
+                        $this->logger->debug('batchResolveUuidLabels: All labels from distributed cache', [
+                            'field' => $field,
+                            'count' => count($result),
+                            'time_ms' => round((microtime(true) - $startTime) * 1000, 2),
+                        ]);
+                        return $result;
+                    }
+                }
+            } catch (\Exception $e) {
+                $this->logger->warning('Failed to get facet labels from distributed cache: ' . $e->getMessage());
+            }
         }
 
-        // Use CacheHandler for centralized name resolution with distributed caching.
-        if ($this->cacheHandler !== null) {
+        // STEP 3: Resolve remaining UUIDs via CacheHandler.
+        $result = $result ?? [];
+        $uncachedUuids = $uncachedUuids ?? $uuids;
+
+        if ($this->cacheHandler !== null && empty($uncachedUuids) === false) {
             $batchedLabels = $this->cacheHandler->getMultipleObjectNames($uncachedUuids);
 
-            // Cache results locally and merge.
+            // Merge results.
             foreach ($batchedLabels as $uuid => $label) {
                 $this->uuidLabelCache[$uuid] = $label;
                 $result[$uuid] = $label;
             }
 
-            $this->logger->debug(
-                'batchResolveUuidLabels: Resolved labels via CacheHandler',
-                [
-                    'field'     => $field,
-                    'requested' => count($uuids),
-                    'fromLocal' => count($uuids) - count($uncachedUuids),
-                    'fromCache' => count($batchedLabels),
-                ]
+            // Update field-level cache with new labels.
+            if (isset($this->fieldLabelCache[$fieldCacheKey]) === false) {
+                $this->fieldLabelCache[$fieldCacheKey] = [];
+            }
+            $this->fieldLabelCache[$fieldCacheKey] = array_merge(
+                $this->fieldLabelCache[$fieldCacheKey],
+                $batchedLabels
             );
+
+            // Persist to distributed cache for future requests.
+            if ($this->distributedLabelCache !== null) {
+                try {
+                    $this->distributedLabelCache->set(
+                        $fieldCacheKey,
+                        $this->fieldLabelCache[$fieldCacheKey],
+                        self::FACET_LABEL_CACHE_TTL
+                    );
+                    $this->warmedFields[$fieldCacheKey] = true;
+                } catch (\Exception $e) {
+                    $this->logger->warning('Failed to persist facet labels to distributed cache: ' . $e->getMessage());
+                }
+            }
+
+            $this->logger->debug('batchResolveUuidLabels: Resolved via CacheHandler and cached', [
+                'field' => $field,
+                'requested' => count($uuids),
+                'resolved' => count($batchedLabels),
+                'time_ms' => round((microtime(true) - $startTime) * 1000, 2),
+            ]);
         }
 
         return $result;

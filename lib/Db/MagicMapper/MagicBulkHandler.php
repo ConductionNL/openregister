@@ -175,13 +175,12 @@ class MagicBulkHandler
 
                 $columnName = $this->sanitizeColumnName($propertyName);
 
-                // Get property type from schema to handle JSON columns properly.
-                $propertyConfig = $schemaProperties[$propertyName] ?? [];
-                $propertyType = $propertyConfig['type'] ?? 'string';
-
-                // Handle empty strings for JSON columns (array/object types).
-                // PostgreSQL rejects empty strings as invalid JSON.
-                if ($value === '' && in_array($propertyType, ['array', 'object'], true) === true) {
+                // Convert empty strings to NULL for all schema properties.
+                // This is necessary because:
+                // 1. PostgreSQL rejects empty strings for JSON columns
+                // 2. Column types might differ from schema (e.g., table created with old schema)
+                // 3. Empty strings are semantically equivalent to NULL for most use cases
+                if ($value === '') {
                     $value = null;
                 }
 

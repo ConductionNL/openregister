@@ -129,7 +129,19 @@
 			</div>
 
 			<div class="provider-info-card" :class="{'warning-card': !databaseInfo.vectorSupport}">
-				<h5>Vector Storage</h5>
+				<div class="card-header">
+					<h5>Vector Storage</h5>
+					<NcButton
+						type="tertiary"
+						:disabled="refreshingDatabase"
+						:aria-label="t('openregister', 'Refresh database info')"
+						@click="refreshDatabaseInfo">
+						<template #icon>
+							<NcLoadingIcon v-if="refreshingDatabase" :size="16" />
+							<Refresh v-else :size="16" />
+						</template>
+					</NcButton>
+				</div>
 				<p class="provider-name">
 					{{ databaseInfo.type }}
 				</p>
@@ -141,6 +153,21 @@
 				</p>
 				<p v-if="databaseInfo.performanceNote" class="performance-note" :title="databaseInfo.performanceNote">
 					{{ databaseInfo.performanceNote }}
+				</p>
+				<!-- PostgreSQL Extensions -->
+				<div v-if="databaseInfo.extensions && databaseInfo.extensions.length > 0" class="extensions-section">
+					<details>
+						<summary>{{ t('openregister', 'Extensions') }} ({{ databaseInfo.extensions.length }})</summary>
+						<ul class="extensions-list">
+							<li v-for="ext in databaseInfo.extensions" :key="ext.name" class="extension-item">
+								<span class="ext-name">{{ ext.name }}</span>
+								<span class="ext-version">v{{ ext.version }}</span>
+							</li>
+						</ul>
+					</details>
+				</div>
+				<p v-if="databaseInfo.lastUpdated" class="last-updated">
+					{{ t('openregister', 'Updated:') }} {{ formatDate(databaseInfo.lastUpdated) }}
 				</p>
 			</div>
 		</div>
@@ -360,7 +387,10 @@ export default {
 				vectorSupport: false,
 				recommendedPlugin: null,
 				performanceNote: null,
+				extensions: [],
+				lastUpdated: null,
 			},
+			refreshingDatabase: false,
 			chatStats: {
 				totalAgents: 0,
 				totalConversations: 0,
@@ -492,6 +522,34 @@ export default {
 		},
 
 		/**
+		 * Refresh database information (force re-query)
+		 */
+		async refreshDatabaseInfo() {
+			this.refreshingDatabase = true
+			try {
+				await axios.post(generateUrl('/apps/openregister/api/settings/database/refresh'))
+				await this.loadDatabaseInfo()
+				showSuccess(this.t('openregister', 'Database information refreshed'))
+			} catch (error) {
+				console.error('Failed to refresh database info:', error)
+				showError(this.t('openregister', 'Failed to refresh database information'))
+			} finally {
+				this.refreshingDatabase = false
+			}
+		},
+
+		/**
+		 * Format date for display
+		 * @param {string} dateString - ISO date string
+		 * @return {string} Formatted date
+		 */
+		formatDate(dateString) {
+			if (!dateString) return ''
+			const date = new Date(dateString)
+			return date.toLocaleString()
+		},
+
+		/**
 		 * Load database information
 		 */
 		async loadDatabaseInfo() {
@@ -540,6 +598,8 @@ export default {
 						vectorSupport,
 						recommendedPlugin: recommendedPlugin || null,
 						performanceNote,
+						extensions: db.extensions || [],
+						lastUpdated: db.lastUpdated || null,
 					}
 				}
 			} catch (error) {
@@ -982,6 +1042,68 @@ export default {
 	overflow: hidden;
 	text-overflow: ellipsis;
 	cursor: help;
+}
+
+.provider-info-card .card-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 8px;
+}
+
+.provider-info-card .card-header h5 {
+	margin: 0;
+}
+
+.provider-info-card .extensions-section {
+	margin-top: 12px;
+	border-top: 1px solid var(--color-border);
+	padding-top: 8px;
+}
+
+.provider-info-card .extensions-section summary {
+	cursor: pointer;
+	font-size: 11px;
+	color: var(--color-text-maxcontrast);
+	font-weight: 500;
+}
+
+.provider-info-card .extensions-list {
+	margin: 8px 0 0 0;
+	padding: 0;
+	list-style: none;
+	max-height: 150px;
+	overflow-y: auto;
+}
+
+.provider-info-card .extension-item {
+	display: flex;
+	justify-content: space-between;
+	padding: 4px 0;
+	font-size: 11px;
+	border-bottom: 1px solid var(--color-border-dark);
+}
+
+.provider-info-card .extension-item:last-child {
+	border-bottom: none;
+}
+
+.provider-info-card .ext-name {
+	color: var(--color-main-text);
+	font-weight: 500;
+}
+
+.provider-info-card .ext-version {
+	color: var(--color-text-maxcontrast);
+	font-family: monospace;
+	font-size: 10px;
+}
+
+.provider-info-card .last-updated {
+	margin: 8px 0 0 0;
+	font-size: 10px;
+	color: var(--color-text-maxcontrast);
+	font-style: italic;
 }
 
 /* Statistics Grid (matching File Configuration tiles) */

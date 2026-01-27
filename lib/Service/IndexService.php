@@ -873,4 +873,23 @@ class IndexService
 
         throw new Exception('HTTP client not available for current backend');
     }//end getHttpClient()
+
+    /**
+     * List available ConfigSets from Solr.
+     *
+     * This is a Solr-specific operation. Returns an empty array if the
+     * backend doesn't support ConfigSets (non-Solr backends).
+     *
+     * @return array List of available ConfigSets.
+     */
+    public function listConfigSets(): array
+    {
+        // Check if backend is Solr and has listConfigSets method.
+        if (method_exists($this->searchBackend, 'listConfigSets') === true) {
+            return $this->searchBackend->listConfigSets();
+        }
+
+        // Return empty array for non-Solr backends.
+        return [];
+    }//end listConfigSets()
 }//end class
