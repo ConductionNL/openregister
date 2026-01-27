@@ -524,8 +524,31 @@ class MagicSearchHandler
             }
 
             $columnName = $this->sanitizeColumnName($key);
+            $propertyType = $properties[$key]['type'] ?? 'string';
 
-            // Handle array values with IN clause.
+            // Handle array-type properties (JSONB columns) with JSON containment operator.
+            if ($propertyType === 'array') {
+                // Normalize value to array.
+                $values = is_array($value) ? $value : [$value];
+                if (empty($values) === false) {
+                    if (count($values) === 1) {
+                        // Single value: check if JSON array contains this value.
+                        $jsonValue = $connection->quote(json_encode([$values[0]]));
+                        $conditions[] = "COALESCE({$columnName}, '[]')::jsonb @> {$jsonValue}::jsonb";
+                    } else {
+                        // Multiple values: check if JSON array contains ANY of the values (OR logic).
+                        $orParts = [];
+                        foreach ($values as $v) {
+                            $jsonValue = $connection->quote(json_encode([$v]));
+                            $orParts[] = "COALESCE({$columnName}, '[]')::jsonb @> {$jsonValue}::jsonb";
+                        }
+                        $conditions[] = '(' . implode(' OR ', $orParts) . ')';
+                    }
+                }
+                continue;
+            }
+
+            // Handle array filter values with IN clause (for non-array property types).
             if (is_array($value) === true) {
                 if (empty($value) === false) {
                     $quotedValues = array_map(
@@ -1191,7 +1214,25 @@ class MagicSearchHandler
 
             case 'string':
             default:
-                // Schema says string or unknown type - return as-is.
+                // Schema says string or unknown type.
+                // However, for backwards compatibility and data flexibility, if the value
+                // looks like a JSON array or object (starts with [ or {), try to decode it.
+                // This handles cases where schema is incorrectly defined as string but
+                // the actual data is array/object, matching MagicMapper::convertRowToObjectEntity behavior.
+                if (is_string($value) === true) {
+                    $trimmed = trim($value);
+                    $startsWithArrayOrObject = (
+                        str_starts_with($trimmed, '[') === true || str_starts_with($trimmed, '{') === true
+                    );
+
+                    if ($startsWithArrayOrObject === true) {
+                        $decoded = json_decode($value, true);
+                        if (json_last_error() === JSON_ERROR_NONE && ($decoded !== null || $value === 'null')) {
+                            return $decoded;
+                        }
+                    }
+                }
+
                 return $value;
         }//end switch
     }//end convertValueByType()
