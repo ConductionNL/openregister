@@ -427,6 +427,10 @@ class MagicFacetHandler
     /**
      * Get terms facet using UNION ALL across multiple tables.
      *
+     * This method uses a simple GROUP BY approach and then post-processes
+     * array values in PHP. This is more reliable than trying to detect
+     * array fields at SQL level and use jsonb_array_elements_text().
+     *
      * @param array  $tableConfigs Array of table configurations.
      * @param string $field        The field/column name.
      * @param array  $baseQuery    Base query filters.
@@ -446,96 +450,37 @@ class MagicFacetHandler
             return ['type' => 'terms', 'buckets' => []];
         }
 
-        // Determine if this field is an array type.
-        // Check ALL schemas since different schemas might define the same field differently.
-        // If ANY schema defines it as array, treat it as array.
-        $isArrayField = false;
-        if ($isMetadata === false) {
-            // Check all schemas for array type definition.
-            foreach ($tableConfigs as $tc) {
-                if (isset($tc['schema']) === true) {
-                    if ($this->isArrayField(field: $field, schema: $tc['schema'], isMetadata: false) === true) {
-                        $isArrayField = true;
-                        break;
-                    }
-                }
-            }
-
-            // Fallback: sample data from first table if no schema indicates array.
-            if ($isArrayField === false && isset($tableConfigs[0]['tableName']) === true) {
-                $isArrayField = $this->isArrayFieldByDataSample(
-                    tableName: $tableConfigs[0]['tableName'],
-                    field: $field
-                );
-            }
-        }
-
-        $this->logger->debug(
-            'MagicFacetHandler: UNION array field check',
-            ['field' => $field, 'isArrayField' => $isArrayField, 'isMetadata' => $isMetadata]
-        );
-
-        // Build UNION ALL query.
+        // Build UNION ALL query with simple GROUP BY.
+        // Array values will come as JSON strings like '["uuid1", "uuid2"]'
+        // and will be post-processed in PHP.
         $unionParts = [];
-        $params = [];
         $prefix = 'oc_';
 
         foreach ($tableConfigs as $tc) {
             $tableName = $tc['tableName'];
             $fullTableName = $prefix . $tableName;
+            $tcSchema = $tc['schema'];
 
-            // Build subquery for this table.
-            // For array fields, use jsonb_array_elements_text to unnest array elements.
-            if ($isArrayField === true) {
-                $subSql = "SELECT elem as facet_value, COUNT(*) as cnt FROM {$fullTableName}, jsonb_array_elements_text({$field}::jsonb) AS elem WHERE {$field} IS NOT NULL AND {$field} != '[]' AND {$field} != 'null'";
-            } else {
-                $subSql = "SELECT {$field} as facet_value, COUNT(*) as cnt FROM {$fullTableName} WHERE {$field} IS NOT NULL";
-            }
+            // Simple SELECT with GROUP BY - no jsonb_array_elements_text complexity.
+            $subSql = "SELECT {$field} as facet_value, COUNT(*) as cnt FROM {$fullTableName} WHERE {$field} IS NOT NULL";
 
-            // Add _deleted filter.
-            $includeDeleted = $baseQuery['_includeDeleted'] ?? false;
-            if ($includeDeleted === false) {
-                $subSql .= " AND _deleted IS NULL";
-            }
-
-            // Add _published filter when _published=true.
-            $publishedFilter = $baseQuery['_published'] ?? false;
-            if ($publishedFilter === true) {
-                $now = (new DateTime())->format('Y-m-d H:i:s');
-                $subSql .= " AND (_published IS NOT NULL AND _published <= '{$now}' AND (_depublished IS NULL OR _depublished > '{$now}'))";
-            }
-
-            // Add search filter if provided.
-            $search = $baseQuery['_search'] ?? null;
-            if ($search !== null && trim($search) !== '') {
-                $searchConditions = $this->buildSearchConditionsSql(
-                    searchTerm: trim($search),
-                    tableName: $tableName,
-                    schema: $tc['schema'],
-                    params: $params
+            // Use shared method for all filter conditions (single source of truth).
+            if ($this->searchHandler !== null) {
+                $whereConditions = $this->searchHandler->buildWhereConditionsSql(
+                    query: $baseQuery,
+                    schema: $tcSchema
                 );
-                if ($searchConditions !== '') {
-                    $subSql .= " AND ({$searchConditions})";
+                foreach ($whereConditions as $condition) {
+                    // Skip '1=0' conditions - they mean filter column doesn't exist on this schema.
+                    if ($condition === '1=0') {
+                        // Skip this table entirely.
+                        continue 2;
+                    }
+                    $subSql .= " AND {$condition}";
                 }
             }
 
-            // Add object field filters.
-            $filterSql = $this->buildObjectFieldFiltersSql(
-                baseQuery: $baseQuery,
-                tableName: $tableName,
-                schema: $tc['schema'],
-                params: $params
-            );
-            if ($filterSql !== '' && $filterSql !== '1 = 0') {
-                $subSql .= " AND {$filterSql}";
-            } else if ($filterSql === '1 = 0') {
-                // Skip this table - filter column doesn't exist.
-                continue;
-            }
-
-            // Group by the appropriate column (elem for arrays, field for regular).
-            $groupByColumn = $isArrayField === true ? 'elem' : $field;
-            $subSql .= " GROUP BY {$groupByColumn}";
+            $subSql .= " GROUP BY {$field}";
             $unionParts[] = $subSql;
         }
 
@@ -550,23 +495,26 @@ class MagicFacetHandler
 
         try {
             $stmt = $this->db->prepare($sql);
-            foreach ($params as $index => $value) {
-                $stmt->bindValue((int) $index + 1, $value);
-            }
             $stmt->execute();
 
-            // Collect buckets.
+            // Collect raw buckets from database.
             $rawBuckets = [];
-            $uuidsToResolve = [];
-
             while (($row = $stmt->fetch()) !== false) {
-                $key = $this->cleanJsonValue($row['facet_value']);
-
                 $rawBuckets[] = [
-                    'key' => $key,
-                    'results' => (int) $row['doc_count'],
+                    'key' => $row['facet_value'],
+                    'count' => (int) $row['doc_count'],
                 ];
+            }
 
+            // PHP POST-PROCESSING: Normalize array values.
+            // This splits JSON array values like '["uuid1", "uuid2"]' into individual values
+            // and merges their counts. Much more reliable than SQL-based array detection.
+            $normalizedBuckets = $this->normalizeArrayFacetBuckets($rawBuckets);
+
+            // Collect UUIDs for label resolution.
+            $uuidsToResolve = [];
+            foreach ($normalizedBuckets as $bucket) {
+                $key = $bucket['key'];
                 if (is_string($key) === true
                     && preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $key) === 1
                 ) {
@@ -574,7 +522,7 @@ class MagicFacetHandler
                 }
             }
 
-            // Batch resolve labels.
+            // Batch resolve labels AFTER normalization (so we only resolve individual UUIDs).
             $labelMap = [];
             if (empty($uuidsToResolve) === false && $isMetadata === false) {
                 $firstConfig = reset($tableConfigs);
@@ -586,15 +534,15 @@ class MagicFacetHandler
                 );
             }
 
-            // Build final buckets.
+            // Build final buckets with labels.
             $buckets = [];
-            foreach ($rawBuckets as $bucket) {
+            foreach ($normalizedBuckets as $bucket) {
                 $key = $bucket['key'];
                 $label = $labelMap[$key] ?? (string) $key;
 
                 $buckets[] = [
                     'key' => $key,
-                    'results' => $bucket['results'],
+                    'results' => $bucket['count'],
                     'label' => $label,
                 ];
             }
@@ -608,6 +556,89 @@ class MagicFacetHandler
             return ['type' => 'terms', 'buckets' => []];
         }
     }//end getTermsFacetUnion()
+
+    /**
+     * Normalize facet buckets by splitting JSON array values into individual values.
+     *
+     * This is the PHP-based approach to handling array facets. Instead of complex
+     * SQL with jsonb_array_elements_text(), we:
+     * 1. Get raw facet values (arrays come as JSON strings like '["uuid1", "uuid2"]')
+     * 2. Detect array values by checking if they start with '['
+     * 3. Decode arrays and distribute counts to individual values
+     * 4. Merge counts for values that appear both individually and in arrays
+     *
+     * This approach is more reliable because:
+     * - No need for complex array field detection at SQL level
+     * - Works regardless of how the schema defines the field
+     * - Clear, testable PHP logic
+     *
+     * @param array $rawBuckets Array of ['key' => value, 'count' => int] from database.
+     *
+     * @return array Normalized buckets with array values split into individuals.
+     */
+    private function normalizeArrayFacetBuckets(array $rawBuckets): array
+    {
+        // Map to accumulate counts: value => count
+        $valueCounts = [];
+
+        foreach ($rawBuckets as $bucket) {
+            $key = $bucket['key'];
+            $count = $bucket['count'];
+
+            // Skip null/empty values.
+            if ($key === null || $key === '' || $key === 'null') {
+                continue;
+            }
+
+            // Check if this looks like a JSON array (starts with '[').
+            if (is_string($key) === true && str_starts_with(trim($key), '[') === true) {
+                // Try to decode as JSON array.
+                $decoded = json_decode($key, true);
+
+                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded) === true) {
+                    // It's a valid JSON array - distribute count to each element.
+                    foreach ($decoded as $element) {
+                        // Skip null/empty elements.
+                        if ($element === null || $element === '') {
+                            continue;
+                        }
+
+                        $elementKey = (string) $element;
+                        if (isset($valueCounts[$elementKey]) === false) {
+                            $valueCounts[$elementKey] = 0;
+                        }
+                        $valueCounts[$elementKey] += $count;
+                    }
+                    continue;
+                }
+            }
+
+            // Not an array - use value as-is.
+            // Clean up JSON-encoded single values (e.g., "\"value\"" -> "value").
+            $cleanKey = $this->cleanJsonValue($key);
+            $cleanKeyStr = (string) $cleanKey;
+
+            if (isset($valueCounts[$cleanKeyStr]) === false) {
+                $valueCounts[$cleanKeyStr] = 0;
+            }
+            $valueCounts[$cleanKeyStr] += $count;
+        }
+
+        // Convert back to bucket format, sorted by count descending.
+        $normalizedBuckets = [];
+        foreach ($valueCounts as $key => $count) {
+            $normalizedBuckets[] = [
+                'key' => $key,
+                'count' => $count,
+            ];
+        }
+
+        // Sort by count descending (highest first).
+        usort($normalizedBuckets, fn($a, $b) => $b['count'] <=> $a['count']);
+
+        // Apply limit.
+        return array_slice($normalizedBuckets, 0, self::MAX_FACET_BUCKETS);
+    }//end normalizeArrayFacetBuckets()
 
     /**
      * Get date histogram facet using UNION ALL across multiple tables.
@@ -631,12 +662,12 @@ class MagicFacetHandler
 
         $dateFormat = $this->getDateFormatForInterval($interval);
         $unionParts = [];
-        $params = [];
         $prefix = 'oc_';
 
         foreach ($tableConfigs as $tc) {
             $tableName = $tc['tableName'];
             $fullTableName = $prefix . $tableName;
+            $tcSchema = $tc['schema'] ?? null;
 
             if ($this->columnExists(tableName: $tableName, columnName: $field) === false) {
                 continue;
@@ -645,16 +676,18 @@ class MagicFacetHandler
             $subSql = "SELECT TO_CHAR({$field}, '{$dateFormat}') as date_key, COUNT(*) as cnt "
                 . "FROM {$fullTableName} WHERE {$field} IS NOT NULL";
 
-            $includeDeleted = $baseQuery['_includeDeleted'] ?? false;
-            if ($includeDeleted === false) {
-                $subSql .= " AND _deleted IS NULL";
-            }
-
-            // Add _published filter when _published=true.
-            $publishedFilter = $baseQuery['_published'] ?? false;
-            if ($publishedFilter === true) {
-                $now = (new DateTime())->format('Y-m-d H:i:s');
-                $subSql .= " AND (_published IS NOT NULL AND _published <= '{$now}' AND (_depublished IS NULL OR _depublished > '{$now}'))";
+            // Use shared method for all filter conditions (single source of truth).
+            if ($this->searchHandler !== null && $tcSchema !== null) {
+                $whereConditions = $this->searchHandler->buildWhereConditionsSql(
+                    query: $baseQuery,
+                    schema: $tcSchema
+                );
+                foreach ($whereConditions as $condition) {
+                    if ($condition === '1=0') {
+                        continue 2;
+                    }
+                    $subSql .= " AND {$condition}";
+                }
             }
 
             $subSql .= " GROUP BY date_key";
@@ -880,6 +913,7 @@ class MagicFacetHandler
      * Get terms facet for a field in a magic mapper table.
      *
      * Returns unique values and their counts for categorical fields.
+     * Uses simple GROUP BY and PHP post-processing for array values.
      *
      * @param string   $tableName  The table name.
      * @param string   $field      The field/column name.
@@ -920,34 +954,8 @@ class MagicFacetHandler
             return $result;
         }
 
-        // Check if this is an array field by looking at the schema property.
-        $isArrayField = $this->isArrayField(field: $field, schema: $schema, isMetadata: $isMetadata);
-
-        // Fallback: if schema doesn't indicate array, check actual data.
-        if ($isArrayField === false && $isMetadata === false) {
-            $isArrayField = $this->isArrayFieldByDataSample(tableName: $tableName, field: $field);
-        }
-
-        $this->logger->debug(
-            'MagicFacetHandler: Array field check',
-            ['field' => $field, 'isArrayField' => $isArrayField, 'isMetadata' => $isMetadata]
-        );
-
-        if ($isArrayField === true) {
-            // Use JSON array unnesting for array fields.
-            $result = $this->getTermsFacetForArrayField(
-                tableName: $tableName,
-                field: $field,
-                baseQuery: $baseQuery,
-                isMetadata: $isMetadata,
-                register: $register,
-                schema: $schema
-            );
-            $this->facetCache[$cacheKey] = $result;
-            return $result;
-        }
-
         // Use shared query builder from MagicSearchHandler (single source of truth for filters).
+        // Simple GROUP BY - array values will be post-processed in PHP.
         if ($this->searchHandler !== null) {
             $queryBuilder = $this->searchHandler->buildFilteredQuery(
                 query: $baseQuery,
@@ -956,8 +964,6 @@ class MagicFacetHandler
             );
 
             // Add facet-specific SELECT and GROUP BY.
-            // Note: buildFilteredQuery uses alias 't' for table.
-            // Use 'facet_value' alias for consistent result access.
             $queryBuilder->selectAlias("t.{$field}", 'facet_value')
                 ->addSelect($queryBuilder->createFunction('COUNT(*) as doc_count'))
                 ->andWhere($queryBuilder->expr()->isNotNull("t.{$field}"))
@@ -975,7 +981,7 @@ class MagicFacetHandler
                 ->orderBy('doc_count', 'DESC')
                 ->setMaxResults(self::MAX_FACET_BUCKETS);
 
-            // Apply base filters (including object field filters for facet filtering).
+            // Apply base filters.
             $this->applyBaseFilters(
                 queryBuilder: $queryBuilder,
                 baseQuery: $baseQuery,
@@ -984,34 +990,33 @@ class MagicFacetHandler
             );
         }
 
-        $result  = $queryBuilder->executeQuery();
+        $result = $queryBuilder->executeQuery();
 
-        // STEP 1: Collect all bucket keys first (don't resolve labels yet).
+        // Collect raw buckets from database.
         $rawBuckets = [];
-        $uuidsToResolve = [];
-
         while (($row = $result->fetch()) !== false) {
-            $key = $row['facet_value'];
-            // Clean up JSON-encoded single values (e.g., "value" -> value).
-            $key = $this->cleanJsonValue($key);
-
             $rawBuckets[] = [
-                'key'     => $key,
-                'results' => (int) $row['doc_count'],
+                'key' => $row['facet_value'],
+                'count' => (int) $row['doc_count'],
             ];
+        }
 
-            // Collect UUIDs that need label resolution.
+        // PHP POST-PROCESSING: Normalize array values.
+        // This splits JSON array values into individual values and merges counts.
+        $normalizedBuckets = $this->normalizeArrayFacetBuckets($rawBuckets);
+
+        // Collect UUIDs for label resolution.
+        $uuidsToResolve = [];
+        foreach ($normalizedBuckets as $bucket) {
+            $key = $bucket['key'];
             if (is_string($key) === true
-                && preg_match(
-                    '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i',
-                    $key
-                ) === 1
+                && preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $key) === 1
             ) {
                 $uuidsToResolve[] = $key;
             }
         }
 
-        // STEP 2: Batch resolve all UUID labels at once.
+        // Batch resolve all UUID labels at once (after normalization).
         $labelMap = [];
         if (empty($uuidsToResolve) === false && $isMetadata === false) {
             $labelMap = $this->batchResolveUuidLabels(
@@ -1022,9 +1027,9 @@ class MagicFacetHandler
             );
         }
 
-        // STEP 3: Build final buckets with labels.
+        // Build final buckets with labels.
         $buckets = [];
-        foreach ($rawBuckets as $bucket) {
+        foreach ($normalizedBuckets as $bucket) {
             $key = $bucket['key'];
 
             // Use batch-resolved label if available, otherwise fall back to individual lookup.
@@ -1042,7 +1047,7 @@ class MagicFacetHandler
 
             $buckets[] = [
                 'key'     => $key,
-                'results' => $bucket['results'],
+                'results' => $bucket['count'],
                 'label'   => $label,
             ];
         }
@@ -1053,7 +1058,6 @@ class MagicFacetHandler
         ];
 
         // Cache the result.
-        $cacheKey = md5(json_encode([$tableName, $field, $baseQuery, $isMetadata]));
         $this->facetCache[$cacheKey] = $result;
 
         return $result;
@@ -1063,187 +1067,6 @@ class MagicFacetHandler
      * Get terms facet for an array field using JSON unnesting.
      *
      * Uses PostgreSQL's jsonb_array_elements_text() to unnest JSON arrays
-     * and count individual values.
-     *
-     * @param string   $tableName  The table name.
-     * @param string   $field      The field/column name.
-     * @param array    $baseQuery  Base query filters to apply.
-     * @param bool     $isMetadata Whether this is a metadata field.
-     * @param Register $register   The register context.
-     * @param Schema   $schema     The schema context.
-     *
-     * @return array Facet result with type and buckets.
-     */
-    private function getTermsFacetForArrayField(
-        string $tableName,
-        string $field,
-        array $baseQuery,
-        bool $isMetadata,
-        Register $register,
-        Schema $schema
-    ): array {
-        // Build raw SQL for JSON array unnesting.
-        // PostgreSQL: jsonb_array_elements_text(column::jsonb) to extract array elements.
-        $prefix        = 'oc_';
-        $fullTableName = $prefix.$tableName;
-        $params        = [];
-
-        $sql = "SELECT elem AS facet_value, COUNT(*) AS doc_count
-                FROM {$fullTableName}, jsonb_array_elements_text({$field}::jsonb) AS elem
-                WHERE {$field} IS NOT NULL AND {$field} != '[]' AND {$field} != 'null'";
-
-        // Add deleted filter.
-        $includeDeleted = $baseQuery['_includeDeleted'] ?? false;
-        if ($includeDeleted === false) {
-            $sql .= " AND _deleted IS NULL";
-        }
-
-        // Add _published filter when _published=true.
-        $publishedFilter = $baseQuery['_published'] ?? false;
-        if ($publishedFilter === true) {
-            $now = (new DateTime())->format('Y-m-d H:i:s');
-            $sql .= " AND (_published IS NOT NULL AND _published <= '{$now}' AND (_depublished IS NULL OR _depublished > '{$now}'))";
-        }
-
-        // Add object field filters for facet filtering.
-        $filterSql = $this->buildObjectFieldFiltersSql(
-            baseQuery: $baseQuery,
-            tableName: $tableName,
-            schema: $schema,
-            params: $params
-        );
-        if ($filterSql !== '') {
-            $sql .= " AND ".$filterSql;
-        }
-
-        // Add search filter if provided (CRITICAL FIX: was missing for array fields).
-        // Use same logic as MagicMapper: search all string properties in schema.
-        $search = $baseQuery['_search'] ?? null;
-        if ($search !== null && trim($search) !== '') {
-            $searchTerm = trim($search);
-            $searchConditions = [];
-            
-            // Get all text-based properties from the schema (matching MagicMapper logic).
-            $searchableColumns = [];
-            if ($schema !== null) {
-                $properties = $schema->getProperties() ?? [];
-                if (is_array($properties) === true) {
-                    foreach ($properties as $propertyName => $propertyConfig) {
-                        $type = $propertyConfig['type'] ?? 'string';
-                        // Only search in string fields (same as MagicMapper).
-                        if ($type === 'string') {
-                            $columnName = $this->sanitizeColumnName($propertyName);
-                            $searchableColumns[] = $columnName;
-                        }
-                    }
-                }
-            }
-            
-            // If no schema properties, fall back to metadata columns.
-            if (empty($searchableColumns) === true) {
-                $searchableColumns = ['_name', '_summary', '_uuid'];
-            }
-            
-            // Build search conditions (matching MagicMapper's ACTUAL behavior).
-            // Use ILIKE only, not trigram % operator.
-            foreach ($searchableColumns as $column) {
-                // ILIKE for case-insensitive substring match.
-                $searchConditions[] = "LOWER($column) ILIKE ?";
-                $params[] = '%'.strtolower($searchTerm).'%';
-            }
-            
-            if (count($searchConditions) > 0) {
-                $sql .= " AND (".implode(" OR ", $searchConditions).")";
-            }
-        }
-
-        $sql .= " GROUP BY elem ORDER BY doc_count DESC LIMIT ".self::MAX_FACET_BUCKETS;
-
-        try {
-            $stmt = $this->db->prepare($sql);
-            // Bind parameters if any.
-            foreach ($params as $index => $value) {
-                $stmt->bindValue((int) $index + 1, $value);
-            }
-
-            $stmt->execute();
-
-            // STEP 1: Collect all bucket keys first (don't resolve labels yet).
-            $rawBuckets = [];
-            $uuidsToResolve = [];
-
-            while (($row = $stmt->fetch()) !== false) {
-                $key = $row['facet_value'];
-
-                $rawBuckets[] = [
-                    'key'     => $key,
-                    'results' => (int) $row['doc_count'],
-                ];
-
-                // Collect UUIDs that need label resolution.
-                if (is_string($key) === true
-                    && preg_match(
-                        '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i',
-                        $key
-                    ) === 1
-                ) {
-                    $uuidsToResolve[] = $key;
-                }
-            }
-
-            // STEP 2: Batch resolve all UUID labels at once.
-            $labelMap = [];
-            if (empty($uuidsToResolve) === false && $isMetadata === false) {
-                $labelMap = $this->batchResolveUuidLabels(
-                    uuids: $uuidsToResolve,
-                    field: $field,
-                    schema: $schema,
-                    register: $register
-                );
-            }
-
-            // STEP 3: Build final buckets with labels.
-            $buckets = [];
-            foreach ($rawBuckets as $bucket) {
-                $key = $bucket['key'];
-
-                // Use batch-resolved label if available, else fall back.
-                if (isset($labelMap[$key]) === true) {
-                    $label = $labelMap[$key];
-                } else {
-                    $label = $this->getFieldLabel(
-                        field: $field,
-                        value: $key,
-                        isMetadata: $isMetadata,
-                        register: $register,
-                        schema: $schema
-                    );
-                }
-
-                $buckets[] = [
-                    'key'     => $key,
-                    'results' => $bucket['results'],
-                    'label'   => $label,
-                ];
-            }
-
-            return [
-                'type'    => 'terms',
-                'buckets' => $buckets,
-            ];
-        } catch (\Exception $e) {
-            $this->logger->warning(
-                'MagicFacetHandler: Failed to get array facet',
-                ['field' => $field, 'error' => $e->getMessage()]
-            );
-            // Fall back to empty buckets on error.
-            return [
-                'type'    => 'terms',
-                'buckets' => [],
-            ];
-        }//end try
-    }//end getTermsFacetForArrayField()
-
     /**
      * Build raw SQL WHERE conditions for object field filters.
      *
@@ -1356,102 +1179,6 @@ class MagicFacetHandler
 
         return implode(" AND ", $conditions);
     }//end buildObjectFieldFiltersSql()
-
-    /**
-     * Check if a field is an array type based on schema.
-     *
-     * @param string $field      The field name.
-     * @param Schema $schema     The schema.
-     * @param bool   $isMetadata Whether this is a metadata field.
-     *
-     * @return bool True if the field is an array type.
-     */
-    private function isArrayField(string $field, Schema $schema, bool $isMetadata): bool
-    {
-        // Metadata fields are not arrays (they're stored directly).
-        if ($isMetadata === true) {
-            return false;
-        }
-
-        // Check schema properties for type definition.
-        $properties = $schema->getProperties() ?? [];
-
-        // Find the property - need to match sanitized name back to original.
-        foreach ($properties as $propName => $propDef) {
-            $sanitized = $this->sanitizeColumnName($propName);
-            if ($sanitized === $field) {
-                $type = $propDef['type'] ?? 'string';
-
-                // Direct array type check.
-                if ($type === 'array') {
-                    return true;
-                }
-
-                // Also check for 'items' property which indicates an array in JSON Schema.
-                if (isset($propDef['items']) === true) {
-                    return true;
-                }
-
-                // Check for format hints that suggest arrays.
-                $format = $propDef['format'] ?? '';
-                if (in_array($format, ['array', 'list', 'tags'], true) === true) {
-                    return true;
-                }
-
-                return false;
-            }
-        }
-
-        return false;
-    }//end isArrayField()
-
-    /**
-     * Check if a field contains JSON array data by sampling the database.
-     *
-     * This is a fallback detection method when schema type isn't definitive.
-     * Samples a few values from the database to see if they look like JSON arrays.
-     *
-     * @param string $tableName The table to check.
-     * @param string $field     The field/column to check.
-     *
-     * @return bool True if the field appears to contain JSON arrays.
-     */
-    private function isArrayFieldByDataSample(string $tableName, string $field): bool
-    {
-        try {
-            $prefix = 'oc_';
-            $fullTableName = str_starts_with($tableName, $prefix) ? $tableName : $prefix . $tableName;
-
-            // Sample a few non-null values.
-            $sql = "SELECT {$field} FROM {$fullTableName} WHERE {$field} IS NOT NULL AND {$field} != '' LIMIT 5";
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute();
-
-            $arrayCount = 0;
-            $totalCount = 0;
-
-            while (($row = $stmt->fetch()) !== false) {
-                $totalCount++;
-                $value = $row[$field];
-
-                if (is_string($value) === true && str_starts_with(trim($value), '[') === true) {
-                    $decoded = json_decode($value, true);
-                    if (json_last_error() === JSON_ERROR_NONE && is_array($decoded) === true) {
-                        $arrayCount++;
-                    }
-                }
-            }
-
-            // If most sampled values are arrays, treat this as an array field.
-            return $totalCount > 0 && ($arrayCount / $totalCount) >= 0.5;
-        } catch (\Exception $e) {
-            $this->logger->debug(
-                'MagicFacetHandler: Failed to sample field for array detection',
-                ['field' => $field, 'error' => $e->getMessage()]
-            );
-            return false;
-        }
-    }//end isArrayFieldByDataSample()
 
     /**
      * Clean up JSON-encoded values.

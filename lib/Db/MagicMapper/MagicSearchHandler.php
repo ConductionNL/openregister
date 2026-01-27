@@ -69,6 +69,13 @@ class MagicSearchHandler
     private array $ignoredFilters = [];
 
     /**
+     * Cached result of pg_trgm extension availability check.
+     *
+     * @var bool|null
+     */
+    private ?bool $hasPgTrgm = null;
+
+    /**
      * Constructor for MagicSearchHandler
      *
      * @param IDBConnection            $db                  Database connection for queries
@@ -83,6 +90,45 @@ class MagicSearchHandler
         private readonly MagicOrganizationHandler $organizationHandler
     ) {
     }//end __construct()
+
+    /**
+     * Check if PostgreSQL pg_trgm extension is available for fuzzy search.
+     *
+     * This extension provides the similarity() function and % operator
+     * for fuzzy text searching. Result is cached for the request lifetime.
+     *
+     * @return bool True if pg_trgm is available, false otherwise.
+     */
+    public function hasPgTrgmExtension(): bool
+    {
+        // Return cached result if available.
+        if ($this->hasPgTrgm !== null) {
+            return $this->hasPgTrgm;
+        }
+
+        // Not PostgreSQL = no pg_trgm.
+        $platform = $this->db->getDatabasePlatform();
+        if (str_contains(get_class($platform), 'PostgreSQL') === false) {
+            $this->hasPgTrgm = false;
+            return false;
+        }
+
+        // Check if pg_trgm extension is installed.
+        try {
+            $stmt   = $this->db->prepare("SELECT COUNT(*) FROM pg_extension WHERE extname = 'pg_trgm'");
+            $result = $stmt->execute();
+            $count  = (int) $result->fetchOne();
+            $this->hasPgTrgm = $count > 0;
+        } catch (Exception $e) {
+            $this->logger->warning(
+                'Failed to check pg_trgm extension availability',
+                ['error' => $e->getMessage()]
+            );
+            $this->hasPgTrgm = false;
+        }
+
+        return $this->hasPgTrgm;
+    }//end hasPgTrgmExtension()
 
     /**
      * Get the list of filter properties that were ignored during the last search.
@@ -269,6 +315,131 @@ class MagicSearchHandler
 
         return $queryBuilder;
     }//end buildFilteredQuery()
+
+    /**
+     * Build WHERE conditions as raw SQL for use in UNION queries.
+     *
+     * This is the SINGLE SOURCE OF TRUTH for filter conditions used by:
+     * - UNION search queries (MagicMapper::buildUnionSelectPart)
+     * - UNION facet queries (MagicFacetHandler::getTermsFacetUnion)
+     *
+     * Values are quoted inline (not parameterized) for UNION query compatibility.
+     *
+     * @param array  $query  Search parameters including filters.
+     * @param Schema $schema The schema for property filtering.
+     *
+     * @return string[] Array of SQL WHERE conditions (without leading AND/WHERE).
+     */
+    public function buildWhereConditionsSql(array $query, Schema $schema): array
+    {
+        $conditions = [];
+        // Get connection for value quoting through QueryBuilder.
+        $qb = $this->db->getQueryBuilder();
+        $connection = $qb->getConnection();
+
+        // Extract options from query.
+        $search         = $query['_search'] ?? null;
+        $includeDeleted = $query['_includeDeleted'] ?? false;
+        $published      = $query['_published'] ?? false;
+
+        // 1. Deleted filter.
+        if ($includeDeleted === false) {
+            $conditions[] = '_deleted IS NULL';
+        }
+
+        // 2. Published filter.
+        if ($published === true) {
+            $now = (new DateTime())->format('Y-m-d H:i:s');
+            $quotedNow = $connection->quote($now);
+            $conditions[] = "(_published IS NOT NULL AND _published <= {$quotedNow} AND (_depublished IS NULL OR _depublished > {$quotedNow}))";
+        }
+
+        // 3. Full-text search filter with optional fuzzy matching.
+        if ($search !== null && trim($search) !== '') {
+            $searchTerm = trim($search);
+            $searchConditions = [];
+            $likePattern = $connection->quote('%' . $searchTerm . '%');
+            $quotedTerm = $connection->quote($searchTerm);
+            $hasTrgm = $this->hasPgTrgmExtension();
+
+            // Search in schema string properties.
+            $properties = $schema->getProperties() ?? [];
+            foreach ($properties as $propName => $propDef) {
+                $type = $propDef['type'] ?? 'string';
+                if ($type === 'string') {
+                    $columnName = $this->sanitizeColumnName($propName);
+                    // ILIKE for substring matching.
+                    $searchConditions[] = "{$columnName}::text ILIKE {$likePattern}";
+                    // Add trigram similarity for fuzzy matching when pg_trgm is available.
+                    if ($hasTrgm === true) {
+                        $searchConditions[] = "similarity({$columnName}::text, {$quotedTerm}) > 0.1";
+                    }
+                }
+            }
+
+            // Also search in metadata text fields.
+            $searchConditions[] = "_name::text ILIKE {$likePattern}";
+            $searchConditions[] = "_description::text ILIKE {$likePattern}";
+            $searchConditions[] = "_summary::text ILIKE {$likePattern}";
+            // Add trigram similarity for metadata fields when pg_trgm is available.
+            if ($hasTrgm === true) {
+                $searchConditions[] = "similarity(_name::text, {$quotedTerm}) > 0.1";
+                $searchConditions[] = "similarity(_description::text, {$quotedTerm}) > 0.1";
+                $searchConditions[] = "similarity(_summary::text, {$quotedTerm}) > 0.1";
+            }
+
+            if (empty($searchConditions) === false) {
+                $conditions[] = '(' . implode(' OR ', $searchConditions) . ')';
+            }
+        }
+
+        // 4. Object field filters (non-reserved, non-metadata).
+        $reservedParams = [
+            '_limit', '_offset', '_page', '_order', '_sort', '_search', '_extend',
+            '_fields', '_filter', '_unset', '_facets', '_facetable', '_aggregations',
+            '_debug', '_source', '_published', '_rbac', '_multitenancy', '_validation',
+            '_events', '_register', '_schema', '_schemas', '_ids', '_count',
+            '_includeDeleted', '_relations_contains', '_multitenancy_explicit',
+            'register', 'schema', 'registers', 'schemas',
+        ];
+
+        $properties = $schema->getProperties() ?? [];
+        foreach ($query as $key => $value) {
+            // Skip reserved params, underscore-prefixed params, and @ metadata params.
+            if (in_array($key, $reservedParams, true) === true
+                || str_starts_with($key, '_') === true
+                || str_starts_with($key, '@') === true
+            ) {
+                continue;
+            }
+
+            // Check if this property exists in the schema.
+            if (isset($properties[$key]) === false) {
+                // Property doesn't exist - add impossible condition.
+                $conditions[] = '1=0';
+                continue;
+            }
+
+            $columnName = $this->sanitizeColumnName($key);
+
+            // Handle array values with IN clause.
+            if (is_array($value) === true) {
+                if (empty($value) === false) {
+                    $quotedValues = array_map(
+                        fn($v) => $connection->quote((string) $v),
+                        $value
+                    );
+                    $conditions[] = "{$columnName} IN (" . implode(', ', $quotedValues) . ')';
+                }
+                continue;
+            }
+
+            // Simple equality filter.
+            $conditions[] = "{$columnName} = " . $connection->quote((string) $value);
+        }
+
+        return $conditions;
+    }//end buildWhereConditionsSql()
 
     /**
      * Apply basic filters like deleted and published status
@@ -526,6 +697,10 @@ class MagicSearchHandler
     /**
      * Apply full-text search across relevant columns
      *
+     * Supports both substring matching (ILIKE) and fuzzy matching (pg_trgm similarity)
+     * when the pg_trgm extension is available. This ensures consistent search behavior
+     * with the UNION query path that uses buildWhereConditionsSql().
+     *
      * @param IQueryBuilder $qb     Query builder to modify
      * @param string        $search Search term
      * @param Schema        $schema Schema for determining searchable fields
@@ -541,16 +716,27 @@ class MagicSearchHandler
         $lowerSearch   = strtolower($search);
         $searchPattern = $qb->createNamedParameter('%'.$lowerSearch.'%');
 
+        // Check if fuzzy matching is available.
+        $hasTrgm = $this->hasPgTrgmExtension();
+        $searchTermParam = $qb->createNamedParameter($search);
+
         // Search in text-based schema properties (case-insensitive using LOWER()).
         foreach ($properties ?? [] as $field => $propertyConfig) {
             if (($propertyConfig['type'] ?? '') === 'string') {
                 $columnName = $this->sanitizeColumnName($field);
+                // Substring matching with LIKE.
                 $searchConditions->add(
                     $qb->expr()->like(
                         $qb->createFunction("LOWER(t.{$columnName})"),
                         $searchPattern
                     )
                 );
+                // Fuzzy matching with trigram similarity when available.
+                if ($hasTrgm === true) {
+                    $searchConditions->add(
+                        $qb->createFunction("similarity(t.{$columnName}::text, {$searchTermParam}) > 0.1")
+                    );
+                }
             }
         }
 
@@ -564,6 +750,19 @@ class MagicSearchHandler
         $searchConditions->add(
             $qb->expr()->like($qb->createFunction('LOWER(t._summary)'), $searchPattern)
         );
+
+        // Add trigram similarity for metadata fields when available.
+        if ($hasTrgm === true) {
+            $searchConditions->add(
+                $qb->createFunction("similarity(t._name::text, {$searchTermParam}) > 0.1")
+            );
+            $searchConditions->add(
+                $qb->createFunction("similarity(t._description::text, {$searchTermParam}) > 0.1")
+            );
+            $searchConditions->add(
+                $qb->createFunction("similarity(t._summary::text, {$searchTermParam}) > 0.1")
+            );
+        }
 
         $qb->andWhere($searchConditions);
     }//end applyFullTextSearch()
