@@ -1149,6 +1149,9 @@ class SaveObject
                     || $data[$key] === null
                     || $data[$key] === ''
                     || (is_array($data[$key]) === true && empty($data[$key]));
+            } else if ($defaultBehavior === 'always') {
+                // Always apply default value on every save (computed/derived property).
+                $shouldApplyDefault = true;
             }
 
             if ($shouldApplyDefault === true) {
@@ -1167,8 +1170,23 @@ class SaveObject
                     && str_contains(haystack: $defaultValue, needle: '{{') === true
                     && str_contains(haystack: $defaultValue, needle: '}}') === true
                 ) {
-                    $template    = $this->twig->createTemplate($defaultValue);
-                    $renderedDefaults[$key] = $template->render($twigContext);
+                    // Check if this is a simple property reference like "{{ propertyName }}"
+                    // to preserve array values instead of converting to string.
+                    $simpleRefPattern = '/^\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}$/';
+                    if (preg_match($simpleRefPattern, $defaultValue, $matches) === 1) {
+                        $sourceProperty = $matches[1];
+                        if (isset($twigContext[$sourceProperty]) === true) {
+                            // Direct copy preserves arrays and other types.
+                            $renderedDefaults[$key] = $twigContext[$sourceProperty];
+                        } else {
+                            // Source property not found, use empty value.
+                            $renderedDefaults[$key] = null;
+                        }
+                    } else {
+                        // Complex template, use Twig rendering (converts to string).
+                        $template    = $this->twig->createTemplate($defaultValue);
+                        $renderedDefaults[$key] = $template->render($twigContext);
+                    }
                 }
 
                 if (is_string($defaultValue) === false
@@ -1200,6 +1218,86 @@ class SaveObject
 
         return $mergedData;
     }//end setDefaultValues()
+
+    /**
+     * Applies defaults with defaultBehavior: "always" BEFORE validation.
+     *
+     * This method is called from ObjectService before validation to ensure that
+     * computed/derived properties with defaultBehavior: "always" are set before
+     * validation runs. This allows properties like "dienstType" to be automatically
+     * populated from "type" even when the payload contains an invalid value.
+     *
+     * @param Schema $schema The schema containing property definitions.
+     * @param array  $data   The object data to transform.
+     *
+     * @return array The transformed data with "always" defaults applied.
+     */
+    public function applyAlwaysDefaults(Schema $schema, array $data): array
+    {
+        try {
+            $schemaObject = json_decode(json_encode($schema->getSchemaObject($this->urlGenerator)), associative: true);
+
+            if (isset($schemaObject['properties']) === false || is_array($schemaObject['properties']) === false) {
+                return $data;
+            }
+        } catch (Exception $e) {
+            return $data;
+        }
+
+        // Find properties with defaultBehavior: "always" and a default value.
+        $alwaysDefaults = [];
+        foreach ($schemaObject['properties'] as $key => $property) {
+            $defaultBehavior = $property['defaultBehavior'] ?? null;
+            $defaultValue    = $property['default'] ?? null;
+
+            if ($defaultBehavior === 'always' && $defaultValue !== null) {
+                $alwaysDefaults[$key] = $defaultValue;
+            }
+        }
+
+        // If no "always" defaults, return data unchanged.
+        if (empty($alwaysDefaults) === true) {
+            return $data;
+        }
+
+        // Use the data itself as Twig context (no existing object at this point).
+        $twigContext = $data;
+
+        // Render twig templated default values.
+        foreach ($alwaysDefaults as $key => $defaultValue) {
+            try {
+                if (is_string($defaultValue) === true
+                    && str_contains(haystack: $defaultValue, needle: '{{') === true
+                    && str_contains(haystack: $defaultValue, needle: '}}') === true
+                ) {
+                    // Check if this is a simple property reference like "{{ propertyName }}"
+                    // to preserve array values instead of converting to string.
+                    $simpleRefPattern = '/^\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}$/';
+                    if (preg_match($simpleRefPattern, $defaultValue, $matches) === 1) {
+                        $sourceProperty = $matches[1];
+                        if (isset($twigContext[$sourceProperty]) === true) {
+                            // Direct copy preserves arrays and other types.
+                            $data[$key] = $twigContext[$sourceProperty];
+                        }
+
+                        // If source property not found, skip (don't overwrite with null).
+                    } else {
+                        // Complex template, use Twig rendering (converts to string).
+                        $template    = $this->twig->createTemplate($defaultValue);
+                        $data[$key] = $template->render($twigContext);
+                    }
+                } else {
+                    // Non-template value, use directly.
+                    $data[$key] = $defaultValue;
+                }
+            } catch (Exception $e) {
+                // Template failed, skip this default.
+                continue;
+            }//end try
+        }//end foreach
+
+        return $data;
+    }//end applyAlwaysDefaults()
 
     /**
      * Generates a slug for an object based on its data and schema configuration.

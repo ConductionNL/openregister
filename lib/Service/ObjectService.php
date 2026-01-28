@@ -1078,6 +1078,14 @@ class ObjectService
             uuid: $uuid
         );
 
+        // Apply "always" defaults BEFORE validation.
+        // This ensures computed/derived properties (e.g., dienstType from type) are set
+        // before validation runs, allowing them to override invalid incoming values.
+        $object = $this->saveHandler->applyAlwaysDefaults(
+            schema: $this->currentSchema,
+            data: $object
+        );
+
         // Validate if hard validation is enabled.
         $this->validateObjectIfRequired($object);
 
