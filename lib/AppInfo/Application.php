@@ -284,7 +284,8 @@ class Application extends App implements IBootstrap
                     groupManager: $container->get('OCP\IGroupManager'),
                     accountManager: $container->get('OCP\Accounts\IAccountManager'),
                     logger: $container->get('Psr\Log\LoggerInterface'),
-                    organisationService: $container->get(OrganisationService::class)
+                    organisationService: $container->get(OrganisationService::class),
+                    eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher')
                 );
             }
         );

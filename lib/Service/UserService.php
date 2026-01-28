@@ -23,6 +23,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Event\UserProfileUpdatedEvent;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IUser;
 use OCP\IUserManager;
 use OCP\IUserSession;
@@ -57,6 +59,7 @@ class UserService
      * @param IAccountManager     $accountManager      The account manager service
      * @param LoggerInterface     $logger              The logger interface
      * @param OrganisationService $organisationService The organisation service
+     * @param IEventDispatcher    $eventDispatcher     The event dispatcher service
      */
     public function __construct(
         private readonly IUserManager $userManager,
@@ -65,7 +68,8 @@ class UserService
         private readonly IGroupManager $groupManager,
         private readonly IAccountManager $accountManager,
         private readonly LoggerInterface $logger,
-        private readonly OrganisationService $organisationService
+        private readonly OrganisationService $organisationService,
+        private readonly IEventDispatcher $eventDispatcher
     ) {
     }//end __construct()
 
@@ -210,6 +214,9 @@ class UserService
             'organisation_updated' => false,
         ];
 
+        // Collect old user data before updates for event dispatching.
+        $oldData = $this->buildUserDataArray($user);
+
         // Handle organization switching if requested.
         if (isset($data['activeOrganisation']) === true && is_string($data['activeOrganisation']) === true) {
             $organisationResult = $this->organisationService->setActiveOrganisation(
@@ -230,8 +237,76 @@ class UserService
 
         $this->updateProfileProperties(user: $user, data: $data);
 
+        // Collect new user data after updates.
+        $newData = $this->buildUserDataArray($user);
+
+        // Determine which fields changed.
+        $changes = $this->determineChangedFields($oldData, $newData);
+
+        // Dispatch event if there are changes.
+        if (empty($changes) === false) {
+            $event = new UserProfileUpdatedEvent(
+                user: $user,
+                oldData: $oldData,
+                newData: $newData,
+                changes: $changes
+            );
+            $this->eventDispatcher->dispatchTyped($event);
+
+            $this->logger->debug('UserService: Dispatched UserProfileUpdatedEvent', [
+                'app'     => 'openregister',
+                'userId'  => $user->getUID(),
+                'changes' => $changes,
+            ]);
+        }
+
         return $result;
     }//end updateUserProperties()
+
+    /**
+     * Determine which fields have changed between old and new user data.
+     *
+     * @param array $oldData The old user data before updates.
+     * @param array $newData The new user data after updates.
+     *
+     * @return array Array of field names that have changed.
+     */
+    private function determineChangedFields(array $oldData, array $newData): array
+    {
+        $changes = [];
+
+        // Fields to check for changes.
+        $fieldsToCheck = [
+            'displayName',
+            'email',
+            'firstName',
+            'lastName',
+            'middleName',
+            'phone',
+            'address',
+            'website',
+            'twitter',
+            'fediverse',
+            'organisation',
+            'role',
+            'headline',
+            'biography',
+            'language',
+            'locale',
+            'functie',
+        ];
+
+        foreach ($fieldsToCheck as $field) {
+            $oldValue = $oldData[$field] ?? null;
+            $newValue = $newData[$field] ?? null;
+
+            if ($oldValue !== $newValue) {
+                $changes[] = $field;
+            }
+        }
+
+        return $changes;
+    }//end determineChangedFields()
 
     /**
      * Get custom name fields for a user
