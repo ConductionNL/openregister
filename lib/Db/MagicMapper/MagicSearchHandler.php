@@ -996,10 +996,15 @@ class MagicSearchHandler
             $metadataData = [];
             $objectData   = [];
 
-            // Build property type map from schema for type conversion.
+            // Build property type map and column-to-property mapping from schema.
+            // The column-to-property mapping allows us to restore original property names
+            // (e.g., 'e-mailadres') from their sanitized column names (e.g., 'e_mailadres').
             $propertyTypes = [];
+            $columnToPropertyMap = [];
             foreach ($schema->getProperties() as $propName => $propDef) {
                 $propertyTypes[$propName] = $propDef['type'] ?? 'string';
+                $columnName = $this->sanitizeColumnName($propName);
+                $columnToPropertyMap[$columnName] = $propName;
             }
 
             foreach ($row as $column => $value) {
@@ -1010,8 +1015,9 @@ class MagicSearchHandler
                     continue;
                 }
 
-                // Convert column name from snake_case to camelCase property name.
-                $propertyName = $this->columnNameToPropertyName($column);
+                // Map column name back to original property name using schema mapping.
+                // Falls back to camelCase conversion if not found in mapping.
+                $propertyName = $columnToPropertyMap[$column] ?? $this->columnNameToPropertyName($column);
 
                 // Convert value based on schema property type.
                 $propertyType = $propertyTypes[$propertyName] ?? 'string';
@@ -1231,6 +1237,15 @@ class MagicSearchHandler
                             return $decoded;
                         }
                     }
+
+                    return $value;
+                }
+
+                // For schema type 'string', ensure we return a string.
+                // This handles cases where the database driver returns numeric values as integers
+                // even though they're stored in TEXT/VARCHAR columns (e.g., "45" returned as int 45).
+                if ($type === 'string' && (is_int($value) === true || is_float($value) === true)) {
+                    return (string) $value;
                 }
 
                 return $value;

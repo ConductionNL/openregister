@@ -257,9 +257,21 @@ class SecurityService
         $username  = $this->sanitizeForCacheKey($username);
         $ipAddress = $this->sanitizeForCacheKey($ipAddress);
 
+        // Clear user-based rate limits.
         $userAttemptsKey = self::CACHE_PREFIX_LOGIN_ATTEMPTS.$username;
         $this->cache->remove($userAttemptsKey);
 
+        $userLockoutKey = self::CACHE_PREFIX_USER_LOCKOUT.$username;
+        $this->cache->remove($userLockoutKey);
+
+        // Clear IP-based rate limits.
+        $ipAttemptsKey = self::CACHE_PREFIX_IP_ATTEMPTS.$ipAddress;
+        $this->cache->remove($ipAttemptsKey);
+
+        $ipLockoutKey = self::CACHE_PREFIX_IP_LOCKOUT.$ipAddress;
+        $this->cache->remove($ipLockoutKey);
+
+        // Clear progressive delay.
         $delayKey = self::CACHE_PREFIX_PROGRESSIVE_DELAY.$username.'_'.$ipAddress;
         $this->cache->remove($delayKey);
 
@@ -271,6 +283,58 @@ class SecurityService
             ]
         );
     }//end recordSuccessfulLogin()
+
+    /**
+     * Clear all rate limits for a specific IP address
+     *
+     * This method allows administrators to unblock an IP that has been
+     * temporarily blocked due to suspicious activity.
+     *
+     * @param string $ipAddress The IP address to unblock
+     *
+     * @return void
+     */
+    public function clearIpRateLimits(string $ipAddress): void
+    {
+        $ipAddress = $this->sanitizeForCacheKey($ipAddress);
+
+        $ipAttemptsKey = self::CACHE_PREFIX_IP_ATTEMPTS.$ipAddress;
+        $this->cache->remove($ipAttemptsKey);
+
+        $ipLockoutKey = self::CACHE_PREFIX_IP_LOCKOUT.$ipAddress;
+        $this->cache->remove($ipLockoutKey);
+
+        $this->logSecurityEvent(
+            event: 'ip_rate_limits_cleared',
+            context: ['ip_address' => $ipAddress]
+        );
+    }//end clearIpRateLimits()
+
+    /**
+     * Clear all rate limits for a specific user
+     *
+     * This method allows administrators to unblock a user account that has been
+     * temporarily locked due to too many failed login attempts.
+     *
+     * @param string $username The username to unblock
+     *
+     * @return void
+     */
+    public function clearUserRateLimits(string $username): void
+    {
+        $username = $this->sanitizeForCacheKey($username);
+
+        $userAttemptsKey = self::CACHE_PREFIX_LOGIN_ATTEMPTS.$username;
+        $this->cache->remove($userAttemptsKey);
+
+        $userLockoutKey = self::CACHE_PREFIX_USER_LOCKOUT.$username;
+        $this->cache->remove($userLockoutKey);
+
+        $this->logSecurityEvent(
+            event: 'user_rate_limits_cleared',
+            context: ['username' => $username]
+        );
+    }//end clearUserRateLimits()
 
     /**
      * Sanitize input data to prevent XSS and injection attacks

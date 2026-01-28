@@ -2856,7 +2856,10 @@ class MagicMapper
 
         if (is_array($schemaProperties) === true) {
             foreach (array_keys($schemaProperties) as $propertyName) {
-                if (($data[$propertyName] ?? null) !== null) {
+                // Use array_key_exists to distinguish between:
+                // - Property exists with null value → include in prepared data (update DB to null)
+                // - Property doesn't exist at all → skip (don't change DB value)
+                if (array_key_exists($propertyName, $data) === true) {
                     $value = $data[$propertyName];
                     $propertyConfig = $schemaProperties[$propertyName] ?? [];
                     $propertyType = $propertyConfig['type'] ?? 'string';
@@ -3057,14 +3060,17 @@ class MagicMapper
             $objectEntity->setRegister((string) $_register->getId());
             $objectEntity->setSchema((string) $_schema->getId());
 
-            // Build column-to-property mapping from schema.
+            // Build column-to-property mapping and property types from schema.
             // This allows us to restore original property names (e.g., 'e-mailadres')
             // from their sanitized column names (e.g., 'e_mailadres').
+            // Also builds property type map for type conversion.
             $columnToPropertyMap = [];
+            $propertyTypes = [];
             $properties = $_schema->getProperties() ?? [];
             foreach ($properties as $propertyName => $propertyDef) {
                 $columnName = $this->sanitizeColumnName($propertyName);
                 $columnToPropertyMap[$columnName] = $propertyName;
+                $propertyTypes[$propertyName] = $propertyDef['type'] ?? 'string';
             }
 
             // Extract metadata fields (remove prefix).
@@ -3122,6 +3128,14 @@ class MagicMapper
                 // Map column name back to original property name using schema mapping.
                 // Falls back to camelCase conversion if not found in mapping.
                 $propertyName = $columnToPropertyMap[$columnName] ?? $this->columnNameToPropertyName($columnName);
+
+                // Apply type conversion based on schema type.
+                // This ensures values match the expected schema type (e.g., numeric strings stay as strings).
+                $schemaType = $propertyTypes[$propertyName] ?? 'string';
+                if ($schemaType === 'string' && (is_int($value) === true || is_float($value) === true)) {
+                    // Schema expects string but database returned numeric - cast to string.
+                    $value = (string) $value;
+                }
 
                 // Decode JSON values if they're JSON strings.
                 $objectData[$propertyName] = $value;

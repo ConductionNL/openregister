@@ -34,6 +34,7 @@ use InvalidArgumentException;
 use JsonSerializable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Service\FacetableAnalyzer;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Db\Register;
@@ -215,6 +216,7 @@ class ObjectService
      * @param SchemaMapper                   $schemaMapper        Mapper for schema operations.
      * @param ViewMapper                     $viewMapper          Mapper for view operations.
      * @param ObjectEntityMapper             $objectEntityMapper  Mapper for object entity operations.
+     * @param UnifiedObjectMapper            $unifiedObjectMapper Unified mapper for object operations (routes to magic tables).
      * @param FileService                    $fileService         Service for file operations.
      * @param IUserSession                   $userSession         User session for getting current user.
      * @param SearchTrailService             $searchTrailService  Service for search trail operations.
@@ -269,6 +271,7 @@ class ObjectService
         private readonly SchemaMapper $schemaMapper,
         private readonly ViewMapper $viewMapper,
         private readonly ObjectEntityMapper $objectEntityMapper,
+        private readonly UnifiedObjectMapper $unifiedObjectMapper,
         private readonly FileService $fileService,
         private readonly IUserSession $userSession,
         private readonly SearchTrailService $searchTrailService,
@@ -506,7 +509,18 @@ class ObjectService
     {
         if (is_string($object) === true || is_int($object) === true) {
             // Look up the object by ID or UUID.
-            $object = $this->objectEntityMapper->find($object);
+            // Use UnifiedObjectMapper when register and schema context are available
+            // (routes to magic tables for better performance).
+            if ($this->currentRegister !== null && $this->currentSchema !== null) {
+                $object = $this->unifiedObjectMapper->find(
+                    identifier: $object,
+                    register: $this->currentRegister,
+                    schema: $this->currentSchema
+                );
+            } else {
+                // Fall back to ObjectEntityMapper for blob storage when no context.
+                $object = $this->objectEntityMapper->find($object);
+            }
         }
 
         $this->currentObject = $object;

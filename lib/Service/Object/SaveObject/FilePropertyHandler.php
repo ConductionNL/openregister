@@ -478,12 +478,37 @@ class FilePropertyHandler
         }
 
         // Handle file deletion: null for single files, empty array for array properties.
-        if ($fileValue === null || (is_array($fileValue) === true && empty($fileValue) === true) === true) {
-            // Get existing file IDs from the current object data.
+        if ($fileValue === null || (is_array($fileValue) === true && empty($fileValue) === true)) {
+            $this->logger->info(
+                'File property deletion requested',
+                [
+                    'app'          => 'openregister',
+                    'propertyName' => $propertyName,
+                    'uuid'         => $objectEntity->getUuid(),
+                ]
+            );
+
+            // Get existing file IDs from the ORIGINAL object data (before any modifications).
+            // We need to look at the stored data, not the current entity state which may
+            // have been modified by prepareObjectData.
             $currentObjectData = $objectEntity->getObject();
             $existingFileIds   = $currentObjectData[$propertyName] ?? null;
 
-            if ($existingFileIds !== null) {
+            // Also check for file IDs that might be stored as integers in the data.
+            if ($existingFileIds === null && isset($currentObjectData[$propertyName]) === true) {
+                $existingFileIds = $currentObjectData[$propertyName];
+            }
+
+            $this->logger->info(
+                'Existing file IDs for deletion',
+                [
+                    'app'             => 'openregister',
+                    'propertyName'    => $propertyName,
+                    'existingFileIds' => $existingFileIds,
+                ]
+            );
+
+            if ($existingFileIds !== null && $existingFileIds !== '') {
                 // Delete existing files.
                 if (is_array($existingFileIds) === true) {
                     // Array of file IDs.
@@ -494,6 +519,7 @@ class FilePropertyHandler
                                     file: (int) $fileId,
                                     object: $objectEntity
                                 );
+                                $this->logger->info("Deleted file $fileId for property $propertyName");
                             } catch (Exception $e) {
                                 // Log but don't fail - file might already be deleted.
                                 $this->logger->warning("Failed to delete file $fileId: ".$e->getMessage());
@@ -507,6 +533,7 @@ class FilePropertyHandler
                             file: (int) $existingFileIds,
                             object: $objectEntity
                         );
+                        $this->logger->info("Deleted file $existingFileIds for property $propertyName");
                     } catch (Exception $e) {
                         // Log but don't fail - file might already be deleted.
                         $this->logger->warning("Failed to delete file $existingFileIds: ".$e->getMessage());
@@ -514,11 +541,20 @@ class FilePropertyHandler
                 }//end if
             }//end if
 
-            // Set property to null or empty array.
+            // Set property to null or empty array in the object data.
             $object[$propertyName] = null;
             if ($isArrayProperty === true) {
                 $object[$propertyName] = [];
             }
+
+            $this->logger->info(
+                'File property set to null/empty',
+                [
+                    'app'          => 'openregister',
+                    'propertyName' => $propertyName,
+                    'newValue'     => $object[$propertyName],
+                ]
+            );
 
             return;
         }//end if

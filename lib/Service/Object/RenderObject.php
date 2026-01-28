@@ -129,7 +129,8 @@ class RenderObject
         private readonly CacheHandler $cacheHandler,
         private readonly CacheHandler $objectCacheService,
         private readonly PropertyRbacHandler $propertyRbacHandler,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly FileService $fileService
     ) {
     }//end __construct()
 
@@ -523,7 +524,10 @@ class RenderObject
     }//end isFilePropertyConfig()
 
     /**
-     * Hydrates a file property by replacing file IDs with file objects.
+     * Hydrates a file property by replacing file IDs with file objects or base64 content.
+     *
+     * If the property config has `format: base64`, returns the file content as a base64
+     * data URI string. Otherwise, returns the file metadata object with URLs.
      *
      * @param mixed  $propertyValue  The property value (file ID or array of file IDs).
      * @param array  $propertyConfig The property configuration from schema.
@@ -536,16 +540,22 @@ class RenderObject
      * @phpstan-param array<string, mixed> $propertyConfig
      * @phpstan-param string $_propertyName
      *
-     * @return mixed The hydrated property value (file object or array of file objects).
+     * @return mixed The hydrated property value (file object, base64 string, or array).
      *
      * @psalm-return   mixed
      * @phpstan-return mixed
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function hydrateFileProperty($propertyValue, array $propertyConfig, string $_propertyName)
     {
         $isArrayProperty = ($propertyConfig['type'] ?? '') === 'array';
+
+        // Determine if base64 format is requested.
+        // Check both the property config and items config (for arrays).
+        $fileConfig    = $isArrayProperty ? ($propertyConfig['items'] ?? []) : $propertyConfig;
+        $returnBase64  = ($fileConfig['format'] ?? '') === 'base64';
 
         if ($isArrayProperty === true) {
             // Handle array of files.
@@ -556,9 +566,16 @@ class RenderObject
 
             $hydratedFiles = [];
             foreach ($propertyValue as $fileId) {
-                $fileObject = $this->getFileObject($fileId);
-                if ($fileObject !== null) {
-                    $hydratedFiles[] = $fileObject;
+                if ($returnBase64 === true) {
+                    $base64Content = $this->getFileAsBase64($fileId);
+                    if ($base64Content !== null) {
+                        $hydratedFiles[] = $base64Content;
+                    }
+                } else {
+                    $fileObject = $this->getFileObject($fileId);
+                    if ($fileObject !== null) {
+                        $hydratedFiles[] = $fileObject;
+                    }
                 }
             }
 
@@ -568,12 +585,54 @@ class RenderObject
         // Handle single file.
         $isDigitString = is_string($propertyValue) === true && ctype_digit($propertyValue) === true;
         if (is_numeric($propertyValue) === true || $isDigitString === true) {
+            if ($returnBase64 === true) {
+                return $this->getFileAsBase64($propertyValue);
+            }
+
             return $this->getFileObject($propertyValue);
         }
 
         return $propertyValue;
         // Return unchanged if not a file ID.
     }//end hydrateFileProperty()
+
+    /**
+     * Gets a file's content as a base64 data URI string.
+     *
+     * @param mixed $fileId The file ID to retrieve.
+     *
+     * @return string|null The base64 data URI or null if file not found.
+     */
+    private function getFileAsBase64($fileId): ?string
+    {
+        try {
+            // Convert to int.
+            $fileIdInt = (int) $fileId;
+            if ($fileIdInt <= 0) {
+                return null;
+            }
+
+            // Get the file using FileService.
+            $file = $this->fileService->getFileById($fileIdInt);
+            if ($file === null) {
+                return null;
+            }
+
+            // Get file content.
+            $fileContent = $file->getContent();
+            if ($fileContent === null || $fileContent === '') {
+                return null;
+            }
+
+            // Get MIME type.
+            $mimeType = $file->getMimeType() ?? 'application/octet-stream';
+
+            // Return as data URI.
+            return 'data:'.$mimeType.';base64,'.base64_encode($fileContent);
+        } catch (Exception $e) {
+            return null;
+        }
+    }//end getFileAsBase64()
 
     /**
      * Hydrates metadata (@self) from file properties after they've been converted to file objects.
