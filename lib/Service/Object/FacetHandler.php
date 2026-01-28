@@ -412,7 +412,7 @@ class FacetHandler
                 'enabled'     => false,
             ],
             'schema'       => [
-                'title'       => 'Schema',
+                'title'       => 'Type',
                 'description' => 'metadata field: Schema',
                 'data_type'   => 'integer',
                 'index_field' => 'self_schema',

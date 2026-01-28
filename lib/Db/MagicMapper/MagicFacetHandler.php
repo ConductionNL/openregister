@@ -554,9 +554,21 @@ class MagicFacetHandler
 
             // Build final buckets with labels.
             $buckets = [];
+            $firstConfig = reset($tableConfigs);
             foreach ($normalizedBuckets as $bucket) {
                 $key = $bucket['key'];
-                $label = $labelMap[$key] ?? (string) $key;
+                // For metadata facets, use getFieldLabel to resolve IDs to names.
+                if ($isMetadata === true) {
+                    $label = $this->getFieldLabel(
+                        field: $field,
+                        value: $key,
+                        isMetadata: true,
+                        register: $firstConfig['register'],
+                        schema: $firstConfig['schema']
+                    );
+                } else {
+                    $label = $labelMap[$key] ?? (string) $key;
+                }
 
                 $buckets[] = [
                     'key' => $key,
@@ -766,7 +778,7 @@ class MagicFacetHandler
                 '@self' => [
                     // Disabled for performance - uncomment if needed:
                     // 'register'     => ['type' => 'terms'],
-                    // 'schema'       => ['type' => 'terms'],
+                    'schema'       => ['type' => 'terms'],
                     // 'organisation' => ['type' => 'terms'],
                     // 'created'      => ['type' => 'date_histogram', 'interval' => 'month'],
                     // 'updated'      => ['type' => 'date_histogram', 'interval' => 'month'],
