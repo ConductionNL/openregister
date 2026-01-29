@@ -1199,7 +1199,7 @@ class OrganisationService
         $multitenancyConfig = $this->appConfig->getValueString(app: 'openregister', key: 'multitenancy');
         $multitenancyConfig = json_decode(json: $multitenancyConfig, associative: true);
 
-        $defaultUserTenantId = $multitenancyConfig['defaultUserTenant'];
+        $defaultUserTenantId = isset($multitenancyConfig['defaultUserTenant']['id']) === true ? $multitenancyConfig['defaultUserTenant']['id'] : null;
         return $defaultUserTenantId !== null ? $defaultUserTenantId : null;
     }
 
