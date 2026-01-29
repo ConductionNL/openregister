@@ -1152,6 +1152,14 @@ class SaveObject
                     $data[$property] = $createdUuid;
                 }
             } catch (Exception $e) {
+                $this->logger->error(
+                    'Cascade single object failed',
+                    [
+                        'property' => $property,
+                        'schema' => $definition['$ref'] ?? null,
+                        'error' => $e->getMessage(),
+                    ]
+                );
                 // Continue with other properties even if one fails
             }
         }//end foreach
@@ -1184,6 +1192,14 @@ class SaveObject
                     $data[$property] = $createdUuids;
                 }
             } catch (Exception $e) {
+                $this->logger->error(
+                    'Cascade array objects failed',
+                    [
+                        'property' => $property,
+                        'schema' => $definition['$ref'] ?? ($definition['items']['$ref'] ?? null),
+                        'error' => $e->getMessage(),
+                    ]
+                );
                 // Continue with other properties even if one fails
             }//end try
         }//end foreach
@@ -1255,6 +1271,13 @@ class SaveObject
                     $createdUuids[] = $uuid;
                 }
             } catch (Exception $e) {
+                $this->logger->error(
+                    'Cascade array item failed',
+                    [
+                        'schema' => $property['items']['$ref'] ?? null,
+                        'error' => $e->getMessage(),
+                    ]
+                );
                 // Continue with other objects even if one fails
             }
         }
