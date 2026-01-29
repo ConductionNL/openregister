@@ -251,21 +251,21 @@ class ChunkProcessingHandler
                     switch ($objectStatus) {
                         case 'created':
                             // 🆕 CREATED: Object was created during this operation (database-computed).
-                            $createdObjects[] = $completeObject;
+                            $createdObjects[]  = $completeObject;
                             $result['saved'][] = $objEntity->jsonSerialize();
                             $result['statistics']['saved']++;
                             break;
 
                         case 'updated':
                             // 📝 UPDATED: Existing object was modified during this operation (database-computed).
-                            $updatedObjects[] = $completeObject;
+                            $updatedObjects[]    = $completeObject;
                             $result['updated'][] = $objEntity->jsonSerialize();
                             $result['statistics']['updated']++;
                             break;
 
                         case 'unchanged':
                             // ⏸️ UNCHANGED: Existing object was not modified (database-computed).
-                            $unchangedObjects[] = $completeObject;
+                            $unchangedObjects[]    = $completeObject;
                             $result['unchanged'][] = $objEntity->jsonSerialize();
                             $result['statistics']['unchanged']++;
                             break;
@@ -279,7 +279,7 @@ class ChunkProcessingHandler
                                     'object_status' => $objectStatus,
                                 ]
                             );
-                            $unchangedObjects[] = $completeObject->jsonSerialize();
+                            $unchangedObjects[]    = $completeObject->jsonSerialize();
                             $result['unchanged'][] = $objEntity;
                             $result['statistics']['unchanged']++;
                     }//end switch

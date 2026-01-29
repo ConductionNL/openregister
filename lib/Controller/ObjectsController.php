@@ -205,7 +205,7 @@ class ObjectsController extends Controller
                     $uploadedFiles[(string) $fieldName] = $uploadedFile;
                 }
             }
-        }
+        }//end foreach
 
         // Secondary method: also check request params for file fields.
         // Some frameworks may include file field names in params.
@@ -233,7 +233,7 @@ class ObjectsController extends Controller
                     $uploadedFiles[(string) $fieldName] = $uploadedFile;
                 }
             }
-        }
+        }//end foreach
 
         return $uploadedFiles;
     }//end extractAllUploadedFiles()
@@ -838,8 +838,8 @@ class ObjectsController extends Controller
         }
 
         // Extract filtering parameters from request.
-        $params    = $this->request->getParams();
-        $rbac      = filter_var($params['rbac'] ?? true, FILTER_VALIDATE_BOOLEAN);
+        $params = $this->request->getParams();
+        $rbac   = filter_var($params['rbac'] ?? true, FILTER_VALIDATE_BOOLEAN);
         // Check both _multi and multi params (URL uses _multi, but we also support multi).
         $multiExplicitlySet = isset($params['_multi']) || isset($params['multi']);
         $multi     = filter_var($params['_multi'] ?? $params['multi'] ?? true, FILTER_VALIDATE_BOOLEAN);
@@ -904,7 +904,7 @@ class ObjectsController extends Controller
 
                 // Apply complex rendering if needed (extensions, fields, filters).
                 if ($hasComplexRendering === true && is_array($results) === true && empty($results) === false) {
-                    $renderHandler = \OC::$server->get(\OCA\OpenRegister\Service\Object\RenderObject::class);
+                    $renderHandler     = \OC::$server->get(\OCA\OpenRegister\Service\Object\RenderObject::class);
                     $serializedResults = $renderHandler->renderEntities(
                         entities: $results,
                         _extend: $extend,
@@ -962,8 +962,8 @@ class ObjectsController extends Controller
                 $activeOrganisation = null;
                 try {
                     $organisationService = \OC::$server->get(\OCA\OpenRegister\Service\OrganisationService::class);
-                    $activeOrg = $organisationService->getActiveOrganisation();
-                    $activeOrganisation = $activeOrg?->getUuid();
+                    $activeOrg           = $organisationService->getActiveOrganisation();
+                    $activeOrganisation  = $activeOrg?->getUuid();
                 } catch (\Exception $e) {
                     // Silently ignore if organisation service is not available.
                 }
@@ -2931,7 +2931,7 @@ class ObjectsController extends Controller
             foreach ($relations as $relation) {
                 if (is_string($relation) === true && $this->isUuid($relation) === true) {
                     $uuids[] = $relation;
-                } elseif (is_array($relation) === true) {
+                } else if (is_array($relation) === true) {
                     // Handle nested relation arrays.
                     foreach ($relation as $uuid) {
                         if (is_string($uuid) === true && $this->isUuid($uuid) === true) {
@@ -2962,7 +2962,7 @@ class ObjectsController extends Controller
     /**
      * Recursively collect UUIDs from an array structure.
      *
-     * @param array $data  The array to scan for UUIDs.
+     * @param array $data   The array to scan for UUIDs.
      * @param array &$uuids Reference to array collecting UUIDs.
      *
      * @return void
@@ -2977,12 +2977,12 @@ class ObjectsController extends Controller
 
             if (is_string($value) === true && $this->isUuid($value) === true) {
                 $uuids[] = $value;
-            } elseif (is_array($value) === true) {
+            } else if (is_array($value) === true) {
                 // Check if it's an array of UUIDs.
                 foreach ($value as $item) {
                     if (is_string($item) === true && $this->isUuid($item) === true) {
                         $uuids[] = $item;
-                    } elseif (is_array($item) === true) {
+                    } else if (is_array($item) === true) {
                         // Recurse into nested arrays.
                         $this->collectUuidsFromArray($item, $uuids);
                     }
@@ -3054,6 +3054,4 @@ class ObjectsController extends Controller
             );
         }//end try
     }//end clearBlob()
-
 }//end class
-

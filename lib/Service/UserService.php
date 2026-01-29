@@ -171,7 +171,7 @@ class UserService
         $result['lastName']   = $result['lastName'] ?? null;
         $result['middleName'] = $result['middleName'] ?? null;
         // 'functie' is the Dutch term for job title/role - map from 'role' property.
-        $result['functie']    = $result['functie'] ?? $additionalInfo['role'] ?? null;
+        $result['functie'] = $result['functie'] ?? $additionalInfo['role'] ?? null;
 
         // Add organization information in the format expected by the frontend.
         // Frontend expects: { active: { uuid, naam, id, slug }, all: [...] }
@@ -182,6 +182,7 @@ class UserService
             if ($org === null) {
                 return null;
             }
+
             // Add 'naam' field that mirrors 'name' for Dutch frontend compatibility.
             $org['naam'] = $org['name'] ?? null;
             return $org;
@@ -253,11 +254,14 @@ class UserService
             );
             $this->eventDispatcher->dispatchTyped($event);
 
-            $this->logger->debug('UserService: Dispatched UserProfileUpdatedEvent', [
-                'app'     => 'openregister',
-                'userId'  => $user->getUID(),
-                'changes' => $changes,
-            ]);
+            $this->logger->debug(
+                    'UserService: Dispatched UserProfileUpdatedEvent',
+                    [
+                        'app'     => 'openregister',
+                        'userId'  => $user->getUID(),
+                        'changes' => $changes,
+                    ]
+                    );
         }
 
         return $result;

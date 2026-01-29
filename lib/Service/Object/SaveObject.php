@@ -169,20 +169,20 @@ class SaveObject
     /**
      * Constructor for SaveObject handler.
      *
-     * @param ObjectEntityMapper       $objectEntityMapper    Object entity mapper
-     * @param MetadataHydrationHandler $metaHydrationHandler  Handler for metadata extraction
-     * @param FilePropertyHandler      $filePropertyHandler   Handler for file property operations
-     * @param IUserSession             $userSession           User session service
-     * @param AuditTrailMapper         $auditTrailMapper      Audit trail mapper for logging changes
-     * @param SchemaMapper             $schemaMapper          Schema mapper for schema operations
-     * @param RegisterMapper           $registerMapper        Register mapper for register operations
-     * @param IURLGenerator            $urlGenerator          URL generator service
-     * @param OrganisationService      $organisationService   Service for organisation operations
-     * @param CacheHandler             $cacheHandler          Object cache service for entity and query caching
-     * @param SettingsService          $settingsService       Settings service for accessing trail settings
-     * @param PropertyRbacHandler      $propertyRbacHandler   Property-level RBAC handler
-     * @param LoggerInterface          $logger                Logger interface for logging operations
-     * @param ArrayLoader              $arrayLoader           Twig array loader for template rendering
+     * @param ObjectEntityMapper       $objectEntityMapper   Object entity mapper
+     * @param MetadataHydrationHandler $metaHydrationHandler Handler for metadata extraction
+     * @param FilePropertyHandler      $filePropertyHandler  Handler for file property operations
+     * @param IUserSession             $userSession          User session service
+     * @param AuditTrailMapper         $auditTrailMapper     Audit trail mapper for logging changes
+     * @param SchemaMapper             $schemaMapper         Schema mapper for schema operations
+     * @param RegisterMapper           $registerMapper       Register mapper for register operations
+     * @param IURLGenerator            $urlGenerator         URL generator service
+     * @param OrganisationService      $organisationService  Service for organisation operations
+     * @param CacheHandler             $cacheHandler         Object cache service for entity and query caching
+     * @param SettingsService          $settingsService      Settings service for accessing trail settings
+     * @param PropertyRbacHandler      $propertyRbacHandler  Property-level RBAC handler
+     * @param LoggerInterface          $logger               Logger interface for logging operations
+     * @param ArrayLoader              $arrayLoader          Twig array loader for template rendering
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      */
@@ -246,9 +246,9 @@ class SaveObject
      */
     public function clearAllCaches(): void
     {
-        $this->createdSubObjects = [];
-        $this->schemaCache = [];
-        $this->registerCache = [];
+        $this->createdSubObjects    = [];
+        $this->schemaCache          = [];
+        $this->registerCache        = [];
         $this->schemaReferenceCache = [];
     }//end clearAllCaches()
 
@@ -267,6 +267,7 @@ class SaveObject
         if (isset($this->schemaCache[$cacheKey]) === false) {
             $this->schemaCache[$cacheKey] = $this->schemaMapper->find(id: $schemaId);
         }
+
         return $this->schemaCache[$cacheKey];
     }//end getCachedSchema()
 
@@ -285,6 +286,7 @@ class SaveObject
         if (isset($this->registerCache[$cacheKey]) === false) {
             $this->registerCache[$cacheKey] = $this->registerMapper->find(id: $registerId);
         }
+
         return $this->registerCache[$cacheKey];
     }//end getCachedRegister()
 
@@ -346,7 +348,7 @@ class SaveObject
         $uuidPattern = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
         if (is_numeric($cleanReference) === true || preg_match($uuidPattern, $cleanReference) === 1) {
             try {
-                $schema = $this->getCachedSchema($cleanReference);
+                $schema   = $this->getCachedSchema($cleanReference);
                 $schemaId = (string) $schema->getId();
                 $this->schemaReferenceCache[$reference] = $schemaId;
                 return $schemaId;
@@ -369,13 +371,13 @@ class SaveObject
             // Cache all schemas by slug for future lookups.
             foreach ($schemas as $schema) {
                 $schemaSlug = strtolower($schema->getSlug());
-                $schemaId = (string) $schema->getId();
+                $schemaId   = (string) $schema->getId();
                 // Cache the schema entity.
                 $this->schemaCache[$schemaId] = $schema;
                 // Cache the slug -> ID mapping.
-                $this->schemaReferenceCache['#/components/schemas/' . $schema->getSlug()] = $schemaId;
+                $this->schemaReferenceCache['#/components/schemas/'.$schema->getSlug()] = $schemaId;
                 $this->schemaReferenceCache[$schema->getSlug()] = $schemaId;
-                $this->schemaReferenceCache[$schemaSlug] = $schemaId;
+                $this->schemaReferenceCache[$schemaSlug]        = $schemaId;
 
                 if (strcasecmp($schema->getSlug(), $slug) === 0) {
                     $this->schemaReferenceCache[$reference] = $schemaId;
@@ -384,7 +386,7 @@ class SaveObject
             }
         } catch (Exception $e) {
             // Schema not found.
-        }
+        }//end try
 
         // Try direct slug match as last resort.
         try {
@@ -392,7 +394,7 @@ class SaveObject
             $schema = $this->schemaMapper->find(id: $slug, published: null, _rbac: false, _multitenancy: false);
             if ($schema !== null) {
                 $schemaId = (string) $schema->getId();
-                $this->schemaCache[$schemaId] = $schema;
+                $this->schemaCache[$schemaId]           = $schema;
                 $this->schemaReferenceCache[$reference] = $schemaId;
                 return $schemaId;
             }
@@ -788,10 +790,13 @@ class SaveObject
                         _multitenancy: false
                     );
                 } catch (\Exception $e) {
-                    $this->logger->warning('[SaveObject] Could not resolve target schema', [
-                        'targetSchemaSlug' => $targetSchemaSlug,
-                        'error' => $e->getMessage()
-                    ]);
+                    $this->logger->warning(
+                            '[SaveObject] Could not resolve target schema',
+                            [
+                                'targetSchemaSlug' => $targetSchemaSlug,
+                                'error'            => $e->getMessage(),
+                            ]
+                            );
                     continue;
                 }
 
@@ -831,9 +836,9 @@ class SaveObject
                 $this->logger->debug(
                     '[SaveObject] Updated inverse relation',
                     [
-                        'savedUuid'             => $savedUuid,
-                        'relatedUuid'           => $relatedUuid,
-                        'newRelationsCount'     => count($relatedObjectRelations),
+                        'savedUuid'         => $savedUuid,
+                        'relatedUuid'       => $relatedUuid,
+                        'newRelationsCount' => count($relatedObjectRelations),
                     ]
                 );
             } catch (\Exception $e) {
@@ -1162,7 +1167,7 @@ class SaveObject
         // Render twig templated default values.
         // Merge incoming $data with existing object data so Twig templates can reference
         // both newly submitted values and existing object properties.
-        $twigContext = array_merge($objectEntity->getObjectArray(), $data);
+        $twigContext      = array_merge($objectEntity->getObjectArray(), $data);
         $renderedDefaults = [];
         foreach ($defaultValues as $key => $defaultValue) {
             try {
@@ -1184,7 +1189,7 @@ class SaveObject
                         }
                     } else {
                         // Complex template, use Twig rendering (converts to string).
-                        $template    = $this->twig->createTemplate($defaultValue);
+                        $template = $this->twig->createTemplate($defaultValue);
                         $renderedDefaults[$key] = $template->render($twigContext);
                     }
                 }
@@ -1283,13 +1288,13 @@ class SaveObject
                         // If source property not found, skip (don't overwrite with null).
                     } else {
                         // Complex template, use Twig rendering (converts to string).
-                        $template    = $this->twig->createTemplate($defaultValue);
+                        $template   = $this->twig->createTemplate($defaultValue);
                         $data[$key] = $template->render($twigContext);
                     }
                 } else {
                     // Non-template value, use directly.
                     $data[$key] = $defaultValue;
-                }
+                }//end if
             } catch (Exception $e) {
                 // Template failed, skip this default.
                 continue;
@@ -1523,8 +1528,8 @@ class SaveObject
                 );
 
                 // Check if this is a related-object handling (stores UUIDs in parent).
-                $objHandling   = $definition['objectConfiguration']['handling'] ?? null;
-                $itemsHandling = $definition['items']['objectConfiguration']['handling'] ?? null;
+                $objHandling     = $definition['objectConfiguration']['handling'] ?? null;
+                $itemsHandling   = $definition['items']['objectConfiguration']['handling'] ?? null;
                 $isRelatedObject = $objHandling === 'related-object' || $itemsHandling === 'related-object';
 
                 // For related-object handling: always store UUIDs in parent property.
@@ -1540,22 +1545,27 @@ class SaveObject
                             if (is_string($item) === false) {
                                 return false;
                             }
+
                             // Standard UUID with dashes.
                             if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $item) === 1) {
                                 return true;
                             }
+
                             // UUID without dashes (32 hex chars).
                             if (preg_match('/^[0-9a-f]{32}$/i', $item) === 1) {
                                 return true;
                             }
+
                             // Prefixed UUID (e.g., "id-uuid" with or without dashes).
                             if (preg_match('/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/i', $item) === 1) {
                                 return true;
                             }
+
                             // Numeric ID.
                             if (preg_match('/^[0-9]+$/', $item) === 1) {
                                 return true;
                             }
+
                             return false;
                         }
                     );
@@ -1591,7 +1601,7 @@ class SaveObject
                         // Without inversedBy: store the created objects' UUIDs.
                         $data[$property] = $createdUuids;
                     }
-                }
+                }//end if
             } catch (Exception $e) {
                 // Continue with other properties even if one fails.
             }//end try
@@ -1639,19 +1649,22 @@ class SaveObject
                     if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $object) === 1) {
                         return true;
                     }
+
                     // UUID without dashes (32 hex chars).
                     if (preg_match('/^[0-9a-f]{32}$/i', $object) === 1) {
                         return true;
                     }
+
                     // Prefixed UUID (e.g., "id-uuid" with or without dashes).
                     if (preg_match('/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/i', $object) === 1) {
                         return true;
                     }
+
                     // Numeric ID.
                     if (preg_match('/^[0-9]+$/', $object) === 1) {
                         return true;
                     }
-                }
+                }//end if
 
                 return false;
             }
@@ -1690,6 +1703,7 @@ class SaveObject
             if (is_string($object) === true) {
                 continue;
             }
+
             $objectsToCreate[] = $object;
         }
 
@@ -1816,7 +1830,7 @@ class SaveObject
                 persist: true,
                 silent: true
             );
-            $savedUuid = $savedObject->getUuid();
+            $savedUuid   = $savedObject->getUuid();
 
             // Track the created sub-object for inclusion in @self.objects.
             // This allows the parent response to include the full sub-object data.
@@ -1827,7 +1841,7 @@ class SaveObject
             return $savedUuid;
         } catch (Exception $e) {
             throw $e;
-        }
+        }//end try
     }//end cascadeSingleObject()
 
     /**
@@ -1956,28 +1970,33 @@ class SaveObject
 
             // Filter out empty or invalid IDs.
             // Supports: standard UUIDs, UUIDs without dashes, prefixed UUIDs, and numeric IDs.
-            $validUuids  = array_filter(
+            $validUuids = array_filter(
                 $targetUuids,
                 function ($uuid) {
                     if (empty($uuid) === true || is_string($uuid) === false || trim($uuid) === '') {
                         return false;
                     }
+
                     // Standard UUID with dashes.
                     if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $uuid) === 1) {
                         return true;
                     }
+
                     // UUID without dashes (32 hex chars).
                     if (preg_match('/^[0-9a-f]{32}$/i', $uuid) === 1) {
                         return true;
                     }
+
                     // Prefixed UUID (e.g., "id-uuid" with or without dashes).
                     if (preg_match('/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/i', $uuid) === 1) {
                         return true;
                     }
+
                     // Numeric ID.
                     if (preg_match('/^[0-9]+$/', $uuid) === 1) {
                         return true;
                     }
+
                     return false;
                 }
             );
@@ -2193,7 +2212,7 @@ class SaveObject
         // Check property-level authorization for incoming data.
         // This throws a ValidationException if user tries to modify unauthorized properties.
         if ($schema->hasPropertyAuthorization() === true) {
-            $isCreate = ($uuid === null);
+            $isCreate           = ($uuid === null);
             $existingObjectData = [];
 
             // For updates, get existing object data for matching
@@ -2224,10 +2243,10 @@ class SaveObject
 
             if (empty($unauthorizedProperties) === false) {
                 throw new Exception(
-                    'You are not authorized to modify the following properties: ' . implode(', ', $unauthorizedProperties)
+                    'You are not authorized to modify the following properties: '.implode(', ', $unauthorizedProperties)
                 );
             }
-        }
+        }//end if
 
         // Try to update existing object if UUID provided.
         if ($uuid !== null) {
@@ -2253,7 +2272,7 @@ class SaveObject
                     silent: $silent
                 );
             }
-        }
+        }//end if
 
         // Create new object if no existing object found.
         return $this->handleObjectCreation(
@@ -2354,7 +2373,7 @@ class SaveObject
         } else if (is_int($schema) === true) {
             // It's an integer ID - use cached lookup.
             $schemaId = $schema;
-            $schema = $this->getCachedSchema($schema);
+            $schema   = $this->getCachedSchema($schema);
         }
 
         // Resolve register using request-scoped cache for performance.
@@ -2374,11 +2393,11 @@ class SaveObject
         } else if (is_int($register) === true) {
             // It's an integer ID - use cached lookup.
             $registerId = $register;
-            $register = $this->getCachedRegister($register);
+            $register   = $this->getCachedRegister($register);
         } else if ($register === null) {
             // Register is NULL (e.g., for seedData objects) - leave as NULL.
             $registerId = null;
-        }
+        }//end if
 
         return [$schema, $schemaId, $register, $registerId];
     }//end resolveSchemaAndRegister()
@@ -2474,7 +2493,7 @@ class SaveObject
         // This is critical for event dispatching - the old status must be captured here,
         // not after preparation when the entity has already been modified.
         $oldObjectData = $existingObject->getObject();
-        $oldObject = clone $existingObject;
+        $oldObject     = clone $existingObject;
         // Deep clone the object data array to prevent reference issues.
         $oldObject->setObject($oldObjectData);
 
@@ -2659,7 +2678,7 @@ class SaveObject
                 $this->logger->error(
                     'DEBUG: After setObject - entity object is now',
                     [
-                        'app' => 'openregister',
+                        'app'          => 'openregister',
                         'entityObject' => json_encode($savedEntity->getObject()),
                     ]
                 );
@@ -2683,7 +2702,7 @@ class SaveObject
                     'DEBUG: After objectEntityMapper->update() - result object',
                     ['app' => 'openregister', 'resultObject' => json_encode($savedEntity->getObject())]
                 );
-            }
+            }//end if
 
             return $savedEntity;
         } catch (Exception $e) {
@@ -3116,19 +3135,25 @@ class SaveObject
         $preparedObject->setUpdated(new DateTime());
 
         // Log that we're about to update using UnifiedObjectMapper.
-        $this->logger->debug('[SaveObject] Updating object using UnifiedObjectMapper', [
-            'uuid' => $preparedObject->getUuid(),
-        ]);
+        $this->logger->debug(
+                '[SaveObject] Updating object using UnifiedObjectMapper',
+                [
+                    'uuid' => $preparedObject->getUuid(),
+                ]
+                );
 
         // Save the object to database using UnifiedObjectMapper.
         // This ensures proper event dispatching for both magic-mapped and blob storage objects.
         // Pass the oldObject to ensure accurate status change detection in events.
         $updatedEntity = $this->unifiedObjectMapper->update(entity: $preparedObject, register: $register, schema: $schema, oldEntity: $oldObject);
 
-        $this->logger->info('[SaveObject] Object updated successfully', [
-            'app' => 'openregister',
-            'uuid' => $updatedEntity->getUuid()
-        ]);
+        $this->logger->info(
+                '[SaveObject] Object updated successfully',
+                [
+                    'app'  => 'openregister',
+                    'uuid' => $updatedEntity->getUuid(),
+                ]
+                );
 
         // Create audit trail for update if audit trails are enabled and not in silent mode.
         if ($silent === false && $this->isAuditTrailsEnabled() === true) {

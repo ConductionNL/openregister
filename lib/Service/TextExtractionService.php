@@ -121,6 +121,7 @@ class TextExtractionService
      * @param EntityRecognitionHandler $entityHandler        Handler for entity recognition
      * @param GdprEntityMapper         $entityMapper         Mapper for GDPR entities
      * @param EntityRelationMapper     $entityRelationMapper Mapper for entity relations
+     * @param SettingsService          $settingsService      Settings service
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      */
@@ -135,7 +136,8 @@ class TextExtractionService
         private readonly RegisterMapper $registerMapper,
         private readonly EntityRecognitionHandler $entityHandler,
         private readonly GdprEntityMapper $entityMapper,
-        private readonly EntityRelationMapper $entityRelationMapper
+        private readonly EntityRelationMapper $entityRelationMapper,
+        private readonly SettingsService $settingsService
     ) {
     }//end __construct()
 
@@ -205,11 +207,21 @@ class TextExtractionService
 
         // Extract entities from chunks.
         try {
+            // Get entity recognition settings.
+            $fileSettings  = $this->settingsService->getFileSettingsOnly();
+            $entityMethod  = $fileSettings['entityRecognitionMethod'] ?? 'hybrid';
+            $entityEnabled = $fileSettings['entityRecognitionEnabled'] ?? false;
+
+            if ($entityEnabled === false) {
+                $this->logger->info('[TextExtractionService] Entity recognition disabled, skipping', ['fileId' => $fileId]);
+                return;
+            }
+
             $entityResult = $this->entityHandler->processSourceChunks(
                 sourceType: 'file',
                 sourceId: $fileId,
                 options: [
-                    'method'               => 'hybrid',
+                    'method'               => $entityMethod,
                     'confidence_threshold' => 0.5,
                 ]
             );
@@ -274,6 +286,7 @@ class TextExtractionService
             );
             return;
         }
+
         $sourceTimestamp = $object->getUpdated()?->getTimestamp() ?? time();
 
         // Check if chunks are up-to-date.

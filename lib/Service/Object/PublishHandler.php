@@ -63,8 +63,8 @@ class PublishHandler
     /**
      * Find an object across all storage sources and get its context.
      *
-     * @param string $identifier Object ID or UUID
-     * @param bool   $_rbac      Apply RBAC filters
+     * @param string $identifier    Object ID or UUID
+     * @param bool   $_rbac         Apply RBAC filters
      * @param bool   $_multitenancy Apply multitenancy filters
      *
      * @return array{object: ObjectEntity, register: Register|null, schema: Schema|null}
@@ -119,14 +119,14 @@ class PublishHandler
 
         try {
             // Fetch object with full context (finds in both blob and magic tables).
-            $context = $this->findObjectWithContext(
+            $context      = $this->findObjectWithContext(
                 identifier: $uuid,
                 _rbac: $_rbac,
                 _multitenancy: $_multitenancy
             );
             $objectBefore = $context['object'];
-            $register = $context['register'];
-            $schema = $context['schema'];
+            $register     = $context['register'];
+            $schema       = $context['schema'];
 
             // Clone the object to preserve the old state.
             $objectBeforeClone = clone $objectBefore;
@@ -214,14 +214,14 @@ class PublishHandler
 
         try {
             // Fetch object with full context (finds in both blob and magic tables).
-            $context = $this->findObjectWithContext(
+            $context      = $this->findObjectWithContext(
                 identifier: $uuid,
                 _rbac: $_rbac,
                 _multitenancy: $_multitenancy
             );
             $objectBefore = $context['object'];
-            $register = $context['register'];
-            $schema = $context['schema'];
+            $register     = $context['register'];
+            $schema       = $context['schema'];
 
             // Clone the object to preserve the old state.
             $objectBeforeClone = clone $objectBefore;

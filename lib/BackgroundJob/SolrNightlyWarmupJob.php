@@ -73,7 +73,7 @@ class SolrNightlyWarmupJob extends TimedJob
     {
         parent::__construct($time);
         $this->setInterval(self::DEFAULT_INTERVAL);
-    }
+    }//end __construct()
 
     /**
      * Execute the nightly SOLR warmup job

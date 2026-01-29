@@ -80,7 +80,7 @@ class PerformanceOptimizationHandler
                 ['error' => $e->getMessage()]
             );
             return null;
-        }
+        }//end try
     }//end getActiveOrganisationForContext()
 
     /**

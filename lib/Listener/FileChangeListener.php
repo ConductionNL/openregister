@@ -110,6 +110,20 @@ class FileChangeListener implements IEventListener
             return;
         }
 
+        // Skip anonymized files - they should not be scanned for entities.
+        // Anonymized files are created with '_anonymized' suffix by the anonymization process.
+        if (strpos($fileName, '_anonymized') !== false) {
+            $this->logger->debug(
+                '[FileChangeListener] Skipping anonymized file',
+                [
+                    'file_id'   => $fileId,
+                    'file_name' => $fileName,
+                    'file_path' => $filePath,
+                ]
+            );
+            return;
+        }
+
         $this->logger->debug(
             '[FileChangeListener] File event detected',
             [

@@ -686,7 +686,7 @@ class SaveObjects
         // Get default organisation UUID for objects without explicit organisation.
         $defaultOrganisation = null;
         try {
-            $defaultOrg = $this->organisationService->ensureDefaultOrganisation();
+            $defaultOrg          = $this->organisationService->ensureDefaultOrganisation();
             $defaultOrganisation = $defaultOrg->getUuid();
         } catch (Exception $e) {
             $this->logger->warning(
@@ -694,6 +694,7 @@ class SaveObjects
                 ['error' => $e->getMessage()]
             );
         }
+
         $now = new DateTime();
         $now->format('c');
 

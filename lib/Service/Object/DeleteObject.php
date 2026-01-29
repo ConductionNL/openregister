@@ -126,27 +126,27 @@ class DeleteObject
         if ($object instanceof ObjectEntity === true) {
             $objectEntity = $object;
             // Get register/schema context for this object.
-            $context = $this->objectEntityMapper->findAcrossAllSources(
+            $context        = $this->objectEntityMapper->findAcrossAllSources(
                 identifier: $objectEntity->getUuid(),
                 includeDeleted: true,
                 _rbac: false,
                 _multitenancy: false
             );
             $registerEntity = $context['register'];
-            $schemaEntity = $context['schema'];
+            $schemaEntity   = $context['schema'];
         } else {
             // Handle array input - find object with context (searches both blob and magic tables).
             // @psalm-suppress UndefinedInterfaceMethod
-            $context = $this->objectEntityMapper->findAcrossAllSources(
+            $context        = $this->objectEntityMapper->findAcrossAllSources(
                 identifier: $object['id'],
                 includeDeleted: false,
                 _rbac: false,
                 _multitenancy: false
             );
-            $objectEntity = $context['object'];
+            $objectEntity   = $context['object'];
             $registerEntity = $context['register'];
-            $schemaEntity = $context['schema'];
-        }
+            $schemaEntity   = $context['schema'];
+        }//end if
 
         // **SOFT DELETE**: Mark object as deleted instead of removing from database.
         // Set deletion metadata with user, timestamp, and organization information.
@@ -269,7 +269,7 @@ class DeleteObject
                 _rbac: $_rbac,
                 _multitenancy: $_multitenancy
             );
-            $object = $context['object'];
+            $object  = $context['object'];
 
             // Handle cascading deletes if this is the root object.
             // Use register and schema from context if provided, otherwise use passed parameters.
@@ -290,12 +290,15 @@ class DeleteObject
 
             return $this->delete($object);
         } catch (Exception $e) {
-            $this->logger->warning('[DeleteObject] Delete failed', [
-                'uuid'  => $uuid,
-                'error' => $e->getMessage(),
-            ]);
+            $this->logger->warning(
+                    '[DeleteObject] Delete failed',
+                    [
+                        'uuid'  => $uuid,
+                        'error' => $e->getMessage(),
+                    ]
+                    );
             return false;
-        }
+        }//end try
     }//end deleteObject()
 
     /**

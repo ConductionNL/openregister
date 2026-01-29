@@ -132,10 +132,10 @@ class RegisterService
         $this->logger = $logger;
         $this->logger->debug('RegisterService constructor started.');
         // Store dependencies for use in service methods.
-        $this->registerMapper      = $registerMapper;
-        $this->schemaMapper        = $schemaMapper;
-        $this->db                  = $db;
-        $this->fileService         = $fileService;
+        $this->registerMapper = $registerMapper;
+        $this->schemaMapper   = $schemaMapper;
+        $this->db          = $db;
+        $this->fileService = $fileService;
         $this->organisationService = $organisationService;
         $this->logger->debug('RegisterService constructor completed.');
     }//end __construct()
@@ -383,7 +383,7 @@ class RegisterService
                         // Magic tables store data in flat columns (not in an 'object' column).
                         // The _deleted column is JSONB and should be NULL for non-deleted objects.
                         // Cast schema_id to VARCHAR to match blob storage query type.
-                        $unionQueries[]  = "
+                        $unionQueries[] = "
                             SELECT 
                                 CAST({$schemaId} AS VARCHAR) as schema_id,
                                 COUNT(*) as total,
@@ -404,11 +404,11 @@ class RegisterService
                             'published' => 0,
                             'size'      => 0,
                         ];
-                    }
+                    }//end if
                 } else {
                     // Blob storage: add to blob schemas list
                     $blobSchemas[] = (int) $schemaId;
-                }
+                }//end if
             }//end foreach
 
             // Add blob storage query if there are any blob schemas.

@@ -58,6 +58,7 @@ use Psr\Log\LoggerInterface;
  */
 class MagicRbacHandler
 {
+
     /**
      * Cached active organisation UUID
      *
@@ -109,7 +110,7 @@ class MagicRbacHandler
     public function applyRbacFilters(
         IQueryBuilder $qb,
         Schema $schema,
-        string $action = 'read'
+        string $action='read'
     ): void {
         $user   = $this->userSession->getUser();
         $userId = $user?->getUID();
@@ -363,7 +364,7 @@ class MagicRbacHandler
 
         try {
             $organisationService = $this->container->get('OCA\OpenRegister\Service\OrganisationService');
-            $activeOrg = $organisationService->getActiveOrganisation();
+            $activeOrg           = $organisationService->getActiveOrganisation();
 
             if ($activeOrg !== null) {
                 $this->cachedActiveOrg = $activeOrg->getUuid();
@@ -757,7 +758,7 @@ class MagicRbacHandler
      *               - 'bypass' => true means no filtering needed (user has full access)
      *               - 'conditions' => SQL conditions to OR together, empty array means deny all
      */
-    public function buildRbacConditionsSql(Schema $schema, string $action = 'read'): array
+    public function buildRbacConditionsSql(Schema $schema, string $action='read'): array
     {
         $user   = $this->userSession->getUser();
         $userId = $user?->getUID();
@@ -909,7 +910,7 @@ class MagicRbacHandler
             return $conditions[0];
         }
 
-        return '(' . implode(' AND ', $conditions) . ')';
+        return '('.implode(' AND ', $conditions).')';
     }//end buildMatchConditionsSql()
 
     /**
@@ -981,14 +982,14 @@ class MagicRbacHandler
                 case '$in':
                     if (is_array($operand) === true && empty($operand) === false) {
                         $quotedValues = array_map(fn($v) => $this->quoteValue($v), $operand);
-                        return "{$columnName} IN (" . implode(', ', $quotedValues) . ')';
+                        return "{$columnName} IN (".implode(', ', $quotedValues).')';
                     }
                     break;
 
                 case '$nin':
                     if (is_array($operand) === true && empty($operand) === false) {
                         $quotedValues = array_map(fn($v) => $this->quoteValue($v), $operand);
-                        return "{$columnName} NOT IN (" . implode(', ', $quotedValues) . ')';
+                        return "{$columnName} NOT IN (".implode(', ', $quotedValues).')';
                     }
                     break;
 
@@ -1013,8 +1014,8 @@ class MagicRbacHandler
                 case '$lte':
                     $quotedValue = $this->quoteValue($operand);
                     return "{$columnName} <= {$quotedValue}";
-            }
-        }
+            }//end switch
+        }//end foreach
 
         return null;
     }//end buildOperatorConditionSql()
@@ -1093,7 +1094,7 @@ class MagicRbacHandler
      *
      * @return bool True if RBAC has conditional rules that should bypass multitenancy
      */
-    public function hasConditionalRulesBypassingMultitenancy(Schema $schema, string $action = 'read'): bool
+    public function hasConditionalRulesBypassingMultitenancy(Schema $schema, string $action='read'): bool
     {
         $user = $this->userSession->getUser();
 
@@ -1132,9 +1133,11 @@ class MagicRbacHandler
                 if ($rule === 'public') {
                     return true;
                 }
+
                 if (in_array($rule, $userGroups, true) === true) {
                     return true;
                 }
+
                 continue;
             }
 
@@ -1159,8 +1162,8 @@ class MagicRbacHandler
                         }
                     }
                 }
-            }
-        }
+            }//end if
+        }//end foreach
 
         return false;
     }//end hasConditionalRulesBypassingMultitenancy()

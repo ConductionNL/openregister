@@ -696,7 +696,7 @@ class Schema extends Entity implements JsonSerializable
      *
      * @throws InvalidArgumentException If the rule is invalid
      */
-    private function validateAuthorizationRule(mixed $rule, string $action, string $context = 'schema'): void
+    private function validateAuthorizationRule(mixed $rule, string $action, string $context='schema'): void
     {
         // Simple rule: non-empty string (group name).
         if (is_string($rule) === true) {
@@ -1740,6 +1740,7 @@ class Schema extends Entity implements JsonSerializable
         if (is_string($published) === true) {
             $published = new DateTime($published);
         }
+
         $this->published = $published;
         $this->markFieldUpdated('published');
     }//end setPublished()
@@ -1766,6 +1767,7 @@ class Schema extends Entity implements JsonSerializable
         if (is_string($depublished) === true) {
             $depublished = new DateTime($depublished);
         }
+
         $this->depublished = $depublished;
         $this->markFieldUpdated('depublished');
     }//end setDepublished()

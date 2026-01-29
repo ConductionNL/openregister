@@ -117,11 +117,11 @@ class LogService
         RegisterMapper $registerMapper,
         SchemaMapper $schemaMapper
     ) {
-        $this->auditTrailMapper     = $auditTrailMapper;
-        $this->objectEntityMapper   = $objectEntityMapper;
-        $this->unifiedObjectMapper  = $unifiedObjectMapper;
-        $this->registerMapper       = $registerMapper;
-        $this->schemaMapper         = $schemaMapper;
+        $this->auditTrailMapper    = $auditTrailMapper;
+        $this->objectEntityMapper  = $objectEntityMapper;
+        $this->unifiedObjectMapper = $unifiedObjectMapper;
+        $this->registerMapper      = $registerMapper;
+        $this->schemaMapper        = $schemaMapper;
     }//end __construct()
 
     /**

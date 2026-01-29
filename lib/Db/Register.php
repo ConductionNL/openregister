@@ -610,6 +610,7 @@ class Register extends Entity implements JsonSerializable
         if (is_string($published) === true) {
             $published = new DateTime($published);
         }
+
         $this->published = $published;
         $this->markFieldUpdated('published');
     }//end setPublished()
@@ -636,6 +637,7 @@ class Register extends Entity implements JsonSerializable
         if (is_string($depublished) === true) {
             $depublished = new DateTime($depublished);
         }
+
         $this->depublished = $depublished;
         $this->markFieldUpdated('depublished');
     }//end setDepublished()

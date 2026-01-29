@@ -534,7 +534,7 @@ class BulkOperationsHandler
         $totalDeletedUuids = [];
 
         try {
-            $schema = $this->schemaMapper->find($schemaId);
+            $schema   = $this->schemaMapper->find($schemaId);
             $register = $this->registerMapper->find($registerId);
 
             // Check if magic mapping is enabled for this schema.
@@ -602,8 +602,8 @@ class BulkOperationsHandler
             $this->logger->error(
                 message: 'Failed to delete objects for schema',
                 context: [
-                    'error'     => $e->getMessage(),
-                    'schemaId'  => $schemaId,
+                    'error'      => $e->getMessage(),
+                    'schemaId'   => $schemaId,
                     'hardDelete' => $hardDelete,
                 ]
             );

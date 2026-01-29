@@ -93,12 +93,12 @@ class LockHandler
         }
 
         return [
-            'object' => $result['object'],
+            'object'   => $result['object'],
             'register' => $result['register'],
-            'schema' => $result['schema'],
-            'isMagic' => $isMagic,
+            'schema'   => $result['schema'],
+            'isMagic'  => $isMagic,
         ];
-    }
+    }//end findObjectWithContext()
 
     /**
      * Lock an object
@@ -129,7 +129,7 @@ class LockHandler
 
         try {
             // Find the object and determine its storage type.
-            $context = $this->findObjectWithContext($identifier);
+            $context      = $this->findObjectWithContext($identifier);
             $objectBefore = $context['object'];
 
             if ($context['isMagic'] === true) {
@@ -142,7 +142,7 @@ class LockHandler
                 );
 
                 $lockResult = [
-                    'uuid' => $objectAfter->getUuid(),
+                    'uuid'   => $objectAfter->getUuid(),
                     'locked' => $objectAfter->getLocked(),
                 ];
             } else {
@@ -151,8 +151,8 @@ class LockHandler
 
                 // Reload the object after locking to get updated state.
                 $reloadContext = $this->findObjectWithContext($identifier);
-                $objectAfter = $reloadContext['object'];
-            }
+                $objectAfter   = $reloadContext['object'];
+            }//end if
 
             // Record lock action in audit trail.
             $this->auditTrailMapper->createAuditTrail(old: $objectBefore, new: $objectAfter, action: 'lock');
@@ -209,7 +209,7 @@ class LockHandler
 
         try {
             // Find the object and determine its storage type.
-            $context = $this->findObjectWithContext($identifier);
+            $context      = $this->findObjectWithContext($identifier);
             $objectBefore = $context['object'];
 
             if ($context['isMagic'] === true) {
@@ -225,7 +225,7 @@ class LockHandler
 
                 // Reload the object after unlocking to get updated state.
                 $reloadContext = $this->findObjectWithContext($identifier);
-                $objectAfter = $reloadContext['object'];
+                $objectAfter   = $reloadContext['object'];
             }
 
             // Record unlock action in audit trail.
@@ -265,7 +265,7 @@ class LockHandler
     {
         try {
             $context = $this->findObjectWithContext($identifier);
-            $object = $context['object'];
+            $object  = $context['object'];
 
             // Check the locked property on the ObjectEntity.
             $locked = $object->getLocked();
@@ -278,7 +278,8 @@ class LockHandler
             if (isset($locked['expiresAt']) === true) {
                 $expiryDate = new DateTime($locked['expiresAt']);
                 if ($expiryDate < new DateTime()) {
-                    return false; // Lock expired.
+                    return false;
+                    // Lock expired.
                 }
             }
 
@@ -309,7 +310,7 @@ class LockHandler
     {
         try {
             $context = $this->findObjectWithContext($identifier);
-            $object = $context['object'];
+            $object  = $context['object'];
 
             $locked = $object->getLocked();
 
@@ -335,5 +336,4 @@ class LockHandler
             return null;
         }//end try
     }//end getLockInfo()
-
 }//end class

@@ -108,16 +108,16 @@ class RenderObject
     /**
      * Constructor for RenderObject handler.
      *
-     * @param FileMapper             $fileMapper            File mapper for database operations.
-     * @param ObjectEntityMapper     $objectEntityMapper    Object entity mapper for database operations.
-     * @param RegisterMapper         $registerMapper        Register mapper for database operations.
-     * @param SchemaMapper           $schemaMapper          Schema mapper for database operations.
-     * @param ISystemTagManager      $systemTagManager      System tag manager for file tags.
-     * @param ISystemTagObjectMapper $systemTagMapper       System tag object mapper for file tags.
-     * @param CacheHandler           $cacheHandler          Cache service for performance optimization.
-     * @param CacheHandler           $objectCacheService    Object cache service for optimized loading.
-     * @param PropertyRbacHandler    $propertyRbacHandler   Property-level RBAC handler.
-     * @param LoggerInterface        $logger                Logger for performance monitoring.
+     * @param FileMapper             $fileMapper          File mapper for database operations.
+     * @param ObjectEntityMapper     $objectEntityMapper  Object entity mapper for database operations.
+     * @param RegisterMapper         $registerMapper      Register mapper for database operations.
+     * @param SchemaMapper           $schemaMapper        Schema mapper for database operations.
+     * @param ISystemTagManager      $systemTagManager    System tag manager for file tags.
+     * @param ISystemTagObjectMapper $systemTagMapper     System tag object mapper for file tags.
+     * @param CacheHandler           $cacheHandler        Cache service for performance optimization.
+     * @param CacheHandler           $objectCacheService  Object cache service for optimized loading.
+     * @param PropertyRbacHandler    $propertyRbacHandler Property-level RBAC handler.
+     * @param LoggerInterface        $logger              Logger for performance monitoring.
      */
     public function __construct(
         private readonly FileMapper $fileMapper,
@@ -232,7 +232,7 @@ class RenderObject
     private function isUuidLike(string $value): bool
     {
         return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === 1;
-    }
+    }//end isUuidLike()
 
     /**
      * Get an object from cache or database
@@ -554,8 +554,8 @@ class RenderObject
 
         // Determine if base64 format is requested.
         // Check both the property config and items config (for arrays).
-        $fileConfig    = $isArrayProperty ? ($propertyConfig['items'] ?? []) : $propertyConfig;
-        $returnBase64  = ($fileConfig['format'] ?? '') === 'base64';
+        $fileConfig   = $isArrayProperty ? ($propertyConfig['items'] ?? []) : $propertyConfig;
+        $returnBase64 = ($fileConfig['format'] ?? '') === 'base64';
 
         if ($isArrayProperty === true) {
             // Handle array of files.
@@ -580,7 +580,7 @@ class RenderObject
             }
 
             return $hydratedFiles;
-        }
+        }//end if
 
         // Handle single file.
         $isDigitString = is_string($propertyValue) === true && ctype_digit($propertyValue) === true;
@@ -631,7 +631,7 @@ class RenderObject
             return 'data:'.$mimeType.';base64,'.base64_encode($fileContent);
         } catch (Exception $e) {
             return null;
-        }
+        }//end try
     }//end getFileAsBase64()
 
     /**
@@ -925,8 +925,8 @@ class RenderObject
                         _objects: $objects
                     );
                 }
-            }
-        }
+            }//end if
+        }//end if
 
         // Convert extend to an array if it's a string.
         if (is_array($_extend) === true && in_array('all', $_extend, true) === true) {
@@ -1002,7 +1002,7 @@ class RenderObject
             ) {
                 unset($objectData['@self']);
             }
-        }
+        }//end if
 
         $entity->setObject($objectData);
 
@@ -1142,6 +1142,7 @@ class RenderObject
                             if (isset($identifier['id']) === true || isset($identifier['@self']) === true) {
                                 return $identifier;
                             }
+
                             return null;
                         }
 
@@ -1312,7 +1313,7 @@ class RenderObject
             // Add preloaded objects to local cache for immediate access.
             foreach ($preloadedObjects as $object) {
                 $this->objectsCache[$object->getUuid()] = $object;
-                $this->objectsCache[$object->getId()] = $object;
+                $this->objectsCache[$object->getId()]   = $object;
             }
 
             $this->logger->debug(
@@ -1348,7 +1349,7 @@ class RenderObject
      */
     private function collectUuidsForExtend(array $objectData, array $extend): array
     {
-        $uuids = [];
+        $uuids   = [];
         $dataDot = new Dot($objectData);
 
         foreach ($extend as $key) {
@@ -1384,7 +1385,7 @@ class RenderObject
             if (is_string($value) === true && $this->isUuidLike($value) === true) {
                 $uuids[] = $value;
             }
-        }
+        }//end foreach
 
         return array_unique($uuids);
     }//end collectUuidsForExtend()
@@ -1452,10 +1453,13 @@ class RenderObject
             return;
         }
 
-        $this->logger->debug('[INVERSE_PRELOAD] Starting batch inverse preload', [
-            'entityCount' => count($entityUuids),
-            'inverseProperties' => array_keys($inversePropertiesToExtend),
-        ]);
+        $this->logger->debug(
+                '[INVERSE_PRELOAD] Starting batch inverse preload',
+                [
+                    'entityCount'       => count($entityUuids),
+                    'inverseProperties' => array_keys($inversePropertiesToExtend),
+                ]
+                );
 
         // For each inverse property, determine target schema and batch-load referencing objects.
         foreach ($inversePropertiesToExtend as $propName => $propConfig) {
@@ -1482,7 +1486,7 @@ class RenderObject
             // Batch find all objects of the target schema that reference ANY of our entity UUIDs.
             // This uses the _relations column with GIN index for efficiency.
             try {
-                $magicMapper = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
+                $magicMapper        = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
                 $referencingObjects = $magicMapper->findByRelationBatchInSchema(
                     uuids: $entityUuids,
                     schemaId: (int) $targetSchemaId,
@@ -1504,7 +1508,7 @@ class RenderObject
 
                     // Index the results by which entity UUID they reference.
                     foreach ($referencingObjects as $refObject) {
-                        $refData = $refObject->getObject();
+                        $refData        = $refObject->getObject();
                         $referencedUuid = $refData[$inversedByField] ?? null;
 
                         // Handle both single UUID and array of UUIDs.
@@ -1520,20 +1524,26 @@ class RenderObject
                             }
                         }
                     }
-                }
+                }//end if
 
-                $this->logger->debug('[INVERSE_PRELOAD] Batch loaded inverse relationships', [
-                    'property' => $propName,
-                    'targetSchema' => $targetSchemaId,
-                    'foundObjects' => count($referencingObjects),
-                ]);
+                $this->logger->debug(
+                        '[INVERSE_PRELOAD] Batch loaded inverse relationships',
+                        [
+                            'property'     => $propName,
+                            'targetSchema' => $targetSchemaId,
+                            'foundObjects' => count($referencingObjects),
+                        ]
+                        );
             } catch (\Exception $e) {
-                $this->logger->warning('[INVERSE_PRELOAD] Batch preload failed, falling back to per-entity lookup', [
-                    'property' => $propName,
-                    'error' => $e->getMessage(),
-                ]);
-            }
-        }
+                $this->logger->warning(
+                        '[INVERSE_PRELOAD] Batch preload failed, falling back to per-entity lookup',
+                        [
+                            'property' => $propName,
+                            'error'    => $e->getMessage(),
+                        ]
+                        );
+            }//end try
+        }//end foreach
     }//end preloadInverseRelationships()
 
     /**
@@ -1842,7 +1852,7 @@ class RenderObject
             } else {
                 $objectData[$targetProperty] = empty($renderedObjects) === false ? end($renderedObjects) : null;
             }
-        }
+        }//end foreach
 
         return $objectData;
     }//end handleInversedPropertiesFromCache()
@@ -1960,10 +1970,13 @@ class RenderObject
 
         // **PERFORMANCE OPTIMIZATION**: Batch preload ALL related objects BEFORE rendering.
         // This prevents N+1 query problem when extending relations across multiple entities.
-        $this->logger->info('[BATCH_PRELOAD] Starting batch preload check', [
-            'extendParam' => $_extend,
-            'entityCount' => count($entities),
-        ]);
+        $this->logger->info(
+                '[BATCH_PRELOAD] Starting batch preload check',
+                [
+                    'extendParam' => $_extend,
+                    'entityCount' => count($entities),
+                ]
+                );
 
         if (empty($_extend) === false && empty($entities) === false) {
             $allUuidsToPreload = [];
@@ -1980,17 +1993,20 @@ class RenderObject
                 }
 
                 // Use the existing collectUuidsForExtend method to extract UUIDs.
-                $entityUuids = $this->collectUuidsForExtend($objectData, $_extend);
+                $entityUuids       = $this->collectUuidsForExtend($objectData, $_extend);
                 $allUuidsToPreload = array_merge($allUuidsToPreload, $entityUuids);
             }
 
             // Remove duplicates and batch preload ALL related objects in ONE query.
             $allUuidsToPreload = array_unique($allUuidsToPreload);
 
-            $this->logger->info('[BATCH_PRELOAD] UUIDs collected', [
-                'uuidCount' => count($allUuidsToPreload),
-                'sampleUuids' => array_slice($allUuidsToPreload, 0, 3),
-            ]);
+            $this->logger->info(
+                    '[BATCH_PRELOAD] UUIDs collected',
+                    [
+                        'uuidCount'   => count($allUuidsToPreload),
+                        'sampleUuids' => array_slice($allUuidsToPreload, 0, 3),
+                    ]
+                    );
 
             if (empty($allUuidsToPreload) === false) {
                 $preloadedObjects = $this->objectCacheService->preloadObjects($allUuidsToPreload);
@@ -1998,15 +2014,15 @@ class RenderObject
                 // Add preloaded objects to local cache for immediate access during rendering.
                 foreach ($preloadedObjects as $object) {
                     $this->objectsCache[$object->getUuid()] = $object;
-                    $this->objectsCache[$object->getId()] = $object;
+                    $this->objectsCache[$object->getId()]   = $object;
                 }
 
                 $this->logger->debug(
                     'Batch preloaded objects for renderEntities',
                     [
-                        'entityCount'      => count($entities),
-                        'requestedUuids'   => count($allUuidsToPreload),
-                        'loadedObjects'    => count($preloadedObjects),
+                        'entityCount'    => count($entities),
+                        'requestedUuids' => count($allUuidsToPreload),
+                        'loadedObjects'  => count($preloadedObjects),
                     ]
                 );
             }
@@ -2014,7 +2030,7 @@ class RenderObject
             // **INVERSE RELATIONSHIP OPTIMIZATION**: Batch preload objects that REFERENCE our entities.
             // This prevents N+1 queries when extending inverse properties like 'contactpersonen'.
             $this->preloadInverseRelationships($entities, $_extend);
-        }
+        }//end if
 
         $renderedEntities = [];
 

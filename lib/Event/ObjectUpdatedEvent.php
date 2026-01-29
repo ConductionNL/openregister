@@ -51,7 +51,7 @@ class ObjectUpdatedEvent extends Event
      *
      * @return void
      */
-    public function __construct(ObjectEntity $newObject, ?ObjectEntity $oldObject = null)
+    public function __construct(ObjectEntity $newObject, ?ObjectEntity $oldObject=null)
     {
         parent::__construct();
         $this->newObject = $newObject;

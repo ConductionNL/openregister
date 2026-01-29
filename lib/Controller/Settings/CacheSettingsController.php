@@ -229,11 +229,11 @@ class CacheSettingsController extends Controller
                     } else {
                         $errors[] = $fileName.' (invalid format)';
                     }
-                } catch (NotFoundException|GenericFileException $e) {
+                } catch (NotFoundException | GenericFileException $e) {
                     // File doesn't exist, nothing to invalidate.
                     $errors[] = $fileName.' (not found)';
                 }
-            }
+            }//end foreach
 
             return new JSONResponse(
                 data: [
@@ -257,9 +257,12 @@ class CacheSettingsController extends Controller
                 statusCode: 200
             );
         } catch (Exception $e) {
-            $this->logger->error('Failed to invalidate app store cache: '.$e->getMessage(), [
-                'exception' => $e,
-            ]);
+            $this->logger->error(
+                    'Failed to invalidate app store cache: '.$e->getMessage(),
+                    [
+                        'exception' => $e,
+                    ]
+                    );
 
             return new JSONResponse(
                 data: [

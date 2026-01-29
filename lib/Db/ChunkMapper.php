@@ -184,7 +184,7 @@ class ChunkMapper extends QBMapper
         $qb = $this->db->getQueryBuilder();
         $qb->select($qb->func()->count('id'))
             ->from($this->getTableName())
-            ->where($qb->expr()->isNotNull('indexed_at'));
+            ->where($qb->expr()->eq('indexed', $qb->createNamedParameter(true, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_BOOL)));
 
         $result = $qb->executeQuery();
         $count  = (int) $result->fetchOne();
@@ -205,7 +205,7 @@ class ChunkMapper extends QBMapper
         $qb = $this->db->getQueryBuilder();
         $qb->select($qb->func()->count('id'))
             ->from($this->getTableName())
-            ->where($qb->expr()->isNull('indexed_at'));
+            ->where($qb->expr()->eq('indexed', $qb->createNamedParameter(false, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_BOOL)));
 
         $result = $qb->executeQuery();
         $count  = (int) $result->fetchOne();
@@ -226,7 +226,7 @@ class ChunkMapper extends QBMapper
         $qb = $this->db->getQueryBuilder();
         $qb->select($qb->func()->count('id'))
             ->from($this->getTableName())
-            ->where($qb->expr()->isNotNull('vectorized_at'));
+            ->where($qb->expr()->eq('vectorized', $qb->createNamedParameter(true, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_BOOL)));
 
         $result = $qb->executeQuery();
         $count  = (int) $result->fetchOne();
@@ -252,7 +252,7 @@ class ChunkMapper extends QBMapper
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
             ->from($this->getTableName())
-            ->where($qb->expr()->isNull('indexed_at'))
+            ->where($qb->expr()->eq('indexed', $qb->createNamedParameter(false, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_BOOL)))
             ->orderBy('created_at', 'ASC');
 
         if ($limit !== null) {

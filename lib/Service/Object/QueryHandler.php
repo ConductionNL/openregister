@@ -192,7 +192,7 @@ class QueryHandler
         // Check if any result object has a schema with property-level authorization.
         // If yes, we need to render to filter unauthorized properties.
         if ($hasComplexRendering === false && is_array($result) === true && empty($result) === false) {
-            $schemaMapper = $this->container->get(\OCA\OpenRegister\Db\SchemaMapper::class);
+            $schemaMapper   = $this->container->get(\OCA\OpenRegister\Db\SchemaMapper::class);
             $checkedSchemas = [];
             foreach ($result as $object) {
                 $schemaId = $object->getSchema();
@@ -201,8 +201,10 @@ class QueryHandler
                         $hasComplexRendering = true;
                         break;
                     }
+
                     continue;
                 }
+
                 try {
                     $schema = $schemaMapper->find($schemaId);
                     $checkedSchemas[$schemaId] = $schema->hasPropertyAuthorization();
@@ -213,8 +215,8 @@ class QueryHandler
                 } catch (\Exception $e) {
                     $checkedSchemas[$schemaId] = false;
                 }
-            }
-        }
+            }//end foreach
+        }//end if
 
         // Return early if no complex rendering is needed.
         if ($hasComplexRendering === false) {
@@ -363,7 +365,7 @@ class QueryHandler
         ?string $uses=null
     ): array {
         $startTime = microtime(true);
-        $metrics = [];
+        $metrics   = [];
 
         // Set published filter if not already set.
         if (isset($query['_published']) === false) {
@@ -404,8 +406,8 @@ class QueryHandler
         }
 
         // Use optimized combined search+count that loads register/schema once.
-        $searchStart = microtime(true);
-        $searchResult = $this->unifiedObjectMapper->searchObjectsPaginated(
+        $searchStart       = microtime(true);
+        $searchResult      = $this->unifiedObjectMapper->searchObjectsPaginated(
             searchQuery: $paginatedQuery,
             countQuery: $countQuery,
             activeOrgUuid: $activeOrgUuid,
@@ -426,7 +428,7 @@ class QueryHandler
         // Include detailed metrics from mapper if available.
         if (isset($searchResult['metrics']) === true) {
             $metrics['db_search'] = $searchResult['metrics']['search_ms'] ?? null;
-            $metrics['db_count'] = $searchResult['metrics']['count_ms'] ?? null;
+            $metrics['db_count']  = $searchResult['metrics']['count_ms'] ?? null;
         }
 
         // Detect if complex rendering is needed (extend, fields, filter, unset).
@@ -466,8 +468,8 @@ class QueryHandler
 
         // Apply complex rendering if needed.
         if ($hasComplexRendering === true && is_array($results) === true) {
-            $renderStart = microtime(true);
-            $results = $this->renderHandler->renderEntities(
+            $renderStart       = microtime(true);
+            $results           = $this->renderHandler->renderEntities(
                 entities: $results,
                 _extend: $extend,
                 _filter: $query['_filter'] ?? null,
@@ -536,10 +538,10 @@ class QueryHandler
         $hasFacetable = ($query['_facetable'] ?? false) === true || ($query['_facetable'] ?? false) === 'true';
 
         if ($hasFacets === true) {
-            $facetStart = microtime(true);
+            $facetStart  = microtime(true);
             $facetResult = $this->facetHandler->getFacetsForObjects($countQuery);
             $paginatedResults['facets'] = $facetResult['facets'] ?? [];
-            $metrics['facets'] = round((microtime(true) - $facetStart) * 1000, 2);
+            $metrics['facets']          = round((microtime(true) - $facetStart) * 1000, 2);
 
             // Include per-facet timing breakdown if available.
             if (isset($facetResult['performance_metadata']['facet_db_ms']) === true) {
@@ -553,7 +555,7 @@ class QueryHandler
                 baseQuery: $countQuery,
                 _sampleSize: 100
             );
-            $metrics['facetable'] = round((microtime(true) - $facetableStart) * 1000, 2);
+            $metrics['facetable']          = round((microtime(true) - $facetableStart) * 1000, 2);
         }
 
         // Always add performance metrics to @self for debugging.

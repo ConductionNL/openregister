@@ -405,10 +405,13 @@ class PermissionHandler
 
             return null;
         } catch (Exception $e) {
-            $this->logger->warning('PermissionHandler: Failed to get active organisation', [
-                'error' => $e->getMessage()
-            ]);
+            $this->logger->warning(
+                    'PermissionHandler: Failed to get active organisation',
+                    [
+                        'error' => $e->getMessage(),
+                    ]
+                    );
             return null;
-        }
+        }//end try
     }//end getActiveOrganisationForContext()
 }//end class

@@ -1699,6 +1699,7 @@ class SettingsService
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Statistics aggregation requires comprehensive data collection
      */
+
     /**
      * Get statistics for the settings dashboard.
      *
@@ -1751,37 +1752,37 @@ class SettingsService
 
             // Get database statistics using optimized queries.
             try {
-                $dbStats = $this->getDatabaseStats();
+                $dbStats           = $this->getDatabaseStats();
                 $stats['warnings'] = $dbStats['warnings'];
                 $stats['totals']   = $dbStats['totals'];
             } catch (\Exception $e) {
                 $this->logger->error('[SettingsService] Failed to load database statistics', ['error' => $e->getMessage()]);
                 // Provide default empty stats if DB query fails.
                 $stats['warnings'] = [
-                    'objectsWithoutOwner'          => 0,
-                    'objectsWithoutOrganisation'   => 0,
-                    'auditTrailsWithoutExpiry'     => 0,
-                    'searchTrailsWithoutExpiry'    => 0,
-                    'expiredAuditTrails'           => 0,
-                    'expiredSearchTrails'          => 0,
-                    'expiredObjects'               => 0,
+                    'objectsWithoutOwner'        => 0,
+                    'objectsWithoutOrganisation' => 0,
+                    'auditTrailsWithoutExpiry'   => 0,
+                    'searchTrailsWithoutExpiry'  => 0,
+                    'expiredAuditTrails'         => 0,
+                    'expiredSearchTrails'        => 0,
+                    'expiredObjects'             => 0,
                 ];
-                $stats['totals'] = [
-                    'totalObjects'         => 0,
-                    'totalBlobObjects'     => 0,
-                    'totalMagicObjects'    => 0,
-                    'totalSize'            => 0,
-                    'totalBlobSize'        => 0,
-                    'totalMagicSize'       => 0,
-                    'totalAuditTrails'     => 0,
-                    'totalSearchTrails'    => 0,
-                    'totalConfigurations'  => 0,
-                    'totalOrganisations'   => 0,
-                    'totalRegisters'       => 0,
-                    'totalSchemas'         => 0,
-                    'totalSources'         => 0,
-                    'totalWebhookLogs'     => 0,
-                    'deletedObjects'       => 0,
+                $stats['totals']   = [
+                    'totalObjects'        => 0,
+                    'totalBlobObjects'    => 0,
+                    'totalMagicObjects'   => 0,
+                    'totalSize'           => 0,
+                    'totalBlobSize'       => 0,
+                    'totalMagicSize'      => 0,
+                    'totalAuditTrails'    => 0,
+                    'totalSearchTrails'   => 0,
+                    'totalConfigurations' => 0,
+                    'totalOrganisations'  => 0,
+                    'totalRegisters'      => 0,
+                    'totalSchemas'        => 0,
+                    'totalSources'        => 0,
+                    'totalWebhookLogs'    => 0,
+                    'deletedObjects'      => 0,
                 ];
             }//end try
 
@@ -1832,7 +1833,7 @@ class SettingsService
      *         searchTrailsWithoutExpiry: int,
      *         expiredAuditTrails: int,
      *         expiredSearchTrails: int,
-         *         expiredObjects: int
+     *         expiredObjects: int
      *     },
      *     totals: array{
      *         totalObjects: int,
@@ -1865,14 +1866,14 @@ class SettingsService
         $blobSizeQuery = "SELECT COALESCE(SUM(size), 0) as total 
                           FROM {$qb->getTableName('openregister_objects')} 
                           WHERE deleted IS NULL AND size IS NOT NULL";
-        $blobSize = (int) $this->db->executeQuery($blobSizeQuery)->fetch()['total'];
+        $blobSize      = (int) $this->db->executeQuery($blobSizeQuery)->fetch()['total'];
 
         // Then, get the count and size of magic mapper objects by summing from all openregister_table_* tables.
         $magicCount = 0;
         $magicSize  = 0;
         try {
             // Get database platform to use correct query for listing tables.
-            $platform = $this->db->getDatabasePlatform();
+            $platform   = $this->db->getDatabasePlatform();
             $isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
 
             if ($isPostgres === true) {
@@ -1906,18 +1907,21 @@ class SettingsService
                          FROM {$fullTableName} 
                          WHERE _deleted IS NULL"
                     )->fetch();
-                    
+
                     $magicCount += (int) $result['cnt'];
                     $magicSize  += (int) $result['total_size'];
                 } catch (\Exception $e) {
                     // Table query failed, skip it.
-                    $this->logger->debug('[SettingsService] Failed to query magic mapper table', [
-                        'table' => $fullTableName,
-                        'error' => $e->getMessage()
-                    ]);
+                    $this->logger->debug(
+                            '[SettingsService] Failed to query magic mapper table',
+                            [
+                                'table' => $fullTableName,
+                                'error' => $e->getMessage(),
+                            ]
+                            );
                     continue;
-                }
-            }
+                }//end try
+            }//end foreach
         } catch (\Exception $e) {
             $this->logger->warning('[SettingsService] Failed to count magic mapper objects', ['error' => $e->getMessage()]);
         }//end try
@@ -1933,9 +1937,7 @@ class SettingsService
         }
 
         // Build query for sources count based on table existence.
-        $sourcesCountQuery = $sourcesTableExists
-            ? "(SELECT COUNT(*) FROM {$qb->getTableName('openconnector_sources')})"
-            : '0';
+        $sourcesCountQuery = $sourcesTableExists ? "(SELECT COUNT(*) FROM {$qb->getTableName('openconnector_sources')})" : '0';
 
         // Build a single query that gets all other counts at once using subqueries.
         $query = "SELECT
@@ -1972,30 +1974,30 @@ class SettingsService
 
         return [
             'warnings' => [
-                'objectsWithoutOwner'          => (int) ($row['objects_without_owner'] ?? 0),
-                'objectsWithoutOrganisation'   => (int) ($row['objects_without_organisation'] ?? 0),
-                'auditTrailsWithoutExpiry'     => (int) ($row['audit_trails_without_expiry'] ?? 0),
-                'searchTrailsWithoutExpiry'    => (int) ($row['search_trails_without_expiry'] ?? 0),
-                'expiredAuditTrails'           => (int) ($row['expired_audit_trails'] ?? 0),
-                'expiredSearchTrails'          => (int) ($row['expired_search_trails'] ?? 0),
-                'expiredObjects'               => (int) ($row['expired_objects'] ?? 0),
+                'objectsWithoutOwner'        => (int) ($row['objects_without_owner'] ?? 0),
+                'objectsWithoutOrganisation' => (int) ($row['objects_without_organisation'] ?? 0),
+                'auditTrailsWithoutExpiry'   => (int) ($row['audit_trails_without_expiry'] ?? 0),
+                'searchTrailsWithoutExpiry'  => (int) ($row['search_trails_without_expiry'] ?? 0),
+                'expiredAuditTrails'         => (int) ($row['expired_audit_trails'] ?? 0),
+                'expiredSearchTrails'        => (int) ($row['expired_search_trails'] ?? 0),
+                'expiredObjects'             => (int) ($row['expired_objects'] ?? 0),
             ],
-            'totals' => [
-                'totalObjects'         => $totalObjects,
-                'totalBlobObjects'     => $blobCount,
-                'totalMagicObjects'    => $magicCount,
-                'totalSize'            => $totalSize,
-                'totalBlobSize'        => $blobSize,
-                'totalMagicSize'       => $magicSize,
-                'totalAuditTrails'     => (int) ($row['total_audit_trails'] ?? 0),
-                'totalSearchTrails'    => (int) ($row['total_search_trails'] ?? 0),
-                'totalConfigurations'  => (int) ($row['total_configurations'] ?? 0),
-                'totalOrganisations'   => (int) ($row['total_organisations'] ?? 0),
-                'totalRegisters'       => (int) ($row['total_registers'] ?? 0),
-                'totalSchemas'         => (int) ($row['total_schemas'] ?? 0),
-                'totalSources'         => (int) ($row['total_sources'] ?? 0),
-                'totalWebhookLogs'     => (int) ($row['total_webhook_logs'] ?? 0),
-                'deletedObjects'       => (int) ($row['deleted_objects'] ?? 0),
+            'totals'   => [
+                'totalObjects'        => $totalObjects,
+                'totalBlobObjects'    => $blobCount,
+                'totalMagicObjects'   => $magicCount,
+                'totalSize'           => $totalSize,
+                'totalBlobSize'       => $blobSize,
+                'totalMagicSize'      => $magicSize,
+                'totalAuditTrails'    => (int) ($row['total_audit_trails'] ?? 0),
+                'totalSearchTrails'   => (int) ($row['total_search_trails'] ?? 0),
+                'totalConfigurations' => (int) ($row['total_configurations'] ?? 0),
+                'totalOrganisations'  => (int) ($row['total_organisations'] ?? 0),
+                'totalRegisters'      => (int) ($row['total_registers'] ?? 0),
+                'totalSchemas'        => (int) ($row['total_schemas'] ?? 0),
+                'totalSources'        => (int) ($row['total_sources'] ?? 0),
+                'totalWebhookLogs'    => (int) ($row['total_webhook_logs'] ?? 0),
+                'deletedObjects'      => (int) ($row['deleted_objects'] ?? 0),
             ],
         ];
     }//end getDatabaseStats()

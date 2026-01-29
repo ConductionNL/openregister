@@ -76,7 +76,7 @@ class SolrWarmupJob extends QueuedJob
     public function __construct(ITimeFactory $time)
     {
         parent::__construct($time);
-    }
+    }//end __construct()
 
     /**
      * Execute the SOLR warmup job

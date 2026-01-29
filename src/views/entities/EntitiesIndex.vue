@@ -158,10 +158,9 @@
 
 <script>
 import { t } from '@nextcloud/l10n'
-// TODO: Uncomment when entities API is implemented
-// import { generateUrl } from '@nextcloud/router'
-// import { showError } from '@nextcloud/dialogs'
-// import axios from '@nextcloud/axios'
+import { generateUrl } from '@nextcloud/router'
+import { showError } from '@nextcloud/dialogs'
+import axios from '@nextcloud/axios'
 
 import {
 	NcAppContent,
@@ -288,42 +287,35 @@ export default {
 		async loadEntities() {
 			this.loading = true
 			try {
-				// TODO: Replace with actual entities API endpoint when available
-				// For now, show empty state
-				this.entitiesList = []
-				this.totalEntities = 0
+				const params = {
+					limit: this.limit,
+					offset: this.offset,
+				}
 
-				// Uncomment when API is available:
-				// const params = {
-				//     limit: this.limit,
-				//     offset: this.offset,
-				// }
-				//
-				// if (this.searchQuery) {
-				//     params.search = this.searchQuery
-				// }
-				//
-				// if (this.typeFilter) {
-				//     params.type = this.typeFilter
-				// }
-				//
-				// if (this.categoryFilter) {
-				//     params.category = this.categoryFilter
-				// }
-				//
-				// const response = await axios.get(
-				//     generateUrl('/apps/openregister/api/entities'),
-				//     { params },
-				// )
-				//
-				// if (response.data.success) {
-				//     this.entitiesList = response.data.data
-				//     this.totalEntities = response.data.count || this.entitiesList.length
-				// }
+				if (this.searchQuery) {
+					params.search = this.searchQuery
+				}
+
+				if (this.typeFilter) {
+					params.type = this.typeFilter
+				}
+
+				if (this.categoryFilter) {
+					params.category = this.categoryFilter
+				}
+
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/entities'),
+					{ params },
+				)
+
+				if (response.data.success) {
+					this.entitiesList = response.data.data
+					this.totalEntities = response.data.count || this.entitiesList.length
+				}
 			} catch (error) {
-				// TODO: Uncomment when API is implemented
-				// console.error('Failed to load entities:', error)
-				// showError(t('openregister', 'Failed to load entities'))
+				console.error('Failed to load entities:', error)
+				showError(t('openregister', 'Failed to load entities'))
 			} finally {
 				this.loading = false
 			}
@@ -370,7 +362,7 @@ export default {
 		 */
 		viewEntity(entity) {
 			// TODO: Navigate to entity details page when available
-			// console.log('View entity:', entity)
+			console.log('View entity:', entity)
 		},
 
 		/**

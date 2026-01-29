@@ -159,8 +159,8 @@ class MergeHandler
 
             $sourceObject = $sourceContext['object'];
             $targetObject = $targetContext['object'];
-            $register = $targetContext['register'];
-            $schema = $targetContext['schema'];
+            $register     = $targetContext['register'];
+            $schema       = $targetContext['schema'];
 
             // Store original objects in report.
             $mergeReport['sourceObject'] = $sourceObject->jsonSerialize();

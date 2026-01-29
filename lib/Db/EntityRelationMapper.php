@@ -47,4 +47,74 @@ class EntityRelationMapper extends QBMapper
     {
         parent::__construct($db, 'openregister_entity_relations', EntityRelation::class);
     }//end __construct()
+
+    /**
+     * Find entity relations by file ID.
+     *
+     * @param int $fileId The file ID.
+     *
+     * @return EntityRelation[] Array of entity relations.
+     */
+    public function findByFileId(int $fileId): array
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from($this->getTableName())
+            ->where($qb->expr()->eq('file_id', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)));
+
+        return $this->findEntities($qb);
+    }//end findByFileId()
+
+    /**
+     * Find entity relations with entity details by file ID.
+     *
+     * Returns entity relations joined with entity data for anonymization.
+     *
+     * @param int $fileId The file ID.
+     *
+     * @return array Array of entity data with type, value, and relation info.
+     */
+    public function findEntitiesForFile(int $fileId): array
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select(
+            'r.id as relation_id',
+            'r.entity_id',
+            'r.position_start',
+            'r.position_end',
+            'r.confidence',
+            'e.type as entity_type',
+            'e.value as entity_value',
+            'e.category'
+        )
+            ->from($this->getTableName(), 'r')
+            ->innerJoin('r', 'openregister_entities', 'e', $qb->expr()->eq('r.entity_id', 'e.id'))
+            ->where($qb->expr()->eq('r.file_id', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)))
+            ->orderBy('r.position_start', 'ASC');
+
+        $result   = $qb->executeQuery();
+        $entities = $result->fetchAll();
+        $result->closeCursor();
+
+        return $entities;
+    }//end findEntitiesForFile()
+
+    /**
+     * Mark entity relations as anonymized.
+     *
+     * @param int    $fileId          The file ID.
+     * @param string $anonymizedValue The placeholder value used.
+     *
+     * @return int Number of relations updated.
+     */
+    public function markAsAnonymized(int $fileId, string $anonymizedValue): int
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->update($this->getTableName())
+            ->set('anonymized', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL))
+            ->set('anonymized_value', $qb->createNamedParameter($anonymizedValue))
+            ->where($qb->expr()->eq('file_id', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)));
+
+        return $qb->executeStatement();
+    }//end markAsAnonymized()
 }//end class

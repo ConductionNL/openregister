@@ -84,9 +84,9 @@ class MagicOrganizationHandler
      * 4. Published objects may be accessible across organizations (if configured)
      * 5. Objects with null organization are accessible to all (legacy/global data)
      *
-     * @param IQueryBuilder $qb                    Query builder to modify
-     * @param bool          $allowPublishedAccess  Whether to allow access to published objects from other orgs
-     * @param bool          $adminBypassEnabled    Whether admin users can bypass org filtering
+     * @param IQueryBuilder $qb                   Query builder to modify
+     * @param bool          $allowPublishedAccess Whether to allow access to published objects from other orgs
+     * @param bool          $adminBypassEnabled   Whether admin users can bypass org filtering
      *
      * @return void
      *
@@ -96,8 +96,8 @@ class MagicOrganizationHandler
      */
     public function applyOrganizationFilter(
         IQueryBuilder $qb,
-        bool $allowPublishedAccess = false,
-        bool $adminBypassEnabled = false
+        bool $allowPublishedAccess=false,
+        bool $adminBypassEnabled=false
     ): void {
         $user = $this->userSession->getUser();
 
@@ -130,7 +130,7 @@ class MagicOrganizationHandler
 
             // Published objects (if allowed)
             if ($allowPublishedAccess === true) {
-                $now = (new DateTime())->format('Y-m-d H:i:s');
+                $now          = (new DateTime())->format('Y-m-d H:i:s');
                 $conditions[] = $qb->expr()->andX(
                     $qb->expr()->isNotNull('t._published'),
                     $qb->expr()->lte('t._published', $qb->createNamedParameter($now)),
@@ -149,7 +149,7 @@ class MagicOrganizationHandler
 
             $qb->andWhere($qb->expr()->orX(...$conditions));
             return;
-        }
+        }//end if
 
         // Build conditions for organization filtering
         $conditions = [];
@@ -174,7 +174,7 @@ class MagicOrganizationHandler
 
         // Condition 3: Published objects from other organizations (if allowed)
         if ($allowPublishedAccess === true) {
-            $now = (new DateTime())->format('Y-m-d H:i:s');
+            $now          = (new DateTime())->format('Y-m-d H:i:s');
             $conditions[] = $qb->expr()->andX(
                 $qb->expr()->isNotNull('t._published'),
                 $qb->expr()->lte('t._published', $qb->createNamedParameter($now)),
@@ -188,12 +188,15 @@ class MagicOrganizationHandler
         // Apply OR of all conditions
         $qb->andWhere($qb->expr()->orX(...$conditions));
 
-        $this->logger->debug('MagicOrganizationHandler: Applied organization filter', [
-            'activeOrgUuids' => $activeOrgUuids,
-            'allowPublishedAccess' => $allowPublishedAccess,
-            'conditionsCount' => count($conditions),
-            'isAdmin' => $isAdmin
-        ]);
+        $this->logger->debug(
+                'MagicOrganizationHandler: Applied organization filter',
+                [
+                    'activeOrgUuids'       => $activeOrgUuids,
+                    'allowPublishedAccess' => $allowPublishedAccess,
+                    'conditionsCount'      => count($conditions),
+                    'isAdmin'              => $isAdmin,
+                ]
+                );
     }//end applyOrganizationFilter()
 
     /**
@@ -213,10 +216,13 @@ class MagicOrganizationHandler
             // Get active organisations including parent chain
             $orgUuids = $organisationService->getUserActiveOrganisations();
 
-            $this->logger->debug('MagicOrganizationHandler: getUserActiveOrganisations returned', [
-                'orgUuids' => $orgUuids,
-                'user' => $this->userSession->getUser()?->getUID()
-            ]);
+            $this->logger->debug(
+                    'MagicOrganizationHandler: getUserActiveOrganisations returned',
+                    [
+                        'orgUuids' => $orgUuids,
+                        'user'     => $this->userSession->getUser()?->getUID(),
+                    ]
+                    );
 
             if (empty($orgUuids) === false) {
                 return $orgUuids;
@@ -225,20 +231,26 @@ class MagicOrganizationHandler
             // Fallback: try to get just the active organisation
             $activeOrg = $organisationService->getActiveOrganisation();
             if ($activeOrg !== null) {
-                $this->logger->debug('MagicOrganizationHandler: getActiveOrganisation returned', [
-                    'uuid' => $activeOrg->getUuid()
-                ]);
+                $this->logger->debug(
+                        'MagicOrganizationHandler: getActiveOrganisation returned',
+                        [
+                            'uuid' => $activeOrg->getUuid(),
+                        ]
+                        );
                 return [$activeOrg->getUuid()];
             }
 
             $this->logger->debug('MagicOrganizationHandler: No active organisation found');
             return [];
         } catch (\Exception $e) {
-            $this->logger->warning('MagicOrganizationHandler: Failed to get active organisation', [
-                'error' => $e->getMessage()
-            ]);
+            $this->logger->warning(
+                    'MagicOrganizationHandler: Failed to get active organisation',
+                    [
+                        'error' => $e->getMessage(),
+                    ]
+                    );
             return [];
-        }
+        }//end try
     }//end getActiveOrganizationUuids()
 
     /**
@@ -268,6 +280,7 @@ class MagicOrganizationHandler
                 $userGroups = $this->groupManager->getUserGroupIds($user);
                 return in_array('admin', $userGroups, true);
             }
+
             return false;
         }
 

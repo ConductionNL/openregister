@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\GdprEntity;
 use OCA\OpenRegister\Db\GdprEntityMapper;
+use OCA\OpenRegister\Service\SettingsService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -89,13 +90,15 @@ class EntityRecognitionHandler
      * @param EntityRelationMapper $entityRelationMapper Entity relation mapper.
      * @param IDBConnection        $db                   Database connection.
      * @param LoggerInterface      $logger               Logger.
+     * @param SettingsService      $settingsService      Settings service.
      */
     public function __construct(
         private readonly ChunkMapper $chunkMapper,
         private readonly GdprEntityMapper $entityMapper,
         private readonly EntityRelationMapper $entityRelationMapper,
         private readonly IDBConnection $db,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly SettingsService $settingsService
     ) {
     }//end __construct()
 
@@ -429,12 +432,162 @@ class EntityRecognitionHandler
      */
     private function detectWithPresidio(string $text, ?array $entityTypes, float $confidenceThreshold): array
     {
-        // TODO: Implement Presidio integration.
-        // For now, fall back to regex.
-        $this->logger->debug(message: '[EntityRecognitionHandler] Presidio not yet implemented, using regex fallback');
+        try {
+            // Get Presidio settings.
+            $fileSettings     = $this->settingsService->getFileSettingsOnly();
+            $presidioEndpoint = $fileSettings['presidioApiEndpoint'] ?? '';
 
-        return $this->detectWithRegex(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold);
+            if (empty($presidioEndpoint) === true) {
+                $this->logger->warning('[EntityRecognitionHandler] Presidio endpoint not configured, falling back to regex');
+                return $this->detectWithRegex(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold);
+            }
+
+            // Build request body.
+            $requestBody = [
+                'text'     => $text,
+                'language' => 'en',
+            ];
+
+            // Add entity types filter if specified.
+            if ($entityTypes !== null && empty($entityTypes) === false) {
+                // Map our entity types to Presidio entity types.
+                $presidioEntities = $this->mapToPresidioEntityTypes($entityTypes);
+                if (empty($presidioEntities) === false) {
+                    $requestBody['entities'] = $presidioEntities;
+                }
+            }
+
+            // Make HTTP request to Presidio.
+            $ch = curl_init($presidioEndpoint.'/analyze');
+            curl_setopt_array(
+                $ch,
+                [
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_POST           => true,
+                    CURLOPT_POSTFIELDS     => json_encode($requestBody),
+                    CURLOPT_HTTPHEADER     => [
+                        'Content-Type: application/json',
+                        'Accept: application/json',
+                    ],
+                    CURLOPT_TIMEOUT        => 30,
+                ]
+            );
+
+            $response  = curl_exec($ch);
+            $httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlError = curl_error($ch);
+            curl_close($ch);
+
+            if ($curlError !== '') {
+                $this->logger->error('[EntityRecognitionHandler] Presidio connection error: '.$curlError);
+                return $this->detectWithRegex(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold);
+            }
+
+            if ($httpCode !== 200) {
+                $this->logger->error('[EntityRecognitionHandler] Presidio returned HTTP '.$httpCode);
+                return $this->detectWithRegex(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold);
+            }
+
+            $presidioResults = json_decode($response, true);
+            if (json_last_error() !== JSON_ERROR_NONE || is_array($presidioResults) === false) {
+                $this->logger->error('[EntityRecognitionHandler] Failed to parse Presidio response');
+                return $this->detectWithRegex(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold);
+            }
+
+            $this->logger->debug('[EntityRecognitionHandler] Presidio found '.count($presidioResults).' entities');
+
+            // Convert Presidio results to our format.
+            $entities = [];
+            foreach ($presidioResults as $result) {
+                $score = $result['score'] ?? 0;
+
+                // Skip low confidence results.
+                if ($score < $confidenceThreshold) {
+                    continue;
+                }
+
+                $start = $result['start'] ?? 0;
+                $end   = $result['end'] ?? 0;
+                $value = substr($text, $start, ($end - $start));
+
+                $entityType = $this->mapFromPresidioEntityType($result['entity_type'] ?? 'UNKNOWN');
+
+                $entities[] = [
+                    'type'           => $entityType,
+                    'value'          => $value,
+                    'category'       => $this->getCategoryForType(type: $entityType),
+                    'position_start' => $start,
+                    'position_end'   => $end,
+                    'confidence'     => $score,
+                    'method'         => self::METHOD_PRESIDIO,
+                ];
+            }//end foreach
+
+            return $entities;
+        } catch (Exception $e) {
+            $this->logger->error('[EntityRecognitionHandler] Presidio detection failed: '.$e->getMessage());
+            return $this->detectWithRegex(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold);
+        }//end try
     }//end detectWithPresidio()
+
+    /**
+     * Map our entity types to Presidio entity types.
+     *
+     * @param array $entityTypes Our entity types.
+     *
+     * @return array Presidio entity types.
+     */
+    private function mapToPresidioEntityTypes(array $entityTypes): array
+    {
+        $mapping = [
+            self::ENTITY_TYPE_PERSON       => 'PERSON',
+            self::ENTITY_TYPE_ORGANIZATION => 'ORGANIZATION',
+            self::ENTITY_TYPE_LOCATION     => 'LOCATION',
+            self::ENTITY_TYPE_EMAIL        => 'EMAIL_ADDRESS',
+            self::ENTITY_TYPE_PHONE        => 'PHONE_NUMBER',
+            self::ENTITY_TYPE_DATE         => 'DATE_TIME',
+            self::ENTITY_TYPE_IBAN         => 'IBAN_CODE',
+            self::ENTITY_TYPE_SSN          => 'US_SSN',
+            self::ENTITY_TYPE_IP_ADDRESS   => 'IP_ADDRESS',
+        ];
+
+        $presidioTypes = [];
+        foreach ($entityTypes as $type) {
+            if (isset($mapping[$type]) === true) {
+                $presidioTypes[] = $mapping[$type];
+            }
+        }
+
+        return $presidioTypes;
+    }//end mapToPresidioEntityTypes()
+
+    /**
+     * Map Presidio entity type to our entity type.
+     *
+     * @param string $presidioType Presidio entity type.
+     *
+     * @return string Our entity type.
+     */
+    private function mapFromPresidioEntityType(string $presidioType): string
+    {
+        $mapping = [
+            'PERSON'        => self::ENTITY_TYPE_PERSON,
+            'ORGANIZATION'  => self::ENTITY_TYPE_ORGANIZATION,
+            'LOCATION'      => self::ENTITY_TYPE_LOCATION,
+            'EMAIL_ADDRESS' => self::ENTITY_TYPE_EMAIL,
+            'PHONE_NUMBER'  => self::ENTITY_TYPE_PHONE,
+            'DATE_TIME'     => self::ENTITY_TYPE_DATE,
+            'IBAN_CODE'     => self::ENTITY_TYPE_IBAN,
+            'US_SSN'        => self::ENTITY_TYPE_SSN,
+            'IP_ADDRESS'    => self::ENTITY_TYPE_IP_ADDRESS,
+            'CREDIT_CARD'   => 'CREDIT_CARD',
+            'CRYPTO'        => 'CRYPTO',
+            'URL'           => 'URL',
+            'NRP'           => 'NRP',
+        ];
+
+        return $mapping[$presidioType] ?? $presidioType;
+    }//end mapFromPresidioEntityType()
 
     /**
      * Detect entities using LLM.

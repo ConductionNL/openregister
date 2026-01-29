@@ -94,15 +94,15 @@ class RevertHandler
         bool $overwriteVersion=false
     ): ObjectEntity {
         // Get the object with context (searches both blob and magic tables).
-        $context = $this->objectEntityMapper->findAcrossAllSources(
+        $context        = $this->objectEntityMapper->findAcrossAllSources(
             identifier: $id,
             includeDeleted: false,
             _rbac: false,
             _multitenancy: false
         );
-        $object = $context['object'];
+        $object         = $context['object'];
         $registerEntity = $context['register'];
-        $schemaEntity = $context['schema'];
+        $schemaEntity   = $context['schema'];
 
         // Verify that the object belongs to the specified register and schema.
         if ($object->getRegister() !== $register || $object->getSchema() !== $schema) {

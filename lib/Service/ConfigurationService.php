@@ -758,30 +758,30 @@ class ConfigurationService
         try {
             // Try to find configuration for this app by appId.
             $configurations = $this->configurationMapper->findByApp($appId);
-            
+
             if (count($configurations) > 0) {
                 // Use the first (most recent) configuration.
                 $configuration = $configurations[0];
-                $version = $configuration->getVersion();
-                
+                $version       = $configuration->getVersion();
+
                 if ($version !== null && $version !== '') {
                     return $version;
                 }
             }
-            
+
             // Fallback: Try to get the value from legacy appconfig.
             $versionKey = $appId.'_config_version';
-            $version = $this->appConfig->getValueString(
+            $version    = $this->appConfig->getValueString(
                 app: 'openregister',
                 key: $versionKey,
                 default: ''
             );
-            
+
             // Return null if empty string.
             if ($version === '') {
                 return null;
             }
-            
+
             return $version;
         } catch (Exception $e) {
             // Log error and return null.

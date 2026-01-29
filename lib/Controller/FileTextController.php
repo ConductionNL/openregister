@@ -22,6 +22,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCP\AppFramework\Http;
+use OCA\OpenRegister\Db\EntityRelationMapper;
+use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\TextExtractionService;
 use OCA\OpenRegister\Service\IndexService;
 use OCP\AppFramework\Controller;
@@ -47,18 +49,22 @@ class FileTextController extends Controller
     /**
      * Constructor
      *
-     * @param string                $appName       App name
-     * @param IRequest              $request       Request object
-     * @param TextExtractionService $textExtractor Text extraction service
-     * @param IndexService          $indexService  Index service for file operations
-     * @param LoggerInterface       $logger        Logger
-     * @param IAppConfig            $config        Application configuration
+     * @param string                $appName              App name
+     * @param IRequest              $request              Request object
+     * @param TextExtractionService $textExtractor        Text extraction service
+     * @param IndexService          $indexService         Index service for file operations
+     * @param FileService           $fileService          File service for file operations
+     * @param EntityRelationMapper  $entityRelationMapper Entity relation mapper
+     * @param LoggerInterface       $logger               Logger
+     * @param IAppConfig            $config               Application configuration
      */
     public function __construct(
         string $appName,
         IRequest $request,
         private readonly TextExtractionService $textExtractor,
         private readonly IndexService $indexService,
+        private readonly FileService $fileService,
+        private readonly EntityRelationMapper $entityRelationMapper,
         private readonly LoggerInterface $logger,
         private readonly IAppConfig $config
     ) {
@@ -420,4 +426,142 @@ class FileTextController extends Controller
             );
         }//end try
     }//end getChunkingStats()
+
+    /**
+     * Anonymize a file by replacing detected entities with placeholders
+     *
+     * Creates a new anonymized copy of the file with all detected PII entities
+     * replaced by placeholders in the format [ENTITY_TYPE: key].
+     * The original file remains unchanged.
+     *
+     * @param int $fileId Nextcloud file ID to anonymize
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with anonymization result
+     */
+    public function anonymizeFile(int $fileId): JSONResponse
+    {
+        try {
+            $this->logger->info(
+                '[FileTextController] Anonymizing file',
+                ['file_id' => $fileId]
+            );
+
+            // Get the file node.
+            $fileNode = $this->fileService->getFileById($fileId);
+            if ($fileNode === null) {
+                return new JSONResponse(
+                    data: [
+                        'success' => false,
+                        'message' => 'File not found',
+                    ],
+                    statusCode: Http::STATUS_NOT_FOUND
+                );
+            }
+
+            // Check if the file is already anonymized.
+            $fileName = $fileNode->getName();
+            if (strpos($fileName, '_anonymized') !== false) {
+                return new JSONResponse(
+                    data: [
+                        'success' => false,
+                        'message' => 'File is already anonymized',
+                    ],
+                    statusCode: Http::STATUS_BAD_REQUEST
+                );
+            }
+
+            // Get detected entities for this file.
+            $entityData = $this->entityRelationMapper->findEntitiesForFile($fileId);
+
+            if (empty($entityData) === true) {
+                return new JSONResponse(
+                    data: [
+                        'success' => false,
+                        'message' => 'No entities detected in this file. Run text extraction first.',
+                    ],
+                    statusCode: Http::STATUS_BAD_REQUEST
+                );
+            }
+
+            // Build entities array in the format expected by anonymizeDocument.
+            // Format: [['text' => 'value', 'entityType' => 'TYPE', 'key' => 'unique_key'], ...]
+            $entities        = [];
+            $processedValues = [];
+            // Track unique values to avoid duplicates.
+            foreach ($entityData as $entity) {
+                $value = $entity['entity_value'];
+
+                // Skip if we've already processed this value.
+                if (isset($processedValues[$value]) === true) {
+                    continue;
+                }
+
+                $processedValues[$value] = true;
+                $entities[] = [
+                    'text'       => $value,
+                    'entityType' => $entity['entity_type'],
+                    'key'        => substr(md5($value.$entity['entity_type']), 0, 8),
+                ];
+            }
+
+            $this->logger->debug(
+                '[FileTextController] Found entities to anonymize',
+                [
+                    'file_id'      => $fileId,
+                    'entity_count' => count($entities),
+                ]
+            );
+
+            // Perform anonymization.
+            $anonymizedFile = $this->fileService->anonymizeDocument($fileNode, $entities);
+
+            // Mark entity relations as anonymized.
+            $this->entityRelationMapper->markAsAnonymized(
+                fileId: $fileId,
+                anonymizedValue: 'anonymized_'.date('Y-m-d_H-i-s')
+            );
+
+            $this->logger->info(
+                '[FileTextController] File anonymized successfully',
+                [
+                    'original_file_id'   => $fileId,
+                    'anonymized_file_id' => $anonymizedFile->getId(),
+                    'anonymized_path'    => $anonymizedFile->getPath(),
+                    'entities_replaced'  => count($entities),
+                ]
+            );
+
+            return new JSONResponse(
+                data: [
+                    'success'            => true,
+                    'message'            => 'File anonymized successfully',
+                    'original_file_id'   => $fileId,
+                    'anonymized_file_id' => $anonymizedFile->getId(),
+                    'anonymized_path'    => $anonymizedFile->getPath(),
+                    'entities_replaced'  => count($entities),
+                ]
+            );
+        } catch (\Exception $e) {
+            $this->logger->error(
+                '[FileTextController] Failed to anonymize file',
+                [
+                    'file_id' => $fileId,
+                    'error'   => $e->getMessage(),
+                    'trace'   => $e->getTraceAsString(),
+                ]
+            );
+
+            return new JSONResponse(
+                data: [
+                    'success' => false,
+                    'message' => 'Failed to anonymize file: '.$e->getMessage(),
+                ],
+                statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }//end try
+    }//end anonymizeFile()
 }//end class

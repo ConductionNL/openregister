@@ -34,10 +34,10 @@ class UserProfileUpdatedEvent extends Event
     /**
      * Constructor for UserProfileUpdatedEvent.
      *
-     * @param IUser $user     The user whose profile was updated.
-     * @param array $oldData  The user data before the update.
-     * @param array $newData  The user data after the update.
-     * @param array $changes  Array of field names that were changed.
+     * @param IUser $user    The user whose profile was updated.
+     * @param array $oldData The user data before the update.
+     * @param array $newData The user data after the update.
+     * @param array $changes Array of field names that were changed.
      *
      * @return void
      */

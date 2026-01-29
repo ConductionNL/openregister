@@ -606,13 +606,13 @@ class CacheHandler
         return array_merge(
             $this->stats,
             [
-                'hit_rate'                      => round($hitRate, 2),
-                'query_hit_rate'                => round($queryHitRate, 2),
-                'name_hit_rate'                 => round($nameHitRate, 2),
-                'cache_size'                    => count($this->objectCache),
-                'query_cache_size'              => count($this->inMemoryQueryCache),
-                'name_cache_size'               => count($this->nameCache),
-                'distributed_name_cache_size'   => $distributedNameCacheCount,
+                'hit_rate'                    => round($hitRate, 2),
+                'query_hit_rate'              => round($queryHitRate, 2),
+                'name_hit_rate'               => round($nameHitRate, 2),
+                'cache_size'                  => count($this->objectCache),
+                'query_cache_size'            => count($this->inMemoryQueryCache),
+                'name_cache_size'             => count($this->nameCache),
+                'distributed_name_cache_size' => $distributedNameCacheCount,
             ]
         );
     }//end getStats()
@@ -812,7 +812,7 @@ class CacheHandler
                         );
                     }
                 }
-            }
+            }//end if
         }//end if
 
         // **SCHEMA-WIDE INVALIDATION**: Clear ALL search caches for this schema.
@@ -1065,7 +1065,7 @@ class CacheHandler
             );
             if (($result['object'] ?? null) !== null) {
                 $object = $result['object'];
-                $name = $object->getName() ?? $object->getUuid();
+                $name   = $object->getName() ?? $object->getUuid();
                 $this->setObjectName(identifier: $identifier, name: $name);
                 return $name;
             }
@@ -1194,8 +1194,8 @@ class CacheHandler
 
                         // Remove from missing list since we found it.
                         $missingIdentifiers = array_diff($missingIdentifiers, [$uuid]);
-                    }
-                }
+                    }//end foreach
+                }//end if
 
                 // STEP 3: Batch load any still-missing identifiers from magic tables.
                 // This replaces the N+1 individual lookups with batch queries per table.
@@ -1423,7 +1423,7 @@ class CacheHandler
                         // Magic table columns have underscore prefix: _id, _name, _deleted, _published, _depublished.
                         // Note: _id is bigint (internal DB ID), we need _uuid (the UUID) for mapping.
                         // Filter: only exclude deleted objects. Include all others regardless of publish status.
-                        $sql = 'SELECT "_uuid", "_name" FROM '.$tableName.' WHERE "_deleted" IS NULL';
+                        $sql    = 'SELECT "_uuid", "_name" FROM '.$tableName.' WHERE "_deleted" IS NULL';
                         $result = $this->db->executeQuery($sql);
 
                         while (($row = $result->fetch()) !== false) {
@@ -1483,9 +1483,12 @@ class CacheHandler
         }
 
         // Filter to only UUID-like strings.
-        $uuidList = array_filter($uuids, function ($id) {
-            return is_string($id) === true && str_contains($id, '-');
-        });
+        $uuidList = array_filter(
+                $uuids,
+                function ($id) {
+                    return is_string($id) === true && str_contains($id, '-');
+                }
+                );
 
         if (empty($uuidList) === true) {
             return $results;
@@ -1523,7 +1526,8 @@ class CacheHandler
                     if ($register->isMagicMappingEnabledForSchema(
                         schemaId: (int) $schemaId,
                         schemaSlug: $schemaSlug
-                    ) === false) {
+                    ) === false
+                    ) {
                         continue;
                     }
 
@@ -1550,7 +1554,7 @@ class CacheHandler
                 'Failed to batch load names from magic tables',
                 ['error' => $e->getMessage(), 'uuid_count' => count($uuids)]
             );
-        }
+        }//end try
 
         return $results;
     }//end batchLoadNamesFromMagicTables()
@@ -1588,6 +1592,7 @@ class CacheHandler
                 foreach ($uuids as $index => $uuid) {
                     $stmt->bindValue((int) $index + 1, $uuid);
                 }
+
                 $stmt->execute();
 
                 while (($row = $stmt->fetch()) !== false) {
@@ -1605,8 +1610,8 @@ class CacheHandler
             } catch (\Exception $e) {
                 // Column doesn't exist, try next one.
                 continue;
-            }
-        }
+            }//end try
+        }//end foreach
 
         return $results;
     }//end queryTableForNames()

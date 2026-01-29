@@ -272,9 +272,12 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         bool $_rbac=true,
         bool $_multitenancy=true
     ): array {
-        $this->logger->debug('[UnifiedObjectMapper] findAcrossAllSources called', [
-            'identifier' => $identifier,
-        ]);
+        $this->logger->debug(
+                '[UnifiedObjectMapper] findAcrossAllSources called',
+                [
+                    'identifier' => $identifier,
+                ]
+                );
 
         return $this->objectEntityMapper->findAcrossAllSources(
             identifier: $identifier,
@@ -440,9 +443,12 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         }
 
         // Dispatch ObjectCreatedEvent after successful insert.
-        $this->logger->debug('[UnifiedObjectMapper] Dispatching ObjectCreatedEvent', [
-            'entityUuid' => $insertedEntity->getUuid()
-        ]);
+        $this->logger->debug(
+                '[UnifiedObjectMapper] Dispatching ObjectCreatedEvent',
+                [
+                    'entityUuid' => $insertedEntity->getUuid(),
+                ]
+                );
         $this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent($insertedEntity));
 
         return $insertedEntity;
@@ -479,23 +485,29 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             // Use the UUID (not numeric ID) to ensure we get the correct object.
             try {
                 $oldEntity = $this->find(
-                    identifier: $entity->getUuid(),  // Use UUID, not ID!
+                    identifier: $entity->getUuid(),
+                // Use UUID, not ID!
                     register: $register,
                     schema: $schema,
                     includeDeleted: false,
-                    _rbac: false,  // Skip RBAC for internal fetch
-                    _multitenancy: false  // Skip multitenancy for internal fetch
+                    _rbac: false,
+                // Skip RBAC for internal fetch
+                    _multitenancy: false
+                // Skip multitenancy for internal fetch
                 );
             } catch (\Exception $e) {
                 // If old object doesn't exist (shouldn't happen in update), use current entity.
-                $this->logger->warning('[UnifiedObjectMapper] Could not fetch old entity for update event', [
-                    'entityId' => $entity->getId(),
-                    'entityUuid' => $entity->getUuid(),
-                    'error' => $e->getMessage()
-                ]);
+                $this->logger->warning(
+                        '[UnifiedObjectMapper] Could not fetch old entity for update event',
+                        [
+                            'entityId'   => $entity->getId(),
+                            'entityUuid' => $entity->getUuid(),
+                            'error'      => $e->getMessage(),
+                        ]
+                        );
                 $oldEntity = $entity;
-            }
-        }
+            }//end try
+        }//end if
 
         if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
             $this->logger->debug('[UnifiedObjectMapper] Routing update() to MagicMapper');
@@ -506,9 +518,12 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         }
 
         // Dispatch ObjectUpdatedEvent after successful update.
-        $this->logger->debug('[UnifiedObjectMapper] Dispatching ObjectUpdatedEvent', [
-            'entityUuid' => $updatedEntity->getUuid(),
-        ]);
+        $this->logger->debug(
+                '[UnifiedObjectMapper] Dispatching ObjectUpdatedEvent',
+                [
+                    'entityUuid' => $updatedEntity->getUuid(),
+                ]
+                );
         $this->eventDispatcher->dispatchTyped(new ObjectUpdatedEvent($updatedEntity, $oldEntity));
 
         return $updatedEntity;
@@ -543,16 +558,19 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             );
 
             // Dispatch ObjectDeletedEvent after successful delete (MagicMapper doesn't dispatch events).
-            $this->logger->debug('[UnifiedObjectMapper] Dispatching ObjectDeletedEvent', [
-                'entityUuid' => $deletedEntity->getUuid()
-            ]);
+            $this->logger->debug(
+                    '[UnifiedObjectMapper] Dispatching ObjectDeletedEvent',
+                    [
+                        'entityUuid' => $deletedEntity->getUuid(),
+                    ]
+                    );
             $this->eventDispatcher->dispatchTyped(new ObjectDeletedEvent($deletedEntity));
         } else {
             $this->logger->debug('[UnifiedObjectMapper] Routing delete() to ObjectEntityMapper');
             // NOTE: ObjectEntityMapper.delete() handles its own event dispatching for blob storage.
             // Do NOT dispatch ObjectDeletedEvent here to avoid duplicates.
             $deletedEntity = $this->objectEntityMapper->delete(entity: $entity);
-        }
+        }//end if
 
         return $deletedEntity;
     }//end delete()
@@ -626,7 +644,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             // Check if we have mixed schemas by examining all objects.
             $schemaGroups = [];
             foreach ($insertObjects as $obj) {
-                $objSchemaId = $obj['@self']['schema'] ?? null;
+                $objSchemaId   = $obj['@self']['schema'] ?? null;
                 $objRegisterId = $obj['@self']['register'] ?? ($register?->getId());
                 if ($objSchemaId !== null) {
                     $groupKey = "{$objRegisterId}_{$objSchemaId}";
@@ -652,7 +670,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
 
                     // Resolve register and schema for this group.
                     $groupRegister = $register;
-                    $groupSchema = null;
+                    $groupSchema   = null;
 
                     if ($groupRegister === null && $groupRegisterId !== null) {
                         try {
@@ -679,11 +697,11 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                     );
 
                     $allResults = array_merge($allResults, $groupResults);
-                }
+                }//end foreach
 
                 return $allResults;
-            }
-        }
+            }//end if
+        }//end if
 
         // Single schema processing (or schema was explicitly provided).
         return $this->ultraFastBulkSaveSingleSchema(
@@ -1085,8 +1103,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                 $registerSchemaPairs[] = ['register' => $register, 'schema' => $schema];
 
                 // Get count for this schema using MagicSearchHandler (applies all filters correctly).
-                $schemaCountQuery                  = $countQuery;
-                $schemaCountQuery['_rbac']         = $rbac;
+                $schemaCountQuery          = $countQuery;
+                $schemaCountQuery['_rbac'] = $rbac;
                 $schemaCountQuery['_multitenancy'] = $multitenancy;
                 $schemaCount = $this->magicMapper->countObjectsInRegisterSchemaTable(
                     query: $schemaCountQuery,
@@ -1099,8 +1117,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                     '[UnifiedObjectMapper] Failed to load schema for multi-schema search',
                     ['schemaId' => $schemaId, 'error' => $e->getMessage()]
                 );
-            }
-        }
+            }//end try
+        }//end foreach
 
         // If no valid schema pairs, return empty.
         if (empty($registerSchemaPairs) === true) {
@@ -1116,8 +1134,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
 
         // Use UNION-based search for proper SQL-level ordering across all tables.
         // Add RBAC and multitenancy flags.
-        $unionQuery                  = $searchQuery;
-        $unionQuery['_rbac']         = $rbac;
+        $unionQuery          = $searchQuery;
+        $unionQuery['_rbac'] = $rbac;
         $unionQuery['_multitenancy'] = $multitenancy;
 
         $results = $this->magicMapper->searchAcrossMultipleTables(
@@ -1130,7 +1148,6 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         // - Each schema is filtered independently - some may have the property, some may not
         // - Reporting a filter as "ignored" is misleading when it was applied to schemas that have it
         // Only single-schema searches should report ignoredFilters (when the filter has no effect).
-
         return [
             'results'        => $results,
             'total'          => $totalCount,
@@ -1181,14 +1198,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
     ): array|int {
         // Check if register and schema are specified in query for magic mapper routing.
         // Support both top-level keys (_register, register) and @self nested keys.
-        $registerId = $query['@self']['register']
-            ?? $query['_register']
-            ?? $query['register']
-            ?? null;
-        $schemaId   = $query['@self']['schema']
-            ?? $query['_schema']
-            ?? $query['schema']
-            ?? null;
+        $registerId = $query['@self']['register'] ?? $query['_register'] ?? $query['register'] ?? null;
+        $schemaId   = $query['@self']['schema'] ?? $query['_schema'] ?? $query['schema'] ?? null;
 
         if ($registerId !== null && $schemaId !== null) {
             try {
@@ -1213,7 +1224,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                     ['error' => $e->getMessage()]
                 );
                 // Fall through to blob storage.
-            }
+            }//end try
         }//end if
 
         $this->logger->debug('[UnifiedObjectMapper] Routing searchObjects() to blob storage (ObjectEntityMapper)');
@@ -1251,14 +1262,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
     ): int {
         // Check if register and schema are specified in query for magic mapper routing.
         // Support both top-level keys (_register, register) and @self nested keys.
-        $registerId = $query['@self']['register']
-            ?? $query['_register']
-            ?? $query['register']
-            ?? null;
-        $schemaId   = $query['@self']['schema']
-            ?? $query['_schema']
-            ?? $query['schema']
-            ?? null;
+        $registerId = $query['@self']['register'] ?? $query['_register'] ?? $query['register'] ?? null;
+        $schemaId   = $query['@self']['schema'] ?? $query['_schema'] ?? $query['schema'] ?? null;
 
         if ($registerId !== null && $schemaId !== null) {
             try {
@@ -1325,17 +1330,9 @@ class UnifiedObjectMapper extends AbstractObjectMapper
     ): array {
         // Extract register and schema IDs from query.
         // Support both top-level keys (_register, register) and @self nested keys.
-        $registerId = $searchQuery['@self']['register']
-            ?? $searchQuery['_register']
-            ?? $searchQuery['register']
-            ?? null;
-        $schemaId   = $searchQuery['@self']['schema']
-            ?? $searchQuery['_schema']
-            ?? $searchQuery['schema']
-            ?? null;
-        $schemaIds  = $searchQuery['@self']['schemas']
-            ?? $searchQuery['_schemas']
-            ?? null;
+        $registerId = $searchQuery['@self']['register'] ?? $searchQuery['_register'] ?? $searchQuery['register'] ?? null;
+        $schemaId   = $searchQuery['@self']['schema'] ?? $searchQuery['_schema'] ?? $searchQuery['schema'] ?? null;
+        $schemaIds  = $searchQuery['@self']['schemas'] ?? $searchQuery['_schemas'] ?? null;
 
         // Handle case where @self.schema is an array (multi-schema search via singular key).
         // This supports opencatalogi which uses @self.schema with array values.
@@ -1398,24 +1395,24 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             $searchQuery['_multitenancy'] = $multitenancy;
 
             $searchStart = microtime(true);
-            $results = $this->magicMapper->searchObjectsInRegisterSchemaTable(
+            $results     = $this->magicMapper->searchObjectsInRegisterSchemaTable(
                 query: $searchQuery,
                 register: $register,
                 schema: $schema
             );
-            $searchTime = round((microtime(true) - $searchStart) * 1000, 2);
+            $searchTime  = round((microtime(true) - $searchStart) * 1000, 2);
 
             // Add RBAC and multitenancy flags to count query for MagicSearchHandler.
             $countQuery['_rbac']         = $rbac;
             $countQuery['_multitenancy'] = $multitenancy;
 
             $countStart = microtime(true);
-            $total   = $this->magicMapper->countObjectsInRegisterSchemaTable(
+            $total      = $this->magicMapper->countObjectsInRegisterSchemaTable(
                 query: $countQuery,
                 register: $register,
                 schema: $schema
             );
-            $countTime = round((microtime(true) - $countStart) * 1000, 2);
+            $countTime  = round((microtime(true) - $countStart) * 1000, 2);
 
             // Get ignored filters from the search (properties that don't exist in schema).
             $ignoredFilters = $this->magicMapper->getIgnoredFilters();
@@ -1432,11 +1429,11 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                     'count_ms'  => $countTime,
                 ],
             ];
-        }
+        }//end if
 
         // Check if this is a global ID search (no register/schema but _ids provided).
         // In this case, search across ALL magic tables to find the objects.
-        $queryIds = $searchQuery['_ids'] ?? null;
+        $queryIds         = $searchQuery['_ids'] ?? null;
         $isGlobalIdSearch = $registerId === null
             && $schemaId === null
             && $queryIds !== null
@@ -1455,7 +1452,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
 
         // Check if this is a global relations search (no register/schema but _relations_contains provided).
         // In this case, search across ALL magic tables to find objects that reference the given UUID.
-        $relationsContains = $searchQuery['_relations_contains'] ?? null;
+        $relationsContains       = $searchQuery['_relations_contains'] ?? null;
         $isGlobalRelationsSearch = $registerId === null
             && $schemaId === null
             && $relationsContains !== null
@@ -1585,9 +1582,9 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      * - Schema with no authorization = normal RBAC (multitenancy + auth required)
      * - Published objects = override to make private objects public
      *
-     * @param array        $objects       Array of ObjectEntity objects to filter.
-     * @param array        $schemasCache  Cache of schema data by ID.
-     * @param bool         $rbac          Whether RBAC is enabled.
+     * @param array $objects      Array of ObjectEntity objects to filter.
+     * @param array $schemasCache Cache of schema data by ID.
+     * @param bool  $rbac         Whether RBAC is enabled.
      *
      * @return array Filtered array of ObjectEntity objects.
      */
@@ -1604,9 +1601,9 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             return $objects;
         }
 
-        $userId = $this->rbacHandler->getCurrentUserId();
+        $userId     = $this->rbacHandler->getCurrentUserId();
         $userGroups = $this->rbacHandler->getCurrentUserGroups();
-        $now = new DateTime();
+        $now        = new DateTime();
 
         $filtered = [];
 
@@ -1614,12 +1611,12 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             $schemaId = $object->getSchema();
 
             // Check if object is published (override to make private objects public).
-            $published = null;
+            $published   = null;
             $depublished = null;
             $objectOwner = null;
 
             if ($object instanceof ObjectEntity) {
-                $published = $object->getPublished();
+                $published   = $object->getPublished();
                 $depublished = $object->getDepublished();
                 $objectOwner = $object->getOwner();
             }
@@ -1645,6 +1642,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                 if ($userId !== null) {
                     $filtered[] = $object;
                 }
+
                 continue;
             }
 
@@ -1658,11 +1656,12 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                     if ($userId !== null) {
                         $filtered[] = $object;
                     }
+
                     continue;
                 }
             }
 
-            $schemaData = $schemasCache[$schemaId];
+            $schemaData    = $schemasCache[$schemaId];
             $authorization = $schemaData['authorization'] ?? [];
 
             // Get authorized groups for read action.
@@ -1696,21 +1695,28 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                 if ($userId !== null) {
                     $filtered[] = $object;
                 }
+
                 continue;
             }
 
             // No access conditions met - object is filtered out.
-            $this->logger->debug('[UnifiedObjectMapper] filterBySchemaRbac: Filtered out object', [
-                'uuid' => $object->getUuid(),
-                'schemaId' => $schemaId,
-                'schemaTitle' => $schemaData['title'] ?? 'unknown',
-            ]);
+            $this->logger->debug(
+                    '[UnifiedObjectMapper] filterBySchemaRbac: Filtered out object',
+                    [
+                        'uuid'        => $object->getUuid(),
+                        'schemaId'    => $schemaId,
+                        'schemaTitle' => $schemaData['title'] ?? 'unknown',
+                    ]
+                    );
         }//end foreach
 
-        $this->logger->debug('[UnifiedObjectMapper] filterBySchemaRbac complete', [
-            'inputCount' => count($objects),
-            'outputCount' => count($filtered),
-        ]);
+        $this->logger->debug(
+                '[UnifiedObjectMapper] filterBySchemaRbac complete',
+                [
+                    'inputCount'  => count($objects),
+                    'outputCount' => count($filtered),
+                ]
+                );
 
         return $filtered;
     }//end filterBySchemaRbac()
@@ -1736,9 +1742,12 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         bool $rbac=true,
         bool $multitenancy=true
     ): array {
-        $this->logger->debug('[UnifiedObjectMapper] searchObjectsGloballyByIds starting', [
-            'idsCount' => count($ids),
-        ]);
+        $this->logger->debug(
+                '[UnifiedObjectMapper] searchObjectsGloballyByIds starting',
+                [
+                    'idsCount' => count($ids),
+                ]
+                );
 
         // Use MagicMapper's efficient batch search across all magic tables.
         $results = $this->magicMapper->findMultipleAcrossAllMagicTables(
@@ -1747,17 +1756,17 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         );
 
         // Also check blob storage for any objects not found in magic tables.
-        $foundUuids = array_map(fn($obj) => $obj->getUuid(), $results);
+        $foundUuids   = array_map(fn($obj) => $obj->getUuid(), $results);
         $missingUuids = array_diff($ids, $foundUuids);
 
         if (empty($missingUuids) === false) {
             $blobResults = $this->objectEntityMapper->findMultiple(ids: $missingUuids);
-            $results = array_merge($results, $blobResults);
+            $results     = array_merge($results, $blobResults);
         }
 
         // Collect register/schema info for frontend (needed for RBAC filtering).
         $registersCache = [];
-        $schemasCache = [];
+        $schemasCache   = [];
 
         foreach ($results as $result) {
             if ($result instanceof ObjectEntity) {
@@ -1781,8 +1790,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                         // Skip if not found.
                     }
                 }
-            }
-        }
+            }//end if
+        }//end foreach
 
         // Apply RBAC filtering based on schema authorization.
         $results = $this->filterBySchemaRbac(objects: $results, schemasCache: $schemasCache, rbac: $rbac);
@@ -1790,12 +1799,12 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         $total = count($results);
 
         // Apply limit/offset from query after RBAC filtering.
-        $limit = $searchQuery['_limit'] ?? 1000;
-        $offset = $searchQuery['_offset'] ?? 0;
+        $limit   = $searchQuery['_limit'] ?? 1000;
+        $offset  = $searchQuery['_offset'] ?? 0;
         $results = array_slice($results, $offset, $limit);
 
         // Filter caches to only include schemas/registers actually in the filtered results.
-        $finalSchemaIds = [];
+        $finalSchemaIds   = [];
         $finalRegisterIds = [];
         foreach ($results as $object) {
             $schId = $object->getSchema();
@@ -1803,18 +1812,22 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             if ($schId !== null) {
                 $finalSchemaIds[$schId] = true;
             }
+
             if ($regId !== null) {
                 $finalRegisterIds[$regId] = true;
             }
         }
 
-        $schemasCache = array_intersect_key($schemasCache, $finalSchemaIds);
+        $schemasCache   = array_intersect_key($schemasCache, $finalSchemaIds);
         $registersCache = array_intersect_key($registersCache, $finalRegisterIds);
 
-        $this->logger->debug('[UnifiedObjectMapper] searchObjectsGloballyByIds complete', [
-            'requestedCount' => count($ids),
-            'foundCount' => $total,
-        ]);
+        $this->logger->debug(
+                '[UnifiedObjectMapper] searchObjectsGloballyByIds complete',
+                [
+                    'requestedCount' => count($ids),
+                    'foundCount'     => $total,
+                ]
+                );
 
         return [
             'results'   => $results,
@@ -1830,11 +1843,11 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      * This method is used when no register/schema is specified but _relations_contains is provided.
      * It searches across all magic tables to find objects that reference the given UUID.
      *
-     * @param string      $uuid           The UUID to search for in relations.
-     * @param array       $searchQuery    The original search query parameters.
-     * @param string|null $activeOrgUuid  The active organisation UUID for multitenancy.
-     * @param bool        $rbac           Whether to apply RBAC filtering.
-     * @param bool        $multitenancy   Whether to apply multitenancy filtering.
+     * @param string      $uuid          The UUID to search for in relations.
+     * @param array       $searchQuery   The original search query parameters.
+     * @param string|null $activeOrgUuid The active organisation UUID for multitenancy.
+     * @param bool        $rbac          Whether to apply RBAC filtering.
+     * @param bool        $multitenancy  Whether to apply multitenancy filtering.
      *
      * @return array Search results with pagination info.
      */
@@ -1845,10 +1858,13 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         bool $rbac=true,
         bool $multitenancy=true
     ): array {
-        $this->logger->debug('[UnifiedObjectMapper] searchObjectsGloballyByRelations starting', [
-            'uuid' => $uuid,
-            'rbac' => $rbac,
-        ]);
+        $this->logger->debug(
+                '[UnifiedObjectMapper] searchObjectsGloballyByRelations starting',
+                [
+                    'uuid' => $uuid,
+                    'rbac' => $rbac,
+                ]
+                );
 
         // Use MagicMapper to search across all magic tables for objects with this UUID in relations.
         $results = $this->magicMapper->findByRelationAcrossAllMagicTables(
@@ -1858,7 +1874,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
 
         // Collect unique register/schema info for @self metadata (needed for RBAC filtering).
         $registersCache = [];
-        $schemasCache = [];
+        $schemasCache   = [];
 
         foreach ($results as $object) {
             $regId = $object->getRegister();
@@ -1885,7 +1901,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                     // Skip if schema not found.
                 }
             }
-        }
+        }//end foreach
 
         // Apply RBAC filtering based on schema authorization.
         $results = $this->filterBySchemaRbac(objects: $results, schemasCache: $schemasCache, rbac: $rbac);
@@ -1893,12 +1909,12 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         $total = count($results);
 
         // Apply limit/offset from query after RBAC filtering.
-        $limit = $searchQuery['_limit'] ?? 1000;
-        $offset = $searchQuery['_offset'] ?? 0;
+        $limit   = $searchQuery['_limit'] ?? 1000;
+        $offset  = $searchQuery['_offset'] ?? 0;
         $results = array_slice($results, $offset, $limit);
 
         // Filter caches to only include schemas/registers actually in the filtered results.
-        $finalSchemaIds = [];
+        $finalSchemaIds   = [];
         $finalRegisterIds = [];
         foreach ($results as $object) {
             $schId = $object->getSchema();
@@ -1906,18 +1922,22 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             if ($schId !== null) {
                 $finalSchemaIds[$schId] = true;
             }
+
             if ($regId !== null) {
                 $finalRegisterIds[$regId] = true;
             }
         }
 
-        $schemasCache = array_intersect_key($schemasCache, $finalSchemaIds);
+        $schemasCache   = array_intersect_key($schemasCache, $finalSchemaIds);
         $registersCache = array_intersect_key($registersCache, $finalRegisterIds);
 
-        $this->logger->debug('[UnifiedObjectMapper] searchObjectsGloballyByRelations complete', [
-            'uuid' => $uuid,
-            'foundCount' => $total,
-        ]);
+        $this->logger->debug(
+                '[UnifiedObjectMapper] searchObjectsGloballyByRelations complete',
+                [
+                    'uuid'       => $uuid,
+                    'foundCount' => $total,
+                ]
+                );
 
         return [
             'results'   => $results,
@@ -1941,23 +1961,23 @@ class UnifiedObjectMapper extends AbstractObjectMapper
     {
         // Map common field names to getter methods.
         $getterMap = [
-            'id'          => 'getId',
-            'uuid'        => 'getUuid',
-            'name'        => 'getName',
-            'slug'        => 'getSlug',
-            'uri'         => 'getUri',
-            'version'     => 'getVersion',
-            'register'    => 'getRegister',
-            'schema'      => 'getSchema',
-            'owner'       => 'getOwner',
-            'organisation'=> 'getOrganisation',
-            'application' => 'getApplication',
-            'folder'      => 'getFolder',
-            'created'     => 'getCreated',
-            'updated'     => 'getUpdated',
-            'published'   => 'getPublished',
-            'description' => 'getDescription',
-            'summary'     => 'getSummary',
+            'id'           => 'getId',
+            'uuid'         => 'getUuid',
+            'name'         => 'getName',
+            'slug'         => 'getSlug',
+            'uri'          => 'getUri',
+            'version'      => 'getVersion',
+            'register'     => 'getRegister',
+            'schema'       => 'getSchema',
+            'owner'        => 'getOwner',
+            'organisation' => 'getOrganisation',
+            'application'  => 'getApplication',
+            'folder'       => 'getFolder',
+            'created'      => 'getCreated',
+            'updated'      => 'getUpdated',
+            'published'    => 'getPublished',
+            'description'  => 'getDescription',
+            'summary'      => 'getSummary',
         ];
 
         // Try getter method first (ObjectEntity may use __call for dynamic getters).

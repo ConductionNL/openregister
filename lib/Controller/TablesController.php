@@ -120,48 +120,50 @@ class TablesController extends Controller
                 ]
             );
 
-            return new JSONResponse([
-                'success'    => true,
-                'message'    => 'Magic table synchronized successfully',
-                'register'   => [
-                    'id'    => $register->getId(),
-                    'title' => $register->getTitle(),
-                ],
-                'schema'     => [
-                    'id'    => $schema->getId(),
-                    'title' => $schema->getTitle(),
-                ],
-                'tableName'  => 'openregister_objects_'.$register->getId().'_'.$schema->getId(),
-                'statistics' => [
-                    'metadata' => [
-                        'count' => $result['metadataProperties'] ?? 0,
-                        'description' => 'Built-in system columns (id, uuid, register, schema, etc.)',
-                    ],
-                    'properties' => [
-                        'count' => $result['regularProperties'] ?? 0,
-                        'description' => 'Schema-defined properties',
-                    ],
-                    'columns' => [
-                        'added' => [
-                            'count' => $result['columnsAdded'] ?? 0,
-                            'list' => $result['columnsAddedList'] ?? [],
+            return new JSONResponse(
+                    [
+                        'success'    => true,
+                        'message'    => 'Magic table synchronized successfully',
+                        'register'   => [
+                            'id'    => $register->getId(),
+                            'title' => $register->getTitle(),
                         ],
-                        'removed' => [
-                            'count' => $result['columnsDropped'] ?? 0,
-                            'list' => $result['columnsDroppedList'] ?? [],
+                        'schema'     => [
+                            'id'    => $schema->getId(),
+                            'title' => $schema->getTitle(),
                         ],
-                        'deRequired' => [
-                            'count' => $result['columnsDeRequired'] ?? 0,
-                            'list' => $result['columnsDeRequiredList'] ?? [],
-                            'description' => 'Columns made nullable (no longer required)',
+                        'tableName'  => 'openregister_objects_'.$register->getId().'_'.$schema->getId(),
+                        'statistics' => [
+                            'metadata'   => [
+                                'count'       => $result['metadataProperties'] ?? 0,
+                                'description' => 'Built-in system columns (id, uuid, register, schema, etc.)',
+                            ],
+                            'properties' => [
+                                'count'       => $result['regularProperties'] ?? 0,
+                                'description' => 'Schema-defined properties',
+                            ],
+                            'columns'    => [
+                                'added'      => [
+                                    'count' => $result['columnsAdded'] ?? 0,
+                                    'list'  => $result['columnsAddedList'] ?? [],
+                                ],
+                                'removed'    => [
+                                    'count' => $result['columnsDropped'] ?? 0,
+                                    'list'  => $result['columnsDroppedList'] ?? [],
+                                ],
+                                'deRequired' => [
+                                    'count'       => $result['columnsDeRequired'] ?? 0,
+                                    'list'        => $result['columnsDeRequiredList'] ?? [],
+                                    'description' => 'Columns made nullable (no longer required)',
+                                ],
+                                'unchanged'  => [
+                                    'count' => $result['columnsUnchanged'] ?? 0,
+                                ],
+                                'total'      => $result['totalProperties'] ?? 0,
+                            ],
                         ],
-                        'unchanged' => [
-                            'count' => $result['columnsUnchanged'] ?? 0,
-                        ],
-                        'total' => $result['totalProperties'] ?? 0,
-                    ],
-                ],
-            ]);
+                    ]
+                    );
         } catch (Exception $e) {
             $this->logger->error(
                 '[TablesController] Magic table sync failed',
@@ -172,10 +174,13 @@ class TablesController extends Controller
                 ]
             );
 
-            return new JSONResponse([
-                'error'   => 'Failed to sync magic table',
-                'message' => $e->getMessage(),
-            ], 500);
+            return new JSONResponse(
+                    [
+                        'error'   => 'Failed to sync magic table',
+                        'message' => $e->getMessage(),
+                    ],
+                    500
+                    );
         }//end try
     }//end sync()
 
@@ -236,19 +241,24 @@ class TablesController extends Controller
                 }//end foreach
             }//end foreach
 
-            return new JSONResponse([
-                'success'      => count($errors) === 0,
-                'message'      => 'Sync completed for '.count($results).' tables',
-                'synced'       => $results,
-                'errors'       => $errors,
-                'totalSynced'  => count($results),
-                'totalErrors'  => count($errors),
-            ]);
+            return new JSONResponse(
+                    [
+                        'success'     => count($errors) === 0,
+                        'message'     => 'Sync completed for '.count($results).' tables',
+                        'synced'      => $results,
+                        'errors'      => $errors,
+                        'totalSynced' => count($results),
+                        'totalErrors' => count($errors),
+                    ]
+                    );
         } catch (Exception $e) {
-            return new JSONResponse([
-                'error'   => 'Failed to sync magic tables',
-                'message' => $e->getMessage(),
-            ], 500);
+            return new JSONResponse(
+                    [
+                        'error'   => 'Failed to sync magic tables',
+                        'message' => $e->getMessage(),
+                    ],
+                    500
+                    );
         }//end try
     }//end syncAll()
 }//end class

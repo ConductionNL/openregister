@@ -249,7 +249,7 @@ class MagicMapper
     /**
      * Cached result of pg_trgm extension availability check
      *
-     * @var bool|null null = not checked yet, true/false = checked result
+     * @var boolean|null null = not checked yet, true/false = checked result
      */
     private ?bool $hasPgTrgm = null;
 
@@ -383,9 +383,9 @@ class MagicMapper
 
         // Check if pg_trgm extension is installed.
         try {
-            $stmt   = $this->db->prepare("SELECT COUNT(*) FROM pg_extension WHERE extname = 'pg_trgm'");
-            $result = $stmt->execute();
-            $count  = (int) $result->fetchOne();
+            $stmt            = $this->db->prepare("SELECT COUNT(*) FROM pg_extension WHERE extname = 'pg_trgm'");
+            $result          = $stmt->execute();
+            $count           = (int) $result->fetchOne();
             $this->hasPgTrgm = $count > 0;
         } catch (Exception $e) {
             $this->logger->warning(
@@ -687,7 +687,7 @@ class MagicMapper
                 );
                 return [];
             }
-        }
+        }//end if
 
         $tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
 
@@ -716,7 +716,7 @@ class MagicMapper
             );
 
             throw $e;
-        }
+        }//end try
     }//end searchObjectsInRegisterSchemaTable()
 
     /**
@@ -769,7 +769,7 @@ class MagicMapper
                 );
                 return 0;
             }
-        }
+        }//end if
 
         $tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
 
@@ -849,7 +849,7 @@ class MagicMapper
                 );
                 return [];
             }
-        }
+        }//end if
 
         $tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
 
@@ -899,7 +899,7 @@ class MagicMapper
                 continue;
             }
 
-            $tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
+            $tableName      = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
             $tableConfigs[] = [
                 'tableName' => $tableName,
                 'register'  => $register,
@@ -1049,7 +1049,7 @@ class MagicMapper
         $unionSql = implode(' UNION ALL ', $parts);
 
         // Apply global ORDER BY - supports _order parameter or defaults to search score.
-        $hasSearch = isset($query['_search']) === true && empty($query['_search']) === false;
+        $hasSearch   = isset($query['_search']) === true && empty($query['_search']) === false;
         $orderParams = $query['_order'] ?? [];
 
         if (empty($orderParams) === false && is_array($orderParams) === true) {
@@ -1062,9 +1062,10 @@ class MagicMapper
                 if ($field === '_relevance') {
                     // Only use _search_score if we have a search term.
                     if ($hasSearch === true) {
-                        $dir = strtoupper($direction) === 'DESC' ? 'DESC' : 'ASC';
+                        $dir            = strtoupper($direction) === 'DESC' ? 'DESC' : 'ASC';
                         $orderClauses[] = "_search_score {$dir}";
                     }
+
                     // Skip _relevance ordering if no search term (nothing to order by).
                     continue;
                 }
@@ -1080,9 +1081,9 @@ class MagicMapper
                     $columnName = $this->sanitizeColumnName($field);
                 }
 
-                $dir = strtoupper($direction) === 'DESC' ? 'DESC' : 'ASC';
+                $dir            = strtoupper($direction) === 'DESC' ? 'DESC' : 'ASC';
                 $orderClauses[] = "{$columnName} {$dir}";
-            }
+            }//end foreach
 
             if (empty($orderClauses) === false) {
                 $unionSql .= ' ORDER BY '.implode(', ', $orderClauses);
@@ -1090,7 +1091,7 @@ class MagicMapper
         } else if ($hasSearch === true) {
             // Default to search score ordering when no _order specified but search is present.
             $unionSql .= ' ORDER BY _search_score DESC';
-        }
+        }//end if
 
         // Apply LIMIT/OFFSET to final UNION result.
         $limit     = $query['_limit'] ?? 100;
@@ -1146,7 +1147,7 @@ class MagicMapper
         $metadataColumns = array_keys($this->getMetadataColumns());
 
         // Base SELECT with only metadata columns (for UNION compatibility).
-        $selectColumns = $metadataColumns;
+        $selectColumns   = $metadataColumns;
         $selectColumns[] = "'{$register->getId()}' AS _union_register_id";
         $selectColumns[] = "'{$schema->getId()}' AS _union_schema_id";
 
@@ -1182,7 +1183,7 @@ class MagicMapper
                 $scoreExpression = 'GREATEST('.implode(', ', $searchColumns).')';
                 $selectColumns[count($selectColumns) - 1] = "{$scoreExpression} AS _search_score";
             }
-        }
+        }//end if
 
         if ($hasSearch === false || empty($schemaProps) === true) {
             $selectColumns[] = '0 AS _search_score';
@@ -1243,7 +1244,7 @@ class MagicMapper
         } catch (\Exception $e) {
             $this->logger->warning('Failed to convert union row', ['error' => $e->getMessage()]);
             return null;
-        }
+        }//end try
     }//end convertUnionRowToObjectEntity()
 
     /**
@@ -1384,7 +1385,7 @@ class MagicMapper
             // Get database platform to use correct schema check.
             // MySQL/MariaDB: table_schema = DATABASE()
             // PostgreSQL: table_schema = current_schema()
-            $platform = $this->db->getDatabasePlatform();
+            $platform   = $this->db->getDatabasePlatform();
             $isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
 
             if ($isPostgres === true) {
@@ -1536,7 +1537,7 @@ class MagicMapper
         try {
             // Check if table exists - if not, create it instead of trying to update
             $tableExists = $this->tableExistsForRegisterSchema(register: $register, schema: $schema);
-            
+
             if ($tableExists === false) {
                 $this->logger->info(
                     'Table does not exist, creating it',
@@ -1546,33 +1547,33 @@ class MagicMapper
                         'tableName'  => $tableName,
                     ]
                 );
-                
+
                 // Create the table
                 $this->createTableForRegisterSchema(register: $register, schema: $schema);
-                
+
                 // Get the columns that were created
-                $requiredColumns = $this->buildTableColumnsFromSchema($schema);
-                $metadataColumns = ['id', 'uuid', 'register', 'schema', 'object', 'deleted', 'locked', 'published', 'updated', 'created', 'version'];
-                $metadataCount   = count(array_intersect(array_keys($requiredColumns), $metadataColumns));
+                $requiredColumns        = $this->buildTableColumnsFromSchema($schema);
+                $metadataColumns        = ['id', 'uuid', 'register', 'schema', 'object', 'deleted', 'locked', 'published', 'updated', 'created', 'version'];
+                $metadataCount          = count(array_intersect(array_keys($requiredColumns), $metadataColumns));
                 $regularPropertiesCount = count($requiredColumns) - $metadataCount;
-                
+
                 // Return statistics for newly created table
                 return [
-                    'success'              => true,
-                    'created'              => true,
-                    'metadataProperties'   => $metadataCount,
-                    'regularProperties'    => $regularPropertiesCount,
-                    'totalProperties'      => count($requiredColumns),
-                    'columnsAdded'         => count($requiredColumns),
-                    'columnsDeRequired'    => 0,
-                    'columnsDropped'       => 0,
-                    'columnsUnchanged'     => 0,
-                    'columnsAddedList'     => array_keys($requiredColumns),
+                    'success'               => true,
+                    'created'               => true,
+                    'metadataProperties'    => $metadataCount,
+                    'regularProperties'     => $regularPropertiesCount,
+                    'totalProperties'       => count($requiredColumns),
+                    'columnsAdded'          => count($requiredColumns),
+                    'columnsDeRequired'     => 0,
+                    'columnsDropped'        => 0,
+                    'columnsUnchanged'      => 0,
+                    'columnsAddedList'      => array_keys($requiredColumns),
                     'columnsDeRequiredList' => [],
-                    'columnsDroppedList'   => [],
+                    'columnsDroppedList'    => [],
                 ];
-            }
-            
+            }//end if
+
             // Table exists, update its structure
             $this->logger->info(
                 'Table exists, updating structure',
@@ -1582,7 +1583,7 @@ class MagicMapper
                     'tableName'  => $tableName,
                 ]
             );
-            
+
             // Get current table structure.
             $currentColumns = $this->getExistingTableColumns($tableName);
 
@@ -1607,22 +1608,21 @@ class MagicMapper
             $this->storeRegisterSchemaVersion(register: $register, schema: $schema);
             self::$tableExistsCache[$cacheKey] = time();
             // Refresh cache timestamp.
-            
             // Calculate regular properties (excluding metadata)
             $regularPropertiesCount = count($requiredColumns) - $metadataCount;
 
             $result = [
-                'success'              => true,
-                'metadataProperties'   => $metadataCount,
-                'regularProperties'    => $regularPropertiesCount,
-                'totalProperties'      => count($requiredColumns),
-                'columnsAdded'         => count($columnStats['columnsAdded']),
-                'columnsDeRequired'    => count($columnStats['columnsDeRequired']),
-                'columnsDropped'       => count($columnStats['columnsDropped']),
-                'columnsUnchanged'     => count($currentColumns) - count($columnStats['columnsAdded']) - count($columnStats['columnsDropped']),
-                'columnsAddedList'     => $columnStats['columnsAdded'],
+                'success'               => true,
+                'metadataProperties'    => $metadataCount,
+                'regularProperties'     => $regularPropertiesCount,
+                'totalProperties'       => count($requiredColumns),
+                'columnsAdded'          => count($columnStats['columnsAdded']),
+                'columnsDeRequired'     => count($columnStats['columnsDeRequired']),
+                'columnsDropped'        => count($columnStats['columnsDropped']),
+                'columnsUnchanged'      => count($currentColumns) - count($columnStats['columnsAdded']) - count($columnStats['columnsDropped']),
+                'columnsAddedList'      => $columnStats['columnsAdded'],
                 'columnsDeRequiredList' => $columnStats['columnsDeRequired'],
-                'columnsDroppedList'   => $columnStats['columnsDropped'],
+                'columnsDroppedList'    => $columnStats['columnsDropped'],
             ];
 
             $this->logger->info(
@@ -1646,7 +1646,7 @@ class MagicMapper
 
             throw $e;
         }//end try
-    }//end updateTableForRegisterSchema()
+    }//end syncTableForRegisterSchema()
 
     /**
      * Build table columns from JSON schema properties
@@ -1709,8 +1709,8 @@ class MagicMapper
                 if ($column !== null && $column !== '') {
                     $columns[$propertyName] = $column;
                 }
-            }
-        }
+            }//end foreach
+        }//end if
 
         return $columns;
     }//end buildTableColumnsFromSchema()
@@ -1788,7 +1788,8 @@ class MagicMapper
             self::METADATA_PREFIX.'uuid'           => [
                 'name'     => self::METADATA_PREFIX.'uuid',
                 'type'     => 'string',
-                'length'   => 40,  // ArchiMate identifiers are max 39 chars (id-{uuid-36})
+                'length'   => 40,
+            // ArchiMate identifiers are max 39 chars (id-{uuid-36})
                 'nullable' => false,
                 'unique'   => true,
                 'index'    => true,
@@ -1865,7 +1866,8 @@ class MagicMapper
             ],
             self::METADATA_PREFIX.'summary'        => [
                 'name'     => self::METADATA_PREFIX.'summary',
-                'type'     => 'text',  // Changed from varchar(500) to text to support longer summaries
+                'type'     => 'text',
+            // Changed from varchar(500) to text to support longer summaries
                 'nullable' => true,
             ],
             self::METADATA_PREFIX.'image'          => [
@@ -2030,7 +2032,6 @@ class MagicMapper
                 } else if (is_bool($required) === true) {
                     $isRequired = $required;
                 }
-
                 return [
                     'name'     => $columnName,
                     'type'     => 'text',
@@ -2592,8 +2593,8 @@ class MagicMapper
 
                     // For array of object references with inversedBy, create GIN index on PostgreSQL.
                     if ($type === 'array' && $isPostgres === true) {
-                        $items     = $propertyConfig['items'] ?? [];
-                        $itemsRef  = $items['$ref'] ?? null;
+                        $items      = $propertyConfig['items'] ?? [];
+                        $itemsRef   = $items['$ref'] ?? null;
                         $inversedBy = $items['inversedBy'] ?? ($propertyConfig['inversedBy'] ?? null);
 
                         if ($itemsRef !== null || $inversedBy !== null) {
@@ -2627,10 +2628,10 @@ class MagicMapper
             $this->logger->debug(
                 'Created table indexes',
                 [
-                    'tableName'        => $tableName,
-                    'baseIndexCount'   => 5 + count($idxMetaFields),
-                    'relationIndexes'  => $relationIndexes,
-                    'facetIndexes'     => $facetIndexes,
+                    'tableName'       => $tableName,
+                    'baseIndexCount'  => 5 + count($idxMetaFields),
+                    'relationIndexes' => $relationIndexes,
+                    'facetIndexes'    => $facetIndexes,
                 ]
             );
         } catch (Exception $e) {
@@ -2845,13 +2846,16 @@ class MagicMapper
 
         // DEBUG: Log schema property mapping for gemmaType
         if ($schema->getSlug() === 'element' && isset($schemaProperties['gemmaType'])) {
-            $this->logger->error('MAGIC_MAPPER_DEBUG: Mapping element properties', [
-                'has_gemmaType_in_schema' => isset($schemaProperties['gemmaType']),
-                'has_gemmaType_in_data' => isset($data['gemmaType']),
-                'gemmaType_value' => $data['gemmaType'] ?? 'NOT IN DATA',
-                'data_keys' => array_keys($data),
-                'objectData_keys' => array_keys($objectData)
-            ]);
+            $this->logger->error(
+                    'MAGIC_MAPPER_DEBUG: Mapping element properties',
+                    [
+                        'has_gemmaType_in_schema' => isset($schemaProperties['gemmaType']),
+                        'has_gemmaType_in_data'   => isset($data['gemmaType']),
+                        'gemmaType_value'         => $data['gemmaType'] ?? 'NOT IN DATA',
+                        'data_keys'               => array_keys($data),
+                        'objectData_keys'         => array_keys($objectData),
+                    ]
+                    );
         }
 
         if (is_array($schemaProperties) === true) {
@@ -2860,9 +2864,9 @@ class MagicMapper
                 // - Property exists with null value → include in prepared data (update DB to null)
                 // - Property doesn't exist at all → skip (don't change DB value)
                 if (array_key_exists($propertyName, $data) === true) {
-                    $value = $data[$propertyName];
+                    $value          = $data[$propertyName];
                     $propertyConfig = $schemaProperties[$propertyName] ?? [];
-                    $propertyType = $propertyConfig['type'] ?? 'string';
+                    $propertyType   = $propertyConfig['type'] ?? 'string';
 
                     // Safety check for file properties: if a base64 data URL is still present,
                     // the FilePropertyHandler didn't process it. Log a warning and set to null
@@ -2896,8 +2900,10 @@ class MagicMapper
                                 );
                                 continue;
                             }
+
                             $cleanedArray[] = $item;
                         }
+
                         $value = empty($cleanedArray) === true ? null : $cleanedArray;
                     }
 
@@ -3065,12 +3071,12 @@ class MagicMapper
             // from their sanitized column names (e.g., 'e_mailadres').
             // Also builds property type map for type conversion.
             $columnToPropertyMap = [];
-            $propertyTypes = [];
-            $properties = $_schema->getProperties() ?? [];
+            $propertyTypes       = [];
+            $properties          = $_schema->getProperties() ?? [];
             foreach ($properties as $propertyName => $propertyDef) {
                 $columnName = $this->sanitizeColumnName($propertyName);
                 $columnToPropertyMap[$columnName] = $propertyName;
-                $propertyTypes[$propertyName] = $propertyDef['type'] ?? 'string';
+                $propertyTypes[$propertyName]     = $propertyDef['type'] ?? 'string';
             }
 
             // Extract metadata fields (remove prefix).
@@ -3623,6 +3629,7 @@ class MagicMapper
                 if ($hasTrgm === true) {
                     $orConditions[] = "LOWER({$columnName}) % LOWER(".$qb->createNamedParameter($searchTerm).')';
                 }
+
                 continue;
             }
 
@@ -3711,6 +3718,7 @@ class MagicMapper
                 if ($hasTrgm === true) {
                     $orConditions[] = "LOWER({$columnName}) % LOWER(".$qb->createNamedParameter($searchTerm).')';
                 }
+
                 continue;
             }
 
@@ -4050,7 +4058,7 @@ class MagicMapper
         // Build map of snake_case column names from required columns.
         $snakeCaseColumns = [];
         foreach ($requiredColumns as $propertyName => $colDef) {
-            $actualColName                   = $colDef['name'] ?? $this->sanitizeColumnName($propertyName);
+            $actualColName = $colDef['name'] ?? $this->sanitizeColumnName($propertyName);
             $snakeCaseColumns[$actualColName] = true;
         }
 
@@ -4068,9 +4076,9 @@ class MagicMapper
                 $this->logger->info(
                     'Dropping duplicate camelCase column (snake_case version exists)',
                     [
-                        'tableName'       => $tableName,
-                        'camelCaseCol'    => $colName,
-                        'snakeCaseCol'    => $snakeVersion,
+                        'tableName'    => $tableName,
+                        'camelCaseCol' => $colName,
+                        'snakeCaseCol' => $snakeVersion,
                     ]
                 );
 
@@ -4139,18 +4147,18 @@ class MagicMapper
         $this->logger->info(
             'Successfully updated table structure',
             [
-                'tableName'          => $tableName,
-                'columnsAdded'       => $columnsAdded,
-                'columnsDeRequired'  => $columnsDeRequired,
-                'columnsDropped'     => $columnsDropped,
+                'tableName'         => $tableName,
+                'columnsAdded'      => $columnsAdded,
+                'columnsDeRequired' => $columnsDeRequired,
+                'columnsDropped'    => $columnsDropped,
             ]
         );
 
         // Return statistics about what was changed
         return [
-            'columnsAdded'       => $columnsAdded,
-            'columnsDeRequired'  => $columnsDeRequired,
-            'columnsDropped'     => $columnsDropped,
+            'columnsAdded'      => $columnsAdded,
+            'columnsDeRequired' => $columnsDeRequired,
+            'columnsDropped'    => $columnsDropped,
         ];
     }//end updateTableStructure()
 
@@ -4467,9 +4475,9 @@ class MagicMapper
         $this->logger->debug(
             'Finding object in register+schema table',
             [
-                'identifier' => $identifier,
-                'tableName'  => $tableName,
-                'rbac'       => $rbac,
+                'identifier'   => $identifier,
+                'tableName'    => $tableName,
+                'rbac'         => $rbac,
                 'multitenancy' => $multitenancy,
             ]
         );
@@ -4505,7 +4513,6 @@ class MagicMapper
         // is primarily used to decide whether to filter at all.
         // For now, we skip adding explicit organisation filters in MagicMapper
         // as that's handled by RBAC and the table structure.
-
         // Apply RBAC filtering if enabled.
         if ($rbac === true) {
             // Add RBAC filtering logic here if needed.
@@ -4572,28 +4579,34 @@ class MagicMapper
         bool $_rbac=true,
         bool $_multitenancy=true
     ): array {
-        $this->logger->debug('[MagicMapper::findAcrossAllMagicTables] Starting search', [
-            'identifier' => $identifier,
-        ]);
+        $this->logger->debug(
+                '[MagicMapper::findAcrossAllMagicTables] Starting search',
+                [
+                    'identifier' => $identifier,
+                ]
+                );
 
         // Get all magic tables from information_schema.
         // NOTE: We use raw SQL here because the query builder adds the table prefix
         // to information_schema, which is a system schema and shouldn't be prefixed.
-        $prefix = 'oc_';
+        $prefix       = 'oc_';
         $tablePattern = $prefix.'openregister_table_%';
 
-        $sql = "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?";
-        $stmt = $this->db->prepare($sql);
+        $sql    = "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?";
+        $stmt   = $this->db->prepare($sql);
         $result = $stmt->execute([$tablePattern]);
         $tables = $result->fetchAll();
 
-        $this->logger->debug('[MagicMapper::findAcrossAllMagicTables] Found magic tables', [
-            'count' => count($tables),
-        ]);
+        $this->logger->debug(
+                '[MagicMapper::findAcrossAllMagicTables] Found magic tables',
+                [
+                    'count' => count($tables),
+                ]
+                );
 
         // Get register and schema mappers.
         $registerMapper = \OC::$server->get(RegisterMapper::class);
-        $schemaMapper = \OC::$server->get(SchemaMapper::class);
+        $schemaMapper   = \OC::$server->get(SchemaMapper::class);
 
         // Search each magic table.
         foreach ($tables as $tableRow) {
@@ -4609,7 +4622,7 @@ class MagicMapper
             }
 
             $registerId = (int) $matches[1];
-            $schemaId = (int) $matches[2];
+            $schemaId   = (int) $matches[2];
 
             try {
                 // Build query to search this table.
@@ -4618,10 +4631,10 @@ class MagicMapper
                 $searchQb->select('*')->from($tableName);
 
                 // Build identifier conditions.
-                $idCol = self::METADATA_PREFIX.'id';
-                $uuidCol = self::METADATA_PREFIX.'uuid';
-                $slugCol = self::METADATA_PREFIX.'slug';
-                $uriCol = self::METADATA_PREFIX.'uri';
+                $idCol      = self::METADATA_PREFIX.'id';
+                $uuidCol    = self::METADATA_PREFIX.'uuid';
+                $slugCol    = self::METADATA_PREFIX.'slug';
+                $uriCol     = self::METADATA_PREFIX.'uri';
                 $deletedCol = self::METADATA_PREFIX.'deleted';
 
                 $idParam = -1;
@@ -4644,23 +4657,26 @@ class MagicMapper
                 }
 
                 $searchResult = $searchQb->executeQuery();
-                $row = $searchResult->fetch();
+                $row          = $searchResult->fetch();
                 $searchResult->closeCursor();
 
                 if ($row !== false) {
                     // Found the object! Get register and schema entities.
                     $register = null;
-                    $schema = null;
+                    $schema   = null;
 
                     try {
                         $register = $registerMapper->find(id: $registerId, _multitenancy: false);
-                        $schema = $schemaMapper->find(id: $schemaId, _multitenancy: false);
+                        $schema   = $schemaMapper->find(id: $schemaId, _multitenancy: false);
                     } catch (\Exception $e) {
-                        $this->logger->warning('[MagicMapper::findAcrossAllMagicTables] Could not load register/schema', [
-                            'registerId' => $registerId,
-                            'schemaId' => $schemaId,
-                            'error' => $e->getMessage(),
-                        ]);
+                        $this->logger->warning(
+                                '[MagicMapper::findAcrossAllMagicTables] Could not load register/schema',
+                                [
+                                    'registerId' => $registerId,
+                                    'schemaId'   => $schemaId,
+                                    'error'      => $e->getMessage(),
+                                ]
+                                );
                     }
 
                     // Convert row to ObjectEntity.
@@ -4670,27 +4686,33 @@ class MagicMapper
                         _schema: $schema
                     );
 
-                    $this->logger->debug('[MagicMapper::findAcrossAllMagicTables] Found object', [
-                        'uuid' => $object->getUuid(),
-                        'registerId' => $registerId,
-                        'schemaId' => $schemaId,
-                    ]);
+                    $this->logger->debug(
+                            '[MagicMapper::findAcrossAllMagicTables] Found object',
+                            [
+                                'uuid'       => $object->getUuid(),
+                                'registerId' => $registerId,
+                                'schemaId'   => $schemaId,
+                            ]
+                            );
 
                     return [
-                        'object' => $object,
+                        'object'   => $object,
                         'register' => $register,
-                        'schema' => $schema,
+                        'schema'   => $schema,
                     ];
-                }
+                }//end if
             } catch (\Exception $e) {
                 // Table might not have the expected structure, skip it.
-                $this->logger->debug('[MagicMapper::findAcrossAllMagicTables] Error searching table', [
-                    'table' => $fullTableName,
-                    'error' => $e->getMessage(),
-                ]);
+                $this->logger->debug(
+                        '[MagicMapper::findAcrossAllMagicTables] Error searching table',
+                        [
+                            'table' => $fullTableName,
+                            'error' => $e->getMessage(),
+                        ]
+                        );
                 continue;
-            }
-        }
+            }//end try
+        }//end foreach
 
         // Not found in any magic table.
         throw new DoesNotExistException("Object with identifier '$identifier' not found in any magic table");
@@ -4702,7 +4724,7 @@ class MagicMapper
      * This method efficiently searches all magic tables for multiple UUIDs in batch.
      * It's optimized for performance by searching all UUIDs in each table with a single query.
      *
-     * @param array $uuids         Array of UUIDs to search for.
+     * @param array $uuids          Array of UUIDs to search for.
      * @param bool  $includeDeleted Whether to include soft-deleted objects.
      *
      * @return ObjectEntity[] Array of found objects (may be fewer than requested if some not found).
@@ -4715,23 +4737,24 @@ class MagicMapper
             return [];
         }
 
-        $uuids = array_unique($uuids);
+        $uuids        = array_unique($uuids);
         $foundObjects = [];
 
         // Get all magic tables from information_schema.
-        $prefix = 'oc_';
+        $prefix       = 'oc_';
         $tablePattern = $prefix.'openregister_table_%';
 
-        $sql = "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?";
-        $stmt = $this->db->prepare($sql);
+        $sql    = "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?";
+        $stmt   = $this->db->prepare($sql);
         $result = $stmt->execute([$tablePattern]);
         $tables = $result->fetchAll();
 
         // PERFORMANCE OPTIMIZATION: Use a single UNION query to find ALL UUIDs across ALL tables.
         // This reduces ~60 queries (COUNT + SELECT per table) to just 1 query.
-        $unionParts = [];
-        $tableInfoMap = []; // Maps table name to register/schema IDs.
-        $uuidCol = self::METADATA_PREFIX.'uuid';
+        $unionParts   = [];
+        $tableInfoMap = [];
+        // Maps table name to register/schema IDs.
+        $uuidCol    = self::METADATA_PREFIX.'uuid';
         $deletedCol = self::METADATA_PREFIX.'deleted';
 
         // Prepare UUID placeholders for raw SQL.
@@ -4750,35 +4773,36 @@ class MagicMapper
             }
 
             $registerId = (int) $matches[1];
-            $schemaId = (int) $matches[2];
+            $schemaId   = (int) $matches[2];
             $tableInfoMap[$fullTableName] = ['registerId' => $registerId, 'schemaId' => $schemaId];
 
             // Build UNION part for this table - select only metadata columns for efficiency.
             $deletedCondition = $includeDeleted ? '' : " AND {$deletedCol} IS NULL";
-            $unionParts[] = "SELECT '{$fullTableName}' AS _source_table, {$uuidCol} AS found_uuid "
-                ."FROM {$fullTableName} "
-                ."WHERE {$uuidCol} IN ({$uuidPlaceholders}){$deletedCondition}";
-        }
+            $unionParts[]     = "SELECT '{$fullTableName}' AS _source_table, {$uuidCol} AS found_uuid "."FROM {$fullTableName} "."WHERE {$uuidCol} IN ({$uuidPlaceholders}){$deletedCondition}";
+        }//end foreach
 
         if (empty($unionParts) === true) {
             return [];
         }
 
         // Execute single UNION query to find which tables contain which UUIDs.
-        $unionSql = implode(' UNION ALL ', $unionParts);
+        $unionSql    = implode(' UNION ALL ', $unionParts);
         $unionParams = [];
         foreach ($unionParts as $part) {
             $unionParams = array_merge($unionParams, $uuids);
         }
 
         try {
-            $stmt = $this->db->prepare($unionSql);
+            $stmt        = $this->db->prepare($unionSql);
             $unionResult = $stmt->execute($unionParams);
-            $matches = $unionResult->fetchAll();
+            $matches     = $unionResult->fetchAll();
         } catch (\Exception $e) {
-            $this->logger->error('[MagicMapper::findMultipleAcrossAllMagicTables] UNION query failed', [
-                'error' => $e->getMessage(),
-            ]);
+            $this->logger->error(
+                    '[MagicMapper::findMultipleAcrossAllMagicTables] UNION query failed',
+                    [
+                        'error' => $e->getMessage(),
+                    ]
+                    );
             // Fallback to old per-table approach would go here, but for now return empty.
             return [];
         }
@@ -4787,20 +4811,21 @@ class MagicMapper
         $uuidsByTable = [];
         foreach ($matches as $match) {
             $table = $match['_source_table'];
-            $uuid = $match['found_uuid'];
+            $uuid  = $match['found_uuid'];
             if (isset($uuidsByTable[$table]) === false) {
                 $uuidsByTable[$table] = [];
             }
+
             $uuidsByTable[$table][] = $uuid;
         }
 
         // Get register and schema mappers.
         $registerMapper = \OC::$server->get(RegisterMapper::class);
-        $schemaMapper = \OC::$server->get(SchemaMapper::class);
+        $schemaMapper   = \OC::$server->get(SchemaMapper::class);
 
         // Cache for register/schema lookups.
         static $registerCache = [];
-        static $schemaCache = [];
+        static $schemaCache   = [];
 
         // Now fetch full rows only from tables that have matches.
         foreach ($uuidsByTable as $fullTableName => $tableUuids) {
@@ -4810,7 +4835,7 @@ class MagicMapper
             }
 
             $registerId = $tableInfo['registerId'];
-            $schemaId = $tableInfo['schemaId'];
+            $schemaId   = $tableInfo['schemaId'];
             $tableNameWithoutPrefix = str_replace($prefix, '', $fullTableName);
 
             try {
@@ -4838,30 +4863,36 @@ class MagicMapper
                 }
 
                 $searchResult = $searchQb->executeQuery();
-                $rows = $searchResult->fetchAll();
+                $rows         = $searchResult->fetchAll();
                 $searchResult->closeCursor();
 
                 // Convert found rows to ObjectEntity objects.
                 // Add register and schema IDs to row since they're derived from table name, not stored in columns.
                 foreach ($rows as $row) {
                     $row['_register'] = (string) $registerId;
-                    $row['_schema'] = (string) $schemaId;
-                    $foundObjects[] = $this->rowToObjectEntity(row: $row);
+                    $row['_schema']   = (string) $schemaId;
+                    $foundObjects[]   = $this->rowToObjectEntity(row: $row);
                 }
             } catch (\Exception $e) {
-                $this->logger->debug('[MagicMapper::findMultipleAcrossAllMagicTables] Error fetching from table', [
-                    'table' => $fullTableName,
-                    'error' => $e->getMessage(),
-                ]);
+                $this->logger->debug(
+                        '[MagicMapper::findMultipleAcrossAllMagicTables] Error fetching from table',
+                        [
+                            'table' => $fullTableName,
+                            'error' => $e->getMessage(),
+                        ]
+                        );
                 continue;
-            }
-        }
+            }//end try
+        }//end foreach
 
-        $this->logger->debug('[MagicMapper::findMultipleAcrossAllMagicTables] Batch search complete', [
-            'requestedCount' => count($uuids),
-            'foundCount' => count($foundObjects),
-            'tablesWithMatches' => count($uuidsByTable),
-        ]);
+        $this->logger->debug(
+                '[MagicMapper::findMultipleAcrossAllMagicTables] Batch search complete',
+                [
+                    'requestedCount'    => count($uuids),
+                    'foundCount'        => count($foundObjects),
+                    'tablesWithMatches' => count($uuidsByTable),
+                ]
+                );
 
         return $foundObjects;
     }//end findMultipleAcrossAllMagicTables()
@@ -4888,19 +4919,20 @@ class MagicMapper
         $foundObjects = [];
 
         // Get all magic tables from information_schema.
-        $prefix = 'oc_';
+        $prefix       = 'oc_';
         $tablePattern = $prefix.'openregister_table_%';
 
-        $sql = "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?";
-        $stmt = $this->db->prepare($sql);
+        $sql    = "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?";
+        $stmt   = $this->db->prepare($sql);
         $result = $stmt->execute([$tablePattern]);
         $tables = $result->fetchAll();
 
         // PERFORMANCE OPTIMIZATION: Use a single UNION query to find objects across ALL tables.
-        $unionParts = [];
-        $tableInfoMap = []; // Maps table name to register/schema IDs.
-        $uuidCol = self::METADATA_PREFIX.'uuid';
-        $deletedCol = self::METADATA_PREFIX.'deleted';
+        $unionParts   = [];
+        $tableInfoMap = [];
+        // Maps table name to register/schema IDs.
+        $uuidCol      = self::METADATA_PREFIX.'uuid';
+        $deletedCol   = self::METADATA_PREFIX.'deleted';
         $relationsCol = self::METADATA_PREFIX.'relations';
 
         foreach ($tables as $tableRow) {
@@ -4916,17 +4948,14 @@ class MagicMapper
             }
 
             $registerId = (int) $matches[1];
-            $schemaId = (int) $matches[2];
+            $schemaId   = (int) $matches[2];
             $tableInfoMap[$fullTableName] = ['registerId' => $registerId, 'schemaId' => $schemaId];
 
             // Build UNION part - search for UUID in relation VALUES using text search.
             // This is more reliable than jsonb_each_text as it handles various JSON formats.
             $deletedCondition = $includeDeleted ? '' : " AND {$deletedCol} IS NULL";
-            $unionParts[] = "SELECT '{$fullTableName}' AS _source_table, {$uuidCol} AS found_uuid "
-                ."FROM {$fullTableName} "
-                ."WHERE {$relationsCol}::text LIKE ?"
-                ."{$deletedCondition}";
-        }
+            $unionParts[]     = "SELECT '{$fullTableName}' AS _source_table, {$uuidCol} AS found_uuid "."FROM {$fullTableName} "."WHERE {$relationsCol}::text LIKE ?"."{$deletedCondition}";
+        }//end foreach
 
         if (empty($unionParts) === true) {
             return [];
@@ -4935,38 +4964,42 @@ class MagicMapper
         // Execute single UNION query.
         $unionSql = implode(' UNION ALL ', $unionParts);
         // Use LIKE pattern to match UUID anywhere in the JSON text.
-        $likePattern = '%"' . $uuid . '"%';
+        $likePattern = '%"'.$uuid.'"%';
         $unionParams = array_fill(0, count($unionParts), $likePattern);
 
         try {
-            $stmt = $this->db->prepare($unionSql);
+            $stmt        = $this->db->prepare($unionSql);
             $unionResult = $stmt->execute($unionParams);
-            $matches = $unionResult->fetchAll();
+            $matches     = $unionResult->fetchAll();
         } catch (\Exception $e) {
-            $this->logger->error('[MagicMapper::findByRelationAcrossAllMagicTables] UNION query failed', [
-                'error' => $e->getMessage(),
-            ]);
+            $this->logger->error(
+                    '[MagicMapper::findByRelationAcrossAllMagicTables] UNION query failed',
+                    [
+                        'error' => $e->getMessage(),
+                    ]
+                    );
             return [];
         }
 
         // Group found UUIDs by table for efficient batch fetching.
         $uuidsByTable = [];
         foreach ($matches as $match) {
-            $table = $match['_source_table'];
+            $table     = $match['_source_table'];
             $foundUuid = $match['found_uuid'];
             if (isset($uuidsByTable[$table]) === false) {
                 $uuidsByTable[$table] = [];
             }
+
             $uuidsByTable[$table][] = $foundUuid;
         }
 
         // Get register and schema mappers.
         $registerMapper = \OC::$server->get(RegisterMapper::class);
-        $schemaMapper = \OC::$server->get(SchemaMapper::class);
+        $schemaMapper   = \OC::$server->get(SchemaMapper::class);
 
         // Cache for register/schema lookups.
         static $registerCache = [];
-        static $schemaCache = [];
+        static $schemaCache   = [];
 
         // Fetch full rows only from tables that have matches.
         foreach ($uuidsByTable as $fullTableName => $tableUuids) {
@@ -4976,7 +5009,7 @@ class MagicMapper
             }
 
             $registerId = $tableInfo['registerId'];
-            $schemaId = $tableInfo['schemaId'];
+            $schemaId   = $tableInfo['schemaId'];
             $tableNameWithoutPrefix = str_replace($prefix, '', $fullTableName);
 
             try {
@@ -5004,29 +5037,35 @@ class MagicMapper
                 }
 
                 $searchResult = $searchQb->executeQuery();
-                $rows = $searchResult->fetchAll();
+                $rows         = $searchResult->fetchAll();
                 $searchResult->closeCursor();
 
                 // Convert found rows to ObjectEntity objects.
                 foreach ($rows as $row) {
                     $row['_register'] = (string) $registerId;
-                    $row['_schema'] = (string) $schemaId;
-                    $foundObjects[] = $this->rowToObjectEntity(row: $row);
+                    $row['_schema']   = (string) $schemaId;
+                    $foundObjects[]   = $this->rowToObjectEntity(row: $row);
                 }
             } catch (\Exception $e) {
-                $this->logger->debug('[MagicMapper::findByRelationAcrossAllMagicTables] Error fetching from table', [
-                    'table' => $fullTableName,
-                    'error' => $e->getMessage(),
-                ]);
+                $this->logger->debug(
+                        '[MagicMapper::findByRelationAcrossAllMagicTables] Error fetching from table',
+                        [
+                            'table' => $fullTableName,
+                            'error' => $e->getMessage(),
+                        ]
+                        );
                 continue;
-            }
-        }
+            }//end try
+        }//end foreach
 
-        $this->logger->debug('[MagicMapper::findByRelationAcrossAllMagicTables] Search complete', [
-            'uuid' => $uuid,
-            'foundCount' => count($foundObjects),
-            'tablesWithMatches' => count($uuidsByTable),
-        ]);
+        $this->logger->debug(
+                '[MagicMapper::findByRelationAcrossAllMagicTables] Search complete',
+                [
+                    'uuid'              => $uuid,
+                    'foundCount'        => count($foundObjects),
+                    'tablesWithMatches' => count($uuidsByTable),
+                ]
+                );
 
         return $foundObjects;
     }//end findByRelationAcrossAllMagicTables()
@@ -5171,7 +5210,6 @@ class MagicMapper
 
         // NOTE: Event dispatching is handled by UnifiedObjectMapper (the facade) to avoid duplicate events.
         // Do NOT dispatch ObjectCreatedEvent here.
-
         return $insertedEntity;
     }//end insertObjectEntity()
 
@@ -5190,7 +5228,7 @@ class MagicMapper
         ObjectEntity $entity,
         Register $register,
         Schema $schema,
-        ?ObjectEntity $oldEntity = null
+        ?ObjectEntity $oldEntity=null
     ): ObjectEntity {
         // Use provided oldEntity or fetch from database.
         if ($oldEntity === null) {
@@ -5247,7 +5285,6 @@ class MagicMapper
 
         // NOTE: Event dispatching is handled by UnifiedObjectMapper (the facade) to avoid duplicate events.
         // Do NOT dispatch ObjectUpdatedEvent here.
-
         return $updatedEntity;
     }//end updateObjectEntity()
 
@@ -5329,7 +5366,6 @@ class MagicMapper
 
         // NOTE: Event dispatching is handled by UnifiedObjectMapper (the facade) to avoid duplicate events.
         // Do NOT dispatch ObjectDeletedEvent here.
-
         return $entity;
     }//end deleteObjectEntity()
 
@@ -5354,7 +5390,7 @@ class MagicMapper
         Schema $schema,
         bool $hardDelete=false
     ): int {
-        $tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
+        $tableName  = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
         $registerId = $register->getId();
         $schemaId   = $schema->getId();
 
@@ -5403,12 +5439,14 @@ class MagicMapper
         } else {
             // Soft delete - set _deleted field for all rows.
             // Prepare the deletion metadata as JSONB.
-            $deletedMetadata = json_encode([
-                'time'   => (new \DateTime())->format('Y-m-d H:i:s'),
-                'user'   => $this->userSession->getUser()?->getUID() ?? 'system',
-                'reason' => 'Bulk soft delete via deleteObjectsBySchema',
-                'retention' => 30,
-            ]);
+            $deletedMetadata = json_encode(
+                    [
+                        'time'      => (new \DateTime())->format('Y-m-d H:i:s'),
+                        'user'      => $this->userSession->getUser()?->getUID() ?? 'system',
+                        'reason'    => 'Bulk soft delete via deleteObjectsBySchema',
+                        'retention' => 30,
+                    ]
+                    );
 
             $qb->update($tableName)
                 ->set(self::METADATA_PREFIX.'deleted', $qb->createNamedParameter($deletedMetadata, \PDO::PARAM_STR))
@@ -5568,11 +5606,11 @@ class MagicMapper
                     schema: $schema,
                     tableName: $tableName
                 );
-            }
+            }//end if
 
             // Re-throw if it's not a table-not-found error.
             throw $e;
-        }
+        }//end try
     }//end bulkUpsert()
 
     /**
@@ -5613,7 +5651,7 @@ class MagicMapper
         foreach ($tables as $tableName) {
             try {
                 $tableResults = $this->findByRelationInTable(uuid: $uuid, tableName: $tableName);
-                $results = array_merge($results, $tableResults);
+                $results      = array_merge($results, $tableResults);
             } catch (Exception $e) {
                 $this->logger->debug(
                     '[MagicMapper] Failed to search table for relation',
@@ -5702,14 +5740,14 @@ class MagicMapper
                 } else {
                     // MySQL: Use JSON_SEARCH to find the UUID as a value anywhere.
                     // This works for both arrays and objects.
-                    $sql = "SELECT * FROM {$fullTableName}
+                    $sql  = "SELECT * FROM {$fullTableName}
                             WHERE _deleted IS NULL
                             AND JSON_SEARCH(_relations, 'one', ?) IS NOT NULL
                             LIMIT 100";
                     $stmt = $this->db->prepare($sql);
                     $stmt->execute([$uuid]);
                     $rows = $stmt->fetchAll();
-                }
+                }//end if
 
                 foreach ($rows as $row) {
                     try {
@@ -5828,9 +5866,7 @@ class MagicMapper
             $conditionSql = implode(' OR ', $conditions);
 
             // Build the WHERE clause for _deleted check (different syntax for PostgreSQL vs MySQL).
-            $deletedCheck = $isPostgres
-                ? "(_deleted IS NULL OR _deleted = 'null'::jsonb)"
-                : '_deleted IS NULL';
+            $deletedCheck = $isPostgres ? "(_deleted IS NULL OR _deleted = 'null'::jsonb)" : '_deleted IS NULL';
 
             $sql = "SELECT * FROM {$fullTableName}
                     WHERE {$deletedCheck}
@@ -5899,8 +5935,8 @@ class MagicMapper
         $isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
 
         // Construct the full table name with prefix for use in SQL functions.
-        $fullTableName = 'oc_' . $tableName;
-        $searchPattern = '%' . $uuid . '%';
+        $fullTableName = 'oc_'.$tableName;
+        $searchPattern = '%'.$uuid.'%';
 
         try {
             // For PostgreSQL, use row_to_json to convert entire row to searchable text.
@@ -5924,9 +5960,9 @@ class MagicMapper
             $this->logger->debug(
                 '[MagicMapper] findByRelationInTable query executed',
                 [
-                    'tableName'    => $fullTableName,
-                    'uuid'         => $uuid,
-                    'resultCount'  => count($rows),
+                    'tableName'   => $fullTableName,
+                    'uuid'        => $uuid,
+                    'resultCount' => count($rows),
                 ]
             );
         } catch (Exception $e) {
@@ -5939,7 +5975,7 @@ class MagicMapper
                 ]
             );
             return [];
-        }
+        }//end try
 
         // Convert rows to ObjectEntity instances.
         $entities = [];
@@ -5986,7 +6022,7 @@ class MagicMapper
                         AND table_name LIKE 'oc_openregister_table_%'";
             }
 
-            $stmt   = $this->db->prepare($sql);
+            $stmt = $this->db->prepare($sql);
             $stmt->execute();
             $tables = [];
 
@@ -5996,6 +6032,7 @@ class MagicMapper
                 if (str_starts_with($tableName, 'oc_') === true) {
                     $tableName = substr($tableName, 3);
                 }
+
                 $tables[] = $tableName;
             }
 
@@ -6006,7 +6043,7 @@ class MagicMapper
                 ['error' => $e->getMessage()]
             );
             return [];
-        }
+        }//end try
     }//end getAllMagicMapperTables()
 
     /**
@@ -6030,9 +6067,11 @@ class MagicMapper
         if (isset($row['_register']) === true) {
             $entity->setRegister((string) $row['_register']);
         }
+
         if (isset($row['_schema']) === true) {
             $entity->setSchema((string) $row['_schema']);
         }
+
         if (isset($row['_name']) === true) {
             $entity->setName($row['_name']);
         }
@@ -6053,12 +6092,15 @@ class MagicMapper
                 }
             } catch (\Exception $e) {
                 // Schema not found - will fall back to column names as-is.
-                $this->logger->debug('[MagicMapper] Could not load schema for property mapping', [
-                    'schemaId' => $row['_schema'],
-                    'error'    => $e->getMessage(),
-                ]);
+                $this->logger->debug(
+                        '[MagicMapper] Could not load schema for property mapping',
+                        [
+                            'schemaId' => $row['_schema'],
+                            'error'    => $e->getMessage(),
+                        ]
+                        );
             }
-        }
+        }//end if
 
         // Build the object data from non-metadata columns.
         $objectData = [];
@@ -6139,6 +6181,6 @@ class MagicMapper
             );
             // Return false on error to prevent invalid queries.
             return false;
-        }
+        }//end try
     }//end columnExistsInTable()
 }//end class

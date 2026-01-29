@@ -91,7 +91,7 @@ class FileTextExtractionJob extends QueuedJob
         $this->config        = $config;
         $this->logger        = $logger;
         $this->textExtractor = $textExtractor;
-    }
+    }//end __construct()
 
     /**
      * Run the background job

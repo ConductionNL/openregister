@@ -60,6 +60,7 @@ use DateTime;
  */
 class MagicSearchHandler
 {
+
     /**
      * Tracks filter properties that don't exist in the schema during search.
      * Reset at the start of each searchObjects call.
@@ -71,7 +72,7 @@ class MagicSearchHandler
     /**
      * Cached result of pg_trgm extension availability check.
      *
-     * @var bool|null
+     * @var boolean|null
      */
     private ?bool $hasPgTrgm = null;
 
@@ -115,9 +116,9 @@ class MagicSearchHandler
 
         // Check if pg_trgm extension is installed.
         try {
-            $stmt   = $this->db->prepare("SELECT COUNT(*) FROM pg_extension WHERE extname = 'pg_trgm'");
-            $result = $stmt->execute();
-            $count  = (int) $result->fetchOne();
+            $stmt            = $this->db->prepare("SELECT COUNT(*) FROM pg_extension WHERE extname = 'pg_trgm'");
+            $result          = $stmt->execute();
+            $count           = (int) $result->fetchOne();
             $this->hasPgTrgm = $count > 0;
         } catch (Exception $e) {
             $this->logger->warning(
@@ -223,7 +224,7 @@ class MagicSearchHandler
             if (empty($order) === false) {
                 $this->applySorting(qb: $queryBuilder, order: $order, schema: $schema, searchTerm: $searchTerm);
             }
-        }
+        }//end if
 
         // Execute query and return results.
         if ($count === true) {
@@ -267,7 +268,7 @@ class MagicSearchHandler
         // multitenancy with _multi=true. This allows public data to be visible across orgs
         // while still giving users the option to filter by their own organisation.
         $multitenancyExplicitRaw = $query['_multitenancy_explicit'] ?? false;
-        $multitenancyExplicit = $multitenancyExplicitRaw === true
+        $multitenancyExplicit    = $multitenancyExplicitRaw === true
             || $multitenancyExplicitRaw === 'true'
             || $multitenancyExplicitRaw === '1'
             || $multitenancyExplicitRaw === 1;
@@ -282,6 +283,7 @@ class MagicSearchHandler
                 // Public schema without explicit _multi=true - bypass multitenancy.
                 $multitenancy = false;
             }
+
             // If _multi=true was explicitly set, enforce multitenancy even on public schemas.
         }
 
@@ -334,9 +336,9 @@ class MagicSearchHandler
                 // Apply multitenancy to further restrict results to their org
                 $shouldApplyMultitenancy = true;
             }
+
             // Otherwise: user has RBAC access and didn't request _multi=true
             // Skip multitenancy - let RBAC handle access control
-
             if ($shouldApplyMultitenancy === true) {
                 $this->organizationHandler->applyOrganizationFilter(
                     qb: $queryBuilder,
@@ -344,7 +346,7 @@ class MagicSearchHandler
                     adminBypassEnabled: $this->organizationHandler->isAdminOverrideEnabled()
                 );
             }
-        }
+        }//end if
 
         // Apply RBAC filtering if enabled.
         if ($rbac === true) {
@@ -414,7 +416,7 @@ class MagicSearchHandler
     {
         $conditions = [];
         // Get connection for value quoting through QueryBuilder.
-        $qb = $this->db->getQueryBuilder();
+        $qb         = $this->db->getQueryBuilder();
         $connection = $qb->getConnection();
 
         // Extract options from query.
@@ -430,8 +432,8 @@ class MagicSearchHandler
 
         // 2. Published filter.
         if ($published === true) {
-            $now = (new DateTime())->format('Y-m-d H:i:s');
-            $quotedNow = $connection->quote($now);
+            $now          = (new DateTime())->format('Y-m-d H:i:s');
+            $quotedNow    = $connection->quote($now);
             $conditions[] = "(_published IS NOT NULL AND _published <= {$quotedNow} AND (_depublished IS NULL OR _depublished > {$quotedNow}))";
         }
 
@@ -446,9 +448,10 @@ class MagicSearchHandler
                     $conditions[] = '1=0';
                 } else {
                     // OR together all RBAC conditions (access if ANY matches).
-                    $conditions[] = '(' . implode(' OR ', $rbacResult['conditions']) . ')';
+                    $conditions[] = '('.implode(' OR ', $rbacResult['conditions']).')';
                 }
             }
+
             // If bypass=true, no RBAC filtering needed (user has full access).
         }
 
@@ -458,14 +461,14 @@ class MagicSearchHandler
         // Without _fuzzy=true: ~140ms (ILIKE only)
         // With _fuzzy=true: ~160ms (ILIKE + similarity on _name)
         if ($search !== null && trim($search) !== '') {
-            $searchTerm = trim($search);
+            $searchTerm       = trim($search);
             $searchConditions = [];
-            $likePattern = $connection->quote('%' . $searchTerm . '%');
-            $quotedTerm = $connection->quote($searchTerm);
+            $likePattern      = $connection->quote('%'.$searchTerm.'%');
+            $quotedTerm       = $connection->quote($searchTerm);
 
             // Check if fuzzy search is explicitly requested via _fuzzy=true parameter.
             $fuzzyEnabled = false;
-            $fuzzyParam = $query['_fuzzy'] ?? null;
+            $fuzzyParam   = $query['_fuzzy'] ?? null;
             if ($fuzzyParam === true || $fuzzyParam === 'true' || $fuzzyParam === '1' || $fuzzyParam === 1) {
                 $fuzzyEnabled = $this->hasPgTrgmExtension();
             }
@@ -475,7 +478,7 @@ class MagicSearchHandler
             foreach ($properties as $propName => $propDef) {
                 $type = $propDef['type'] ?? 'string';
                 if ($type === 'string') {
-                    $columnName = $this->sanitizeColumnName($propName);
+                    $columnName         = $this->sanitizeColumnName($propName);
                     $searchConditions[] = "{$columnName}::text ILIKE {$likePattern}";
                 }
             }
@@ -492,18 +495,45 @@ class MagicSearchHandler
             }
 
             if (empty($searchConditions) === false) {
-                $conditions[] = '(' . implode(' OR ', $searchConditions) . ')';
+                $conditions[] = '('.implode(' OR ', $searchConditions).')';
             }
-        }
+        }//end if
 
         // 5. Object field filters (non-reserved, non-metadata).
         $reservedParams = [
-            '_limit', '_offset', '_page', '_order', '_sort', '_search', '_extend',
-            '_fields', '_filter', '_unset', '_facets', '_facetable', '_aggregations',
-            '_debug', '_source', '_published', '_rbac', '_multitenancy', '_validation',
-            '_events', '_register', '_schema', '_schemas', '_ids', '_count',
-            '_includeDeleted', '_relations_contains', '_multitenancy_explicit', '_fuzzy',
-            'register', 'schema', 'registers', 'schemas',
+            '_limit',
+            '_offset',
+            '_page',
+            '_order',
+            '_sort',
+            '_search',
+            '_extend',
+            '_fields',
+            '_filter',
+            '_unset',
+            '_facets',
+            '_facetable',
+            '_aggregations',
+            '_debug',
+            '_source',
+            '_published',
+            '_rbac',
+            '_multitenancy',
+            '_validation',
+            '_events',
+            '_register',
+            '_schema',
+            '_schemas',
+            '_ids',
+            '_count',
+            '_includeDeleted',
+            '_relations_contains',
+            '_multitenancy_explicit',
+            '_fuzzy',
+            'register',
+            'schema',
+            'registers',
+            'schemas',
         ];
 
         $properties = $schema->getProperties() ?? [];
@@ -523,7 +553,7 @@ class MagicSearchHandler
                 continue;
             }
 
-            $columnName = $this->sanitizeColumnName($key);
+            $columnName   = $this->sanitizeColumnName($key);
             $propertyType = $properties[$key]['type'] ?? 'string';
 
             // Handle array-type properties (JSONB columns) with JSON containment operator.
@@ -533,7 +563,7 @@ class MagicSearchHandler
                 if (empty($values) === false) {
                     if (count($values) === 1) {
                         // Single value: check if JSON array contains this value.
-                        $jsonValue = $connection->quote(json_encode([$values[0]]));
+                        $jsonValue    = $connection->quote(json_encode([$values[0]]));
                         $conditions[] = "COALESCE({$columnName}, '[]')::jsonb @> {$jsonValue}::jsonb";
                     } else {
                         // Multiple values: check if JSON array contains ANY of the values (OR logic).
@@ -542,11 +572,13 @@ class MagicSearchHandler
                             $jsonValue = $connection->quote(json_encode([$v]));
                             $orParts[] = "COALESCE({$columnName}, '[]')::jsonb @> {$jsonValue}::jsonb";
                         }
-                        $conditions[] = '(' . implode(' OR ', $orParts) . ')';
+
+                        $conditions[] = '('.implode(' OR ', $orParts).')';
                     }
                 }
+
                 continue;
-            }
+            }//end if
 
             // Handle array filter values with IN clause (for non-array property types).
             if (is_array($value) === true) {
@@ -555,14 +587,15 @@ class MagicSearchHandler
                         fn($v) => $connection->quote((string) $v),
                         $value
                     );
-                    $conditions[] = "{$columnName} IN (" . implode(', ', $quotedValues) . ')';
+                    $conditions[] = "{$columnName} IN (".implode(', ', $quotedValues).')';
                 }
+
                 continue;
             }
 
             // Simple equality filter.
-            $conditions[] = "{$columnName} = " . $connection->quote((string) $value);
-        }
+            $conditions[] = "{$columnName} = ".$connection->quote((string) $value);
+        }//end foreach
 
         return $conditions;
     }//end buildWhereConditionsSql()
@@ -838,14 +871,14 @@ class MagicSearchHandler
         IQueryBuilder $qb,
         string $search,
         Schema $schema,
-        bool $fuzzyEnabled = false
+        bool $fuzzyEnabled=false
     ): void {
         $properties       = $schema->getProperties();
         $searchConditions = $qb->expr()->orX();
 
         // Use lowercase search for case-insensitive matching.
-        $lowerSearch   = strtolower($search);
-        $searchPattern = $qb->createNamedParameter('%'.$lowerSearch.'%');
+        $lowerSearch     = strtolower($search);
+        $searchPattern   = $qb->createNamedParameter('%'.$lowerSearch.'%');
         $searchTermParam = $qb->createNamedParameter($search);
 
         // Search in text-based schema properties (LIKE only for performance).
@@ -897,7 +930,7 @@ class MagicSearchHandler
         IQueryBuilder $qb,
         array $order,
         Schema $schema,
-        ?string $searchTerm = null
+        ?string $searchTerm=null
     ): void {
         $properties = $schema->getProperties();
 
@@ -917,6 +950,7 @@ class MagicSearchHandler
                     $similarityExpr = "similarity(t._name::text, {$paramName})";
                     $qb->addOrderBy($qb->createFunction($similarityExpr), $direction);
                 }
+
                 // Skip _relevance if conditions aren't met (no search term or no pg_trgm).
                 // Silently ignore to avoid errors - relevance ordering without search makes no sense.
                 continue;
@@ -931,7 +965,7 @@ class MagicSearchHandler
                 $columnName = $this->sanitizeColumnName($field);
                 $qb->addOrderBy("t.{$columnName}", $direction);
             }
-        }
+        }//end foreach
     }//end applySorting()
 
     /**
@@ -999,7 +1033,7 @@ class MagicSearchHandler
             // Build property type map and column-to-property mapping from schema.
             // The column-to-property mapping allows us to restore original property names
             // (e.g., 'e-mailadres') from their sanitized column names (e.g., 'e_mailadres').
-            $propertyTypes = [];
+            $propertyTypes       = [];
             $columnToPropertyMap = [];
             foreach ($schema->getProperties() as $propName => $propDef) {
                 $propertyTypes[$propName] = $propDef['type'] ?? 'string';
@@ -1247,7 +1281,6 @@ class MagicSearchHandler
                 if ($type === 'string' && (is_int($value) === true || is_float($value) === true)) {
                     return (string) $value;
                 }
-
                 return $value;
         }//end switch
     }//end convertValueByType()

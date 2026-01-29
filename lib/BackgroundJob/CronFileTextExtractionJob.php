@@ -67,7 +67,7 @@ class CronFileTextExtractionJob extends TimedJob
     {
         parent::__construct($time);
         $this->setInterval(self::DEFAULT_INTERVAL);
-    }
+    }//end __construct()
 
     /**
      * Execute the cron file text extraction job

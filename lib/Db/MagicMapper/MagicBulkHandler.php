@@ -129,24 +129,24 @@ class MagicBulkHandler
             $preparedObject['_schema']       = $schema->getId();
             $preparedObject['_owner']        = $selfData['owner'] ?? $object['owner'] ?? null;
             $preparedObject['_organisation'] = $selfData['organisation'] ?? $object['organisation'] ?? null;
-            
+
             // Format datetime fields to MySQL-compatible format (Y-m-d H:i:s)
             $createdValue = $selfData['created'] ?? $object['created'] ?? $now->format('Y-m-d H:i:s');
             $preparedObject['_created'] = $this->formatDateTimeForDatabase($createdValue, $now->format('Y-m-d H:i:s'));
-            
+
             $preparedObject['_updated'] = $now->format('Y-m-d H:i:s');
-            
+
             $publishedValue = $selfData['published'] ?? $object['published'] ?? null;
             $preparedObject['_published'] = $publishedValue ? $this->formatDateTimeForDatabase($publishedValue, null) : null;
-            
+
             $depublishedValue = $selfData['depublished'] ?? $object['depublished'] ?? null;
             $preparedObject['_depublished'] = $depublishedValue ? $this->formatDateTimeForDatabase($depublishedValue, null) : null;
-            $preparedObject['_name']         = $selfData['name'] ?? $object['name'] ?? null;
-            $preparedObject['_description']  = $selfData['description'] ?? $object['description'] ?? null;
-            $preparedObject['_summary']      = $selfData['summary'] ?? $object['summary'] ?? null;
-            $preparedObject['_image']        = $selfData['image'] ?? $object['image'] ?? null;
-            $preparedObject['_slug']         = $selfData['slug'] ?? $object['slug'] ?? null;
-            $preparedObject['_uri']          = $selfData['uri'] ?? $object['uri'] ?? null;
+            $preparedObject['_name']        = $selfData['name'] ?? $object['name'] ?? null;
+            $preparedObject['_description'] = $selfData['description'] ?? $object['description'] ?? null;
+            $preparedObject['_summary']     = $selfData['summary'] ?? $object['summary'] ?? null;
+            $preparedObject['_image']       = $selfData['image'] ?? $object['image'] ?? null;
+            $preparedObject['_slug']        = $selfData['slug'] ?? $object['slug'] ?? null;
+            $preparedObject['_uri']         = $selfData['uri'] ?? $object['uri'] ?? null;
 
             // Calculate object size (similar to blob storage).
             // This is the size of the serialized object data for storage analytics.
@@ -164,7 +164,7 @@ class MagicBulkHandler
 
             // Map ALL object properties to columns (camelCase → snake_case).
             // Properties can be at top level OR in 'object' key (structured format).
-            $propertySource = $object['object'] ?? $object;
+            $propertySource   = $object['object'] ?? $object;
             $schemaProperties = $schema->getProperties() ?? [];
 
             foreach ($propertySource as $propertyName => $value) {
@@ -189,7 +189,7 @@ class MagicBulkHandler
                 if (is_array($value) === true || is_object($value) === true) {
                     $preparedObject[$columnName] = json_encode($value);
                 }
-            }
+            }//end foreach
 
             $prepared[] = $preparedObject;
         }//end foreach
@@ -467,6 +467,7 @@ class MagicBulkHandler
                 }
             }
         }
+
         $uuids      = array_column($filteredChunk, '_uuid');
         $platform   = $this->db->getDatabasePlatform();
         $isPostgres = $platform->getName() === 'postgresql';
@@ -496,10 +497,10 @@ class MagicBulkHandler
                 $this->logger->debug(
                     '[MagicBulkHandler] Pre-upsert UUID check',
                     [
-                        'chunk'         => $chunkNumber,
-                        'total_uuids'   => count($uuids),
+                        'chunk'          => $chunkNumber,
+                        'total_uuids'    => count($uuids),
                         'existing_uuids' => count($existingUuids),
-                        'new_uuids'     => count($uuids) - count($existingUuids),
+                        'new_uuids'      => count($uuids) - count($existingUuids),
                     ]
                 );
             } catch (\Exception $e) {
@@ -507,7 +508,7 @@ class MagicBulkHandler
                     '[MagicBulkHandler] Failed to check existing UUIDs, will use timestamp-based classification',
                     ['error' => $e->getMessage()]
                 );
-            }
+            }//end try
         }//end if
 
         // Build column list with proper quoting.

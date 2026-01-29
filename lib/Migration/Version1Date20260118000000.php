@@ -95,7 +95,7 @@ class Version1Date20260118000000 extends SimpleMigrationStep
                     [
                         'notnull' => true,
                         'default' => true,
-                        'comment' => 'Whether the organisation is active'
+                        'comment' => 'Whether the organisation is active',
                     ]
                 );
 

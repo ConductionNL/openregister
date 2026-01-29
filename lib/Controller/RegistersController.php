@@ -306,12 +306,16 @@ class RegistersController extends Controller
                                 $this->logger->debug("RegistersController: No count for schema {$schemaId}, set to 0");
                             }
                         }
-                        unset($schema); // CRITICAL: Unset reference to prevent corruption of array in subsequent iterations.
-                    }
-                }
-            }
-            unset($register); // CRITICAL: Unset reference to prevent array corruption.
-        }
+
+                        unset($schema);
+                        // CRITICAL: Unset reference to prevent corruption of array in subsequent iterations.
+                    }//end if
+                }//end if
+            }//end foreach
+
+            unset($register);
+            // CRITICAL: Unset reference to prevent array corruption.
+        }//end if
 
         // If '@self.stats' is requested, attach statistics to each register.
         if (in_array('@self.stats', $extend, true) === true) {

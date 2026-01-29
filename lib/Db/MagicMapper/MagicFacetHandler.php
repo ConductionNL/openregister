@@ -104,10 +104,10 @@ class MagicFacetHandler
      * Tracks hits/misses for facet label resolution.
      */
     private array $cacheStats = [
-        'field_cache_hits' => 0,
+        'field_cache_hits'       => 0,
         'distributed_cache_hits' => 0,
-        'cache_handler_calls' => 0,
-        'total_uuids_resolved' => 0,
+        'cache_handler_calls'    => 0,
+        'total_uuids_resolved'   => 0,
     ];
 
     /**
@@ -148,21 +148,21 @@ class MagicFacetHandler
     /**
      * Constructor for MagicFacetHandler
      *
-     * @param IDBConnection   $db           Database connection for queries
-     * @param LoggerInterface $logger       Logger for debugging and error reporting
-     * @param \OCA\OpenRegister\Service\Object\CacheHandler|null $cacheHandler Cache handler for name resolution
-     * @param ICacheFactory|null $cacheFactory Cache factory for distributed caching
-     * @param MagicSearchHandler|null $searchHandler Search handler for shared query building
+     * @param IDBConnection                                      $db            Database connection for queries
+     * @param LoggerInterface                                    $logger        Logger for debugging and error reporting
+     * @param \OCA\OpenRegister\Service\Object\CacheHandler|null $cacheHandler  Cache handler for name resolution
+     * @param ICacheFactory|null                                 $cacheFactory  Cache factory for distributed caching
+     * @param MagicSearchHandler|null                            $searchHandler Search handler for shared query building
      */
     public function __construct(
         private readonly IDBConnection $db,
         private readonly LoggerInterface $logger,
-        ?\OCA\OpenRegister\Service\Object\CacheHandler $cacheHandler = null,
-        ?ICacheFactory $cacheFactory = null,
-        ?MagicSearchHandler $searchHandler = null
+        ?\OCA\OpenRegister\Service\Object\CacheHandler $cacheHandler=null,
+        ?ICacheFactory $cacheFactory=null,
+        ?MagicSearchHandler $searchHandler=null
     ) {
-        $this->cacheHandler = $cacheHandler;
-        $this->cacheFactory = $cacheFactory;
+        $this->cacheHandler  = $cacheHandler;
+        $this->cacheFactory  = $cacheFactory;
         $this->searchHandler = $searchHandler;
 
         // Initialize distributed cache for facet labels.
@@ -170,7 +170,7 @@ class MagicFacetHandler
             try {
                 $this->distributedLabelCache = $this->cacheFactory->createDistributed('openregister_facet_labels');
             } catch (\Exception $e) {
-                $this->logger->warning('Failed to create distributed facet label cache: ' . $e->getMessage());
+                $this->logger->warning('Failed to create distributed facet label cache: '.$e->getMessage());
             }
         }
     }//end __construct()
@@ -198,7 +198,7 @@ class MagicFacetHandler
         Schema $schema
     ): array {
         $startTime = microtime(true);
-        
+
         // Extract facet configuration.
         $facetConfig = $query['_facets'] ?? [];
         if (empty($facetConfig) === true) {
@@ -214,15 +214,15 @@ class MagicFacetHandler
         $baseQuery = $query;
         unset($baseQuery['_facets']);
 
-        $facets = [];
-        $facetTimes = []; // Track time per facet for optimization
-
+        $facets     = [];
+        $facetTimes = [];
+        // Track time per facet for optimization
         // Process metadata facets (@self).
         if (($facetConfig['@self'] ?? null) !== null && is_array($facetConfig['@self']) === true) {
             $facets['@self'] = [];
             foreach ($facetConfig['@self'] as $field => $config) {
                 $facetStart = microtime(true);
-                $type = $config['type'] ?? 'terms';
+                $type       = $config['type'] ?? 'terms';
 
                 if ($type === 'terms') {
                     $facets['@self'][$field] = $this->getTermsFacet(
@@ -243,7 +243,7 @@ class MagicFacetHandler
                         schema: $schema
                     );
                 }
-                
+
                 $facetTimes['@self.'.$field] = round((microtime(true) - $facetStart) * 1000, 2);
             }//end foreach
         }//end if
@@ -259,7 +259,7 @@ class MagicFacetHandler
 
         foreach ($objectFacetConfig as $field => $config) {
             $facetStart = microtime(true);
-            $type = $config['type'] ?? 'terms';
+            $type       = $config['type'] ?? 'terms';
             // Sanitize field name to match database column (camelCase -> snake_case).
             $columnName = $this->sanitizeColumnName($field);
 
@@ -295,9 +295,9 @@ class MagicFacetHandler
 
         // Add timing metadata to facets for performance debugging.
         $facets['_metrics'] = [
-            'total_ms' => $totalTime,
+            'total_ms'     => $totalTime,
             'per_facet_ms' => $facetTimes,
-            'label_cache' => $this->cacheStats,
+            'label_cache'  => $this->cacheStats,
         ];
 
         return $facets;
@@ -343,7 +343,7 @@ class MagicFacetHandler
         $baseQuery = $query;
         unset($baseQuery['_facets']);
 
-        $facets = [];
+        $facets     = [];
         $facetTimes = [];
 
         // Get all table names.
@@ -358,7 +358,7 @@ class MagicFacetHandler
 
         foreach ($objectFacetConfig as $field => $config) {
             $facetStart = microtime(true);
-            $type = $config['type'] ?? 'terms';
+            $type       = $config['type'] ?? 'terms';
             $columnName = $this->sanitizeColumnName($field);
 
             if ($type === 'terms') {
@@ -373,7 +373,7 @@ class MagicFacetHandler
                 if (empty($tablesWithColumn) === false) {
                     // Use first matching table's schema for label resolution.
                     $firstMatchingConfig = reset($tablesWithColumn);
-                    $schemaForLabels = $firstMatchingConfig['schema'] ?? null;
+                    $schemaForLabels     = $firstMatchingConfig['schema'] ?? null;
 
                     $facets[$field] = $this->getTermsFacetUnion(
                         tableConfigs: $tablesWithColumn,
@@ -384,7 +384,7 @@ class MagicFacetHandler
                 } else {
                     $facets[$field] = ['type' => 'terms', 'buckets' => []];
                 }
-            }
+            }//end if
 
             // Add schema property title if available.
             if (isset($config['title']) === true && $config['title'] !== null) {
@@ -392,19 +392,19 @@ class MagicFacetHandler
             }
 
             $facetTimes[$field] = round((microtime(true) - $facetStart) * 1000, 2);
-        }
+        }//end foreach
 
         // Process @self metadata facets using UNION.
         if (($facetConfig['@self'] ?? null) !== null && is_array($facetConfig['@self']) === true) {
             $facets['@self'] = [];
             // Use first table's schema for metadata facets (all tables share same metadata structure).
             $firstTableConfig = reset($tableConfigs);
-            $metadataSchema = $firstTableConfig['schema'] ?? null;
+            $metadataSchema   = $firstTableConfig['schema'] ?? null;
 
             foreach ($facetConfig['@self'] as $field => $config) {
                 $facetStart = microtime(true);
-                $type = $config['type'] ?? 'terms';
-                $columnName = self::METADATA_PREFIX . $field;
+                $type       = $config['type'] ?? 'terms';
+                $columnName = self::METADATA_PREFIX.$field;
 
                 if ($type === 'terms') {
                     $facets['@self'][$field] = $this->getTermsFacetUnion(
@@ -425,18 +425,18 @@ class MagicFacetHandler
                     );
                 }
 
-                $facetTimes['@self.' . $field] = round((microtime(true) - $facetStart) * 1000, 2);
-            }
-        }
+                $facetTimes['@self.'.$field] = round((microtime(true) - $facetStart) * 1000, 2);
+            }//end foreach
+        }//end if
 
         $totalTime = round((microtime(true) - $startTime) * 1000, 2);
 
         // Add timing metadata to facets for performance debugging.
         $facets['_metrics'] = [
-            'total_ms' => $totalTime,
-            'table_count' => count($tableConfigs),
+            'total_ms'     => $totalTime,
+            'table_count'  => count($tableConfigs),
             'per_facet_ms' => $facetTimes,
-            'label_cache' => $this->cacheStats,
+            'label_cache'  => $this->cacheStats,
         ];
 
         return $facets;
@@ -462,7 +462,7 @@ class MagicFacetHandler
         string $field,
         array $baseQuery,
         ?Schema $schema,
-        bool $isMetadata = false
+        bool $isMetadata=false
     ): array {
         if (empty($tableConfigs) === true) {
             return ['type' => 'terms', 'buckets' => []];
@@ -472,12 +472,12 @@ class MagicFacetHandler
         // Array values will come as JSON strings like '["uuid1", "uuid2"]'
         // and will be post-processed in PHP.
         $unionParts = [];
-        $prefix = 'oc_';
+        $prefix     = 'oc_';
 
         foreach ($tableConfigs as $tc) {
-            $tableName = $tc['tableName'];
-            $fullTableName = $prefix . $tableName;
-            $tcSchema = $tc['schema'];
+            $tableName     = $tc['tableName'];
+            $fullTableName = $prefix.$tableName;
+            $tcSchema      = $tc['schema'];
 
             // Simple SELECT with GROUP BY - no jsonb_array_elements_text complexity.
             $subSql = "SELECT {$field} as facet_value, COUNT(*) as cnt FROM {$fullTableName} WHERE {$field} IS NOT NULL";
@@ -494,22 +494,21 @@ class MagicFacetHandler
                         // Skip this table entirely.
                         continue 2;
                     }
+
                     $subSql .= " AND {$condition}";
                 }
             }
 
-            $subSql .= " GROUP BY {$field}";
+            $subSql      .= " GROUP BY {$field}";
             $unionParts[] = $subSql;
-        }
+        }//end foreach
 
         if (empty($unionParts) === true) {
             return ['type' => 'terms', 'buckets' => []];
         }
 
         // Combine with UNION ALL and aggregate.
-        $sql = "SELECT facet_value, SUM(cnt) as doc_count FROM (\n"
-            . implode("\nUNION ALL\n", $unionParts)
-            . "\n) combined GROUP BY facet_value ORDER BY doc_count DESC LIMIT " . self::MAX_FACET_BUCKETS;
+        $sql = "SELECT facet_value, SUM(cnt) as doc_count FROM (\n".implode("\nUNION ALL\n", $unionParts)."\n) combined GROUP BY facet_value ORDER BY doc_count DESC LIMIT ".self::MAX_FACET_BUCKETS;
 
         try {
             $stmt = $this->db->prepare($sql);
@@ -519,7 +518,7 @@ class MagicFacetHandler
             $rawBuckets = [];
             while (($row = $stmt->fetch()) !== false) {
                 $rawBuckets[] = [
-                    'key' => $row['facet_value'],
+                    'key'   => $row['facet_value'],
                     'count' => (int) $row['doc_count'],
                 ];
             }
@@ -544,7 +543,7 @@ class MagicFacetHandler
             $labelMap = [];
             if (empty($uuidsToResolve) === false && $isMetadata === false) {
                 $firstConfig = reset($tableConfigs);
-                $labelMap = $this->batchResolveUuidLabels(
+                $labelMap    = $this->batchResolveUuidLabels(
                     uuids: $uuidsToResolve,
                     field: $field,
                     schema: $firstConfig['schema'],
@@ -553,7 +552,7 @@ class MagicFacetHandler
             }
 
             // Build final buckets with labels.
-            $buckets = [];
+            $buckets     = [];
             $firstConfig = reset($tableConfigs);
             foreach ($normalizedBuckets as $bucket) {
                 $key = $bucket['key'];
@@ -571,11 +570,11 @@ class MagicFacetHandler
                 }
 
                 $buckets[] = [
-                    'key' => $key,
+                    'key'     => $key,
                     'results' => $bucket['count'],
-                    'label' => $label,
+                    'label'   => $label,
                 ];
-            }
+            }//end foreach
 
             return ['type' => 'terms', 'buckets' => $buckets];
         } catch (\Exception $e) {
@@ -584,7 +583,7 @@ class MagicFacetHandler
                 ['field' => $field, 'error' => $e->getMessage(), 'sql' => $sql]
             );
             return ['type' => 'terms', 'buckets' => []];
-        }
+        }//end try
     }//end getTermsFacetUnion()
 
     /**
@@ -612,7 +611,7 @@ class MagicFacetHandler
         $valueCounts = [];
 
         foreach ($rawBuckets as $bucket) {
-            $key = $bucket['key'];
+            $key   = $bucket['key'];
             $count = $bucket['count'];
 
             // Skip null/empty values.
@@ -637,28 +636,31 @@ class MagicFacetHandler
                         if (isset($valueCounts[$elementKey]) === false) {
                             $valueCounts[$elementKey] = 0;
                         }
+
                         $valueCounts[$elementKey] += $count;
                     }
+
                     continue;
                 }
-            }
+            }//end if
 
             // Not an array - use value as-is.
             // Clean up JSON-encoded single values (e.g., "\"value\"" -> "value").
-            $cleanKey = $this->cleanJsonValue($key);
+            $cleanKey    = $this->cleanJsonValue($key);
             $cleanKeyStr = (string) $cleanKey;
 
             if (isset($valueCounts[$cleanKeyStr]) === false) {
                 $valueCounts[$cleanKeyStr] = 0;
             }
+
             $valueCounts[$cleanKeyStr] += $count;
-        }
+        }//end foreach
 
         // Convert back to bucket format, sorted by count descending.
         $normalizedBuckets = [];
         foreach ($valueCounts as $key => $count) {
             $normalizedBuckets[] = [
-                'key' => $key,
+                'key'   => $key,
                 'count' => $count,
             ];
         }
@@ -692,19 +694,18 @@ class MagicFacetHandler
 
         $dateFormat = $this->getDateFormatForInterval($interval);
         $unionParts = [];
-        $prefix = 'oc_';
+        $prefix     = 'oc_';
 
         foreach ($tableConfigs as $tc) {
-            $tableName = $tc['tableName'];
-            $fullTableName = $prefix . $tableName;
-            $tcSchema = $tc['schema'] ?? null;
+            $tableName     = $tc['tableName'];
+            $fullTableName = $prefix.$tableName;
+            $tcSchema      = $tc['schema'] ?? null;
 
             if ($this->columnExists(tableName: $tableName, columnName: $field) === false) {
                 continue;
             }
 
-            $subSql = "SELECT TO_CHAR({$field}, '{$dateFormat}') as date_key, COUNT(*) as cnt "
-                . "FROM {$fullTableName} WHERE {$field} IS NOT NULL";
+            $subSql = "SELECT TO_CHAR({$field}, '{$dateFormat}') as date_key, COUNT(*) as cnt "."FROM {$fullTableName} WHERE {$field} IS NOT NULL";
 
             // Use shared method for all filter conditions (single source of truth).
             if ($this->searchHandler !== null && $tcSchema !== null) {
@@ -716,21 +717,20 @@ class MagicFacetHandler
                     if ($condition === '1=0') {
                         continue 2;
                     }
+
                     $subSql .= " AND {$condition}";
                 }
             }
 
-            $subSql .= " GROUP BY date_key";
+            $subSql      .= " GROUP BY date_key";
             $unionParts[] = $subSql;
-        }
+        }//end foreach
 
         if (empty($unionParts) === true) {
             return ['type' => 'date_histogram', 'interval' => $interval, 'buckets' => []];
         }
 
-        $sql = "SELECT date_key, SUM(cnt) as doc_count FROM (\n"
-            . implode("\nUNION ALL\n", $unionParts)
-            . "\n) combined GROUP BY date_key ORDER BY date_key ASC";
+        $sql = "SELECT date_key, SUM(cnt) as doc_count FROM (\n".implode("\nUNION ALL\n", $unionParts)."\n) combined GROUP BY date_key ORDER BY date_key ASC";
 
         try {
             $stmt = $this->db->prepare($sql);
@@ -739,7 +739,7 @@ class MagicFacetHandler
             $buckets = [];
             while (($row = $stmt->fetch()) !== false) {
                 $buckets[] = [
-                    'key' => $row['date_key'],
+                    'key'     => $row['date_key'],
                     'results' => (int) $row['doc_count'],
                 ];
             }
@@ -778,7 +778,7 @@ class MagicFacetHandler
                 '@self' => [
                     // Disabled for performance - uncomment if needed:
                     // 'register'     => ['type' => 'terms'],
-                    'schema'       => ['type' => 'terms'],
+                    'schema' => ['type' => 'terms'],
                     // 'organisation' => ['type' => 'terms'],
                     // 'created'      => ['type' => 'date_histogram', 'interval' => 'month'],
                     // 'updated'      => ['type' => 'date_histogram', 'interval' => 'month'],
@@ -874,15 +874,14 @@ class MagicFacetHandler
                 // Add field if not already present, or merge if title is missing.
                 if (isset($mergedConfig[$field]) === false) {
                     $mergedConfig[$field] = $config;
-                } else if (
-                    isset($config['title']) === true
+                } else if (isset($config['title']) === true
                     && isset($mergedConfig[$field]['title']) === false
                 ) {
                     // Use the title from a schema that has it.
                     $mergedConfig[$field]['title'] = $config['title'];
                 }
             }
-        }
+        }//end foreach
 
         return $mergedConfig;
     }//end expandFacetConfigFromAllSchemas()
@@ -1024,7 +1023,7 @@ class MagicFacetHandler
                 tableName: $tableName,
                 schema: $schema
             );
-        }
+        }//end if
 
         $result = $queryBuilder->executeQuery();
 
@@ -1032,7 +1031,7 @@ class MagicFacetHandler
         $rawBuckets = [];
         while (($row = $result->fetch()) !== false) {
             $rawBuckets[] = [
-                'key' => $row['facet_value'],
+                'key'   => $row['facet_value'],
                 'count' => (int) $row['doc_count'],
             ];
         }
@@ -1086,7 +1085,7 @@ class MagicFacetHandler
                 'results' => $bucket['count'],
                 'label'   => $label,
             ];
-        }
+        }//end foreach
 
         $result = [
             'type'    => 'terms',
@@ -1205,7 +1204,7 @@ class MagicFacetHandler
                 tableName: $tableName,
                 schema: $schema
             );
-        }
+        }//end if
 
         $result  = $queryBuilder->executeQuery();
         $buckets = [];
@@ -1497,6 +1496,7 @@ class MagicFacetHandler
      *
      * @return void
      */
+
     /**
      * Apply search filter to query builder using same logic as MagicMapper.
      *
@@ -1515,13 +1515,13 @@ class MagicFacetHandler
         IQueryBuilder $queryBuilder,
         string $searchTerm,
         string $tableName,
-        ?Schema $schema = null
+        ?Schema $schema=null
     ): void {
         $orConditions = $queryBuilder->expr()->orX();
 
         // Get all text-based properties from the schema (matching MagicMapper logic).
         $searchableColumns = [];
-        
+
         if ($schema !== null) {
             $properties = $schema->getProperties() ?? [];
             if (is_array($properties) === true) {
@@ -1550,7 +1550,7 @@ class MagicFacetHandler
         // Build search conditions (matching MagicMapper's ACTUAL behavior, not intended).
         // NOTE: Even though MagicMapper's applyFuzzySearch() includes trigram % operator,
         // in practice it seems to only use ILIKE. We match the actual behavior for consistency.
-        $platform = $this->db->getDatabasePlatform();
+        $platform      = $this->db->getDatabasePlatform();
         $searchPattern = '%'.$searchTerm.'%';
 
         foreach ($searchableColumns as $column) {
@@ -1614,10 +1614,10 @@ class MagicFacetHandler
      * - Subsequent requests: instant lookup from cache
      * - Labels rarely change, so long TTL (24h) is safe
      *
-     * @param array    $uuids    Array of UUIDs to resolve.
-     * @param string   $field    The field name for cache key.
-     * @param Schema   $schema   The current schema context.
-     * @param Register $register The current register context.
+     * @param array    $uuids     Array of UUIDs to resolve.
+     * @param string   $field     The field name for cache key.
+     * @param Schema   $schema    The current schema context.
+     * @param Register $register  The current register context.
      * @param string   $tableName The magic mapper table name (optional, for cache key).
      *
      * @return array<string, string> Map of UUID to label.
@@ -1627,7 +1627,7 @@ class MagicFacetHandler
         string $field,
         Schema $schema,
         Register $register,
-        string $tableName = ''
+        string $tableName=''
     ): array {
         if (empty($uuids) === true) {
             return [];
@@ -1636,12 +1636,12 @@ class MagicFacetHandler
         $startTime = microtime(true);
 
         // Generate field-level cache key.
-        $fieldCacheKey = 'facet_labels_' . $register->getId() . '_' . $schema->getId() . '_' . $field;
+        $fieldCacheKey = 'facet_labels_'.$register->getId().'_'.$schema->getId().'_'.$field;
 
         // STEP 1: Check in-memory field-level cache (fastest).
         if (isset($this->fieldLabelCache[$fieldCacheKey]) === true) {
-            $cachedLabels = $this->fieldLabelCache[$fieldCacheKey];
-            $result = [];
+            $cachedLabels  = $this->fieldLabelCache[$fieldCacheKey];
+            $result        = [];
             $uncachedUuids = [];
 
             foreach ($uuids as $uuid) {
@@ -1656,14 +1656,17 @@ class MagicFacetHandler
             if (empty($uncachedUuids) === true) {
                 $this->cacheStats['field_cache_hits']++;
                 $this->cacheStats['total_uuids_resolved'] += count($result);
-                $this->logger->debug('batchResolveUuidLabels: All labels from in-memory field cache', [
-                    'field' => $field,
-                    'count' => count($result),
-                    'time_ms' => round((microtime(true) - $startTime) * 1000, 2),
-                ]);
+                $this->logger->debug(
+                        'batchResolveUuidLabels: All labels from in-memory field cache',
+                        [
+                            'field'   => $field,
+                            'count'   => count($result),
+                            'time_ms' => round((microtime(true) - $startTime) * 1000, 2),
+                        ]
+                        );
                 return $result;
             }
-        }
+        }//end if
 
         // STEP 2: Check distributed cache for field-level labels.
         if ($this->distributedLabelCache !== null && isset($this->warmedFields[$fieldCacheKey]) === false) {
@@ -1672,10 +1675,10 @@ class MagicFacetHandler
                 if ($distributedLabels !== null && is_array($distributedLabels) === true) {
                     // Store in in-memory cache for this request.
                     $this->fieldLabelCache[$fieldCacheKey] = $distributedLabels;
-                    $this->warmedFields[$fieldCacheKey] = true;
+                    $this->warmedFields[$fieldCacheKey]    = true;
 
                     // Try again with the loaded cache.
-                    $result = [];
+                    $result        = [];
                     $uncachedUuids = [];
                     foreach ($uuids as $uuid) {
                         if (isset($distributedLabels[$uuid]) === true) {
@@ -1688,21 +1691,24 @@ class MagicFacetHandler
                     if (empty($uncachedUuids) === true) {
                         $this->cacheStats['distributed_cache_hits']++;
                         $this->cacheStats['total_uuids_resolved'] += count($result);
-                        $this->logger->debug('batchResolveUuidLabels: All labels from distributed cache', [
-                            'field' => $field,
-                            'count' => count($result),
-                            'time_ms' => round((microtime(true) - $startTime) * 1000, 2),
-                        ]);
+                        $this->logger->debug(
+                                'batchResolveUuidLabels: All labels from distributed cache',
+                                [
+                                    'field'   => $field,
+                                    'count'   => count($result),
+                                    'time_ms' => round((microtime(true) - $startTime) * 1000, 2),
+                                ]
+                                );
                         return $result;
                     }
-                }
+                }//end if
             } catch (\Exception $e) {
-                $this->logger->warning('Failed to get facet labels from distributed cache: ' . $e->getMessage());
-            }
-        }
+                $this->logger->warning('Failed to get facet labels from distributed cache: '.$e->getMessage());
+            }//end try
+        }//end if
 
         // STEP 3: Resolve remaining UUIDs via CacheHandler.
-        $result = $result ?? [];
+        $result        = $result ?? [];
         $uncachedUuids = $uncachedUuids ?? $uuids;
 
         if ($this->cacheHandler !== null && empty($uncachedUuids) === false) {
@@ -1720,6 +1726,7 @@ class MagicFacetHandler
             if (isset($this->fieldLabelCache[$fieldCacheKey]) === false) {
                 $this->fieldLabelCache[$fieldCacheKey] = [];
             }
+
             $this->fieldLabelCache[$fieldCacheKey] = array_merge(
                 $this->fieldLabelCache[$fieldCacheKey],
                 $batchedLabels
@@ -1735,17 +1742,20 @@ class MagicFacetHandler
                     );
                     $this->warmedFields[$fieldCacheKey] = true;
                 } catch (\Exception $e) {
-                    $this->logger->warning('Failed to persist facet labels to distributed cache: ' . $e->getMessage());
+                    $this->logger->warning('Failed to persist facet labels to distributed cache: '.$e->getMessage());
                 }
             }
 
-            $this->logger->debug('batchResolveUuidLabels: Resolved via CacheHandler and cached', [
-                'field' => $field,
-                'requested' => count($uuids),
-                'resolved' => count($batchedLabels),
-                'time_ms' => round((microtime(true) - $startTime) * 1000, 2),
-            ]);
-        }
+            $this->logger->debug(
+                    'batchResolveUuidLabels: Resolved via CacheHandler and cached',
+                    [
+                        'field'     => $field,
+                        'requested' => count($uuids),
+                        'resolved'  => count($batchedLabels),
+                        'time_ms'   => round((microtime(true) - $startTime) * 1000, 2),
+                    ]
+                    );
+        }//end if
 
         return $result;
     }//end batchResolveUuidLabels()
@@ -1835,7 +1845,7 @@ class MagicFacetHandler
 
             // Return shortened UUID if name not found.
             return substr($value, 0, 8).'...';
-        }
+        }//end if
 
         // For object fields containing UUIDs, try to resolve to object names.
         // Note: Using relaxed UUID pattern to match non-standard UUIDs (e.g., version 1 time-based).

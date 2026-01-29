@@ -230,9 +230,9 @@ services:
     container_name: openregister-presidio-analyzer
     restart: always
     ports:
-      - "5001:5001"
+      - "5001:3000"
     environment:
-      - GRPC_PORT=5001
+      - PORT=3000
       - LOG_LEVEL=INFO
       # Enable multi-language support
       - PRESIDIO_ANALYZER_LANGUAGES=en,nl,de,fr,es
@@ -243,7 +243,7 @@ services:
         reservations:
           memory: 512M
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:5001/health || exit 1"]
+      test: ["CMD-SHELL", "python3 -c \"import requests; requests.get('http://localhost:3000/health')\" || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3

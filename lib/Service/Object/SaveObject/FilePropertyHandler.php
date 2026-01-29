@@ -174,15 +174,15 @@ class FilePropertyHandler
             }
 
             $propertyConfig = $schemaProperties[$propertyName];
-            $propertyType = $propertyConfig['type'] ?? '';
+            $propertyType   = $propertyConfig['type'] ?? '';
 
             $this->logger->warning(
                 'isFileProperty: Checking property type',
                 [
-                    'app' => 'openregister',
+                    'app'      => 'openregister',
                     'property' => $propertyName,
-                    'type' => $propertyType,
-                    'isFile' => ($propertyType === 'file'),
+                    'type'     => $propertyType,
+                    'isFile'   => ($propertyType === 'file'),
                 ]
             );
 
@@ -357,7 +357,7 @@ class FilePropertyHandler
     private function generateFileName(
         string $propertyName,
         string $extension,
-        ?int $index = null
+        ?int $index=null
     ): string {
         $timestamp   = time();
         $random      = bin2hex(random_bytes(4));
@@ -384,12 +384,12 @@ class FilePropertyHandler
      * @phpstan-return array<int, string>
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) $index kept for API consistency with other methods
-     * @psalm-suppress UnusedParam $index kept for API consistency and future use
+     * @psalm-suppress                                UnusedParam $index kept for API consistency and future use
      */
     private function prepareAutoTags(
         array $fileConfig,
         string $propertyName,
-        ?int $index = null
+        ?int $index=null
     ): array {
         // Note: $index parameter is kept for API consistency with generateFileName() and other methods.
         // It could be used in the future to add index-specific tags like "array_item:0".
@@ -823,7 +823,7 @@ class FilePropertyHandler
                         'error'  => $e->getMessage(),
                     ]
                 );
-            }
+            }//end try
         }//end if
 
         // No ID or existing file not accessible, create a new file.

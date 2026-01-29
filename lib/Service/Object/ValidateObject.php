@@ -608,7 +608,7 @@ class ValidateObject
                     }
                 }
             }
-        }
+        }//end if
 
         // Check inside oneOf directly on the property (alternative structure).
         if (isset($propertySchema->oneOf) && (is_array($propertySchema->oneOf) || is_object($propertySchema->oneOf))) {
@@ -702,13 +702,14 @@ class ValidateObject
             if ($this->isSelfReference(propertySchema: $propertySchema, schemaSlug: $currentSchemaSlug) === true) {
                 // Check if this is a related-object with objectConfiguration.
                 // Handle both array and object formats for objectConfiguration
-                $config = $propertySchema->objectConfiguration ?? null;
+                $config   = $propertySchema->objectConfiguration ?? null;
                 $handling = null;
                 if (is_array($config) && isset($config['handling'])) {
                     $handling = $config['handling'];
-                } elseif (is_object($config) && isset($config->handling)) {
+                } else if (is_object($config) && isset($config->handling)) {
                     $handling = $config->handling;
                 }
+
                 if ($config !== null && $handling === 'related-object') {
                     // Handle inversedBy relationships for single objects.
                     if (($propertySchema->inversedBy ?? null) !== null) {
@@ -734,10 +735,10 @@ class ValidateObject
 
                     if (($propertySchema->inversedBy ?? null) === null) {
                         // For non-inversedBy properties, expect string UUID.
-                        $uuidPattern          = '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-';
-                        $uuidPattern         .= '[0-9a-f]{4}-[0-9a-f]{12}$';
+                        $uuidPattern  = '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-';
+                        $uuidPattern .= '[0-9a-f]{4}-[0-9a-f]{12}$';
                         // Note: For related-object patterns, we support prefixed UUIDs, UUIDs without dashes, and numeric IDs
-                        $uuidPattern = '^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$';
+                        $uuidPattern          = '^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$';
                         $propertySchema->type = 'string';
                         $propertySchema->pattern = $uuidPattern;
                         $desc = 'UUID reference to a related object (self-reference)';
@@ -956,7 +957,7 @@ class ValidateObject
         ) {
             // Ensure items object exists.
             if (($cleanedProperty->items ?? null) === null) {
-                $cleanedProperty->items = new \stdClass();
+                $cleanedProperty->items       = new \stdClass();
                 $cleanedProperty->items->type = 'string';
             }
 
@@ -975,9 +976,7 @@ class ValidateObject
             && ($cleanedProperty->oneOf ?? null) !== null
             && (is_array($cleanedProperty->oneOf) === true || is_object($cleanedProperty->oneOf) === true)
         ) {
-            $oneOfArray = is_object($cleanedProperty->oneOf)
-                ? get_object_vars($cleanedProperty->oneOf)
-                : $cleanedProperty->oneOf;
+            $oneOfArray = is_object($cleanedProperty->oneOf) ? get_object_vars($cleanedProperty->oneOf) : $cleanedProperty->oneOf;
 
             if (empty($oneOfArray) === false) {
                 // Ensure items object exists.
@@ -1012,14 +1011,22 @@ class ValidateObject
     {
         // Map of custom OpenRegister types to their JSON Schema equivalents.
         $customTypeMap = [
-            'file'     => 'string',  // File references are stored as strings (paths, UUIDs, etc.)
-            'datetime' => 'string',  // Datetime values are stored as ISO 8601 strings
-            'date'     => 'string',  // Date values are stored as strings
-            'time'     => 'string',  // Time values are stored as strings
-            'uuid'     => 'string',  // UUIDs are strings
-            'url'      => 'string',  // URLs are strings
-            'email'    => 'string',  // Emails are strings
-            'phone'    => 'string',  // Phone numbers are strings
+            'file'     => 'string',
+        // File references are stored as strings (paths, UUIDs, etc.)
+            'datetime' => 'string',
+        // Datetime values are stored as ISO 8601 strings
+            'date'     => 'string',
+        // Date values are stored as strings
+            'time'     => 'string',
+        // Time values are stored as strings
+            'uuid'     => 'string',
+        // UUIDs are strings
+            'url'      => 'string',
+        // URLs are strings
+            'email'    => 'string',
+        // Emails are strings
+            'phone'    => 'string',
+        // Phone numbers are strings
         ];
 
         // Check if type is set and needs transformation.
@@ -1064,11 +1071,11 @@ class ValidateObject
 
         // Check if this has objectConfiguration to determine handling.
         // Handle both array and object formats for objectConfiguration
-        $config = $itemsSchema->objectConfiguration ?? null;
+        $config   = $itemsSchema->objectConfiguration ?? null;
         $handling = null;
         if (is_array($config) && isset($config['handling'])) {
             $handling = $config['handling'];
-        } elseif (is_object($config) && isset($config->handling)) {
+        } else if (is_object($config) && isset($config->handling)) {
             $handling = $config->handling;
         }
 
@@ -1121,7 +1128,7 @@ class ValidateObject
         // Accept either a UUID string or an object with an id field.
         // This allows flexibility in how related objects are submitted.
         unset($itemsSchema->type);
-        $itemsSchema->oneOf = [
+        $itemsSchema->oneOf       = [
             (object) [
                 'type'        => 'string',
                 'pattern'     => $uuidPattern,

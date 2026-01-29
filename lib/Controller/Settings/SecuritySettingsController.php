@@ -100,7 +100,7 @@ class SecuritySettingsController extends Controller
                 data: ['error' => $e->getMessage()],
                 statusCode: 500
             );
-        }
+        }//end try
     }//end clearIpRateLimits()
 
     /**
@@ -150,7 +150,7 @@ class SecuritySettingsController extends Controller
                 data: ['error' => $e->getMessage()],
                 statusCode: 500
             );
-        }
+        }//end try
     }//end clearUserRateLimits()
 
     /**
@@ -211,6 +211,6 @@ class SecuritySettingsController extends Controller
                 data: ['error' => $e->getMessage()],
                 statusCode: 500
             );
-        }
+        }//end try
     }//end clearAllRateLimits()
 }//end class
