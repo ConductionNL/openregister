@@ -27,12 +27,38 @@
 				<div class="viewInfo">
 					<span v-if="entitiesList.length" class="viewTotalCount">
 						{{ t('openregister', 'Showing {showing} of {total} entities', {
-							showing: entitiesList.length,
+							showing: paginatedEntities.length,
 							total: totalEntities
 						}) }}
 					</span>
+					<span v-if="selectedEntities.length > 0" class="viewIndicator">
+						({{ t('openregister', '{count} selected', { count: selectedEntities.length }) }})
+					</span>
 				</div>
 				<div class="viewActions">
+					<div class="viewModeSwitchContainer">
+						<NcCheckboxRadioSwitch
+							v-model="viewMode"
+							v-tooltip="'See entities as cards'"
+							:button-variant="true"
+							value="cards"
+							name="view_mode_radio"
+							type="radio"
+							button-variant-grouped="horizontal">
+							Cards
+						</NcCheckboxRadioSwitch>
+						<NcCheckboxRadioSwitch
+							v-model="viewMode"
+							v-tooltip="'See entities as a table'"
+							:button-variant="true"
+							value="table"
+							name="view_mode_radio"
+							type="radio"
+							button-variant-grouped="horizontal">
+							Table
+						</NcCheckboxRadioSwitch>
+					</div>
+
 					<NcActions
 						:force-name="true"
 						:inline="1"
@@ -49,98 +75,148 @@
 				</div>
 			</div>
 
-			<!-- Entities Table -->
-			<div class="tableContainer">
-				<NcLoadingIcon v-if="loading" :size="64" />
+			<!-- Loading State -->
+			<NcLoadingIcon v-if="loading" :size="64" />
 
-				<NcEmptyContent
-					v-else-if="!entitiesList.length"
-					:name="t('openregister', 'No entities found')"
-					:description="t('openregister', 'No entities have been detected yet')">
-					<template #icon>
-						<AccountOutline :size="64" />
-					</template>
-				</NcEmptyContent>
+			<!-- Empty State -->
+			<NcEmptyContent
+				v-else-if="!entitiesList.length"
+				:name="t('openregister', 'No entities found')"
+				:description="t('openregister', 'No entities have been detected yet')">
+				<template #icon>
+					<AccountOutline :size="64" />
+				</template>
+			</NcEmptyContent>
 
-				<table v-else class="entitiesTable">
-					<thead>
-						<tr>
-							<th class="column-type">
-								{{ t('openregister', 'Type') }}
-							</th>
-							<th class="column-value">
-								{{ t('openregister', 'Value') }}
-							</th>
-							<th class="column-category">
-								{{ t('openregister', 'Category') }}
-							</th>
-							<th class="column-detected">
-								{{ t('openregister', 'Detected At') }}
-							</th>
-							<th class="column-relations">
-								{{ t('openregister', 'Relations') }}
-							</th>
-							<th class="column-actions">
-								{{ t('openregister', 'Actions') }}
-							</th>
-						</tr>
-					</thead>
-					<tbody>
-						<tr v-for="entity in entitiesList" :key="entity.id">
-							<td class="column-type">
-								<span class="badge badge-type">{{ entity.type }}</span>
-							</td>
-							<td class="column-value">
-								<div class="entity-value-cell">
-									<AccountOutline :size="20" class="entity-icon" />
-									<span class="entity-value">{{ entity.value }}</span>
-								</div>
-							</td>
-							<td class="column-category">
-								<span class="badge badge-category">{{ entity.category }}</span>
-							</td>
-							<td class="column-detected">
-								{{ formatDate(entity.detectedAt) }}
-							</td>
-							<td class="column-relations">
-								{{ entity.relationCount || 0 }}
-							</td>
-							<td class="column-actions">
-								<NcActions>
+			<!-- Content -->
+			<div v-else>
+				<!-- Cards View -->
+				<template v-if="viewMode === 'cards'">
+					<div class="cardGrid">
+						<div v-for="entity in paginatedEntities"
+							:key="entity.id"
+							class="card"
+							@click="viewEntity(entity)">
+							<div class="cardHeader">
+								<h2>
+									<AccountOutline :size="20" />
+									{{ entity.value }}
+									<span class="badge badge-type">{{ entity.type }}</span>
+								</h2>
+								<NcActions :primary="true" menu-name="Actions">
+									<template #icon>
+										<DotsHorizontal :size="20" />
+									</template>
 									<NcActionButton
 										close-after-click
-										@click="viewEntity(entity)">
+										@click.stop="viewEntity(entity)">
 										<template #icon>
 											<EyeOutline :size="20" />
 										</template>
-										{{ t('openregister', 'View Details') }}
+										View Details
 									</NcActionButton>
 								</NcActions>
-							</td>
-						</tr>
-					</tbody>
-				</table>
+							</div>
 
-				<!-- Pagination -->
-				<div v-if="totalEntities > limit" class="pagination">
-					<NcButton
-						:disabled="offset === 0"
-						@click="previousPage">
-						{{ t('openregister', 'Previous') }}
-					</NcButton>
-					<span class="pagination-info">
-						{{ t('openregister', 'Page {current} of {total}', {
-							current: currentPage,
-							total: totalPages
-						}) }}
-					</span>
-					<NcButton
-						:disabled="offset + limit >= totalEntities"
-						@click="nextPage">
-						{{ t('openregister', 'Next') }}
-					</NcButton>
-				</div>
+							<!-- Entity Info -->
+							<table class="statisticsTable entityStats">
+								<tbody>
+									<tr>
+										<td><strong>{{ t('openregister', 'Category') }}</strong></td>
+										<td><span class="badge badge-category">{{ entity.category }}</span></td>
+									</tr>
+									<tr>
+										<td><strong>{{ t('openregister', 'Detected At') }}</strong></td>
+										<td>{{ formatDate(entity.detectedAt) }}</td>
+									</tr>
+									<tr>
+										<td><strong>{{ t('openregister', 'Relations') }}</strong></td>
+										<td>{{ entity.relationCount || 0 }}</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</template>
+
+				<!-- Table View -->
+				<template v-else>
+					<div class="viewTableContainer">
+						<table class="viewTable">
+							<thead>
+								<tr>
+									<th class="tableColumnCheckbox">
+										<NcCheckboxRadioSwitch
+											:checked="allSelected"
+											:indeterminate="someSelected"
+											@update:checked="toggleSelectAll" />
+									</th>
+									<th>{{ t('openregister', 'Value') }}</th>
+									<th>{{ t('openregister', 'Type') }}</th>
+									<th>{{ t('openregister', 'Category') }}</th>
+									<th>{{ t('openregister', 'Detected At') }}</th>
+									<th>{{ t('openregister', 'Relations') }}</th>
+									<th class="tableColumnActions">
+										{{ t('openregister', 'Actions') }}
+									</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr v-for="entity in paginatedEntities"
+									:key="entity.id"
+									class="viewTableRow"
+									:class="{ viewTableRowSelected: selectedEntities.includes(entity.id) }">
+									<td class="tableColumnCheckbox">
+										<NcCheckboxRadioSwitch
+											:checked="selectedEntities.includes(entity.id)"
+											@update:checked="(checked) => toggleEntitySelection(entity.id, checked)" />
+									</td>
+									<td class="tableColumnTitle">
+										<div class="entity-value-cell">
+											<AccountOutline :size="20" class="entity-icon" />
+											<strong>{{ entity.value }}</strong>
+										</div>
+									</td>
+									<td>
+										<span class="badge badge-type">{{ entity.type }}</span>
+									</td>
+									<td>
+										<span class="badge badge-category">{{ entity.category }}</span>
+									</td>
+									<td>{{ formatDate(entity.detectedAt) }}</td>
+									<td>{{ entity.relationCount || 0 }}</td>
+									<td class="tableColumnActions">
+										<NcActions :primary="false">
+											<template #icon>
+												<DotsHorizontal :size="20" />
+											</template>
+											<NcActionButton
+												close-after-click
+												@click="viewEntity(entity)">
+												<template #icon>
+													<EyeOutline :size="20" />
+												</template>
+												View Details
+											</NcActionButton>
+										</NcActions>
+									</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				</template>
 			</div>
+
+			<!-- Pagination -->
+			<PaginationComponent
+				v-if="entitiesList.length > 0"
+				:current-page="currentPage"
+				:total-pages="totalPages"
+				:total-items="totalEntities"
+				:current-page-size="limit"
+				:min-items-to-show="10"
+				@page-changed="onPageChanged"
+				@page-size-changed="onPageSizeChanged" />
 		</div>
 
 		<!-- Search Sidebar -->
@@ -169,17 +245,28 @@ import {
 	NcButton,
 	NcLoadingIcon,
 	NcEmptyContent,
+	NcCheckboxRadioSwitch,
 } from '@nextcloud/vue'
 
 import AccountOutline from 'vue-material-design-icons/AccountOutline.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import FilterVariant from 'vue-material-design-icons/FilterVariant.vue'
 import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
+import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 
 import EntitiesSidebar from '../../components/EntitiesSidebar.vue'
+import PaginationComponent from '../../components/PaginationComponent.vue'
 
 /**
  * Main view for managing entities
+ *
+ * @package OpenRegister
+ * @category View
+ * @author Ruben Linde <ruben@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license EUPL-1.2
+ * @version 1.0.0
+ * @link https://github.com/ConductionNL/openregister
  */
 export default {
 	name: 'EntitiesIndex',
@@ -190,35 +277,31 @@ export default {
 		NcButton,
 		NcLoadingIcon,
 		NcEmptyContent,
+		NcCheckboxRadioSwitch,
 		AccountOutline,
 		Refresh,
 		FilterVariant,
 		EyeOutline,
+		DotsHorizontal,
 		EntitiesSidebar,
+		PaginationComponent,
 	},
 	data() {
 		return {
 			entitiesList: [],
 			loading: false,
 			totalEntities: 0,
-			limit: 50,
-			offset: 0,
+			limit: 20,
+			currentPage: 1,
 			sidebarOpen: false,
 			searchQuery: '',
 			typeFilter: null,
 			categoryFilter: null,
+			viewMode: 'table',
+			selectedEntities: [],
 		}
 	},
 	computed: {
-		/**
-		 * Get current page number
-		 *
-		 * @return {number} Current page
-		 */
-		currentPage() {
-			return Math.floor(this.offset / this.limit) + 1
-		},
-
 		/**
 		 * Get total number of pages
 		 *
@@ -226,6 +309,35 @@ export default {
 		 */
 		totalPages() {
 			return Math.ceil(this.totalEntities / this.limit)
+		},
+
+		/**
+		 * Get paginated entities for current page
+		 *
+		 * @return {Array} Paginated entities
+		 */
+		paginatedEntities() {
+			const start = (this.currentPage - 1) * this.limit
+			const end = start + this.limit
+			return this.entitiesList.slice(start, end)
+		},
+
+		/**
+		 * Check if all entities are selected
+		 *
+		 * @return {boolean} True if all selected
+		 */
+		allSelected() {
+			return this.entitiesList.length > 0 && this.entitiesList.every(entity => this.selectedEntities.includes(entity.id))
+		},
+
+		/**
+		 * Check if some entities are selected
+		 *
+		 * @return {boolean} True if some selected
+		 */
+		someSelected() {
+			return this.selectedEntities.length > 0 && !this.allSelected
 		},
 	},
 	mounted() {
@@ -251,7 +363,7 @@ export default {
 		 */
 		handleSearchUpdate(query) {
 			this.searchQuery = query
-			this.offset = 0
+			this.currentPage = 1
 			this.loadEntities()
 		},
 
@@ -263,7 +375,7 @@ export default {
 		 */
 		handleTypeUpdate(type) {
 			this.typeFilter = type
-			this.offset = 0
+			this.currentPage = 1
 			this.loadEntities()
 		},
 
@@ -275,7 +387,7 @@ export default {
 		 */
 		handleCategoryUpdate(category) {
 			this.categoryFilter = category
-			this.offset = 0
+			this.currentPage = 1
 			this.loadEntities()
 		},
 
@@ -289,7 +401,7 @@ export default {
 			try {
 				const params = {
 					limit: this.limit,
-					offset: this.offset,
+					offset: (this.currentPage - 1) * this.limit,
 				}
 
 				if (this.searchQuery) {
@@ -331,26 +443,54 @@ export default {
 		},
 
 		/**
-		 * Go to previous page
+		 * Handle page change event
 		 *
+		 * @param {number} page - New page number
 		 * @return {void}
 		 */
-		previousPage() {
-			if (this.offset > 0) {
-				this.offset = Math.max(0, this.offset - this.limit)
-				this.loadEntities()
+		onPageChanged(page) {
+			this.currentPage = page
+			this.loadEntities()
+		},
+
+		/**
+		 * Handle page size change event
+		 *
+		 * @param {number} pageSize - New page size
+		 * @return {void}
+		 */
+		onPageSizeChanged(pageSize) {
+			this.limit = pageSize
+			this.currentPage = 1
+			this.loadEntities()
+		},
+
+		/**
+		 * Toggle select all entities
+		 *
+		 * @param {boolean} checked - Whether to select all
+		 * @return {void}
+		 */
+		toggleSelectAll(checked) {
+			if (checked) {
+				this.selectedEntities = this.entitiesList.map(entity => entity.id)
+			} else {
+				this.selectedEntities = []
 			}
 		},
 
 		/**
-		 * Go to next page
+		 * Toggle entity selection
 		 *
+		 * @param {number} entityId - Entity ID
+		 * @param {boolean} checked - Whether entity is selected
 		 * @return {void}
 		 */
-		nextPage() {
-			if (this.offset + this.limit < this.totalEntities) {
-				this.offset += this.limit
-				this.loadEntities()
+		toggleEntitySelection(entityId, checked) {
+			if (checked) {
+				this.selectedEntities.push(entityId)
+			} else {
+				this.selectedEntities = this.selectedEntities.filter(id => id !== entityId)
 			}
 		},
 
@@ -361,8 +501,7 @@ export default {
 		 * @return {void}
 		 */
 		viewEntity(entity) {
-			// TODO: Navigate to entity details page when available
-			console.log('View entity:', entity)
+			this.$router.push({ name: 'entityDetails', params: { id: entity.id } })
 		},
 
 		/**
@@ -379,7 +518,7 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .viewContainer {
 	padding: 20px;
 	max-width: 100%;
@@ -427,41 +566,83 @@ export default {
 	font-weight: 600;
 }
 
+.viewIndicator {
+	color: var(--color-text-maxcontrast);
+}
+
 .viewActions {
 	display: flex;
 	gap: 8px;
 }
 
-.tableContainer {
-	background: var(--color-main-background);
-	border-radius: var(--border-radius-large);
-	overflow: hidden;
+/* Cards Grid */
+.cardGrid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+	gap: 20px;
+	margin-bottom: 20px;
 }
 
-.entitiesTable {
+.card {
+	background: var(--color-main-background);
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius-large);
+	overflow: hidden;
+	transition: box-shadow 0.2s ease;
+	cursor: pointer;
+}
+
+.card:hover {
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.cardHeader {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 16px;
+	border-bottom: 1px solid var(--color-border);
+}
+
+.cardHeader h2 {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin: 0;
+	font-size: 16px;
+	font-weight: 600;
+	flex-wrap: wrap;
+}
+
+/* Entity Stats Table */
+.entityStats {
 	width: 100%;
 	border-collapse: collapse;
 }
 
-.entitiesTable thead {
-	background: var(--color-background-hover);
-	border-bottom: 2px solid var(--color-border);
-}
-
-.entitiesTable th {
-	padding: 12px 16px;
-	text-align: left;
-	font-weight: 600;
-	white-space: nowrap;
-}
-
-.entitiesTable td {
-	padding: 12px 16px;
+.entityStats tbody tr {
 	border-bottom: 1px solid var(--color-border);
 }
 
-.entitiesTable tbody tr:hover {
-	background: var(--color-background-hover);
+.entityStats tbody tr:last-child {
+	border-bottom: none;
+}
+
+.entityStats td {
+	padding: 12px 16px;
+}
+
+.entityStats td:first-child {
+	width: 40%;
+	color: var(--color-text-maxcontrast);
+}
+
+/* Table View */
+.viewTableContainer {
+	background: var(--color-main-background);
+	border-radius: var(--border-radius-large);
+	overflow: hidden;
+	margin-bottom: 20px;
 }
 
 .entity-value-cell {
@@ -475,13 +656,7 @@ export default {
 	flex-shrink: 0;
 }
 
-.entity-value {
-	font-weight: 500;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-
+/* Badges */
 .badge {
 	display: inline-block;
 	padding: 4px 8px;
@@ -501,42 +676,16 @@ export default {
 	color: var(--color-text-maxcontrast);
 }
 
-.column-type {
-	width: 120px;
-}
-
-.column-value {
-	min-width: 200px;
-}
-
-.column-category {
-	width: 150px;
-}
-
-.column-detected {
-	width: 180px;
-}
-
-.column-relations {
-	width: 100px;
-	text-align: center;
-}
-
-.column-actions {
+/* Column sizes for table view */
+.tableColumnCheckbox {
 	width: 50px;
 }
 
-.pagination {
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	gap: 16px;
-	padding: 20px;
-	border-top: 1px solid var(--color-border);
+.tableColumnTitle {
+	min-width: 200px;
 }
 
-.pagination-info {
-	color: var(--color-text-maxcontrast);
-	font-size: 14px;
+.tableColumnActions {
+	width: 50px;
 }
 </style>

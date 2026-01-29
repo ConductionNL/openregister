@@ -59,4 +59,24 @@ class GdprEntityMapper extends QBMapper
     {
         return parent::findEntities($query);
     }//end findEntitiesPublic()
+
+    /**
+     * Find entity by ID.
+     *
+     * @param int $id Entity ID.
+     *
+     * @return GdprEntity The entity.
+     *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException If entity not found.
+     * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple entities found.
+     */
+    public function find(int $id): GdprEntity
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from($this->getTableName())
+            ->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
+
+        return $this->findEntity($qb);
+    }//end find()
 }//end class

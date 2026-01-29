@@ -408,6 +408,24 @@ class UiController extends Controller
     }//end entities()
 
     /**
+     * Returns the entity details page template.
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     *
+     * @phpstan-return TemplateResponse
+     *
+     * @psalm-return TemplateResponse<200|500, array<string, mixed>>
+     *
+     * @return TemplateResponse The SPA template response
+     */
+    public function entitiesDetails(): TemplateResponse
+    {
+        return $this->makeSpaResponse();
+    }//end entitiesDetails()
+
+    /**
      * Render endpoints UI
      *
      * Serves the Single Page Application template for the endpoints management interface.

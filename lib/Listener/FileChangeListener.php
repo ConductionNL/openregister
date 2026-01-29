@@ -95,21 +95,6 @@ class FileChangeListener implements IEventListener
         $fileName = $node->getName();
         $filePath = $node->getPath();
 
-        // Only process OpenRegister files to avoid unnecessary processing.
-        // OpenRegister files are stored in paths containing 'OpenRegister/files'.
-        if (strpos($filePath, 'OpenRegister/files') === false
-            && strpos($filePath, '/Open Registers/') === false
-        ) {
-            $this->logger->debug(
-                '[FileChangeListener] Skipping non-OpenRegister file',
-                [
-                    'file_id'   => $fileId,
-                    'file_path' => $filePath,
-                ]
-            );
-            return;
-        }
-
         // Skip anonymized files - they should not be scanned for entities.
         // Anonymized files are created with '_anonymized' suffix by the anonymization process.
         if (strpos($fileName, '_anonymized') !== false) {
@@ -124,30 +109,56 @@ class FileChangeListener implements IEventListener
             return;
         }
 
-        $this->logger->debug(
-            '[FileChangeListener] File event detected',
+        // Get extraction settings to determine scope.
+        try {
+            $fileSettings    = $this->settingsService->getFileSettingsOnly();
+            $extractionScope = $fileSettings['extractionScope'] ?? 'objects';
+        } catch (\Exception $e) {
+            $extractionScope = 'objects';
+        }
+
+        // Determine if file should be processed based on extraction scope.
+        $isOpenRegisterFile = strpos($filePath, 'OpenRegister/files') !== false
+            || strpos($filePath, '/Open Registers/') !== false;
+
+        // Check extraction scope to decide if we should process this file.
+        // - 'none': Skip all files.
+        // - 'objects': Only process OpenRegister files.
+        // - 'files': Process all user files (not OpenRegister-specific).
+        // - 'all': Process all files.
+        if ($extractionScope === 'none') {
+            $this->logger->debug(
+                '[FileChangeListener] Extraction scope is none, skipping',
+                ['file_id' => $fileId]
+            );
+            return;
+        }
+
+        if ($extractionScope === 'objects' && $isOpenRegisterFile === false) {
+            $this->logger->debug(
+                '[FileChangeListener] Skipping non-OpenRegister file (scope: objects)',
+                [
+                    'file_id'   => $fileId,
+                    'file_path' => $filePath,
+                ]
+            );
+            return;
+        }
+
+        $this->logger->info(
+            '[FileChangeListener] File event detected - processing',
             [
-                'event_type' => get_class($event),
-                'file_id'    => $fileId,
-                'file_name'  => $fileName,
-                'file_path'  => $filePath,
+                'event_type'       => get_class($event),
+                'file_id'          => $fileId,
+                'file_name'        => $fileName,
+                'file_path'        => $filePath,
+                'extraction_scope' => $extractionScope,
             ]
         );
 
         // Get extraction mode from settings to determine processing strategy.
         try {
-            $fileSettings    = $this->settingsService->getFileSettingsOnly();
-            $extractionMode  = $fileSettings['extractionMode'] ?? 'background';
-            $extractionScope = $fileSettings['extractionScope'] ?? 'objects';
-
-            // Check extraction scope - skip if not matching.
-            if ($extractionScope === 'none') {
-                $this->logger->debug(
-                    '[FileChangeListener] Text extraction disabled, skipping',
-                    ['file_id' => $fileId]
-                );
-                return;
-            }
+            $extractionMode = $fileSettings['extractionMode'] ?? 'background';
 
             // Handle different extraction modes.
             switch ($extractionMode) {

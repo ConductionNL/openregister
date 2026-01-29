@@ -224,7 +224,7 @@ class GdprEntitiesController extends Controller
             $entity = $this->entityMapper->find($id);
 
             // Get relations for this entity.
-            $relations = $this->entityRelationMapper->findByFileId($id);
+            $relations = $this->entityRelationMapper->findByEntityId($id);
 
             return new JSONResponse(
                 data: [
