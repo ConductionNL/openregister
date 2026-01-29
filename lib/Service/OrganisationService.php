@@ -1189,6 +1189,43 @@ class OrganisationService
 
     }//end getDefaultOrganisation()
 
+    /**
+     * Get the default organisation UUID from config
+     *
+     * @return string|null The UUID of the default user tenant, or null if not set
+     */
+    private function getDefaultUserTenantId(): ?string
+    {
+        $multitenancyConfig = $this->appConfig->getValueString(app: 'openregister', key: 'multitenancy');
+        $multitenancyConfig = json_decode(json: $multitenancyConfig, associative: true);
+
+        $defaultUserTenantId = $multitenancyConfig['defaultUserTenant'];
+        return $defaultUserTenantId !== null ? $defaultUserTenantId : null;
+    }
+
+    /**
+     * Get the default organisation object
+     *
+     * @return Organisation|null The default user tenant, or null if not set
+     */
+    public function getDefaultUserTenant(): ?Organisation
+    {
+        $defaultUserTenantId = $this->getDefaultUserTenantId();
+        if ($defaultUserTenantId === null) {
+            return null;
+        }
+
+        try {
+            return $this->organisationMapper->findByUuid($defaultUserTenantId);
+        } catch (\Exception $e) {
+            $this->logger->warning('Default organisation not found', [
+                'uuid' => $defaultUserTenantId,
+                'error' => $e->getMessage()
+            ]);
+            return null;
+        }
+    }
+
 
     /**
      * Get UUIDs of active organisation and all its parent organisations

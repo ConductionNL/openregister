@@ -256,7 +256,7 @@ trait MultiTenancyTrait
             }
 
             if ($user === null) {
-                $defaultOrg = $this->organisationService->getDefaultOrganisation();
+                $defaultOrg = $this->organisationService->getDefaultUserTenant();
 
                 $orgConditions->add($qb->expr()->eq(x: $organisationColumn, y: $qb->createNamedParameter(value: $defaultOrg->getUuid(), type: IQueryBuilder::PARAM_STR)));
             }
