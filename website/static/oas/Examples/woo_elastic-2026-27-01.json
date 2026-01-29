@@ -62,7 +62,8 @@
                     "conclusies": "{{ conclusies|default('') }}",
                     "opdrachtgever": "{{ opdrachtgever|default('') }}",
                     "onderdeelTaak": "{{ onderdeelTaak|default('') }}",
-                    "thema": "{{ thema|default('') }}"
+                    "thema": "{{ thema|default('') }}",
+                    "attachments": "{% set files = getFiles(_context['@self'].id) %}{% set index = 0 %} [{% for file in files %}{% if index > 0 %}, {% endif %}{\"label\": \"{{ file.title }}\", \"endpoint\": \"{{ file.accessUrl }}\", \"published\": true}{% set index = index + 1 %}{% endfor %}]"
                 },
                 "unset": [
                     "beschrijving",
@@ -75,7 +76,8 @@
                     "ontvangstdatum": "nullStringToNull",
                     "date": "nullStringToNull",
                     "modified": "nullStringToNull",
-                    "besluitdatum": "nullStringToNull"
+                    "besluitdatum": "nullStringToNull",
+                    "attachments": "jsonToArray"
                 },
                 "passThrough": true,
                 "configurations": [],
@@ -90,7 +92,7 @@
                 "description": "",
                 "version": "0.0.1",
                 "reference": "https://zuiddrecht-drie.accept.commonground.nu/apps/openconnector/api/sources/2",
-                "location": "https://zaaksysteem-accept.noordwijk.nl",
+                "location": "!ChangeMe!",
                 "isEnabled": true,
                 "type": "api",
                 "locale": "",
@@ -102,7 +104,7 @@
                 "headers": [],
                 "translationConfig": [],
                 "configuration": {
-                    "headers.API-Interface-ID": "646",
+                    "headers.API-Interface-ID": "!ChangeMe!",
                     "headers.Accept": "*/*",
                     "headers.Content-Type": "application/json"
                 },
@@ -128,7 +130,7 @@
                 "description": "",
                 "version": "0.0.2",
                 "reference": "",
-                "location": "https://es.test01.yard.nl:443/nrd--openwoo--accept--conduction",
+                "location": "!ChangeMe!",
                 "isEnabled": true,
                 "type": "api",
                 "locale": "",
@@ -1252,32 +1254,7 @@
                 "targetLastSynced": "2025-10-22T11:33:16+00:00",
                 "created": "2025-10-03T08:53:56+00:00",
                 "updated": "2026-01-21T10:22:43+00:00",
-                "conditions": {
-                    "and": [
-                        {
-                            "!=": [
-                                {
-                                    "var": [
-                                        "@self.published",
-                                        null
-                                    ]
-                                },
-                                null
-                            ]
-                        },
-                        {
-                            "!=": [
-                                {
-                                    "var": [
-                                        "@self.published",
-                                        ""
-                                    ]
-                                },
-                                ""
-                            ]
-                        }
-                    ]
-                },
+                "conditions": {"and":[{"!=":[{"var":["@self.published",null]},null]},{"!=":[{"var":["@self.published",""]},""]}]},
                 "followUps": [],
                 "actions": [],
                 "configurations": [],
