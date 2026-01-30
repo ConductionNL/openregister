@@ -4,8 +4,6 @@ services:
     image: pgvector/pgvector:pg16
     restart: always
     container_name: openregister-demo-postgres
-    volumes:
-      - ./docker/postgres/init-extensions.sql:/docker-entrypoint-initdb.d/01-init-extensions.sql:ro
     environment:
       - POSTGRES_DB=nextcloud
       - POSTGRES_USER=nextcloud
@@ -15,10 +13,36 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    command: >
-      postgres
-      -c shared_preload_libraries=pg_trgm,vector
-      -c max_connections=200
+    command:
+      - bash
+      - -c
+      - |
+        # Start postgres in background
+        docker-entrypoint.sh postgres \
+          -c shared_preload_libraries=pg_trgm,vector \
+          -c max_connections=200 &
+        PG_PID=$$!
+
+        # Wait for postgres to be ready
+        until pg_isready -U nextcloud -d nextcloud; do
+          echo "Waiting for PostgreSQL to start..."
+          sleep 2
+        done
+
+        # Create extensions
+        psql -U nextcloud -d nextcloud <<'EOSQL'
+        CREATE EXTENSION IF NOT EXISTS vector;
+        CREATE EXTENSION IF NOT EXISTS pg_trgm;
+        CREATE EXTENSION IF NOT EXISTS btree_gin;
+        CREATE EXTENSION IF NOT EXISTS btree_gist;
+        CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+        ALTER DATABASE nextcloud SET pg_trgm.similarity_threshold = 0.3;
+        EOSQL
+
+        echo "PostgreSQL extensions initialized successfully"
+
+        # Wait for postgres process
+        wait $$PG_PID
 
   # Nextcloud with OpenRegister and OpenCatalogi from App Store
   nextcloud:
