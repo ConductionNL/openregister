@@ -2226,8 +2226,9 @@ class ImportHandler
                 $externalSchemaSlug   = $selfData['schema'] ?? null;
 
                 // Start with the current target register (from configuration).
-                $targetRegId  = $targetRegisterId;
-                $objectSchema = $schema;
+                $targetRegId       = $targetRegisterId;
+                $objectSchema      = $schema;
+                $objectRegister    = $targetRegister;  // Track the Register object for idempotency checks.
 
                 // If object references external configuration, resolve schema and register from that config.
                 if ($externalConfigUrl !== null) {
@@ -2265,6 +2266,7 @@ class ImportHandler
                                     _multitenancy: false
                                 );
                                 $targetRegId        = $externalRegister->getId();
+                                $objectRegister     = $externalRegister;  // Update for idempotency check.
                                 $this->logger->info(
                                     "Resolved external register for seedData object",
                                     [
@@ -2339,6 +2341,60 @@ class ImportHandler
                 }
 
                 try {
+                    // IDEMPOTENCY CHECK: Check if object already exists by slug or uuid.
+                    // This prevents duplicate data when configuration is run multiple times.
+                    $existingObject = null;
+                    $lookupIdentifier = $objectData['uuid'] ?? $objectSlug;
+
+                    try {
+                        // Try to find existing object using UnifiedObjectMapper (checks both MagicMapper and blob storage).
+                        // Disable RBAC/multitenancy to find objects from any app/tenant.
+                        if ($this->unifiedObjectMapper !== null && $objectRegister !== null) {
+                            $existingObject = $this->unifiedObjectMapper->find(
+                                identifier: $lookupIdentifier,
+                                register: $objectRegister,
+                                schema: $objectSchema,
+                                includeDeleted: false,
+                                _rbac: false,
+                                _multitenancy: false
+                            );
+                        } else {
+                            // Fallback to blob storage only if UnifiedObjectMapper not available or no register.
+                            $existingObject = $this->objectEntityMapper->findDirectBlobStorage(
+                                identifier: $lookupIdentifier,
+                                register: null,
+                                schema: null,
+                                includeDeleted: false,
+                                _rbac: false,
+                                _multitenancy: false
+                            );
+                        }
+                    } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+                        // Object doesn't exist - this is expected, we'll create it.
+                        $existingObject = null;
+                    } catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
+                        // Multiple objects found with same identifier - log warning and skip.
+                        $this->logger->warning(
+                            "Multiple seed objects found with identifier '{$lookupIdentifier}' - skipping to avoid duplication",
+                            ['schema' => $schemaSlug, 'identifier' => $lookupIdentifier]
+                        );
+                        continue;
+                    }
+
+                    if ($existingObject !== null) {
+                        // Object already exists - skip creation to prevent duplication.
+                        $this->logger->debug(
+                            "Seed object already exists - skipping",
+                            [
+                                'schema'     => $schemaSlug,
+                                'identifier' => $lookupIdentifier,
+                                'object_id'  => $existingObject->getId(),
+                            ]
+                        );
+                        $result['objects'][] = $existingObject->getId();
+                        continue;
+                    }
+
                     // Use ObjectEntityMapper directly for seedData objects to avoid complex ObjectService dependencies.
                     // SeedData objects are simple and don't require cascading or complex validation.
                     $objectEntity = new ObjectEntity();
@@ -2346,6 +2402,9 @@ class ImportHandler
                     // Generate UUID if not provided.
                     $uuid = $objectData['uuid'] ?? \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
                     $objectEntity->setUuid($uuid);
+
+                    // Set the slug for future idempotency checks.
+                    $objectEntity->setSlug($objectSlug);
 
                     // Set schema reference - use resolved external schema if available.
                     $objectEntity->setSchema($objectSchema->getId());

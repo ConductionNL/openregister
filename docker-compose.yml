@@ -13,6 +13,14 @@ volumes:
   zookeeper:
   elasticsearch:
   open-webui:
+  harp-data:
+  exapp-n8n:
+  exapp-ollama:
+  exapp-openwebui:
+
+networks:
+  default:
+    name: openregister-network
 
 services:
   # PostgreSQL Database (default)
@@ -249,13 +257,15 @@ services:
       retries: 3
       start_period: 30s
 
-  # n8n Workflow Automation (Default - starts automatically)
-  # Integrates with OpenRegister via Nextcloud webhooks
+  # n8n Workflow Automation (Standalone - use --profile standalone)
+  # NOTE: Use exapp-n8n instead for Nextcloud AppAPI integration
   # Access at: http://localhost:5678
   # Default credentials: admin / admin (change in production!)
   # Documentation: https://docs.n8n.io
   # MCP Integration: See website/docs/technical/n8n-mcp/setup.md
   n8n:
+    profiles:
+      - standalone
     image: n8nio/n8n:latest
     container_name: openregister-n8n
     restart: always
@@ -395,11 +405,13 @@ services:
       retries: 3
       start_period: 120s
 
-  # Open WebUI - Web interface for LLMs (Default)
-  # Works with both Ollama API and OpenAI-compatible APIs (like TGI)
+  # Open WebUI - Web interface for LLMs (Standalone - use --profile standalone)
+  # NOTE: Use exapp-openwebui instead for Nextcloud AppAPI integration
   # Access at: http://localhost:3000
   # Documentation: https://docs.openwebui.com
   open-webui:
+    profiles:
+      - standalone
     image: ghcr.io/open-webui/open-webui:main
     container_name: openregister-open-webui
     restart: always
@@ -528,6 +540,7 @@ services:
       - .:/var/www/html/custom_apps/openregister
       - ../opencatalogi:/var/www/html/custom_apps/opencatalogi
       - ../softwarecatalog:/var/www/html/custom_apps/softwarecatalog
+      - ../nldesign:/var/www/html/custom_apps/nldesign
     environment:
       # Database configuration (PostgreSQL)
       - POSTGRES_DB=nextcloud
@@ -546,6 +559,10 @@ services:
       - DOLPHIN_VLM_URL=http://openregister-dolphin-vlm:5000
       - PRESIDIO_URL=http://openregister-presidio-analyzer:5001
       - N8N_URL=http://openregister-n8n:5678
+      # AppAPI ExApp endpoints (when using --profile exapps)
+      - EXAPP_N8N_URL=http://openregister-exapp-n8n:9000
+      - EXAPP_OLLAMA_URL=http://openregister-exapp-ollama:9000
+      - EXAPP_OPENWEBUI_URL=http://openregister-exapp-openwebui:9000
 
   # Nextcloud Application Server (MariaDB - For Testing)
   # Start with: docker-compose --profile mariadb up
@@ -591,3 +608,165 @@ services:
     depends_on:
       db-mariadb:
         condition: service_healthy
+
+  # =============================================================================
+  # AppAPI External Apps (ExApps) Infrastructure
+  # =============================================================================
+
+  # HaRP - High-performance AppAPI Reverse Proxy (Recommended Deploy Daemon)
+  # Manages ExApp containers and routes requests
+  # Documentation: https://github.com/nextcloud/HaRP
+  harp:
+    image: ghcr.io/nextcloud/harp:latest
+    container_name: openregister-harp
+    restart: always
+    ports:
+      - "8780:8780"   # HaRP API port
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - harp-data:/data
+    environment:
+      # HaRP configuration
+      - HARP_HOST=0.0.0.0
+      - HARP_PORT=8780
+      - HARP_LOG_LEVEL=info
+      # Basic auth for Docker access (change in production!)
+      - HAPROXY_PASSWORD=harp-secret-change-me
+      # Network for ExApps
+      - DOCKER_NETWORK=openregister-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8780/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Docker Socket Proxy - Alternative Deploy Daemon (Legacy)
+  # Use if HaRP doesn't work in your environment
+  # Documentation: https://github.com/nextcloud/docker-socket-proxy
+  docker-socket-proxy:
+    profiles:
+      - exapps-legacy
+    image: ghcr.io/nextcloud/docker-socket-proxy:latest
+    container_name: openregister-docker-socket-proxy
+    restart: always
+    ports:
+      - "2375:2375"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - HAPROXY_PASSWORD=docker-proxy-secret-change-me
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:2375/_ping || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # =============================================================================
+  # ExApp Services - Nextcloud External Apps (Default)
+  # These provide workflow automation and AI capabilities
+  # =============================================================================
+
+  # n8n ExApp - Workflow Automation
+  # Access via Nextcloud: /index.php/apps/app_api/proxy/n8n
+  exapp-n8n:
+    build:
+      context: ./exapps/n8n
+      dockerfile: Dockerfile
+    image: ghcr.io/conductionnl/n8n-nextcloud:latest
+    container_name: openregister-exapp-n8n
+    restart: always
+    volumes:
+      - exapp-n8n:/data
+    environment:
+      - APP_ID=n8n
+      - APP_VERSION=1.0.0
+      - APP_HOST=0.0.0.0
+      - APP_PORT=9000
+      - APP_PERSISTENT_STORAGE=/data
+      # These will be set by AppAPI when registered
+      - APP_SECRET=${N8N_APP_SECRET:-dev-secret}
+      - NEXTCLOUD_URL=http://nextcloud
+      # n8n specific
+      - N8N_TIMEZONE=Europe/Amsterdam
+    depends_on:
+      - db
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9000/heartbeat || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Ollama ExApp - Local LLM Inference
+  # Access via Nextcloud: /index.php/apps/app_api/proxy/ollama
+  exapp-ollama:
+    build:
+      context: ./exapps/ollama
+      dockerfile: Dockerfile
+    image: ghcr.io/conductionnl/ollama-nextcloud:latest
+    container_name: openregister-exapp-ollama
+    restart: always
+    volumes:
+      - exapp-ollama:/data
+    environment:
+      - APP_ID=ollama
+      - APP_VERSION=1.0.0
+      - APP_HOST=0.0.0.0
+      - APP_PORT=9000
+      - APP_PERSISTENT_STORAGE=/data
+      # These will be set by AppAPI when registered
+      - APP_SECRET=${OLLAMA_APP_SECRET:-dev-secret}
+      - NEXTCLOUD_URL=http://nextcloud
+      # Ollama specific - use small model for dev
+      - OLLAMA_DEFAULT_MODEL=llama3.2:1b
+      - OLLAMA_NUM_PARALLEL=2
+      - OLLAMA_KEEP_ALIVE=15m
+    deploy:
+      resources:
+        limits:
+          memory: 16G
+        reservations:
+          memory: 4G
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    shm_size: '2gb'
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9000/heartbeat || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+  # Open WebUI ExApp - Chat Interface for LLMs
+  # Access via Nextcloud: /index.php/apps/app_api/proxy/open_webui
+  exapp-openwebui:
+    build:
+      context: ./exapps/open-webui
+      dockerfile: Dockerfile
+    image: ghcr.io/conductionnl/open-webui-nextcloud:latest
+    container_name: openregister-exapp-openwebui
+    restart: always
+    volumes:
+      - exapp-openwebui:/data
+    environment:
+      - APP_ID=open_webui
+      - APP_VERSION=1.0.0
+      - APP_HOST=0.0.0.0
+      - APP_PORT=9000
+      - APP_PERSISTENT_STORAGE=/data
+      # These will be set by AppAPI when registered
+      - APP_SECRET=${OPENWEBUI_APP_SECRET:-dev-secret}
+      - NEXTCLOUD_URL=http://nextcloud
+      # Open WebUI specific - connect to Ollama ExApp
+      - OLLAMA_BASE_URL=http://openregister-exapp-ollama:11434
+      - ENABLE_SIGNUP=true
+    depends_on:
+      - exapp-ollama
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9000/heartbeat || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
