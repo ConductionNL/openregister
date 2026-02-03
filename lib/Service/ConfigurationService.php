@@ -1683,6 +1683,11 @@ class ConfigurationService
                             $property['items']['register'] = $this->registersMap[$property['items']['register']]->getId();
                         }
                     }
+
+                    // OpenRegister cant save oneOf
+                    if (isset($property['oneOf']) === true) {
+                        $property['oneOf'] = [];
+                    }
                 }//end foreach
             }//end if
 
