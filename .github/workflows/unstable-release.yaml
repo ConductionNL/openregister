@@ -3,8 +3,7 @@ name: Unstable Release
 on:
   push:
     branches:
-      # - feature/php-linting  # Disabled - now building beta releases instead
-      - disabled-placeholder  # Workflow disabled
+      - development
 
 jobs:
   release-management:
@@ -31,7 +30,7 @@ jobs:
           git fetch origin main
           main_version=$(git show origin/main:appinfo/info.xml | grep -oP '(?<=<version>)[^<]+' || echo "")
           
-          # Get current version from feature/php-linting branch
+          # Get current version from development branch
           current_version=$(grep -oP '(?<=<version>)[^<]+' appinfo/info.xml || echo "")
           
           # Split main version into parts
@@ -242,7 +241,7 @@ jobs:
         id: version
         uses: codacy/git-version@2.7.1
         with:
-          release-branch: feature/php-linting
+          release-branch: development
 
       # Step 15: Extract repository description (optional)
       - name: Extract repository description
