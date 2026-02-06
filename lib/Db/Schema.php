@@ -53,7 +53,7 @@ use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
  * @method string|null getSummary()
  * @method void setSummary(?string $summary)
  * @method array|null getRequired()
- * @method void setRequired(?array $required)
+ * @method void setRequired(array|string|null $required)
  * @method array|null getProperties()
  * @method void setProperties(?array $properties)
  * @method array|null getArchive()
@@ -410,7 +410,25 @@ class Schema extends Entity implements JsonSerializable
      */
     public function getRequired(): array
     {
-        return ($this->required ?? []);
+        if ($this->required === null) {
+            return [];
+        }
+
+        // If it's already an array, return it directly.
+        if (is_array($this->required) === true) {
+            return $this->required;
+        }
+
+        // If it's a JSON string, decode it.
+        if (is_string($this->required) === true) {
+            $decoded = json_decode($this->required, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                return $decoded;
+            }
+        }
+
+        // If we get here, something is wrong - return empty array.
+        return [];
     }//end getRequired()
 
     /**
@@ -419,12 +437,34 @@ class Schema extends Entity implements JsonSerializable
      * Always ensures required is an array, never NULL.
      * This prevents database errors during schema validation.
      *
-     * @param array|null $required The required field names
+     * **TYPE SAFETY**: Handle both array and JSON string inputs for database hydration.
+     * The database stores required as JSON strings, but we want to work with arrays in PHP.
+     *
+     * @param array|string|null $required The required field names (array or JSON string)
      *
      * @return void
      */
-    public function setRequired(?array $required): void
+    public function setRequired(array|string|null $required): void
     {
+        // **DATABASE COMPATIBILITY**: Handle JSON string from database.
+        if (is_string($required) === true) {
+            try {
+                $decoded = json_decode($required, true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                    $this->required = $decoded;
+                } else {
+                    // Invalid JSON, set to empty array.
+                    $this->required = [];
+                }
+            } catch (Exception $e) {
+                // If decoding fails, set to empty array.
+                $this->required = [];
+            }
+
+            $this->markFieldUpdated('required');
+            return;
+        }
+
         // Always ensure required is an array, never NULL.
         // This is critical for schema validation to work correctly.
         $this->required = ($required ?? []);
