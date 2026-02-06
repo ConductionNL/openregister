@@ -788,6 +788,33 @@ class Application extends App implements IBootstrap
                 $logger->debug('SOLR Nightly Warmup Job already registered');
             }
 
+
+            $logger->info('OpenRegister boot: Set multitenancy settings');
+            /** @var SettingsService $settingsService */
+            $settingsService = $container->get(SettingsService::class);
+
+            $multiTenancySettings = $settingsService->getMultitenancySettings();
+
+            if ($multiTenancySettings['multitenancy']['enabled'] === true && $multiTenancySettings['multitenancy']['defaultUserTenant'] === '' && count($multiTenancySettings['availableTenants']) >= 1) {
+                $orgs = array_filter($multiTenancySettings['availableTenants'], function ($tenant) { return $tenant['name'] === 'Default organisation';});
+
+                $defaultOrg = array_shift($orgs);
+                $multiTenancySettings['multitenancy']['defaultUserTenant'] = ['label' => $defaultOrg['name'], 'id' => $defaultOrg['uuid']];
+                $multiTenancySettings['multitenancy']['defaultObjectTenant'] = ['label' => $defaultOrg['name'], 'id' => $defaultOrg['uuid']];
+
+                $settingsService->updateMultitenancySettingsOnly($multiTenancySettings['multitenancy']);
+
+            } elseif ($multiTenancySettings['multitenancy']['enabled'] === true && $multiTenancySettings['multitenancy']['defaultUserTenant'] === '') {
+                /** @var OrganisationService $organisationService */
+                $organisationService = $container->get(OrganisationService::class);
+
+                $defaultOrg = $organisationService->ensureDefaultOrganisation();
+                $multiTenancySettings['multitenancy']['defaultUserTenant'] =  ['label' => $defaultOrg->getName(), 'id' => $defaultOrg->getUuid()];
+                $multiTenancySettings['multitenancy']['defaultObjectTenant'] =  ['label' => $defaultOrg->getName(), 'id' => $defaultOrg->getUuid()];
+
+                $settingsService->updateMultitenancySettingsOnly($multiTenancySettings['multitenancy']);
+            }
+
         } catch (\Exception $e) {
             $logger->error('OpenRegister boot: Failed to register event listeners and background jobs', [
                 'exception' => $e->getMessage(),

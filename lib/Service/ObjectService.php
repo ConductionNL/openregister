@@ -2053,6 +2053,46 @@ class ObjectService
 
     }//end applyViewsToQuery()
 
+    /**
+     * In the @self fields for schema and register, rewrite slugs to ids if needed.
+     *
+     *
+     * @param array $query The original query
+     * @return array The updated query
+     * @throws Exception
+     */
+    private function rewriteSlugs(array $query): array
+    {
+        if (isset($query['@self']['register']) === true && is_array($query['@self']['register']) === true) {
+            $query['@self']['register'] = array_map(
+                function($register) {
+                    if (is_int($register) === true) {
+                        return $register;
+                    }
+                    return $this->registerMapper->find($register)->getId();
+                },
+                $query['@self']['register']
+            );
+        } else if (isset($query['@self']['register']) === true) {
+            $query['@self']['register'] = is_int($query['@self']['register']) ? $query['@self']['register'] : $this->registerMapper->find($query['@self']['register'])->getId();
+        }
+
+        if (isset($query['@self']['schema']) === true && is_array($query['@self']['schema']) === true) {
+            $query['@self']['schema'] = array_map(
+                function($schema) {
+                    if (is_int($schema) === true) {
+                        return $schema;
+                    }
+                    return $this->schemaMapper->find($schema)->getId();
+                },
+                $query['@self']['schema']
+            );
+        } else if (isset($query['@self']['schema']) === true) {
+            $query['@self']['schema'] = is_int($query['@self']['schema']) ? $query['@self']['schema'] : $this->registerMapper->find($query['@self']['schema'])->getId();
+        }
+
+        return $query;
+    }
 
     public function searchObjects(array $query=[], bool $rbac=true, bool $multi=true, ?array $ids=null, ?string $uses=null, ?array $views=null): array|int
     {
@@ -2060,6 +2100,8 @@ class ObjectService
         if ($views !== null && !empty($views)) {
             $query = $this->applyViewsToQuery($query, $views);
         }
+
+        $query = $this->rewriteSlugs($query);
 
         // **CRITICAL PERFORMANCE OPTIMIZATION**: Detect simple vs complex rendering needs
         $hasExtend = !empty($query['_extend'] ?? []);
