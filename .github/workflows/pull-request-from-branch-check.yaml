@@ -1,9 +1,10 @@
-name: Main Branch Protection
+name: Branch Protection
 
 on:
   pull_request:
     branches:
       - main
+      - beta
 
 jobs:
   check-branch:
@@ -11,8 +12,21 @@ jobs:
     steps:
       - name: Check branch
         run: |
-          if [[ ${GITHUB_HEAD_REF} != development ]] && [[ ${GITHUB_HEAD_REF} != documentation ]] && ! [[ ${GITHUB_HEAD_REF} =~ ^hotfix/ ]]; 
-          then
-            echo "Error: Pull request must come from 'development', 'documentation' or 'hotfix/' branch"
-            exit 1
+          TARGET="${{ github.base_ref }}"
+          SOURCE="${{ github.head_ref }}"
+
+          if [[ "$TARGET" == "main" ]]; then
+            if [[ "$SOURCE" != "beta" ]] && ! [[ "$SOURCE" =~ ^hotfix ]]; then
+              echo "Error: Pull requests to main must come from 'beta' or a branch starting with 'hotfix'"
+              echo "Source branch: $SOURCE"
+              exit 1
+            fi
+          elif [[ "$TARGET" == "beta" ]]; then
+            if [[ "$SOURCE" != "development" ]] && ! [[ "$SOURCE" =~ ^hotfix ]]; then
+              echo "Error: Pull requests to beta must come from 'development' or a branch starting with 'hotfix'"
+              echo "Source branch: $SOURCE"
+              exit 1
+            fi
           fi
+
+          echo "Branch check passed: $SOURCE -> $TARGET"
