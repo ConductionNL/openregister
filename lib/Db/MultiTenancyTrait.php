@@ -647,7 +647,9 @@ trait MultiTenancyTrait
     protected function setOrganisationOnCreate(Entity $entity): void
     {
         // Only set organisation if the entity has an organisation property.
-        if (method_exists($entity, 'getOrganisation') === false || method_exists($entity, 'setOrganisation') === false) {
+        // Note: We use property_exists() instead of method_exists() because Nextcloud's Entity
+        // class uses magic methods (__call) for getters/setters, which method_exists() doesn't detect.
+        if (property_exists($entity, 'organisation') === false) {
             return;
         }
 

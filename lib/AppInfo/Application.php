@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\FileTextMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\WebhookMapper;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\DashboardService;
@@ -330,6 +331,19 @@ class Application extends App implements IBootstrap
                     schemaMapper: $container->get(SchemaMapper::class),
                     eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
                     objectEntityMapper: $container->get(ObjectEntityMapper::class),
+                    organisationMapper: $container->get(OrganisationMapper::class),
+                    userSession: $container->get('OCP\IUserSession'),
+                    groupManager: $container->get('OCP\IGroupManager'),
+                    appConfig: $container->get('OCP\IAppConfig')
+                );
+            }
+        );
+
+        $context->registerService(
+            WebhookMapper::class,
+            function (ContainerInterface $container) {
+                return new WebhookMapper(
+                    db: $container->get('OCP\IDBConnection'),
                     organisationMapper: $container->get(OrganisationMapper::class),
                     userSession: $container->get('OCP\IUserSession'),
                     groupManager: $container->get('OCP\IGroupManager'),

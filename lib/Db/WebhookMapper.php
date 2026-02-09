@@ -30,6 +30,7 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IUserSession;
+use OCP\IAppConfig;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -55,7 +56,7 @@ use Symfony\Component\Uid\Uuid;
  * @method Webhook delete(Entity $entity)
  * @method Webhook find(int $id)
  * @method Webhook findEntity(IQueryBuilder $query)
- * @method Webhook[] findAll(int|null $limit=null, int|null $offset=null)
+ * @method Webhook[] findAll(int|null $limit=null, int|null $offset=null, array|null $filters=[])
  * @method list<Webhook> findEntities(IQueryBuilder $query)
  *
  * @template-extends QBMapper<Webhook>
@@ -65,6 +66,24 @@ use Symfony\Component\Uid\Uuid;
 class WebhookMapper extends QBMapper
 {
     use MultiTenancyTrait;
+
+    /**
+     * Organisation mapper for multi-tenancy
+     *
+     * Used to get active organisation and apply organisation filters.
+     *
+     * @var OrganisationMapper Organisation mapper instance
+     */
+    protected OrganisationMapper $organisationMapper;
+
+    /**
+     * App configuration for multitenancy settings
+     *
+     * Used by MultiTenancyTrait for checking multitenancy configuration.
+     *
+     * @var IAppConfig App configuration instance
+     */
+    protected IAppConfig $appConfig;
 
     /**
      * User session for current user
@@ -90,27 +109,29 @@ class WebhookMapper extends QBMapper
      * Initializes mapper with database connection and multi-tenancy/RBAC dependencies.
      * Calls parent constructor to set up base mapper functionality.
      *
-     * @param IDBConnection $db           Database connection
-     * @param IUserSession  $userSession  User session
-     * @param IGroupManager $groupManager Group manager
+     * @param IDBConnection      $db                 Database connection
+     * @param OrganisationMapper $organisationMapper Organisation mapper for multi-tenancy
+     * @param IUserSession       $userSession        User session
+     * @param IGroupManager       $groupManager       Group manager
+     * @param IAppConfig          $appConfig          App configuration for multitenancy settings
      *
      * @return void
      */
     public function __construct(
         IDBConnection $db,
-        // REMOVED: Services should not be in mappers.
-        // OrganisationMapper $organisationMapper.
+        OrganisationMapper $organisationMapper,
         IUserSession $userSession,
-        IGroupManager $groupManager
+        IGroupManager $groupManager,
+        IAppConfig $appConfig
     ) {
         // Call parent constructor to initialize base mapper with table name and entity class.
         parent::__construct($db, 'openregister_webhooks', Webhook::class);
 
         // Store dependencies for use in mapper methods.
-        // REMOVED: Services should not be in mappers.
-        // $this->organisationMapper = $organisationService.
-        $this->userSession  = $userSession;
-        $this->groupManager = $groupManager;
+        $this->organisationMapper = $organisationMapper;
+        $this->userSession        = $userSession;
+        $this->groupManager        = $groupManager;
+        $this->appConfig          = $appConfig;
     }//end __construct()
 
     /**
@@ -118,12 +139,17 @@ class WebhookMapper extends QBMapper
      *
      * Retrieves all webhooks with organisation filtering for multi-tenancy.
      * Returns only webhooks belonging to the current organisation.
+     * Supports pagination and filtering.
+     *
+     * @param int|null $limit  Maximum number of results to return
+     * @param int|null $offset Number of results to skip
+     * @param array    $filters Optional filters to apply
      *
      * @return Webhook[]
      *
      * @psalm-return list<OCA\OpenRegister\Db\Webhook>
      */
-    public function findAll(): array
+    public function findAll(?int $limit=null, ?int $offset=null, ?array $filters=[]): array
     {
         // Check if table exists before querying (migrations might not have run yet).
         if ($this->tableExists() === false) {
@@ -137,11 +163,35 @@ class WebhookMapper extends QBMapper
         $qb->select('*')
             ->from($this->getTableName());
 
-        // Step 3: Apply organisation filter for multi-tenancy.
+        // Step 3: Apply pagination if provided.
+        if ($limit !== null) {
+            $qb->setMaxResults($limit);
+        }
+
+        if ($offset !== null) {
+            $qb->setFirstResult($offset);
+        }
+
+        // Step 4: Apply filters if provided.
+        foreach ($filters ?? [] as $filter => $value) {
+            if ($value === 'IS NOT NULL') {
+                $qb->andWhere($qb->expr()->isNotNull($filter));
+                continue;
+            }
+
+            if ($value === 'IS NULL') {
+                $qb->andWhere($qb->expr()->isNull($filter));
+                continue;
+            }
+
+            $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
+        }
+
+        // Step 5: Apply organisation filter for multi-tenancy.
         // This ensures users only see webhooks from their organisation.
         $this->applyOrganisationFilter($qb);
 
-        // Step 4: Execute query and return entities.
+        // Step 6: Execute query and return entities.
         return $this->findEntities($qb);
     }//end findAll()
 
