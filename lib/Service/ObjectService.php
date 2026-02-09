@@ -456,8 +456,9 @@ class ObjectService
             // When deriving schema from object context, bypass RBAC and multi-tenancy checks.
             // If user has access to the object, they should be able to access its schema.
             $schemas = $this->getCachedEntities('schema', [$schema], function($ids) {
-                return [$this->schemaMapper->find(id: $ids[0], extend: [], published: null, rbac: false, multi: false)];
+                return [$this->schemaMapper->find(id: $ids[0], rbac: false, multi: false)];
             });
+
             if (isset($schemas[0]) && $schemas[0] instanceof Schema) {
                 $schema = $schemas[0];
             } else {
@@ -925,6 +926,7 @@ class ObjectService
             && is_array($config['filters']['schema']) === false
             && !empty($config['filters']['schema'])) {
             $this->setSchema($config['filters']['schema']);
+            $config['filters']['schema'] = $this->getSchema();
         }
 
         // Delegate the findAll operation to the handler.
@@ -1416,6 +1418,17 @@ class ObjectService
 
         $filtersWithSub = array_intersect_key($filters, array_flip($filterKeysWithSub));
 
+
+        $filtersWithSub = array_map(function($value) {
+            if($value === 'false') {
+                return false;
+            } else if ($value === 'true') {
+                return true;
+            }
+
+            return $value;
+        }, $filtersWithSub);
+
         if (empty($filtersWithSub)) {
             return [];
         }
@@ -1426,9 +1439,10 @@ class ObjectService
 
         $iterator = 0;
         foreach ($filterDot as $key => $value) {
-            if (isset($schema->getProperties()[$key]['inversedBy']) === false) {
-                continue;
-            }
+
+//            if (isset($schema->getProperties()[$key]['inversedBy']) === false) {
+//                continue;
+//            }
 
             $iterator++;
             $property = $schema->getProperties()[$key];
@@ -1437,11 +1451,16 @@ class ObjectService
 
             // @TODO fix schema finder
             $value['schema'] = $property['$ref'];
+            $remoteSchema = $this->schemaMapper->find($value['schema']);
 
             $objects  = $this->findAll(config: ['filters' => $value]);
-            $foundIds = array_map(
-                    function (ObjectEntity $object) use ($property, $key) {
-                        $idRaw = $object->jsonSerialize()[$property['inversedBy']];
+
+            if (isset($property['inversedBy']) === true) {
+                $foundIds = array_map(
+                    function (ObjectEntity $object) use ($property, $key, $remoteSchema, $schema) {
+                        if (isset($property['inversedBy']) === true) {
+                            $idRaw = $object->jsonSerialize()[$property['inversedBy']];
+                        }
 
                         if (Uuid::isValid($idRaw) === true) {
                             return $idRaw;
@@ -1452,7 +1471,40 @@ class ObjectService
                         }
                     },
                     $objects
+                );
+            } else {
+                $filteredProperties = array_keys(array_filter($remoteSchema->getProperties(), function ($v, $k) use ($property, $schema) {
+                    return (isset($v['inversedBy']) === true
+                        && (
+                            $v['inversedBy'] === $property['title']
+                            || $v['inversedBy'] === $k
+                        )
+                        && (
+                            $v['$ref'] === $schema->getId()
+                            || $v['$ref'] === $schema->getSlug()
+                        )
                     );
+                }, ARRAY_FILTER_USE_BOTH));
+
+                foreach($filteredProperties as $property) {
+                    $foundIds[] = array_map(function(ObjectEntity $object) use ($property) {
+                        return $object->jsonSerialize()[$property];
+                    }, $objects);
+                }
+
+                $rawIds = [];
+                array_walk_recursive($foundIds, function($value) use (&$rawIds) { $rawIds[] = $value; });
+
+                $foundIds = array_map(function(string $rawId) {
+                    if (Uuid::isValid($rawId) === true) {
+                        return $rawId;
+                    } else if (filter_var($rawId, FILTER_VALIDATE_URL) !== false) {
+                        $path = explode(separator: '/', string: parse_url($rawId, PHP_URL_PATH));
+
+                        return end($path);
+                    }
+                }, $rawIds);
+            }
 
             if ($ids === []) {
                 $ids = $foundIds;
@@ -1882,7 +1934,7 @@ class ObjectService
         if (isset($specialParams['_published'])) {
             $specialParams['_published'] = filter_var($specialParams['_published'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false;
         }
-        
+
         $query = array_merge($query, $specialParams);
 
         return $query;
@@ -2001,6 +2053,46 @@ class ObjectService
 
     }//end applyViewsToQuery()
 
+    /**
+     * In the @self fields for schema and register, rewrite slugs to ids if needed.
+     *
+     *
+     * @param array $query The original query
+     * @return array The updated query
+     * @throws Exception
+     */
+    private function rewriteSlugs(array $query): array
+    {
+        if (isset($query['@self']['register']) === true && is_array($query['@self']['register']) === true) {
+            $query['@self']['register'] = array_map(
+                function($register) {
+                    if (is_int($register) === true) {
+                        return $register;
+                    }
+                    return $this->registerMapper->find($register)->getId();
+                },
+                $query['@self']['register']
+            );
+        } else if (isset($query['@self']['register']) === true) {
+            $query['@self']['register'] = is_int($query['@self']['register']) ? $query['@self']['register'] : $this->registerMapper->find($query['@self']['register'])->getId();
+        }
+
+        if (isset($query['@self']['schema']) === true && is_array($query['@self']['schema']) === true) {
+            $query['@self']['schema'] = array_map(
+                function($schema) {
+                    if (is_int($schema) === true) {
+                        return $schema;
+                    }
+                    return $this->schemaMapper->find($schema)->getId();
+                },
+                $query['@self']['schema']
+            );
+        } else if (isset($query['@self']['schema']) === true) {
+            $query['@self']['schema'] = is_int($query['@self']['schema']) ? $query['@self']['schema'] : $this->registerMapper->find($query['@self']['schema'])->getId();
+        }
+
+        return $query;
+    }
 
     public function searchObjects(array $query=[], bool $rbac=true, bool $multi=true, ?array $ids=null, ?string $uses=null, ?array $views=null): array|int
     {
@@ -2008,6 +2100,8 @@ class ObjectService
         if ($views !== null && !empty($views)) {
             $query = $this->applyViewsToQuery($query, $views);
         }
+
+        $query = $this->rewriteSlugs($query);
 
         // **CRITICAL PERFORMANCE OPTIMIZATION**: Detect simple vs complex rendering needs
         $hasExtend = !empty($query['_extend'] ?? []);
