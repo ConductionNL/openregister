@@ -4,7 +4,7 @@ on:
   push:
     branches:
       # - feature/php-linting  # Disabled - now building beta releases instead
-      # - fix/backward-compatibility  # Workflow disabled
+      - fix/backward-compatibility  # Workflow disabled
 
 jobs:
   release-management:
