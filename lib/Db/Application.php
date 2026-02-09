@@ -64,7 +64,7 @@ use Symfony\Component\Uid\Uuid;
  * @method array|null getGroups()
  * @method self setGroups(?array $groups)
  * @method array|null getAuthorization()
- * @method self setAuthorization(?array $authorization)
+ * @method self setAuthorization(array|string|null $authorization)
  * @method DateTime|null getCreated()
  * @method void setCreated(?DateTime $created)
  * @method DateTime|null getUpdated()
@@ -495,12 +495,28 @@ class Application extends Entity implements JsonSerializable
     /**
      * Set authorization rules for this application
      *
-     * @param array|null $authorization Authorization rules structure
+     * @param array|string|null $authorization Authorization rules structure or JSON string
      *
      * @return static Returns this application for method chaining
      */
-    public function setAuthorization(?array $authorization): static
+    public function setAuthorization(array|string|null $authorization): static
     {
+        // Handle JSON string from database (type safety)
+        if (is_string($authorization) === true) {
+            try {
+                $decoded = json_decode($authorization, true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                    $authorization = $decoded;
+                } else {
+                    // Invalid JSON, use default
+                    $authorization = null;
+                }
+            } catch (\Exception $e) {
+                // If decoding fails, use default
+                $authorization = null;
+            }
+        }
+
         $this->authorization = $authorization ?? $this->getDefaultAuthorization();
         $this->markFieldUpdated('authorization');
         return $this;
