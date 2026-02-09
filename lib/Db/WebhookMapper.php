@@ -56,7 +56,7 @@ use Symfony\Component\Uid\Uuid;
  * @method Webhook delete(Entity $entity)
  * @method Webhook find(int $id)
  * @method Webhook findEntity(IQueryBuilder $query)
- * @method Webhook[] findAll(int|null $limit=null, int|null $offset=null)
+ * @method Webhook[] findAll(int|null $limit=null, int|null $offset=null, array|null $filters=[])
  * @method list<Webhook> findEntities(IQueryBuilder $query)
  *
  * @template-extends QBMapper<Webhook>
@@ -139,12 +139,17 @@ class WebhookMapper extends QBMapper
      *
      * Retrieves all webhooks with organisation filtering for multi-tenancy.
      * Returns only webhooks belonging to the current organisation.
+     * Supports pagination and filtering.
+     *
+     * @param int|null $limit  Maximum number of results to return
+     * @param int|null $offset Number of results to skip
+     * @param array    $filters Optional filters to apply
      *
      * @return Webhook[]
      *
      * @psalm-return list<OCA\OpenRegister\Db\Webhook>
      */
-    public function findAll(): array
+    public function findAll(?int $limit=null, ?int $offset=null, ?array $filters=[]): array
     {
         // Check if table exists before querying (migrations might not have run yet).
         if ($this->tableExists() === false) {
@@ -158,11 +163,35 @@ class WebhookMapper extends QBMapper
         $qb->select('*')
             ->from($this->getTableName());
 
-        // Step 3: Apply organisation filter for multi-tenancy.
+        // Step 3: Apply pagination if provided.
+        if ($limit !== null) {
+            $qb->setMaxResults($limit);
+        }
+
+        if ($offset !== null) {
+            $qb->setFirstResult($offset);
+        }
+
+        // Step 4: Apply filters if provided.
+        foreach ($filters ?? [] as $filter => $value) {
+            if ($value === 'IS NOT NULL') {
+                $qb->andWhere($qb->expr()->isNotNull($filter));
+                continue;
+            }
+
+            if ($value === 'IS NULL') {
+                $qb->andWhere($qb->expr()->isNull($filter));
+                continue;
+            }
+
+            $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
+        }
+
+        // Step 5: Apply organisation filter for multi-tenancy.
         // This ensures users only see webhooks from their organisation.
         $this->applyOrganisationFilter($qb);
 
-        // Step 4: Execute query and return entities.
+        // Step 6: Execute query and return entities.
         return $this->findEntities($qb);
     }//end findAll()
 

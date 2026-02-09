@@ -109,6 +109,9 @@ class WebhooksController extends Controller
     /**
      * List all webhooks
      *
+     * Returns a JSON response containing an array of all webhooks in the system.
+     * Supports pagination, filtering, and extended properties.
+     *
      * @return JSONResponse
      *
      * @NoAdminRequired
@@ -119,23 +122,80 @@ class WebhooksController extends Controller
      *     200|500,
      *     array{
      *         error?: 'Failed to list webhooks',
-     *         results?: array<\OCA\OpenRegister\Db\Webhook>,
+     *         results?: array<array<string, mixed>>,
      *         total?: int<0, max>
      *     },
      *     array<never, never>
      * >
+     *
+     * @SuppressWarnings(PHPMD.NPathComplexity) Complex request parameter handling for flexible API
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
     public function index(): JSONResponse
     {
         try {
-            $webhooks = $this->webhookMapper->findAll();
+            // Get request parameters for filtering and searching.
+            $params = $this->request->getParams();
+
+            // Extract pagination and search parameters.
+            $limit = null;
+            if (isset($params['_limit']) === true) {
+                $limit = (int) $params['_limit'];
+            }
+
+            $offset = null;
+            if (isset($params['_offset']) === true) {
+                $offset = (int) $params['_offset'];
+            }
+
+            $page = null;
+            if (isset($params['_page']) === true) {
+                $page = (int) $params['_page'];
+            }
+
+            // Extract extend parameter for additional properties.
+            $extend = $params['_extend'] ?? [];
+            if (is_string($extend) === true) {
+                $extend = [$extend];
+            }
+
+            // Convert page to offset if provided (page-based pagination).
+            if ($page !== null && $limit !== null) {
+                $offset = ($page - 1) * $limit;
+            }
+
+            // Extract filters from request parameters.
+            $filters = $params['filters'] ?? [];
+
+            // Retrieve webhooks using mapper with pagination and filters.
+            $webhooks = $this->webhookMapper->findAll(
+                limit: $limit,
+                offset: $offset,
+                filters: $filters
+            );
+
+            // Get total count for pagination (without limit/offset but with filters).
+            $allWebhooks = $this->webhookMapper->findAll(
+                limit: null,
+                offset: null,
+                filters: $filters
+            );
+            $total = count($allWebhooks);
+
+            // Serialize webhooks to arrays.
+            $webhooksArr = array_map(
+                function ($webhook) {
+                    return $webhook->jsonSerialize();
+                },
+                $webhooks
+            );
 
             return new JSONResponse(
                 data: [
-                    'results' => $webhooks,
-                    'total'   => count($webhooks),
+                    'results' => $webhooksArr,
+                    'total'   => $total,
                 ],
                 statusCode: 200
             );
@@ -225,6 +285,23 @@ class WebhooksController extends Controller
     {
         try {
             $data = $this->request->getParams();
+
+            // Remove internal parameters (starting with '_').
+            foreach (array_keys($data) as $key) {
+                if (str_starts_with($key, '_') === true) {
+                    unset($data[$key]);
+                }
+            }
+
+            // Remove ID if present to ensure a new record is created.
+            if (($data['id'] ?? null) !== null) {
+                unset($data['id']);
+            }
+
+            // Remove organisation from request data - it will be set automatically
+            // by setOrganisationOnCreate() in the mapper based on the active session.
+            // This prevents frontend from overriding the organisation assignment.
+            unset($data['organisation']);
 
             // Validate required fields.
             if (empty($data['name']) === true || empty($data['url']) === true) {
