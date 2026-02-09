@@ -30,6 +30,7 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IUserSession;
+use OCP\IAppConfig;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -67,6 +68,24 @@ class WebhookMapper extends QBMapper
     use MultiTenancyTrait;
 
     /**
+     * Organisation mapper for multi-tenancy
+     *
+     * Used to get active organisation and apply organisation filters.
+     *
+     * @var OrganisationMapper Organisation mapper instance
+     */
+    protected OrganisationMapper $organisationMapper;
+
+    /**
+     * App configuration for multitenancy settings
+     *
+     * Used by MultiTenancyTrait for checking multitenancy configuration.
+     *
+     * @var IAppConfig App configuration instance
+     */
+    protected IAppConfig $appConfig;
+
+    /**
      * User session for current user
      *
      * Used to determine current user context for RBAC filtering.
@@ -90,27 +109,29 @@ class WebhookMapper extends QBMapper
      * Initializes mapper with database connection and multi-tenancy/RBAC dependencies.
      * Calls parent constructor to set up base mapper functionality.
      *
-     * @param IDBConnection $db           Database connection
-     * @param IUserSession  $userSession  User session
-     * @param IGroupManager $groupManager Group manager
+     * @param IDBConnection      $db                 Database connection
+     * @param OrganisationMapper $organisationMapper Organisation mapper for multi-tenancy
+     * @param IUserSession       $userSession        User session
+     * @param IGroupManager       $groupManager       Group manager
+     * @param IAppConfig          $appConfig          App configuration for multitenancy settings
      *
      * @return void
      */
     public function __construct(
         IDBConnection $db,
-        // REMOVED: Services should not be in mappers.
-        // OrganisationMapper $organisationMapper.
+        OrganisationMapper $organisationMapper,
         IUserSession $userSession,
-        IGroupManager $groupManager
+        IGroupManager $groupManager,
+        IAppConfig $appConfig
     ) {
         // Call parent constructor to initialize base mapper with table name and entity class.
         parent::__construct($db, 'openregister_webhooks', Webhook::class);
 
         // Store dependencies for use in mapper methods.
-        // REMOVED: Services should not be in mappers.
-        // $this->organisationMapper = $organisationService.
-        $this->userSession  = $userSession;
-        $this->groupManager = $groupManager;
+        $this->organisationMapper = $organisationMapper;
+        $this->userSession        = $userSession;
+        $this->groupManager        = $groupManager;
+        $this->appConfig          = $appConfig;
     }//end __construct()
 
     /**
