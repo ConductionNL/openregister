@@ -179,6 +179,8 @@ class MetricsService
             $this->logger->error(
                 message: '[MetricsService] Failed to record metric',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'metric_type' => $metricType,
                     'error'       => $e->getMessage(),
                 ]

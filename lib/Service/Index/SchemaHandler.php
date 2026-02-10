@@ -78,6 +78,8 @@ class SchemaHandler
             $this->logger->info(
                 '[SchemaHandler] Ensuring vector field type',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'collection' => $collection,
                     'dimensions' => $dimensions,
                     'similarity' => $similarity,
@@ -88,7 +90,7 @@ class SchemaHandler
             $existingTypes = $this->searchBackend->getFieldTypes($collection);
 
             if (isset($existingTypes['knn_vector']) === true) {
-                $this->logger->info('[SchemaHandler] knn_vector field type already exists');
+                $this->logger->info('[SchemaHandler] knn_vector field type already exists', ['file' => __FILE__, 'line' => __LINE__]);
                 return true;
             }
 
@@ -103,7 +105,7 @@ class SchemaHandler
             $result = $this->searchBackend->addFieldType(collection: $collection, fieldType: $fieldType);
 
             if ($result === true) {
-                $this->logger->info('[SchemaHandler] ✅ knn_vector field type created successfully');
+                $this->logger->info('[SchemaHandler] ✅ knn_vector field type created successfully', ['file' => __FILE__, 'line' => __LINE__]);
             }
 
             return $result;
@@ -111,6 +113,8 @@ class SchemaHandler
             $this->logger->error(
                 '[SchemaHandler] Failed to ensure vector field type',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error'      => $e->getMessage(),
                     'collection' => $collection,
                 ]
@@ -146,7 +150,7 @@ class SchemaHandler
         ];
 
         try {
-            $this->logger->info('[SchemaHandler] Starting intelligent schema mirroring with conflict resolution');
+            $this->logger->info('[SchemaHandler] Starting intelligent schema mirroring with conflict resolution', ['file' => __FILE__, 'line' => __LINE__]);
 
             // Get all OpenRegister schemas.
             $schemas = $this->schemaMapper->findAll();
@@ -157,6 +161,8 @@ class SchemaHandler
             $this->logger->info(
                 '[SchemaHandler] Field conflict analysis complete',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'total_fields'       => count($conflictAnalysis['fields']),
                     'conflicting_fields' => count($conflictAnalysis['conflicts']),
                     'resolved_conflicts' => count($conflictAnalysis['resolved']),
@@ -192,6 +198,8 @@ class SchemaHandler
                     $this->logger->error(
                         '[SchemaHandler] Failed to process schema',
                         [
+                            'file' => __FILE__,
+                            'line' => __LINE__,
                             'schema_id' => $schema->getId(),
                             'error'     => $e->getMessage(),
                         ]
@@ -204,6 +212,8 @@ class SchemaHandler
             $this->logger->info(
                 '[SchemaHandler] Schema mirroring complete',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'stats'             => $stats,
                     'execution_time_ms' => $executionTime,
                 ]
@@ -219,6 +229,8 @@ class SchemaHandler
             $this->logger->error(
                 '[SchemaHandler] Schema mirroring failed',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -283,6 +295,8 @@ class SchemaHandler
                 $this->logger->warning(
                     '[SchemaHandler] Field type conflict resolved',
                     [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'field'             => $fieldName,
                         'conflicting_types' => $uniqueTypes,
                         'resolved_type'     => $resolvedType,
@@ -440,7 +454,7 @@ class SchemaHandler
      */
     private function ensureCoreMetadataFields(bool $force): bool
     {
-        $this->logger->info('[SchemaHandler] Ensuring core metadata fields');
+        $this->logger->info('[SchemaHandler] Ensuring core metadata fields', ['file' => __FILE__, 'line' => __LINE__]);
 
         $coreFields = $this->getCoreMetadataFields();
 
@@ -450,6 +464,8 @@ class SchemaHandler
             $this->logger->info(
                 '[SchemaHandler] Core metadata fields ensured',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'created' => $result['created'],
                     'updated' => $result['updated'],
                 ]
@@ -460,6 +476,8 @@ class SchemaHandler
             $this->logger->error(
                 '[SchemaHandler] Failed to ensure core metadata fields',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -552,6 +570,8 @@ class SchemaHandler
                 $this->logger->error(
                     '[SchemaHandler] Failed to apply field',
                     [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'field' => $fieldConfig['name'] ?? 'unknown',
                         'error' => $e->getMessage(),
                     ]
@@ -605,6 +625,8 @@ class SchemaHandler
             $this->logger->error(
                 '[SchemaHandler] Failed to get collection field status',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'collection' => $collection,
                     'error'      => $e->getMessage(),
                 ]
@@ -634,6 +656,8 @@ class SchemaHandler
         $this->logger->info(
             '[SchemaHandler] Creating missing fields',
             [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'collection'  => $collection,
                 'field_count' => count($missingFields),
                 'dry_run'     => $dryRun,
@@ -675,6 +699,8 @@ class SchemaHandler
         $this->logger->info(
             '[SchemaHandler] Fixing mismatched fields',
             [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'count'  => count($mismatchedFields),
                 'dryRun' => $dryRun,
             ]
@@ -692,6 +718,8 @@ class SchemaHandler
             $this->logger->error(
                 '[SchemaHandler] Failed to fix mismatched fields',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );

@@ -113,6 +113,8 @@ class MessageHistoryHandler
         $this->logger->debug(
             message: '[ChatService] Building message history',
             context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'conversationId' => $conversationId,
                 'messageCount'   => count($messages),
             ]
@@ -126,6 +128,8 @@ class MessageHistoryHandler
             $this->logger->debug(
                 message: '[ChatService] Adding message to history',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'role'          => $role,
                     'contentLength' => strlen($content ?? ''),
                     'hasContent'    => empty($content) === false,
@@ -148,6 +152,8 @@ class MessageHistoryHandler
                     $this->logger->warning(
                         message: '[ChatService] Unknown message role',
                         context: [
+                            'file' => __FILE__,
+                            'line' => __LINE__,
                             'role' => $role,
                         ]
                     );
@@ -158,6 +164,8 @@ class MessageHistoryHandler
                 $this->logger->warning(
                     message: '[ChatService] Skipping message with missing role or content',
                     context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'hasRole'    => empty($role) === false,
                         'hasContent' => empty($content) === false,
                     ]
@@ -168,6 +176,8 @@ class MessageHistoryHandler
         $this->logger->info(
             message: '[ChatService] Message history built',
             context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'historyCount' => count($history),
             ]
         );
@@ -210,6 +220,8 @@ class MessageHistoryHandler
         $this->logger->debug(
             message: '[ChatService] Message stored',
             context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'messageId'      => $message->getId(),
                 'conversationId' => $conversationId,
                 'role'           => $role,

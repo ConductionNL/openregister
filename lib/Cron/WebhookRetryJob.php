@@ -125,8 +125,10 @@ class WebhookRetryJob extends TimedJob
         $now = new DateTime();
 
         $this->logger->debug(
-            'Checking for webhook retries',
+            '[WebhookRetryJob] Checking for webhook retries',
             [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'timestamp' => $now->format('c'),
             ]
         );
@@ -135,13 +137,15 @@ class WebhookRetryJob extends TimedJob
         $failedLogs = $this->webhookLogMapper->findFailedForRetry($now);
 
         if (empty($failedLogs) === true) {
-            $this->logger->debug('No webhook retries needed');
+            $this->logger->debug('[WebhookRetryJob] No webhook retries needed', ['file' => __FILE__, 'line' => __LINE__]);
             return;
         }
 
         $this->logger->info(
-            'Processing webhook retries',
+            '[WebhookRetryJob] Processing webhook retries',
             [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'count' => count($failedLogs),
             ]
         );
@@ -154,8 +158,10 @@ class WebhookRetryJob extends TimedJob
                 // Check if webhook is still enabled.
                 if ($webhook->getEnabled() === false) {
                     $this->logger->debug(
-                        'Skipping retry for disabled webhook',
+                        '[WebhookRetryJob] Skipping retry for disabled webhook',
                         [
+                            'file' => __FILE__,
+                            'line' => __LINE__,
                             'webhook_id' => $webhook->getId(),
                             'log_id'     => $log->getId(),
                         ]
@@ -166,8 +172,10 @@ class WebhookRetryJob extends TimedJob
                 // Check if we've exceeded max retries.
                 if ($log->getAttempt() >= $webhook->getMaxRetries()) {
                     $this->logger->warning(
-                        'Webhook retry limit exceeded',
+                        '[WebhookRetryJob] Webhook retry limit exceeded',
                         [
+                            'file' => __FILE__,
+                            'line' => __LINE__,
                             'webhook_id'  => $webhook->getId(),
                             'log_id'      => $log->getId(),
                             'attempt'     => $log->getAttempt(),
@@ -179,8 +187,10 @@ class WebhookRetryJob extends TimedJob
 
                 // Retry webhook delivery.
                 $this->logger->info(
-                    'Retrying webhook delivery',
+                    '[WebhookRetryJob] Retrying webhook delivery',
                     [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'webhook_id' => $webhook->getId(),
                         'log_id'     => $log->getId(),
                         'attempt'    => $log->getAttempt() + 1,
@@ -196,8 +206,10 @@ class WebhookRetryJob extends TimedJob
 
                 if ($success === true) {
                     $this->logger->info(
-                        'Webhook retry succeeded',
+                        '[WebhookRetryJob] Webhook retry succeeded',
                         [
+                            'file' => __FILE__,
+                            'line' => __LINE__,
                             'webhook_id' => $webhook->getId(),
                             'log_id'     => $log->getId(),
                         ]
@@ -206,8 +218,10 @@ class WebhookRetryJob extends TimedJob
                 }
 
                 $this->logger->warning(
-                    'Webhook retry failed',
+                    '[WebhookRetryJob] Webhook retry failed',
                     [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'webhook_id' => $webhook->getId(),
                         'log_id'     => $log->getId(),
                         'attempt'    => $log->getAttempt() + 1,
@@ -215,8 +229,10 @@ class WebhookRetryJob extends TimedJob
                 );
             } catch (\Exception $e) {
                 $this->logger->error(
-                    'Error processing webhook retry',
+                    '[WebhookRetryJob] Error processing webhook retry',
                     [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'log_id' => $log->getId(),
                         'error'  => $e->getMessage(),
                     ]

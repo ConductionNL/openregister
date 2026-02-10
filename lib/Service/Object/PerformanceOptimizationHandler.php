@@ -71,7 +71,7 @@ class PerformanceOptimizationHandler
                 return $uuid;
             }
 
-            $this->logger->debug('[PerformanceOptimizationHandler] No active organisation for current user');
+            $this->logger->debug('[PerformanceOptimizationHandler] No active organisation for current user', ['file' => __FILE__, 'line' => __LINE__]);
             return null;
         } catch (Exception $e) {
             // Log error but continue without organization context.

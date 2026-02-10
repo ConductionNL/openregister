@@ -201,7 +201,7 @@ class TransformationHandler
             if (($object['object'] ?? null) !== null && is_array($object['object']) === true) {
                 // NEW STRUCTURE: object property contains business data.
                 $businessData = $object['object'];
-                $this->logger->info("[SaveObjects] Using object property for business data (mixed)");
+                $this->logger->info("[SaveObjects] Using object property for business data (mixed)", ['file' => __FILE__, 'line' => __LINE__]);
             } else {
                 // LEGACY STRUCTURE: Remove metadata fields to isolate business data.
                 $businessData   = $object;

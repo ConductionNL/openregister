@@ -83,7 +83,7 @@ class ConfigurationHandler
             // @psalm-suppress InvalidPropertyAssignmentValue - getSolrSettings() returns array with compatible shape.
             $this->solrConfig = $this->settingsService->getSolrSettings();
         } catch (Exception $e) {
-            $this->logger->warning(message: 'Failed to load SOLR settings', context: ['error' => $e->getMessage()]);
+            $this->logger->warning(message: '[ConfigurationHandler] Failed to load SOLR settings', context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]);
 
             /*
              * @psalm-suppress InvalidPropertyAssignmentValue - ['enabled' => false] is compatible with solrConfig type
@@ -125,7 +125,7 @@ class ConfigurationHandler
             ];
 
             $this->logger->info(
-                'ConfigurationHandler: HTTP Basic Authentication configured',
+                '[ConfigurationHandler] HTTP Basic Authentication configured',
                 [
                     'username'  => $this->solrConfig['username'],
                     'auth_type' => 'basic',

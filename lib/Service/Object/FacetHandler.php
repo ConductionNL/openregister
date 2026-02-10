@@ -111,7 +111,7 @@ class FacetHandler
             } catch (\Exception $e) {
                 // No caching available - will skip cache operations.
                 $this->facetCache = null;
-                $this->logger->warning(message: 'Facet caching unavailable', context: ['error' => $e->getMessage()]);
+                $this->logger->warning(message: '[FacetHandler] Facet caching unavailable', context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]);
             }
         }
     }//end __construct()
@@ -683,7 +683,7 @@ class FacetHandler
         try {
             $cached = $this->facetCache->get($cacheKey);
             if ($cached !== null) {
-                $this->logger->debug(message: 'Facet response cache hit', context: ['cacheKey' => $cacheKey]);
+                $this->logger->debug(message: '[FacetHandler] Facet response cache hit', context: ['file' => __FILE__, 'line' => __LINE__, 'cacheKey' => $cacheKey]);
                 // Add cache metadata.
                 $cached['performance_metadata']['cache_hit'] = true;
                 return $cached;

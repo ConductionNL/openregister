@@ -61,7 +61,7 @@ class SchemaMapper
      */
     public function mapToBackendSchema(array $_schema): array
     {
-        $this->logger->debug('[SchemaMapper] Mapping schema');
+        $this->logger->debug('[SchemaMapper] Mapping schema', ['file' => __FILE__, 'line' => __LINE__]);
 
         return [];
     }//end mapToBackendSchema()

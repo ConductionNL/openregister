@@ -339,7 +339,7 @@ class MagicMapper
         try {
             $cacheHandler = $this->container->get(\OCA\OpenRegister\Service\Object\CacheHandler::class);
         } catch (\Exception $e) {
-            $this->logger->debug('CacheHandler not available for MagicFacetHandler: '.$e->getMessage());
+            $this->logger->debug('[MagicMapper] CacheHandler not available for MagicFacetHandler: '.$e->getMessage(), ['file' => __FILE__, 'line' => __LINE__]);
         }
 
         // Get ICacheFactory from container for distributed facet label caching.
@@ -347,7 +347,7 @@ class MagicMapper
         try {
             $cacheFactory = $this->container->get(\OCP\ICacheFactory::class);
         } catch (\Exception $e) {
-            $this->logger->debug('ICacheFactory not available for MagicFacetHandler: '.$e->getMessage());
+            $this->logger->debug('[MagicMapper] ICacheFactory not available for MagicFacetHandler: '.$e->getMessage(), ['file' => __FILE__, 'line' => __LINE__]);
         }
 
         $this->facetHandler = new MagicFacetHandler(
@@ -389,8 +389,8 @@ class MagicMapper
             $this->hasPgTrgm = $count > 0;
         } catch (Exception $e) {
             $this->logger->warning(
-                'Failed to check pg_trgm extension availability',
-                ['error' => $e->getMessage()]
+                '[MagicMapper] Failed to check pg_trgm extension availability',
+                ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
             );
             $this->hasPgTrgm = false;
         }
@@ -422,8 +422,10 @@ class MagicMapper
         $cacheKey   = $this->getCacheKey(registerId: $registerId, schemaId: $schemaId);
 
         $this->logger->info(
-            'Creating/updating table for register+schema',
+            '[MagicMapper] Creating/updating table for register+schema',
             [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'registerId'   => $registerId,
                 'schemaId'     => $schemaId,
                 'registerSlug' => $register->getSlug(),
@@ -441,8 +443,10 @@ class MagicMapper
                 // Table exists and not forcing update - check if schema changed.
                 if ($this->hasRegisterSchemaChanged(register: $register, schema: $schema) === false) {
                     $this->logger->debug(
-                        'Table exists and schema unchanged, skipping',
+                        '[MagicMapper] Table exists and schema unchanged, skipping',
                         [
+                            'file' => __FILE__,
+                            'line' => __LINE__,
                             'tableName' => $tableName,
                             'cacheKey'  => $cacheKey,
                         ]
@@ -464,8 +468,10 @@ class MagicMapper
             return $this->createTableForRegisterSchema(register: $register, schema: $schema);
         } catch (Exception $e) {
             $this->logger->error(
-                'Failed to ensure table for register+schema',
+                '[MagicMapper] Failed to ensure table for register+schema',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'registerId' => $registerId,
                     'schemaId'   => $schemaId,
                     'tableName'  => $tableName,
@@ -534,8 +540,10 @@ class MagicMapper
             $cachedTime = self::$tableExistsCache[$cacheKey];
             if ((time() - $cachedTime) < self::TABLE_CACHE_TIMEOUT) {
                 $this->logger->debug(
-                    'Table existence check: cache hit',
+                    '[MagicMapper] Table existence check: cache hit',
                     [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'registerId' => $registerId,
                         'schemaId'   => $schemaId,
                         'cacheKey'   => $cacheKey,
@@ -558,8 +566,10 @@ class MagicMapper
             self::$tableExistsCache[$cacheKey] = time();
 
             $this->logger->debug(
-                'Table existence check: database hit - exists',
+                '[MagicMapper] Table existence check: database hit - exists',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'registerId' => $registerId,
                     'schemaId'   => $schemaId,
                     'tableName'  => $tableName,
@@ -570,8 +580,10 @@ class MagicMapper
 
         if ($exists === false) {
             $this->logger->debug(
-                'Table existence check: database hit - not exists',
+                '[MagicMapper] Table existence check: database hit - not exists',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'registerId' => $registerId,
                     'schemaId'   => $schemaId,
                     'tableName'  => $tableName,
@@ -605,8 +617,10 @@ class MagicMapper
         $savedUuids = [];
 
         $this->logger->info(
-            'Saving objects to register+schema table',
+            '[MagicMapper] Saving objects to register+schema table',
             [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'registerId'  => $register->getId(),
                 'schemaId'    => $schema->getId(),
                 'tableName'   => $tableName,
@@ -628,8 +642,10 @@ class MagicMapper
             }
 
             $this->logger->info(
-                'Successfully saved objects to register+schema table',
+                '[MagicMapper] Successfully saved objects to register+schema table',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'tableName'  => $tableName,
                     'savedCount' => count($savedUuids),
                 ]
@@ -638,8 +654,10 @@ class MagicMapper
             return $savedUuids;
         } catch (Exception $e) {
             $this->logger->error(
-                'Failed to save objects to register+schema table',
+                '[MagicMapper] Failed to save objects to register+schema table',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'tableName' => $tableName,
                     'error'     => $e->getMessage(),
                 ]
@@ -670,8 +688,10 @@ class MagicMapper
             if ($register->isMagicMappingEnabledForSchema(schemaId: $schema->getId(), schemaSlug: $schema->getSlug()) === true) {
                 // Create the table since magic mapping is enabled.
                 $this->logger->info(
-                    'Register+schema table does not exist but magic mapping enabled, creating table',
+                    '[MagicMapper] Register+schema table does not exist but magic mapping enabled, creating table',
                     [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'registerId' => $register->getId(),
                         'schemaId'   => $schema->getId(),
                     ]
@@ -679,8 +699,10 @@ class MagicMapper
                 $this->ensureTableForRegisterSchema(register: $register, schema: $schema);
             } else {
                 $this->logger->info(
-                    'Register+schema table does not exist, should use generic storage',
+                    '[MagicMapper] Register+schema table does not exist, should use generic storage',
                     [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'registerId' => $register->getId(),
                         'schemaId'   => $schema->getId(),
                     ]
@@ -708,8 +730,10 @@ class MagicMapper
             return $result;
         } catch (Exception $e) {
             $this->logger->error(
-                'Failed to search register+schema table',
+                '[MagicMapper] Failed to search register+schema table',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'tableName' => $tableName,
                     'error'     => $e->getMessage(),
                 ]
@@ -752,8 +776,10 @@ class MagicMapper
             if ($register->isMagicMappingEnabledForSchema(schemaId: $schema->getId(), schemaSlug: $schema->getSlug()) === true) {
                 // Create the table since magic mapping is enabled.
                 $this->logger->info(
-                    'Register+schema table does not exist but magic mapping enabled, creating table',
+                    '[MagicMapper] Register+schema table does not exist but magic mapping enabled, creating table',
                     [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'registerId' => $register->getId(),
                         'schemaId'   => $schema->getId(),
                     ]
@@ -761,8 +787,10 @@ class MagicMapper
                 $this->ensureTableForRegisterSchema(register: $register, schema: $schema);
             } else {
                 $this->logger->info(
-                    'Register+schema table does not exist for count, returning 0',
+                    '[MagicMapper] Register+schema table does not exist for count, returning 0',
                     [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'registerId' => $register->getId(),
                         'schemaId'   => $schema->getId(),
                     ]
@@ -790,6 +818,8 @@ class MagicMapper
             $this->logger->debug(
                 '[MagicMapper] Count query completed',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'tableName' => $tableName,
                     'count'     => $count,
                     'hasSearch' => empty($query['_search']) === false,
@@ -800,8 +830,10 @@ class MagicMapper
             return $count;
         } catch (Exception $e) {
             $this->logger->error(
-                'Failed to count in register+schema table',
+                '[MagicMapper] Failed to count in register+schema table',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'tableName' => $tableName,
                     'error'     => $e->getMessage(),
                 ]
@@ -832,8 +864,10 @@ class MagicMapper
             // Check if magic mapping is enabled for this schema - if so, create the table.
             if ($register->isMagicMappingEnabledForSchema(schemaId: $schema->getId(), schemaSlug: $schema->getSlug()) === true) {
                 $this->logger->info(
-                    'Register+schema table does not exist but magic mapping enabled, creating table for facets',
+                    '[MagicMapper] Register+schema table does not exist but magic mapping enabled, creating table for facets',
                     [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'registerId' => $register->getId(),
                         'schemaId'   => $schema->getId(),
                     ]
@@ -841,7 +875,7 @@ class MagicMapper
                 $this->ensureTableForRegisterSchema(register: $register, schema: $schema);
             } else {
                 $this->logger->info(
-                    'Register+schema table does not exist for facets, returning empty',
+                    '[MagicMapper] Register+schema table does not exist for facets, returning empty',
                     [
                         'registerId' => $register->getId(),
                         'schemaId'   => $schema->getId(),
@@ -865,7 +899,7 @@ class MagicMapper
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                'Failed to get facets from register+schema table',
+                '[MagicMapper] Failed to get facets from register+schema table',
                 [
                     'tableName' => $tableName,
                     'error'     => $e->getMessage(),
@@ -937,7 +971,7 @@ class MagicMapper
     {
         $this->logger->info(
             '[MagicMapper] Starting cross-table search',
-            ['pairCount' => count($registerSchemaPairs), 'queryKeys' => array_keys($query)]
+            ['file' => __FILE__, 'line' => __LINE__, 'pairCount' => count($registerSchemaPairs), 'queryKeys' => array_keys($query)]
         );
 
         // OPTIMIZATION: Use UNION ALL for multi-table search in a single query.
@@ -1014,8 +1048,10 @@ class MagicMapper
                 // Check if magic mapping is enabled for this schema - if so, create the table.
                 if ($register->isMagicMappingEnabledForSchema(schemaId: $schema->getId(), schemaSlug: $schema->getSlug()) === true) {
                     $this->logger->info(
-                        'Register+schema table does not exist but magic mapping enabled, creating table for cross-search',
+                        '[MagicMapper] Register+schema table does not exist but magic mapping enabled, creating table for cross-search',
                         [
+                            'file' => __FILE__,
+                            'line' => __LINE__,
                             'registerId' => $register->getId(),
                             'schemaId'   => $schema->getId(),
                         ]
@@ -1112,12 +1148,12 @@ class MagicMapper
                     $results[] = $entity;
                 }
             } catch (\Exception $e) {
-                $this->logger->warning('Failed to convert union row to entity', ['error' => $e->getMessage()]);
+                $this->logger->warning('[MagicMapper] Failed to convert union row to entity', ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]);
                 continue;
             }
         }
 
-        $this->logger->info('[MagicMapper] Union search completed', ['resultCount' => count($results)]);
+        $this->logger->info('[MagicMapper] Union search completed', ['file' => __FILE__, 'line' => __LINE__, 'resultCount' => count($results)]);
 
         return $results;
     }//end searchAcrossMultipleTablesWithUnion()
@@ -1242,7 +1278,7 @@ class MagicMapper
 
             return $entity;
         } catch (\Exception $e) {
-            $this->logger->warning('Failed to convert union row', ['error' => $e->getMessage()]);
+            $this->logger->warning('[MagicMapper] Failed to convert union row', ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]);
             return null;
         }//end try
     }//end convertUnionRowToObjectEntity()
@@ -1268,12 +1304,12 @@ class MagicMapper
             $schema   = $pair['schema'] ?? null;
 
             if ($register === null || $schema === null) {
-                $this->logger->warning('Invalid register+schema pair in cross-table search', ['pair' => $pair]);
+                $this->logger->warning('[MagicMapper] Invalid register+schema pair in cross-table search', ['file' => __FILE__, 'line' => __LINE__, 'pair' => $pair]);
                 continue;
             }
 
             try {
-                $this->logger->debug('[MagicMapper] Searching table (sequential)', ['schemaId' => $schema->getId()]);
+                $this->logger->debug('[MagicMapper] Searching table (sequential)', ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $schema->getId()]);
 
                 // Search in this table.
                 $results = $this->searchObjectsInRegisterSchemaTable(
@@ -1285,6 +1321,8 @@ class MagicMapper
                 $this->logger->info(
                     '[MagicMapper] Table search completed',
                     [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'schemaId'    => $schema->getId(),
                         'schemaTitle' => $schema->getTitle(),
                         'resultCount' => count($results),
@@ -1300,8 +1338,10 @@ class MagicMapper
                 $allResults = array_merge($allResults, $results);
             } catch (Exception $e) {
                 $this->logger->error(
-                    'Failed to search in register+schema table',
+                    '[MagicMapper] Failed to search in register+schema table',
                     [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'registerId' => $register->getId(),
                         'schemaId'   => $schema->getId(),
                         'error'      => $e->getMessage(),
@@ -1312,7 +1352,7 @@ class MagicMapper
             }//end try
         }//end foreach
 
-        $this->logger->info('[MagicMapper] Sequential search completed', ['totalResults' => count($allResults)]);
+        $this->logger->info('[MagicMapper] Sequential search completed', ['file' => __FILE__, 'line' => __LINE__, 'totalResults' => count($allResults)]);
 
         // Sort all results by search score if available (from _search parameter).
         if (isset($query['_search']) === true && empty($query['_search']) === false) {
@@ -1341,8 +1381,10 @@ class MagicMapper
         }//end if
 
         $this->logger->debug(
-            'Cross-table search completed',
+            '[MagicMapper] Cross-table search completed',
             [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'tableCount'  => count($registerSchemaPairs),
                 'resultCount' => count($allResults),
             ]
@@ -1405,6 +1447,8 @@ class MagicMapper
             $this->logger->debug(
                 '[MagicMapper] Table does not exist in database',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'tableName' => $tableName,
                     'error'     => $e->getMessage(),
                 ]
@@ -1428,7 +1472,7 @@ class MagicMapper
         unset(self::$tableStructureCache[$cacheKey]);
         unset(self::$calculatedVersionCache[$cacheKey]);
 
-        $this->logger->debug('Invalidated table cache', ['cacheKey' => $cacheKey]);
+        $this->logger->debug('[MagicMapper] Invalidated table cache', ['file' => __FILE__, 'line' => __LINE__, 'cacheKey' => $cacheKey]);
     }//end invalidateTableCache()
 
     /**
@@ -1449,8 +1493,10 @@ class MagicMapper
         $cacheKey   = $this->getCacheKey(registerId: $registerId, schemaId: $schemaId);
 
         $this->logger->info(
-            'Creating new register+schema table',
+            '[MagicMapper] Creating new register+schema table',
             [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'registerId' => $registerId,
                 'schemaId'   => $schemaId,
                 'tableName'  => $tableName,
@@ -1474,8 +1520,10 @@ class MagicMapper
         self::$regSchemaTableCache[$cacheKey] = $tableName;
 
         $this->logger->info(
-            'Successfully created register+schema table',
+            '[MagicMapper] Successfully created register+schema table',
             [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'tableName'   => $tableName,
                 'columnCount' => count($columns),
                 'cacheKey'    => $cacheKey,
@@ -1526,8 +1574,10 @@ class MagicMapper
         $cacheKey   = $this->getCacheKey(registerId: $registerId, schemaId: $schemaId);
 
         $this->logger->info(
-            'Syncing register+schema table',
+            '[MagicMapper] Syncing register+schema table',
             [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'registerId' => $registerId,
                 'schemaId'   => $schemaId,
                 'tableName'  => $tableName,
@@ -1540,8 +1590,10 @@ class MagicMapper
 
             if ($tableExists === false) {
                 $this->logger->info(
-                    'Table does not exist, creating it',
+                    '[MagicMapper] Table does not exist, creating it',
                     [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'registerId' => $registerId,
                         'schemaId'   => $schemaId,
                         'tableName'  => $tableName,
@@ -1576,8 +1628,10 @@ class MagicMapper
 
             // Table exists, update its structure
             $this->logger->info(
-                'Table exists, updating structure',
+                '[MagicMapper] Table exists, updating structure',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'registerId' => $registerId,
                     'schemaId'   => $schemaId,
                     'tableName'  => $tableName,
@@ -1626,8 +1680,10 @@ class MagicMapper
             ];
 
             $this->logger->info(
-                'Successfully updated register+schema table',
+                '[MagicMapper] Successfully updated register+schema table',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'tableName' => $tableName,
                     'cacheKey'  => $cacheKey,
                     'stats'     => $result,
@@ -1637,8 +1693,10 @@ class MagicMapper
             return $result;
         } catch (Exception $e) {
             $this->logger->error(
-                'Failed to update register+schema table',
+                '[MagicMapper] Failed to update register+schema table',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'tableName' => $tableName,
                     'error'     => $e->getMessage(),
                 ]
@@ -1693,8 +1751,10 @@ class MagicMapper
                 // Skip if propertyConfig is not an array (it should be an object/array for real properties)
                 if (is_array($propertyConfig) === false) {
                     $this->logger->debug(
-                        message: 'Skipping non-array property in schema',
+                        message: '[MagicMapper] Skipping non-array property in schema',
                         context: [
+                            'file' => __FILE__,
+                            'line' => __LINE__,
                             'propertyName' => $propertyName,
                             'propertyType' => gettype($propertyConfig),
                         ]
@@ -2074,8 +2134,10 @@ class MagicMapper
                 if ($type === 'object' && $hasRef === true && $handling === 'related-object') {
                     // This is a reference to another object - store as UUID string.
                     $this->logger->debug(
-                        'Detected object reference property, using VARCHAR for UUID storage',
+                        '[MagicMapper] Detected object reference property, using VARCHAR for UUID storage',
                         [
+                            'file' => __FILE__,
+                            'line' => __LINE__,
                             'propertyName' => $propertyName,
                             '$ref'         => $propertyConfig['$ref'] ?? 'nested in items.oneOf',
                             'handling'     => $handling,
@@ -2101,8 +2163,10 @@ class MagicMapper
             default:
                 // Unknown type - store as JSON for flexibility.
                 $this->logger->warning(
-                    'Unknown schema property type, storing as JSON',
+                    '[MagicMapper] Unknown schema property type, storing as JSON',
                     [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'propertyName' => $propertyName,
                         'type'         => $type,
                     ]
@@ -2430,6 +2494,8 @@ class MagicMapper
             $this->logger->debug(
                 '[MagicMapper] Created table with columns',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'tableName'     => $tableName,
                     'fullTableName' => $fullTableName,
                     'columns'       => array_column($columns, 'name'),
@@ -2439,6 +2505,8 @@ class MagicMapper
             $this->logger->error(
                 '[MagicMapper] Failed to create table',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'tableName' => $tableName,
                     'error'     => $e->getMessage(),
                 ]
@@ -2626,8 +2694,10 @@ class MagicMapper
             }//end if
 
             $this->logger->debug(
-                'Created table indexes',
+                '[MagicMapper] Created table indexes',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'tableName'       => $tableName,
                     'baseIndexCount'  => 5 + count($idxMetaFields),
                     'relationIndexes' => $relationIndexes,
@@ -2636,8 +2706,10 @@ class MagicMapper
             );
         } catch (Exception $e) {
             $this->logger->warning(
-                'Failed to create some table indexes',
+                '[MagicMapper] Failed to create some table indexes',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'tableName' => $tableName,
                     'error'     => $e->getMessage(),
                 ]
@@ -2690,8 +2762,10 @@ class MagicMapper
                 // Insert new object.
                 $this->insertObjectInRegisterSchemaTable(data: $preparedData, tableName: $tableName);
                 $this->logger->debug(
-                    'Inserted object in register+schema table',
+                    '[MagicMapper] Inserted object in register+schema table',
                     [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'uuid'      => $uuid,
                         'tableName' => $tableName,
                     ]
@@ -2702,8 +2776,10 @@ class MagicMapper
             // Update existing object.
             $this->updateObjectInRegisterSchemaTable(uuid: $uuid, data: $preparedData, tableName: $tableName);
             $this->logger->debug(
-                'Updated object in register+schema table',
+                '[MagicMapper] Updated object in register+schema table',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'uuid'      => $uuid,
                     'tableName' => $tableName,
                 ]
@@ -2711,7 +2787,7 @@ class MagicMapper
             return $uuid;
         } catch (Exception $e) {
             $this->logger->error(
-                'Failed to save object to register+schema table',
+                '[MagicMapper] Failed to save object to register+schema table',
                 [
                     'uuid'      => $uuid,
                     'tableName' => $tableName,
@@ -2847,7 +2923,7 @@ class MagicMapper
         // DEBUG: Log schema property mapping for gemmaType
         if ($schema->getSlug() === 'element' && isset($schemaProperties['gemmaType'])) {
             $this->logger->error(
-                    'MAGIC_MAPPER_DEBUG: Mapping element properties',
+                    '[MagicMapper] MAGIC_MAPPER_DEBUG: Mapping element properties',
                     [
                         'has_gemmaType_in_schema' => isset($schemaProperties['gemmaType']),
                         'has_gemmaType_in_data'   => isset($data['gemmaType']),
@@ -2877,7 +2953,7 @@ class MagicMapper
 
                     if ($isFileProperty === true && is_string($value) === true && strpos($value, 'data:') === 0) {
                         $this->logger->warning(
-                            'File property contains unprocessed base64 data URL - setting to null to prevent DB error',
+                            '[MagicMapper] File property contains unprocessed base64 data URL - setting to null to prevent DB error',
                             [
                                 'propertyName' => $propertyName,
                                 'valueLength'  => strlen($value),
@@ -2892,7 +2968,7 @@ class MagicMapper
                         foreach ($value as $item) {
                             if (is_string($item) === true && strpos($item, 'data:') === 0) {
                                 $this->logger->warning(
-                                    'Array file item contains unprocessed base64 data URL - skipping item',
+                                    '[MagicMapper] Array file item contains unprocessed base64 data URL - skipping item',
                                     [
                                         'propertyName' => $propertyName,
                                         'valueLength'  => strlen($item),
@@ -3008,7 +3084,7 @@ class MagicMapper
             }
 
             $this->logger->debug(
-                'Register+schema table search completed',
+                '[MagicMapper] Register+schema table search completed',
                 [
                     'tableName'    => $tableName,
                     'resultCount'  => count($objects),
@@ -3019,7 +3095,7 @@ class MagicMapper
             return $objects;
         } catch (Exception $e) {
             $this->logger->error(
-                'Register+schema table search failed',
+                '[MagicMapper] Register+schema table search failed',
                 [
                     'tableName' => $tableName,
                     'error'     => $e->getMessage(),
@@ -3229,7 +3305,7 @@ class MagicMapper
             return $objectEntity;
         } catch (Exception $e) {
             $this->logger->error(
-                'Failed to convert row to ObjectEntity',
+                '[MagicMapper] Failed to convert row to ObjectEntity',
                 [
                     'error' => $e->getMessage(),
                     'uuid'  => $row[self::METADATA_PREFIX.'uuid'] ?? 'unknown',
@@ -3819,7 +3895,7 @@ class MagicMapper
             return $row;
         } catch (Exception $e) {
             $this->logger->warning(
-                'Failed to find object in register+schema table',
+                '[MagicMapper] Failed to find object in register+schema table',
                 [
                     'uuid'      => $uuid,
                     'tableName' => $tableName,
@@ -3932,7 +4008,7 @@ class MagicMapper
             return $columnDefinitions;
         } catch (Exception $e) {
             $this->logger->error(
-                'Failed to get existing table columns',
+                '[MagicMapper] Failed to get existing table columns',
                 [
                     'tableName' => $tableName,
                     'error'     => $e->getMessage(),
@@ -3980,7 +4056,7 @@ class MagicMapper
 
             if (isset($currentColumns[$columnName]) === false) {
                 $this->logger->info(
-                    'Adding new column to schema table',
+                    '[MagicMapper] Adding new column to schema table',
                     [
                         'tableName'    => $tableName,
                         'propertyName' => $propertyName,
@@ -4025,7 +4101,7 @@ class MagicMapper
             // If schema says nullable but table says NOT NULL, make column nullable.
             if ($schemaIsNullable === true && $tableIsNullable === false) {
                 $this->logger->info(
-                    'Making column nullable (no longer required)',
+                    '[MagicMapper] Making column nullable (no longer required)',
                     [
                         'tableName'  => $tableName,
                         'columnName' => $columnName,
@@ -4047,7 +4123,7 @@ class MagicMapper
                     $columnsDeRequired[] = $columnName;
                 } catch (Exception $e) {
                     $this->logger->warning(
-                        'Failed to make column nullable',
+                        '[MagicMapper] Failed to make column nullable',
                         ['columnName' => $columnName, 'error' => $e->getMessage()]
                     );
                 }
@@ -4074,7 +4150,7 @@ class MagicMapper
             if ($snakeVersion !== $colName && isset($snakeCaseColumns[$snakeVersion]) === true) {
                 // This is a camelCase duplicate - drop it.
                 $this->logger->info(
-                    'Dropping duplicate camelCase column (snake_case version exists)',
+                    '[MagicMapper] Dropping duplicate camelCase column (snake_case version exists)',
                     [
                         'tableName'    => $tableName,
                         'camelCaseCol' => $colName,
@@ -4090,7 +4166,7 @@ class MagicMapper
                     $columnsDropped[] = $colName;
                 } catch (Exception $e) {
                     $this->logger->warning(
-                        'Failed to drop duplicate column',
+                        '[MagicMapper] Failed to drop duplicate column',
                         ['columnName' => $colName, 'error' => $e->getMessage()]
                     );
                 }
@@ -4117,7 +4193,7 @@ class MagicMapper
 
             // This is an obsolete column - make it nullable.
             $this->logger->info(
-                'Making obsolete column nullable',
+                '[MagicMapper] Making obsolete column nullable',
                 [
                     'tableName'  => $tableName,
                     'columnName' => $colName,
@@ -4138,14 +4214,14 @@ class MagicMapper
                 $columnsDeRequired[] = $colName.' (obsolete)';
             } catch (Exception $e) {
                 $this->logger->warning(
-                    'Failed to make obsolete column nullable',
+                    '[MagicMapper] Failed to make obsolete column nullable',
                     ['columnName' => $colName, 'error' => $e->getMessage()]
                 );
             }
         }//end foreach
 
         $this->logger->info(
-            'Successfully updated table structure',
+            '[MagicMapper] Successfully updated table structure',
             [
                 'tableName'         => $tableName,
                 'columnsAdded'      => $columnsAdded,
@@ -4234,14 +4310,14 @@ class MagicMapper
             }
 
             $this->logger->info(
-                'Dropped register+schema table',
+                '[MagicMapper] Dropped register+schema table',
                 [
                     'tableName' => $tableName,
                 ]
             );
         } catch (Exception $e) {
             $this->logger->error(
-                'Failed to drop table',
+                '[MagicMapper] Failed to drop table',
                 [
                     'tableName' => $tableName,
                     'error'     => $e->getMessage(),
@@ -4286,7 +4362,7 @@ class MagicMapper
             self::$tableStructureCache    = [];
             self::$calculatedVersionCache = [];
 
-            $this->logger->debug('Cleared all MagicMapper caches');
+            $this->logger->debug('[MagicMapper] Cleared all MagicMapper caches', ['file' => __FILE__, 'line' => __LINE__]);
             return;
         }
 
@@ -4295,7 +4371,7 @@ class MagicMapper
         $this->invalidateTableCache($cacheKey);
 
         $this->logger->debug(
-            'Cleared MagicMapper cache for register+schema',
+            '[MagicMapper] Cleared MagicMapper cache for register+schema',
             [
                 'registerId' => $registerId,
                 'schemaId'   => $schemaId,
@@ -4355,7 +4431,7 @@ class MagicMapper
             }//end foreach
 
             $this->logger->info(
-                'Found existing register+schema tables',
+                '[MagicMapper] Found existing register+schema tables',
                 [
                     'tableCount' => count($registerSchemaTables),
                 ]
@@ -4364,7 +4440,7 @@ class MagicMapper
             return $registerSchemaTables;
         } catch (Exception $e) {
             $this->logger->error(
-                'Failed to get existing register+schema tables',
+                '[MagicMapper] Failed to get existing register+schema tables',
                 [
                     'error' => $e->getMessage(),
                 ]
@@ -4460,8 +4536,10 @@ class MagicMapper
         if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
             if ($register->isMagicMappingEnabledForSchema(schemaId: $schema->getId(), schemaSlug: $schema->getSlug()) === true) {
                 $this->logger->info(
-                    'Register+schema table does not exist but magic mapping enabled, creating table',
+                    '[MagicMapper] Register+schema table does not exist but magic mapping enabled, creating table',
                     [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'registerId' => $register->getId(),
                         'schemaId'   => $schema->getId(),
                     ]
@@ -4473,7 +4551,7 @@ class MagicMapper
         $tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
 
         $this->logger->debug(
-            'Finding object in register+schema table',
+            '[MagicMapper] Finding object in register+schema table',
             [
                 'identifier'   => $identifier,
                 'tableName'    => $tableName,
@@ -4544,7 +4622,7 @@ class MagicMapper
             throw $e;
         } catch (Exception $e) {
             $this->logger->error(
-                'Failed to find object in register+schema table',
+                '[MagicMapper] Failed to find object in register+schema table',
                 [
                     'identifier' => $identifier,
                     'tableName'  => $tableName,
@@ -4580,7 +4658,7 @@ class MagicMapper
         bool $_multitenancy=true
     ): array {
         $this->logger->debug(
-                '[MagicMapper::findAcrossAllMagicTables] Starting search',
+                '[MagicMapper] findAcrossAllMagicTables: Starting search',
                 [
                     'identifier' => $identifier,
                 ]
@@ -4598,7 +4676,7 @@ class MagicMapper
         $tables = $result->fetchAll();
 
         $this->logger->debug(
-                '[MagicMapper::findAcrossAllMagicTables] Found magic tables',
+                '[MagicMapper] findAcrossAllMagicTables: Found magic tables',
                 [
                     'count' => count($tables),
                 ]
@@ -4670,7 +4748,7 @@ class MagicMapper
                         $schema   = $schemaMapper->find(id: $schemaId, _multitenancy: false);
                     } catch (\Exception $e) {
                         $this->logger->warning(
-                                '[MagicMapper::findAcrossAllMagicTables] Could not load register/schema',
+                                '[MagicMapper] findAcrossAllMagicTables: Could not load register/schema',
                                 [
                                     'registerId' => $registerId,
                                     'schemaId'   => $schemaId,
@@ -4687,7 +4765,7 @@ class MagicMapper
                     );
 
                     $this->logger->debug(
-                            '[MagicMapper::findAcrossAllMagicTables] Found object',
+                            '[MagicMapper] findAcrossAllMagicTables: Found object',
                             [
                                 'uuid'       => $object->getUuid(),
                                 'registerId' => $registerId,
@@ -4704,7 +4782,7 @@ class MagicMapper
             } catch (\Exception $e) {
                 // Table might not have the expected structure, skip it.
                 $this->logger->debug(
-                        '[MagicMapper::findAcrossAllMagicTables] Error searching table',
+                        '[MagicMapper] findAcrossAllMagicTables: Error searching table',
                         [
                             'table' => $fullTableName,
                             'error' => $e->getMessage(),
@@ -4798,7 +4876,7 @@ class MagicMapper
             $matches     = $unionResult->fetchAll();
         } catch (\Exception $e) {
             $this->logger->error(
-                    '[MagicMapper::findMultipleAcrossAllMagicTables] UNION query failed',
+                    '[MagicMapper] findMultipleAcrossAllMagicTables: UNION query failed',
                     [
                         'error' => $e->getMessage(),
                     ]
@@ -4875,7 +4953,7 @@ class MagicMapper
                 }
             } catch (\Exception $e) {
                 $this->logger->debug(
-                        '[MagicMapper::findMultipleAcrossAllMagicTables] Error fetching from table',
+                        '[MagicMapper] findMultipleAcrossAllMagicTables: Error fetching from table',
                         [
                             'table' => $fullTableName,
                             'error' => $e->getMessage(),
@@ -4886,7 +4964,7 @@ class MagicMapper
         }//end foreach
 
         $this->logger->debug(
-                '[MagicMapper::findMultipleAcrossAllMagicTables] Batch search complete',
+                '[MagicMapper] findMultipleAcrossAllMagicTables: Batch search complete',
                 [
                     'requestedCount'    => count($uuids),
                     'foundCount'        => count($foundObjects),
@@ -4973,7 +5051,7 @@ class MagicMapper
             $matches     = $unionResult->fetchAll();
         } catch (\Exception $e) {
             $this->logger->error(
-                    '[MagicMapper::findByRelationAcrossAllMagicTables] UNION query failed',
+                    '[MagicMapper] findByRelationAcrossAllMagicTables: UNION query failed',
                     [
                         'error' => $e->getMessage(),
                     ]
@@ -5048,7 +5126,7 @@ class MagicMapper
                 }
             } catch (\Exception $e) {
                 $this->logger->debug(
-                        '[MagicMapper::findByRelationAcrossAllMagicTables] Error fetching from table',
+                        '[MagicMapper] findByRelationAcrossAllMagicTables: Error fetching from table',
                         [
                             'table' => $fullTableName,
                             'error' => $e->getMessage(),
@@ -5059,7 +5137,7 @@ class MagicMapper
         }//end foreach
 
         $this->logger->debug(
-                '[MagicMapper::findByRelationAcrossAllMagicTables] Search complete',
+                '[MagicMapper] findByRelationAcrossAllMagicTables: Search complete',
                 [
                     'uuid'              => $uuid,
                     'foundCount'        => count($foundObjects),
@@ -5150,7 +5228,7 @@ class MagicMapper
         $tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
 
         $this->logger->debug(
-            'Inserting object entity into register+schema table',
+            '[MagicMapper] Inserting object entity into register+schema table',
             [
                 'uuid'      => $entity->getUuid(),
                 'tableName' => $tableName,
@@ -5199,7 +5277,7 @@ class MagicMapper
             );
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             // Fallback: manually set ID if re-fetch fails.
-            $this->logger->warning('[MagicMapper] Failed to re-fetch inserted entity, using fallback');
+            $this->logger->warning('[MagicMapper] Failed to re-fetch inserted entity, using fallback', ['file' => __FILE__, 'line' => __LINE__]);
             $row = $this->findObjectInRegisterSchemaTable(uuid: $uuid, tableName: $tableName);
             if ($row !== null) {
                 $entity->setId((int) $row[self::METADATA_PREFIX.'id']);
@@ -5237,7 +5315,7 @@ class MagicMapper
             $oldObject = $oldEntity;
         }
 
-        $this->logger->debug('[MagicMapper] updateObjectEntity called - UUID: '.$entity->getUuid());
+        $this->logger->debug('[MagicMapper] updateObjectEntity called - UUID: '.$entity->getUuid(), ['file' => __FILE__, 'line' => __LINE__]);
 
         // Dispatch updating event for audit trails.
         $event = new ObjectUpdatingEvent(newObject: $entity, oldObject: $oldObject);
@@ -5251,7 +5329,7 @@ class MagicMapper
         }
 
         $this->logger->debug(
-            'Updating object entity in register+schema table',
+            '[MagicMapper] Updating object entity in register+schema table',
             [
                 'uuid'      => $uuid,
                 'tableName' => $tableName,
@@ -5279,7 +5357,7 @@ class MagicMapper
             );
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             // Fallback: return input entity if re-fetch fails.
-            $this->logger->warning('[MagicMapper] Failed to re-fetch updated entity, returning input entity');
+            $this->logger->warning('[MagicMapper] Failed to re-fetch updated entity, returning input entity', ['file' => __FILE__, 'line' => __LINE__]);
             $updatedEntity = $entity;
         }
 
@@ -5321,7 +5399,7 @@ class MagicMapper
         }
 
         $this->logger->debug(
-            'Deleting object entity from register+schema table',
+            '[MagicMapper] Deleting object entity from register+schema table',
             [
                 'uuid'       => $uuid,
                 'tableName'  => $tableName,
@@ -5337,7 +5415,7 @@ class MagicMapper
             $qb->executeStatement();
 
             $this->logger->info(
-                'Hard deleted object from register+schema table',
+                '[MagicMapper] Hard deleted object from register+schema table',
                 [
                     'uuid'      => $uuid,
                     'tableName' => $tableName,
@@ -5356,7 +5434,7 @@ class MagicMapper
             $this->updateObjectEntity(entity: $entity, register: $register, schema: $schema);
 
             $this->logger->info(
-                'Soft deleted object in register+schema table',
+                '[MagicMapper] Soft deleted object in register+schema table',
                 [
                     'uuid'      => $uuid,
                     'tableName' => $tableName,
@@ -5395,7 +5473,7 @@ class MagicMapper
         $schemaId   = $schema->getId();
 
         $this->logger->info(
-            message: 'Deleting all objects from magic table for schema',
+            message: '[MagicMapper] Deleting all objects from magic table for schema',
             context: [
                 'registerId' => $registerId,
                 'schemaId'   => $schemaId,
@@ -5407,7 +5485,7 @@ class MagicMapper
         // Check if table exists before attempting deletion.
         if ($this->tableExistsForRegisterSchema(register: $register, schema: $schema) === false) {
             $this->logger->warning(
-                message: 'Cannot delete from magic table - table does not exist',
+                message: '[MagicMapper] Cannot delete from magic table - table does not exist',
                 context: [
                     'registerId' => $registerId,
                     'schemaId'   => $schemaId,
@@ -5428,7 +5506,7 @@ class MagicMapper
             $deletedCount = $qb->executeStatement();
 
             $this->logger->info(
-                message: 'Hard deleted objects from magic table',
+                message: '[MagicMapper] Hard deleted objects from magic table',
                 context: [
                     'deletedCount' => $deletedCount,
                     'registerId'   => $registerId,
@@ -5458,7 +5536,7 @@ class MagicMapper
             $deletedCount = $qb->executeStatement();
 
             $this->logger->info(
-                message: 'Soft deleted objects in magic table',
+                message: '[MagicMapper] Soft deleted objects in magic table',
                 context: [
                     'deletedCount' => $deletedCount,
                     'registerId'   => $registerId,
@@ -5496,8 +5574,10 @@ class MagicMapper
         $this->updateObjectEntity(entity: $entity, register: $register, schema: $schema);
 
         $this->logger->info(
-            'Locked object in register+schema table',
+            '[MagicMapper] Locked object in register+schema table',
             [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'uuid'     => $entity->getUuid(),
                 'duration' => $lockDuration,
             ]
@@ -5532,7 +5612,7 @@ class MagicMapper
         $this->updateObjectEntity(entity: $entity, register: $register, schema: $schema);
 
         $this->logger->info(
-            'Unlocked object in register+schema table',
+            '[MagicMapper] Unlocked object in register+schema table',
             ['uuid' => $entity->getUuid()]
         );
 

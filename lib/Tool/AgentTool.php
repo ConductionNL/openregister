@@ -271,7 +271,7 @@ class AgentTool extends AbstractTool implements ToolInterface
     public function getAgent(string $uuid): array
     {
         try {
-            $this->logger->info('[AgentTool] Getting agent', ['uuid' => $uuid]);
+            $this->logger->info('[AgentTool] Getting agent', ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid]);
 
             // Find agent (RBAC enforced in mapper).
             $agent = $this->agentMapper->findByUuid(uuid: $uuid);
@@ -286,6 +286,8 @@ class AgentTool extends AbstractTool implements ToolInterface
             $this->logger->error(
                 '[AgentTool] Failed to get agent',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'uuid'  => $uuid,
                     'error' => $e->getMessage(),
                 ]
@@ -315,7 +317,7 @@ class AgentTool extends AbstractTool implements ToolInterface
         ?string $systemPrompt=null
     ): array {
         try {
-            $this->logger->info('[AgentTool] Creating agent', ['name' => $name]);
+            $this->logger->info('[AgentTool] Creating agent', ['file' => __FILE__, 'line' => __LINE__, 'name' => $name]);
 
             // Create agent entity.
             $agent = new Agent();
@@ -349,6 +351,8 @@ class AgentTool extends AbstractTool implements ToolInterface
             $this->logger->error(
                 '[AgentTool] Failed to create agent',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'name'  => $name,
                     'error' => $e->getMessage(),
                 ]
@@ -378,7 +382,7 @@ class AgentTool extends AbstractTool implements ToolInterface
         ?string $systemPrompt=null
     ): array {
         try {
-            $this->logger->info('[AgentTool] Updating agent', ['uuid' => $uuid]);
+            $this->logger->info('[AgentTool] Updating agent', ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid]);
 
             // Find agent (RBAC enforced in mapper).
             $agent = $this->agentMapper->findByUuid(uuid: $uuid);
@@ -409,6 +413,8 @@ class AgentTool extends AbstractTool implements ToolInterface
             $this->logger->error(
                 '[AgentTool] Failed to update agent',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'uuid'  => $uuid,
                     'error' => $e->getMessage(),
                 ]
@@ -429,7 +435,7 @@ class AgentTool extends AbstractTool implements ToolInterface
     public function deleteAgent(string $uuid): array
     {
         try {
-            $this->logger->info('[AgentTool] Deleting agent', ['uuid' => $uuid]);
+            $this->logger->info('[AgentTool] Deleting agent', ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid]);
 
             // Find agent (RBAC enforced in mapper).
             $agent = $this->agentMapper->findByUuid(uuid: $uuid);
@@ -448,6 +454,8 @@ class AgentTool extends AbstractTool implements ToolInterface
             $this->logger->error(
                 '[AgentTool] Failed to delete agent',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'uuid'  => $uuid,
                     'error' => $e->getMessage(),
                 ]

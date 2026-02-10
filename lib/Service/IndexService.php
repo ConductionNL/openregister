@@ -350,6 +350,8 @@ class IndexService
             $this->logger->error(
                 '[IndexService] Failed to check availability',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -374,6 +376,8 @@ class IndexService
             $this->logger->error(
                 '[IndexService] Connection test failed',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -398,6 +402,8 @@ class IndexService
             $this->logger->error(
                 '[IndexService] Failed to get stats',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -439,6 +445,8 @@ class IndexService
             $this->logger->error(
                 '[IndexService] Failed to get dashboard stats',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -463,6 +471,8 @@ class IndexService
             $this->logger->error(
                 '[IndexService] Optimization failed',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -485,6 +495,8 @@ class IndexService
             $this->logger->error(
                 '[IndexService] Failed to clear index',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'collection' => $collectionName,
                     'error'      => $e->getMessage(),
                 ]
@@ -510,6 +522,8 @@ class IndexService
             $this->logger->error(
                 '[IndexService] Failed to get config',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );

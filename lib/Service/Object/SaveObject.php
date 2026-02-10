@@ -759,7 +759,7 @@ class SaveObject
                 // Look up the target schema from the property configuration.
                 $propertyConfig = $schemaProperties[$baseProperty] ?? null;
                 if ($propertyConfig === null) {
-                    $this->logger->debug('[SaveObject] No property config for relation', ['property' => $baseProperty]);
+                    $this->logger->debug('[SaveObject] No property config for relation', ['file' => __FILE__, 'line' => __LINE__, 'property' => $baseProperty]);
                     continue;
                 }
 
@@ -777,7 +777,7 @@ class SaveObject
                 }
 
                 if (empty($targetSchemaSlug) === true) {
-                    $this->logger->debug('[SaveObject] No target schema in $ref for relation', ['property' => $baseProperty]);
+                    $this->logger->debug('[SaveObject] No target schema in $ref for relation', ['file' => __FILE__, 'line' => __LINE__, 'property' => $baseProperty]);
                     continue;
                 }
 
@@ -3020,13 +3020,13 @@ class SaveObject
             }//end if
 
             if (empty($publishedValue) === true) {
-                $this->logger->debug('[SaveObject] Published value is empty, setting to null');
+                $this->logger->debug('[SaveObject] Published value is empty, setting to null', ['file' => __FILE__, 'line' => __LINE__]);
                 $objectEntity->setPublished(null);
             }//end if
         }//end if
 
         if (array_key_exists('published', $selfData) === false) {
-            $this->logger->debug('[SaveObject] No published field found in selfData, setting to existing value');
+            $this->logger->debug('[SaveObject] No published field found in selfData, setting to existing value', ['file' => __FILE__, 'line' => __LINE__]);
             $objectEntity->setPublished($objectEntity->getPublished());
         }//end if
 

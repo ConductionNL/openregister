@@ -110,7 +110,7 @@ class ObjectTextExtractionJob extends QueuedJob
         $objectSettings = json_decode($objMgmtValue, true);
         if (($objectSettings['objectExtractionMode'] ?? 'background') === 'none') {
             $message = '[ObjectTextExtractionJob] Object extraction is disabled. Not extracting text from objects.';
-            $this->logger->info($message);
+            $this->logger->info($message, ['file' => __FILE__, 'line' => __LINE__]);
             return;
         }
 
@@ -119,6 +119,8 @@ class ObjectTextExtractionJob extends QueuedJob
             $this->logger->error(
                 '[ObjectTextExtractionJob] Missing object_id in job arguments',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'argument' => $argument,
                 ]
             );
@@ -130,6 +132,8 @@ class ObjectTextExtractionJob extends QueuedJob
         $this->logger->info(
             '[ObjectTextExtractionJob] Starting text extraction',
             [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'object_id' => $objectId,
                 'job_id'    => $this->getId(),
             ]
@@ -146,6 +150,8 @@ class ObjectTextExtractionJob extends QueuedJob
             $this->logger->info(
                 '[ObjectTextExtractionJob] Text extraction completed successfully',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'object_id'          => $objectId,
                     'processing_time_ms' => $processingTime,
                 ]
@@ -156,6 +162,8 @@ class ObjectTextExtractionJob extends QueuedJob
             $this->logger->error(
                 '[ObjectTextExtractionJob] Exception during text extraction',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'object_id'          => $objectId,
                     'error'              => $e->getMessage(),
                     'trace'              => $e->getTraceAsString(),

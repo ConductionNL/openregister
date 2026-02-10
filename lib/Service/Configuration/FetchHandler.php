@@ -94,11 +94,11 @@ class FetchHandler
     public function getJSONfromURL(string $url): array|JSONResponse
     {
         try {
-            $this->logger->debug("Fetching data from URL: {$url}");
+            $this->logger->debug("[FetchHandler] Fetching data from URL: {$url}", ['file' => __FILE__, 'line' => __LINE__]);
             $response = $this->client->request('GET', $url);
         } catch (GuzzleException $e) {
             $errorMessage = 'Failed to do a GET api-call on url: '.$url.' '.$e->getMessage();
-            $this->logger->error($errorMessage);
+            $this->logger->error('[FetchHandler] '.$errorMessage, ['file' => __FILE__, 'line' => __LINE__]);
             return new JSONResponse(data: ['error' => $errorMessage], statusCode: 400);
         }
 
@@ -108,14 +108,14 @@ class FetchHandler
 
         if ($phpArray === null) {
             $error = 'Failed to parse response body as JSON or YAML';
-            $this->logger->error($error, ['Content-Type' => $contentType, 'url' => $url]);
+            $this->logger->error('[FetchHandler] '.$error, ['file' => __FILE__, 'line' => __LINE__, 'Content-Type' => $contentType, 'url' => $url]);
             return new JSONResponse(
                 data: ['error' => $error, 'Content-Type' => $contentType],
                 statusCode: 400
             );
         }
 
-        $this->logger->debug("Successfully fetched and parsed data from URL: {$url}");
+        $this->logger->debug("[FetchHandler] Successfully fetched and parsed data from URL: {$url}", ['file' => __FILE__, 'line' => __LINE__]);
         return $phpArray;
     }//end getJSONfromURL()
 
@@ -148,7 +148,7 @@ class FetchHandler
         }
 
         try {
-            $this->logger->info("Fetching remote configuration from: {$sourceUrl}");
+            $this->logger->info("[FetchHandler] Fetching remote configuration from: {$sourceUrl}", ['file' => __FILE__, 'line' => __LINE__]);
 
             // Use getJSONfromURL to fetch and parse the remote configuration.
             $remoteData = $this->getJSONfromURL($sourceUrl);
@@ -160,18 +160,19 @@ class FetchHandler
             $schemaCount   = count($remoteData['components']['schemas'] ?? []);
             $registerCount = count($remoteData['components']['registers'] ?? []);
             $this->logger->info(
-                "Successfully fetched remote configuration with {$schemaCount} schemas and {$registerCount} registers"
+                "[FetchHandler] Successfully fetched remote configuration with {$schemaCount} schemas and {$registerCount} registers",
+                ['file' => __FILE__, 'line' => __LINE__]
             );
 
             return $remoteData;
         } catch (GuzzleException $e) {
-            $this->logger->error("Failed to fetch remote configuration: ".$e->getMessage());
+            $this->logger->error("[FetchHandler] Failed to fetch remote configuration: ".$e->getMessage(), ['file' => __FILE__, 'line' => __LINE__]);
             return new JSONResponse(
                 data: ['error' => 'Failed to fetch remote configuration: '.$e->getMessage()],
                 statusCode: 500
             );
         } catch (\Exception $e) {
-            $this->logger->error("Unexpected error fetching remote configuration: ".$e->getMessage());
+            $this->logger->error("[FetchHandler] Unexpected error fetching remote configuration: ".$e->getMessage(), ['file' => __FILE__, 'line' => __LINE__]);
             return new JSONResponse(
                 data: ['error' => 'Unexpected error: '.$e->getMessage()],
                 statusCode: 500
@@ -207,7 +208,7 @@ class FetchHandler
                     return $decoded;
                 }
             } catch (\Exception $e) {
-                $this->logger->warning("Failed to parse as YAML: ".$e->getMessage());
+                $this->logger->warning("[FetchHandler] Failed to parse as YAML: ".$e->getMessage(), ['file' => __FILE__, 'line' => __LINE__]);
             }
         }
 
@@ -216,7 +217,7 @@ class FetchHandler
             try {
                 $decoded = Yaml::parse($data);
                 if (is_array($decoded) === true) {
-                    $this->logger->info("Content-Type was JSON but data was successfully parsed as YAML");
+                    $this->logger->info("[FetchHandler] Content-Type was JSON but data was successfully parsed as YAML", ['file' => __FILE__, 'line' => __LINE__]);
                     return $decoded;
                 }
             } catch (\Exception $e) {

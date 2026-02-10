@@ -187,11 +187,11 @@ class RegistersController extends Controller
         IAppManager $appManager,
         OasService $oasService
     ) {
-        $this->logger->debug('RegistersController constructor started.');
+        $this->logger->debug('[RegistersController] Constructor started.', ['file' => __FILE__, 'line' => __LINE__]);
         parent::__construct(appName: $appName, request: $request);
-        $this->logger->debug('Parent constructor called.');
+        $this->logger->debug('[RegistersController] Parent constructor called.', ['file' => __FILE__, 'line' => __LINE__]);
         $this->configurationService = $configurationService;
-        $this->logger->debug('ConfigurationService assigned.');
+        $this->logger->debug('[RegistersController] ConfigurationService assigned.', ['file' => __FILE__, 'line' => __LINE__]);
         $this->auditTrailMapper = $auditTrailMapper;
         $this->exportService    = $exportService;
         $this->importService    = $importService;
@@ -200,7 +200,7 @@ class RegistersController extends Controller
         $this->githubService    = $githubService;
         $this->appManager       = $appManager;
         $this->oasService       = $oasService;
-        $this->logger->debug('RegistersController constructor completed.');
+        $this->logger->debug('[RegistersController] Constructor completed.', ['file' => __FILE__, 'line' => __LINE__]);
     }//end __construct()
 
     /**
@@ -273,7 +273,7 @@ class RegistersController extends Controller
                         } catch (DoesNotExistException $e) {
                             // Schema not found, skip it.
                             $ctx = ['schemaId' => $schemaId];
-                            $this->logger->warning(message: 'Schema not found for expansion', context: $ctx);
+                            $this->logger->warning(message: '[RegistersController] Schema not found for expansion', context: array_merge(['file' => __FILE__, 'line' => __LINE__], $ctx));
                         }
                     }
 
@@ -287,23 +287,23 @@ class RegistersController extends Controller
                             schemas: $expandedSchemas
                         );
 
-                        $this->logger->debug('RegistersController: Schema counts for register '.$register['id'].': '.json_encode($schemaCounts));
+                        $this->logger->debug('[RegistersController] Schema counts for register '.$register['id'].': '.json_encode($schemaCounts), ['file' => __FILE__, 'line' => __LINE__]);
 
                         // Add stats to each expanded schema
                         foreach ($register['schemas'] as &$schema) {
                             $schemaId = $schema['id'] ?? null;
-                            $this->logger->debug("RegistersController: Processing schema {$schemaId}, has count: ".(isset($schemaCounts[$schemaId]) ? 'yes' : 'no'));
+                            $this->logger->debug("[RegistersController] Processing schema {$schemaId}, has count: ".(isset($schemaCounts[$schemaId]) ? 'yes' : 'no'), ['file' => __FILE__, 'line' => __LINE__]);
                             if ($schemaId !== null && isset($schemaCounts[$schemaId]) === true) {
                                 $schema['stats'] = [
                                     'objects' => $schemaCounts[$schemaId],
                                 ];
-                                $this->logger->debug("RegistersController: Set stats for schema {$schemaId}: ".json_encode($schema['stats']));
+                                $this->logger->debug("[RegistersController] Set stats for schema {$schemaId}: ".json_encode($schema['stats']), ['file' => __FILE__, 'line' => __LINE__]);
                             } else {
                                 // No objects found for this schema
                                 $schema['stats'] = [
                                     'objects' => ['total' => 0],
                                 ];
-                                $this->logger->debug("RegistersController: No count for schema {$schemaId}, set to 0");
+                                $this->logger->debug("[RegistersController] No count for schema {$schemaId}, set to 0", ['file' => __FILE__, 'line' => __LINE__]);
                             }
                         }
 
@@ -740,8 +740,10 @@ class RegistersController extends Controller
             }
 
             $this->logger->info(
-                'Publishing register OAS to GitHub',
+                '[RegistersController] Publishing register OAS to GitHub',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'register_id'   => $id,
                     'register_slug' => $register->getSlug(),
                     'owner'         => $owner,
@@ -763,7 +765,7 @@ class RegistersController extends Controller
                 $fileSha = $this->githubService->getFileSha(owner: $owner, repo: $repo, path: $path, branch: $branch);
             } catch (Exception $e) {
                 // File doesn't exist, which is fine for new files.
-                $this->logger->debug('File does not exist, will create new file', ['path' => $path]);
+                $this->logger->debug('[RegistersController] File does not exist, will create new file', ['file' => __FILE__, 'line' => __LINE__, 'path' => $path]);
             }
 
             // Publish to GitHub.
@@ -778,8 +780,10 @@ class RegistersController extends Controller
             );
 
             $this->logger->info(
-                "Successfully published register OAS {$register->getTitle()} to GitHub",
+                "[RegistersController] Successfully published register OAS {$register->getTitle()} to GitHub",
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'owner'    => $owner,
                     'repo'     => $repo,
                     'branch'   => $branch,
@@ -795,8 +799,10 @@ class RegistersController extends Controller
                 $defaultBranch = $repoInfo['default_branch'] ?? 'main';
             } catch (Exception $e) {
                 $this->logger->warning(
-                    'Could not fetch repository default branch',
+                    '[RegistersController] Could not fetch repository default branch',
                     [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'owner' => $owner,
                         'repo'  => $repo,
                         'error' => $e->getMessage(),
@@ -837,10 +843,10 @@ class RegistersController extends Controller
                 statusCode: 200
             );
         } catch (DoesNotExistException $e) {
-            $this->logger->error('Register not found for publishing', ['register_id' => $id]);
+            $this->logger->error('[RegistersController] Register not found for publishing', ['file' => __FILE__, 'line' => __LINE__, 'register_id' => $id]);
             return new JSONResponse(data: ['error' => 'Register not found'], statusCode: 404);
         } catch (Exception $e) {
-            $this->logger->error('Failed to publish register OAS to GitHub: '.$e->getMessage());
+            $this->logger->error('[RegistersController] Failed to publish register OAS to GitHub: '.$e->getMessage(), ['file' => __FILE__, 'line' => __LINE__]);
 
             return new JSONResponse(data: ['error' => 'Failed to publish register OAS: '.$e->getMessage()], statusCode: 500);
         }//end try
@@ -899,8 +905,10 @@ class RegistersController extends Controller
 
             // Log import parameters for debugging.
             $this->logger->debug(
-                'Import parameters received',
+                '[RegistersController] Import parameters received',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'includeObjects' => $includeObjects,
                     'validation'     => $validation,
                     'events'         => $events,
@@ -1244,8 +1252,10 @@ class RegistersController extends Controller
             $updatedRegister = $this->registerMapper->update($register);
 
             $this->logger->info(
-                'Register published',
+                '[RegistersController] Register published',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'register_id'    => $id,
                     'published_date' => $date->format('Y-m-d H:i:s'),
                 ]
@@ -1256,8 +1266,10 @@ class RegistersController extends Controller
             return new JSONResponse(['error' => 'Register not found'], 404);
         } catch (Exception $e) {
             $this->logger->error(
-                'Failed to publish register',
+                '[RegistersController] Failed to publish register',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'register_id' => $id,
                     'error'       => $e->getMessage(),
                 ]
@@ -1341,8 +1353,10 @@ class RegistersController extends Controller
             $updatedRegister = $this->registerMapper->update($register);
 
             $this->logger->info(
-                'Register depublished',
+                '[RegistersController] Register depublished',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'register_id'      => $id,
                     'depublished_date' => $date->format('Y-m-d H:i:s'),
                 ]
@@ -1353,8 +1367,10 @@ class RegistersController extends Controller
             return new JSONResponse(['error' => 'Register not found'], 404);
         } catch (Exception $e) {
             $this->logger->error(
-                'Failed to depublish register',
+                '[RegistersController] Failed to depublish register',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'register_id' => $id,
                     'error'       => $e->getMessage(),
                 ]

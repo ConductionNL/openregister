@@ -119,7 +119,7 @@ class SolrOperationsController extends Controller
             $setup = new SetupHandler(solrService: $guzzleSolrService, logger: $logger);
 
             // **IMPROVED LOGGING**: Log setup initialization.
-            $logger->info(message: '🏗️ SolrSetup instance created, starting setup process');
+            $logger->info(message: '🏗️ SolrSetup instance created, starting setup process', context: ['file' => __FILE__, 'line' => __LINE__]);
 
             // Run setup.
             $setupResult = $setup->setupSolr();
@@ -294,7 +294,7 @@ class SolrOperationsController extends Controller
                     ];
 
                     // **IMPROVED LOGGING**: Log setup progress and error details.
-                    $logger->error('📋 SOLR setup failure details', $detailedError);
+                    $logger->error('📋 SOLR setup failure details', array_merge(['file' => __FILE__, 'line' => __LINE__], $detailedError));
                 } catch (Exception $progressException) {
                     $logger->warning(
                         message: 'Failed to get setup progress details',

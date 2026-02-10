@@ -812,8 +812,10 @@ class ImportService
         if (empty($allObjects) === false) {
             // Log publish processing for debugging.
             $this->logger->debug(
-                message: 'CSV import processing objects',
+                message: '[ImportService] CSV import processing objects',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'objectCount' => count($allObjects),
                     'publish'     => $publish,
                 ]
@@ -821,15 +823,23 @@ class ImportService
 
             // Add publish date to all objects if publish is enabled.
             if ($publish !== true) {
-                $this->logger->debug(message: 'Publish disabled for CSV import, not adding publish dates');
+                $this->logger->debug(
+                    message: '[ImportService] Publish disabled for CSV import, not adding publish dates',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
+                    ]
+                );
             }
 
             if ($publish === true) {
                 $publishDate = (new DateTime('now'))->format('c');
                 // ISO 8601 format.
                 $this->logger->debug(
-                    message: 'Adding publish date to CSV import objects',
+                    message: '[ImportService] Adding publish date to CSV import objects',
                     context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'publishDate' => $publishDate,
                         'objectCount' => count($allObjects),
                     ]
@@ -839,8 +849,10 @@ class ImportService
                 // Log first object structure for debugging.
                 if (empty($allObjects[0]['@self']) === false) {
                     $this->logger->debug(
-                        message: 'First object @self structure after adding publish date',
+                        message: '[ImportService] First object @self structure after adding publish date',
                         context: [
+                            'file' => __FILE__,
+                            'line' => __LINE__,
                             'selfData' => $allObjects[0]['@self'],
                         ]
                     );
@@ -967,6 +979,8 @@ class ImportService
         $this->logger->debug(
                 '[ImportService] Processing CSV row',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'isAdmin'  => $isAdmin,
                     'username' => $currentUser ? $currentUser->getUID() : 'null',
                 ]
@@ -1577,7 +1591,13 @@ class ImportService
             $totalImported = $this->calculateTotalImported($importSummary);
 
             if ($totalImported === 0) {
-                $this->logger->info(message: 'Skipping SOLR warmup - no objects were imported');
+                $this->logger->info(
+                    message: '[ImportService] Skipping SOLR warmup - no objects were imported',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
+                    ]
+                );
                 return false;
             }
 
@@ -1599,8 +1619,10 @@ class ImportService
             $this->jobList->scheduleAfter(SolrWarmupJob::class, $executeAfter, $jobArguments);
 
             $this->logger->info(
-                message: '🔥 SOLR Warmup Job Scheduled',
+                message: '[ImportService] 🔥 SOLR Warmup Job Scheduled',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'total_imported' => $totalImported,
                     'warmup_mode'    => $mode,
                     'max_objects'    => $maxObjects,
@@ -1613,8 +1635,10 @@ class ImportService
             return true;
         } catch (Exception $e) {
             $this->logger->error(
-                message: 'Failed to schedule SOLR warmup job',
+                message: '[ImportService] Failed to schedule SOLR warmup job',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error'          => $e->getMessage(),
                     'import_summary' => $importSummary,
                 ]
@@ -1707,8 +1731,10 @@ class ImportService
 
         // 30 second delay by default
         $this->logger->info(
-            message: 'Scheduling smart SOLR warmup',
+            message: '[ImportService] Scheduling smart SOLR warmup',
             context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'total_imported'   => $totalImported,
                 'recommended_mode' => $mode,
                 'max_objects'      => $maxObjects,

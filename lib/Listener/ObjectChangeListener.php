@@ -85,6 +85,8 @@ class ObjectChangeListener implements IEventListener
         $this->logger->debug(
             '[ObjectChangeListener] Object event detected',
             [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'event_type'  => get_class($event),
                 'object_id'   => $objectId,
                 'object_uuid' => $object->getUuid(),
@@ -98,7 +100,7 @@ class ObjectChangeListener implements IEventListener
 
             // Skip extraction if no object ID (e.g., magic mapper objects use UUID only).
             if ($objectId === null) {
-                $this->logger->debug('[ObjectChangeListener] Skipping extraction for object without ID (magic mapper?)');
+                $this->logger->debug('[ObjectChangeListener] Skipping extraction for object without ID (magic mapper?)', ['file' => __FILE__, 'line' => __LINE__]);
                 return;
             }
 
@@ -162,6 +164,8 @@ class ObjectChangeListener implements IEventListener
         $this->logger->info(
             '[ObjectChangeListener] Immediate mode - processing synchronously',
             [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'object_id'   => $objectId,
                 'object_uuid' => $objectUuid,
             ]
@@ -171,12 +175,14 @@ class ObjectChangeListener implements IEventListener
             $this->textExtractSvc->extractObject(objectId: $objectId, forceReExtract: false);
             $this->logger->info(
                 '[ObjectChangeListener] Immediate extraction completed',
-                ['object_id' => $objectId]
+                ['file' => __FILE__, 'line' => __LINE__, 'object_id' => $objectId]
             );
         } catch (\Exception $e) {
             $this->logger->error(
                 '[ObjectChangeListener] Immediate extraction failed',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'object_id' => $objectId,
                     'error'     => $e->getMessage(),
                 ]
@@ -197,6 +203,8 @@ class ObjectChangeListener implements IEventListener
         $this->logger->info(
             '[ObjectChangeListener] Background mode - queueing extraction job',
             [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'object_id'   => $objectId,
                 'object_uuid' => $objectUuid,
             ]
@@ -206,12 +214,14 @@ class ObjectChangeListener implements IEventListener
             $this->jobList->add(job: ObjectTextExtractionJob::class, argument: ['object_id' => $objectId]);
             $this->logger->debug(
                 '[ObjectChangeListener] Background extraction job queued',
-                ['object_id' => $objectId]
+                ['file' => __FILE__, 'line' => __LINE__, 'object_id' => $objectId]
             );
         } catch (\Exception $e) {
             $this->logger->error(
                 '[ObjectChangeListener] Failed to queue background job',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'object_id' => $objectId,
                     'error'     => $e->getMessage(),
                 ]
@@ -230,7 +240,7 @@ class ObjectChangeListener implements IEventListener
     {
         $this->logger->debug(
             '[ObjectChangeListener] Cron mode - skipping, will be processed by scheduled job',
-            ['object_id' => $objectId]
+            ['file' => __FILE__, 'line' => __LINE__, 'object_id' => $objectId]
         );
     }//end processCronMode()
 
@@ -245,7 +255,7 @@ class ObjectChangeListener implements IEventListener
     {
         $this->logger->debug(
             '[ObjectChangeListener] Manual mode - skipping, requires manual trigger',
-            ['object_id' => $objectId]
+            ['file' => __FILE__, 'line' => __LINE__, 'object_id' => $objectId]
         );
     }//end processManualMode()
 
@@ -262,6 +272,8 @@ class ObjectChangeListener implements IEventListener
         $this->logger->warning(
             '[ObjectChangeListener] Unknown extraction mode, defaulting to background',
             [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'object_id'       => $objectId,
                 'extraction_mode' => $mode,
             ]

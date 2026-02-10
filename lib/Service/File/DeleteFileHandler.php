@@ -89,12 +89,12 @@ class DeleteFileHandler
         }
 
         if ($file === null) {
-            $this->logger->error(message: 'File '.$fileName.' not found for object '.($object?->getId() ?? 'unknown'));
+            $this->logger->error(message: '[DeleteFileHandler] File '.$fileName.' not found for object '.($object?->getId() ?? 'unknown'), context: ['file' => __FILE__, 'line' => __LINE__]);
             return false;
         }
 
         if ($file instanceof File === false) {
-            $this->logger->error(message: 'File is not a File instance, it\'s a: '.get_class($file));
+            $this->logger->error(message: '[DeleteFileHandler] File is not a File instance, it\'s a: '.get_class($file), context: ['file' => __FILE__, 'line' => __LINE__]);
             return false;
         }
 
@@ -104,7 +104,7 @@ class DeleteFileHandler
         try {
             $file->delete();
         } catch (Exception $e) {
-            $this->logger->error(message: 'Failed to delete file: '.$e->getMessage());
+            $this->logger->error(message: '[DeleteFileHandler] Failed to delete file: '.$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
             return false;
         }
 

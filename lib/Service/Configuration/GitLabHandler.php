@@ -158,8 +158,10 @@ class GitLabHandler
             }
 
             $this->logger->info(
-                message: 'Searching GitLab for OpenRegister configurations',
+                message: '[GitLabHandler] Searching GitLab for OpenRegister configurations',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     '_search' => $search,
                     'query'   => $searchQuery,
                     'page'    => $page,
@@ -216,6 +218,8 @@ class GitLabHandler
             $this->logger->error(
                 message: 'GitLab API search failed',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error'   => $e->getMessage(),
                     '_search' => $search,
                     'query'   => $searchQuery ?? '',
@@ -244,6 +248,8 @@ class GitLabHandler
             $this->logger->info(
                 message: 'Fetching branches from GitLab',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'project_id' => $projectId,
                 ]
             );
@@ -275,6 +281,8 @@ class GitLabHandler
             $this->logger->error(
                 message: 'GitLab API get branches failed',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error'      => $e->getMessage(),
                     'project_id' => $projectId,
                 ]
@@ -301,6 +309,8 @@ class GitLabHandler
             $this->logger->info(
                 message: 'Fetching file from GitLab',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'project_id' => $projectId,
                     'path'       => $path,
                     'ref'        => $ref,
@@ -331,6 +341,8 @@ class GitLabHandler
             $this->logger->error(
                 message: 'GitLab API get file content failed',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error'      => $e->getMessage(),
                     'project_id' => $projectId,
                     'path'       => $path,
@@ -366,6 +378,8 @@ class GitLabHandler
             $this->logger->info(
                 message: 'Listing configuration files from GitLab',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'project_id' => $projectId,
                     'ref'        => $ref,
                     'path'       => $path,
@@ -420,6 +434,8 @@ class GitLabHandler
             $this->logger->error(
                 message: 'GitLab API list files failed',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error'      => $e->getMessage(),
                     'project_id' => $projectId,
                     'ref'        => $ref,
@@ -450,6 +466,8 @@ class GitLabHandler
             $this->logger->info(
                 message: 'Fetching GitLab project by path',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'namespace' => $namespace,
                     'project'   => $project,
                 ]
@@ -468,6 +486,8 @@ class GitLabHandler
             $this->logger->error(
                 message: 'GitLab API get project failed',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error'     => $e->getMessage(),
                     'namespace' => $namespace,
                     'project'   => $project,
@@ -502,6 +522,8 @@ class GitLabHandler
                 $this->logger->debug(
                     message: 'File does not contain required OpenRegister structure',
                     context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'path' => $path,
                     ]
                 );
@@ -513,6 +535,8 @@ class GitLabHandler
             $this->logger->debug(
                 message: 'Failed to parse configuration file',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'path'  => $path,
                     'error' => $e->getMessage(),
                 ]

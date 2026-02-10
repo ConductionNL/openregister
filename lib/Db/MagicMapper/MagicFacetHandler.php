@@ -170,7 +170,7 @@ class MagicFacetHandler
             try {
                 $this->distributedLabelCache = $this->cacheFactory->createDistributed('openregister_facet_labels');
             } catch (\Exception $e) {
-                $this->logger->warning('Failed to create distributed facet label cache: '.$e->getMessage());
+                $this->logger->warning('[MagicFacetHandler] Failed to create distributed facet label cache: '.$e->getMessage(), ['file' => __FILE__, 'line' => __LINE__]);
             }
         }
     }//end __construct()
@@ -579,8 +579,8 @@ class MagicFacetHandler
             return ['type' => 'terms', 'buckets' => $buckets];
         } catch (\Exception $e) {
             $this->logger->warning(
-                'MagicFacetHandler: UNION facet query failed',
-                ['field' => $field, 'error' => $e->getMessage(), 'sql' => $sql]
+                '[MagicFacetHandler] UNION facet query failed',
+                ['file' => __FILE__, 'line' => __LINE__, 'field' => $field, 'error' => $e->getMessage(), 'sql' => $sql]
             );
             return ['type' => 'terms', 'buckets' => []];
         }//end try
@@ -747,8 +747,8 @@ class MagicFacetHandler
             return ['type' => 'date_histogram', 'interval' => $interval, 'buckets' => $buckets];
         } catch (\Exception $e) {
             $this->logger->warning(
-                'MagicFacetHandler: UNION date histogram failed',
-                ['field' => $field, 'error' => $e->getMessage()]
+                '[MagicFacetHandler] UNION date histogram failed',
+                ['file' => __FILE__, 'line' => __LINE__, 'field' => $field, 'error' => $e->getMessage()]
             );
             return ['type' => 'date_histogram', 'interval' => $interval, 'buckets' => []];
         }
@@ -978,8 +978,8 @@ class MagicFacetHandler
         // Check if column exists in table before querying.
         if ($this->columnExists(tableName: $tableName, columnName: $field) === false) {
             $this->logger->debug(
-                'MagicFacetHandler: Column does not exist for facet',
-                ['tableName' => $tableName, 'field' => $field]
+                '[MagicFacetHandler] Column does not exist for facet',
+                ['file' => __FILE__, 'line' => __LINE__, 'tableName' => $tableName, 'field' => $field]
             );
             $result = [
                 'type'    => 'terms',
@@ -1271,8 +1271,8 @@ class MagicFacetHandler
             return isset($this->columnCache[$fullTableNameLower][$columnNameLower]);
         } catch (\Exception $e) {
             $this->logger->warning(
-                'MagicFacetHandler: Failed to check column existence',
-                ['tableName' => $tableName, 'column' => $columnName, 'error' => $e->getMessage()]
+                '[MagicFacetHandler] Failed to check column existence',
+                ['file' => __FILE__, 'line' => __LINE__, 'tableName' => $tableName, 'column' => $columnName, 'error' => $e->getMessage()]
             );
             return false;
         }//end try
@@ -1659,6 +1659,8 @@ class MagicFacetHandler
                 $this->logger->debug(
                         'batchResolveUuidLabels: All labels from in-memory field cache',
                         [
+                            'file' => __FILE__,
+                            'line' => __LINE__,
                             'field'   => $field,
                             'count'   => count($result),
                             'time_ms' => round((microtime(true) - $startTime) * 1000, 2),
@@ -1694,6 +1696,8 @@ class MagicFacetHandler
                         $this->logger->debug(
                                 'batchResolveUuidLabels: All labels from distributed cache',
                                 [
+                                    'file' => __FILE__,
+                                    'line' => __LINE__,
                                     'field'   => $field,
                                     'count'   => count($result),
                                     'time_ms' => round((microtime(true) - $startTime) * 1000, 2),
@@ -1703,7 +1707,7 @@ class MagicFacetHandler
                     }
                 }//end if
             } catch (\Exception $e) {
-                $this->logger->warning('Failed to get facet labels from distributed cache: '.$e->getMessage());
+                $this->logger->warning('[MagicFacetHandler] Failed to get facet labels from distributed cache: '.$e->getMessage(), ['file' => __FILE__, 'line' => __LINE__]);
             }//end try
         }//end if
 
@@ -1742,13 +1746,15 @@ class MagicFacetHandler
                     );
                     $this->warmedFields[$fieldCacheKey] = true;
                 } catch (\Exception $e) {
-                    $this->logger->warning('Failed to persist facet labels to distributed cache: '.$e->getMessage());
+                    $this->logger->warning('[MagicFacetHandler] Failed to persist facet labels to distributed cache: '.$e->getMessage(), ['file' => __FILE__, 'line' => __LINE__]);
                 }
             }
 
             $this->logger->debug(
                     'batchResolveUuidLabels: Resolved via CacheHandler and cached',
                     [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'field'     => $field,
                         'requested' => count($uuids),
                         'resolved'  => count($batchedLabels),

@@ -1243,7 +1243,7 @@ class ValidateObject
             }
         } catch (Exception $e) {
             // Failed to fetch schemas, returning null.
-            $this->logger->debug('Failed to find schema by slug', ['slug' => $slug, 'exception' => $e->getMessage()]);
+            $this->logger->debug('[ValidateObject] Failed to find schema by slug', ['slug' => $slug, 'exception' => $e->getMessage()]);
         }
 
         return null;

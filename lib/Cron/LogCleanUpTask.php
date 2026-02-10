@@ -100,8 +100,10 @@ class LogCleanUpTask extends TimedJob
             // Log the result for monitoring purposes.
             if ($logsCleared === true) {
                 $this->logger->info(
-                    'Successfully cleared expired audit trail logs',
+                    '[LogCleanUpTask] Successfully cleared expired audit trail logs',
                     [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'app' => 'openregister',
                     ]
                 );
@@ -109,16 +111,20 @@ class LogCleanUpTask extends TimedJob
             }
 
             $this->logger->debug(
-                'No expired audit trail logs found to clear',
+                '[LogCleanUpTask] No expired audit trail logs found to clear',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'app' => 'openregister',
                 ]
             );
         } catch (\Exception $e) {
             // Log any errors that occur during cleanup.
             $this->logger->error(
-                'Failed to clear expired audit trail logs: '.$e->getMessage(),
+                '[LogCleanUpTask] Failed to clear expired audit trail logs: '.$e->getMessage(),
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'app'       => 'openregister',
                     'exception' => $e,
                 ]

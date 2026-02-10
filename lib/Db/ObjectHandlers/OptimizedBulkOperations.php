@@ -144,7 +144,7 @@ class OptimizedBulkOperations
         // PERFORMANCE: Minimal logging for large operations.
         if (count($allObjects) > 10000) {
             $this->logger->info(
-                "Starting ultra-fast bulk operations",
+                "[OptimizedBulkOperations] Starting ultra-fast bulk operations",
                 [
                     'total_objects' => count($allObjects),
                     'chunks'        => $totalChunks,
@@ -165,7 +165,7 @@ class OptimizedBulkOperations
 
             $chunkTime = microtime(true) - $chunkStartTime;
             $this->logger->debug(
-                "Processed chunk with optimized bulk operations",
+                "[OptimizedBulkOperations] Processed chunk with optimized bulk operations",
                 [
                     'chunk'              => $chunkIndex + 1,
                     'objects'            => count($chunk),
@@ -188,7 +188,7 @@ class OptimizedBulkOperations
         }
 
         $this->logger->info(
-            "Completed optimized bulk operations",
+            "[OptimizedBulkOperations] Completed optimized bulk operations",
             [
                 'total_objects'           => count($allObjects),
                 'total_time_seconds'      => round($totalTime, 3),
@@ -307,7 +307,7 @@ class OptimizedBulkOperations
         }
 
         $this->logger->info(
-            "BULK SAVE: Executed unified bulk operation with statistics",
+            "[OptimizedBulkOperations] BULK SAVE: Executed unified bulk operation with statistics",
             [
                 'chunk'             => $chunkNumber,
                 'objects_processed' => $totalObjects,
@@ -348,7 +348,7 @@ class OptimizedBulkOperations
 
             // DEBUG: SELECT query completed.
             $this->logger->info(
-                "BULK SAVE: Retrieved complete objects for classification",
+                "[OptimizedBulkOperations] BULK SAVE: Retrieved complete objects for classification",
                 [
                     'chunk'              => $chunkNumber,
                     'uuids_requested'    => count($uuids),

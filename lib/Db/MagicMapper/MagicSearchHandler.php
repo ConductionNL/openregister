@@ -122,7 +122,7 @@ class MagicSearchHandler
             $this->hasPgTrgm = $count > 0;
         } catch (Exception $e) {
             $this->logger->warning(
-                'Failed to check pg_trgm extension availability',
+                '[MagicSearchHandler] Failed to check pg_trgm extension availability',
                 ['error' => $e->getMessage()]
             );
             $this->hasPgTrgm = false;
@@ -1138,7 +1138,7 @@ class MagicSearchHandler
             return $objectEntity;
         } catch (\Exception $e) {
             $this->logger->error(
-                'Failed to convert row to ObjectEntity',
+                '[MagicSearchHandler] Failed to convert row to ObjectEntity',
                 [
                     'error'     => $e->getMessage(),
                     'tableName' => $tableName,

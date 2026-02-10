@@ -89,6 +89,8 @@ class SolrCollectionManager
             $this->logger->error(
                 '[SolrCollectionManager] Failed to check collection existence',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'collection' => $collectionName,
                     'error'      => $e->getMessage(),
                 ]
@@ -116,6 +118,8 @@ class SolrCollectionManager
         $this->logger->warning(
             '[SolrCollectionManager] Tenant collection does not exist',
             [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'tenant_collection' => $tenantCollection,
                 'base_collection'   => $baseCollection,
             ]
@@ -148,6 +152,8 @@ class SolrCollectionManager
         $this->logger->info(
             '[SolrCollectionManager] Creating collection',
             [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'name'      => $name,
                 'configSet' => $configSetName,
             ]
@@ -168,7 +174,7 @@ class SolrCollectionManager
         $data = $this->httpClient->get($url, ['timeout' => 60]);
 
         if (($data['responseHeader']['status'] ?? -1) === 0) {
-            $this->logger->info('[SolrCollectionManager] Collection created successfully', ['collection' => $name]);
+            $this->logger->info('[SolrCollectionManager] Collection created successfully', ['file' => __FILE__, 'line' => __LINE__, 'collection' => $name]);
 
             return [
                 'success'    => true,
@@ -182,6 +188,8 @@ class SolrCollectionManager
         $this->logger->error(
             '[SolrCollectionManager] Collection creation failed',
             [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'collection' => $name,
                 'error'      => $errorMessage,
             ]
@@ -211,7 +219,7 @@ class SolrCollectionManager
                 ];
             }
 
-            $this->logger->info('[SolrCollectionManager] Deleting collection', ['collection' => $targetCollection]);
+            $this->logger->info('[SolrCollectionManager] Deleting collection', ['file' => __FILE__, 'line' => __LINE__, 'collection' => $targetCollection]);
 
             $url  = $this->httpClient->buildSolrBaseUrl().'/admin/collections?'.http_build_query(
                 [
@@ -226,6 +234,8 @@ class SolrCollectionManager
                 $this->logger->info(
                     '[SolrCollectionManager] Collection deleted successfully',
                     [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'collection' => $targetCollection,
                     ]
                 );
@@ -241,6 +251,8 @@ class SolrCollectionManager
             $this->logger->error(
                 '[SolrCollectionManager] Collection deletion failed',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'collection' => $targetCollection,
                     'error'      => $errorMessage,
                 ]
@@ -254,6 +266,8 @@ class SolrCollectionManager
             $this->logger->error(
                 '[SolrCollectionManager] Collection deletion exception',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -282,6 +296,8 @@ class SolrCollectionManager
             $this->logger->error(
                 '[SolrCollectionManager] Failed to list collections',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -305,6 +321,8 @@ class SolrCollectionManager
             $this->logger->error(
                 '[SolrCollectionManager] Failed to list ConfigSets',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -331,6 +349,8 @@ class SolrCollectionManager
             $this->logger->info(
                 '[SolrCollectionManager] Creating ConfigSet',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'name' => $name,
                     'base' => $baseConfigSet,
                 ]
@@ -356,6 +376,8 @@ class SolrCollectionManager
             $this->logger->error(
                 '[SolrCollectionManager] ConfigSet creation failed',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -383,7 +405,7 @@ class SolrCollectionManager
     public function deleteConfigSet(string $name): array
     {
         try {
-            $this->logger->info('[SolrCollectionManager] Deleting ConfigSet', ['name' => $name]);
+            $this->logger->info('[SolrCollectionManager] Deleting ConfigSet', ['file' => __FILE__, 'line' => __LINE__, 'name' => $name]);
 
             $url  = $this->httpClient->buildSolrBaseUrl().'/admin/configs?action=DELETE&name='.$name.'&wt=json';
             $data = $this->httpClient->get($url);
@@ -404,6 +426,8 @@ class SolrCollectionManager
             $this->logger->error(
                 '[SolrCollectionManager] ConfigSet deletion failed',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );

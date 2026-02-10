@@ -107,7 +107,7 @@ class CrudHandler
 
         $this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent($entity));
 
-        $this->logger->info('[CrudHandler] Object inserted', ['id' => $entity->getId()]);
+        $this->logger->info('[CrudHandler] Object inserted', ['file' => __FILE__, 'line' => __LINE__, 'id' => $entity->getId()]);
 
         return $entity;
     }//end insert()
@@ -138,7 +138,7 @@ class CrudHandler
 
         $this->eventDispatcher->dispatchTyped(new ObjectUpdatedEvent($entity, $oldObject));
 
-        $this->logger->info('[CrudHandler] Object updated', ['id' => $entity->getId()]);
+        $this->logger->info('[CrudHandler] Object updated', ['file' => __FILE__, 'line' => __LINE__, 'id' => $entity->getId()]);
 
         return $entity;
     }//end update()
@@ -158,7 +158,7 @@ class CrudHandler
 
         $this->eventDispatcher->dispatchTyped(new ObjectDeletedEvent($entity));
 
-        $this->logger->info('[CrudHandler] Object deleted', ['id' => $entity->getId()]);
+        $this->logger->info('[CrudHandler] Object deleted', ['file' => __FILE__, 'line' => __LINE__, 'id' => $entity->getId()]);
 
         return $result;
     }//end delete()

@@ -229,6 +229,8 @@ abstract class AbstractTool implements ToolInterface
         // Build context array with tool execution metadata.
         // Includes tool name, function name, parameters, agent ID, and user ID.
         $context = [
+            'file' => __FILE__,
+            'line' => __LINE__,
             'tool'       => $this->getName(),
             'function'   => $functionName,
             'parameters' => $parameters,
@@ -252,18 +254,20 @@ abstract class AbstractTool implements ToolInterface
 
         // Log based on severity level.
         // Different log levels help filter and prioritize log entries.
+        // Add file and line to context for all log calls.
+        $contextWithLocation = array_merge(['file' => __FILE__, 'line' => __LINE__], $context);
         switch ($level) {
             case 'error':
                 // Log errors for critical issues that need attention.
-                $this->logger->error($logMessage, $context);
+                $this->logger->error($logMessage, $contextWithLocation);
                 break;
             case 'warning':
                 // Log warnings for non-critical issues.
-                $this->logger->warning($logMessage, $context);
+                $this->logger->warning($logMessage, $contextWithLocation);
                 break;
             default:
                 // Log info for normal operations (default level).
-                $this->logger->info($logMessage, $context);
+                $this->logger->info($logMessage, $contextWithLocation);
                 break;
         }
     }//end log()

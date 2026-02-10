@@ -178,7 +178,7 @@ class CacheHandler
                 $this->nameDistributedCache = $cacheFactory->createDistributed('openregister_object_names');
             } catch (\Exception $e) {
                 $this->logger->warning(
-                    'Failed to initialize distributed caches',
+                    '[CacheHandler] Failed to initialize distributed caches',
                     [
                         'error' => $e->getMessage(),
                     ]
@@ -220,7 +220,7 @@ class CacheHandler
         } catch (\Exception $e) {
             // If IndexService is not available, return null (graceful degradation).
             $this->logger->debug(
-                'IndexService not available',
+                '[CacheHandler] IndexService not available',
                 [
                     'error' => $e->getMessage(),
                 ]
@@ -302,7 +302,7 @@ class CacheHandler
 
         if ($result !== true) {
             $this->logger->error(
-                'Object indexing failed',
+                '[CacheHandler] Object indexing failed',
                 [
                     'object_id' => $object->getId(),
                     'uuid'      => $object->getUuid(),
@@ -314,7 +314,7 @@ class CacheHandler
         }
 
         $this->logger->debug(
-            '🔍 OBJECT INDEXED',
+            '[CacheHandler] 🔍 OBJECT INDEXED',
             [
                 'object_id' => $object->getId(),
                 'uuid'      => $object->getUuid(),
@@ -352,7 +352,7 @@ class CacheHandler
 
             if ($result === true) {
                 $this->logger->debug(
-                    '🗑️  OBJECT REMOVED FROM INDEX',
+                    '[CacheHandler] 🗑️  OBJECT REMOVED FROM INDEX',
                     [
                         'object_id' => $object->getId(),
                         'uuid'      => $object->getUuid(),
@@ -363,7 +363,7 @@ class CacheHandler
             return $result;
         } catch (\Exception $e) {
             $this->logger->warning(
-                'Failed to remove object from search index',
+                '[CacheHandler] Failed to remove object from search index',
                 [
                     'object_id' => $object->getId(),
                     'error'     => $e->getMessage(),
@@ -522,7 +522,7 @@ class CacheHandler
             return $objects;
         } catch (\Exception $e) {
             $this->logger->error(
-                'Bulk preload failed in CacheHandler',
+                '[CacheHandler] Bulk preload failed in CacheHandler',
                 [
                     'exception'         => $e->getMessage(),
                     'identifiersToLoad' => count($identifiersToLoad),
@@ -652,7 +652,7 @@ class CacheHandler
                 $this->queryCache->clear();
             } catch (\Exception $e) {
                 $this->logger->warning(
-                    'Failed to clear search cache',
+                    '[CacheHandler] Failed to clear search cache',
                     [
                         'error'   => $e->getMessage(),
                         'pattern' => $pattern,
@@ -661,7 +661,7 @@ class CacheHandler
             }
         }
 
-        $this->logger->debug(message: '🧹 SEARCH CACHE CLEARED', context: ['pattern' => $pattern ?? 'all']);
+        $this->logger->debug(message: '[CacheHandler] 🧹 SEARCH CACHE CLEARED', context: ['pattern' => $pattern ?? 'all']);
     }//end clearSearchCache()
 
     /**
@@ -693,7 +693,7 @@ class CacheHandler
                 $this->queryCache->clear();
 
                 $this->logger->debug(
-                    'Schema-related distributed caches cleared',
+                    '[CacheHandler] Schema-related distributed caches cleared',
                     [
                         'schemaId'   => $schemaId,
                         'registerId' => $registerId,
@@ -703,7 +703,7 @@ class CacheHandler
                 );
             } catch (\Exception $e) {
                 $this->logger->warning(
-                    'Failed to clear schema-related distributed caches',
+                    '[CacheHandler] Failed to clear schema-related distributed caches',
                     [
                         'schemaId' => $schemaId,
                         'error'    => $e->getMessage(),
@@ -726,7 +726,7 @@ class CacheHandler
         }
 
         $this->logger->info(
-            'Schema-related caches cleared for CUD operation',
+            '[CacheHandler] Schema-related caches cleared for CUD operation',
             [
                 'schemaId'      => $schemaId,
                 'registerId'    => $registerId,
@@ -807,7 +807,7 @@ class CacheHandler
                         }
                     } catch (\Exception $e) {
                         $this->logger->warning(
-                            'Failed to remove object name from distributed cache',
+                            '[CacheHandler] Failed to remove object name from distributed cache',
                             ['uuid' => $object->getUuid(), 'error' => $e->getMessage()]
                         );
                     }
@@ -826,7 +826,7 @@ class CacheHandler
         $executionTime = round((microtime(true) - $startTime) * 1000, 2);
 
         $this->logger->info(
-            'Schema-wide cache invalidated for CRUD operation',
+            '[CacheHandler] Schema-wide cache invalidated for CRUD operation',
             [
                 'operation'     => $operation,
                 'registerId'    => $registerId,
@@ -859,7 +859,7 @@ class CacheHandler
         }
 
         $this->logger->debug(
-            'Individual object cleared from cache',
+            '[CacheHandler] Individual object cleared from cache',
             [
                 'objectId'   => $object->getId(),
                 'objectUuid' => $object->getUuid(),
@@ -899,7 +899,7 @@ class CacheHandler
                 $this->queryCache->clear();
             } catch (\Exception $e) {
                 $this->logger->warning(
-                    'Failed to clear distributed query cache',
+                    '[CacheHandler] Failed to clear distributed query cache',
                     [
                         'error' => $e->getMessage(),
                     ]
@@ -924,7 +924,7 @@ class CacheHandler
         $executionTime = round((microtime(true) - $startTime) * 1000, 2);
 
         $this->logger->info(
-            'All object caches cleared (including name cache)',
+            '[CacheHandler] All object caches cleared (including name cache)',
             [
                 'executionTime' => $executionTime.'ms',
             ]
@@ -974,7 +974,7 @@ class CacheHandler
                 $this->nameDistributedCache->set('name_'.$key, $name, $ttl);
             } catch (\Exception $e) {
                 $this->logger->warning(
-                    'Failed to cache object name in distributed cache',
+                    '[CacheHandler] Failed to cache object name in distributed cache',
                     [
                         'identifier' => $key,
                         'error'      => $e->getMessage(),
@@ -984,7 +984,7 @@ class CacheHandler
         }
 
         $this->logger->debug(
-            '💾 OBJECT NAME CACHED',
+            '[CacheHandler] 💾 OBJECT NAME CACHED',
             [
                 'identifier' => $key,
                 'name'       => $name,
@@ -1013,7 +1013,7 @@ class CacheHandler
         // Check in-memory cache first (fastest).
         if (($this->nameCache[$key] ?? null) !== null) {
             $this->stats['name_hits']++;
-            $this->logger->debug(message: '🚀 NAME CACHE HIT (in-memory)', context: ['identifier' => $key]);
+            $this->logger->debug(message: '[CacheHandler] 🚀 NAME CACHE HIT (in-memory)', context: ['identifier' => $key]);
             return $this->nameCache[$key];
         }
 
@@ -1025,12 +1025,12 @@ class CacheHandler
                     // Store in in-memory cache for faster future access.
                     $this->nameCache[$key] = $cachedName;
                     $this->stats['name_hits']++;
-                    $this->logger->debug(message: '⚡ NAME CACHE HIT (distributed)', context: ['identifier' => $key]);
+                    $this->logger->debug(message: '[CacheHandler] ⚡ NAME CACHE HIT (distributed)', context: ['identifier' => $key]);
                     return $cachedName;
                 }
             } catch (\Exception $e) {
-                $this->logger->warning(
-                    'Failed to get object name from distributed cache',
+                    $this->logger->warning(
+                    '[CacheHandler] Failed to get object name from distributed cache',
                     [
                         'identifier' => $key,
                         'error'      => $e->getMessage(),
@@ -1041,7 +1041,7 @@ class CacheHandler
 
         // Cache miss - load from database.
         $this->stats['name_misses']++;
-        $this->logger->debug(message: '❌ NAME CACHE MISS', context: ['identifier' => $key]);
+        $this->logger->debug(message: '[CacheHandler] ❌ NAME CACHE MISS', context: ['identifier' => $key]);
 
         try {
             // STEP 1: Try to find as organisation first (they take priority).
@@ -1071,7 +1071,7 @@ class CacheHandler
             }
         } catch (\Exception $e) {
             $this->logger->debug(
-                'Failed to load entity for name lookup',
+                '[CacheHandler] Failed to load entity for name lookup',
                 [
                     'identifier' => $key,
                     'error'      => $e->getMessage(),
@@ -1208,7 +1208,7 @@ class CacheHandler
                 }
             } catch (\Exception $e) {
                 $this->logger->error(
-                    'Failed to bulk load names from database',
+                    '[CacheHandler] Failed to bulk load names from database',
                     [
                         'identifiers' => count($missingIdentifiers),
                         'error'       => $e->getMessage(),
@@ -1228,7 +1228,7 @@ class CacheHandler
         );
 
         $this->logger->debug(
-            '📦 BULK NAME LOOKUP COMPLETED',
+            '[CacheHandler] 📦 BULK NAME LOOKUP COMPLETED',
             [
                 'requested'             => count($identifiers),
                 'total_found'           => count($results),
@@ -1280,7 +1280,7 @@ class CacheHandler
         $executionTime = round((microtime(true) - $startTime) * 1000, 2);
 
         $this->logger->info(
-            '📋 ALL OBJECT NAMES RETRIEVED',
+            '[CacheHandler] 📋 ALL OBJECT NAMES RETRIEVED',
             [
                 'total_cached'        => count($this->nameCache),
                 'uuid_names_returned' => count($uuidNames),
@@ -1348,7 +1348,7 @@ class CacheHandler
             $executionTime = round((microtime(true) - $startTime) * 1000, 2);
 
             $this->logger->info(
-                '🔥 NAME CACHE WARMED UP',
+                '[CacheHandler] 🔥 NAME CACHE WARMED UP',
                 [
                     'organisations_processed'  => count($organisations),
                     'objects_processed'        => count($objects),
@@ -1370,7 +1370,7 @@ class CacheHandler
             return count($this->nameCache);
         } catch (\Exception $e) {
             $this->logger->error(
-                'Name cache warmup failed',
+                '[CacheHandler] Name cache warmup failed',
                 [
                     'error' => $e->getMessage(),
                 ]
@@ -1443,7 +1443,7 @@ class CacheHandler
                     } catch (\Exception $e) {
                         // Table might not exist or have different structure - skip silently.
                         $this->logger->debug(
-                            'Could not query magic table for names',
+                            '[CacheHandler] Could not query magic table for names',
                             [
                                 'table' => $tableName,
                                 'error' => $e->getMessage(),
@@ -1454,7 +1454,7 @@ class CacheHandler
             }//end foreach
         } catch (\Exception $e) {
             $this->logger->warning(
-                'Failed to load names from magic tables',
+                '[CacheHandler] Failed to load names from magic tables',
                 [
                     'error' => $e->getMessage(),
                 ]
@@ -1551,7 +1551,7 @@ class CacheHandler
             }//end foreach
         } catch (\Exception $e) {
             $this->logger->warning(
-                'Failed to batch load names from magic tables',
+                '[CacheHandler] Failed to batch load names from magic tables',
                 ['error' => $e->getMessage(), 'uuid_count' => count($uuids)]
             );
         }//end try
@@ -1643,7 +1643,7 @@ class CacheHandler
                 // Log once per batch, not per entry to avoid log spam.
                 if ($storedCount === 0) {
                     $this->logger->warning(
-                        'Failed to persist name cache entry to distributed cache',
+                        '[CacheHandler] Failed to persist name cache entry to distributed cache',
                         [
                             'identifier' => $identifier,
                             'error'      => $e->getMessage(),
@@ -1712,7 +1712,7 @@ class CacheHandler
             }
         }
 
-        $this->logger->debug(message: '🧹 OBJECT NAME CACHE CLEARED');
+        $this->logger->debug(message: '[CacheHandler] 🧹 OBJECT NAME CACHE CLEARED', context: ['file' => __FILE__, 'line' => __LINE__]);
     }//end clearNameCache()
 
     // ========================================.

@@ -326,7 +326,7 @@ class FileValidationHandler
             } catch (Exception $ownershipException) {
                 $fileName = $file->getName();
                 $errMsg   = "checkOwnership: Failed to fix for file {$fileName}: ".$ownershipException->getMessage();
-                $this->logger->error(message: $errMsg);
+                $this->logger->error(message: $errMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
                 throw new Exception("Ownership fix failed for file: ".$file->getName());
             }
         }//end try

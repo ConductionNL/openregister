@@ -241,8 +241,10 @@ class SaveObjects
             // Log if duplicates were found and removed.
             if ($dedupeResult['duplicateCount'] > 0) {
                 $this->logger->info(
-                    message: 'Deduplicated objects before bulk save',
+                    message: '[SaveObjects] Deduplicated objects before bulk save',
                     context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'originalCount'   => $totalObjects,
                         'uniqueCount'     => count($objects),
                         'duplicateCount'  => $dedupeResult['duplicateCount'],
@@ -371,6 +373,8 @@ class SaveObjects
         $this->logger->info(
             $logMessage,
             [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'totalObjects' => $totalObjects,
                 'operation'    => $operationType,
             ]
@@ -691,7 +695,7 @@ class SaveObjects
         } catch (Exception $e) {
             $this->logger->warning(
                 'Could not get default organisation, objects will have null organisation',
-                ['error' => $e->getMessage()]
+                ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
             );
         }
 
@@ -748,6 +752,8 @@ class SaveObjects
                         $this->logger->warning(
                             'Failed to convert published date to DateTime',
                             [
+                                'file' => __FILE__,
+                                'line' => __LINE__,
                                 'value' => $selfDataForHydration['published'],
                                 'error' => $e->getMessage(),
                             ]
@@ -785,6 +791,8 @@ class SaveObjects
                     $this->logger->debug(
                         'Auto-publishing NEW object in bulk creation (single schema)',
                         [
+                            'file' => __FILE__,
+                            'line' => __LINE__,
                             'schema'           => $schemaObj->getTitle(),
                             'autoPublish'      => true,
                             'isNewObject'      => true,
@@ -796,6 +804,8 @@ class SaveObjects
                     $this->logger->debug(
                         'Skipping auto-publish - published date provided from CSV',
                         [
+                            'file' => __FILE__,
+                            'line' => __LINE__,
                             'schema'           => $schemaObj->getTitle(),
                             'publishedFromCsv' => true,
                             'csvPublishedDate' => $selfData['published'],
@@ -851,6 +861,8 @@ class SaveObjects
                 $this->logger->info(
                     "[SaveObjects] DEBUG - Single schema object structure",
                     [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'available_keys'      => array_keys($object),
                         'has_@self'           => (($object['@self'] ?? null) !== null) === true,
                         '@self_keys'          => $selfKeys,
@@ -863,7 +875,7 @@ class SaveObjects
             if (($object['object'] ?? null) !== null && is_array($object['object']) === true) {
                 // NEW STRUCTURE: object property contains business data.
                 $businessData = $object['object'];
-                $this->logger->info("[SaveObjects] Using object property for business data");
+                $this->logger->info("[SaveObjects] Using object property for business data", ['file' => __FILE__, 'line' => __LINE__]);
             }
 
             if (($object['object'] ?? null) === null || is_array($object['object']) === false) {
@@ -896,6 +908,8 @@ class SaveObjects
                 $this->logger->info(
                     "[SaveObjects] Metadata removal applied",
                     [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'removed_fields'       => array_intersect($metadataFields, array_keys($object)),
                         'remaining_keys'       => array_keys($businessData),
                         'business_data_sample' => array_slice($businessData, 0, 3, true),
@@ -911,6 +925,8 @@ class SaveObjects
                 $this->logger->info(
                     "[SaveObjects] Relations scanned in preparation (single schema)",
                     [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'uuid'             => $selfData['uuid'] ?? 'unknown',
                         'relationCount'    => count($relations),
                         'businessDataKeys' => array_keys($businessData),
@@ -938,6 +954,8 @@ class SaveObjects
             $this->logger->debug(
                 'Single-schema preparation completed',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'objectsProcessed' => count($preparedObjects),
                     'timeMs'           => $duration,
                     'speed'            => round(count($preparedObjects) / max(($endTime - $startTime), 0.001), 2),
@@ -1346,6 +1364,8 @@ class SaveObjects
             $this->logger->warning(
                 message: 'Found and merged duplicate IDs within batch',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'originalCount'    => count($objects),
                     'uniqueCount'      => count($uniqueObjects),
                     'totalDuplicates'  => $totalDuplicates,

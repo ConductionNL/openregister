@@ -115,7 +115,7 @@ class FileTextExtractionJob extends QueuedJob
         if ($this->config->hasKey(app: 'openregister', key: $fileManagementKey) === false
             || $fileManagement['extractionScope'] === 'none'
         ) {
-            $this->logger->info('[FileTextExtractionJob] File extraction is disabled. Not extracting text from files.');
+            $this->logger->info('[FileTextExtractionJob] File extraction is disabled. Not extracting text from files.', ['file' => __FILE__, 'line' => __LINE__]);
             return;
         }
 
@@ -124,6 +124,8 @@ class FileTextExtractionJob extends QueuedJob
             $this->logger->error(
                 '[FileTextExtractionJob] Missing file_id in job arguments',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'argument' => $argument,
                 ]
             );
@@ -137,6 +139,8 @@ class FileTextExtractionJob extends QueuedJob
         $this->logger->info(
             '[FileTextExtractionJob] Starting text extraction',
             [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'file_id' => $fileId,
                 'job_id'  => $this->getId(),
             ]
@@ -156,6 +160,8 @@ class FileTextExtractionJob extends QueuedJob
             $this->logger->info(
                 '[FileTextExtractionJob] Text extraction completed successfully',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'file_id'            => $fileId,
                     'processing_time_ms' => $processingTime,
                 ]
@@ -168,6 +174,8 @@ class FileTextExtractionJob extends QueuedJob
             $this->logger->error(
                 '[FileTextExtractionJob] Exception during text extraction',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'file_id'            => $fileId,
                     'error'              => $e->getMessage(),
                     'trace'              => $e->getTraceAsString(),

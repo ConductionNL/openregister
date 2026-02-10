@@ -119,7 +119,7 @@ class ToolRegistry
             return;
         }
 
-        $this->logger->info('[ToolRegistry] Loading tools from all apps');
+        $this->logger->info('[ToolRegistry] Loading tools from all apps', ['file' => __FILE__, 'line' => __LINE__]);
 
         $event = new ToolRegistrationEvent($this);
         $this->eventDispatcher->dispatchTyped($event);
@@ -129,6 +129,8 @@ class ToolRegistry
         $this->logger->info(
             '[ToolRegistry] Loaded tools',
             [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'count' => count($this->tools),
                 'tools' => array_keys($this->tools),
             ]
@@ -182,6 +184,8 @@ class ToolRegistry
         $this->logger->info(
             '[ToolRegistry] Tool registered',
             [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'id'   => $id,
                 'name' => $metadata['name'],
                 'app'  => $metadata['app'],
@@ -240,7 +244,8 @@ class ToolRegistry
         $result = [];
         foreach ($ids as $id) {
             if (($this->tools[$id] ?? null) === null) {
-                $this->logger->warning('[ToolRegistry] Tool not found', ['id' => $id]);
+                $this->logger->warning('[ToolRegistry] Tool not found', ['file' => __FILE__,
+                'line' => __LINE__, 'id' => $id]);
                 continue;
             }
 

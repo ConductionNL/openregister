@@ -202,7 +202,7 @@ class SchemaCacheHandler
 
         // Check in-memory cache first.
         if ((self::$memoryCache[$cacheKey] ?? null) !== null) {
-            $this->logger->debug('Schema cache hit (memory)', ['schemaId' => $schemaId]);
+            $this->logger->debug('[SchemaCacheHandler] Schema cache hit (memory)', ['schemaId' => $schemaId]);
             return self::$memoryCache[$cacheKey];
         }
 
@@ -214,7 +214,7 @@ class SchemaCacheHandler
             if ($schema !== null) {
                 // Store in memory cache for future requests.
                 self::$memoryCache[$cacheKey] = $schema;
-                $this->logger->debug('Schema cache hit (database)', ['schemaId' => $schemaId]);
+                $this->logger->debug('[SchemaCacheHandler] Schema cache hit (database)', ['schemaId' => $schemaId]);
                 return $schema;
             }
         }
@@ -223,7 +223,7 @@ class SchemaCacheHandler
         try {
             $schema = $this->schemaMapper->find($schemaId);
             $this->cacheSchema($schema);
-            $this->logger->debug('Schema loaded from database and cached', ['schemaId' => $schemaId]);
+            $this->logger->debug('[SchemaCacheHandler] Schema loaded from database and cached', ['schemaId' => $schemaId]);
             return $schema;
         } catch (DoesNotExistException $e) {
             return null;
@@ -253,10 +253,10 @@ class SchemaCacheHandler
         $sql = 'DELETE FROM '.self::CACHE_TABLE.' WHERE schema_id = ?';
         try {
             $this->db->executeQuery($sql, [(string) $schemaId]);
-            $this->logger->debug('Cleared schema cache', ['schemaId' => $schemaId]);
+            $this->logger->debug('[SchemaCacheHandler] Cleared schema cache', ['schemaId' => $schemaId]);
         } catch (Exception $e) {
             $this->logger->error(
-                'Failed to clear schema cache',
+                '[SchemaCacheHandler] Failed to clear schema cache',
                 [
                     'schemaId' => $schemaId,
                     'error'    => $e->getMessage(),

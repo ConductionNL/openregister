@@ -202,11 +202,11 @@ class CreateFileHandler
             return $file;
         } catch (NotPermittedException $e) {
             // Log permission error and rethrow exception.
-            $this->logger->error(message: "Permission denied creating file $fileName: ".$e->getMessage());
+            $this->logger->error(message: "[CreateFileHandler] Permission denied creating file $fileName: ".$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
             throw new NotPermittedException("Cannot create file $fileName: ".$e->getMessage());
         } catch (Exception $e) {
             // Log general error and rethrow exception.
-            $this->logger->error(message: "Failed to create file $fileName: ".$e->getMessage());
+            $this->logger->error(message: "[CreateFileHandler] Failed to create file $fileName: ".$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
             throw new Exception("Failed to create file $fileName: ".$e->getMessage());
         }//end try
     }//end addFile()
@@ -252,7 +252,7 @@ class CreateFileHandler
             $objectId = $objectEntity->getId();
             if ($existingFile !== null) {
                 // File exists, update it.
-                $this->logger->info(message: "File $fileName already exists for object {$objectId}, updating...");
+                $this->logger->info(message: "[CreateFileHandler] File $fileName already exists for object {$objectId}, updating...", context: ['file' => __FILE__, 'line' => __LINE__]);
 
                 // Update the existing file - pass the object so updateFile can find it in the object folder.
                 return $this->fileService->updateFile(
@@ -264,7 +264,7 @@ class CreateFileHandler
             }
 
             // File doesn't exist, create it.
-            $this->logger->info(message: "File $fileName doesn't exist for object {$objectId}, creating...");
+            $this->logger->info(message: "[CreateFileHandler] File $fileName doesn't exist for object {$objectId}, creating...", context: ['file' => __FILE__, 'line' => __LINE__]);
 
             return $this->addFile(
                 objectEntity: $objectEntity,
@@ -275,11 +275,11 @@ class CreateFileHandler
             );
         } catch (NotPermittedException $e) {
             // Log permission error and rethrow exception.
-            $this->logger->error(message: "Permission denied saving file $fileName: ".$e->getMessage());
+            $this->logger->error(message: "[CreateFileHandler] Permission denied saving file $fileName: ".$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
             throw new NotPermittedException("Cannot save file $fileName: ".$e->getMessage());
         } catch (Exception $e) {
             // Log general error and rethrow exception.
-            $this->logger->error(message: "Failed to save file $fileName: ".$e->getMessage());
+            $this->logger->error(message: "[CreateFileHandler] Failed to save file $fileName: ".$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
             throw new Exception("Failed to save file $fileName: ".$e->getMessage());
         }//end try
     }//end saveFile()

@@ -497,7 +497,7 @@ class BulkOperationsHandler
                 try {
                     $this->db->rollBack();
                 } catch (\Exception $rollbackException) {
-                    $this->logger->error('Error during rollback', ['exception' => $rollbackException->getMessage()]);
+                    $this->logger->error('[BulkOperationsHandler] Error during rollback', ['file' => __FILE__, 'line' => __LINE__, 'exception' => $rollbackException->getMessage()]);
                 }
             }
 
@@ -542,7 +542,7 @@ class BulkOperationsHandler
                 try {
                     $this->db->rollBack();
                 } catch (\Exception $rollbackException) {
-                    $this->logger->error('Error during rollback', ['exception' => $rollbackException->getMessage()]);
+                    $this->logger->error('[BulkOperationsHandler] Error during rollback', ['file' => __FILE__, 'line' => __LINE__, 'exception' => $rollbackException->getMessage()]);
                 }
             }
 
@@ -818,8 +818,8 @@ class BulkOperationsHandler
                 } catch (Exception $e) {
                     $batchRetryCount++;
                     $this->logger->error(
-                        'Error executing batch',
-                        ['attempt' => $batchRetryCount, 'error' => $e->getMessage()]
+                        '[BulkOperationsHandler] Error executing batch',
+                        ['file' => __FILE__, 'line' => __LINE__, 'attempt' => $batchRetryCount, 'error' => $e->getMessage()]
                     );
 
                     if ($batchRetryCount > $maxBatchRetries) {

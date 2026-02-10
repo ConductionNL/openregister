@@ -121,7 +121,7 @@ class RelationCascadeHandler
                 }
             }
         } catch (\Exception $e) {
-            $this->logger->error('Error finding schema by slug: '.$e->getMessage());
+            $this->logger->error('[RelationCascadeHandler] Error finding schema by slug: '.$e->getMessage(), ['file' => __FILE__, 'line' => __LINE__]);
         }
 
         // No match found.
@@ -200,7 +200,7 @@ class RelationCascadeHandler
                 }
             }
         } catch (\Exception $e) {
-            $this->logger->error('Error finding register by slug: '.$e->getMessage());
+            $this->logger->error('[RelationCascadeHandler] Error finding register by slug: '.$e->getMessage(), ['file' => __FILE__, 'line' => __LINE__]);
         }
 
         // No match found.
@@ -644,7 +644,7 @@ class RelationCascadeHandler
         // TODO: Implement actual cascading logic.
         // This requires access to ObjectService which would create circular dependency.
         // Need to refactor this to use event system or separate coordination service.
-        $this->logger->warning('Cascade object creation not yet implemented in extracted handler');
+        $this->logger->warning('[RelationCascadeHandler] Cascade object creation not yet implemented in extracted handler', ['file' => __FILE__, 'line' => __LINE__]);
 
         return null;
     }//end cascadeSingleObject()
@@ -666,7 +666,7 @@ class RelationCascadeHandler
         // TODO: Implement inverse relation write-back.
         // This requires access to ObjectService which would create circular dependency.
         // Need to refactor this to use event system or separate coordination service.
-        $this->logger->warning('Inverse relation write-back not yet implemented in extracted handler');
+        $this->logger->warning('[RelationCascadeHandler] Inverse relation write-back not yet implemented in extracted handler', ['file' => __FILE__, 'line' => __LINE__]);
 
         return $data;
     }//end handleInverseRelationsWriteBack()

@@ -145,7 +145,7 @@ class ReadFileHandler
                     return $fileNode;
                 }
             } catch (Exception $e) {
-                $this->logger->error(message: 'getFile: Error finding file by ID '.$file.': '.$e->getMessage());
+                $this->logger->error(message: '[ReadFileHandler] getFile: Error finding file by ID '.$file.': '.$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
                 return null;
             }
 
@@ -225,7 +225,7 @@ class ReadFileHandler
 
             return $node;
         } catch (Exception $e) {
-            $this->logger->error(message: 'getFileById: Error finding file by ID '.$fileId.': '.$e->getMessage());
+            $this->logger->error(message: '[ReadFileHandler] getFileById: Error finding file by ID '.$fileId.': '.$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
             return null;
         }//end try
     }//end getFileById()

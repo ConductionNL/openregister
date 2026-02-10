@@ -92,6 +92,8 @@ class ObjectHandler
         $this->logger->debug(
             '[ObjectHandler] Searching objects',
             [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'query'        => $query,
                 'rbac'         => $rbac,
                 'multitenancy' => $multitenancy,
@@ -198,14 +200,14 @@ class ObjectHandler
      */
     public function commit(): bool
     {
-        $this->logger->debug('[ObjectHandler] Committing to Solr');
+        $this->logger->debug('[ObjectHandler] Committing to Solr', ['file' => __FILE__, 'line' => __LINE__]);
 
         try {
             // Use search backend to commit (backend handles collection selection).
             $result = $this->searchBackend->commit();
 
             if ($result === true) {
-                $this->logger->info('[ObjectHandler] Successfully committed to Solr');
+                $this->logger->info('[ObjectHandler] Successfully committed to Solr', ['file' => __FILE__, 'line' => __LINE__]);
             }
 
             return $result;
@@ -213,6 +215,8 @@ class ObjectHandler
             $this->logger->error(
                 '[ObjectHandler] Failed to commit to Solr',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -236,6 +240,8 @@ class ObjectHandler
         $this->logger->info(
             '[ObjectHandler] Starting full reindex',
             [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'maxObjects' => $maxObjects,
                 'batchSize'  => $batchSize,
                 'collection' => $collectionName,
@@ -249,6 +255,8 @@ class ObjectHandler
             $this->logger->error(
                 '[ObjectHandler] Reindex failed',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );

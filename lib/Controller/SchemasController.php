@@ -283,8 +283,10 @@ class SchemasController extends Controller
             return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
         } catch (Exception $e) {
             $this->logger->error(
-                message: 'Failed to retrieve schema',
+                message: '[SchemasController] Failed to retrieve schema',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'schema_id'     => $id,
                     'error_message' => $e->getMessage(),
                 ]
@@ -320,6 +322,8 @@ class SchemasController extends Controller
         $this->logger->info(
             '[SchemasController::create] Starting schema creation',
             [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'title'            => $data['title'] ?? 'no title',
                 'has_organisation' => isset($data['organisation']),
                 'organisation'     => $data['organisation'] ?? 'not set',
@@ -371,8 +375,10 @@ class SchemasController extends Controller
         } catch (Exception $e) {
             // Log the actual error for debugging.
             $this->logger->error(
-                message: 'Schema creation failed',
+                message: '[SchemasController] Schema creation failed',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error_message' => $e->getMessage(),
                     'error_code'    => $e->getCode(),
                     'trace'         => $e->getTraceAsString(),
@@ -473,8 +479,10 @@ class SchemasController extends Controller
         } catch (Exception $e) {
             // Log the actual error for debugging.
             $this->logger->error(
-                message: 'Schema update failed',
+                message: '[SchemasController] Schema update failed',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'schema_id'     => $id,
                     'error_message' => $e->getMessage(),
                     'error_code'    => $e->getCode(),
@@ -691,8 +699,10 @@ class SchemasController extends Controller
         } catch (Exception $e) {
             // Log the actual error for debugging.
             $this->logger->error(
-                'Schema upload failed',
+                '[SchemasController] Schema upload failed',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'schema_id'     => $id,
                     'error_message' => $e->getMessage(),
                     'error_code'    => $e->getCode(),
@@ -892,15 +902,15 @@ class SchemasController extends Controller
     public function explore(int $id): JSONResponse
     {
         try {
-            $this->logger->info('Starting schema exploration for schema ID: '.$id);
+            $this->logger->info('[SchemasController] Starting schema exploration for schema ID: '.$id, ['file' => __FILE__, 'line' => __LINE__]);
 
             $explorationResults = $this->schemaService->exploreSchemaProperties($id);
 
-            $this->logger->info('Schema exploration completed successfully');
+            $this->logger->info('[SchemasController] Schema exploration completed successfully', ['file' => __FILE__, 'line' => __LINE__]);
 
             return new JSONResponse(data: $explorationResults);
         } catch (\Exception $e) {
-            $this->logger->error('Schema exploration failed: '.$e->getMessage());
+            $this->logger->error('[SchemasController] Schema exploration failed: '.$e->getMessage(), ['file' => __FILE__, 'line' => __LINE__]);
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
     }//end explore()
@@ -930,7 +940,7 @@ class SchemasController extends Controller
             }
 
             $updateCount = count($propertyUpdates);
-            $this->logger->info("Updating schema {$id} with {$updateCount} property updates");
+            $this->logger->info("[SchemasController] Updating schema {$id} with {$updateCount} property updates", ['file' => __FILE__, 'line' => __LINE__]);
 
             $updatedSchema = $this->schemaService->updateSchemaFromExploration(
                 schemaId: $id,
@@ -940,7 +950,7 @@ class SchemasController extends Controller
             // Clear schema cache to ensure fresh data.
             $this->schemaCacheService->clearSchemaCache($id);
 
-            $this->logger->info('Schema '.$id.' successfully updated with exploration results');
+            $this->logger->info('[SchemasController] Schema '.$id.' successfully updated with exploration results', ['file' => __FILE__, 'line' => __LINE__]);
 
             return new JSONResponse(
                 data: [
@@ -950,7 +960,7 @@ class SchemasController extends Controller
                 ]
             );
         } catch (\Exception $e) {
-            $this->logger->error('Failed to update schema from exploration: '.$e->getMessage());
+            $this->logger->error('[SchemasController] Failed to update schema from exploration: '.$e->getMessage(), ['file' => __FILE__, 'line' => __LINE__]);
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }//end try
     }//end updateFromExploration()
@@ -1013,8 +1023,10 @@ class SchemasController extends Controller
             );
 
             $this->logger->info(
-                'Schema published',
+                '[SchemasController] Schema published',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'schema_id'      => $id,
                     'published_date' => $date->format('Y-m-d H:i:s'),
                 ]
@@ -1025,8 +1037,10 @@ class SchemasController extends Controller
             return new JSONResponse(['error' => 'Schema not found'], 404);
         } catch (\Exception $e) {
             $this->logger->error(
-                'Failed to publish schema',
+                '[SchemasController] Failed to publish schema',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'schema_id' => $id,
                     'error'     => $e->getMessage(),
                 ]
@@ -1092,8 +1106,10 @@ class SchemasController extends Controller
             );
 
             $this->logger->info(
-                'Schema depublished',
+                '[SchemasController] Schema depublished',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'schema_id'        => $id,
                     'depublished_date' => $date->format('Y-m-d H:i:s'),
                 ]
@@ -1104,8 +1120,10 @@ class SchemasController extends Controller
             return new JSONResponse(['error' => 'Schema not found'], 404);
         } catch (\Exception $e) {
             $this->logger->error(
-                'Failed to depublish schema',
+                '[SchemasController] Failed to depublish schema',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'schema_id' => $id,
                     'error'     => $e->getMessage(),
                 ]

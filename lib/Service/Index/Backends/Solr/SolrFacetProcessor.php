@@ -91,7 +91,7 @@ class SolrFacetProcessor
         $collection = $this->collectionManager->getActiveCollectionName();
 
         if ($collection === null) {
-            $this->logger->warning('[SolrFacetProcessor] No active collection');
+            $this->logger->warning('[SolrFacetProcessor] No active collection', ['file' => __FILE__, 'line' => __LINE__]);
             return [];
         }
 

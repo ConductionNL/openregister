@@ -96,6 +96,8 @@ class VectorizationService
         $this->logger->debug(
             '[VectorizationService] Strategy registered',
             [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'entityType'    => $entityType,
                 'strategyClass' => get_class($strategy),
             ]
@@ -124,6 +126,8 @@ class VectorizationService
         $this->logger->info(
             '[VectorizationService] Starting batch vectorization',
             [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'entityType' => $entityType,
                 'options'    => $options,
             ]
@@ -151,6 +155,8 @@ class VectorizationService
             $this->logger->info(
                 '[VectorizationService] Processing entities',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'entityType'  => $entityType,
                     'entityCount' => count($entities),
                 ]
@@ -178,6 +184,8 @@ class VectorizationService
                     $this->logger->error(
                         '[VectorizationService] Failed to vectorize entity',
                         [
+                            'file' => __FILE__,
+                            'line' => __LINE__,
                             'entityType' => $entityType,
                             'entityId'   => $entityId,
                             'error'      => $e->getMessage(),
@@ -193,6 +201,8 @@ class VectorizationService
             $this->logger->info(
                 '[VectorizationService] Batch vectorization completed',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'entityType'    => $entityType,
                     'totalEntities' => count($entities),
                     'totalItems'    => $totalItems,
@@ -215,6 +225,8 @@ class VectorizationService
             $this->logger->error(
                 '[VectorizationService] Batch vectorization failed',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'entityType' => $entityType,
                     'error'      => $e->getMessage(),
                 ]
@@ -321,6 +333,8 @@ class VectorizationService
                     $this->logger->error(
                         '[VectorizationService] Batch processing failed',
                         [
+                            'file' => __FILE__,
+                            'line' => __LINE__,
                             'entityId' => $entityId,
                             'error'    => $e->getMessage(),
                         ]

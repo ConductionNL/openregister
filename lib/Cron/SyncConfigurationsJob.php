@@ -133,12 +133,12 @@ class SyncConfigurationsJob extends TimedJob
      */
     protected function run($argument): void
     {
-        $this->logger->info('Starting configuration sync job');
+        $this->logger->info('[SyncConfigurationsJob] Starting configuration sync job', ['file' => __FILE__, 'line' => __LINE__]);
 
         try {
             // Get all configurations with sync enabled.
             $configurations = $this->configurationMapper->findBySyncEnabled();
-            $this->logger->info('Found '.count($configurations).' configurations with sync enabled');
+            $this->logger->info('[SyncConfigurationsJob] Found '.count($configurations).' configurations with sync enabled', ['file' => __FILE__, 'line' => __LINE__]);
 
             $synced  = 0;
             $skipped = 0;
@@ -154,16 +154,16 @@ class SyncConfigurationsJob extends TimedJob
 
                     $title = $configuration->getTitle();
                     $id    = $configuration->getId();
-                    $this->logger->info("Syncing configuration: {$title} (ID: {$id})");
+                    $this->logger->info("[SyncConfigurationsJob] Syncing configuration: {$title} (ID: {$id})", ['file' => __FILE__, 'line' => __LINE__]);
 
                     // Sync the configuration based on source type.
                     $this->syncConfiguration($configuration);
 
                     $synced++;
-                    $this->logger->info("Successfully synced configuration {$configuration->getTitle()}");
+                    $this->logger->info("[SyncConfigurationsJob] Successfully synced configuration {$configuration->getTitle()}", ['file' => __FILE__, 'line' => __LINE__]);
                 } catch (Exception $e) {
                     $failed++;
-                    $this->logger->error("Error syncing configuration {$configuration->getId()}: ".$e->getMessage());
+                    $this->logger->error("[SyncConfigurationsJob] Error syncing configuration {$configuration->getId()}: ".$e->getMessage(), ['file' => __FILE__, 'line' => __LINE__]);
 
                     // Update sync status to failed.
                     try {
@@ -174,7 +174,7 @@ class SyncConfigurationsJob extends TimedJob
                             _message: $e->getMessage()
                         );
                     } catch (Exception $statusError) {
-                        $this->logger->error("Failed to update sync status: ".$statusError->getMessage());
+                        $this->logger->error("[SyncConfigurationsJob] Failed to update sync status: ".$statusError->getMessage(), ['file' => __FILE__, 'line' => __LINE__]);
                     }
 
                     continue;
@@ -182,10 +182,11 @@ class SyncConfigurationsJob extends TimedJob
             }//end foreach
 
             $this->logger->info(
-                "Configuration sync job completed: {$synced} synced, {$skipped} skipped, {$failed} failed"
+                "[SyncConfigurationsJob] Configuration sync job completed: {$synced} synced, {$skipped} skipped, {$failed} failed",
+                ['file' => __FILE__, 'line' => __LINE__]
             );
         } catch (Exception $e) {
-            $this->logger->error('Configuration sync job failed: '.$e->getMessage());
+            $this->logger->error('[SyncConfigurationsJob] Configuration sync job failed: '.$e->getMessage(), ['file' => __FILE__, 'line' => __LINE__]);
         }//end try
     }//end run()
 

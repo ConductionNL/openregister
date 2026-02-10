@@ -306,10 +306,12 @@ class OrganisationMapper extends QBMapper
         $organisation->setUpdated($now);
 
         // Debug logging before insert/update.
-        $this->logger->info('[OrganisationMapper] About to save organisation with UUID: '.$organisation->getUuid());
+        $this->logger->info('[OrganisationMapper] About to save organisation with UUID: '.$organisation->getUuid(), ['file' => __FILE__, 'line' => __LINE__]);
         $this->logger->info(
             '[OrganisationMapper] Organisation object properties:',
             [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'uuid'        => $organisation->getUuid(),
                 'name'        => $organisation->getName(),
                 'description' => $organisation->getDescription(),
@@ -319,12 +321,14 @@ class OrganisationMapper extends QBMapper
         );
 
         if ($organisation->getId() === null) {
-            $this->logger->info('[OrganisationMapper] Calling insert() method');
+            $this->logger->info('[OrganisationMapper] Calling insert() method', ['file' => __FILE__, 'line' => __LINE__]);
 
             // Debug: Log the entity state before insert.
             $this->logger->info(
                 '[OrganisationMapper] Entity state before insert:',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'id'          => $organisation->getId(),
                     'uuid'        => $organisation->getUuid(),
                     'name'        => $organisation->getName(),
@@ -338,7 +342,7 @@ class OrganisationMapper extends QBMapper
 
             try {
                 $result = $this->insert($organisation);
-                $this->logger->info('[OrganisationMapper] insert() completed successfully');
+                $this->logger->info('[OrganisationMapper] insert() completed successfully', ['file' => __FILE__, 'line' => __LINE__]);
 
                 // Organization events are now handled by cron job - no event dispatching needed.
                 return $result;
@@ -355,7 +359,7 @@ class OrganisationMapper extends QBMapper
             }
         }//end if
 
-        $this->logger->info('[OrganisationMapper] Calling update() method');
+        $this->logger->info('[OrganisationMapper] Calling update() method', ['file' => __FILE__, 'line' => __LINE__]);
         return $this->update($organisation);
     }//end save()
 
@@ -605,8 +609,10 @@ class OrganisationMapper extends QBMapper
             }
 
             $this->logger->debug(
-                'Found parent chain for organisation',
+                '[OrganisationMapper] Found parent chain for organisation',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'organisation' => $organisationUuid,
                     'parents'      => $parents,
                     'count'        => count($parents),
@@ -616,8 +622,10 @@ class OrganisationMapper extends QBMapper
             return $parents;
         } catch (Exception $e) {
             $this->logger->error(
-                'Error finding parent chain',
+                '[OrganisationMapper] Error finding parent chain',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'organisation' => $organisationUuid,
                     'error'        => $e->getMessage(),
                 ]
@@ -686,8 +694,10 @@ class OrganisationMapper extends QBMapper
             }
 
             $this->logger->debug(
-                'Found children chain for organisation',
+                '[OrganisationMapper] Found children chain for organisation',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'organisation' => $organisationUuid,
                     'children'     => $children,
                     'count'        => count($children),
@@ -697,8 +707,10 @@ class OrganisationMapper extends QBMapper
             return $children;
         } catch (Exception $e) {
             $this->logger->error(
-                'Error finding children chain',
+                '[OrganisationMapper] Error finding children chain',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'organisation' => $organisationUuid,
                     'error'        => $e->getMessage(),
                 ]
@@ -767,8 +779,10 @@ class OrganisationMapper extends QBMapper
         }
 
         $this->logger->debug(
-            'Parent assignment validated',
+            '[OrganisationMapper] Parent assignment validated',
             [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'organisation' => $organisationUuid,
                 'newParent'    => $newParentUuid,
                 'parentChain'  => $parentChain,
@@ -890,8 +904,8 @@ class OrganisationMapper extends QBMapper
             }
         } catch (Exception $e) {
             $this->logger->warning(
-                'Failed to get active organisation for user: '.$e->getMessage(),
-                ['userId' => $userId]
+                '[OrganisationMapper] Failed to get active organisation for user: '.$e->getMessage(),
+                ['file' => __FILE__, 'line' => __LINE__, 'userId' => $userId]
             );
         }
 
@@ -918,8 +932,10 @@ class OrganisationMapper extends QBMapper
         $activeOrgUuid = $this->getActiveOrganisationUuidForUser($userId);
         if ($activeOrgUuid !== null) {
             $this->logger->debug(
-                'Found active organisation for user in preferences',
+                '[OrganisationMapper] Found active organisation for user in preferences',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'userId'           => $userId,
                     'organisationUuid' => $activeOrgUuid,
                 ]
@@ -931,8 +947,8 @@ class OrganisationMapper extends QBMapper
         $defaultOrgUuid = $this->getDefaultOrganisationFromConfig();
         if ($defaultOrgUuid === null) {
             $this->logger->warning(
-                'No active or default organisation found for user',
-                ['userId' => $userId]
+                '[OrganisationMapper] No active or default organisation found for user',
+                ['file' => __FILE__, 'line' => __LINE__, 'userId' => $userId]
             );
             return null;
         }
@@ -941,16 +957,20 @@ class OrganisationMapper extends QBMapper
         try {
             $this->setActiveOrganisationForUser(userId: $userId, organisationUuid: $defaultOrgUuid);
             $this->logger->info(
-                'Set default organisation as active for user',
+                '[OrganisationMapper] Set default organisation as active for user',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'userId'           => $userId,
                     'organisationUuid' => $defaultOrgUuid,
                 ]
             );
         } catch (Exception $e) {
             $this->logger->warning(
-                'Failed to set active organisation in preferences: '.$e->getMessage(),
+                '[OrganisationMapper] Failed to set active organisation in preferences: '.$e->getMessage(),
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'userId'           => $userId,
                     'organisationUuid' => $defaultOrgUuid,
                 ]

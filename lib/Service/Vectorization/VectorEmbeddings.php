@@ -90,7 +90,7 @@ class VectorEmbeddings
         $config = $this->getEmbeddingConfig($provider);
 
         $this->logger->debug(
-            message: 'Generating embedding',
+            message: '[VectorEmbeddings] Generating embedding',
             context: [
                 'text_length' => strlen($text),
                 'provider'    => $config['provider'],

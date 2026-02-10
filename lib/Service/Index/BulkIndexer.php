@@ -134,7 +134,7 @@ class BulkIndexer
      */
     public function bulkIndexObjects(array $_objects, bool $_commit=true): array
     {
-        $this->logger->warning('[BulkIndexer] bulkIndexObjects not yet fully extracted - needs implementation');
+        $this->logger->warning('[BulkIndexer] bulkIndexObjects not yet fully extracted - needs implementation', ['file' => __FILE__, 'line' => __LINE__]);
 
         return [
             'success' => false,
@@ -184,7 +184,7 @@ class BulkIndexer
             $offset       = 0;
             $results      = ['skipped_non_searchable' => 0];
 
-            $this->logger->info('[BulkIndexer] Starting bulk index from database');
+            $this->logger->info('[BulkIndexer] Starting bulk index from database', ['file' => __FILE__, 'line' => __LINE__]);
 
             // Get count of searchable objects for planning.
             $totalObjects     = $this->countSearchableObjects($schemaIds);
@@ -314,7 +314,7 @@ class BulkIndexer
                 'skipped_non_searchable' => $results['skipped_non_searchable'] ?? 0,
             ];
         } catch (\Exception $e) {
-            $this->logger->error('[BulkIndexer] Bulk indexing failed', ['error' => $e->getMessage()]);
+            $this->logger->error('[BulkIndexer] Bulk indexing failed', ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]);
             $indexed = ($totalIndexed ?? 0);
             $batches = ($batchCount ?? 0);
             $msg     = 'Bulk indexing failed: '.$e->getMessage().' (Indexed: '.$indexed.', Batches: '.$batches.')';
@@ -389,7 +389,7 @@ class BulkIndexer
                         $searchableIds[] = $schemaId;
                     }
                 } catch (\Exception $e) {
-                    $this->logger->warning('[BulkIndexer] Schema not found', ['schemaId' => $schemaId]);
+                    $this->logger->warning('[BulkIndexer] Schema not found', ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $schemaId]);
                 }
             }
 

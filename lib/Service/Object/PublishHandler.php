@@ -147,7 +147,7 @@ class PublishHandler
 
             // Record publish action in audit trail (with before/after states).
             try {
-                $this->logger->debug('[PublishHandler] About to create audit trail for publish action');
+                $this->logger->debug('[PublishHandler] About to create audit trail for publish action', ['file' => __FILE__, 'line' => __LINE__]);
                 $auditTrail = $this->auditTrailMapper->createAuditTrail(
                     old: $objectBeforeClone,
                     new: $object,

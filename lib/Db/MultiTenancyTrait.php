@@ -68,7 +68,7 @@ trait MultiTenancyTrait
     protected function getActiveOrganisationUuid(): ?string
     {
         if (isset($this->logger) === true) {
-            $this->logger->info('🔹 MultiTenancyTrait: getActiveOrganisationUuid called');
+            $this->logger->info('[MultiTenancyTrait] 🔹 MultiTenancyTrait: getActiveOrganisationUuid called', ['file' => __FILE__, 'line' => __LINE__]);
         }
 
         // Get current user.
@@ -86,7 +86,7 @@ trait MultiTenancyTrait
             $organisationMapper = $this->organisationMapper;
             if (isset($this->logger) === true) {
                 $this->logger->info(
-                    'MultiTenancyTrait: Calling getActiveOrganisationWithFallback for user: '.$user->getUID()
+                    '[MultiTenancyTrait] MultiTenancyTrait: Calling getActiveOrganisationWithFallback for user: '.$user->getUID()
                 );
             }
 
@@ -170,7 +170,7 @@ trait MultiTenancyTrait
                 // Fall back to just the active org.
                 if (isset($this->logger) === true) {
                     $this->logger->warning(
-                        'Failed to get organisation hierarchy: '.$e->getMessage(),
+                        '[MultiTenancyTrait] Failed to get organisation hierarchy: '.$e->getMessage(),
                         ['activeOrgUuid' => $activeOrgUuid]
                     );
                 }
@@ -361,7 +361,7 @@ trait MultiTenancyTrait
     {
         if (isset($this->userSession) === false) {
             if (($this->logger ?? null) !== null) {
-                $this->logger->debug('[MultiTenancyTrait] UserSession not available, skipping filter');
+                $this->logger->debug('[MultiTenancyTrait] UserSession not available, skipping filter', ['file' => __FILE__, 'line' => __LINE__]);
             }
 
             return null;
@@ -369,7 +369,7 @@ trait MultiTenancyTrait
 
         $user = $this->userSession->getUser();
         if ($user === null && isset($this->logger) === true) {
-            $this->logger->debug('[MultiTenancyTrait] Unauthenticated request, no automatic access');
+            $this->logger->debug('[MultiTenancyTrait] Unauthenticated request, no automatic access', ['file' => __FILE__, 'line' => __LINE__]);
         }
 
         return $user;

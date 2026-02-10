@@ -258,7 +258,7 @@ class CascadingHandler
             return $createdUuid;
         } catch (Exception $e) {
             // Log error but don't expose details.
-            $this->logger->error('Failed to create related object: '.$e->getMessage());
+            $this->logger->error('[CascadingHandler] Failed to create related object: '.$e->getMessage(), ['file' => __FILE__, 'line' => __LINE__]);
             return null;
         }//end try
     }//end createRelatedObject()

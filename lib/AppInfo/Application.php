@@ -697,23 +697,25 @@ class Application extends App implements IBootstrap
         $container->get(IEventDispatcher::class);
 
         $logger = $container->get(id: 'Psr\Log\LoggerInterface');
-        $logger->debug('OpenRegister boot() method started.');
-        $logger->debug('Got app container.');
-        $logger->debug('Got event dispatcher.');
-        $logger->debug('Got logger.');
+        $logger->debug('[Application] OpenRegister boot() method started.', ['file' => __FILE__, 'line' => __LINE__]);
+        $logger->debug('[Application] Got app container.', ['file' => __FILE__, 'line' => __LINE__]);
+        $logger->debug('[Application] Got event dispatcher.', ['file' => __FILE__, 'line' => __LINE__]);
+        $logger->debug('[Application] Got logger.', ['file' => __FILE__, 'line' => __LINE__]);
 
         // Log boot process.
         $logger->info(
-            'OpenRegister boot: Registering event listeners',
+            '[Application] OpenRegister boot: Registering event listeners',
             [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'app'       => 'openregister',
                 'timestamp' => date('Y-m-d H:i:s'),
             ]
         );
-        $logger->debug('Logged boot message.');
+        $logger->debug('[Application] Logged boot message.', ['file' => __FILE__, 'line' => __LINE__]);
 
         try {
-            $logger->info('OpenRegister boot: Event listeners registered successfully');
+            $logger->info('[Application] OpenRegister boot: Event listeners registered successfully', ['file' => __FILE__, 'line' => __LINE__]);
 
             // Register recurring SOLR nightly warmup job.
             $jobList = $container->get('OCP\BackgroundJob\IJobList');
@@ -722,8 +724,10 @@ class Application extends App implements IBootstrap
             if ($jobList->has(SolrNightlyWarmupJob::class, null) === false) {
                 $jobList->add(SolrNightlyWarmupJob::class);
                 $logger->info(
-                    '🌙 SOLR Nightly Warmup Job registered successfully',
+                    '[Application] 🌙 SOLR Nightly Warmup Job registered successfully',
                     [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'job_class' => SolrNightlyWarmupJob::class,
                         'interval'  => '24 hours (daily at 00:00)',
                     ]
@@ -731,15 +735,17 @@ class Application extends App implements IBootstrap
             }
 
             if ($jobList->has(SolrNightlyWarmupJob::class, null) === true) {
-                $logger->debug('SOLR Nightly Warmup Job already registered');
+                $logger->debug('[Application] SOLR Nightly Warmup Job already registered', ['file' => __FILE__, 'line' => __LINE__]);
             }
 
             // Register recurring name cache warmup job.
             if ($jobList->has(NameCacheWarmupJob::class, null) === false) {
                 $jobList->add(NameCacheWarmupJob::class);
                 $logger->info(
-                    '🌙 Name Cache Warmup Job registered successfully',
+                    '[Application] 🌙 Name Cache Warmup Job registered successfully',
                     [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'job_class' => NameCacheWarmupJob::class,
                         'interval'  => '24 hours (daily)',
                     ]
@@ -747,15 +753,17 @@ class Application extends App implements IBootstrap
             }
 
             if ($jobList->has(NameCacheWarmupJob::class, null) === true) {
-                $logger->debug('Name Cache Warmup Job already registered');
+                $logger->debug('[Application] Name Cache Warmup Job already registered', ['file' => __FILE__, 'line' => __LINE__]);
             }
 
             // Register recurring cron file text extraction job.
             if ($jobList->has(CronFileTextExtractionJob::class, null) === false) {
                 $jobList->add(CronFileTextExtractionJob::class);
                 $logger->info(
-                    '🔄 Cron File Text Extraction Job registered successfully',
+                    '[Application] 🔄 Cron File Text Extraction Job registered successfully',
                     [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'job_class' => CronFileTextExtractionJob::class,
                         'interval'  => '15 minutes',
                     ]
@@ -763,7 +771,7 @@ class Application extends App implements IBootstrap
             }
 
             if ($jobList->has(CronFileTextExtractionJob::class, null) === true) {
-                $logger->debug('Cron File Text Extraction Job already registered');
+                $logger->debug('[Application] Cron File Text Extraction Job already registered', ['file' => __FILE__, 'line' => __LINE__]);
             }
 
             // Register recurring webhook retry job.
@@ -771,8 +779,10 @@ class Application extends App implements IBootstrap
             if ($jobList->has($webhookRetryJobClass, null) === false) {
                 $jobList->add($webhookRetryJobClass);
                 $logger->info(
-                    '🔄 Webhook Retry Job registered successfully',
+                    '[Application] 🔄 Webhook Retry Job registered successfully',
                     [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'job_class' => $webhookRetryJobClass,
                         'interval'  => '5 minutes',
                     ]
@@ -780,12 +790,14 @@ class Application extends App implements IBootstrap
             }
 
             if ($jobList->has($webhookRetryJobClass, null) === true) {
-                $logger->debug('Webhook Retry Job already registered');
+                $logger->debug('[Application] Webhook Retry Job already registered', ['file' => __FILE__, 'line' => __LINE__]);
             }
         } catch (\Exception $e) {
             $logger->error(
-                'OpenRegister boot: Failed to register event listeners and background jobs',
+                '[Application] OpenRegister boot: Failed to register event listeners and background jobs',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'exception' => $e->getMessage(),
                     'trace'     => $e->getTraceAsString(),
                 ]

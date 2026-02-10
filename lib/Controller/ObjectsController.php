@@ -618,8 +618,10 @@ class ObjectsController extends Controller
                 } catch (\Exception $e) {
                     // Skip invalid register/schema combinations.
                     $this->logger->warning(
-                        'Invalid register/schema in cross-table search',
+                        '[ObjectsController] Invalid register/schema in cross-table search',
                         [
+                            'file' => __FILE__,
+                            'line' => __LINE__,
                             'register' => $registerId,
                             'schema'   => $schemaId,
                             'error'    => $e->getMessage(),
@@ -1425,8 +1427,10 @@ class ObjectsController extends Controller
                 // This ensures webhook failures don't break the API.
                 if ($this->logger !== null) {
                     $this->logger->error(
-                        'Webhook interception failed',
+                        '[ObjectsController] Webhook interception failed',
                         [
+                            'file' => __FILE__,
+                            'line' => __LINE__,
                             'error'    => $e->getMessage(),
                             'register' => $register,
                             'schema'   => $schema,
@@ -1603,8 +1607,10 @@ class ObjectsController extends Controller
         } catch (\Exception $exception) {
             // Log unexpected exceptions for debugging.
             $this->logger->error(
-                    'Unexpected exception in update findSilent',
+                    '[ObjectsController] Unexpected exception in update findSilent',
                     [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'exception' => $exception->getMessage(),
                         'trace'     => $exception->getTraceAsString(),
                     ]
@@ -1705,8 +1711,10 @@ class ObjectsController extends Controller
 
         // Log RBAC/multitenancy settings for debugging.
         $this->logger->info(
-                'PATCH: RBAC/Multitenancy settings',
+                '[ObjectsController] PATCH: RBAC/Multitenancy settings',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'id'      => $id,
                     'isAdmin' => $isAdmin,
                     'rbac'    => $rbac,
@@ -1743,6 +1751,8 @@ class ObjectsController extends Controller
                 $this->logger->warning(
                         'Could not find object for PATCH',
                         [
+                            'file' => __FILE__,
+                            'line' => __LINE__,
                             'id'        => $id,
                             'exception' => $e->getMessage(),
                         ]
@@ -1764,8 +1774,10 @@ class ObjectsController extends Controller
             );
 
             $this->logger->info(
-                    'PATCH: saveObject succeeded',
+                    '[ObjectsController] PATCH: saveObject succeeded',
                     [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'uuid'   => $objectEntity->getUuid(),
                         'status' => $objectEntity->getObject()['status'] ?? 'unknown',
                     ]
@@ -1779,12 +1791,14 @@ class ObjectsController extends Controller
                 $this->logger->debug(
                         'Failed to unlock after patch',
                         [
+                            'file' => __FILE__,
+                            'line' => __LINE__,
                             'exception' => $e->getMessage(),
                         ]
                         );
             }
 
-            $this->logger->info('PATCH: Starting to prepare response');
+            $this->logger->info('[ObjectsController] PATCH: Starting to prepare response', ['file' => __FILE__, 'line' => __LINE__]);
 
             // Return the successfully saved object directly.
             // We already have it in memory from saveObject(), no need to re-fetch.
@@ -1792,8 +1806,10 @@ class ObjectsController extends Controller
         } catch (ValidationException | CustomValidationException $exception) {
             // Handle validation errors.
             $this->logger->warning(
-                    'Validation exception in patch',
+                    '[ObjectsController] Validation exception in patch',
                     [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'exception' => $exception->getMessage(),
                     ]
                     );
@@ -1801,8 +1817,10 @@ class ObjectsController extends Controller
         } catch (\Exception $exception) {
             // Handle all other exceptions (including RBAC permission errors).
             $this->logger->error(
-                    'Unexpected exception in patch',
+                    '[ObjectsController] Unexpected exception in patch',
                     [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'exception' => $exception->getMessage(),
                         'trace'     => $exception->getTraceAsString(),
                     ]
@@ -2839,8 +2857,10 @@ class ObjectsController extends Controller
             }
 
             $this->logger->info(
-                message: 'Starting bulk validation for schema',
+                message: '[ObjectsController] Starting bulk validation for schema',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'register' => $register,
                     'schema'   => $schemaId,
                     'limit'    => $limitInt,
@@ -2857,8 +2877,10 @@ class ObjectsController extends Controller
             );
 
             $this->logger->info(
-                message: 'Bulk validation and save completed',
+                message: '[ObjectsController] Bulk validation and save completed',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'register'  => $register,
                     'schema'    => $schemaId,
                     'processed' => $result['processed'] ?? 0,
@@ -2886,8 +2908,10 @@ class ObjectsController extends Controller
             );
         } catch (Exception $e) {
             $this->logger->error(
-                message: 'Bulk validation failed',
+                message: '[ObjectsController] Bulk validation failed',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]
@@ -3019,14 +3043,14 @@ class ObjectsController extends Controller
     public function clearBlob(): JSONResponse
     {
         try {
-            $this->logger->info('[ObjectsController] Starting clear blob storage objects operation');
+            $this->logger->info('[ObjectsController] Starting clear blob storage objects operation', ['file' => __FILE__, 'line' => __LINE__]);
 
             // Use the object entity mapper to delete all blob objects.
             $result = $this->objectEntityMapper->clearBlobObjects();
 
             $this->logger->info(
                 '[ObjectsController] Successfully cleared blob storage objects',
-                ['deleted' => $result['deleted'] ?? 0]
+                ['file' => __FILE__, 'line' => __LINE__, 'deleted' => $result['deleted'] ?? 0]
             );
 
             return new JSONResponse(
@@ -3040,6 +3064,8 @@ class ObjectsController extends Controller
             $this->logger->error(
                 '[ObjectsController] Failed to clear blob storage objects',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]

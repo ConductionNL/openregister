@@ -85,7 +85,7 @@ class SolrQueryExecutor
         $collection = $this->collectionManager->getActiveCollectionName();
 
         if ($collection === null) {
-            $this->logger->warning('[SolrQueryExecutor] No active collection for search');
+            $this->logger->warning('[SolrQueryExecutor] No active collection for search', ['file' => __FILE__, 'line' => __LINE__]);
             return [
                 'response' => [
                     'numFound' => 0,

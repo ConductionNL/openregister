@@ -101,6 +101,8 @@ class FileChangeListener implements IEventListener
             $this->logger->debug(
                 '[FileChangeListener] Skipping anonymized file',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'file_id'   => $fileId,
                     'file_name' => $fileName,
                     'file_path' => $filePath,
@@ -129,7 +131,7 @@ class FileChangeListener implements IEventListener
         if ($extractionScope === 'none') {
             $this->logger->debug(
                 '[FileChangeListener] Extraction scope is none, skipping',
-                ['file_id' => $fileId]
+                ['file' => __FILE__, 'line' => __LINE__, 'file_id' => $fileId]
             );
             return;
         }
@@ -138,6 +140,8 @@ class FileChangeListener implements IEventListener
             $this->logger->debug(
                 '[FileChangeListener] Skipping non-OpenRegister file (scope: objects)',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'file_id'   => $fileId,
                     'file_path' => $filePath,
                 ]
@@ -148,6 +152,8 @@ class FileChangeListener implements IEventListener
         $this->logger->info(
             '[FileChangeListener] File event detected - processing',
             [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'event_type'       => get_class($event),
                 'file_id'          => $fileId,
                 'file_name'        => $fileName,
@@ -167,6 +173,8 @@ class FileChangeListener implements IEventListener
                     $this->logger->info(
                         '[FileChangeListener] Immediate mode - processing synchronously',
                         [
+                            'file' => __FILE__,
+                            'line' => __LINE__,
                             'file_id'   => $fileId,
                             'file_name' => $fileName,
                         ]
@@ -175,12 +183,14 @@ class FileChangeListener implements IEventListener
                         $this->textExtractSvc->extractFile(fileId: $fileId, forceReExtract: false);
                         $this->logger->info(
                             '[FileChangeListener] Immediate extraction completed',
-                            ['file_id' => $fileId]
+                            ['file' => __FILE__, 'line' => __LINE__, 'file_id' => $fileId]
                         );
                     } catch (\Exception $e) {
                         $this->logger->error(
                             '[FileChangeListener] Immediate extraction failed',
                             [
+                                'file' => __FILE__,
+                                'line' => __LINE__,
                                 'file_id' => $fileId,
                                 'error'   => $e->getMessage(),
                             ]
@@ -193,6 +203,8 @@ class FileChangeListener implements IEventListener
                     $this->logger->info(
                         '[FileChangeListener] Background mode - queueing extraction job',
                         [
+                            'file' => __FILE__,
+                            'line' => __LINE__,
                             'file_id'   => $fileId,
                             'file_name' => $fileName,
                         ]
@@ -201,12 +213,14 @@ class FileChangeListener implements IEventListener
                         $this->jobList->add(job: FileTextExtractionJob::class, argument: ['file_id' => $fileId]);
                         $this->logger->debug(
                             '[FileChangeListener] Background extraction job queued',
-                            ['file_id' => $fileId]
+                            ['file' => __FILE__, 'line' => __LINE__, 'file_id' => $fileId]
                         );
                     } catch (\Exception $e) {
                         $this->logger->error(
                             '[FileChangeListener] Failed to queue background job',
                             [
+                                'file' => __FILE__,
+                                'line' => __LINE__,
                                 'file_id' => $fileId,
                                 'error'   => $e->getMessage(),
                             ]
@@ -218,7 +232,7 @@ class FileChangeListener implements IEventListener
                     // Skip - cron job will handle periodic batch processing.
                     $this->logger->debug(
                         '[FileChangeListener] Cron mode - skipping, will be processed by scheduled job',
-                        ['file_id' => $fileId]
+                        ['file' => __FILE__, 'line' => __LINE__, 'file_id' => $fileId]
                     );
                     break;
 
@@ -226,7 +240,7 @@ class FileChangeListener implements IEventListener
                     // Skip - only manual triggers will process.
                     $this->logger->debug(
                         '[FileChangeListener] Manual mode - skipping, requires manual trigger',
-                        ['file_id' => $fileId]
+                        ['file' => __FILE__, 'line' => __LINE__, 'file_id' => $fileId]
                     );
                     break;
 
@@ -235,6 +249,8 @@ class FileChangeListener implements IEventListener
                     $this->logger->warning(
                         '[FileChangeListener] Unknown extraction mode, defaulting to background',
                         [
+                            'file' => __FILE__,
+                            'line' => __LINE__,
                             'file_id'         => $fileId,
                             'extraction_mode' => $extractionMode,
                         ]
@@ -246,6 +262,8 @@ class FileChangeListener implements IEventListener
             $this->logger->error(
                 '[FileChangeListener] Error determining extraction mode',
                 [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'file_id' => $fileId,
                     'error'   => $e->getMessage(),
                     'trace'   => $e->getTraceAsString(),
