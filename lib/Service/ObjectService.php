@@ -2088,7 +2088,7 @@ class ObjectService
                 $query['@self']['schema']
             );
         } else if (isset($query['@self']['schema']) === true) {
-            $query['@self']['schema'] = is_int($query['@self']['schema']) ? $query['@self']['schema'] : $this->registerMapper->find($query['@self']['schema'])->getId();
+            $query['@self']['schema'] = is_int($query['@self']['schema']) ? $query['@self']['schema'] : $this->schemaMapper->find($query['@self']['schema'])->getId();
         }
 
         return $query;
