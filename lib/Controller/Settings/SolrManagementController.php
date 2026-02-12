@@ -782,6 +782,8 @@ class SolrManagementController extends Controller
             $logger->warning(
                 message: '[SolrManagementController] 🚨 SOLR collection deletion requested',
                 context: [
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
                     'timestamp'  => date('c'),
                     'user_id'    => $this->userId ?? 'unknown',
                     'collection' => $name,
@@ -799,6 +801,8 @@ class SolrManagementController extends Controller
                 $logger->info(
                     message: '[SolrManagementController] ✅ SOLR collection deleted successfully',
                     context: [
+                        'file'       => __FILE__,
+                        'line'       => __LINE__,
                         'collection' => $name,
                         'user_id'    => $this->userId ?? 'unknown',
                     ]

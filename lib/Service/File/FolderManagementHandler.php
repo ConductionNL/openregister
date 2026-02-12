@@ -141,7 +141,12 @@ class FolderManagementHandler
         } catch (Exception $e) {
             $this->logger->error(
                 message: '[FolderManagementHandler] Failed to create folder for entity: {message}',
-                context: ['message' => $e->getMessage(), 'exception' => $e]
+                context: [
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
+                    'message'   => $e->getMessage(),
+                    'exception' => $e,
+                ]
             );
             return null;
         }

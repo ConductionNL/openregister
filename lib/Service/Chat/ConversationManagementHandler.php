@@ -143,7 +143,7 @@ class ConversationManagementHandler
     public function generateConversationTitle(string $firstMessage): string
     {
         $this->logger->info(
-            message:'[ChatService] Generating conversation title',
+            message: '[ConversationManagementHandler] Generating conversation title',
             context: [
                 'file' => __FILE__,
                 'line' => __LINE__,
@@ -256,7 +256,7 @@ class ConversationManagementHandler
             return $title;
         } catch (Exception $e) {
             $this->logger->warning(
-                message: '[ChatService] Failed to generate title, using fallback',
+                message: '[ConversationManagementHandler] Failed to generate title, using fallback',
                 context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
@@ -310,7 +310,7 @@ class ConversationManagementHandler
     public function ensureUniqueTitle(string $baseTitle, string $userId, int $agentId): string
     {
         $this->logger->info(
-            message: '[ChatService] Ensuring unique title',
+            message: '[ConversationManagementHandler] Ensuring unique title',
             context: [
                 'file' => __FILE__,
                 'line' => __LINE__,
@@ -357,7 +357,7 @@ class ConversationManagementHandler
         $uniqueTitle = $baseTitle.' ('.($maxNumber + 1).')';
 
         $this->logger->info(
-            message: '[ChatService] Generated unique title',
+            message: '[ConversationManagementHandler] Generated unique title',
             context: [
                 'file' => __FILE__,
                 'line' => __LINE__,
@@ -403,7 +403,7 @@ class ConversationManagementHandler
         }
 
         $this->logger->info(
-            message: '[ChatService] Triggering conversation summarization',
+            message: '[ConversationManagementHandler] Triggering conversation summarization',
             context: [
                 'file' => __FILE__,
                 'line' => __LINE__,
@@ -434,7 +434,7 @@ class ConversationManagementHandler
             $this->conversationMapper->update($conversation);
 
             $this->logger->info(
-                message: '[ChatService] Conversation summarized',
+                message: '[ConversationManagementHandler] Conversation summarized',
                 context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
@@ -444,7 +444,7 @@ class ConversationManagementHandler
             );
         } catch (Exception $e) {
             $this->logger->error(
-                message: '[ChatService] Failed to summarize conversation',
+                message: '[ConversationManagementHandler] Failed to summarize conversation',
                 context: [
                     'file' => __FILE__,
                     'line' => __LINE__,

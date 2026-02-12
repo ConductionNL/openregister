@@ -154,6 +154,8 @@ class LockingHandler
         $this->logger->info(
             message: '[LockingHandler] Object locked successfully',
             context: [
+                'file'     => __FILE__,
+                'line'     => __LINE__,
                 'objectId' => $object->getId(),
             ]
         );
@@ -205,6 +207,8 @@ class LockingHandler
         $this->logger->info(
             message: '[LockingHandler] Object unlocked successfully',
             context: [
+                'file'     => __FILE__,
+                'line'     => __LINE__,
                 'objectId' => $object->getId(),
             ]
         );

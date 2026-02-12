@@ -78,6 +78,8 @@ class PerformanceHandler
             $this->logger->debug(
                 message: '[PerformanceHandler] 🚀 FAST PATH: Simple request detected',
                 context: [
+                    'file'            => __FILE__,
+                    'line'            => __LINE__,
                     'benefit'         => 'skip_heavy_processing',
                     'estimatedSaving' => '200-300ms',
                 ]
@@ -288,10 +290,12 @@ class PerformanceHandler
         $this->logger->debug(
             message: '[PerformanceHandler] 🔗 RELATED DATA EXTRACTED',
             context: [
-                'related_ids_found'     => count($allRelatedIds),
-                'include_related'       => $includeRelated,
-                'include_related_names' => $includeRelatedNames,
-                'execution_time'        => $executionTime.'ms',
+                'file'                   => __FILE__,
+                'line'                   => __LINE__,
+                'related_ids_found'      => count($allRelatedIds),
+                'include_related'        => $includeRelated,
+                'include_related_names'  => $includeRelatedNames,
+                'execution_time'         => $executionTime.'ms',
             ]
         );
 

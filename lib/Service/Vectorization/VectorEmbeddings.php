@@ -231,6 +231,8 @@ class VectorEmbeddings
         $this->logger->info(
             message: '[VectorEmbeddings] Testing embedding generation',
             context: [
+                'file'           => __FILE__,
+                'line'           => __LINE__,
                 'provider'       => $provider,
                 'model'          => $config['model'] ?? 'unknown',
                 'testTextLength' => strlen($testText),
@@ -251,6 +253,8 @@ class VectorEmbeddings
             $this->logger->info(
                 message: '[VectorEmbeddings] Embedding test successful',
                 context: [
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
                     'provider'   => $provider,
                     'model'      => $config['model'] ?? 'unknown',
                     'dimensions' => count($embedding),
@@ -272,6 +276,8 @@ class VectorEmbeddings
             $this->logger->error(
                 message: '[VectorEmbeddings] Embedding test failed',
                 context: [
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
                     'provider' => $provider,
                     'error'    => $e->getMessage(),
                 ]

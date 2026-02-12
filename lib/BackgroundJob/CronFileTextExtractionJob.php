@@ -232,13 +232,13 @@ class CronFileTextExtractionJob extends TimedJob
             $logger->error(
                 message: '[CronFileTextExtractionJob] 🚨 Cron File Text Extraction Job Exception',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'                   => __FILE__,
+                    'line'                   => __LINE__,
                     'job_id'                 => $this->getId(),
                     'execution_time_seconds' => round($executionTime, 2),
                     'exception'              => $e->getMessage(),
-                    'file'                   => $e->getFile(),
-                    'line'                   => $e->getLine(),
+                    'exception_file'         => $e->getFile(),
+                    'exception_line'         => $e->getLine(),
                     'trace'                  => $e->getTraceAsString(),
                 ]
             );

@@ -163,6 +163,8 @@ class ViewsController extends Controller
             $this->logger->error(
                 message: '[ViewsController] Error fetching views',
                 context: [
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
                     'exception' => $e->getMessage(),
                 ]
             );
@@ -331,6 +333,8 @@ class ViewsController extends Controller
             $this->logger->error(
                 message: '[ViewsController] Error creating view',
                 context: [
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
                     'exception' => $e->getMessage(),
                 ]
             );

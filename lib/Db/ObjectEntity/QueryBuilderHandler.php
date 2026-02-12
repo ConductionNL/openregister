@@ -96,6 +96,8 @@ class QueryBuilderHandler
                 $this->logger->debug(
                     message: '[QueryBuilderHandler] Retrieved max_allowed_packet',
                     context: [
+                        'file'   => __FILE__,
+                        'line'   => __LINE__,
                         'size'   => $packetSize,
                         'sizeMB' => round($packetSize / 1048576, 2),
                     ]
@@ -107,6 +109,8 @@ class QueryBuilderHandler
             $this->logger->debug(
                 message: '[QueryBuilderHandler] Failed to get max_allowed_packet, using fallback',
                 context: [
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
                     'exception' => $e->getMessage(),
                 ]
             );
