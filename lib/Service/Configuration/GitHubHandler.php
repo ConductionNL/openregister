@@ -132,8 +132,8 @@ class GitHubHandler
         if (empty($token) === false) {
             $headers['Authorization'] = 'Bearer '.$token;
             $this->logger->debug(
-                '[GitHubHandler] Using GitHub API token for authentication',
-                [
+                message: '[GitHubHandler] Using GitHub API token for authentication',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'token_length' => strlen($token),
@@ -144,7 +144,7 @@ class GitHubHandler
 
         if (empty($token) === true) {
             $this->logger->warning(
-                message: 'No GitHub API token configured - unauthenticated access (60 requests/hour limit)',
+                message: '[GitHubHandler] No GitHub API token configured - unauthenticated access (60 requests/hour limit)',
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
         }
@@ -187,8 +187,8 @@ class GitHubHandler
             // Search directly for x-openregister content in JSON files.
             // This targets actual config files immediately, avoiding multi-phase searches.
             $this->logger->info(
-                'Searching for OpenRegister configurations',
-                [
+                message: '[GitHubHandler] Searching for OpenRegister configurations',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'search_terms' => $search,
@@ -210,8 +210,8 @@ class GitHubHandler
             }
 
             $this->logger->debug(
-                'GitHub Code Search query',
-                [
+                message: '[GitHubHandler] GitHub Code Search query',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'query'    => $searchQuery,
@@ -242,8 +242,8 @@ class GitHubHandler
             $data = json_decode($response->getBody(), true);
 
             $this->logger->debug(
-                'GitHub Code Search response',
-                [
+                message: '[GitHubHandler] GitHub Code Search response',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'total_count'        => $data['total_count'] ?? 0,
@@ -296,8 +296,8 @@ class GitHubHandler
             }//end foreach
 
             $this->logger->info(
-                'Search complete',
-                [
+                message: '[GitHubHandler] Search complete',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'total_found'      => $data['total_count'] ?? 0,
@@ -324,8 +324,8 @@ class GitHubHandler
             }
 
             $this->logger->error(
-                'GitHub API search failed',
-                [
+                message: '[GitHubHandler] GitHub API search failed',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'error'       => $errorMessage,
@@ -491,8 +491,8 @@ class GitHubHandler
             $rawUrl = "https://raw.githubusercontent.com/{$owner}/{$repo}/{$branch}/{$path}";
 
             $this->logger->debug(
-                '[GitHubHandler] Enriching configuration details from raw URL',
-                [
+                message: '[GitHubHandler] Enriching configuration details from raw URL',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'url' => $rawUrl,
@@ -514,8 +514,8 @@ class GitHubHandler
 
             if (json_last_error() !== JSON_ERROR_NONE) {
                 $this->logger->warning(
-                    '[GitHubHandler] Failed to parse configuration JSON',
-                    [
+                    message: '[GitHubHandler] Failed to parse configuration JSON',
+                    context: [
                         'file' => __FILE__,
                         'line' => __LINE__,
                         'url'   => $rawUrl,
@@ -536,8 +536,8 @@ class GitHubHandler
             ];
         } catch (Exception $e) {
             $this->logger->warning(
-                '[GitHubHandler] Failed to enrich configuration details',
-                [
+                message: '[GitHubHandler] Failed to enrich configuration details',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'owner' => $owner,
@@ -568,8 +568,8 @@ class GitHubHandler
     {
         try {
             $this->logger->info(
-                '[GitHubHandler] Fetching branches from GitHub',
-                [
+                message: '[GitHubHandler] Fetching branches from GitHub',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'owner' => $owner,
@@ -601,8 +601,8 @@ class GitHubHandler
             );
         } catch (GuzzleException $e) {
             $this->logger->error(
-                '[GitHubHandler] GitHub API get branches failed',
-                [
+                message: '[GitHubHandler] GitHub API get branches failed',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'error' => $e->getMessage(),
@@ -631,8 +631,8 @@ class GitHubHandler
     {
         try {
             $this->logger->info(
-                '[GitHubHandler] Fetching file from GitHub',
-                [
+                message: '[GitHubHandler] Fetching file from GitHub',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'owner'  => $owner,
@@ -668,8 +668,8 @@ class GitHubHandler
             throw new Exception('No content found in file');
         } catch (GuzzleException $e) {
             $this->logger->error(
-                '[GitHubHandler] GitHub API get file content failed',
-                [
+                message: '[GitHubHandler] GitHub API get file content failed',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'error'  => $e->getMessage(),
@@ -711,8 +711,8 @@ class GitHubHandler
     {
         try {
             $this->logger->info(
-                '[GitHubHandler] Listing configuration files from GitHub',
-                [
+                message: '[GitHubHandler] Listing configuration files from GitHub',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'owner'  => $owner,
@@ -768,8 +768,8 @@ class GitHubHandler
             return $files;
         } catch (GuzzleException $e) {
             $this->logger->error(
-                '[GitHubHandler] GitHub API list files failed',
-                [
+                message: '[GitHubHandler] GitHub API list files failed',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'error'  => $e->getMessage(),
@@ -804,8 +804,8 @@ class GitHubHandler
             // Validate that it's a valid OpenRegister configuration.
             if (isset($content['openapi']) === false || isset($content['x-openregister']) === false) {
                 $this->logger->debug(
-                    '[GitHubHandler] File does not contain required OpenRegister structure',
-                    [
+                    message: '[GitHubHandler] File does not contain required OpenRegister structure',
+                    context: [
                         'file' => __FILE__,
                         'line' => __LINE__,
                         'path' => $path,
@@ -817,8 +817,8 @@ class GitHubHandler
             return $content;
         } catch (Exception $e) {
             $this->logger->debug(
-                '[GitHubHandler] Failed to parse configuration file',
-                [
+                message: '[GitHubHandler] Failed to parse configuration file',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'path'  => $path,
@@ -868,8 +868,8 @@ class GitHubHandler
 
         try {
             $this->logger->info(
-                '[GitHubHandler] Fetching repositories from GitHub',
-                [
+                message: '[GitHubHandler] Fetching repositories from GitHub',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'page'     => $page,
@@ -925,8 +925,8 @@ class GitHubHandler
             // If authentication failed (401) or token not configured, return empty array instead of error.
             if ($statusCode === 401 || empty($token) === true) {
                 $this->logger->info(
-                    '[GitHubHandler] GitHub API authentication failed or not configured - returning empty repositories list',
-                    [
+                    message: '[GitHubHandler] GitHub API authentication failed or not configured - returning empty repositories list',
+                    context: [
                         'file' => __FILE__,
                         'line' => __LINE__,
                         'status_code' => $statusCode,
@@ -937,8 +937,8 @@ class GitHubHandler
             }
 
             $this->logger->error(
-                '[GitHubHandler] GitHub API get repositories failed',
-                [
+                message: '[GitHubHandler] GitHub API get repositories failed',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'error'       => $e->getMessage(),
@@ -997,8 +997,8 @@ class GitHubHandler
             ];
         } catch (GuzzleException $e) {
             $this->logger->error(
-                '[GitHubHandler] GitHub API get repository info failed',
-                [
+                message: '[GitHubHandler] GitHub API get repository info failed',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'error' => $e->getMessage(),
@@ -1048,8 +1048,8 @@ class GitHubHandler
     ): array {
         try {
             $this->logger->info(
-                '[GitHubHandler] Publishing configuration to GitHub',
-                [
+                message: '[GitHubHandler] Publishing configuration to GitHub',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'owner'     => $owner,
@@ -1084,8 +1084,8 @@ class GitHubHandler
             $apiUrl = self::API_BASE."/repos/{$owner}/{$repo}/contents/{$encodedPath}";
 
             $this->logger->debug(
-                '[GitHubHandler] GitHub API publish request',
-                [
+                message: '[GitHubHandler] GitHub API publish request',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'url'          => $apiUrl,
@@ -1107,8 +1107,8 @@ class GitHubHandler
             $result = json_decode($response->getBody(), true);
 
             $this->logger->info(
-                '[GitHubHandler] Configuration published successfully',
-                [
+                message: '[GitHubHandler] Configuration published successfully',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'commit_sha' => $result['commit']['sha'] ?? null,
@@ -1152,8 +1152,8 @@ class GitHubHandler
             }//end if
 
             $this->logger->error(
-                '[GitHubHandler] GitHub API publish failed',
-                [
+                message: '[GitHubHandler] GitHub API publish failed',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'error'       => $errorMessage,
@@ -1209,8 +1209,8 @@ class GitHubHandler
             }
 
             $this->logger->error(
-                '[GitHubHandler] GitHub API get file SHA failed',
-                [
+                message: '[GitHubHandler] GitHub API get file SHA failed',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'error' => $e->getMessage(),

@@ -379,7 +379,10 @@ class FileService
         FilePublishingHandler $filePubHandler
     ) {
         $this->logger = $logger;
-        $this->logger->debug('[FileService] FileService constructor started.', ['file' => __FILE__, 'line' => __LINE__]);
+        $this->logger->debug(
+            message: '[FileService] FileService constructor started.',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
         $this->config       = $config;
         $this->fileMapper   = $fileMapper;
         $this->groupManager = $groupManager;
@@ -406,41 +409,86 @@ class FileService
         $this->filePublishingHandler     = $filePubHandler;
 
         // Break circular dependency: FolderManagementHandler needs FileService for cross-handler coordination.
-        $this->logger->debug('[FileService] About to call folderManagementHandler->setFileService.', ['file' => __FILE__, 'line' => __LINE__]);
+        $this->logger->debug(
+            message: '[FileService] About to call folderManagementHandler->setFileService.',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
         $this->folderManagementHandler->setFileService($this);
-        $this->logger->debug('[FileService] Called folderManagementHandler->setFileService.', ['file' => __FILE__, 'line' => __LINE__]);
+        $this->logger->debug(
+            message: '[FileService] Called folderManagementHandler->setFileService.',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
 
         // Break circular dependency: UpdateFileHandler needs FileService for utility methods (tags, path extraction).
-        $this->logger->debug('[FileService] About to call updateFileHandler->setFileService.', ['file' => __FILE__, 'line' => __LINE__]);
+        $this->logger->debug(
+            message: '[FileService] About to call updateFileHandler->setFileService.',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
         $this->updateFileHandler->setFileService($this);
-        $this->logger->debug('[FileService] Called updateFileHandler->setFileService.', ['file' => __FILE__, 'line' => __LINE__]);
+        $this->logger->debug(
+            message: '[FileService] Called updateFileHandler->setFileService.',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
 
         // Break circular dependency: CreateFileHandler needs FileService for sharing and tagging.
-        $this->logger->debug('[FileService] About to call createFileHandler->setFileService.', ['file' => __FILE__, 'line' => __LINE__]);
+        $this->logger->debug(
+            message: '[FileService] About to call createFileHandler->setFileService.',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
         $this->createFileHandler->setFileService($this);
-        $this->logger->debug('[FileService] Called createFileHandler->setFileService.', ['file' => __FILE__, 'line' => __LINE__]);
+        $this->logger->debug(
+            message: '[FileService] Called createFileHandler->setFileService.',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
 
         // Break circular dependency: ReadFileHandler needs FileService for utility methods.
-        $this->logger->debug('[FileService] About to call readFileHandler->setFileService.', ['file' => __FILE__, 'line' => __LINE__]);
+        $this->logger->debug(
+            message: '[FileService] About to call readFileHandler->setFileService.',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
         $this->readFileHandler->setFileService($this);
-        $this->logger->debug('[FileService] Called readFileHandler->setFileService.', ['file' => __FILE__, 'line' => __LINE__]);
+        $this->logger->debug(
+            message: '[FileService] Called readFileHandler->setFileService.',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
 
         // Break circular dependency: FileFormattingHandler needs FileService for utility methods (shares, tags, etc.).
-        $this->logger->debug('[FileService] About to call fileFormattingHandler->setFileService.', ['file' => __FILE__, 'line' => __LINE__]);
+        $this->logger->debug(
+            message: '[FileService] About to call fileFormattingHandler->setFileService.',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
         $this->fileFormattingHandler->setFileService($this);
-        $this->logger->debug('[FileService] Called fileFormattingHandler->setFileService.', ['file' => __FILE__, 'line' => __LINE__]);
+        $this->logger->debug(
+            message: '[FileService] Called fileFormattingHandler->setFileService.',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
 
         // Break circular dependency: DocumentProcessingHandler needs FileService for cross-handler coordination.
-        $this->logger->debug('[FileService] About to call documentProcessingHandler->setFileService.', ['file' => __FILE__, 'line' => __LINE__]);
+        $this->logger->debug(
+            message: '[FileService] About to call documentProcessingHandler->setFileService.',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
         $this->documentProcessingHandler->setFileService($this);
-        $this->logger->debug('[FileService] Called documentProcessingHandler->setFileService.', ['file' => __FILE__, 'line' => __LINE__]);
+        $this->logger->debug(
+            message: '[FileService] Called documentProcessingHandler->setFileService.',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
 
         // Break circular dependency: FilePublishingHandler needs FileService for file operations and utilities.
-        $this->logger->debug('[FileService] About to call filePublishingHandler->setFileService.', ['file' => __FILE__, 'line' => __LINE__]);
+        $this->logger->debug(
+            message: '[FileService] About to call filePublishingHandler->setFileService.',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
         $this->filePublishingHandler->setFileService($this);
-        $this->logger->debug('[FileService] Called filePublishingHandler->setFileService.', ['file' => __FILE__, 'line' => __LINE__]);
+        $this->logger->debug(
+            message: '[FileService] Called filePublishingHandler->setFileService.',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
 
-        $this->logger->debug('[FileService] FileService constructor completed.', ['file' => __FILE__, 'line' => __LINE__]);
+        $this->logger->debug(
+            message: '[FileService] FileService constructor completed.',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
     }//end __construct()
 
     /**

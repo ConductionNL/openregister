@@ -550,8 +550,10 @@ class DashboardController extends Controller
             return new JSONResponse(data: $data);
         } catch (\Exception $e) {
             $this->logger->error(
-                message: 'Error retrieving most active objects: '.$e->getMessage(),
+                message: '[DashboardController] Error retrieving most active objects: '.$e->getMessage(),
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'register_id' => $registerId,
                     'schema_id'   => $schemaId,
                     'limit'       => $limit,

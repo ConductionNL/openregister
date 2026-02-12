@@ -156,7 +156,10 @@ class ElasticsearchBackend implements SearchBackendInterface
     public function deleteByQuery(string $query, bool $commit=false, bool $returnDetails=false): array|bool
     {
         // Simplified implementation - just return success.
-        $this->logger->info('[ElasticsearchBackend] deleteByQuery called (not fully implemented yet)', ['file' => __FILE__, 'line' => __LINE__]);
+        $this->logger->info(
+            message: '[ElasticsearchBackend] deleteByQuery called (not fully implemented yet)',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
         if ($returnDetails === true) {
             return ['deleted' => 0];
         }
@@ -249,7 +252,10 @@ class ElasticsearchBackend implements SearchBackendInterface
      */
     public function reindexAll(int $maxObjects=0, int $batchSize=1000, ?string $collectionName=null): array
     {
-        $this->logger->info('[ElasticsearchBackend] reindexAll called (delegates to external handler)', ['file' => __FILE__, 'line' => __LINE__]);
+        $this->logger->info(
+            message: '[ElasticsearchBackend] reindexAll called (delegates to external handler)',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
 
         return [
             'success' => true,
@@ -453,7 +459,10 @@ class ElasticsearchBackend implements SearchBackendInterface
     public function index(array $documents): bool
     {
         // Simplified implementation.
-        $this->logger->info('[ElasticsearchBackend] index() called with '.count($documents).' documents', ['file' => __FILE__, 'line' => __LINE__]);
+        $this->logger->info(
+            message: '[ElasticsearchBackend] index() called with '.count($documents).' documents',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
         return true;
     }//end index()
 

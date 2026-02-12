@@ -234,7 +234,7 @@ class ConfigurationController extends Controller
             }
 
             $this->logger->info(
-                message: 'Enriching configuration details',
+                message: '[ConfigurationController] Enriching configuration details',
                 context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
@@ -274,7 +274,7 @@ class ConfigurationController extends Controller
             return new JSONResponse(data: $details, statusCode: 200);
         } catch (Exception $e) {
             $this->logger->error(
-                message: 'Configuration enrichment failed: '.$e->getMessage(),
+                message: '[ConfigurationController] Configuration enrichment failed: '.$e->getMessage(),
                 context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
@@ -376,7 +376,7 @@ class ConfigurationController extends Controller
             $updated = $this->configurationMapper->update($configuration);
 
             $this->logger->info(
-                message: "Updated configuration: {$updated->getTitle()} (ID: {$updated->getId()})",
+                message: "[ConfigurationController] Updated configuration: {$updated->getTitle()} (ID: {$updated->getId()})",
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
 
@@ -577,7 +577,10 @@ class ConfigurationController extends Controller
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             return new JSONResponse(data: ['error' => 'Configuration not found'], statusCode: 404);
         } catch (Exception $e) {
-            $this->logger->error("[ConfigurationController] Failed to preview configuration {$id}: ".$e->getMessage(), ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->error(
+                message: "[ConfigurationController] Failed to preview configuration {$id}: ".$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
 
             return new JSONResponse(data: ['error' => 'Failed to preview configuration changes'], statusCode: 500);
         }//end try
@@ -610,14 +613,14 @@ class ConfigurationController extends Controller
             $this->notificationService->markConfigurationUpdated($configuration);
 
             $this->logger->info(
-                "Imported configuration {$configuration->getTitle()}: ".json_encode(
-                    [
-                        'registers' => count($result['registers']),
-                        'schemas'   => count($result['schemas']),
-                        'objects'   => count($result['objects']),
-                    ]
-                ),
-                ['file' => __FILE__, 'line' => __LINE__]
+                message: "[ConfigurationController] Imported configuration {$configuration->getTitle()}",
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
+                    'registers' => count($result['registers']),
+                    'schemas'   => count($result['schemas']),
+                    'objects'   => count($result['objects']),
+                ]
             );
 
             return new JSONResponse(
@@ -632,7 +635,10 @@ class ConfigurationController extends Controller
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             return new JSONResponse(data: ['error' => 'Configuration not found'], statusCode: 404);
         } catch (Exception $e) {
-            $this->logger->error("[ConfigurationController] Failed to import configuration {$id}: ".$e->getMessage(), ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->error(
+                message: "[ConfigurationController] Failed to import configuration {$id}: ".$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
 
             return new JSONResponse(data: ['error' => 'Failed to import configuration: '.$e->getMessage()], statusCode: 500);
         }//end try
@@ -669,7 +675,10 @@ class ConfigurationController extends Controller
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             return new JSONResponse(data: ['error' => 'Configuration not found'], statusCode: 404);
         } catch (Exception $e) {
-            $this->logger->error("[ConfigurationController] Failed to export configuration {$id}: ".$e->getMessage(), ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->error(
+                message: "[ConfigurationController] Failed to export configuration {$id}: ".$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
 
             return new JSONResponse(data: ['error' => 'Failed to export configuration: '.$e->getMessage()], statusCode: 500);
         }//end try
@@ -706,8 +715,8 @@ class ConfigurationController extends Controller
             $page   = (int) ($data['page'] ?? 1);
 
             $this->logger->info(
-                'Discovering configurations',
-                [
+                message: '[ConfigurationController] Discovering configurations',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'source'  => $source,
@@ -726,26 +735,35 @@ class ConfigurationController extends Controller
 
             // Call appropriate service.
             if ($source === 'github') {
-                $this->logger->info('[ConfigurationController] About to call GitHub search service', ['file' => __FILE__, 'line' => __LINE__]);
+                $this->logger->info(
+                    message: '[ConfigurationController] About to call GitHub search service',
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
                 $results = $this->githubHandler->searchConfigurations(search: $search, page: $page);
-                $this->logger->info('[ConfigurationController] GitHub search completed', ['file' => __FILE__, 'line' => __LINE__, 'result_count' => count($results['results'] ?? [])]);
+                $this->logger->info(
+                    message: '[ConfigurationController] GitHub search completed',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'result_count' => count($results['results'] ?? [])]
+                );
             } else {
-                $this->logger->info('[ConfigurationController] About to call GitLab search service', ['file' => __FILE__, 'line' => __LINE__]);
+                $this->logger->info(
+                    message: '[ConfigurationController] About to call GitLab search service',
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
                 $results = $this->gitlabHandler->searchConfigurations(
                     search: $search,
                     page: $page
                 );
                 $this->logger->info(
-                    '[ConfigurationController] GitLab search completed',
-                    ['file' => __FILE__, 'line' => __LINE__, 'result_count' => count($results['results'] ?? [])]
+                    message: '[ConfigurationController] GitLab search completed',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'result_count' => count($results['results'] ?? [])]
                 );
             }
 
             return new JSONResponse(data: $results, statusCode: 200);
         } catch (Exception $e) {
             $this->logger->error(
-                'Configuration discovery failed: '.$e->getMessage(),
-                [
+                message: '[ConfigurationController] Configuration discovery failed: '.$e->getMessage(),
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'source'    => $source ?? 'unknown',
@@ -784,8 +802,8 @@ class ConfigurationController extends Controller
             }
 
             $this->logger->info(
-                'Fetching GitHub branches',
-                [
+                message: '[ConfigurationController] Fetching GitHub branches',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'owner' => $owner,
@@ -797,7 +815,10 @@ class ConfigurationController extends Controller
 
             return new JSONResponse(data: ['branches' => $branches], statusCode: 200);
         } catch (Exception $e) {
-            $this->logger->error('[ConfigurationController] Failed to get GitHub branches: '.$e->getMessage(), ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->error(
+                message: '[ConfigurationController] Failed to get GitHub branches: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
 
             return new JSONResponse(data: ['error' => 'Failed to fetch branches: '.$e->getMessage()], statusCode: 500);
         }//end try
@@ -827,8 +848,8 @@ class ConfigurationController extends Controller
             }
 
             $this->logger->info(
-                'Fetching GitHub repositories',
-                [
+                message: '[ConfigurationController] Fetching GitHub repositories',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'page'     => $page,
@@ -843,7 +864,10 @@ class ConfigurationController extends Controller
 
             return new JSONResponse(data: ['repositories' => $repositories], statusCode: 200);
         } catch (Exception $e) {
-            $this->logger->error('[ConfigurationController] Failed to get GitHub repositories: '.$e->getMessage(), ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->error(
+                message: '[ConfigurationController] Failed to get GitHub repositories: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
 
             return new JSONResponse(data: ['error' => 'Failed to fetch repositories: '.$e->getMessage()], statusCode: 500);
         }//end try
@@ -873,8 +897,8 @@ class ConfigurationController extends Controller
             }
 
             $this->logger->info(
-                'Fetching GitHub configurations',
-                [
+                message: '[ConfigurationController] Fetching GitHub configurations',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'owner'  => $owner,
@@ -887,7 +911,10 @@ class ConfigurationController extends Controller
 
             return new JSONResponse(data: ['files' => $files], statusCode: 200);
         } catch (Exception $e) {
-            $this->logger->error('[ConfigurationController] Failed to get GitHub configurations: '.$e->getMessage(), ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->error(
+                message: '[ConfigurationController] Failed to get GitHub configurations: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
 
             return new JSONResponse(data: ['error' => 'Failed to fetch configurations: '.$e->getMessage()], statusCode: 500);
         }//end try
@@ -920,8 +947,8 @@ class ConfigurationController extends Controller
             $projectId   = $projectData['id'];
 
             $this->logger->info(
-                'Fetching GitLab branches',
-                [
+                message: '[ConfigurationController] Fetching GitLab branches',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'namespace'  => $namespace,
@@ -934,7 +961,10 @@ class ConfigurationController extends Controller
 
             return new JSONResponse(data: ['branches' => $branches], statusCode: 200);
         } catch (Exception $e) {
-            $this->logger->error('[ConfigurationController] Failed to get GitLab branches: '.$e->getMessage(), ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->error(
+                message: '[ConfigurationController] Failed to get GitLab branches: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
 
             return new JSONResponse(data: ['error' => 'Failed to fetch branches: '.$e->getMessage()], statusCode: 500);
         }//end try
@@ -968,8 +998,8 @@ class ConfigurationController extends Controller
             $projectId   = $projectData['id'];
 
             $this->logger->info(
-                'Fetching GitLab configurations',
-                [
+                message: '[ConfigurationController] Fetching GitLab configurations',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'namespace'  => $namespace,
@@ -983,7 +1013,10 @@ class ConfigurationController extends Controller
 
             return new JSONResponse(data: ['files' => $files], statusCode: 200);
         } catch (Exception $e) {
-            $this->logger->error('[ConfigurationController] Failed to get GitLab configurations: '.$e->getMessage(), ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->error(
+                message: '[ConfigurationController] Failed to get GitLab configurations: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
 
             return new JSONResponse(data: ['error' => 'Failed to fetch configurations: '.$e->getMessage()], statusCode: 500);
         }//end try
@@ -1147,7 +1180,10 @@ class ConfigurationController extends Controller
             $syncInterval = (int) ($params['syncInterval'] ?? 24);
 
             // Log import start.
-            $this->logger->info("[ConfigurationController] Importing configuration from {$sourceType}", ['file' => __FILE__, 'line' => __LINE__, 'params' => $params]);
+            $this->logger->info(
+                message: "[ConfigurationController] Importing configuration from {$sourceType}",
+                context: ['file' => __FILE__, 'line' => __LINE__, 'params' => $params]
+            );
 
             // Step 1: Fetch configuration data from source (source-specific logic).
             $fetchResult = $fetchConfig($params);
@@ -1204,7 +1240,10 @@ class ConfigurationController extends Controller
 
             $configuration = $this->configurationMapper->insert($configuration);
 
-            $this->logger->info("[ConfigurationController] Created configuration entity with ID {$configuration->getId()} for app {$appId}", ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->info(
+                message: "[ConfigurationController] Created configuration entity with ID {$configuration->getId()} for app {$appId}",
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
 
             // Step 5: Import using the standard flow with the configuration entity.
             $result = $this->configurationService->importFromJson(
@@ -1225,7 +1264,10 @@ class ConfigurationController extends Controller
             // But we need to save the sync status.
             $this->configurationMapper->update($configuration);
 
-            $this->logger->info("[ConfigurationController] Successfully imported configuration {$configuration->getTitle()} from {$sourceType}", ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->info(
+                message: "[ConfigurationController] Successfully imported configuration {$configuration->getTitle()} from {$sourceType}",
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
 
             // Step 7: Return success response.
             return new JSONResponse(
@@ -1248,7 +1290,10 @@ class ConfigurationController extends Controller
                 $statusCode = 500;
             }
 
-            $this->logger->error("[ConfigurationController] Failed to import from {$sourceType}: ".$e->getMessage(), ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->error(
+                message: "[ConfigurationController] Failed to import from {$sourceType}: ".$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
 
             return new JSONResponse(
                 data: ['error' => 'Failed to import configuration: '.$e->getMessage()],
@@ -1484,8 +1529,8 @@ class ConfigurationController extends Controller
     private function logPublishingAttempt(int $id, array $params): void
     {
         $this->logger->info(
-            'Publishing configuration to GitHub',
-            [
+            message: '[ConfigurationController] Publishing configuration to GitHub',
+            context: [
                 'file' => __FILE__,
                 'line' => __LINE__,
                 'configuration_id' => $id,
@@ -1558,7 +1603,10 @@ class ConfigurationController extends Controller
             );
         } catch (Exception $e) {
             // File doesn't exist, which is fine for new files.
-            $this->logger->debug('[ConfigurationController] File does not exist, will create new file', ['file' => __FILE__, 'line' => __LINE__, 'path' => $params['path']]);
+            $this->logger->debug(
+                message: '[ConfigurationController] File does not exist, will create new file',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'path' => $params['path']]
+            );
             return null;
         }
     }//end getExistingFileSha()
@@ -1624,8 +1672,8 @@ class ConfigurationController extends Controller
     private function logPublishingSuccess(object $configuration, array $params, array $result): void
     {
         $this->logger->info(
-            "Successfully published configuration {$configuration->getTitle()} to GitHub",
-            [
+            message: "[ConfigurationController] Successfully published configuration {$configuration->getTitle()} to GitHub",
+            context: [
                 'file' => __FILE__,
                 'line' => __LINE__,
                 'owner'    => $params['owner'],
@@ -1703,8 +1751,8 @@ class ConfigurationController extends Controller
             return $repoInfo['default_branch'] ?? 'main';
         } catch (Exception $e) {
             $this->logger->warning(
-                'Could not fetch repository default branch',
-                [
+                message: '[ConfigurationController] Could not fetch repository default branch',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'owner' => $params['owner'],
@@ -1727,7 +1775,10 @@ class ConfigurationController extends Controller
      */
     private function handlePublishingError(Exception $exception): JSONResponse
     {
-        $this->logger->error('[ConfigurationController] Failed to publish to GitHub: '.$exception->getMessage(), ['file' => __FILE__, 'line' => __LINE__]);
+        $this->logger->error(
+            message: '[ConfigurationController] Failed to publish to GitHub: '.$exception->getMessage(),
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
 
         return new JSONResponse(
             data: ['error' => 'Failed to publish configuration: '.$exception->getMessage()],

@@ -85,6 +85,8 @@ class VectorSearchHandler
         $this->logger->info(
             message: '[VectorSearchHandler] Performing semantic search',
             context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'backend' => $backend,
                 'limit'   => $limit,
                 'filters' => $filters,
@@ -107,8 +109,12 @@ class VectorSearchHandler
 
                 if ($vectors === []) {
                     $this->logger->warning(
-                        message: 'No vectors found in database',
-                        context: ['filters' => $filters]
+                        message: '[VectorSearchHandler] No vectors found in database',
+                        context: [
+                            'file' => __FILE__,
+                            'line' => __LINE__,
+                            'filters' => $filters,
+                        ]
                     );
                     return [];
                 }
@@ -148,8 +154,10 @@ class VectorSearchHandler
                         ];
                     } catch (Exception $e) {
                         $this->logger->warning(
-                            message: 'Failed to process vector',
+                            message: '[VectorSearchHandler] Failed to process vector',
                             context: [
+                                'file' => __FILE__,
+                                'line' => __LINE__,
                                 'vector_id' => $vector['id'],
                                 'error'     => $e->getMessage(),
                             ]
@@ -169,6 +177,8 @@ class VectorSearchHandler
             $this->logger->info(
                 message: '[VectorSearchHandler] Semantic search completed',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'backend'        => $backend,
                     'results_count'  => count($results),
                     'top_similarity' => $results[0]['similarity'] ?? 0,
@@ -181,8 +191,10 @@ class VectorSearchHandler
             $searchTime = round((microtime(true) - $startTime) * 1000, 2);
 
             $this->logger->error(
-                message: 'Semantic search failed',
+                message: '[VectorSearchHandler] Semantic search failed',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error'          => $e->getMessage(),
                     'search_time_ms' => $searchTime,
                 ]
@@ -214,6 +226,8 @@ class VectorSearchHandler
         $this->logger->debug(
             message: '[VectorSearchHandler] Searching vectors in Solr',
             context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'limit'   => $limit,
                 'filters' => $filters,
             ]
@@ -297,6 +311,8 @@ class VectorSearchHandler
                     $this->logger->warning(
                         message: '[VectorSearchHandler] Failed to search collection',
                         context: [
+                            'file' => __FILE__,
+                            'line' => __LINE__,
                             'collection' => $collection,
                             'error'      => $e->getMessage(),
                         ]
@@ -312,7 +328,11 @@ class VectorSearchHandler
         } catch (Exception $e) {
             $this->logger->error(
                 message: '[VectorSearchHandler] Solr vector search failed',
-                context: ['error' => $e->getMessage()]
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
+                    'error' => $e->getMessage(),
+                ]
             );
             throw new Exception('Solr vector search failed: '.$e->getMessage());
         }//end try
@@ -380,8 +400,12 @@ class VectorSearchHandler
                     );
                 } catch (Exception $e) {
                     $this->logger->warning(
-                        message: 'Vector search failed in hybrid search',
-                        context: ['error' => $e->getMessage()]
+                        message: '[VectorSearchHandler] Vector search failed in hybrid search',
+                        context: [
+                            'file' => __FILE__,
+                            'line' => __LINE__,
+                            'error' => $e->getMessage(),
+                        ]
                     );
                 }
             }
@@ -431,8 +455,10 @@ class VectorSearchHandler
             $searchTime = round((microtime(true) - $startTime) * 1000, 2);
 
             $this->logger->error(
-                message: 'Hybrid search failed',
+                message: '[VectorSearchHandler] Hybrid search failed',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error'          => $e->getMessage(),
                     'search_time_ms' => $searchTime,
                 ]
@@ -596,8 +622,12 @@ class VectorSearchHandler
             return $vectors;
         } catch (Exception $e) {
             $this->logger->error(
-                message: 'Failed to fetch vectors',
-                context: ['error' => $e->getMessage()]
+                message: '[VectorSearchHandler] Failed to fetch vectors',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
+                    'error' => $e->getMessage(),
+                ]
             );
             throw new Exception('Failed to fetch vectors: '.$e->getMessage());
         }//end try

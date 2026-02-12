@@ -189,8 +189,10 @@ class TransformationHandler
             // Properly extracted metadata with simpler getValueFromPath results.
             // DEBUG: Log mixed schema object structure.
             $this->logger->info(
-                "[SaveObjects] DEBUG - Mixed schema object structure",
-                [
+                message: '[TransformationHandler] DEBUG - Mixed schema object structure',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'available_keys'      => array_keys($object),
                     'has_object_property' => isset($object['object']) === true,
                     'sample_data'         => array_slice($object, 0, 3, true),
@@ -201,7 +203,10 @@ class TransformationHandler
             if (($object['object'] ?? null) !== null && is_array($object['object']) === true) {
                 // NEW STRUCTURE: object property contains business data.
                 $businessData = $object['object'];
-                $this->logger->info("[SaveObjects] Using object property for business data (mixed)", ['file' => __FILE__, 'line' => __LINE__]);
+                $this->logger->info(
+                    message: '[TransformationHandler] Using object property for business data (mixed)',
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
             } else {
                 // LEGACY STRUCTURE: Remove metadata fields to isolate business data.
                 $businessData   = $object;
@@ -230,8 +235,10 @@ class TransformationHandler
 
                 // CRITICAL DEBUG: Log what we're removing and what remains.
                 $this->logger->info(
-                    "[SaveObjects] Metadata removal applied (mixed)",
-                    [
+                    message: '[TransformationHandler] Metadata removal applied (mixed)',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'removed_fields'       => array_intersect($metadataFields, array_keys($object)),
                         'remaining_keys'       => array_keys($businessData),
                         'business_data_sample' => array_slice($businessData, 0, 3, true),
@@ -252,8 +259,10 @@ class TransformationHandler
                     $selfData['relations'] = $relations;
 
                     $this->logger->info(
-                        "[SaveObjects] Relations scanned in transformation",
-                        [
+                        message: '[TransformationHandler] Relations scanned in transformation',
+                        context: [
+                            'file' => __FILE__,
+                            'line' => __LINE__,
                             'uuid'          => $selfData['uuid'] ?? 'unknown',
                             'relationCount' => count($relations),
                             'relations'     => array_slice($relations, 0, 3, true),
@@ -262,8 +271,10 @@ class TransformationHandler
                 }
             } else {
                 $this->logger->info(
-                    "[SaveObjects] Relations already set from preparation",
-                    [
+                    message: '[TransformationHandler] Relations already set from preparation',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'uuid'          => $selfData['uuid'] ?? 'unknown',
                         'relationCount' => count($selfData['relations']),
                     ]

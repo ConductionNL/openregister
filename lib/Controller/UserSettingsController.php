@@ -130,7 +130,10 @@ class UserSettingsController extends Controller
                 statusCode: 200
             );
         } catch (Exception $e) {
-            $this->logger->error('[UserSettingsController] Failed to get GitHub token status: '.$e->getMessage(), ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->error(
+                message: '[UserSettingsController] Failed to get GitHub token status: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
 
             return new JSONResponse(data: ['error' => 'Failed to get token status'], statusCode: 500);
         }//end try

@@ -130,14 +130,20 @@ class RegisterService
         LoggerInterface $logger
     ) {
         $this->logger = $logger;
-        $this->logger->debug('[RegisterService] RegisterService constructor started.', ['file' => __FILE__, 'line' => __LINE__]);
+        $this->logger->debug(
+            message: '[RegisterService] RegisterService constructor started.',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
         // Store dependencies for use in service methods.
         $this->registerMapper = $registerMapper;
         $this->schemaMapper   = $schemaMapper;
         $this->db          = $db;
         $this->fileService = $fileService;
         $this->organisationService = $organisationService;
-        $this->logger->debug('[RegisterService] RegisterService constructor completed.', ['file' => __FILE__, 'line' => __LINE__]);
+        $this->logger->debug(
+            message: '[RegisterService] RegisterService constructor completed.',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
     }//end __construct()
 
     /**
@@ -211,26 +217,47 @@ class RegisterService
      */
     public function createFromArray(array $data): Register
     {
-        $this->logger->info('[RegisterService] 🔹 RegisterService: Starting createFromArray', ['file' => __FILE__, 'line' => __LINE__]);
+        $this->logger->info(
+            message: '[RegisterService] 🔹 RegisterService: Starting createFromArray',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
 
         // Create the register first.
         $register = $this->registerMapper->createFromArray(object: $data);
-        $this->logger->info('[RegisterService] 🔹 RegisterService: Register created with ID: '.$register->getId(), ['file' => __FILE__, 'line' => __LINE__]);
+        $this->logger->info(
+            message: '[RegisterService] 🔹 RegisterService: Register created with ID: '.$register->getId(),
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
 
         // Set organisation from active organisation for multi-tenancy (if not already set).
         if ($register->getOrganisation() === null || $register->getOrganisation() === '') {
-            $this->logger->info('[RegisterService] 🔹 RegisterService: Getting organisation for new entity', ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->info(
+                message: '[RegisterService] 🔹 RegisterService: Getting organisation for new entity',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             $organisationUuid = $this->organisationService->getOrganisationForNewEntity();
-            $this->logger->info('[RegisterService] 🔹 RegisterService: Got organisation UUID: '.$organisationUuid, ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->info(
+                message: '[RegisterService] 🔹 RegisterService: Got organisation UUID: '.$organisationUuid,
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             $register->setOrganisation($organisationUuid);
             $register = $this->registerMapper->update($register);
-            $this->logger->info('[RegisterService] 🔹 RegisterService: Updated register with organisation', ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->info(
+                message: '[RegisterService] 🔹 RegisterService: Updated register with organisation',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
         }
 
         // Ensure folder exists for the new register.
-        $this->logger->info('[RegisterService] 🔹 RegisterService: Calling ensureRegisterFolderExists', ['file' => __FILE__, 'line' => __LINE__]);
+        $this->logger->info(
+            message: '[RegisterService] 🔹 RegisterService: Calling ensureRegisterFolderExists',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
         $this->ensureRegisterFolderExists($register);
-        $this->logger->info('[RegisterService] 🔹 RegisterService: Folder creation completed', ['file' => __FILE__, 'line' => __LINE__]);
+        $this->logger->info(
+            message: '[RegisterService] 🔹 RegisterService: Folder creation completed',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
 
         return $register;
     }//end createFromArray()
@@ -342,7 +369,10 @@ class RegisterService
         }
 
         try {
-            $this->logger->debug('[RegisterService] GetSchemaObjectCounts: Processing '.count($schemas).' schemas for register '.$registerId, ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->debug(
+                message: '[RegisterService] GetSchemaObjectCounts: Processing '.count($schemas).' schemas for register '.$registerId,
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
 
             // Build a UNION query that counts objects for each schema
             $unionQueries = [];
@@ -351,11 +381,17 @@ class RegisterService
             foreach ($schemas as $schema) {
                 $schemaId = $schema['id'] ?? null;
                 if ($schemaId === null) {
-                    $this->logger->warning('[RegisterService] Schema without ID found, skipping', ['file' => __FILE__, 'line' => __LINE__]);
+                    $this->logger->warning(
+                        message: '[RegisterService] Schema without ID found, skipping',
+                        context: ['file' => __FILE__, 'line' => __LINE__]
+                    );
                     continue;
                 }
 
-                $this->logger->debug("[RegisterService] Processing schema ID: {$schemaId}", ['file' => __FILE__, 'line' => __LINE__]);
+                $this->logger->debug(
+                    message: "[RegisterService] Processing schema ID: {$schemaId}",
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
 
                 // Check if this schema uses magic table (has 'table' configuration in properties)
                 $isMagicTable = false;
@@ -368,7 +404,10 @@ class RegisterService
                     }
                 }
 
-                $this->logger->debug("[RegisterService] Schema {$schemaId} is magic table: ".($isMagicTable ? 'yes' : 'no'), ['file' => __FILE__, 'line' => __LINE__]);
+                $this->logger->debug(
+                    message: "[RegisterService] Schema {$schemaId} is magic table: ".($isMagicTable ? 'yes' : 'no'),
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
 
                 if ($isMagicTable === true) {
                     // Magic table: check if table exists, then query it
@@ -441,7 +480,10 @@ class RegisterService
             $sql = implode(' UNION ALL ', $unionQueries);
 
             // Log the SQL for debugging
-            $this->logger->debug('[RegisterService] Schema object counts SQL: '.$sql, ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->debug(
+                message: '[RegisterService] Schema object counts SQL: '.$sql,
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
 
             // Execute the query
             $stmt = $this->db->prepare($sql);
@@ -476,8 +518,14 @@ class RegisterService
             }
         } catch (\Exception $e) {
             // Log error but don't fail - return empty counts
-            $this->logger->error('[RegisterService] Error getting schema object counts: '.$e->getMessage(), ['file' => __FILE__, 'line' => __LINE__]);
-            $this->logger->error('[RegisterService] Stack trace: '.$e->getTraceAsString(), ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->error(
+                message: '[RegisterService] Error getting schema object counts: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+            $this->logger->error(
+                message: '[RegisterService] Stack trace: '.$e->getTraceAsString(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
         }//end try
 
         return $result;

@@ -68,7 +68,10 @@ trait MultiTenancyTrait
     protected function getActiveOrganisationUuid(): ?string
     {
         if (isset($this->logger) === true) {
-            $this->logger->info('[MultiTenancyTrait] 🔹 MultiTenancyTrait: getActiveOrganisationUuid called', ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->info(
+                message: '[MultiTenancyTrait] 🔹 MultiTenancyTrait: getActiveOrganisationUuid called',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
         }
 
         // Get current user.
@@ -86,7 +89,8 @@ trait MultiTenancyTrait
             $organisationMapper = $this->organisationMapper;
             if (isset($this->logger) === true) {
                 $this->logger->info(
-                    '[MultiTenancyTrait] MultiTenancyTrait: Calling getActiveOrganisationWithFallback for user: '.$user->getUID()
+                    message: '[MultiTenancyTrait] MultiTenancyTrait: Calling getActiveOrganisationWithFallback for user: '.$user->getUID(),
+                    context: ['file' => __FILE__, 'line' => __LINE__]
                 );
             }
 
@@ -170,8 +174,8 @@ trait MultiTenancyTrait
                 // Fall back to just the active org.
                 if (isset($this->logger) === true) {
                     $this->logger->warning(
-                        '[MultiTenancyTrait] Failed to get organisation hierarchy: '.$e->getMessage(),
-                        ['activeOrgUuid' => $activeOrgUuid]
+                        message: '[MultiTenancyTrait] Failed to get organisation hierarchy: '.$e->getMessage(),
+                        context: ['file' => __FILE__, 'line' => __LINE__, 'activeOrgUuid' => $activeOrgUuid]
                     );
                 }
             }
@@ -361,7 +365,10 @@ trait MultiTenancyTrait
     {
         if (isset($this->userSession) === false) {
             if (($this->logger ?? null) !== null) {
-                $this->logger->debug('[MultiTenancyTrait] UserSession not available, skipping filter', ['file' => __FILE__, 'line' => __LINE__]);
+                $this->logger->debug(
+                    message: '[MultiTenancyTrait] UserSession not available, skipping filter',
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
             }
 
             return null;
@@ -369,7 +376,10 @@ trait MultiTenancyTrait
 
         $user = $this->userSession->getUser();
         if ($user === null && isset($this->logger) === true) {
-            $this->logger->debug('[MultiTenancyTrait] Unauthenticated request, no automatic access', ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->debug(
+                message: '[MultiTenancyTrait] Unauthenticated request, no automatic access',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
         }
 
         return $user;

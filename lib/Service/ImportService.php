@@ -977,8 +977,8 @@ class ImportService
 
         // Debug log to verify admin status
         $this->logger->debug(
-                '[ImportService] Processing CSV row',
-                [
+                message: '[ImportService] Processing CSV row',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'isAdmin'  => $isAdmin,

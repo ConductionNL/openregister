@@ -95,8 +95,8 @@ class SolrSchemaManager
             }
 
             $this->logger->debug(
-                '[SolrSchemaManager] Retrieved field types',
-                [
+                message: '[SolrSchemaManager] Retrieved field types',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'collection' => $collection,
@@ -107,8 +107,8 @@ class SolrSchemaManager
             return $fieldTypes;
         } catch (Exception $e) {
             $this->logger->error(
-                '[SolrSchemaManager] Failed to get field types',
-                [
+                message: '[SolrSchemaManager] Failed to get field types',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'collection' => $collection,
@@ -131,8 +131,8 @@ class SolrSchemaManager
     {
         try {
             $this->logger->info(
-                '[SolrSchemaManager] Adding field type',
-                [
+                message: '[SolrSchemaManager] Adding field type',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'collection' => $collection,
@@ -147,13 +147,16 @@ class SolrSchemaManager
             $result = $this->httpClient->post($url, $command);
 
             if (($result['responseHeader']['status'] ?? -1) === 0) {
-                $this->logger->info('[SolrSchemaManager] Field type added successfully', ['file' => __FILE__, 'line' => __LINE__]);
+                $this->logger->info(
+                    message: '[SolrSchemaManager] Field type added successfully',
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
                 return true;
             }
 
             $this->logger->warning(
-                '[SolrSchemaManager] Field type addition returned non-zero status',
-                [
+                message: '[SolrSchemaManager] Field type addition returned non-zero status',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'status' => $result['responseHeader']['status'] ?? 'unknown',
@@ -163,8 +166,8 @@ class SolrSchemaManager
             return false;
         } catch (Exception $e) {
             $this->logger->error(
-                '[SolrSchemaManager] Failed to add field type',
-                [
+                message: '[SolrSchemaManager] Failed to add field type',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'error' => $e->getMessage(),
@@ -196,8 +199,8 @@ class SolrSchemaManager
             }
 
             $this->logger->debug(
-                '[SolrSchemaManager] Retrieved fields',
-                [
+                message: '[SolrSchemaManager] Retrieved fields',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'collection' => $collection,
@@ -208,8 +211,8 @@ class SolrSchemaManager
             return $fields;
         } catch (Exception $e) {
             $this->logger->error(
-                '[SolrSchemaManager] Failed to get fields',
-                [
+                message: '[SolrSchemaManager] Failed to get fields',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'collection' => $collection,
@@ -233,7 +236,10 @@ class SolrSchemaManager
         $collection = $this->collectionManager->getActiveCollectionName();
 
         if ($collection === null) {
-            $this->logger->warning('[SolrSchemaManager] No active collection for field operation', ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->warning(
+                message: '[SolrSchemaManager] No active collection for field operation',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return 'failed';
         }
 
@@ -241,7 +247,10 @@ class SolrSchemaManager
             $fieldName = $fieldConfig['name'] ?? null;
 
             if ($fieldName === null) {
-                $this->logger->warning('[SolrSchemaManager] Field name not provided', ['file' => __FILE__, 'line' => __LINE__]);
+                $this->logger->warning(
+                    message: '[SolrSchemaManager] Field name not provided',
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
                 return 'failed';
             }
 
@@ -251,8 +260,8 @@ class SolrSchemaManager
             if (isset($existingFields[$fieldName]) === true) {
                 if ($force === false) {
                     $this->logger->debug(
-                        '[SolrSchemaManager] Field already exists, skipping',
-                        [
+                        message: '[SolrSchemaManager] Field already exists, skipping',
+                        context: [
                             'file' => __FILE__,
                             'line' => __LINE__,
                             'field' => $fieldName,
@@ -273,7 +282,10 @@ class SolrSchemaManager
             $result = $this->httpClient->post($url, $command);
 
             if (($result['responseHeader']['status'] ?? -1) === 0) {
-                $this->logger->info('[SolrSchemaManager] Field created', ['file' => __FILE__, 'line' => __LINE__, 'field' => $fieldName]);
+                $this->logger->info(
+                    message: '[SolrSchemaManager] Field created',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'field' => $fieldName]
+                );
                 if (isset($existingFields[$fieldName]) === true) {
                     return 'updated';
                 }
@@ -282,8 +294,8 @@ class SolrSchemaManager
             }
 
             $this->logger->warning(
-                '[SolrSchemaManager] Field creation returned non-zero status',
-                [
+                message: '[SolrSchemaManager] Field creation returned non-zero status',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'field'  => $fieldName,
@@ -294,8 +306,8 @@ class SolrSchemaManager
             return 'failed';
         } catch (Exception $e) {
             $this->logger->error(
-                '[SolrSchemaManager] Failed to add/update field',
-                [
+                message: '[SolrSchemaManager] Failed to add/update field',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'error' => $e->getMessage(),
@@ -319,8 +331,8 @@ class SolrSchemaManager
     {
         try {
             $this->logger->info(
-                '[SolrSchemaManager] Deleting field',
-                [
+                message: '[SolrSchemaManager] Deleting field',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'collection' => $collection,
@@ -335,15 +347,18 @@ class SolrSchemaManager
             $result = $this->httpClient->post($url, $command);
 
             if (($result['responseHeader']['status'] ?? -1) === 0) {
-                $this->logger->info('[SolrSchemaManager] Field deleted', ['file' => __FILE__, 'line' => __LINE__]);
+                $this->logger->info(
+                    message: '[SolrSchemaManager] Field deleted',
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
                 return true;
             }
 
             return false;
         } catch (Exception $e) {
             $this->logger->error(
-                '[SolrSchemaManager] Failed to delete field',
-                [
+                message: '[SolrSchemaManager] Failed to delete field',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'error' => $e->getMessage(),
@@ -369,8 +384,8 @@ class SolrSchemaManager
             return $data['schema'] ?? [];
         } catch (Exception $e) {
             $this->logger->error(
-                '[SolrSchemaManager] Failed to get schema',
-                [
+                message: '[SolrSchemaManager] Failed to get schema',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'collection' => $collection,

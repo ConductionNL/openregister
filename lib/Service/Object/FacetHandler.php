@@ -183,8 +183,10 @@ class FacetHandler
             $this->cacheFacetResponse(cacheKey: $cacheKey, result: $result);
 
         $this->logger->debug(
-            message: 'FacetHandler completed facet calculation',
+            message: '[FacetHandler] FacetHandler completed facet calculation',
             context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'executionTime'     => $executionTime.'ms',
                 'strategy'          => $result['performance_metadata']['strategy'] ?? 'unknown',
                 'cacheUsed'         => false,
@@ -230,8 +232,10 @@ class FacetHandler
         $selfCount   = count($facetableFields['@self'] ?? []);
         $objectCount = count($facetableFields['object_fields'] ?? []);
         $this->logger->debug(
-            message: 'Facetable fields discovery completed',
+            message: '[FacetHandler] Facetable fields discovery completed',
             context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'executionTime'       => $executionTime.'ms',
                 'schemaCount'         => count($schemas),
                 'facetableFieldCount' => $selfCount + $objectCount,
@@ -318,8 +322,10 @@ class FacetHandler
         // **INTELLIGENT FALLBACK**: If no facets and we have restrictive filters, try broader query.
         if ($totalFacetResults === 0 && $hasRestrictFilter === true) {
             $this->logger->debug(
-                message: 'Facets empty with restrictive filters, trying collection-wide fallback',
+                message: '[FacetHandler] Facets empty with restrictive filters, trying collection-wide fallback',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'originalQuery' => array_keys($facetQuery),
                     'totalResults'  => $totalFacetResults,
                 ]
@@ -343,8 +349,10 @@ class FacetHandler
                 $fallbackUsed = true;
 
                 $this->logger->info(
-                    message: 'Smart faceting fallback successful',
+                    message: '[FacetHandler] Smart faceting fallback successful',
                     context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'fallbackResults' => $fallbackResults,
                         'originalResults' => $totalFacetResults,
                         'collectionQuery' => array_keys($collectionQuery),
@@ -720,8 +728,10 @@ class FacetHandler
             $this->facetCache->set($cacheKey, $result, $ttl);
 
             $this->logger->debug(
-                message: 'Facet response cached',
+                message: '[FacetHandler] Facet response cached',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'cacheKey' => $cacheKey,
                     'ttl'      => $ttl,
                     'strategy' => $result['performance_metadata']['strategy'] ?? 'unknown',
@@ -861,8 +871,10 @@ class FacetHandler
                 }
 
                 $this->logger->error(
-                    message: 'Failed to get facetable fields from schema properties',
+                    message: '[FacetHandler] Failed to get facetable fields from schema properties',
                     context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'error'    => $e->getMessage(),
                         'schemaId' => $schemaId,
                     ]

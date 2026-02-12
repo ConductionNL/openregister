@@ -423,7 +423,10 @@ class SettingsService
 
             return json_decode($backendConfig, true);
         } catch (\Exception $e) {
-            $this->logger->error('[SettingsService] Failed to retrieve search backend configuration: '.$e->getMessage(), ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->error(
+                message: '[SettingsService] Failed to retrieve search backend configuration: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return [
                 'active'    => 'solr',
                 'available' => ['solr', 'elasticsearch'],
@@ -981,8 +984,8 @@ class SettingsService
         }
 
         $this->logger->info(
-            '[SettingsService] 🚀 STARTING MASS VALIDATION',
-            [
+            message: '[SettingsService] 🚀 STARTING MASS VALIDATION',
+            context: [
                 'file' => __FILE__,
                     'line' => __LINE__,
                 'totalObjects'  => $totalObjects,
@@ -1021,8 +1024,8 @@ class SettingsService
         $results['stats']['batches_processed'] = count($batchJobs);
 
         $this->logger->info(
-            '[SettingsService] 📋 BATCH JOBS CREATED',
-            [
+            message: '[SettingsService] 📋 BATCH JOBS CREATED',
+            context: [
                 'file' => __FILE__,
                     'line' => __LINE__,
                 'totalBatches'      => count($batchJobs),
@@ -1120,8 +1123,8 @@ class SettingsService
         }//end if
 
         $this->logger->info(
-            '[SettingsService] ✅ MASS VALIDATION COMPLETED',
-            [
+            message: '[SettingsService] ✅ MASS VALIDATION COMPLETED',
+            context: [
                 'file' => __FILE__,
                     'line' => __LINE__,
                 'successful'       => $results['stats']['successful_saves'],
@@ -1247,8 +1250,8 @@ class SettingsService
                     ];
 
                     $this->logger->error(
-                        '[SettingsService] Mass validation failed for object '.$object->getUuid().': '.$e->getMessage(),
-                        ['file' => __FILE__, 'line' => __LINE__]
+                        message: '[SettingsService] Mass validation failed for object '.$object->getUuid().': '.$e->getMessage(),
+                        context: ['file' => __FILE__, 'line' => __LINE__]
                     );
 
                     if ($collectErrors === false) {
@@ -1267,8 +1270,8 @@ class SettingsService
 
             // Log progress.
             $this->logger->info(
-                '[SettingsService] 📈 MASS VALIDATION PROGRESS',
-                [
+                message: '[SettingsService] 📈 MASS VALIDATION PROGRESS',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'batchNumber'      => $job['batchNumber'],
@@ -1288,10 +1291,10 @@ class SettingsService
             // Memory management every 10 batches.
             if ($job['batchNumber'] % 10 === 0) {
                 $this->logger->debug(
-                    '[SettingsService] 🧹 MEMORY CLEANUP',
-                    [
+                    message: '[SettingsService] 🧹 MEMORY CLEANUP',
+                    context: [
                         'file' => __FILE__,
-                    'line' => __LINE__,
+                        'line' => __LINE__,
                         'memoryUsage' => round(memory_get_usage() / 1024 / 1024, 2).'MB',
                         'peakMemory'  => round(memory_get_peak_usage() / 1024 / 1024, 2).'MB',
                     ]
@@ -1329,8 +1332,8 @@ class SettingsService
 
         foreach ($batchChunks as $chunkIndex => $chunk) {
             $this->logger->info(
-                '[SettingsService] 🔄 PROCESSING PARALLEL CHUNK',
-                [
+                message: '[SettingsService] 🔄 PROCESSING PARALLEL CHUNK',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'chunkIndex'     => $chunkIndex + 1,
@@ -1365,8 +1368,8 @@ class SettingsService
             $chunkProcessed = array_sum(array_column($chunkResults, 'processed'));
 
             $this->logger->info(
-                '[SettingsService] ✅ COMPLETED PARALLEL CHUNK',
-                [
+                message: '[SettingsService] ✅ COMPLETED PARALLEL CHUNK',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'chunkIndex'       => $chunkIndex + 1,
@@ -1590,8 +1593,8 @@ class SettingsService
             return $expectedFields;
         } catch (\Exception $e) {
             $this->logger->warning(
-                '[SettingsService] Failed to get expected schema fields',
-                [
+                message: '[SettingsService] Failed to get expected schema fields',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'error' => $e->getMessage(),
@@ -1773,8 +1776,10 @@ class SettingsService
                 $stats['warnings'] = $dbStats['warnings'];
                 $stats['totals']   = $dbStats['totals'];
             } catch (\Exception $e) {
-                $this->logger->error('[SettingsService] Failed to load database statistics', ['file' => __FILE__,
-                    'line' => __LINE__, 'error' => $e->getMessage()]);
+                $this->logger->error(
+                    message: '[SettingsService] Failed to load database statistics',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+                );
                 // Provide default empty stats if DB query fails.
                 $stats['warnings'] = [
                     'objectsWithoutOwner'        => 0,
@@ -1827,8 +1832,10 @@ class SettingsService
 
             return $stats;
         } catch (\Exception $e) {
-            $this->logger->error('[SettingsService] Failed to retrieve stats', ['file' => __FILE__,
-                    'line' => __LINE__, 'error' => $e->getMessage()]);
+            $this->logger->error(
+                message: '[SettingsService] Failed to retrieve stats',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+            );
             return [
                 'error'   => 'Failed to retrieve stats',
                 'message' => $e->getMessage(),
@@ -1874,7 +1881,10 @@ class SettingsService
     {
         $qb = $this->db->getQueryBuilder();
 
-        $this->logger->info('[SettingsService] getDatabaseStats() called', ['file' => __FILE__, 'line' => __LINE__]);
+        $this->logger->info(
+            message: '[SettingsService] getDatabaseStats() called',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
 
         // First, get the count of blob objects (stored in openregister_objects).
         $blobCount = (int) $this->db->executeQuery(
@@ -1932,8 +1942,8 @@ class SettingsService
                 } catch (\Exception $e) {
                     // Table query failed, skip it.
                     $this->logger->debug(
-                            '[SettingsService] Failed to query magic mapper table',
-                            [
+                            message: '[SettingsService] Failed to query magic mapper table',
+                            context: [
                                 'file' => __FILE__,
                                 'line' => __LINE__,
                                 'table' => $fullTableName,
@@ -1944,8 +1954,10 @@ class SettingsService
                 }//end try
             }//end foreach
         } catch (\Exception $e) {
-            $this->logger->warning('[SettingsService] Failed to count magic mapper objects', ['file' => __FILE__,
-                    'line' => __LINE__, 'error' => $e->getMessage()]);
+            $this->logger->warning(
+                message: '[SettingsService] Failed to count magic mapper objects',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+            );
         }//end try
 
         // Check if openconnector_sources table exists (openconnector app might not be installed).
@@ -1955,7 +1967,10 @@ class SettingsService
             $sourcesTableExists = true;
         } catch (\Exception $e) {
             // OpenConnector app is not installed, which is fine.
-            $this->logger->debug('[SettingsService] openconnector_sources table does not exist - OpenConnector app not installed', ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->debug(
+                message: '[SettingsService] openconnector_sources table does not exist - OpenConnector app not installed',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
         }
 
         // Build query for sources count based on table existence.
@@ -2043,8 +2058,10 @@ class SettingsService
     public function rebase(array $options=[]): array
     {
         try {
-            $this->logger->info('[SettingsService] Rebase requested', ['file' => __FILE__,
-                    'line' => __LINE__, 'options' => $options]);
+            $this->logger->info(
+                message: '[SettingsService] Rebase requested',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'options' => $options]
+            );
 
             // Get current settings (currently unused but kept for potential future use).
             // $currentSettings = $this->getSettings();
@@ -2076,8 +2093,10 @@ class SettingsService
                 'timestamp' => time(),
             ];
         } catch (\Exception $e) {
-            $this->logger->error('[SettingsService] Rebase failed', ['file' => __FILE__,
-                    'line' => __LINE__, 'error' => $e->getMessage()]);
+            $this->logger->error(
+                message: '[SettingsService] Rebase failed',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+            );
 
             return [
                 'success' => false,

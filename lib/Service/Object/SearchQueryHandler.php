@@ -278,6 +278,8 @@ class SearchQueryHandler
         $this->logger->debug(
             message: '[SearchQueryHandler] Applying views to query',
             context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'viewIds'       => $viewIds,
                 'originalQuery' => array_keys($query),
             ]
@@ -349,6 +351,8 @@ class SearchQueryHandler
                 $this->logger->debug(
                     message: '[SearchQueryHandler] Applied view to query',
                     context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'viewId'         => $viewId,
                         'registers'      => $viewQuery['registers'] ?? [],
                         'schemas'        => $viewQuery['schemas'] ?? [],
@@ -359,6 +363,8 @@ class SearchQueryHandler
                 $this->logger->warning(
                     message: '[SearchQueryHandler] Failed to apply view',
                     context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'viewId' => $viewId,
                         'error'  => $e->getMessage(),
                     ]
@@ -568,8 +574,12 @@ class SearchQueryHandler
         } catch (Exception $e) {
             // If we can't get settings, default to enabled for safety.
             $this->logger->warning(
-                message: 'Failed to check search trails setting, defaulting to enabled',
-                context: ['error' => $e->getMessage()]
+                message: '[SearchQueryHandler] Failed to check search trails setting, defaulting to enabled',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
+                    'error' => $e->getMessage(),
+                ]
             );
             return true;
         }

@@ -320,8 +320,8 @@ class SchemasController extends Controller
 
         // DEBUG: Log incoming request to track duplicate creation.
         $this->logger->info(
-            '[SchemasController::create] Starting schema creation',
-            [
+            message: '[SchemasController::create] Starting schema creation',
+            context: [
                 'file' => __FILE__,
                 'line' => __LINE__,
                 'title'            => $data['title'] ?? 'no title',
@@ -699,8 +699,8 @@ class SchemasController extends Controller
         } catch (Exception $e) {
             // Log the actual error for debugging.
             $this->logger->error(
-                '[SchemasController] Schema upload failed',
-                [
+                message: '[SchemasController] Schema upload failed',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'schema_id'     => $id,
@@ -902,15 +902,24 @@ class SchemasController extends Controller
     public function explore(int $id): JSONResponse
     {
         try {
-            $this->logger->info('[SchemasController] Starting schema exploration for schema ID: '.$id, ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->info(
+                message: '[SchemasController] Starting schema exploration for schema ID: '.$id,
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
 
             $explorationResults = $this->schemaService->exploreSchemaProperties($id);
 
-            $this->logger->info('[SchemasController] Schema exploration completed successfully', ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->info(
+                message: '[SchemasController] Schema exploration completed successfully',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
 
             return new JSONResponse(data: $explorationResults);
         } catch (\Exception $e) {
-            $this->logger->error('[SchemasController] Schema exploration failed: '.$e->getMessage(), ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->error(
+                message: '[SchemasController] Schema exploration failed: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
     }//end explore()
@@ -940,7 +949,10 @@ class SchemasController extends Controller
             }
 
             $updateCount = count($propertyUpdates);
-            $this->logger->info("[SchemasController] Updating schema {$id} with {$updateCount} property updates", ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->info(
+                message: "[SchemasController] Updating schema {$id} with {$updateCount} property updates",
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
 
             $updatedSchema = $this->schemaService->updateSchemaFromExploration(
                 schemaId: $id,
@@ -950,7 +962,10 @@ class SchemasController extends Controller
             // Clear schema cache to ensure fresh data.
             $this->schemaCacheService->clearSchemaCache($id);
 
-            $this->logger->info('[SchemasController] Schema '.$id.' successfully updated with exploration results', ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->info(
+                message: '[SchemasController] Schema '.$id.' successfully updated with exploration results',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
 
             return new JSONResponse(
                 data: [
@@ -960,7 +975,10 @@ class SchemasController extends Controller
                 ]
             );
         } catch (\Exception $e) {
-            $this->logger->error('[SchemasController] Failed to update schema from exploration: '.$e->getMessage(), ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->error(
+                message: '[SchemasController] Failed to update schema from exploration: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }//end try
     }//end updateFromExploration()
@@ -1023,8 +1041,8 @@ class SchemasController extends Controller
             );
 
             $this->logger->info(
-                '[SchemasController] Schema published',
-                [
+                message: '[SchemasController] Schema published',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'schema_id'      => $id,
@@ -1037,8 +1055,8 @@ class SchemasController extends Controller
             return new JSONResponse(['error' => 'Schema not found'], 404);
         } catch (\Exception $e) {
             $this->logger->error(
-                '[SchemasController] Failed to publish schema',
-                [
+                message: '[SchemasController] Failed to publish schema',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'schema_id' => $id,
@@ -1106,8 +1124,8 @@ class SchemasController extends Controller
             );
 
             $this->logger->info(
-                '[SchemasController] Schema depublished',
-                [
+                message: '[SchemasController] Schema depublished',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'schema_id'        => $id,
@@ -1120,8 +1138,8 @@ class SchemasController extends Controller
             return new JSONResponse(['error' => 'Schema not found'], 404);
         } catch (\Exception $e) {
             $this->logger->error(
-                '[SchemasController] Failed to depublish schema',
-                [
+                message: '[SchemasController] Failed to depublish schema',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'schema_id' => $id,

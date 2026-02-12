@@ -124,7 +124,7 @@ class FilePublishingHandler
                 throw new Exception("File with ID $file does not exist");
             }
 
-            $foundMsg  = "publishFile: Found file by ID: ".$fileNode->getName();
+            $foundMsg  = "[FilePublishingHandler] publishFile: Found file by ID: ".$fileNode->getName();
             $foundMsg .= " (ID: ".$fileNode->getId().")";
             $this->logger->info(message: $foundMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
         } else {
@@ -166,26 +166,26 @@ class FilePublishingHandler
             try {
                 $this->logger->info(message: "[FilePublishingHandler] publishFile: Attempting to get file '$fileName' from object folder", context: ['file' => __FILE__, 'line' => __LINE__]);
                 $fileNode      = $objectFolder->get($fileName);
-                $foundFileMsg  = "publishFile: Successfully found file: ".$fileNode->getName();
+                $foundFileMsg  = "[FilePublishingHandler] publishFile: Successfully found file: ".$fileNode->getName();
                 $foundFileMsg .= " at ".$fileNode->getPath();
                 $this->logger->info(message: $foundFileMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
             } catch (NotFoundException $e) {
                 // Try with full path if filename didn't work.
                 try {
-                    $attemptMsg = "publishFile: Attempting to get file '$filePath' (full path) from object folder";
+                    $attemptMsg = "[FilePublishingHandler] publishFile: Attempting to get file '$filePath' (full path) from object folder";
                     $this->logger->info(message: $attemptMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
                     $fileNode    = $objectFolder->get($filePath);
-                    $successMsg  = "publishFile: Successfully found file using full path: ";
+                    $successMsg  = "[FilePublishingHandler] publishFile: Successfully found file using full path: ";
                     $successMsg .= $fileNode->getName()." at ".$fileNode->getPath();
                     $this->logger->info(message: $successMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
                 } catch (NotFoundException $e2) {
-                    $errMsg  = "publishFile: File '$fileName' and '$filePath' not found in object folder.";
+                    $errMsg  = "[FilePublishingHandler] publishFile: File '$fileName' and '$filePath' not found in object folder.";
                     $errMsg .= " NotFoundException: ".$e2->getMessage();
                     $this->logger->error(message: $errMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
                     throw new Exception('File not found.');
                 }
             } catch (Exception $e) {
-                $errMsg  = "publishFile: Unexpected error getting file from object folder: ";
+                $errMsg  = "[FilePublishingHandler] publishFile: Unexpected error getting file from object folder: ";
                 $errMsg .= $e->getMessage();
                 $this->logger->error(message: $errMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
                 throw new Exception('File not found.');
@@ -216,11 +216,11 @@ class FilePublishingHandler
             $shareId  = $shareInfo['id'];
             $token    = $shareInfo['token'];
             $url      = $shareInfo['accessUrl'];
-            $message  = "publishFile: Successfully created public share via FileMapper";
+            $message  = "[FilePublishingHandler] publishFile: Successfully created public share via FileMapper";
             $message .= " - ID: {$shareId}, Token: {$token}, URL: {$url}";
             $this->logger->info(message: $message, context: ['file' => __FILE__, 'line' => __LINE__]);
         } catch (Exception $e) {
-            $errMsg = "publishFile: Failed to create share via FileMapper: ".$e->getMessage();
+            $errMsg = "[FilePublishingHandler] publishFile: Failed to create share via FileMapper: ".$e->getMessage();
             $this->logger->error(message: $errMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
             throw new Exception('Failed to create share link: '.$e->getMessage());
         }
@@ -275,7 +275,7 @@ class FilePublishingHandler
                 throw new Exception("File with ID $filePath does not exist");
             }
 
-            $foundMsg  = "unpublishFile: Found file by ID: ".$file->getName();
+            $foundMsg  = "[FilePublishingHandler] unpublishFile: Found file by ID: ".$file->getName();
             $foundMsg .= " (ID: ".$file->getId().")";
             $this->logger->info(message: $foundMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
         } else {
@@ -317,26 +317,26 @@ class FilePublishingHandler
             try {
                 $this->logger->info(message: "[FilePublishingHandler] unpublishFile: Attempting to get file '$fileName' from object folder", context: ['file' => __FILE__, 'line' => __LINE__]);
                 $file          = $objectFolder->get($fileName);
-                $foundFileMsg  = "unpublishFile: Successfully found file: ".$file->getName();
+                $foundFileMsg  = "[FilePublishingHandler] unpublishFile: Successfully found file: ".$file->getName();
                 $foundFileMsg .= " at ".$file->getPath();
                 $this->logger->info(message: $foundFileMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
             } catch (NotFoundException $e) {
                 // Try with full path if filename didn't work.
                 try {
-                    $attemptMsg = "unpublishFile: Attempting to get file '$filePath' (full path) from object folder";
+                    $attemptMsg = "[FilePublishingHandler] unpublishFile: Attempting to get file '$filePath' (full path) from object folder";
                     $this->logger->info(message: $attemptMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
                     $file        = $objectFolder->get($filePath);
-                    $successMsg  = "unpublishFile: Successfully found file using full path: ";
+                    $successMsg  = "[FilePublishingHandler] unpublishFile: Successfully found file using full path: ";
                     $successMsg .= $file->getName()." at ".$file->getPath();
                     $this->logger->info(message: $successMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
                 } catch (NotFoundException $e2) {
-                    $errMsg  = "unpublishFile: File '$fileName' and '$filePath' not found in object folder.";
+                    $errMsg  = "[FilePublishingHandler] unpublishFile: File '$fileName' and '$filePath' not found in object folder.";
                     $errMsg .= " NotFoundException: ".$e2->getMessage();
                     $this->logger->error(message: $errMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
                     throw new Exception('File not found.');
                 }
             } catch (Exception $e) {
-                $errMsg  = "unpublishFile: Unexpected error getting file from object folder: ";
+                $errMsg  = "[FilePublishingHandler] unpublishFile: Unexpected error getting file from object folder: ";
                 $errMsg .= $e->getMessage();
                 $this->logger->error(message: $errMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
                 throw new Exception('File not found.');
@@ -360,17 +360,17 @@ class FilePublishingHandler
 
             $deletedShares = $deletionInfo['deleted_shares'];
             $fileId        = $deletionInfo['file_id'];
-            $message       = "unpublishFile: Successfully removed public shares via FileMapper - ";
+            $message       = "[FilePublishingHandler] unpublishFile: Successfully removed public shares via FileMapper - ";
             $message      .= "Deleted shares: {$deletedShares}, File ID: {$fileId}";
             $this->logger->info(message: $message, context: ['file' => __FILE__, 'line' => __LINE__]);
 
             if ($deletionInfo['deleted_shares'] === 0) {
-                $noSharesMsg  = "unpublishFile: No public shares were found to delete for file: ";
+                $noSharesMsg  = "[FilePublishingHandler] unpublishFile: No public shares were found to delete for file: ";
                 $noSharesMsg .= $file->getName();
                 $this->logger->info(message: $noSharesMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
             }
         } catch (Exception $e) {
-            $errMsg = "unpublishFile: Failed to remove shares via FileMapper: ".$e->getMessage();
+            $errMsg = "[FilePublishingHandler] unpublishFile: Failed to remove shares via FileMapper: ".$e->getMessage();
             $this->logger->error(message: $errMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
             throw new Exception('Failed to remove share links: '.$e->getMessage());
         }

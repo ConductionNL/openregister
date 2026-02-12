@@ -115,15 +115,18 @@ class FileTextExtractionJob extends QueuedJob
         if ($this->config->hasKey(app: 'openregister', key: $fileManagementKey) === false
             || $fileManagement['extractionScope'] === 'none'
         ) {
-            $this->logger->info('[FileTextExtractionJob] File extraction is disabled. Not extracting text from files.', ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->info(
+                message: '[FileTextExtractionJob] File extraction is disabled. Not extracting text from files.',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return;
         }
 
         // Step 2: Validate that required file_id argument is present.
         if (isset($argument['file_id']) === false) {
             $this->logger->error(
-                '[FileTextExtractionJob] Missing file_id in job arguments',
-                [
+                message: '[FileTextExtractionJob] Missing file_id in job arguments',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'argument' => $argument,
@@ -137,8 +140,8 @@ class FileTextExtractionJob extends QueuedJob
 
         // Log start of extraction process for monitoring.
         $this->logger->info(
-            '[FileTextExtractionJob] Starting text extraction',
-            [
+            message: '[FileTextExtractionJob] Starting text extraction',
+            context: [
                 'file' => __FILE__,
                 'line' => __LINE__,
                 'file_id' => $fileId,
@@ -158,8 +161,8 @@ class FileTextExtractionJob extends QueuedJob
 
             // Log successful completion with performance metrics.
             $this->logger->info(
-                '[FileTextExtractionJob] Text extraction completed successfully',
-                [
+                message: '[FileTextExtractionJob] Text extraction completed successfully',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'file_id'            => $fileId,
@@ -172,8 +175,8 @@ class FileTextExtractionJob extends QueuedJob
 
             // Log error with full exception details for debugging.
             $this->logger->error(
-                '[FileTextExtractionJob] Exception during text extraction',
-                [
+                message: '[FileTextExtractionJob] Exception during text extraction',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'file_id'            => $fileId,

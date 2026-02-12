@@ -65,19 +65,22 @@ class PerformanceOptimizationHandler
             if ($activeOrganisation !== null) {
                 $uuid = $activeOrganisation->getUuid();
                 $this->logger->debug(
-                    '[PerformanceOptimizationHandler] Got active organisation for context',
-                    ['organisationUuid' => $uuid, 'organisationName' => $activeOrganisation->getName()]
+                    message: '[PerformanceOptimizationHandler] Got active organisation for context',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'organisationUuid' => $uuid, 'organisationName' => $activeOrganisation->getName()]
                 );
                 return $uuid;
             }
 
-            $this->logger->debug('[PerformanceOptimizationHandler] No active organisation for current user', ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->debug(
+                message: '[PerformanceOptimizationHandler] No active organisation for current user',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return null;
         } catch (Exception $e) {
             // Log error but continue without organization context.
             $this->logger->warning(
-                '[PerformanceOptimizationHandler] Failed to get active organisation',
-                ['error' => $e->getMessage()]
+                message: '[PerformanceOptimizationHandler] Failed to get active organisation',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
             );
             return null;
         }//end try

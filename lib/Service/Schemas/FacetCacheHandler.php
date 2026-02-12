@@ -209,8 +209,10 @@ class FacetCacheHandler
         self::$facetConfigCache[$cacheKey] = $facetableFields;
 
         $this->logger->debug(
-            'Cached facetable fields configuration',
-            [
+            message: '[FacetCacheHandler] Cached facetable fields configuration',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'schemaId'   => $schemaId,
                 'fieldCount' => count($facetableFields),
                 'ttl'        => $ttl,
@@ -248,8 +250,10 @@ class FacetCacheHandler
             // If the cache table doesn't exist yet, just log a debug message and continue.
             // This allows the app to work even if the migration hasn't been run yet.
             $this->logger->debug(
-                'Schema facet cache table does not exist yet, skipping database cache invalidation',
-                [
+                message: '[FacetCacheHandler] Schema facet cache table does not exist yet, skipping database cache invalidation',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'schemaId' => $schemaId,
                     'error'    => $e->getMessage(),
                 ]
@@ -269,8 +273,10 @@ class FacetCacheHandler
         $executionTime = round((microtime(true) - $startTime) * 1000, 2);
 
         $this->logger->info(
-            'Schema facet cache invalidated',
-            [
+            message: '[FacetCacheHandler] Schema facet cache invalidated',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'schemaId'             => $schemaId,
                 'operation'            => $operation,
                 'deletedDbEntries'     => $deletedCount,
@@ -306,8 +312,10 @@ class FacetCacheHandler
         $executionTime = round((microtime(true) - $startTime) * 1000, 2);
 
         $this->logger->info(
-            'All facet caches cleared',
-            [
+            message: '[FacetCacheHandler] All facet caches cleared',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'deletedDbEntries'     => $deletedCount,
                 'clearedMemoryEntries' => $memoryCacheSize,
                 'executionTime'        => $executionTime.'ms',
@@ -337,8 +345,10 @@ class FacetCacheHandler
 
         if ($deletedCount > 0) {
             $this->logger->info(
-                'Cleaned expired facet cache entries',
-                [
+                message: '[FacetCacheHandler] Cleaned expired facet cache entries',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'count'         => $deletedCount,
                     'executionTime' => $executionTime.'ms',
                 ]

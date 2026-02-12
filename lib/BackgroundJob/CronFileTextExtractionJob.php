@@ -126,8 +126,8 @@ class CronFileTextExtractionJob extends TimedJob
 
             if ($extractionMode !== 'cron') {
                 $logger->debug(
-                    '[CronFileTextExtractionJob] Cron File Text Extraction Job skipped - extraction mode is not cron',
-                    ['file' => __FILE__, 'line' => __LINE__, 'extraction_mode' => $extractionMode]
+                    message: '[CronFileTextExtractionJob] Cron File Text Extraction Job skipped - extraction mode is not cron',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'extraction_mode' => $extractionMode]
                 );
                 return;
             }
@@ -137,8 +137,8 @@ class CronFileTextExtractionJob extends TimedJob
             $extractionScope = $fileSettings['extractionScope'] ?? 'objects';
 
             $logger->info(
-                '[CronFileTextExtractionJob] Starting cron file text extraction',
-                [
+                message: '[CronFileTextExtractionJob] Starting cron file text extraction',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'batch_size'       => $batchSize,
@@ -155,13 +155,13 @@ class CronFileTextExtractionJob extends TimedJob
             );
 
             if (empty($pendingFiles) === true) {
-                $logger->info('[CronFileTextExtractionJob] No pending files found for cron extraction', ['file' => __FILE__, 'line' => __LINE__]);
+                $logger->info(message: '[CronFileTextExtractionJob] No pending files found for cron extraction', context: ['file' => __FILE__, 'line' => __LINE__]);
                 return;
             }
 
             $logger->info(
-                '[CronFileTextExtractionJob] Processing files in cron job',
-                [
+                message: '[CronFileTextExtractionJob] Processing files in cron job',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'files_count' => count($pendingFiles),
@@ -182,8 +182,8 @@ class CronFileTextExtractionJob extends TimedJob
                     }
 
                     $logger->debug(
-                        '[CronFileTextExtractionJob] Processing file in cron job',
-                        [
+                        message: '[CronFileTextExtractionJob] Processing file in cron job',
+                        context: [
                             'file' => __FILE__,
                             'line' => __LINE__,
                             'file_id'   => $fileId,
@@ -195,14 +195,14 @@ class CronFileTextExtractionJob extends TimedJob
                     $processed++;
 
                     $logger->debug(
-                        '[CronFileTextExtractionJob] File processed successfully in cron job',
-                        ['file' => __FILE__, 'line' => __LINE__, 'file_id' => $fileId]
+                        message: '[CronFileTextExtractionJob] File processed successfully in cron job',
+                        context: ['file' => __FILE__, 'line' => __LINE__, 'file_id' => $fileId]
                     );
                 } catch (\Exception $e) {
                     $failed++;
                     $logger->error(
-                        '[CronFileTextExtractionJob] Failed to process file in cron job',
-                        [
+                        message: '[CronFileTextExtractionJob] Failed to process file in cron job',
+                        context: [
                             'file' => __FILE__,
                             'line' => __LINE__,
                             'file_id' => $fileId ?? 0,
@@ -215,8 +215,8 @@ class CronFileTextExtractionJob extends TimedJob
             $executionTime = microtime(true) - $startTime;
 
             $logger->info(
-                '[CronFileTextExtractionJob] ✅ Cron File Text Extraction Job Completed',
-                [
+                message: '[CronFileTextExtractionJob] ✅ Cron File Text Extraction Job Completed',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'job_id'                 => $this->getId(),
@@ -268,8 +268,8 @@ class CronFileTextExtractionJob extends TimedJob
     ): array {
         // Log query parameters for debugging.
         $logger->debug(
-            '[CronFileTextExtractionJob] Fetching pending files for cron extraction',
-            [
+            message: '[CronFileTextExtractionJob] Fetching pending files for cron extraction',
+            context: [
                 'file' => __FILE__,
                 'line' => __LINE__,
                 'extraction_scope' => $extractionScope,
@@ -285,8 +285,8 @@ class CronFileTextExtractionJob extends TimedJob
             );
 
             $logger->debug(
-                '[CronFileTextExtractionJob] Retrieved pending files',
-                [
+                message: '[CronFileTextExtractionJob] Retrieved pending files',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'count'      => count($pendingFiles),
@@ -299,8 +299,8 @@ class CronFileTextExtractionJob extends TimedJob
         } catch (\Exception $e) {
             // Log error but don't throw - return empty array to continue gracefully.
             $logger->error(
-                '[CronFileTextExtractionJob] Failed to retrieve pending files',
-                [
+                message: '[CronFileTextExtractionJob] Failed to retrieve pending files',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'error'            => $e->getMessage(),

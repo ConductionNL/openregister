@@ -108,13 +108,19 @@ class TaggingHandler
                 $newTag      = $this->findOrCreateTag($tag);
                 $newTagIds[] = $newTag->getId();
             } catch (Exception $e) {
-                $this->logger->error('[TaggingHandler] Error processing tag '.$tag.': '.$e->getMessage(), ['file' => __FILE__, 'line' => __LINE__]);
+                $this->logger->error(
+                    message: '[TaggingHandler] Error processing tag '.$tag.': '.$e->getMessage(),
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
                 // Try to create it anyway.
                 try {
                     $newTag      = $this->findOrCreateTag($tag);
                     $newTagIds[] = $newTag->getId();
                 } catch (Exception $e2) {
-                    $this->logger->error('[TaggingHandler] Failed to create tag '.$tag.': '.$e2->getMessage(), ['file' => __FILE__, 'line' => __LINE__]);
+                    $this->logger->error(
+                        message: '[TaggingHandler] Failed to create tag '.$tag.': '.$e2->getMessage(),
+                        context: ['file' => __FILE__, 'line' => __LINE__]
+                    );
                 }
             }//end try
         }//end foreach
@@ -207,7 +213,10 @@ class TaggingHandler
 
             return $tagNames;
         } catch (Exception $e) {
-            $this->logger->error('[TaggingHandler] Error getting tags for file '.$fileId.': '.$e->getMessage(), ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->error(
+                message: '[TaggingHandler] Error getting tags for file '.$fileId.': '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return [];
         }//end try
     }//end getFileTags()
@@ -250,7 +259,10 @@ class TaggingHandler
 
             return $tagNames;
         } catch (Exception $e) {
-            $this->logger->error('[TaggingHandler] Error getting all tags: '.$e->getMessage(), ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->error(
+                message: '[TaggingHandler] Error getting all tags: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return [];
         }
     }//end getAllTags()

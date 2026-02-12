@@ -348,8 +348,8 @@ class IndexService
             return $this->searchBackend->isAvailable(forceRefresh: $forceRefresh);
         } catch (Exception $e) {
             $this->logger->error(
-                '[IndexService] Failed to check availability',
-                [
+                message: '[IndexService] Failed to check availability',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'error' => $e->getMessage(),
@@ -374,8 +374,8 @@ class IndexService
             return $this->searchBackend->testConnection(inclCollTests: $inclCollTests);
         } catch (Exception $e) {
             $this->logger->error(
-                '[IndexService] Connection test failed',
-                [
+                message: '[IndexService] Connection test failed',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'error' => $e->getMessage(),
@@ -400,8 +400,8 @@ class IndexService
             return $this->searchBackend->getStats();
         } catch (Exception $e) {
             $this->logger->error(
-                '[IndexService] Failed to get stats',
-                [
+                message: '[IndexService] Failed to get stats',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'error' => $e->getMessage(),
@@ -443,8 +443,8 @@ class IndexService
             ];
         } catch (Exception $e) {
             $this->logger->error(
-                '[IndexService] Failed to get dashboard stats',
-                [
+                message: '[IndexService] Failed to get dashboard stats',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'error' => $e->getMessage(),
@@ -469,8 +469,8 @@ class IndexService
             return $this->searchBackend->optimize();
         } catch (Exception $e) {
             $this->logger->error(
-                '[IndexService] Optimization failed',
-                [
+                message: '[IndexService] Optimization failed',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'error' => $e->getMessage(),
@@ -493,8 +493,8 @@ class IndexService
             return $this->searchBackend->clearIndex(collectionName: $collectionName);
         } catch (Exception $e) {
             $this->logger->error(
-                '[IndexService] Failed to clear index',
-                [
+                message: '[IndexService] Failed to clear index',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'collection' => $collectionName,
@@ -520,8 +520,8 @@ class IndexService
             return $this->searchBackend->getConfig();
         } catch (Exception $e) {
             $this->logger->error(
-                '[IndexService] Failed to get config',
-                [
+                message: '[IndexService] Failed to get config',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'error' => $e->getMessage(),

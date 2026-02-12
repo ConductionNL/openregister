@@ -255,8 +255,8 @@ class UserService
             $this->eventDispatcher->dispatchTyped($event);
 
             $this->logger->debug(
-                    '[UserService] UserService: Dispatched UserProfileUpdatedEvent',
-                    [
+                    message: '[UserService] UserService: Dispatched UserProfileUpdatedEvent',
+                    context: [
                         'file' => __FILE__,
                         'line' => __LINE__,
                         'app'     => 'openregister',
@@ -395,8 +395,8 @@ class UserService
                 }
             } catch (\Exception $quotaException) {
                 $this->logger->debug(
-                    '[UserService] User quota calculation failed for user: '.$userId,
-                    [
+                    message: '[UserService] User quota calculation failed for user: '.$userId,
+                    context: [
                         'file' => __FILE__,
                         'line' => __LINE__,
                         'exception' => $quotaException->getMessage(),
@@ -423,8 +423,8 @@ class UserService
             return $quota;
         } catch (\Exception $e) {
             $this->logger->warning(
-                '[UserService] Failed to build quota information for user: '.$user->getUID(),
-                [
+                message: '[UserService] Failed to build quota information for user: '.$user->getUID(),
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'exception' => $e->getMessage(),
@@ -454,8 +454,8 @@ class UserService
 
             if ($currentMemoryUsage > 128 * 1024 * 1024) {
                 $this->logger->warning(
-                    '[UserService] Memory usage too high for quota calculation',
-                    [
+                    message: '[UserService] Memory usage too high for quota calculation',
+                    context: [
                         'file' => __FILE__,
                         'line' => __LINE__,
                         'user'         => $userId,
@@ -482,12 +482,15 @@ class UserService
                 return (int) $row['size'];
             }
 
-            $this->logger->info('[UserService] Using fallback quota calculation for user: '.$userId, ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->info(
+                message: '[UserService] Using fallback quota calculation for user: '.$userId,
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return 0;
         } catch (\Exception $e) {
             $this->logger->warning(
-                '[UserService] Memory-safe quota calculation failed for user: '.$userId,
-                [
+                message: '[UserService] Memory-safe quota calculation failed for user: '.$userId,
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'exception' => $e->getMessage(),
@@ -545,8 +548,8 @@ class UserService
             $additionalInfo = $this->getAccountManagerPropertiesSelectively($user);
         } catch (\Exception $e) {
             $this->logger->warning(
-                '[UserService] AccountManager failed for user: '.$user->getUID(),
-                [
+                message: '[UserService] AccountManager failed for user: '.$user->getUID(),
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'exception' => $e->getMessage(),
@@ -629,8 +632,8 @@ class UserService
                 }
             } catch (\Exception $e) {
                 $this->logger->debug(
-                    '[UserService] Failed to load account property: '.$propertyName,
-                    [
+                    message: '[UserService] Failed to load account property: '.$propertyName,
+                    context: [
                         'file' => __FILE__,
                         'line' => __LINE__,
                         'user'      => $user->getUID(),
@@ -747,8 +750,8 @@ class UserService
             }
         } catch (\Exception $e) {
             $this->logger->warning(
-                '[UserService] Failed to update AccountManager properties for user: '.$user->getUID(),
-                [
+                message: '[UserService] Failed to update AccountManager properties for user: '.$user->getUID(),
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'exception' => $e->getMessage(),

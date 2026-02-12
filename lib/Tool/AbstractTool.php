@@ -244,10 +244,13 @@ abstract class AbstractTool implements ToolInterface
             $messageText = $message;
         }
 
-        // Format log message with tool name, function name, and message text.
+        // Format log message with class name, tool name, function name, and message text.
+        $className  = (new \ReflectionClass($this))->getShortName();
+        $toolName   = $this->getName();
         $logMessage = sprintf(
-            '[Tool:%s] %s: %s',
-            $this->getName(),
+            '[%s] %s: %s: %s',
+            $className,
+            $toolName,
             $functionName,
             $messageText
         );
@@ -259,15 +262,15 @@ abstract class AbstractTool implements ToolInterface
         switch ($level) {
             case 'error':
                 // Log errors for critical issues that need attention.
-                $this->logger->error($logMessage, $contextWithLocation);
+                $this->logger->error(message: $logMessage, context: $contextWithLocation);
                 break;
             case 'warning':
                 // Log warnings for non-critical issues.
-                $this->logger->warning($logMessage, $contextWithLocation);
+                $this->logger->warning(message: $logMessage, context: $contextWithLocation);
                 break;
             default:
                 // Log info for normal operations (default level).
-                $this->logger->info($logMessage, $contextWithLocation);
+                $this->logger->info(message: $logMessage, context: $contextWithLocation);
                 break;
         }
     }//end log()

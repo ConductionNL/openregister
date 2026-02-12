@@ -145,8 +145,8 @@ class WebhookService
         } catch (\Exception $e) {
             // If table doesn't exist yet (migrations haven't run), silently skip webhook delivery.
             $this->logger->debug(
-                '[WebhookService] Webhook table does not exist yet, skipping webhook delivery',
-                [
+                message: '[WebhookService] Webhook table does not exist yet, skipping webhook delivery',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'event' => $eventName,
@@ -158,8 +158,8 @@ class WebhookService
 
         if (empty($webhooks) === true) {
             $this->logger->debug(
-                '[WebhookService] No webhooks configured for event',
-                [
+                message: '[WebhookService] No webhooks configured for event',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'event' => $eventName,
@@ -701,8 +701,8 @@ class WebhookService
                 // TODO: Implement response handling if needed.
                 if ($success === true && $this->shouldProcessResponse($webhook) === true) {
                     $this->logger->info(
-                        '[WebhookService] Webhook delivery successful but response processing not yet implemented',
-                        [
+                        message: '[WebhookService] Webhook delivery successful but response processing not yet implemented',
+                        context: [
                             'file' => __FILE__,
                             'line' => __LINE__,
                             'webhook_id' => $webhook->getId(),
@@ -713,8 +713,8 @@ class WebhookService
             } catch (\Exception $e) {
                 // Log failure but continue processing other webhooks.
                 $this->logger->error(
-                    '[WebhookService] Failed to deliver webhook during request interception',
-                    [
+                    message: '[WebhookService] Failed to deliver webhook during request interception',
+                    context: [
                         'file' => __FILE__,
                         'line' => __LINE__,
                         'webhook_id'   => $webhook->getId(),

@@ -333,8 +333,8 @@ class WebhooksController extends Controller
             return new JSONResponse(data: $webhook, statusCode: 201);
         } catch (\Exception $e) {
             $this->logger->error(
-                '[WebhooksController] Error creating webhook: '.$e->getMessage(),
-                [
+                message: '[WebhooksController] Error creating webhook: '.$e->getMessage(),
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'data'  => $this->request->getParams(),
@@ -394,8 +394,8 @@ class WebhooksController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                '[WebhooksController] Error updating webhook: '.$e->getMessage(),
-                [
+                message: '[WebhooksController] Error updating webhook: '.$e->getMessage(),
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'id'    => $id,
@@ -462,8 +462,8 @@ class WebhooksController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                '[WebhooksController] Error deleting webhook: '.$e->getMessage(),
-                [
+                message: '[WebhooksController] Error deleting webhook: '.$e->getMessage(),
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'id'    => $id,
@@ -561,8 +561,8 @@ class WebhooksController extends Controller
             );
         } catch (GuzzleException $e) {
             $this->logger->error(
-                '[WebhooksController] Error testing webhook: '.$e->getMessage(),
-                [
+                message: '[WebhooksController] Error testing webhook: '.$e->getMessage(),
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'id'    => $id,
@@ -579,8 +579,8 @@ class WebhooksController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                '[WebhooksController] Error testing webhook: '.$e->getMessage(),
-                [
+                message: '[WebhooksController] Error testing webhook: '.$e->getMessage(),
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'id'    => $id,

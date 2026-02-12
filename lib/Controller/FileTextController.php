@@ -243,8 +243,8 @@ class FileTextController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                '[FileTextController] Failed to get stats',
-                [
+                message: '[FileTextController] Failed to get stats',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'error' => $e->getMessage(),
@@ -336,8 +336,8 @@ class FileTextController extends Controller
             return new JSONResponse(data: $result);
         } catch (\Exception $e) {
             $this->logger->error(
-                '[FileTextController] Failed to process extracted files',
-                [
+                message: '[FileTextController] Failed to process extracted files',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'error' => $e->getMessage(),
@@ -384,8 +384,8 @@ class FileTextController extends Controller
             return new JSONResponse(data: $result);
         } catch (\Exception $e) {
             $this->logger->error(
-                '[FileTextController] Failed to process file',
-                [
+                message: '[FileTextController] Failed to process file',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'file_id' => $fileId,
@@ -425,8 +425,8 @@ class FileTextController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                '[FileTextController] Failed to get chunking stats',
-                [
+                message: '[FileTextController] Failed to get chunking stats',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'error' => $e->getMessage(),
@@ -462,8 +462,8 @@ class FileTextController extends Controller
     {
         try {
             $this->logger->info(
-                '[FileTextController] Anonymizing file',
-                ['file' => __FILE__, 'line' => __LINE__, 'file_id' => $fileId]
+                message: '[FileTextController] Anonymizing file',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'file_id' => $fileId]
             );
 
             // Get the file node.
@@ -525,8 +525,8 @@ class FileTextController extends Controller
             }
 
             $this->logger->debug(
-                '[FileTextController] Found entities to anonymize',
-                [
+                message: '[FileTextController] Found entities to anonymize',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'file_id'      => $fileId,
@@ -544,8 +544,8 @@ class FileTextController extends Controller
             );
 
             $this->logger->info(
-                '[FileTextController] File anonymized successfully',
-                [
+                message: '[FileTextController] File anonymized successfully',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'original_file_id'   => $fileId,
@@ -567,8 +567,8 @@ class FileTextController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                '[FileTextController] Failed to anonymize file',
-                [
+                message: '[FileTextController] Failed to anonymize file',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'file_id' => $fileId,

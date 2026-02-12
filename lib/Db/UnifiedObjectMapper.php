@@ -118,16 +118,16 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         // No context → use blob storage.
         if ($register === null || $schema === null) {
             $this->logger->debug(
-                '[UnifiedObjectMapper] No register/schema context, using blob storage',
-                ['file' => __FILE__, 'line' => __LINE__]
+                message: '[UnifiedObjectMapper] No register/schema context, using blob storage',
+                context: ['file' => __FILE__, 'line' => __LINE__]
             );
             return false;
         }
 
         // Always use MagicMapper when we have register+schema context.
         $this->logger->debug(
-            '[UnifiedObjectMapper] Using MagicMapper for register+schema combination',
-            [
+            message: '[UnifiedObjectMapper] Using MagicMapper for register+schema combination',
+            context: [
                 'file' => __FILE__,
                 'line' => __LINE__,
                 'registerId' => $register->getId(),
@@ -167,8 +167,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                 $register = $this->registerMapper->find((int) $entity->getRegister(), [], null, true, false);
             } catch (Exception $e) {
                 $this->logger->warning(
-                    '[UnifiedObjectMapper] Failed to resolve register from entity',
-                    ['file' => __FILE__, 'line' => __LINE__, 'registerId' => $entity->getRegister(), 'error' => $e->getMessage()]
+                    message: '[UnifiedObjectMapper] Failed to resolve register from entity',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'registerId' => $entity->getRegister(), 'error' => $e->getMessage()]
                 );
             }
         }
@@ -180,8 +180,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                 $schema = $this->schemaMapper->find((int) $entity->getSchema(), [], null, true, false);
             } catch (Exception $e) {
                 $this->logger->warning(
-                    '[UnifiedObjectMapper] Failed to resolve schema from entity',
-                    ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $entity->getSchema(), 'error' => $e->getMessage()]
+                    message: '[UnifiedObjectMapper] Failed to resolve schema from entity',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $entity->getSchema(), 'error' => $e->getMessage()]
                 );
             }
         }
@@ -222,7 +222,10 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         bool $_multitenancy=true
     ): ObjectEntity {
         if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
-            $this->logger->debug('[UnifiedObjectMapper] Routing find() to MagicMapper', ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->debug(
+                message: '[UnifiedObjectMapper] Routing find() to MagicMapper',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             $entity = $this->magicMapper->findInRegisterSchemaTable(
                 identifier: $identifier,
                 register: $register,
@@ -235,7 +238,10 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             return $entity;
         }
 
-        $this->logger->debug('[UnifiedObjectMapper] Routing find() to ObjectEntityMapper (blob storage direct)', ['file' => __FILE__, 'line' => __LINE__]);
+        $this->logger->debug(
+            message: '[UnifiedObjectMapper] Routing find() to ObjectEntityMapper (blob storage direct)',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
         $entity = $this->objectEntityMapper->findDirectBlobStorage(
             identifier: $identifier,
             register: $register,
@@ -276,8 +282,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         bool $_multitenancy=true
     ): array {
         $this->logger->debug(
-                '[UnifiedObjectMapper] findAcrossAllSources called',
-                [
+            message: '[UnifiedObjectMapper] findAcrossAllSources called',
+            context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'identifier' => $identifier,
@@ -334,7 +340,10 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         ?bool $published=null
     ): array {
         if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
-            $this->logger->debug('[UnifiedObjectMapper] Routing findAll() to MagicMapper', ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->debug(
+                message: '[UnifiedObjectMapper] Routing findAll() to MagicMapper',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             $entities = $this->magicMapper->findAllInRegisterSchemaTable(
                 register: $register,
                 schema: $schema,
@@ -352,7 +361,10 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             return $entities;
         }
 
-        $this->logger->debug('[UnifiedObjectMapper] Routing findAll() to ObjectEntityMapper (blob storage direct)', ['file' => __FILE__, 'line' => __LINE__]);
+        $this->logger->debug(
+            message: '[UnifiedObjectMapper] Routing findAll() to ObjectEntityMapper (blob storage direct)',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
         $entities = $this->objectEntityMapper->findAllDirectBlobStorage(
             limit: $limit,
             offset: $offset,
@@ -390,7 +402,10 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      */
     public function findMultiple(array $ids): array
     {
-        $this->logger->debug('[UnifiedObjectMapper] Routing findMultiple() to ObjectEntityMapper (cross-schema operation)', ['file' => __FILE__, 'line' => __LINE__]);
+        $this->logger->debug(
+            message: '[UnifiedObjectMapper] Routing findMultiple() to ObjectEntityMapper (cross-schema operation)',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
         return $this->objectEntityMapper->findMultiple($ids);
     }//end findMultiple()
 
@@ -407,8 +422,10 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      */
     public function findBySchema(int $schemaId): array
     {
-        $msg = '[UnifiedObjectMapper] Routing findBySchema() to ObjectEntityMapper (cross-register)';
-        $this->logger->debug($msg, ['file' => __FILE__, 'line' => __LINE__]);
+        $this->logger->debug(
+            message: '[UnifiedObjectMapper] Routing findBySchema() to ObjectEntityMapper (cross-register)',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
         return $this->objectEntityMapper->findBySchema($schemaId);
     }//end findBySchema()
 
@@ -437,10 +454,16 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         }
 
         if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
-            $this->logger->debug('[UnifiedObjectMapper] Routing insert() to MagicMapper', ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->debug(
+                message: '[UnifiedObjectMapper] Routing insert() to MagicMapper',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             $insertedEntity = $this->magicMapper->insertObjectEntity(entity: $entity, register: $register, schema: $schema);
         } else {
-            $this->logger->debug('[UnifiedObjectMapper] Using blob storage (via ObjectEntityMapper parent::insert)', ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->debug(
+                message: '[UnifiedObjectMapper] Using blob storage (via ObjectEntityMapper parent::insert)',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             // Call ObjectEntityMapper's blob storage insert directly by using its parent insert.
             // This avoids the circular loop where ObjectEntityMapper->insert() calls us back.
             // We replicate the blob storage logic here: parent::insert() + events.
@@ -449,13 +472,13 @@ class UnifiedObjectMapper extends AbstractObjectMapper
 
         // Dispatch ObjectCreatedEvent after successful insert.
         $this->logger->debug(
-                '[UnifiedObjectMapper] Dispatching ObjectCreatedEvent',
-                [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
-                    'entityUuid' => $insertedEntity->getUuid(),
-                ]
-                );
+            message: '[UnifiedObjectMapper] Dispatching ObjectCreatedEvent',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
+                'entityUuid' => $insertedEntity->getUuid(),
+            ]
+        );
         $this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent($insertedEntity));
 
         return $insertedEntity;
@@ -505,36 +528,42 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             } catch (\Exception $e) {
                 // If old object doesn't exist (shouldn't happen in update), use current entity.
                 $this->logger->warning(
-                        '[UnifiedObjectMapper] Could not fetch old entity for update event',
-                        [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
-                            'entityId'   => $entity->getId(),
-                            'entityUuid' => $entity->getUuid(),
-                            'error'      => $e->getMessage(),
-                        ]
-                        );
+                    message: '[UnifiedObjectMapper] Could not fetch old entity for update event',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
+                        'entityId'   => $entity->getId(),
+                        'entityUuid' => $entity->getUuid(),
+                        'error'      => $e->getMessage(),
+                    ]
+                );
                 $oldEntity = $entity;
             }//end try
         }//end if
 
         if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
-            $this->logger->debug('[UnifiedObjectMapper] Routing update() to MagicMapper', ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->debug(
+                message: '[UnifiedObjectMapper] Routing update() to MagicMapper',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             $updatedEntity = $this->magicMapper->updateObjectEntity(entity: $entity, register: $register, schema: $schema, oldEntity: $oldEntity);
         } else {
-            $this->logger->debug('[UnifiedObjectMapper] Using blob storage (via ObjectEntityMapper parent::update)', ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->debug(
+                message: '[UnifiedObjectMapper] Using blob storage (via ObjectEntityMapper parent::update)',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             $updatedEntity = $this->objectEntityMapper->updateDirectBlobStorage($entity, $oldEntity);
         }
 
         // Dispatch ObjectUpdatedEvent after successful update.
         $this->logger->debug(
-                '[UnifiedObjectMapper] Dispatching ObjectUpdatedEvent',
-                [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
-                    'entityUuid' => $updatedEntity->getUuid(),
-                ]
-                );
+            message: '[UnifiedObjectMapper] Dispatching ObjectUpdatedEvent',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
+                'entityUuid' => $updatedEntity->getUuid(),
+            ]
+        );
         $this->eventDispatcher->dispatchTyped(new ObjectUpdatedEvent($updatedEntity, $oldEntity));
 
         return $updatedEntity;
@@ -560,7 +589,10 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         [$register, $schema] = $this->resolveRegisterAndSchema($entity);
 
         if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
-            $this->logger->debug('[UnifiedObjectMapper] Routing delete() to MagicMapper', ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->debug(
+                message: '[UnifiedObjectMapper] Routing delete() to MagicMapper',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             $deletedEntity = $this->magicMapper->deleteObjectEntity(
                 entity: $entity,
                 register: $register,
@@ -570,16 +602,19 @@ class UnifiedObjectMapper extends AbstractObjectMapper
 
             // Dispatch ObjectDeletedEvent after successful delete (MagicMapper doesn't dispatch events).
             $this->logger->debug(
-                    '[UnifiedObjectMapper] Dispatching ObjectDeletedEvent',
-                    [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
-                        'entityUuid' => $deletedEntity->getUuid(),
-                    ]
-                    );
+                message: '[UnifiedObjectMapper] Dispatching ObjectDeletedEvent',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
+                    'entityUuid' => $deletedEntity->getUuid(),
+                ]
+            );
             $this->eventDispatcher->dispatchTyped(new ObjectDeletedEvent($deletedEntity));
         } else {
-            $this->logger->debug('[UnifiedObjectMapper] Routing delete() to ObjectEntityMapper', ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->debug(
+                message: '[UnifiedObjectMapper] Routing delete() to ObjectEntityMapper',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             // NOTE: ObjectEntityMapper.delete() handles its own event dispatching for blob storage.
             // Do NOT dispatch ObjectDeletedEvent here to avoid duplicates.
             $deletedEntity = $this->objectEntityMapper->delete(entity: $entity);
@@ -640,8 +675,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         ?Schema $schema=null
     ): array {
         $this->logger->info(
-            '[UnifiedObjectMapper] ultraFastBulkSave called',
-            [
+            message: '[UnifiedObjectMapper] ultraFastBulkSave called',
+            context: [
                 'file' => __FILE__,
                 'line' => __LINE__,
                 'insertCount' => count($insertObjects),
@@ -654,7 +689,10 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         // MIXED SCHEMA SUPPORT: If schema is null and we have objects with different schemas,
         // group them by register+schema and process each group separately.
         if ($schema === null && count($insertObjects) > 0) {
-            $this->logger->info('[UnifiedObjectMapper] Schema is null, checking for mixed schemas', ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->info(
+                message: '[UnifiedObjectMapper] Schema is null, checking for mixed schemas',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
 
             // Check if we have mixed schemas by examining all objects.
             $schemaGroups = [];
@@ -668,15 +706,15 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             }
 
             $this->logger->info(
-                '[UnifiedObjectMapper] Schema grouping result',
-                ['file' => __FILE__, 'line' => __LINE__, 'groupCount' => count($schemaGroups), 'groups' => array_keys($schemaGroups)]
+                message: '[UnifiedObjectMapper] Schema grouping result',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'groupCount' => count($schemaGroups), 'groups' => array_keys($schemaGroups)]
             );
 
             // If we have multiple schema groups, process each separately.
             if (count($schemaGroups) > 1) {
                 $this->logger->info(
-                    '[UnifiedObjectMapper] Mixed schema batch detected, processing by schema groups',
-                    ['file' => __FILE__, 'line' => __LINE__, 'groupCount' => count($schemaGroups), 'groups' => array_keys($schemaGroups)]
+                    message: '[UnifiedObjectMapper] Mixed schema batch detected, processing by schema groups',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'groupCount' => count($schemaGroups), 'groups' => array_keys($schemaGroups)]
                 );
 
                 $allResults = [];
@@ -691,7 +729,10 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                         try {
                             $groupRegister = $this->registerMapper->find(id: (int) $groupRegisterId, _multitenancy: false);
                         } catch (\Exception $e) {
-                            $this->logger->warning('[UnifiedObjectMapper] Failed to resolve register for group', ['file' => __FILE__, 'line' => __LINE__, 'id' => $groupRegisterId]);
+                            $this->logger->warning(
+                                message: '[UnifiedObjectMapper] Failed to resolve register for group',
+                                context: ['file' => __FILE__, 'line' => __LINE__, 'id' => $groupRegisterId]
+                            );
                         }
                     }
 
@@ -699,7 +740,10 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                         try {
                             $groupSchema = $this->schemaMapper->find(id: (int) $groupSchemaId, _multitenancy: false);
                         } catch (\Exception $e) {
-                            $this->logger->warning('[UnifiedObjectMapper] Failed to resolve schema for group', ['file' => __FILE__, 'line' => __LINE__, 'id' => $groupSchemaId]);
+                            $this->logger->warning(
+                                message: '[UnifiedObjectMapper] Failed to resolve schema for group',
+                                context: ['file' => __FILE__, 'line' => __LINE__, 'id' => $groupSchemaId]
+                            );
                         }
                     }
 
@@ -745,7 +789,10 @@ class UnifiedObjectMapper extends AbstractObjectMapper
     ): array {
         // Try to resolve register and schema from object data if not provided.
         if ($register === null || $schema === null) {
-            $this->logger->debug('[UnifiedObjectMapper] Resolving register/schema from object data', ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->debug(
+                message: '[UnifiedObjectMapper] Resolving register/schema from object data',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
 
             // Extract register and schema IDs from first object.
             $firstObject = $insertObjects[0] ?? [];
@@ -756,7 +803,10 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                 try {
                     $register = $this->registerMapper->find(id: $registerId, _multitenancy: false);
                 } catch (\Exception $e) {
-                    $this->logger->warning('[UnifiedObjectMapper] Failed to resolve register', ['file' => __FILE__, 'line' => __LINE__, 'id' => $registerId]);
+                    $this->logger->warning(
+                        message: '[UnifiedObjectMapper] Failed to resolve register',
+                        context: ['file' => __FILE__, 'line' => __LINE__, 'id' => $registerId]
+                    );
                 }
             }
 
@@ -764,13 +814,16 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                 try {
                     $schema = $this->schemaMapper->find(id: $schemaId, _multitenancy: false);
                 } catch (\Exception $e) {
-                    $this->logger->warning('[UnifiedObjectMapper] Failed to resolve schema', ['file' => __FILE__, 'line' => __LINE__, 'id' => $schemaId]);
+                    $this->logger->warning(
+                        message: '[UnifiedObjectMapper] Failed to resolve schema',
+                        context: ['file' => __FILE__, 'line' => __LINE__, 'id' => $schemaId]
+                    );
                 }
             }
 
             $this->logger->debug(
-                '[UnifiedObjectMapper] Resolved',
-                [
+                message: '[UnifiedObjectMapper] Resolved',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'register' => $register?->getId(),
@@ -782,8 +835,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         // Check if magic mapping should be used.
         if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
             $this->logger->info(
-                '[UnifiedObjectMapper] Routing bulk save to MagicMapper',
-                [
+                message: '[UnifiedObjectMapper] Routing bulk save to MagicMapper',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'register'     => $register?->getId(),
@@ -796,9 +849,15 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             $tableName = 'openregister_table_'.$register->getId().'_'.$schema->getId();
 
             // Ensure table exists (create if needed).
-            $this->logger->debug('[UnifiedObjectMapper] Ensuring table exists', ['file' => __FILE__, 'line' => __LINE__, 'table' => $tableName]);
+            $this->logger->debug(
+                message: '[UnifiedObjectMapper] Ensuring table exists',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'table' => $tableName]
+            );
             $this->magicMapper->ensureTableForRegisterSchema(register: $register, schema: $schema);
-            $this->logger->debug('[UnifiedObjectMapper] Table ready', ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->debug(
+                message: '[UnifiedObjectMapper] Table ready',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
 
             // Route to MagicBulkHandler via MagicMapper.
             $result = $this->magicMapper->bulkUpsert(
@@ -807,15 +866,18 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                 schema: $schema,
                 tableName: $tableName
             );
-            $this->logger->debug('[UnifiedObjectMapper] bulkUpsert returned', ['file' => __FILE__, 'line' => __LINE__, 'resultCount' => count($result)]);
+            $this->logger->debug(
+                message: '[UnifiedObjectMapper] bulkUpsert returned',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'resultCount' => count($result)]
+            );
 
             return $result;
         }//end if
 
         // Fallback to blob storage.
         $this->logger->debug(
-            '[UnifiedObjectMapper] Routing bulk save to ObjectEntityMapper (blob storage)',
-            [
+            message: '[UnifiedObjectMapper] Routing bulk save to ObjectEntityMapper (blob storage)',
+            context: [
                 'file' => __FILE__,
                 'line' => __LINE__,
                 'register'     => $register?->getId(),
@@ -976,8 +1038,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                 }
             } catch (\Exception $e) {
                 $this->logger->warning(
-                    '[UnifiedObjectMapper] Failed to resolve register/schema for magic mapper facets',
-                    ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+                    message: '[UnifiedObjectMapper] Failed to resolve register/schema for magic mapper facets',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
                 );
                 // Fall through to blob storage.
             }
@@ -1001,8 +1063,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             $register = $this->registerMapper->find($registerId, _multitenancy: false, _rbac: false);
         } catch (\Exception $e) {
             $this->logger->warning(
-                '[UnifiedObjectMapper] Failed to find register for multi-schema facets',
-                [
+                message: '[UnifiedObjectMapper] Failed to find register for multi-schema facets',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'registerId' => $registerId,
@@ -1023,8 +1085,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                 }
             } catch (\Exception $e) {
                 $this->logger->warning(
-                    '[UnifiedObjectMapper] Failed to find schema for multi-schema facets',
-                    [
+                    message: '[UnifiedObjectMapper] Failed to find schema for multi-schema facets',
+                    context: [
                         'file' => __FILE__,
                         'line' => __LINE__,
                         'schemaId' => $schemaId,
@@ -1091,8 +1153,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             $registersCache[$register->getId()] = $register->jsonSerialize();
         } catch (\Exception $e) {
             $this->logger->warning(
-                '[UnifiedObjectMapper] Failed to find register for multi-schema search',
-                [
+                message: '[UnifiedObjectMapper] Failed to find register for multi-schema search',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'registerId' => $registerId,
@@ -1120,8 +1182,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                 // Check if magic mapper should be used for this schema.
                 if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === false) {
                     $this->logger->debug(
-                        '[UnifiedObjectMapper] Skipping non-magic-mapper schema',
-                        ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $schemaId]
+                        message: '[UnifiedObjectMapper] Skipping non-magic-mapper schema',
+                        context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $schemaId]
                     );
                     continue;
                 }
@@ -1141,8 +1203,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                 $totalCount += $schemaCount;
             } catch (\Exception $e) {
                 $this->logger->warning(
-                    '[UnifiedObjectMapper] Failed to load schema for multi-schema search',
-                    ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $schemaId, 'error' => $e->getMessage()]
+                    message: '[UnifiedObjectMapper] Failed to load schema for multi-schema search',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $schemaId, 'error' => $e->getMessage()]
                 );
             }//end try
         }//end foreach
@@ -1235,7 +1297,10 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                 $schema   = $this->schemaMapper->find((int) $schemaId, _multitenancy: false, _rbac: false);
 
                 if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
-                    $this->logger->info('[UnifiedObjectMapper] Routing searchObjects() to MagicMapper', ['file' => __FILE__, 'line' => __LINE__]);
+                    $this->logger->info(
+                        message: '[UnifiedObjectMapper] Routing searchObjects() to MagicMapper',
+                        context: ['file' => __FILE__, 'line' => __LINE__]
+                    );
                     // Add RBAC and multitenancy flags to query for MagicSearchHandler.
                     $query['_rbac']         = $rbac;
                     $query['_multitenancy'] = $multitenancy;
@@ -1247,14 +1312,17 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                 }
             } catch (\Exception $e) {
                 $this->logger->warning(
-                    '[UnifiedObjectMapper] Failed to resolve register/schema for magic mapper',
-                    ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+                    message: '[UnifiedObjectMapper] Failed to resolve register/schema for magic mapper',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
                 );
                 // Fall through to blob storage.
             }//end try
         }//end if
 
-        $this->logger->debug('[UnifiedObjectMapper] Routing searchObjects() to blob storage (ObjectEntityMapper)', ['file' => __FILE__, 'line' => __LINE__]);
+        $this->logger->debug(
+            message: '[UnifiedObjectMapper] Routing searchObjects() to blob storage (ObjectEntityMapper)',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
         return $this->objectEntityMapper->searchObjects(
             query: $query,
             _activeOrgUuid: $activeOrgUuid,
@@ -1299,7 +1367,10 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                 $schema   = $this->schemaMapper->find((int) $schemaId, _multitenancy: false, _rbac: false);
 
                 if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
-                    $this->logger->info('[UnifiedObjectMapper] Routing countSearchObjects() to MagicMapper', ['file' => __FILE__, 'line' => __LINE__]);
+                    $this->logger->info(
+                        message: '[UnifiedObjectMapper] Routing countSearchObjects() to MagicMapper',
+                        context: ['file' => __FILE__, 'line' => __LINE__]
+                    );
                     return $this->magicMapper->countObjectsInRegisterSchemaTable(
                         query: $query,
                         register: $register,
@@ -1308,14 +1379,17 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                 }
             } catch (\Exception $e) {
                 $this->logger->warning(
-                    '[UnifiedObjectMapper] Failed to resolve register/schema for magic mapper count',
-                    ['error' => $e->getMessage()]
+                    message: '[UnifiedObjectMapper] Failed to resolve register/schema for magic mapper count',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
                 );
                 // Fall through to blob storage.
             }
         }//end if
 
-        $this->logger->debug('[UnifiedObjectMapper] Routing countSearchObjects() to blob storage (ObjectEntityMapper)', ['file' => __FILE__, 'line' => __LINE__]);
+        $this->logger->debug(
+            message: '[UnifiedObjectMapper] Routing countSearchObjects() to blob storage (ObjectEntityMapper)',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
         return $this->objectEntityMapper->countSearchObjects(
             query: $query,
             _activeOrgUuid: $activeOrgUuid,
@@ -1408,8 +1482,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                 $schemasCache[$schema->getId()]     = $schema->jsonSerialize();
             } catch (\Exception $e) {
                 $this->logger->warning(
-                    '[UnifiedObjectMapper] Failed to resolve register/schema',
-                    ['error' => $e->getMessage()]
+                    message: '[UnifiedObjectMapper] Failed to resolve register/schema',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
                 );
             }
         }
@@ -1624,7 +1698,10 @@ class UnifiedObjectMapper extends AbstractObjectMapper
 
         // Admin users see everything.
         if ($this->rbacHandler->isAdmin() === true) {
-            $this->logger->debug('[UnifiedObjectMapper] filterBySchemaRbac: Admin user, returning all', ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->debug(
+                message: '[UnifiedObjectMapper] filterBySchemaRbac: Admin user, returning all',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return $objects;
         }
 
@@ -1728,8 +1805,10 @@ class UnifiedObjectMapper extends AbstractObjectMapper
 
             // No access conditions met - object is filtered out.
             $this->logger->debug(
-                    '[UnifiedObjectMapper] filterBySchemaRbac: Filtered out object',
-                    [
+                    message: '[UnifiedObjectMapper] filterBySchemaRbac: Filtered out object',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'uuid'        => $object->getUuid(),
                         'schemaId'    => $schemaId,
                         'schemaTitle' => $schemaData['title'] ?? 'unknown',
@@ -1738,8 +1817,10 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         }//end foreach
 
         $this->logger->debug(
-                '[UnifiedObjectMapper] filterBySchemaRbac complete',
-                [
+                message: '[UnifiedObjectMapper] filterBySchemaRbac complete',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'inputCount'  => count($objects),
                     'outputCount' => count($filtered),
                 ]
@@ -1770,8 +1851,10 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         bool $multitenancy=true
     ): array {
         $this->logger->debug(
-                '[UnifiedObjectMapper] searchObjectsGloballyByIds starting',
-                [
+                message: '[UnifiedObjectMapper] searchObjectsGloballyByIds starting',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'idsCount' => count($ids),
                 ]
                 );
@@ -1849,8 +1932,10 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         $registersCache = array_intersect_key($registersCache, $finalRegisterIds);
 
         $this->logger->debug(
-                '[UnifiedObjectMapper] searchObjectsGloballyByIds complete',
-                [
+                message: '[UnifiedObjectMapper] searchObjectsGloballyByIds complete',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'requestedCount' => count($ids),
                     'foundCount'     => $total,
                 ]
@@ -1886,12 +1971,14 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         bool $multitenancy=true
     ): array {
         $this->logger->debug(
-                '[UnifiedObjectMapper] searchObjectsGloballyByRelations starting',
-                [
-                    'uuid' => $uuid,
-                    'rbac' => $rbac,
-                ]
-                );
+            message: '[UnifiedObjectMapper] searchObjectsGloballyByRelations starting',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
+                'uuid' => $uuid,
+                'rbac' => $rbac,
+            ]
+        );
 
         // Use MagicMapper to search across all magic tables for objects with this UUID in relations.
         $results = $this->magicMapper->findByRelationAcrossAllMagicTables(
@@ -1959,12 +2046,14 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         $registersCache = array_intersect_key($registersCache, $finalRegisterIds);
 
         $this->logger->debug(
-                '[UnifiedObjectMapper] searchObjectsGloballyByRelations complete',
-                [
-                    'uuid'       => $uuid,
-                    'foundCount' => $total,
-                ]
-                );
+            message: '[UnifiedObjectMapper] searchObjectsGloballyByRelations complete',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
+                'uuid'       => $uuid,
+                'foundCount' => $total,
+            ]
+        );
 
         return [
             'results'   => $results,

@@ -145,7 +145,7 @@ class SolrNightlyWarmupJob extends TimedJob
             $schemas = $schemaMapper->findAll();
 
             $logger->info(
-                '[SolrNightlyWarmupJob] Starting nightly SOLR index warmup',
+                message: '[SolrNightlyWarmupJob] Starting nightly SOLR index warmup',
                 context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
@@ -168,8 +168,8 @@ class SolrNightlyWarmupJob extends TimedJob
 
             if ($result['success'] ?? false) {
                 $logger->info(
-                    '[SolrNightlyWarmupJob] ✅ SOLR Nightly Warmup Job Completed Successfully',
-                    [
+                    message: '[SolrNightlyWarmupJob] ✅ SOLR Nightly Warmup Job Completed Successfully',
+                    context: [
                         'file' => __FILE__,
                         'line' => __LINE__,
                         'job_id'                 => $this->getId(),
@@ -196,8 +196,8 @@ class SolrNightlyWarmupJob extends TimedJob
 
             if (($result['success'] ?? false) === false) {
                 $logger->error(
-                    '[SolrNightlyWarmupJob] ❌ SOLR Nightly Warmup Job Failed',
-                    [
+                    message: '[SolrNightlyWarmupJob] ❌ SOLR Nightly Warmup Job Failed',
+                    context: [
                         'file' => __FILE__,
                         'line' => __LINE__,
                         'job_id'                 => $this->getId(),

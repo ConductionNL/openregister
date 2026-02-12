@@ -158,8 +158,8 @@ class PropertyRbacHandler
             if ($this->canReadProperty(schema: $schema, property: $propertyName, object: $object) === false) {
                 unset($object[$propertyName]);
                 $this->logger->debug(
-                    '[PropertyRbacHandler] Filtered unreadable property',
-                    ['file' => __FILE__, 'line' => __LINE__, 'property' => $propertyName]
+                    message: '[PropertyRbacHandler] Filtered unreadable property',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'property' => $propertyName]
                 );
             }
         }
@@ -325,7 +325,10 @@ class PropertyRbacHandler
         }
 
         // Invalid rule format.
-        $this->logger->warning('[PropertyRbacHandler] Invalid rule format', ['file' => __FILE__, 'line' => __LINE__, 'rule' => $rule]);
+        $this->logger->warning(
+            message: '[PropertyRbacHandler] Invalid rule format',
+            context: ['file' => __FILE__, 'line' => __LINE__, 'rule' => $rule]
+        );
         return false;
     }//end checkRule()
 
@@ -558,8 +561,8 @@ class PropertyRbacHandler
             }
         } catch (\Exception $e) {
             $this->logger->debug(
-                '[PropertyRbacHandler] Could not get active organisation',
-                ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+                message: '[PropertyRbacHandler] Could not get active organisation',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
             );
         }
 
@@ -638,8 +641,8 @@ class PropertyRbacHandler
 
                 default:
                     $this->logger->warning(
-                        '[PropertyRbacHandler] Unknown operator',
-                        ['file' => __FILE__, 'line' => __LINE__, 'operator' => $operator]
+                        message: '[PropertyRbacHandler] Unknown operator',
+                        context: ['file' => __FILE__, 'line' => __LINE__, 'operator' => $operator]
                     );
             }//end switch
         }//end foreach

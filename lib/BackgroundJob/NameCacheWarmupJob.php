@@ -79,8 +79,8 @@ class NameCacheWarmupJob extends TimedJob
         $logger = \OC::$server->get(LoggerInterface::class);
 
         $logger->info(
-            '[NameCacheWarmupJob] 🌙 Name Cache Nightly Warmup Job Started',
-            [
+            message: '[NameCacheWarmupJob] 🌙 Name Cache Nightly Warmup Job Started',
+            context: [
                 'file' => __FILE__,
                 'line' => __LINE__,
                 'job_id'         => $this->getId(),
@@ -99,8 +99,8 @@ class NameCacheWarmupJob extends TimedJob
             $executionTime = round((microtime(true) - $startTime) * 1000, 2);
 
             $logger->info(
-                '[NameCacheWarmupJob] ✅ Name Cache Nightly Warmup Job Completed',
-                [
+                message: '[NameCacheWarmupJob] ✅ Name Cache Nightly Warmup Job Completed',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'job_id'         => $this->getId(),
@@ -112,8 +112,8 @@ class NameCacheWarmupJob extends TimedJob
             $executionTime = round((microtime(true) - $startTime) * 1000, 2);
 
             $logger->error(
-                '[NameCacheWarmupJob] ❌ Name Cache Nightly Warmup Job Failed',
-                [
+                message: '[NameCacheWarmupJob] ❌ Name Cache Nightly Warmup Job Failed',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'job_id'         => $this->getId(),

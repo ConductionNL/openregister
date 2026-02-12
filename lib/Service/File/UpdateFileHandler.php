@@ -149,7 +149,7 @@ class UpdateFileHandler
                     $userFolder = $this->folderMgmtHandler->getOpenRegisterUserFolder();
                     $nodes      = $userFolder->getById($filePath);
                     if (empty($nodes) === true) {
-                        $this->logger->error(message: "updateFile: No file found with ID: $filePath", context: ['file' => __FILE__, 'line' => __LINE__]);
+                        $this->logger->error(message: "[UpdateFileHandler] updateFile: No file found with ID: $filePath", context: ['file' => __FILE__, 'line' => __LINE__]);
                         throw new Exception("File with ID $filePath does not exist");
                     }
 
@@ -234,7 +234,7 @@ class UpdateFileHandler
                 try {
                     $userFolder = $this->folderMgmtHandler->getOpenRegisterUserFolder();
                     $file       = $userFolder->get(path: $filePath);
-                    $msg        = "updateFile: Found file in user folder at path: $filePath (ID: ".$file->getId().")";
+                    $msg        = "[UpdateFileHandler] updateFile: Found file in user folder at path: $filePath (ID: ".$file->getId().")";
                     $this->logger->info(message: $msg, context: ['file' => __FILE__, 'line' => __LINE__]);
                 } catch (NotFoundException $e) {
                     $this->logger->error(message: "[UpdateFileHandler] updateFile: File $filePath not found in user folder either.", context: ['file' => __FILE__, 'line' => __LINE__]);

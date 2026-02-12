@@ -86,8 +86,10 @@ class EmbeddingGeneratorHandler
 
         if (isset($this->generatorCache[$cacheKey]) === false) {
             $this->logger->debug(
-                message: 'Creating new embedding generator',
+                message: '[EmbeddingGeneratorHandler] Creating new embedding generator',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'provider' => $config['provider'],
                     'model'    => $config['model'],
                 ]
@@ -104,8 +106,10 @@ class EmbeddingGeneratorHandler
             $this->generatorCache[$cacheKey] = $generator;
 
             $this->logger->info(
-                message: 'Embedding generator created',
+                message: '[EmbeddingGeneratorHandler] Embedding generator created',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'provider'   => $config['provider'],
                     'model'      => $config['model'],
                     'dimensions' => $generator->getEmbeddingLength(),
@@ -236,8 +240,10 @@ class EmbeddingGeneratorHandler
                 $url = rtrim($this->config['base_url'] ?? 'https://api.fireworks.ai/inference/v1', '/').'/embeddings';
 
                 $this->logger->debug(
-                    message: 'Calling Fireworks AI API',
+                    message: '[EmbeddingGeneratorHandler] Calling Fireworks AI API',
                     context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'url'   => $url,
                         'model' => $this->model,
                     ]

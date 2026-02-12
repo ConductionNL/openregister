@@ -234,8 +234,10 @@ class FileHandler implements TextExtractionHandlerInterface
             // From TextExtractionService (PDF, DOCX, etc.).
             // This should be refactored to use IndexService if needed.
             $this->logger->warning(
-                '[FileHandler] Complex extraction not yet implemented',
-                [
+                message: '[FileHandler] Complex extraction not yet implemented',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'mime_type' => $mimeType,
                 ]
             );
@@ -243,8 +245,10 @@ class FileHandler implements TextExtractionHandlerInterface
             return null;
         } catch (Exception $e) {
             $this->logger->error(
-                '[FileHandler] Text extraction failed',
-                [
+                message: '[FileHandler] Text extraction failed',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );

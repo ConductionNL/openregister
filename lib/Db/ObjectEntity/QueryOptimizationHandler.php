@@ -179,8 +179,8 @@ class QueryOptimizationHandler
                 gc_collect_cycles();
             } catch (Exception $e) {
                 $this->logger->error(
-                    '[QueryOptimizationHandler] Error processing large object',
-                    ['file' => __FILE__, 'line' => __LINE__, 'index' => (int) $index + 1, 'exception' => $e->getMessage()]
+                    message: '[QueryOptimizationHandler] Error processing large object',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'index' => (int) $index + 1, 'exception' => $e->getMessage()]
                 );
 
                 // If it's not a packet size error, re-throw.
@@ -292,7 +292,10 @@ class QueryOptimizationHandler
 
             return $results;
         } catch (Exception $e) {
-            $this->logger->error('[QueryOptimizationHandler] Error during bulk owner declaration', ['file' => __FILE__, 'line' => __LINE__, 'exception' => $e->getMessage()]);
+            $this->logger->error(
+                message: '[QueryOptimizationHandler] Error during bulk owner declaration',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => $e->getMessage()]
+            );
             throw new RuntimeException('Bulk owner declaration failed: '.$e->getMessage());
         }//end try
     }//end bulkOwnerDeclaration()
@@ -336,7 +339,10 @@ class QueryOptimizationHandler
             // Execute the update and return number of affected rows.
             return $qb->executeStatement();
         } catch (Exception $e) {
-            $this->logger->error('[QueryOptimizationHandler] Failed to set expiry dates for objects: '.$e->getMessage(), ['file' => __FILE__, 'line' => __LINE__, 'exception' => $e]);
+            $this->logger->error(
+                message: '[QueryOptimizationHandler] Failed to set expiry dates for objects: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => $e]
+            );
             throw $e;
         }//end try
     }//end setExpiryDate()
@@ -361,13 +367,19 @@ class QueryOptimizationHandler
 
         if ($hasSchema === true && $hasRegister === true && $hasPublished === true) {
             // This will use the idx_schema_register_published composite index.
-            $this->logger->debug('[QueryOptimizationHandler] 🚀 QUERY OPTIMIZATION: Using composite index for schema+register+published', ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->debug(
+                message: '[QueryOptimizationHandler] 🚀 QUERY OPTIMIZATION: Using composite index for schema+register+published',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
         }
 
         // MULTITENANCY OPTIMIZATION: Schema + organisation index.
         $hasOrganisation = ($filters['organisation'] ?? null) !== null;
         if ($hasSchema === true && $hasOrganisation === true) {
-            $this->logger->debug('[QueryOptimizationHandler] 🚀 QUERY OPTIMIZATION: Using composite index for schema+organisation', ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->debug(
+                message: '[QueryOptimizationHandler] 🚀 QUERY OPTIMIZATION: Using composite index for schema+organisation',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
         }
     }//end applyCompositeIndexOptimizations()
 
@@ -388,7 +400,10 @@ class QueryOptimizationHandler
             $qb->orderBy('updated', 'DESC')
                 ->addOrderBy('id', 'DESC');
 
-            $this->logger->debug('[QueryOptimizationHandler] 🚀 QUERY OPTIMIZATION: Using indexed columns for ORDER BY', ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->debug(
+                message: '[QueryOptimizationHandler] 🚀 QUERY OPTIMIZATION: Using indexed columns for ORDER BY',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
         }
     }//end optimizeOrderBy()
 
@@ -406,17 +421,26 @@ class QueryOptimizationHandler
         // QUERY HINT 1: For small result sets, suggest using indexes.
         $limit = $qb->getMaxResults();
         if ($limit !== null && $limit <= 50) {
-            $this->logger->debug('[QueryOptimizationHandler] 🚀 QUERY OPTIMIZATION: Small result set - favoring index usage', ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->debug(
+                message: '[QueryOptimizationHandler] 🚀 QUERY OPTIMIZATION: Small result set - favoring index usage',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
         }
 
         // QUERY HINT 2: For RBAC-enabled queries, suggest specific execution plan.
         if ($skipRbac === false) {
-            $this->logger->debug('[QueryOptimizationHandler] 🚀 QUERY OPTIMIZATION: RBAC enabled - using owner-based indexes', ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->debug(
+                message: '[QueryOptimizationHandler] 🚀 QUERY OPTIMIZATION: RBAC enabled - using owner-based indexes',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
         }
 
         // QUERY HINT 3: For JSON queries, suggest JSON-specific optimizations.
         if (($filters['object'] ?? null) !== null || $this->hasJsonFilters($filters) === true) {
-            $this->logger->debug('[QueryOptimizationHandler] 🚀 QUERY OPTIMIZATION: JSON queries detected - using JSON indexes', ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->debug(
+                message: '[QueryOptimizationHandler] 🚀 QUERY OPTIMIZATION: JSON queries detected - using JSON indexes',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
         }
     }//end addQueryHints()
 

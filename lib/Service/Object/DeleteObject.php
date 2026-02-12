@@ -165,7 +165,10 @@ class DeleteObject
                 $activeOrganisation = $organisationMapper->getActiveOrganisationWithFallback($user->getUID());
             } catch (\Exception $e) {
                 // If we can't get the active organisation, log and continue with null.
-                $this->logger->warning('[DeleteObject] Failed to get active organisation during delete', ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]);
+                $this->logger->warning(
+                    message: '[DeleteObject] Failed to get active organisation during delete',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+                );
                 $activeOrganisation = null;
             }
         }
@@ -291,8 +294,10 @@ class DeleteObject
             return $this->delete($object);
         } catch (Exception $e) {
             $this->logger->warning(
-                    '[DeleteObject] Delete failed',
-                    [
+                    message: '[DeleteObject] Delete failed',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'uuid'  => $uuid,
                         'error' => $e->getMessage(),
                     ]
@@ -363,8 +368,8 @@ class DeleteObject
         } catch (\Exception $e) {
             // If we can't get settings, default to enabled for safety.
             $this->logger->warning(
-                '[DeleteObject] Failed to check audit trails setting, defaulting to enabled',
-                ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+                message: '[DeleteObject] Failed to check audit trails setting, defaulting to enabled',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
             );
             return true;
         }

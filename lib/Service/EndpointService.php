@@ -138,8 +138,8 @@ class EndpointService
         } catch (\Exception $e) {
             // Log error for debugging and monitoring.
             $this->logger->error(
-                '[EndpointService] Error testing endpoint: '.$e->getMessage(),
-                [
+                message: '[EndpointService] Error testing endpoint: '.$e->getMessage(),
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'endpoint_id' => $endpoint->getId(),
@@ -250,8 +250,10 @@ class EndpointService
             $settingsService = \OC::$server->get(\OCA\OpenRegister\Service\SettingsService::class);
 
             $agentId = $endpoint->getTargetId();
-            $this->logger->info('[EndpointService] Executing agent endpoint', ['file' => __FILE__,
-                    'line' => __LINE__, 'agentId' => $agentId]);
+            $this->logger->info(
+                message: '[EndpointService] Executing agent endpoint',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'agentId' => $agentId]
+            );
 
             // Find agent by UUID.
             $agent = $agentMapper->findByUuid($agentId);
@@ -278,8 +280,8 @@ class EndpointService
             }
 
             $this->logger->info(
-                '[EndpointService] Executing agent',
-                [
+                message: '[EndpointService] Executing agent',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'agent'    => $agent->getName(),
@@ -306,8 +308,8 @@ class EndpointService
                             $functions     = array_merge($functions, $toolFunctions);
 
                             $this->logger->debug(
-                                '[EndpointService] Added tool functions',
-                                [
+                                message: '[EndpointService] Added tool functions',
+                                context: [
                                     'file' => __FILE__,
                                     'line' => __LINE__,
                                     'tool'      => $toolName,
@@ -317,8 +319,8 @@ class EndpointService
                         }
                     } catch (\Exception $e) {
                         $this->logger->warning(
-                            '[EndpointService] Failed to load tool: '.$toolName,
-                            [
+                            message: '[EndpointService] Failed to load tool: '.$toolName,
+                            context: [
                                 'file' => __FILE__,
                                 'line' => __LINE__,
                                 'error' => $e->getMessage(),
@@ -329,8 +331,8 @@ class EndpointService
             }//end if
 
             $this->logger->info(
-                '[EndpointService] Agent has tools configured',
-                [
+                message: '[EndpointService] Agent has tools configured',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'totalFunctions' => count($functions),
@@ -343,8 +345,8 @@ class EndpointService
                 $ollamaUrl    = $ollamaConfig['url'] ?? 'http://host.docker.internal:11434';
 
                 $this->logger->info(
-                    '[EndpointService] Calling Ollama',
-                    [
+                    message: '[EndpointService] Calling Ollama',
+                    context: [
                         'file' => __FILE__,
                         'line' => __LINE__,
                         'url'                => $ollamaUrl,
@@ -392,8 +394,8 @@ class EndpointService
             ];
         } catch (\Exception $e) {
             $this->logger->error(
-                '[EndpointService] Error executing agent endpoint: '.$e->getMessage(),
-                [
+                message: '[EndpointService] Error executing agent endpoint: '.$e->getMessage(),
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'trace' => $e->getTraceAsString(),
@@ -586,8 +588,8 @@ class EndpointService
             $this->endpointLogMapper->insert($log);
 
             $this->logger->debug(
-                '[EndpointService] Endpoint call logged',
-                [
+                message: '[EndpointService] Endpoint call logged',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'endpoint_id' => $endpoint->getId(),
@@ -596,8 +598,8 @@ class EndpointService
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                '[EndpointService] Error logging endpoint call: '.$e->getMessage(),
-                [
+                message: '[EndpointService] Error logging endpoint call: '.$e->getMessage(),
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'endpoint_id' => $endpoint->getId(),

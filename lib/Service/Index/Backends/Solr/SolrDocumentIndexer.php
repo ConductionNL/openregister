@@ -103,7 +103,10 @@ class SolrDocumentIndexer
             $collection = $this->collectionManager->getActiveCollectionName();
 
             if ($collection === null) {
-                $this->logger->warning('[SolrDocumentIndexer] No active collection for indexing', ['file' => __FILE__, 'line' => __LINE__]);
+                $this->logger->warning(
+                    message: '[SolrDocumentIndexer] No active collection for indexing',
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
                 return false;
             }
 
@@ -122,8 +125,8 @@ class SolrDocumentIndexer
             $this->httpClient->post($url, [$document]);
 
             $this->logger->debug(
-                '[SolrDocumentIndexer] Object indexed',
-                [
+                message: '[SolrDocumentIndexer] Object indexed',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'objectId' => $object->getId(),
@@ -134,8 +137,8 @@ class SolrDocumentIndexer
             return true;
         } catch (Exception $e) {
             $this->logger->error(
-                '[SolrDocumentIndexer] Failed to index object',
-                [
+                message: '[SolrDocumentIndexer] Failed to index object',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'objectId' => $object->getId(),
@@ -182,8 +185,8 @@ class SolrDocumentIndexer
             } catch (Exception $e) {
                 $failureCount++;
                 $this->logger->warning(
-                    '[SolrDocumentIndexer] Failed to create document for object',
-                    [
+                    message: '[SolrDocumentIndexer] Failed to create document for object',
+                    context: [
                         'file' => __FILE__,
                         'line' => __LINE__,
                         'objectId' => $object->getId(),
@@ -205,8 +208,8 @@ class SolrDocumentIndexer
                 $this->httpClient->post($url, $documents);
 
                 $this->logger->info(
-                    '[SolrDocumentIndexer] Bulk index completed',
-                    [
+                    message: '[SolrDocumentIndexer] Bulk index completed',
+                    context: [
                         'file' => __FILE__,
                         'line' => __LINE__,
                         'indexed' => $successCount,
@@ -215,8 +218,8 @@ class SolrDocumentIndexer
                 );
             } catch (Exception $e) {
                 $this->logger->error(
-                    '[SolrDocumentIndexer] Bulk index failed',
-                    [
+                    message: '[SolrDocumentIndexer] Bulk index failed',
+                    context: [
                         'file' => __FILE__,
                         'line' => __LINE__,
                         'error' => $e->getMessage(),
@@ -255,7 +258,10 @@ class SolrDocumentIndexer
         $collection = $this->collectionManager->getActiveCollectionName();
 
         if ($collection === null) {
-            $this->logger->warning('[SolrDocumentIndexer] No active collection for bulk index', ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->warning(
+                message: '[SolrDocumentIndexer] No active collection for bulk index',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return false;
         }
 
@@ -270,8 +276,8 @@ class SolrDocumentIndexer
             $this->httpClient->post($url, $documents);
 
             $this->logger->info(
-                '[SolrDocumentIndexer] Documents indexed',
-                [
+                message: '[SolrDocumentIndexer] Documents indexed',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'count'  => count($documents),
@@ -282,8 +288,8 @@ class SolrDocumentIndexer
             return true;
         } catch (Exception $e) {
             $this->logger->error(
-                '[SolrDocumentIndexer] Failed to index documents',
-                [
+                message: '[SolrDocumentIndexer] Failed to index documents',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'error' => $e->getMessage(),
@@ -308,7 +314,10 @@ class SolrDocumentIndexer
         $collection = $this->collectionManager->getActiveCollectionName();
 
         if ($collection === null) {
-            $this->logger->warning('[SolrDocumentIndexer] No active collection for deletion', ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->warning(
+                message: '[SolrDocumentIndexer] No active collection for deletion',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return false;
         }
 
@@ -330,8 +339,8 @@ class SolrDocumentIndexer
             $this->httpClient->post($url, $deleteCommand);
 
             $this->logger->debug(
-                '[SolrDocumentIndexer] Object deleted',
-                [
+                message: '[SolrDocumentIndexer] Object deleted',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'objectId' => $objectId,
@@ -342,8 +351,8 @@ class SolrDocumentIndexer
             return true;
         } catch (Exception $e) {
             $this->logger->error(
-                '[SolrDocumentIndexer] Failed to delete object',
-                [
+                message: '[SolrDocumentIndexer] Failed to delete object',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'objectId' => $objectId,
@@ -397,8 +406,8 @@ class SolrDocumentIndexer
             $result = $this->httpClient->post($url, $deleteCommand);
 
             $this->logger->info(
-                '[SolrDocumentIndexer] Deleted by query',
-                [
+                message: '[SolrDocumentIndexer] Deleted by query',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'query'  => $query,
@@ -417,8 +426,8 @@ class SolrDocumentIndexer
             return true;
         } catch (Exception $e) {
             $this->logger->error(
-                '[SolrDocumentIndexer] Delete by query failed',
-                [
+                message: '[SolrDocumentIndexer] Delete by query failed',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'query' => $query,
@@ -447,7 +456,10 @@ class SolrDocumentIndexer
         $collection = $this->collectionManager->getActiveCollectionName();
 
         if ($collection === null) {
-            $this->logger->warning('[SolrDocumentIndexer] No active collection for commit', ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->warning(
+                message: '[SolrDocumentIndexer] No active collection for commit',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return false;
         }
 
@@ -455,13 +467,16 @@ class SolrDocumentIndexer
             $url = $this->httpClient->getEndpointUrl($collection).'/update?commit=true';
             $this->httpClient->post($url, []);
 
-            $this->logger->debug('[SolrDocumentIndexer] Commit successful', ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->debug(
+                message: '[SolrDocumentIndexer] Commit successful',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
 
             return true;
         } catch (Exception $e) {
             $this->logger->error(
-                '[SolrDocumentIndexer] Commit failed',
-                [
+                message: '[SolrDocumentIndexer] Commit failed',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'error' => $e->getMessage(),
@@ -492,7 +507,10 @@ class SolrDocumentIndexer
         }
 
         try {
-            $this->logger->info('[SolrDocumentIndexer] Clearing index', ['file' => __FILE__, 'line' => __LINE__, 'collection' => $collection]);
+            $this->logger->info(
+                message: '[SolrDocumentIndexer] Clearing index',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'collection' => $collection]
+            );
 
             $url = $this->httpClient->getEndpointUrl($collection).'/update?commit=true';
 
@@ -511,8 +529,8 @@ class SolrDocumentIndexer
             ];
         } catch (Exception $e) {
             $this->logger->error(
-                '[SolrDocumentIndexer] Failed to clear index',
-                [
+                message: '[SolrDocumentIndexer] Failed to clear index',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'error' => $e->getMessage(),
@@ -536,23 +554,32 @@ class SolrDocumentIndexer
         $collection = $this->collectionManager->getActiveCollectionName();
 
         if ($collection === null) {
-            $this->logger->warning('[SolrDocumentIndexer] No active collection for optimization', ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->warning(
+                message: '[SolrDocumentIndexer] No active collection for optimization',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return false;
         }
 
         try {
-            $this->logger->info('[SolrDocumentIndexer] Optimizing index', ['file' => __FILE__, 'line' => __LINE__, 'collection' => $collection]);
+            $this->logger->info(
+                message: '[SolrDocumentIndexer] Optimizing index',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'collection' => $collection]
+            );
 
             $url = $this->httpClient->getEndpointUrl($collection).'/update?optimize=true';
             $this->httpClient->post($url, []);
 
-            $this->logger->info('[SolrDocumentIndexer] Optimization completed', ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->info(
+                message: '[SolrDocumentIndexer] Optimization completed',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
 
             return true;
         } catch (Exception $e) {
             $this->logger->error(
-                '[SolrDocumentIndexer] Optimization failed',
-                [
+                message: '[SolrDocumentIndexer] Optimization failed',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'error' => $e->getMessage(),
@@ -582,8 +609,8 @@ class SolrDocumentIndexer
             return $data['response']['numFound'] ?? 0;
         } catch (Exception $e) {
             $this->logger->error(
-                '[SolrDocumentIndexer] Failed to get document count',
-                [
+                message: '[SolrDocumentIndexer] Failed to get document count',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'error' => $e->getMessage(),

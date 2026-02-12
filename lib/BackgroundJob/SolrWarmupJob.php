@@ -176,8 +176,8 @@ class SolrWarmupJob extends QueuedJob
 
             if (($result['success'] ?? false) === true) {
                 $logger->info(
-                    '[SolrWarmupJob] ✅ SOLR Warmup Job Completed Successfully',
-                    [
+                    message: '[SolrWarmupJob] ✅ SOLR Warmup Job Completed Successfully',
+                    context: [
                         'file' => __FILE__,
                         'line' => __LINE__,
                         'job_id'                 => $this->getId(),
@@ -199,8 +199,8 @@ class SolrWarmupJob extends QueuedJob
 
             if (($result['success'] ?? false) === false) {
                 $logger->error(
-                    '[SolrWarmupJob] ❌ SOLR Warmup Job Failed',
-                    [
+                    message: '[SolrWarmupJob] ❌ SOLR Warmup Job Failed',
+                    context: [
                         'file' => __FILE__,
                         'line' => __LINE__,
                         'job_id'                 => $this->getId(),

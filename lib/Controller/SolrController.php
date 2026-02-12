@@ -145,8 +145,10 @@ class SolrController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                message: 'Semantic search failed',
+                message: '[SolrController] Semantic search failed',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                     'query' => $query ?? null,
                 ]
@@ -269,8 +271,10 @@ class SolrController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                message: 'Hybrid search failed',
+                message: '[SolrController] Hybrid search failed',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                     'query' => $query ?? null,
                 ]
@@ -324,8 +328,10 @@ class SolrController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                message: 'Failed to get vector stats',
+                message: '[SolrController] Failed to get vector stats',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -454,8 +460,10 @@ class SolrController extends Controller
 
             // Log the test attempt.
             $this->logger->info(
-                message: 'Testing vector embedding generation',
+                message: '[SolrController] Testing vector embedding generation',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'provider'   => $provider,
                     'model'      => $embeddingConfig['model'] ?? 'default',
                     'textLength' => strlen($testText),
@@ -496,8 +504,10 @@ class SolrController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                'Failed to test vector embedding',
-                [
+                message: '[SolrController] Failed to test vector embedding',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error'    => $e->getMessage(),
                     'provider' => $params['provider'] ?? 'unknown',
                 ]
@@ -550,8 +560,10 @@ class SolrController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                message: 'Failed to list collections',
+                message: '[SolrController] Failed to list collections',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -603,8 +615,10 @@ class SolrController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                message: 'Failed to list ConfigSets',
+                message: '[SolrController] Failed to list ConfigSets',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -676,8 +690,10 @@ class SolrController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                message: 'Failed to create collection',
+                message: '[SolrController] Failed to create collection',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error'      => $e->getMessage(),
                     'collection' => $collectionName ?? null,
                 ]
@@ -736,8 +752,10 @@ class SolrController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                message: 'Failed to create ConfigSet',
+                message: '[SolrController] Failed to create ConfigSet',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error'     => $e->getMessage(),
                     'configSet' => $name ?? null,
                 ]
@@ -795,8 +813,10 @@ class SolrController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                message: 'Failed to delete ConfigSet',
+                message: '[SolrController] Failed to delete ConfigSet',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error'     => $e->getMessage(),
                     'configSet' => $name ?? null,
                 ]
@@ -860,8 +880,10 @@ class SolrController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                message: 'Failed to copy collection',
+                message: '[SolrController] Failed to copy collection',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error'  => $e->getMessage(),
                     'source' => $sourceCollection ?? null,
                     'target' => $targetCollection ?? null,
@@ -935,8 +957,10 @@ class SolrController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                message: 'Failed to vectorize object',
+                message: '[SolrController] Failed to vectorize object',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error'     => $e->getMessage(),
                     'object_id' => $objectId ?? null,
                 ]
@@ -1069,8 +1093,10 @@ class SolrController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                message: 'Failed to bulk vectorize objects',
+                message: '[SolrController] Failed to bulk vectorize objects',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error'       => $e->getMessage(),
                     'schema_id'   => $schemaId ?? null,
                     'register_id' => $registerId ?? null,
@@ -1153,8 +1179,10 @@ class SolrController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                message: 'Failed to get vectorization stats',
+                message: '[SolrController] Failed to get vectorization stats',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]

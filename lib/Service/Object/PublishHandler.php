@@ -110,6 +110,8 @@ class PublishHandler
         $this->logger->debug(
             message: '[PublishHandler] Publishing object',
             context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'uuid'         => $uuid,
                 'date'         => $date?->format('Y-m-d H:i:s'),
                 'rbac'         => $_rbac,
@@ -147,20 +149,31 @@ class PublishHandler
 
             // Record publish action in audit trail (with before/after states).
             try {
-                $this->logger->debug('[PublishHandler] About to create audit trail for publish action', ['file' => __FILE__, 'line' => __LINE__]);
+                $this->logger->debug(
+                    message: '[PublishHandler] About to create audit trail for publish action',
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
                 $auditTrail = $this->auditTrailMapper->createAuditTrail(
                     old: $objectBeforeClone,
                     new: $object,
                     action: 'publish'
                 );
-                $this->logger->debug('[PublishHandler] Audit trail created: '.$auditTrail->getId());
+                $this->logger->debug(
+                    message: '[PublishHandler] Audit trail created: '.$auditTrail->getId(),
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
             } catch (\Exception $auditError) {
-                $this->logger->warning('[PublishHandler] Failed to create audit trail: '.$auditError->getMessage());
+                $this->logger->warning(
+                    message: '[PublishHandler] Failed to create audit trail: '.$auditError->getMessage(),
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
             }
 
             $this->logger->info(
                 message: '[PublishHandler] Object published successfully',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'uuid'             => $uuid,
                     'publication_date' => $publicationDate->format('Y-m-d H:i:s'),
                 ]
@@ -171,6 +184,8 @@ class PublishHandler
             $this->logger->error(
                 message: '[PublishHandler] Failed to publish object',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'uuid'  => $uuid,
                     'error' => $e->getMessage(),
                 ]
@@ -205,6 +220,8 @@ class PublishHandler
         $this->logger->debug(
             message: '[PublishHandler] Depublishing object',
             context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'uuid'         => $uuid,
                 'date'         => $date?->format('Y-m-d H:i:s'),
                 'rbac'         => $_rbac,
@@ -246,6 +263,8 @@ class PublishHandler
             $this->logger->info(
                 message: '[PublishHandler] Object depublished successfully',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'uuid'               => $uuid,
                     'depublication_date' => $depublicationDate->format('Y-m-d H:i:s'),
                 ]
@@ -256,6 +275,8 @@ class PublishHandler
             $this->logger->error(
                 message: '[PublishHandler] Failed to depublish object',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'uuid'  => $uuid,
                     'error' => $e->getMessage(),
                 ]

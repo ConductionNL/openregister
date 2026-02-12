@@ -368,7 +368,7 @@ class SaveObjects
             $operationType = 'mixed-schema';
         }
 
-        $logMessage = "Starting {$operationType} bulk save operation";
+        $logMessage = "[SaveObjects] Starting {$operationType} bulk save operation";
 
         $this->logger->info(
             $logMessage,
@@ -694,8 +694,8 @@ class SaveObjects
             $defaultOrganisation = $defaultOrg->getUuid();
         } catch (Exception $e) {
             $this->logger->warning(
-                'Could not get default organisation, objects will have null organisation',
-                ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+                message: '[SaveObjects] Could not get default organisation, objects will have null organisation',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
             );
         }
 
@@ -750,8 +750,8 @@ class SaveObjects
                     } catch (Exception $e) {
                         // Keep as string if conversion fails.
                         $this->logger->warning(
-                            'Failed to convert published date to DateTime',
-                            [
+                            message: '[SaveObjects] Failed to convert published date to DateTime',
+                            context: [
                                 'file' => __FILE__,
                                 'line' => __LINE__,
                                 'value' => $selfDataForHydration['published'],
@@ -789,8 +789,8 @@ class SaveObjects
                 $publishedFromCsv = ($selfData['published'] ?? null) !== null && (empty($selfData['published']) === false);
                 if (($publishedFromCsv === false) === true && $tempEntity->getPublished() === null) {
                     $this->logger->debug(
-                        'Auto-publishing NEW object in bulk creation (single schema)',
-                        [
+                        message: '[SaveObjects] Auto-publishing NEW object in bulk creation (single schema)',
+                        context: [
                             'file' => __FILE__,
                             'line' => __LINE__,
                             'schema'           => $schemaObj->getTitle(),
@@ -802,8 +802,8 @@ class SaveObjects
                     $tempEntity->setPublished(new DateTime());
                 } else if ($publishedFromCsv === true) {
                     $this->logger->debug(
-                        'Skipping auto-publish - published date provided from CSV',
-                        [
+                        message: '[SaveObjects] Skipping auto-publish - published date provided from CSV',
+                        context: [
                             'file' => __FILE__,
                             'line' => __LINE__,
                             'schema'           => $schemaObj->getTitle(),
@@ -859,8 +859,8 @@ class SaveObjects
 
                 // DEBUG: Log actual data structure to understand what we're receiving.
                 $this->logger->info(
-                    "[SaveObjects] DEBUG - Single schema object structure",
-                    [
+                    message: "[SaveObjects] DEBUG - Single schema object structure",
+                    context: [
                         'file' => __FILE__,
                         'line' => __LINE__,
                         'available_keys'      => array_keys($object),
@@ -875,7 +875,10 @@ class SaveObjects
             if (($object['object'] ?? null) !== null && is_array($object['object']) === true) {
                 // NEW STRUCTURE: object property contains business data.
                 $businessData = $object['object'];
-                $this->logger->info("[SaveObjects] Using object property for business data", ['file' => __FILE__, 'line' => __LINE__]);
+                $this->logger->info(
+                    message: '[SaveObjects] Using object property for business data',
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
             }
 
             if (($object['object'] ?? null) === null || is_array($object['object']) === false) {
@@ -906,8 +909,8 @@ class SaveObjects
 
                 // CRITICAL DEBUG: Log what we're removing and what remains.
                 $this->logger->info(
-                    "[SaveObjects] Metadata removal applied",
-                    [
+                    message: "[SaveObjects] Metadata removal applied",
+                    context: [
                         'file' => __FILE__,
                         'line' => __LINE__,
                         'removed_fields'       => array_intersect($metadataFields, array_keys($object)),
@@ -923,8 +926,8 @@ class SaveObjects
                 $selfData['relations'] = $relations;
 
                 $this->logger->info(
-                    "[SaveObjects] Relations scanned in preparation (single schema)",
-                    [
+                    message: "[SaveObjects] Relations scanned in preparation (single schema)",
+                    context: [
                         'file' => __FILE__,
                         'line' => __LINE__,
                         'uuid'             => $selfData['uuid'] ?? 'unknown',
@@ -952,8 +955,8 @@ class SaveObjects
         // Minimal logging for performance.
         if (count($objects) > 10000) {
             $this->logger->debug(
-                'Single-schema preparation completed',
-                [
+                message: '[SaveObjects] Single-schema preparation completed',
+                context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
                     'objectsProcessed' => count($preparedObjects),
@@ -1362,7 +1365,7 @@ class SaveObjects
         // Log detailed duplicate information if any were found.
         if ($totalDuplicates > 0) {
             $this->logger->warning(
-                message: 'Found and merged duplicate IDs within batch',
+                message: '[SaveObjects] Found and merged duplicate IDs within batch',
                 context: [
                     'file' => __FILE__,
                     'line' => __LINE__,

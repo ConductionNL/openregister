@@ -152,8 +152,10 @@ class RenderObject
     {
         $this->ultraPreloadCache = $ultraPreloadCache;
         $this->logger->debug(
-            'Ultra preload cache set',
-            [
+            message: '[RenderObject] Ultra preload cache set',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'cachedObjectCount' => count($ultraPreloadCache),
             ]
         );
@@ -1153,8 +1155,10 @@ class RenderObject
                             // This keeps the reference data intact even when the referenced object
                             // doesn't exist (e.g., data imported from CSV with external references).
                             $this->logger->debug(
-                                'Object not found in preloaded cache - preserving original UUID',
-                                [
+                                message: '[RenderObject] Object not found in preloaded cache - preserving original UUID',
+                                context: [
+                                    'file' => __FILE__,
+                                    'line' => __LINE__,
                                     'identifier' => $identifier,
                                     'context'    => 'extend_array_processing',
                                 ]
@@ -1218,8 +1222,10 @@ class RenderObject
             if ($object === null) {
                 // If not in cache, this object wasn't preloaded - skip it to prevent N+1.
                 $this->logger->debug(
-                    'Single object not found in preloaded cache - skipping to prevent N+1 query',
-                    [
+                    message: '[RenderObject] Single object not found in preloaded cache - skipping to prevent N+1 query',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'identifier' => $value,
                         'context'    => 'extend_single_processing',
                     ]
@@ -1317,8 +1323,10 @@ class RenderObject
             }
 
             $this->logger->debug(
-                'Batch preloaded objects for extend',
-                [
+                message: '[RenderObject] Batch preloaded objects for extend',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'requestedUuids' => count($uuidsToPreload),
                     'loadedObjects'  => count($preloadedObjects),
                 ]
@@ -1454,8 +1462,10 @@ class RenderObject
         }
 
         $this->logger->debug(
-                '[INVERSE_PRELOAD] Starting batch inverse preload',
-                [
+                message: '[RenderObject] [INVERSE_PRELOAD] Starting batch inverse preload',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'entityCount'       => count($entityUuids),
                     'inverseProperties' => array_keys($inversePropertiesToExtend),
                 ]
@@ -1527,8 +1537,10 @@ class RenderObject
                 }//end if
 
                 $this->logger->debug(
-                        '[INVERSE_PRELOAD] Batch loaded inverse relationships',
-                        [
+                        message: '[RenderObject] [INVERSE_PRELOAD] Batch loaded inverse relationships',
+                        context: [
+                            'file' => __FILE__,
+                            'line' => __LINE__,
                             'property'     => $propName,
                             'targetSchema' => $targetSchemaId,
                             'foundObjects' => count($referencingObjects),
@@ -1536,8 +1548,10 @@ class RenderObject
                         );
             } catch (\Exception $e) {
                 $this->logger->warning(
-                        '[INVERSE_PRELOAD] Batch preload failed, falling back to per-entity lookup',
-                        [
+                        message: '[RenderObject] [INVERSE_PRELOAD] Batch preload failed, falling back to per-entity lookup',
+                        context: [
+                            'file' => __FILE__,
+                            'line' => __LINE__,
                             'property' => $propName,
                             'error'    => $e->getMessage(),
                         ]
@@ -1971,8 +1985,10 @@ class RenderObject
         // **PERFORMANCE OPTIMIZATION**: Batch preload ALL related objects BEFORE rendering.
         // This prevents N+1 query problem when extending relations across multiple entities.
         $this->logger->info(
-                '[BATCH_PRELOAD] Starting batch preload check',
-                [
+                message: '[RenderObject] [BATCH_PRELOAD] Starting batch preload check',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'extendParam' => $_extend,
                     'entityCount' => count($entities),
                 ]
@@ -2001,8 +2017,10 @@ class RenderObject
             $allUuidsToPreload = array_unique($allUuidsToPreload);
 
             $this->logger->info(
-                    '[BATCH_PRELOAD] UUIDs collected',
-                    [
+                    message: '[RenderObject] [BATCH_PRELOAD] UUIDs collected',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'uuidCount'   => count($allUuidsToPreload),
                         'sampleUuids' => array_slice($allUuidsToPreload, 0, 3),
                     ]
@@ -2018,8 +2036,10 @@ class RenderObject
                 }
 
                 $this->logger->debug(
-                    'Batch preloaded objects for renderEntities',
-                    [
+                    message: '[RenderObject] Batch preloaded objects for renderEntities',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'entityCount'    => count($entities),
                         'requestedUuids' => count($allUuidsToPreload),
                         'loadedObjects'  => count($preloadedObjects),

@@ -181,9 +181,15 @@ class FolderManagementHandler
 
         // Store the folder ID instead of the path.
         $register->setFolder((string) $folderNode->getId());
-        $this->logger->info('[FolderManagementHandler] 🔹 FolderManagementHandler: About to update register with folder ID', ['file' => __FILE__, 'line' => __LINE__]);
+        $this->logger->info(
+            message: '[FolderManagementHandler] 🔹 FolderManagementHandler: About to update register with folder ID',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
         $this->registerMapper->update($register);
-        $this->logger->info('[FolderManagementHandler] 🔹 FolderManagementHandler: Register updated with folder ID', ['file' => __FILE__, 'line' => __LINE__]);
+        $this->logger->info(
+            message: '[FolderManagementHandler] 🔹 FolderManagementHandler: Register updated with folder ID',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
 
         $this->logger->info(message: "[FolderManagementHandler] Created register folder with ID: ".$folderNode->getId(), context: ['file' => __FILE__, 'line' => __LINE__]);
 

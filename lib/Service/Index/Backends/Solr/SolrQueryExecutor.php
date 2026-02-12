@@ -85,7 +85,10 @@ class SolrQueryExecutor
         $collection = $this->collectionManager->getActiveCollectionName();
 
         if ($collection === null) {
-            $this->logger->warning('[SolrQueryExecutor] No active collection for search', ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->warning(
+                message: '[SolrQueryExecutor] No active collection for search',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return [
                 'response' => [
                     'numFound' => 0,
@@ -101,8 +104,10 @@ class SolrQueryExecutor
             $result = $this->httpClient->get($url);
 
             $this->logger->debug(
-                '[SolrQueryExecutor] Search executed',
-                [
+                message: '[SolrQueryExecutor] Search executed',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'collection' => $collection,
                     'query'      => $params['q'] ?? '*:*',
                     'numFound'   => $result['response']['numFound'] ?? 0,
@@ -112,8 +117,10 @@ class SolrQueryExecutor
             return $result;
         } catch (Exception $e) {
             $this->logger->error(
-                '[SolrQueryExecutor] Search failed',
-                [
+                message: '[SolrQueryExecutor] Search failed',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );

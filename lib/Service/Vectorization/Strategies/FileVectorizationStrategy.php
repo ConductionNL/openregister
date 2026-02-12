@@ -92,8 +92,10 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
         $fileTypes = $options['file_types'] ?? [];
 
         $this->logger->debug(
-            '[FileVectorizationStrategy] Fetching file chunks',
-            [
+            message: '[FileVectorizationStrategy] Fetching file chunks',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'maxFiles'  => $maxFiles,
                 'fileTypes' => $fileTypes,
             ]
