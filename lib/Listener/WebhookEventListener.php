@@ -113,8 +113,8 @@ class WebhookEventListener implements IEventListener
         $payload    = $this->extractPayload($event);
 
         if ($payload === null) {
-            $this->logger->debug(
-                'Could not extract payload from event',
+            $this->logger->warning(
+                '[WebhookEventListener] Could not extract payload from event',
                 [
                     'event' => $eventClass,
                 ]
@@ -123,7 +123,7 @@ class WebhookEventListener implements IEventListener
         }
 
         $this->logger->debug(
-            'Processing event for webhooks',
+            '[WebhookEventListener] Processing event for webhooks',
             [
                 'event' => $eventClass,
             ]
