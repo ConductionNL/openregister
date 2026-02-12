@@ -632,8 +632,10 @@ class SolrSettingsHandler
             $this->appConfig->setValueString($this->appName, 'search_backend', json_encode($backendConfig));
 
             $this->logger->info(
-                'Search backend changed to: '.$backend,
-                [
+                message: '[SolrSettingsHandler] Search backend changed to: '.$backend,
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'app'     => 'openregister',
                     'backend' => $backend,
                 ]

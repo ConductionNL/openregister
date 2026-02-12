@@ -90,8 +90,10 @@ class ObjectHandler
         bool $deleted=false
     ): array {
         $this->logger->debug(
-            '[ObjectHandler] Searching objects',
-            [
+            message: '[ObjectHandler] Searching objects',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'query'        => $query,
                 'rbac'         => $rbac,
                 'multitenancy' => $multitenancy,
@@ -198,21 +200,29 @@ class ObjectHandler
      */
     public function commit(): bool
     {
-        $this->logger->debug('[ObjectHandler] Committing to Solr');
+        $this->logger->debug(
+            message: '[ObjectHandler] Committing to Solr',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
 
         try {
             // Use search backend to commit (backend handles collection selection).
             $result = $this->searchBackend->commit();
 
             if ($result === true) {
-                $this->logger->info('[ObjectHandler] Successfully committed to Solr');
+                $this->logger->info(
+                    message: '[ObjectHandler] Successfully committed to Solr',
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
             }
 
             return $result;
         } catch (Exception $e) {
             $this->logger->error(
-                '[ObjectHandler] Failed to commit to Solr',
-                [
+                message: '[ObjectHandler] Failed to commit to Solr',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -234,8 +244,10 @@ class ObjectHandler
     public function reindexAll(int $maxObjects=0, int $batchSize=1000, ?string $collectionName=null): array
     {
         $this->logger->info(
-            '[ObjectHandler] Starting full reindex',
-            [
+            message: '[ObjectHandler] Starting full reindex',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'maxObjects' => $maxObjects,
                 'batchSize'  => $batchSize,
                 'collection' => $collectionName,
@@ -247,8 +259,10 @@ class ObjectHandler
             return $this->searchBackend->reindexAll($maxObjects, $batchSize, $collectionName);
         } catch (Exception $e) {
             $this->logger->error(
-                '[ObjectHandler] Reindex failed',
-                [
+                message: '[ObjectHandler] Reindex failed',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );

@@ -72,7 +72,10 @@ class FacetBuilder
      */
     public function getRawSolrFieldsForFacetConfiguration(): array
     {
-        $this->logger->debug('FacetBuilder: Delegating to SolrBackend');
+        $this->logger->debug(
+            message: '[FacetBuilder] Delegating to SolrBackend',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
 
         return $this->solrBackend->getRawSolrFieldsForFacetConfiguration();
     }//end getRawSolrFieldsForFacetConfiguration()

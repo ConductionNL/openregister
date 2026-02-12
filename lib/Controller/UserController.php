@@ -110,8 +110,10 @@ class UserController extends Controller
             return new JSONResponse(data: $userProfile);
         } catch (Exception $e) {
             $this->logger->error(
-                message: 'Failed to get user profile',
+                message: '[UserController] Failed to get user profile',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error_message' => $e->getMessage(),
                     'error_code'    => $e->getCode(),
                 ]
@@ -175,8 +177,10 @@ class UserController extends Controller
             return new JSONResponse(data: $updatedProfile);
         } catch (Exception $e) {
             $this->logger->error(
-                message: 'Failed to update user profile',
+                message: '[UserController] Failed to update user profile',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error_message' => $e->getMessage(),
                     'error_code'    => $e->getCode(),
                 ]
@@ -315,8 +319,10 @@ class UserController extends Controller
 
             if ($memoryIncreaseBytes > 10 * 1024 * 1024) {
                 $this->logger->warning(
-                    message: 'High memory usage during login',
+                    message: '[UserController] High memory usage during login',
                     context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'user'           => $user->getUID(),
                         'initial_memory' => $initialMemoryUsage,
                         'final_memory'   => $finalMemoryUsage,
@@ -339,8 +345,8 @@ class UserController extends Controller
         } catch (Exception $e) {
             // Log the error securely without exposing sensitive information.
             $this->logger->error(
-                message: 'Login failed due to system error',
-                context: ['error_message' => $e->getMessage()]
+                message: '[UserController] Login failed due to system error',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'error_message' => $e->getMessage()]
             );
 
             $response = new JSONResponse(

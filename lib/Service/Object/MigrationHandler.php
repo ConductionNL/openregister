@@ -194,8 +194,10 @@ class MigrationHandler
 
                     // Log the mapping result for debugging.
                     $this->logger->debug(
-                        message: 'Object properties mapped',
+                        message: '[MigrationHandler] Object properties mapped',
                         context: [
+                            'file' => __FILE__,
+                            'line' => __LINE__,
                             'mappedData' => $mappedData,
                         ]
                     );

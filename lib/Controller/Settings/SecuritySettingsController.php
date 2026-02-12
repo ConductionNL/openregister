@@ -79,8 +79,8 @@ class SecuritySettingsController extends Controller
             $this->securityService->clearIpRateLimits(ipAddress: $ipAddress);
 
             $this->logger->info(
-                message: 'IP rate limits cleared by admin',
-                context: ['ip_address' => $ipAddress]
+                message: '[SecuritySettingsController] IP rate limits cleared by admin',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'ip_address' => $ipAddress]
             );
 
             return new JSONResponse(
@@ -92,8 +92,8 @@ class SecuritySettingsController extends Controller
             );
         } catch (Exception $e) {
             $this->logger->error(
-                message: 'Failed to clear IP rate limits',
-                context: ['error' => $e->getMessage()]
+                message: '[SecuritySettingsController] Failed to clear IP rate limits',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
             );
 
             return new JSONResponse(
@@ -129,8 +129,8 @@ class SecuritySettingsController extends Controller
             $this->securityService->clearUserRateLimits(username: $username);
 
             $this->logger->info(
-                message: 'User rate limits cleared by admin',
-                context: ['username' => $username]
+                message: '[SecuritySettingsController] User rate limits cleared by admin',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'username' => $username]
             );
 
             return new JSONResponse(
@@ -142,8 +142,8 @@ class SecuritySettingsController extends Controller
             );
         } catch (Exception $e) {
             $this->logger->error(
-                message: 'Failed to clear user rate limits',
-                context: ['error' => $e->getMessage()]
+                message: '[SecuritySettingsController] Failed to clear user rate limits',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
             );
 
             return new JSONResponse(
@@ -190,8 +190,8 @@ class SecuritySettingsController extends Controller
             }
 
             $this->logger->info(
-                message: 'Rate limits cleared by admin',
-                context: $cleared
+                message: '[SecuritySettingsController] Rate limits cleared by admin',
+                context: array_merge(['file' => __FILE__, 'line' => __LINE__], $cleared)
             );
 
             return new JSONResponse(
@@ -203,8 +203,8 @@ class SecuritySettingsController extends Controller
             );
         } catch (Exception $e) {
             $this->logger->error(
-                message: 'Failed to clear rate limits',
-                context: ['error' => $e->getMessage()]
+                message: '[SecuritySettingsController] Failed to clear rate limits',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
             );
 
             return new JSONResponse(

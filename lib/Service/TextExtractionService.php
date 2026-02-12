@@ -161,7 +161,10 @@ class TextExtractionService
      */
     public function extractFile(int $fileId, bool $forceReExtract=false): void
     {
-        $this->logger->info('[TextExtractionService] Starting file extraction', ['fileId' => $fileId]);
+        $this->logger->info(
+            message: '[TextExtractionService] Starting file extraction',
+            context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $fileId]
+        );
 
         $ncFile = $this->fileMapper->getFile($fileId);
         if ($ncFile === null) {
@@ -179,7 +182,10 @@ class TextExtractionService
         );
         if ($forceReExtract === false && $isUpToDate === true) {
             // File is up-to-date and all chunks are still valid.
-            $this->logger->info('[TextExtractionService] File already processed and up-to-date', ['fileId' => $fileId]);
+            $this->logger->info(
+                message: '[TextExtractionService] File already processed and up-to-date',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $fileId]
+            );
             return;
         }
 
@@ -213,7 +219,10 @@ class TextExtractionService
             $entityEnabled = $fileSettings['entityRecognitionEnabled'] ?? false;
 
             if ($entityEnabled === false) {
-                $this->logger->info('[TextExtractionService] Entity recognition disabled, skipping', ['fileId' => $fileId]);
+                $this->logger->info(
+                    message: '[TextExtractionService] Entity recognition disabled, skipping',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $fileId]
+                );
                 return;
             }
 
@@ -227,8 +236,10 @@ class TextExtractionService
             );
 
             $this->logger->info(
-                '[TextExtractionService] Entity extraction complete',
-                [
+                message: '[TextExtractionService] Entity extraction complete',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'fileId'            => $fileId,
                     'entities_found'    => $entityResult['entities_found'],
                     'relations_created' => $entityResult['relations_created'],
@@ -236,8 +247,10 @@ class TextExtractionService
             );
         } catch (Exception $e) {
             $this->logger->error(
-                '[TextExtractionService] Entity extraction failed',
-                [
+                message: '[TextExtractionService] Entity extraction failed',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'fileId' => $fileId,
                     'error'  => $e->getMessage(),
                 ]
@@ -245,8 +258,10 @@ class TextExtractionService
         }//end try
 
         $this->logger->info(
-            '[TextExtractionService] File extraction complete',
-            [
+            message: '[TextExtractionService] File extraction complete',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'fileId'     => $fileId,
                 'chunkCount' => count($chunks) + 1,
             ]
@@ -273,7 +288,10 @@ class TextExtractionService
      */
     public function extractObject(int $objectId, bool $forceReExtract=false): void
     {
-        $this->logger->info('[TextExtractionService] Starting object extraction', ['objectId' => $objectId]);
+        $this->logger->info(
+            message: '[TextExtractionService] Starting object extraction',
+            context: ['file' => __FILE__, 'line' => __LINE__, 'objectId' => $objectId]
+        );
 
         // Get object to check timestamp.
         // Handle case where object was deleted between job scheduling and execution.
@@ -281,8 +299,12 @@ class TextExtractionService
             $object = $this->objectEntityMapper->find($objectId);
         } catch (DoesNotExistException $e) {
             $this->logger->warning(
-                '[TextExtractionService] Object no longer exists, skipping extraction',
-                ['objectId' => $objectId]
+                message: '[TextExtractionService] Object no longer exists, skipping extraction',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
+                    'objectId' => $objectId,
+                ]
             );
             return;
         }
@@ -299,8 +321,12 @@ class TextExtractionService
         if ($forceReExtract === false && $isUpToDate === true) {
             // Object is up-to-date and all chunks are still valid.
             $this->logger->info(
-                '[TextExtractionService] Object already processed and up-to-date',
-                ['objectId' => $objectId]
+                message: '[TextExtractionService] Object already processed and up-to-date',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
+                    'objectId' => $objectId,
+                ]
             );
             return;
         }
@@ -375,8 +401,10 @@ class TextExtractionService
             );
 
             $this->logger->info(
-                '[TextExtractionService] Entity extraction complete',
-                [
+                message: '[TextExtractionService] Entity extraction complete',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'objectId'          => $objectId,
                     'entities_found'    => $entityResult['entities_found'],
                     'relations_created' => $entityResult['relations_created'],
@@ -384,8 +412,10 @@ class TextExtractionService
             );
         } catch (Exception $e) {
             $this->logger->error(
-                '[TextExtractionService] Entity extraction failed',
-                [
+                message: '[TextExtractionService] Entity extraction failed',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'objectId' => $objectId,
                     'error'    => $e->getMessage(),
                 ]
@@ -393,8 +423,10 @@ class TextExtractionService
         }//end try
 
         $this->logger->info(
-            '[TextExtractionService] Object extraction completed',
-            [
+            message: '[TextExtractionService] Object extraction completed',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'objectId'   => $objectId,
                 'chunkCount' => count($chunks) + 1,
             ]
@@ -749,8 +781,10 @@ class TextExtractionService
             );
         } catch (JsonException $exception) {
             $this->logger->warning(
-                '[TextExtractionService] Failed to encode metadata chunk payload',
-                [
+                message: '[TextExtractionService] Failed to encode metadata chunk payload',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'sourceType' => $sourceType,
                     'sourceId'   => $sourceId,
                     'error'      => $exception->getMessage(),
@@ -843,8 +877,10 @@ class TextExtractionService
         $filePath = $ncFile['path'] ?? '';
 
         $this->logger->debug(
-            '[TextExtractionService] Attempting extraction',
-            [
+            message: '[TextExtractionService] Attempting extraction',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'fileId'   => $fileId,
                 'mimeType' => $mimeType,
                 'filePath' => $filePath,
@@ -886,8 +922,10 @@ class TextExtractionService
                 $extractedText = $file->getContent();
 
                 $this->logger->debug(
-                    '[TextExtractionService] Text file extracted',
-                    [
+                    message: '[TextExtractionService] Text file extracted',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'fileId' => $fileId,
                         'length' => strlen($extractedText),
                     ]
@@ -904,8 +942,10 @@ class TextExtractionService
             } else {
                 // Unsupported file type.
                 $this->logger->info(
-                    '[TextExtractionService] Unsupported file type',
-                    [
+                    message: '[TextExtractionService] Unsupported file type',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'fileId'   => $fileId,
                         'mimeType' => $mimeType,
                     ]
@@ -917,8 +957,10 @@ class TextExtractionService
             return $extractedText;
         } catch (Exception $e) {
             $this->logger->error(
-                '[TextExtractionService] Failed to read file',
-                [
+                message: '[TextExtractionService] Failed to read file',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'fileId' => $fileId,
                     'error'  => $e->getMessage(),
                 ]
@@ -942,7 +984,10 @@ class TextExtractionService
      */
     public function discoverUntrackedFiles(int $limit=100): array
     {
-        $this->logger->info('[TextExtractionService] Discovering untracked files', ['limit' => $limit]);
+        $this->logger->info(
+            message: '[TextExtractionService] Discovering untracked files',
+            context: ['file' => __FILE__, 'line' => __LINE__, 'limit' => $limit]
+        );
 
         try {
             // Get untracked files from Nextcloud (files without chunks).
@@ -957,8 +1002,10 @@ class TextExtractionService
                     $discovered++;
 
                     $this->logger->debug(
-                        '[TextExtractionService] Discovered and extracted untracked file',
-                        [
+                        message: '[TextExtractionService] Discovered and extracted untracked file',
+                        context: [
+                            'file' => __FILE__,
+                            'line' => __LINE__,
                             'fileId' => $ncFile['fileid'],
                             'path'   => $ncFile['path'] ?? 'unknown',
                         ]
@@ -966,8 +1013,10 @@ class TextExtractionService
                 } catch (Exception $e) {
                     $failed++;
                     $this->logger->error(
-                        '[TextExtractionService] Failed to extract file',
-                        [
+                        message: '[TextExtractionService] Failed to extract file',
+                        context: [
+                            'file' => __FILE__,
+                            'line' => __LINE__,
                             'fileId' => $ncFile['fileid'] ?? 'unknown',
                             'error'  => $e->getMessage(),
                         ]
@@ -976,8 +1025,10 @@ class TextExtractionService
             }//end foreach
 
             $this->logger->info(
-                '[TextExtractionService] Discovery complete',
-                [
+                message: '[TextExtractionService] Discovery complete',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'discovered' => $discovered,
                     'failed'     => $failed,
                 ]
@@ -989,7 +1040,10 @@ class TextExtractionService
                 'total'      => count($untrackedFiles),
             ];
         } catch (Exception $e) {
-            $this->logger->error('[TextExtractionService] Discovery failed', ['error' => $e->getMessage()]);
+            $this->logger->error(
+                message: '[TextExtractionService] Discovery failed',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+            );
             return [
                 'discovered' => 0,
                 'failed'     => 0,
@@ -1013,14 +1067,19 @@ class TextExtractionService
      */
     public function extractPendingFiles(int $limit=100): array
     {
-        $this->logger->info('[TextExtractionService] Extracting files without chunks', ['limit' => $limit]);
+        $this->logger->info(
+            message: '[TextExtractionService] Extracting files without chunks',
+            context: ['file' => __FILE__, 'line' => __LINE__, 'limit' => $limit]
+        );
 
         // Get files without chunks.
         $untrackedFiles = $this->fileMapper->findUntrackedFiles($limit);
 
-        $this->logger->info(
-            '[TextExtractionService] Found files without chunks',
-            [
+            $this->logger->info(
+                message: '[TextExtractionService] Found files without chunks',
+                context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'count' => count($untrackedFiles),
                 'limit' => $limit,
             ]
@@ -1032,8 +1091,10 @@ class TextExtractionService
         foreach ($untrackedFiles as $ncFile) {
             try {
                 $this->logger->debug(
-                    '[TextExtractionService] Processing file',
-                    [
+                    message: '[TextExtractionService] Processing file',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'fileId'   => $ncFile['fileid'],
                         'fileName' => $ncFile['name'] ?? 'unknown',
                     ]
@@ -1045,8 +1106,10 @@ class TextExtractionService
             } catch (Exception $e) {
                 $failed++;
                 $this->logger->error(
-                    '[TextExtractionService] Failed to extract file',
-                    [
+                    message: '[TextExtractionService] Failed to extract file',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'fileId' => $ncFile['fileid'] ?? 'unknown',
                         'error'  => $e->getMessage(),
                     ]
@@ -1055,8 +1118,10 @@ class TextExtractionService
         }//end foreach
 
         $this->logger->info(
-            '[TextExtractionService] Extraction complete',
-            [
+            message: '[TextExtractionService] Extraction complete',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'processed'    => $processed,
                 'failed'       => $failed,
                 'foundPending' => count($untrackedFiles),
@@ -1081,7 +1146,10 @@ class TextExtractionService
      */
     public function retryFailedExtractions(int $limit=50): array
     {
-        $this->logger->info('[TextExtractionService] Retrying extractions', ['limit' => $limit]);
+        $this->logger->info(
+            message: '[TextExtractionService] Retrying extractions',
+            context: ['file' => __FILE__, 'line' => __LINE__, 'limit' => $limit]
+        );
 
         // Get files without chunks or with old chunks.
         $untrackedFiles = $this->fileMapper->findUntrackedFiles($limit);
@@ -1095,8 +1163,10 @@ class TextExtractionService
             } catch (Exception $e) {
                 $failed++;
                 $this->logger->error(
-                    '[TextExtractionService] Retry failed for file',
-                    [
+                    message: '[TextExtractionService] Retry failed for file',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'fileId' => $ncFile['fileid'] ?? 'unknown',
                         'error'  => $e->getMessage(),
                     ]
@@ -1161,8 +1231,10 @@ class TextExtractionService
             return $count;
         } catch (Throwable $e) {
             $this->logger->debug(
-                '[TextExtractionService] Unable to count table',
-                [
+                message: '[TextExtractionService] Unable to count table',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'table' => $tableName,
                     'error' => $e->getMessage(),
                 ]
@@ -1227,8 +1299,10 @@ class TextExtractionService
         // Check if PdfParser library is available.
         if (class_exists('Smalot\PdfParser\Parser') === false) {
             $this->logger->warning(
-                '[TextExtractionService] PDF parser library not available',
-                [
+                message: '[TextExtractionService] PDF parser library not available',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'fileId' => $file->getId(),
                 ]
             );
@@ -1239,8 +1313,10 @@ class TextExtractionService
 
         try {
             $this->logger->debug(
-                '[TextExtractionService] Extracting PDF',
-                [
+                message: '[TextExtractionService] Extracting PDF',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'fileId' => $file->getId(),
                     'name'   => $file->getName(),
                 ]
@@ -1266,8 +1342,10 @@ class TextExtractionService
 
             if ($text === '') {
                 $this->logger->warning(
-                    '[TextExtractionService] PDF extraction returned empty text',
-                    [
+                    message: '[TextExtractionService] PDF extraction returned empty text',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'fileId' => $file->getId(),
                     ]
                 );
@@ -1275,8 +1353,10 @@ class TextExtractionService
             }
 
             $this->logger->debug(
-                '[TextExtractionService] PDF extracted successfully',
-                [
+                message: '[TextExtractionService] PDF extracted successfully',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'fileId' => $file->getId(),
                     'length' => strlen($text),
                 ]
@@ -1285,8 +1365,10 @@ class TextExtractionService
             return $text;
         } catch (Exception $e) {
             $this->logger->error(
-                '[TextExtractionService] PDF extraction failed',
-                [
+                message: '[TextExtractionService] PDF extraction failed',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'fileId' => $file->getId(),
                     'error'  => $e->getMessage(),
                 ]
@@ -1312,8 +1394,10 @@ class TextExtractionService
         // Check if PhpWord library is available.
         if (class_exists('PhpOffice\PhpWord\IOFactory') === false) {
             $this->logger->warning(
-                '[TextExtractionService] PhpWord library not available',
-                [
+                message: '[TextExtractionService] PhpWord library not available',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'fileId' => $file->getId(),
                 ]
             );
@@ -1324,8 +1408,10 @@ class TextExtractionService
 
         try {
             $this->logger->debug(
-                '[TextExtractionService] Extracting Word document',
-                [
+                message: '[TextExtractionService] Extracting Word document',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'fileId' => $file->getId(),
                     'name'   => $file->getName(),
                 ]
@@ -1366,8 +1452,10 @@ class TextExtractionService
 
             if (trim($text) === '' || trim($text) === null) {
                 $this->logger->warning(
-                    '[TextExtractionService] Word extraction returned empty text',
-                    [
+                    message: '[TextExtractionService] Word extraction returned empty text',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'fileId' => $file->getId(),
                     ]
                 );
@@ -1375,8 +1463,10 @@ class TextExtractionService
             }
 
             $this->logger->debug(
-                '[TextExtractionService] Word document extracted successfully',
-                [
+                message: '[TextExtractionService] Word document extracted successfully',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'fileId' => $file->getId(),
                     'length' => strlen($text),
                 ]
@@ -1385,8 +1475,10 @@ class TextExtractionService
             return $text;
         } catch (Exception $e) {
             $this->logger->error(
-                '[TextExtractionService] Word extraction failed',
-                [
+                message: '[TextExtractionService] Word extraction failed',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'fileId' => $file->getId(),
                     'error'  => $e->getMessage(),
                 ]
@@ -1413,8 +1505,10 @@ class TextExtractionService
         // PhpSpreadsheet should already be installed (in composer.json).
         if (class_exists('PhpOffice\PhpSpreadsheet\IOFactory') === false) {
             $this->logger->warning(
-                '[TextExtractionService] PhpSpreadsheet library not available',
-                [
+                message: '[TextExtractionService] PhpSpreadsheet library not available',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'fileId' => $file->getId(),
                 ]
             );
@@ -1425,8 +1519,10 @@ class TextExtractionService
 
         try {
             $this->logger->debug(
-                '[TextExtractionService] Extracting spreadsheet',
-                [
+                message: '[TextExtractionService] Extracting spreadsheet',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'fileId' => $file->getId(),
                     'name'   => $file->getName(),
                 ]
@@ -1481,8 +1577,10 @@ class TextExtractionService
 
             if (trim($text) === '' || trim($text) === null) {
                 $this->logger->warning(
-                    '[TextExtractionService] Spreadsheet extraction returned empty text',
-                    [
+                    message: '[TextExtractionService] Spreadsheet extraction returned empty text',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'fileId' => $file->getId(),
                     ]
                 );
@@ -1490,8 +1588,10 @@ class TextExtractionService
             }
 
             $this->logger->debug(
-                '[TextExtractionService] Spreadsheet extracted successfully',
-                [
+                message: '[TextExtractionService] Spreadsheet extracted successfully',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'fileId' => $file->getId(),
                     'length' => strlen($text),
                 ]
@@ -1500,8 +1600,10 @@ class TextExtractionService
             return $text;
         } catch (Exception $e) {
             $this->logger->error(
-                '[TextExtractionService] Spreadsheet extraction failed',
-                [
+                message: '[TextExtractionService] Spreadsheet extraction failed',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'fileId' => $file->getId(),
                     'error'  => $e->getMessage(),
                 ]
@@ -1530,8 +1632,10 @@ class TextExtractionService
         $strategy     = $options['strategy'] ?? self::RECURSIVE_CHARACTER;
 
         $this->logger->debug(
-            '[TextExtractionService] Chunking document',
-            [
+            message: '[TextExtractionService] Chunking document',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'text_length'   => strlen($text),
                 'chunk_size'    => $chunkSize,
                 'chunk_overlap' => $chunkOverlap,
@@ -1564,8 +1668,10 @@ class TextExtractionService
         // Respect max chunks limit.
         if (count($chunks) > self::MAX_CHUNKS_PER_FILE) {
             $this->logger->warning(
-                '[TextExtractionService] File exceeds max chunks, truncating',
-                [
+                message: '[TextExtractionService] File exceeds max chunks, truncating',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'chunks' => count($chunks),
                     'max'    => self::MAX_CHUNKS_PER_FILE,
                 ]
@@ -1576,8 +1682,10 @@ class TextExtractionService
         $chunkingTime = round((microtime(true) - $startTime) * 1000, 2);
 
         $this->logger->info(
-            '[TextExtractionService] Document chunked successfully',
-            [
+            message: '[TextExtractionService] Document chunked successfully',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'chunk_count'      => count($chunks),
                 'chunking_time_ms' => $chunkingTime,
                 'avg_chunk_size'   => $this->calculateAvgChunkSize($chunks),

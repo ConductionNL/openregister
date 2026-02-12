@@ -258,8 +258,10 @@ class CacheSettingsController extends Controller
             );
         } catch (Exception $e) {
             $this->logger->error(
-                    'Failed to invalidate app store cache: '.$e->getMessage(),
-                    [
+                    message: '[CacheSettingsController] Failed to invalidate app store cache: '.$e->getMessage(),
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'exception' => $e,
                     ]
                     );

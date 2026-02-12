@@ -438,7 +438,10 @@ class EntityRecognitionHandler
             $presidioEndpoint = $fileSettings['presidioApiEndpoint'] ?? '';
 
             if (empty($presidioEndpoint) === true) {
-                $this->logger->warning('[EntityRecognitionHandler] Presidio endpoint not configured, falling back to regex');
+                $this->logger->warning(
+                    message: '[EntityRecognitionHandler] Presidio endpoint not configured, falling back to regex',
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
                 return $this->detectWithRegex(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold);
             }
 
@@ -479,22 +482,34 @@ class EntityRecognitionHandler
             curl_close($ch);
 
             if ($curlError !== '') {
-                $this->logger->error('[EntityRecognitionHandler] Presidio connection error: '.$curlError);
+                $this->logger->error(
+                    message: '[EntityRecognitionHandler] Presidio connection error: '.$curlError,
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
                 return $this->detectWithRegex(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold);
             }
 
             if ($httpCode !== 200) {
-                $this->logger->error('[EntityRecognitionHandler] Presidio returned HTTP '.$httpCode);
+                $this->logger->error(
+                    message: '[EntityRecognitionHandler] Presidio returned HTTP '.$httpCode,
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
                 return $this->detectWithRegex(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold);
             }
 
             $presidioResults = json_decode($response, true);
             if (json_last_error() !== JSON_ERROR_NONE || is_array($presidioResults) === false) {
-                $this->logger->error('[EntityRecognitionHandler] Failed to parse Presidio response');
+                $this->logger->error(
+                    message: '[EntityRecognitionHandler] Failed to parse Presidio response',
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
                 return $this->detectWithRegex(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold);
             }
 
-            $this->logger->debug('[EntityRecognitionHandler] Presidio found '.count($presidioResults).' entities');
+            $this->logger->debug(
+                message: '[EntityRecognitionHandler] Presidio found '.count($presidioResults).' entities',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
 
             // Convert Presidio results to our format.
             $entities = [];
@@ -525,7 +540,10 @@ class EntityRecognitionHandler
 
             return $entities;
         } catch (Exception $e) {
-            $this->logger->error('[EntityRecognitionHandler] Presidio detection failed: '.$e->getMessage());
+            $this->logger->error(
+                message: '[EntityRecognitionHandler] Presidio detection failed: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return $this->detectWithRegex(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold);
         }//end try
     }//end detectWithPresidio()
@@ -602,7 +620,7 @@ class EntityRecognitionHandler
     {
         // TODO: Implement LLM-based entity extraction.
         // For now, fall back to regex.
-        $this->logger->debug(message: '[EntityRecognitionHandler] LLM extraction not yet implemented, using regex fallback');
+        $this->logger->debug(message: '[EntityRecognitionHandler] LLM extraction not yet implemented, using regex fallback', context: ['file' => __FILE__, 'line' => __LINE__]);
 
         return $this->detectWithRegex(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold);
     }//end detectWithLLM()

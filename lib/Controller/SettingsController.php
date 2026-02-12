@@ -639,8 +639,8 @@ class SettingsController extends Controller
                     }
                 } catch (Exception $e) {
                     $this->logger->warning(
-                        '[SettingsController] Failed to fetch PostgreSQL extensions',
-                        ['error' => $e->getMessage()]
+                        message: '[SettingsController] Failed to fetch PostgreSQL extensions',
+                        context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
                     );
                 }
 
@@ -697,8 +697,10 @@ class SettingsController extends Controller
             return new JSONResponse(data: $responseData);
         } catch (Exception $e) {
             $this->logger->error(
-                '[SettingsController] Failed to get database info',
-                [
+                message: '[SettingsController] Failed to get database info',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]

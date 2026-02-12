@@ -107,8 +107,10 @@ class ElasticsearchDocumentIndexer
 
             if ($success === true) {
                 $this->logger->info(
-                    '[ElasticsearchDocumentIndexer] Object indexed',
-                    [
+                    message: '[ElasticsearchDocumentIndexer] Object indexed',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'object_id' => $object->getId(),
                         'result'    => $response['result'] ?? 'unknown',
                     ]
@@ -123,8 +125,10 @@ class ElasticsearchDocumentIndexer
             return $success;
         } catch (Exception $e) {
             $this->logger->error(
-                '[ElasticsearchDocumentIndexer] Failed to index object',
-                [
+                message: '[ElasticsearchDocumentIndexer] Failed to index object',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'object_id' => $object->getId(),
                     'error'     => $e->getMessage(),
                 ]
@@ -182,8 +186,10 @@ class ElasticsearchDocumentIndexer
                 $bulkBody[] = json_encode($document);
             } catch (Exception $e) {
                 $this->logger->error(
-                    '[ElasticsearchDocumentIndexer] Failed to build document',
-                    [
+                    message: '[ElasticsearchDocumentIndexer] Failed to build document',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'object_id' => $object->getId(),
                         'error'     => $e->getMessage(),
                     ]
@@ -220,8 +226,10 @@ class ElasticsearchDocumentIndexer
             }
 
             $this->logger->info(
-                '[ElasticsearchDocumentIndexer] Bulk indexing completed',
-                [
+                message: '[ElasticsearchDocumentIndexer] Bulk indexing completed',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'success' => $successCount,
                     'failed'  => $failureCount,
                 ]
@@ -239,8 +247,10 @@ class ElasticsearchDocumentIndexer
             ];
         } catch (Exception $e) {
             $this->logger->error(
-                '[ElasticsearchDocumentIndexer] Bulk indexing failed',
-                [
+                message: '[ElasticsearchDocumentIndexer] Bulk indexing failed',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -276,8 +286,10 @@ class ElasticsearchDocumentIndexer
 
             if ($success === true) {
                 $this->logger->info(
-                    '[ElasticsearchDocumentIndexer] Object deleted',
-                    [
+                    message: '[ElasticsearchDocumentIndexer] Object deleted',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'object_id' => $objectId,
                     ]
                 );
@@ -291,8 +303,10 @@ class ElasticsearchDocumentIndexer
             return $success;
         } catch (Exception $e) {
             $this->logger->error(
-                '[ElasticsearchDocumentIndexer] Failed to delete object',
-                [
+                message: '[ElasticsearchDocumentIndexer] Failed to delete object',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'object_id' => $objectId,
                     'error'     => $e->getMessage(),
                 ]
@@ -316,8 +330,10 @@ class ElasticsearchDocumentIndexer
             $this->indexManager->createIndex($index);
 
             $this->logger->info(
-                '[ElasticsearchDocumentIndexer] Index cleared',
-                [
+                message: '[ElasticsearchDocumentIndexer] Index cleared',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'index' => $index,
                 ]
             );
@@ -325,8 +341,10 @@ class ElasticsearchDocumentIndexer
             return true;
         } catch (Exception $e) {
             $this->logger->error(
-                '[ElasticsearchDocumentIndexer] Failed to clear index',
-                [
+                message: '[ElasticsearchDocumentIndexer] Failed to clear index',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );

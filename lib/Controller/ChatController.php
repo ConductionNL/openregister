@@ -306,6 +306,8 @@ class ChatController extends Controller
         $this->logger->info(
             message: '[ChatController] New conversation created',
             context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'uuid'    => $conversation->getUuid(),
                 'userId'  => $this->userId,
                 'agentId' => $agent->getId(),
@@ -412,10 +414,12 @@ class ChatController extends Controller
             }
 
             // Log request with settings.
-            $this->logger->info(
-                message: '[ChatController] Received message with settings',
-                context: [
-                    'views'       => count($params['selectedViews']),
+        $this->logger->info(
+            message: '[ChatController] Received message with settings',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
+                'views'       => count($params['selectedViews']),
                     'tools'       => count($params['selectedTools']),
                     'ragSettings' => $params['ragSettings'],
                 ]
@@ -452,10 +456,12 @@ class ChatController extends Controller
             }
 
             // Log error with trace.
-            $this->logger->error(
-                message: '[ChatController] Failed to send message',
-                context: [
-                    'error' => $e->getMessage(),
+        $this->logger->error(
+            message: '[ChatController] Failed to send message',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
+                'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]
             );
@@ -556,8 +562,10 @@ class ChatController extends Controller
             );
         } catch (Exception $e) {
             $this->logger->error(
-                '[ChatController] Failed to get history',
-                [
+                message: '[ChatController] Failed to get history',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]
@@ -619,10 +627,12 @@ class ChatController extends Controller
             // Soft delete conversation.
             $this->conversationMapper->softDelete($conversationId);
 
-            $this->logger->info(
-                message: '[ChatController] Conversation cleared (soft deleted)',
-                context: [
-                    'conversationId' => $conversationId,
+        $this->logger->info(
+            message: '[ChatController] Conversation cleared (soft deleted)',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
+                'conversationId' => $conversationId,
                     'userId'         => $this->userId,
                 ]
             );
@@ -636,8 +646,10 @@ class ChatController extends Controller
             );
         } catch (Exception $e) {
             $this->logger->error(
-                '[ChatController] Failed to clear history',
-                [
+                message: '[ChatController] Failed to clear history',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]
@@ -729,8 +741,10 @@ class ChatController extends Controller
                 $feedback = $this->feedbackMapper->update($existingFeedback);
 
                 $this->logger->info(
-                    '[ChatController] Message feedback updated',
-                    [
+                    message: '[ChatController] Message feedback updated',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'feedbackId' => $feedback->getId(),
                         'messageId'  => $messageId,
                         'type'       => $type,
@@ -751,8 +765,10 @@ class ChatController extends Controller
                 $feedback = $this->feedbackMapper->insert($feedback);
 
                 $this->logger->info(
-                    '[ChatController] Message feedback created',
-                    [
+                    message: '[ChatController] Message feedback created',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'feedbackId' => $feedback->getId(),
                         'messageId'  => $messageId,
                         'type'       => $type,
@@ -764,8 +780,10 @@ class ChatController extends Controller
             return new JSONResponse(data: $feedback->jsonSerialize(), statusCode: 200);
         } catch (Exception $e) {
             $this->logger->error(
-                '[ChatController] Failed to save feedback',
-                [
+                message: '[ChatController] Failed to save feedback',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'conversationUuid' => $conversationUuid ?? null,
                     'messageId'        => $messageId ?? null,
                     'error'            => $e->getMessage(),
@@ -828,8 +846,10 @@ class ChatController extends Controller
             );
         } catch (Exception $e) {
             $this->logger->error(
-                '[ChatController] Failed to get chat stats',
-                [
+                message: '[ChatController] Failed to get chat stats',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );

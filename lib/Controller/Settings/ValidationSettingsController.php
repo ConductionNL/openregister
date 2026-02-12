@@ -143,8 +143,10 @@ class ValidationSettingsController extends Controller
         } catch (Exception $e) {
             // Other errors.
             $this->logger->error(
-                '❌ MASS VALIDATION FAILED',
-                [
+                message: '[ValidationSettingsController] ❌ MASS VALIDATION FAILED',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]

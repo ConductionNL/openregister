@@ -92,7 +92,7 @@ class ObjectHandler implements TextExtractionHandlerInterface
      */
     public function extractText(int $sourceId, array $sourceMeta, bool $force=false): array
     {
-        $this->logger->info(message: '[ObjectHandler] Extracting text from object', context: ['objectId' => $sourceId]);
+        $this->logger->info(message: '[ObjectHandler] Extracting text from object', context: ['file' => __FILE__, 'line' => __LINE__, 'objectId' => $sourceId]);
 
         // Get object entity.
         $object = $this->objectMapper->find($sourceId);
@@ -117,8 +117,10 @@ class ObjectHandler implements TextExtractionHandlerInterface
             }
         } catch (Exception $e) {
             $this->logger->debug(
-                '[ObjectHandler] Could not load schema',
-                [
+                message: '[ObjectHandler] Could not load schema',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'object_id' => $sourceId,
                     'schema_id' => $object->getSchema(),
                 ]
@@ -136,8 +138,10 @@ class ObjectHandler implements TextExtractionHandlerInterface
             }
         } catch (Exception $e) {
             $this->logger->debug(
-                '[ObjectHandler] Could not load register',
-                [
+                message: '[ObjectHandler] Could not load register',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'object_id'   => $sourceId,
                     'register_id' => $object->getRegister(),
                 ]

@@ -183,7 +183,7 @@ class ViewService
             return $this->viewMapper->insert($view);
         } catch (Exception $e) {
             // Log error for debugging and monitoring.
-            $this->logger->error(message: 'Error creating view: '.$e->getMessage());
+            $this->logger->error(message: '[ViewService] Error creating view: '.$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
             throw $e;
         }//end try
     }//end create()
@@ -235,7 +235,7 @@ class ViewService
 
             return $this->viewMapper->update($view);
         } catch (Exception $e) {
-            $this->logger->error(message: 'Error updating view: '.$e->getMessage());
+            $this->logger->error(message: '[ViewService] Error updating view: '.$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
             throw $e;
         }//end try
     }//end update()
@@ -256,7 +256,7 @@ class ViewService
             $view = $this->find(id: $id, owner: $owner);
             $this->viewMapper->delete($view);
         } catch (Exception $e) {
-            $this->logger->error(message: 'Error deleting view: '.$e->getMessage());
+            $this->logger->error(message: '[ViewService] Error deleting view: '.$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
             throw $e;
         }
     }//end delete()

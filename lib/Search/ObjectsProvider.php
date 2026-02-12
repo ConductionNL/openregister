@@ -287,8 +287,10 @@ class ObjectsProvider implements IFilteringProvider
         $searchQuery['_offset'] = 0;
 
         $this->logger->debug(
-            'OpenRegister search requested',
-            [
+            message: '[ObjectsProvider] OpenRegister search requested',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'search_query' => $searchQuery,
                 'has_search'   => empty($search) === false,
             ]
@@ -322,8 +324,10 @@ class ObjectsProvider implements IFilteringProvider
         }//end if
 
         $this->logger->debug(
-            'OpenRegister search completed',
-            [
+            message: '[ObjectsProvider] OpenRegister search completed',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'results_count' => count($searchResultEntries),
                 'total_results' => $searchResults['total'] ?? 0,
             ]

@@ -141,8 +141,12 @@ class ApplicationService
     {
         // Log creation attempt with provided data.
         $this->logger->info(
-            message: 'Creating new application',
-            context: ['data' => $data]
+            message: '[ApplicationService] Creating new application',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
+                'data' => $data
+            ]
         );
 
         // Create application entity from data array using mapper.
@@ -150,8 +154,12 @@ class ApplicationService
 
         // Log successful creation with assigned ID.
         $this->logger->info(
-            message: 'Application created successfully',
-            context: ['id' => $application->getId()]
+            message: '[ApplicationService] Application created successfully',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
+                'id' => $application->getId()
+            ]
         );
 
         return $application;
@@ -177,8 +185,13 @@ class ApplicationService
     {
         // Log update attempt with ID and data.
         $this->logger->info(
-            message: 'Updating application',
-            context: ['id' => $id, 'data' => $data]
+            message: '[ApplicationService] Updating application',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
+                'id' => $id,
+                'data' => $data
+            ]
         );
 
         // Update application entity using mapper.
@@ -186,8 +199,12 @@ class ApplicationService
 
         // Log successful update.
         $this->logger->info(
-            message: 'Application updated successfully',
-            context: ['id' => $id]
+            message: '[ApplicationService] Application updated successfully',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
+                'id' => $id
+            ]
         );
 
         return $application;
@@ -211,8 +228,12 @@ class ApplicationService
     {
         // Log deletion attempt.
         $this->logger->info(
-            message: 'Deleting application',
-            context: ['id' => $id]
+            message: '[ApplicationService] Deleting application',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
+                'id' => $id
+            ]
         );
 
         // Find application to ensure it exists (throws exception if not found).
@@ -223,8 +244,12 @@ class ApplicationService
 
         // Log successful deletion.
         $this->logger->info(
-            message: 'Application deleted successfully',
-            context: ['id' => $id]
+            message: '[ApplicationService] Application deleted successfully',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
+                'id' => $id
+            ]
         );
     }//end delete()
 

@@ -821,7 +821,10 @@ class ConfigurationSettingsHandler
             $settings = $this->getOrganisationSettingsOnly();
             return $settings['organisation']['default_organisation'] ?? null;
         } catch (Exception $e) {
-            $this->logger->warning('Failed to get default organisation UUID: '.$e->getMessage());
+            $this->logger->warning(
+                message: '[ConfigurationSettingsHandler] Failed to get default organisation UUID: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return null;
         }
     }//end getDefaultOrganisationUuid()
@@ -837,7 +840,10 @@ class ConfigurationSettingsHandler
             $multitenancySettings = $this->getMultitenancySettingsOnly();
             return $multitenancySettings['multitenancy']['defaultUserTenant'] ?? null;
         } catch (Exception $e) {
-            $this->logger->warning('Failed to get tenant ID: '.$e->getMessage());
+            $this->logger->warning(
+                message: '[ConfigurationSettingsHandler] Failed to get tenant ID: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return null;
         }
     }//end getTenantId()
@@ -866,7 +872,10 @@ class ConfigurationSettingsHandler
             $settings['organisation']['default_organisation'] = $uuid;
             $this->updateOrganisationSettingsOnly($settings['organisation']);
         } catch (Exception $e) {
-            $this->logger->error('Failed to set default organisation UUID: '.$e->getMessage());
+            $this->logger->error(
+                message: '[ConfigurationSettingsHandler] Failed to set default organisation UUID: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
         }
     }//end setDefaultOrganisationUuid()
 

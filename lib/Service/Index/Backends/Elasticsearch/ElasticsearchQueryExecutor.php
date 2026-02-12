@@ -85,8 +85,10 @@ class ElasticsearchQueryExecutor
             $result = $this->httpClient->post($url, $esQuery);
 
             $this->logger->debug(
-                '[ElasticsearchQueryExecutor] Search executed',
-                [
+                message: '[ElasticsearchQueryExecutor] Search executed',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'index' => $index,
                     'hits'  => $result['hits']['total']['value'] ?? 0,
                 ]
@@ -95,8 +97,10 @@ class ElasticsearchQueryExecutor
             return $result;
         } catch (Exception $e) {
             $this->logger->error(
-                '[ElasticsearchQueryExecutor] Search failed',
-                [
+                message: '[ElasticsearchQueryExecutor] Search failed',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -172,8 +176,10 @@ class ElasticsearchQueryExecutor
             return $result['count'] ?? 0;
         } catch (Exception $e) {
             $this->logger->error(
-                '[ElasticsearchQueryExecutor] Failed to get document count',
-                [
+                message: '[ElasticsearchQueryExecutor] Failed to get document count',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );

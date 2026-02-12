@@ -127,8 +127,10 @@ class WarmupHandler
         array $schemaIds=[]
     ): array {
         $this->logger->info(
-            '[WarmupHandler] Starting index warmup',
-            [
+            message: '[WarmupHandler] Starting index warmup',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'max_objects' => $maxObjects,
                 'mode'        => $mode,
                 'batch_size'  => $batchSize,
@@ -147,8 +149,10 @@ class WarmupHandler
             );
 
             $this->logger->info(
-                '[WarmupHandler] Index warmup completed',
-                [
+                message: '[WarmupHandler] Index warmup completed',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'success'         => $result['success'] ?? false,
                     'objects_indexed' => $result['operations']['objects_indexed'] ?? 0,
                 ]
@@ -157,8 +161,10 @@ class WarmupHandler
             return $result;
         } catch (Exception $e) {
             $this->logger->error(
-                '[WarmupHandler] Index warmup failed',
-                [
+                message: '[WarmupHandler] Index warmup failed',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
