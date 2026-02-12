@@ -96,8 +96,10 @@ class SolrNightlyWarmupJob extends TimedJob
         $logger = \OC::$server->get(LoggerInterface::class);
 
         $logger->info(
-            message: '🌙 SOLR Nightly Warmup Job Started',
+            message: '[SolrNightlyWarmupJob] 🌙 SOLR Nightly Warmup Job Started',
             context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'job_id'         => $this->getId(),
                 'scheduled_time' => date('Y-m-d H:i:s'),
                 'timezone'       => date_default_timezone_get(),
@@ -132,7 +134,7 @@ class SolrNightlyWarmupJob extends TimedJob
                 logger: $logger
             );
             if ($isSolrAvailable === false) {
-                $logger->info(message: 'SOLR Nightly Warmup Job skipped - SOLR not enabled or available');
+                $logger->info(message: '[SolrNightlyWarmupJob] SOLR Nightly Warmup Job skipped - SOLR not enabled or available', context: ['file' => __FILE__, 'line' => __LINE__]);
                 return;
             }
 
@@ -143,8 +145,10 @@ class SolrNightlyWarmupJob extends TimedJob
             $schemas = $schemaMapper->findAll();
 
             $logger->info(
-                'Starting nightly SOLR index warmup',
+                message: '[SolrNightlyWarmupJob] Starting nightly SOLR index warmup',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'schemas_found'  => count($schemas),
                     'max_objects'    => $config['maxObjects'],
                     'mode'           => $config['mode'],
@@ -164,8 +168,10 @@ class SolrNightlyWarmupJob extends TimedJob
 
             if ($result['success'] ?? false) {
                 $logger->info(
-                    '✅ SOLR Nightly Warmup Job Completed Successfully',
-                    [
+                    message: '[SolrNightlyWarmupJob] ✅ SOLR Nightly Warmup Job Completed Successfully',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'job_id'                 => $this->getId(),
                         'execution_time_seconds' => round($executionTime, 2),
                         'objects_indexed'        => $result['operations']['objects_indexed'] ?? 0,
@@ -190,8 +196,10 @@ class SolrNightlyWarmupJob extends TimedJob
 
             if (($result['success'] ?? false) === false) {
                 $logger->error(
-                    '❌ SOLR Nightly Warmup Job Failed',
-                    [
+                    message: '[SolrNightlyWarmupJob] ❌ SOLR Nightly Warmup Job Failed',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'job_id'                 => $this->getId(),
                         'execution_time_seconds' => round($executionTime, 2),
                         'error'                  => $result['error'] ?? 'Unknown error',
@@ -203,8 +211,10 @@ class SolrNightlyWarmupJob extends TimedJob
             $executionTime = microtime(true) - $startTime;
 
             $logger->error(
-                message: '🚨 SOLR Nightly Warmup Job Exception',
+                message: '[SolrNightlyWarmupJob] 🚨 SOLR Nightly Warmup Job Exception',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'job_id'                 => $this->getId(),
                     'execution_time_seconds' => round($executionTime, 2),
                     'exception'              => $e->getMessage(),
@@ -315,13 +325,13 @@ class SolrNightlyWarmupJob extends TimedJob
         // Check if SOLR is enabled in settings.
         $solrSettings = $settingsService->getSolrSettings();
         if (($solrSettings['enabled'] ?? false) === false) {
-            $logger->debug(message: 'SOLR Nightly Warmup Job skipped - SOLR not enabled in settings');
+            $logger->debug(message: '[SolrNightlyWarmupJob] SOLR Nightly Warmup Job skipped - SOLR not enabled in settings', context: ['file' => __FILE__, 'line' => __LINE__]);
             return false;
         }
 
         // Check if SOLR service is available.
         if ($solrService->isAvailable() === false) {
-            $logger->debug(message: 'SOLR Nightly Warmup Job skipped - SOLR service not available');
+            $logger->debug(message: '[SolrNightlyWarmupJob] SOLR Nightly Warmup Job skipped - SOLR service not available', context: ['file' => __FILE__, 'line' => __LINE__]);
             return false;
         }
 
@@ -390,8 +400,10 @@ class SolrNightlyWarmupJob extends TimedJob
     private function logPerformanceStats(array $result, float $executionTime, LoggerInterface $logger): void
     {
         $logger->info(
-            message: 'SOLR Nightly Warmup Performance Stats',
+            message: '[SolrNightlyWarmupJob] SOLR Nightly Warmup Performance Stats',
             context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'execution_time_seconds' => round($executionTime, 2),
                 'objects_per_second'     => $this->calculateObjectsPerSecond(result: $result, executionTime: $executionTime),
                 'efficiency_percentage'  => $this->calculateWarmupEfficiency($result),

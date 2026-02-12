@@ -196,8 +196,10 @@ class MappingsController extends Controller
             return new JSONResponse(data: $mapping->jsonSerialize(), statusCode: 201);
         } catch (Exception $e) {
             $this->logger->error(
-                message: 'Mapping creation failed',
+                message: '[MappingsController] Mapping creation failed',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error_message' => $e->getMessage(),
                     'error_code'    => $e->getCode(),
                 ]
@@ -246,8 +248,10 @@ class MappingsController extends Controller
             return new JSONResponse(data: ['error' => 'Mapping not found'], statusCode: 404);
         } catch (Exception $e) {
             $this->logger->error(
-                message: 'Mapping update failed',
+                message: '[MappingsController] Mapping update failed',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'mapping_id'    => $id,
                     'error_message' => $e->getMessage(),
                     'error_code'    => $e->getCode(),

@@ -106,7 +106,7 @@ class SchemaService
      */
     public function exploreSchemaProperties(int $schemaId): array
     {
-        $this->logger->info(message: 'Starting schema exploration for schema ID: '.$schemaId);
+        $this->logger->info(message: '[SchemaService] Starting schema exploration for schema ID: '.$schemaId, context: ['file' => __FILE__, 'line' => __LINE__]);
 
         // Get the schema to validate it exists.
         try {
@@ -118,7 +118,7 @@ class SchemaService
         // Get all objects for this schema.
         $objects = $this->objectEntityMapper->findBySchema($schemaId);
 
-        $this->logger->info(message: 'Found '.count($objects).' objects to analyze');
+        $this->logger->info(message: '[SchemaService] Found '.count($objects).' objects to analyze', context: ['file' => __FILE__, 'line' => __LINE__]);
 
         if (empty($objects) === true) {
             return [
@@ -1733,7 +1733,7 @@ class SchemaService
      */
     public function updateSchemaFromExploration(int $schemaId, array $propertyUpdates): Schema
     {
-        $this->logger->info(message: 'Updating schema '.$schemaId.' with '.count($propertyUpdates).' property updates');
+        $this->logger->info(message: '[SchemaService] Updating schema '.$schemaId.' with '.count($propertyUpdates).' property updates', context: ['file' => __FILE__, 'line' => __LINE__]);
 
         try {
             // Get existing schema.
@@ -1754,11 +1754,11 @@ class SchemaService
             // Save updated schema.
             $updatedSchema = $this->schemaMapper->update($schema);
 
-            $this->logger->info(message: 'Schema '.$schemaId.' successfully updated with exploration results');
+            $this->logger->info(message: '[SchemaService] Schema '.$schemaId.' successfully updated with exploration results', context: ['file' => __FILE__, 'line' => __LINE__]);
 
             return $updatedSchema;
         } catch (\Exception $e) {
-            $this->logger->error(message: 'Failed to update schema '.$schemaId.': '.$e->getMessage());
+            $this->logger->error(message: '[SchemaService] Failed to update schema '.$schemaId.': '.$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
             throw new Exception('Failed to update schema properties: '.$e->getMessage());
         }//end try
     }//end updateSchemaFromExploration()

@@ -120,8 +120,10 @@ class SetupHandler
         $this->solrConfig = $solrService->getSolrConfig();
 
         $this->logger->info(
-            'SOLR Setup: Using authenticated HTTP client from IndexService',
-            [
+            message: '[SetupHandler] SOLR Setup: Using authenticated HTTP client from IndexService',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'has_credentials' => empty($this->solrConfig['username']) === false
                     && empty($this->solrConfig['password']) === false,
                 'username'        => $this->solrConfig['username'] ?? 'not_set',
@@ -175,7 +177,10 @@ class SetupHandler
             $this->setupProgress['steps'][] = $stepData;
         }
 
-        $this->logger->info("Setup Step {$stepNumber}/{$stepName}: {$status} - {$description}", $details);
+        $this->logger->info(
+            message: "[SetupHandler] Setup Step {$stepNumber}/{$stepName}: {$status} - {$description}",
+            context: array_merge(['file' => __FILE__, 'line' => __LINE__], $details)
+        );
     }//end trackStep()
 
     /**
@@ -296,8 +301,10 @@ class SetupHandler
         // If using _default, return it as-is (no tenant suffix needed).
         if ($configSetName === '_default') {
             $this->logger->info(
-                'Using _default ConfigSet for maximum compatibility',
-                [
+                message: '[SetupHandler] Using _default ConfigSet for maximum compatibility',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'configSet' => $configSetName,
                     'tenant_id' => $this->getTenantId(),
                     'reason'    => 'Proven stable configuration with dynamic field support',
@@ -309,8 +316,10 @@ class SetupHandler
         // For custom configSets, append tenant ID to make it tenant-specific.
         $tenantSpecificName = $configSetName.'_'.$this->getTenantId();
         $this->logger->info(
-            'Using custom tenant-specific ConfigSet',
-            [
+            message: '[SetupHandler] Using custom tenant-specific ConfigSet',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'base_configSet'   => $configSetName,
                 'tenant_configSet' => $tenantSpecificName,
                 'tenant_id'        => $this->getTenantId(),
@@ -341,7 +350,10 @@ class SetupHandler
      */
     public function setupSolr(): bool
     {
-        $this->logger->info('Starting SOLR setup for OpenRegister multi-tenant architecture (SolrCloud mode)');
+        $this->logger->info(
+            message: '[SetupHandler] Starting SOLR setup for OpenRegister multi-tenant architecture (SolrCloud mode)',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
 
         // Initialize setup progress tracking.
         $this->setupProgress = [
@@ -548,8 +560,10 @@ class SetupHandler
 
                         // Note: Propagation failure is not critical, so we continue but log the issue.
                     $this->logger->warning(
-                        'ConfigSet propagation failed but continuing with setup',
-                        [
+                        message: '[SetupHandler] ConfigSet propagation failed but continuing with setup',
+                        context: [
+                            'file' => __FILE__,
+                            'line' => __LINE__,
                             'configSet' => $tenantConfigSetName,
                             'error'     => $propagationResult['error'] ?? 'Unknown error',
                         ]
@@ -592,8 +606,10 @@ class SetupHandler
 
                     // Note: Propagation exception is not critical, so we continue but log the issue.
                 $this->logger->warning(
-                    'Exception during configSet propagation but continuing with setup',
-                    [
+                    message: '[SetupHandler] Exception during configSet propagation but continuing with setup',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'configSet' => $tenantConfigSetName,
                         'error'     => $e->getMessage(),
                     ]
@@ -819,8 +835,10 @@ class SetupHandler
             $solrPort   = $this->solrConfig['port'] ?? '8983';
             $adminUiUrl = 'http://'.$solrHost.':'.$solrPort.'/solr/';
             $this->logger->info(
-                '✅ SOLR setup completed successfully (SolrCloud mode)',
-                [
+                message: '[SetupHandler] ✅ SOLR setup completed successfully (SolrCloud mode)',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'tenant_configSet_created'  => $tenantConfigSetName,
                     'tenant_collection_created' => $tenantCollectionName,
                     'schema_fields_configured'  => true,
@@ -839,8 +857,10 @@ class SetupHandler
             $this->setupProgress['success']      = false;
 
             $this->logger->error(
-                'SOLR setup failed',
-                [
+                message: '[SetupHandler] SOLR setup failed',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error'           => $e->getMessage(),
                     'completed_steps' => $this->setupProgress['completed_steps'],
                     'total_steps'     => $this->setupProgress['total_steps'],
@@ -882,8 +902,10 @@ class SetupHandler
 
             if ($isConnected !== true) {
                 $this->logger->error(
-                    'SOLR connectivity verification failed using IndexService',
-                    [
+                    message: '[SetupHandler] SOLR connectivity verification failed using IndexService',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'test_message' => $connectionTest['message'] ?? 'Connection test failed',
                         'components'   => $connectionTest['components'] ?? [],
                         'details'      => $connectionTest['details'] ?? [],
@@ -909,8 +931,10 @@ class SetupHandler
             }//end if
 
             $this->logger->info(
-                'SOLR connectivity verified successfully using IndexService',
-                [
+                message: '[SetupHandler] SOLR connectivity verified successfully using IndexService',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'test_message'              => $connectionTest['message'] ?? 'Connection test passed',
                     'components_tested'         => array_keys($connectionTest['components'] ?? []),
                     'all_components_successful' => $this->allComponentsSuccessful($connectionTest['components'] ?? []),
@@ -919,12 +943,14 @@ class SetupHandler
             return true;
         } catch (\Exception $e) {
             $this->logger->error(
-                'SOLR connectivity verification failed - exception during IndexService test',
-                [
+                message: '[SetupHandler] SOLR connectivity verification failed - exception during IndexService test',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error'           => $e->getMessage(),
                     'exception_class' => get_class($e),
-                    'file'            => $e->getFile(),
-                    'line'            => $e->getLine(),
+                    'exception_file'  => $e->getFile(),
+                    'exception_line'  => $e->getLine(),
                 ]
             );
 
@@ -977,8 +1003,10 @@ class SetupHandler
         // Check if configSet already exists.
         if ($this->configSetExists($tenantConfigSetName) === true) {
             $this->logger->info(
-                'Tenant configSet already exists (skipping creation)',
-                [
+                message: '[SetupHandler] Tenant configSet already exists (skipping creation)',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'configSet' => $tenantConfigSetName,
                 ]
             );
@@ -991,8 +1019,10 @@ class SetupHandler
             // This handles cases where configSet exists but isn't fully propagated.
             $propagationResult = $this->forceConfigSetPropagation($tenantConfigSetName);
             $this->logger->info(
-                'ConfigSet propagation attempted for existing configSet',
-                [
+                message: '[SetupHandler] ConfigSet propagation attempted for existing configSet',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'configSet' => $tenantConfigSetName,
                     'result'    => $propagationResult,
                 ]
@@ -1003,8 +1033,10 @@ class SetupHandler
 
         // Upload configSet from ZIP file (bypasses trusted configSet authentication).
         $this->logger->info(
-            'Uploading tenant configSet from ZIP file',
-            [
+            message: '[SetupHandler] Uploading tenant configSet from ZIP file',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'configSet' => $tenantConfigSetName,
                 'method'    => 'ZIP upload (avoids SolrCloud authentication issues)',
             ]
@@ -1024,8 +1056,10 @@ class SetupHandler
         $url = $this->buildSolrUrl('/admin/configs?action=LIST&wt=json');
 
         $this->logger->debug(
-            'Checking if configSet exists',
-            [
+            message: '[SetupHandler] Checking if configSet exists',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'configSet' => $configSetName,
                 'url'       => $url,
             ]
@@ -1043,8 +1077,10 @@ class SetupHandler
 
             if ($response->getStatusCode() !== 200) {
                 $this->logger->warning(
-                    'Failed to check configSet existence - HTTP error',
-                    [
+                    message: '[SetupHandler] Failed to check configSet existence - HTTP error',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'configSet'     => $configSetName,
                         'url'           => $url,
                         'status_code'   => $response->getStatusCode(),
@@ -1058,8 +1094,10 @@ class SetupHandler
             $data = json_decode((string) $response->getBody(), true);
         } catch (\Exception $e) {
             $this->logger->warning(
-                'Failed to check configSet existence - HTTP request failed',
-                [
+                message: '[SetupHandler] Failed to check configSet existence - HTTP request failed',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'configSet'      => $configSetName,
                     'url'            => $url,
                     'error'          => $e->getMessage(),
@@ -1072,8 +1110,10 @@ class SetupHandler
 
         if ($data === null) {
             $this->logger->warning(
-                'Failed to check configSet existence - Invalid JSON response',
-                [
+                message: '[SetupHandler] Failed to check configSet existence - Invalid JSON response',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'configSet'  => $configSetName,
                     'url'        => $url,
                     'json_error' => json_last_error_msg(),
@@ -1087,8 +1127,10 @@ class SetupHandler
         $exists     = in_array($configSetName, $configSets);
 
         $this->logger->debug(
-            'ConfigSet existence check completed',
-            [
+            message: '[SetupHandler] ConfigSet existence check completed',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'configSet'            => $configSetName,
                 'exists'               => $exists,
                 'available_configSets' => $configSets,
@@ -1116,8 +1158,10 @@ class SetupHandler
         // Check if tenant collection already exists.
         if ($this->solrService->collectionExists($tenantCollectionName) === true) {
             $this->logger->info(
-                'Tenant collection already exists (skipping creation)',
-                [
+                message: '[SetupHandler] Tenant collection already exists (skipping creation)',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'collection' => $tenantCollectionName,
                 ]
             );
@@ -1133,8 +1177,10 @@ class SetupHandler
         // Create tenant collection using the tenant-specific configSet.
         $tenantConfigSetName = $this->getTenantConfigSetName();
         $this->logger->info(
-            'Creating tenant collection',
-            [
+            message: '[SetupHandler] Creating tenant collection',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'collection' => $tenantCollectionName,
                 'configSet'  => $tenantConfigSetName,
             ]
@@ -1196,7 +1242,10 @@ class SetupHandler
                 ],
             ];
 
-            $this->logger->error('Guzzle HTTP error during collection creation', $this->lastErrorDetails);
+            $this->logger->error(
+                message: '[SetupHandler] Guzzle HTTP error during collection creation',
+                context: array_merge(['file' => __FILE__, 'line' => __LINE__], $this->lastErrorDetails ?? [])
+            );
             return false;
         } catch (\Exception $e) {
             // Capture SOLR API errors (400 responses, validation errors, etc.).
@@ -1216,8 +1265,10 @@ class SetupHandler
 
             // Log the collection creation failure with full details.
             $this->logger->error(
-                'Collection creation failed',
-                [
+                message: '[SetupHandler] Collection creation failed',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'collection'     => $tenantCollectionName,
                     'configSet'      => $tenantConfigSetName,
                     'original_error' => $e->getMessage(),
@@ -1247,7 +1298,10 @@ class SetupHandler
                 ],
             ];
 
-            $this->logger->error('SOLR collection creation exception', $this->lastErrorDetails);
+            $this->logger->error(
+                message: '[SetupHandler] SOLR collection creation exception',
+                context: array_merge(['file' => __FILE__, 'line' => __LINE__], $this->lastErrorDetails ?? [])
+            );
             return false;
         }//end try
     }//end ensureTenantCollectionExists()
@@ -1291,8 +1345,10 @@ class SetupHandler
                 $retryDetails['attempt_timestamps'][] = date('Y-m-d H:i:s');
 
                 $this->logger->info(
-                    'Attempting collection creation',
-                    [
+                    message: '[SetupHandler] Attempting collection creation',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'collection'      => $collectionName,
                         'configSet'       => $configSetName,
                         'attempt'         => $attempt,
@@ -1311,8 +1367,10 @@ class SetupHandler
                 if ($success === true) {
                     $totalElapsed = time() - $startTime;
                     $this->logger->info(
-                        'Collection created successfully',
-                        [
+                        message: '[SetupHandler] Collection created successfully',
+                        context: [
+                            'file' => __FILE__,
+                            'line' => __LINE__,
                             'collection'            => $collectionName,
                             'configSet'             => $configSetName,
                             'attempt'               => $attempt,
@@ -1338,8 +1396,10 @@ class SetupHandler
 
                             // Log the actual SOLR error for debugging.
                             $this->logger->error(
-                                'SOLR API returned error response',
-                                [
+                                message: '[SetupHandler] SOLR API returned error response',
+                                context: [
+                                    'file' => __FILE__,
+                                    'line' => __LINE__,
                                     'collection'    => $collectionName,
                                     'configSet'     => $configSetName,
                                     'attempt'       => $attempt,
@@ -1356,8 +1416,10 @@ class SetupHandler
                 }//end if
 
                 $this->logger->warning(
-                    'Collection creation attempt failed',
-                    [
+                    message: '[SetupHandler] Collection creation attempt failed',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'collection'                  => $collectionName,
                         'configSet'                   => $configSetName,
                         'attempt'                     => $attempt,
@@ -1391,8 +1453,10 @@ class SetupHandler
                 $retryDetails['total_delay_seconds'] += $delaySeconds;
 
                 $this->logger->info(
-                    'Retrying collection creation after delay',
-                    [
+                    message: '[SetupHandler] Retrying collection creation after delay',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'collection'               => $collectionName,
                         'delaySeconds'             => $delaySeconds,
                         'nextAttempt'              => $attempt + 1,
@@ -1488,8 +1552,10 @@ class SetupHandler
     private function forceConfigSetPropagation(string $configSetName): array
     {
         $this->logger->info(
-            'Attempting to force configSet propagation',
-            [
+            message: '[SetupHandler] Attempting to force configSet propagation',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'configSet' => $configSetName,
             ]
         );
@@ -1520,8 +1586,10 @@ class SetupHandler
                 $successCount++;
                 $listOperation['status'] = 'success';
                 $this->logger->debug(
-                    'ConfigSet list refresh successful',
-                    [
+                    message: '[SetupHandler] ConfigSet list refresh successful',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'configSet'     => $configSetName,
                         'method'        => 'LIST',
                         'response_size' => $listOperation['response_size'],
@@ -1531,8 +1599,10 @@ class SetupHandler
         } catch (\Exception $e) {
             $listOperation['error'] = $e->getMessage();
             $this->logger->debug(
-                'ConfigSet list refresh failed',
-                [
+                message: '[SetupHandler] ConfigSet list refresh failed',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'configSet' => $configSetName,
                     'method'    => 'LIST',
                     'error'     => $e->getMessage(),
@@ -1565,8 +1635,10 @@ class SetupHandler
                 $successCount++;
                 $clusterOperation['status'] = 'success';
                 $this->logger->debug(
-                    'Cluster status refresh successful',
-                    [
+                    message: '[SetupHandler] Cluster status refresh successful',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'configSet'     => $configSetName,
                         'method'        => 'CLUSTERSTATUS',
                         'response_size' => $clusterOperation['response_size'],
@@ -1576,8 +1648,10 @@ class SetupHandler
         } catch (\Exception $e) {
             $clusterOperation['error'] = $e->getMessage();
             $this->logger->debug(
-                'Cluster status refresh failed',
-                [
+                message: '[SetupHandler] Cluster status refresh failed',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'configSet' => $configSetName,
                     'method'    => 'CLUSTERSTATUS',
                     'error'     => $e->getMessage(),
@@ -1588,8 +1662,10 @@ class SetupHandler
         $operationResults['cluster_status_sync'] = $clusterOperation;
 
         $this->logger->info(
-            'ConfigSet propagation force completed',
-            [
+            message: '[SetupHandler] ConfigSet propagation force completed',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'configSet'          => $configSetName,
                 'successful_methods' => $successCount,
                 'total_methods'      => 2,
@@ -1653,8 +1729,10 @@ class SetupHandler
 
         if (file_exists($zipPath) === false) {
             $this->logger->error(
-                'ConfigSet ZIP file not found',
-                [
+                message: '[SetupHandler] ConfigSet ZIP file not found',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'configSet' => $configSetName,
                     'zipPath'   => $zipPath,
                 ]
@@ -1683,8 +1761,10 @@ class SetupHandler
         );
 
         $this->logger->info(
-            'Uploading SOLR configSet from ZIP file',
-            [
+            message: '[SetupHandler] Uploading SOLR configSet from ZIP file',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'configSet' => $configSetName,
                 'url'       => $url,
                 'zipPath'   => $zipPath,
@@ -1697,8 +1777,10 @@ class SetupHandler
             $zipContents = file_get_contents($zipPath);
             if ($zipContents === false) {
                 $this->logger->error(
-                    'Failed to read configSet ZIP file',
-                    [
+                    message: '[SetupHandler] Failed to read configSet ZIP file',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'configSet' => $configSetName,
                         'zipPath'   => $zipPath,
                     ]
@@ -1728,8 +1810,10 @@ class SetupHandler
             if ($response->getStatusCode() !== 200) {
                 $responseBody = (string) $response->getBody();
                 $this->logger->error(
-                    'Failed to upload configSet - HTTP error',
-                    [
+                    message: '[SetupHandler] Failed to upload configSet - HTTP error',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'configSet'     => $configSetName,
                         'url'           => $url,
                         'status_code'   => $response->getStatusCode(),
@@ -1753,8 +1837,10 @@ class SetupHandler
 
             if ($data === null) {
                 $this->logger->error(
-                    'Failed to upload configSet - Invalid JSON response',
-                    [
+                    message: '[SetupHandler] Failed to upload configSet - Invalid JSON response',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'configSet'    => $configSetName,
                         'url'          => $url,
                         'raw_response' => (string) $response->getBody(),
@@ -1777,8 +1863,10 @@ class SetupHandler
             $status = $data['responseHeader']['status'] ?? -1;
             if ($status === 0) {
                 $this->logger->info(
-                    'ConfigSet uploaded successfully',
-                    [
+                    message: '[SetupHandler] ConfigSet uploaded successfully',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'configSet' => $configSetName,
                         'method'    => 'ZIP upload',
                     ]
@@ -1794,8 +1882,10 @@ class SetupHandler
                 // The likelihood of propagation delays when creating collections.
                 $propagationResult = $this->forceConfigSetPropagation($configSetName);
                 $this->logger->info(
-                    'ConfigSet propagation attempted after upload',
-                    [
+                    message: '[SetupHandler] ConfigSet propagation attempted after upload',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'configSet' => $configSetName,
                         'result'    => $propagationResult,
                     ]
@@ -1810,8 +1900,10 @@ class SetupHandler
             $errorDetails = $data['error']['metadata'] ?? [];
 
             $this->logger->error(
-                'Failed to upload configSet - SOLR API error',
-                [
+                message: '[SetupHandler] Failed to upload configSet - SOLR API error',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'configSet'          => $configSetName,
                     'url'                => $url,
                     'solr_status'        => $status,
@@ -1836,8 +1928,10 @@ class SetupHandler
             return false;
         } catch (\Exception $e) {
             $this->logger->error(
-                'Failed to upload configSet - HTTP request failed',
-                [
+                message: '[SetupHandler] Failed to upload configSet - HTTP request failed',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'configSet'      => $configSetName,
                     'url'            => $url,
                     'error'          => $e->getMessage(),
@@ -1867,14 +1961,19 @@ class SetupHandler
      */
     private function configureSchemaFields(): bool
     {
-        $this->logger->info('Configuring SOLR schema fields for ObjectEntity metadata');
+        $this->logger->info(
+            message: '[SetupHandler] Configuring SOLR schema fields for ObjectEntity metadata',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
 
         // Get all field definitions including self_* metadata fields.
         $fieldDefinitions = self::getObjectEntityFieldDefinitions();
 
         $this->logger->info(
-            'Schema field configuration',
-            [
+            message: '[SetupHandler] Schema field configuration',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'total_fields_to_configure' => count($fieldDefinitions),
                 'includes_metadata_fields'  => true,
                 'note'                      => 'All ObjectEntity fields including self_* metadata fields will be configured',
@@ -1904,7 +2003,10 @@ class SetupHandler
                 $fieldResults['fields_failed']++;
                 $fieldResults['failed_fields'][] = $fieldName;
                 $errorMsg = $result['error'] ?? 'Unknown error';
-                $this->logger->error('Failed to configure field', ['field' => $fieldName, 'error' => $errorMsg]);
+                $this->logger->error(
+                    message: '[SetupHandler] Failed to configure field',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'field' => $fieldName, 'error' => $errorMsg]
+                );
                 $success = false;
                 continue;
             }
@@ -1941,7 +2043,10 @@ class SetupHandler
         );
 
         if ($success === true) {
-            $this->logger->info('Schema field configuration completed successfully', $fieldResults);
+            $this->logger->info(
+                message: '[SetupHandler] Schema field configuration completed successfully',
+                context: array_merge(['file' => __FILE__, 'line' => __LINE__], $fieldResults)
+            );
         }
 
         return $success;
@@ -2384,8 +2489,10 @@ class SetupHandler
         $tenantConfigSetName = $this->getTenantConfigSetName();
         if ($this->configSetExists($tenantConfigSetName) === false) {
             $this->logger->error(
-                'Validation failed: tenant configSet missing',
-                [
+                message: '[SetupHandler] Validation failed: tenant configSet missing',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'configSet' => $tenantConfigSetName,
                 ]
             );
@@ -2395,8 +2502,10 @@ class SetupHandler
         // Check tenant collection exists.
         if ($this->solrService->collectionExists($tenantCollectionName) === false) {
             $this->logger->error(
-                'Validation failed: tenant collection missing',
-                [
+                message: '[SetupHandler] Validation failed: tenant collection missing',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'collection' => $tenantCollectionName,
                 ]
             );
@@ -2406,15 +2515,20 @@ class SetupHandler
         // Test tenant collection query functionality.
         if ($this->testCollectionQuery($tenantCollectionName) === false) {
             $this->logger->error(
-                'Validation failed: tenant collection query test failed',
-                [
+                message: '[SetupHandler] Validation failed: tenant collection query test failed',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'collection' => $tenantCollectionName,
                 ]
             );
             return false;
         }
 
-        $this->logger->info('SOLR setup validation passed (SolrCloud mode)');
+        $this->logger->info(
+            message: '[SetupHandler] SOLR setup validation passed (SolrCloud mode)',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
         return true;
     }//end validateSetup()
 
@@ -2439,8 +2553,10 @@ class SetupHandler
             $data     = json_decode((string) $response->getBody(), true);
         } catch (\Exception $e) {
             $this->logger->warning(
-                'Failed to test collection query',
-                [
+                message: '[SetupHandler] Failed to test collection query',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'collection' => $collectionName,
                     'error'      => $e->getMessage(),
                     'url'        => $url,

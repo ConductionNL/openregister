@@ -108,12 +108,18 @@ class ConfigurationCheckJob extends TimedJob
         if ($interval === 0) {
             $this->setInterval(86400 * 365);
             // 1 year.
-            $this->logger->info('Configuration check job is disabled (interval set to 0)');
+            $this->logger->info(
+                message: '[ConfigurationCheckJob] Configuration check job is disabled (interval set to 0)',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return;
         }
 
         $this->setInterval($interval);
-        $this->logger->info("Configuration check job interval set to {$interval} seconds");
+        $this->logger->info(
+            message: "[ConfigurationCheckJob] Configuration check job interval set to {$interval} seconds",
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
     }//end __construct()
 
     /**
@@ -130,7 +136,10 @@ class ConfigurationCheckJob extends TimedJob
      */
     protected function run($argument): void
     {
-        $this->logger->info('Starting configuration check job');
+        $this->logger->info(
+            message: '[ConfigurationCheckJob] Starting configuration check job',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
 
         // Check if the job is disabled.
         if ($this->isJobDisabled() === true) {
@@ -140,7 +149,10 @@ class ConfigurationCheckJob extends TimedJob
         try {
             // Get all configurations.
             $configurations = $this->configurationMapper->findAll();
-            $this->logger->info('Found '.count($configurations).' configurations to check');
+            $this->logger->info(
+                message: '[ConfigurationCheckJob] Found '.count($configurations).' configurations to check',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
 
             $stats = ['checked' => 0, 'updated' => 0, 'failed' => 0];
 
@@ -152,10 +164,14 @@ class ConfigurationCheckJob extends TimedJob
             $updated = $stats['updated'];
             $failed  = $stats['failed'];
             $this->logger->info(
-                "Configuration check job completed: {$checked} checked, {$updated} updated, {$failed} failed"
+                message: "[ConfigurationCheckJob] Configuration check job completed: {$checked} checked, {$updated} updated, {$failed} failed",
+                context: ['file' => __FILE__, 'line' => __LINE__]
             );
         } catch (Exception $e) {
-            $this->logger->error('Configuration check job failed: '.$e->getMessage());
+            $this->logger->error(
+                message: '[ConfigurationCheckJob] Configuration check job failed: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
         }//end try
     }//end run()
 
@@ -168,7 +184,10 @@ class ConfigurationCheckJob extends TimedJob
     {
         $interval = (int) $this->appConfig->getValueString('openregister', 'configuration_check_interval', '3600');
         if ($interval === 0) {
-            $this->logger->info('Configuration check job is disabled, skipping');
+            $this->logger->info(
+                message: '[ConfigurationCheckJob] Configuration check job is disabled, skipping',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return true;
         }
 
@@ -191,26 +210,38 @@ class ConfigurationCheckJob extends TimedJob
                 return;
             }
 
-            $this->logger->info("Checking configuration: {$configuration->getTitle()} (ID: {$configuration->getId()})");
+            $this->logger->info(
+                message: "[ConfigurationCheckJob] Checking configuration: {$configuration->getTitle()} (ID: {$configuration->getId()})",
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
 
             // Check remote version.
             $remoteVersion = $this->configurationService->checkRemoteVersion(configuration: $configuration);
             $stats['checked']++;
 
             if ($remoteVersion === null) {
-                $this->logger->warning("Could not determine remote version for configuration {$configuration->getId()}");
+                $this->logger->warning(
+                    message: "[ConfigurationCheckJob] Could not determine remote version for configuration {$configuration->getId()}",
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
                 return;
             }
 
             // Check if update is available.
             if ($configuration->hasUpdateAvailable() === false) {
-                $this->logger->info("Configuration {$configuration->getTitle()} is up to date");
+                $this->logger->info(
+                    message: "[ConfigurationCheckJob] Configuration {$configuration->getTitle()} is up to date",
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
                 return;
             }
 
             $title        = $configuration->getTitle();
             $localVersion = $configuration->getLocalVersion();
-            $this->logger->info("Update available for {$title}: {$localVersion} → {$remoteVersion}");
+            $this->logger->info(
+                message: "[ConfigurationCheckJob] Update available for {$title}: {$localVersion} → {$remoteVersion}",
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
 
             // Handle the update based on auto-update setting.
             if ($configuration->getAutoUpdate() === true) {
@@ -221,7 +252,10 @@ class ConfigurationCheckJob extends TimedJob
             $this->sendUpdateNotification($configuration);
         } catch (Exception $e) {
             $stats['failed']++;
-            $this->logger->error("Error checking configuration {$configuration->getId()}: ".$e->getMessage());
+            $this->logger->error(
+                message: "[ConfigurationCheckJob] Error checking configuration {$configuration->getId()}: ".$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
         }//end try
     }//end checkSingleConfiguration()
 
@@ -235,7 +269,10 @@ class ConfigurationCheckJob extends TimedJob
      */
     private function handleAutoUpdate($configuration, array &$stats): void
     {
-        $this->logger->info("Auto-update enabled, importing updates for {$configuration->getTitle()}");
+        $this->logger->info(
+            message: "[ConfigurationCheckJob] Auto-update enabled, importing updates for {$configuration->getTitle()}",
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
 
         try {
             // Import all changes (no selection, import everything).
@@ -246,9 +283,15 @@ class ConfigurationCheckJob extends TimedJob
             );
 
             $stats['updated']++;
-            $this->logger->info("Successfully auto-updated configuration {$configuration->getTitle()}");
+            $this->logger->info(
+                message: "[ConfigurationCheckJob] Successfully auto-updated configuration {$configuration->getTitle()}",
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
         } catch (Exception $e) {
-            $this->logger->error("Failed to auto-update configuration {$configuration->getTitle()}: ".$e->getMessage());
+            $this->logger->error(
+                message: "[ConfigurationCheckJob] Failed to auto-update configuration {$configuration->getTitle()}: ".$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             $stats['failed']++;
         }
     }//end handleAutoUpdate()
@@ -262,15 +305,24 @@ class ConfigurationCheckJob extends TimedJob
      */
     private function sendUpdateNotification($configuration): void
     {
-        $this->logger->info("Auto-update disabled for {$configuration->getTitle()}, sending notification");
+        $this->logger->info(
+            message: "[ConfigurationCheckJob] Auto-update disabled for {$configuration->getTitle()}, sending notification",
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
 
         try {
             // Send notification to configured groups.
             $notificationCount = $this->notificationService->notifyConfigurationUpdate(configuration: $configuration);
-            $this->logger->info("Sent {$notificationCount} notifications for configuration {$configuration->getTitle()}");
+            $this->logger->info(
+                message: "[ConfigurationCheckJob] Sent {$notificationCount} notifications for configuration {$configuration->getTitle()}",
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
         } catch (Exception $e) {
             $title = $configuration->getTitle();
-            $this->logger->error("Failed to send notifications for configuration {$title}: ".$e->getMessage());
+            $this->logger->error(
+                message: "[ConfigurationCheckJob] Failed to send notifications for configuration {$title}: ".$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
         }
     }//end sendUpdateNotification()
 }//end class

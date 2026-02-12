@@ -128,7 +128,10 @@ class ChunkProcessingHandler
                 $registerMapper = \OC::$server->get(\OCA\OpenRegister\Db\RegisterMapper::class);
                 $register       = $registerMapper->find((int) $register, _multitenancy: false);
             } catch (\Exception $e) {
-                $this->logger->warning('[ChunkProcessingHandler] Failed to resolve register', ['id' => $register]);
+                $this->logger->warning(
+                    message: '[ChunkProcessingHandler] Failed to resolve register',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'id' => $register]
+                );
                 $register = null;
             }
         }
@@ -138,7 +141,10 @@ class ChunkProcessingHandler
                 $schemaMapper = \OC::$server->get(\OCA\OpenRegister\Db\SchemaMapper::class);
                 $schema       = $schemaMapper->find((int) $schema, _multitenancy: false);
             } catch (\Exception $e) {
-                $this->logger->warning('[ChunkProcessingHandler] Failed to resolve schema', ['id' => $schema]);
+                $this->logger->warning(
+                    message: '[ChunkProcessingHandler] Failed to resolve schema',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'id' => $schema]
+                );
                 $schema = null;
             }
         }
@@ -187,8 +193,10 @@ class ChunkProcessingHandler
 
         // REVOLUTIONARY APPROACH: Skip database lookup entirely and use single-call processing.
         $this->logger->info(
-            "[SaveObjects] Using single-call bulk processing (no pre-lookup needed)",
-            [
+            message: '[ChunkProcessingHandler] Using single-call bulk processing (no pre-lookup needed)',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'objects_to_process' => count($transformedObjects),
                 'approach'           => 'INSERT...ON DUPLICATE KEY UPDATE with database-computed classification',
             ]
@@ -235,7 +243,10 @@ class ChunkProcessingHandler
                 && isset($firstItem['object_status'])
             ) {
                 // NEW APPROACH: Complete objects with database-computed classification returned.
-                $this->logger->info("[SaveObjects] Processing complete objects with database-computed classification");
+                $this->logger->info(
+                    message: '[ChunkProcessingHandler] Processing complete objects with database-computed classification',
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
 
                 foreach ($bulkResult as $completeObject) {
                     $savedObjectIds[] = $completeObject['_uuid'];
@@ -273,8 +284,10 @@ class ChunkProcessingHandler
                         default:
                             // Fallback for unexpected status.
                             $this->logger->warning(
-                                "Unexpected object status: {$objectStatus}",
-                                [
+                                message: "[ChunkProcessingHandler] Unexpected object status: {$objectStatus}",
+                                context: [
+                                    'file' => __FILE__,
+                                    'line' => __LINE__,
                                     'uuid'          => $completeObject['uuid'],
                                     'object_status' => $objectStatus,
                                 ]
@@ -286,8 +299,10 @@ class ChunkProcessingHandler
                 }//end foreach
 
                 $this->logger->info(
-                    "[SaveObjects] Database-computed classification completed",
-                    [
+                    message: '[ChunkProcessingHandler] Database-computed classification completed',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'total_processed'       => count($bulkResult),
                         'created_objects'       => count($createdObjects),
                         'updated_objects'       => count($updatedObjects),
@@ -297,7 +312,10 @@ class ChunkProcessingHandler
                 );
             } else {
                 // FALLBACK: UUID array returned (legacy behavior).
-                $this->logger->info("[SaveObjects] Processing UUID array (legacy mode)");
+                $this->logger->info(
+                    message: '[ChunkProcessingHandler] Processing UUID array (legacy mode)',
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
                 $savedObjectIds = $bulkResult;
 
                 // Fallback counting (less precise).
@@ -309,7 +327,10 @@ class ChunkProcessingHandler
             }//end if
         } else {
             // Fallback for unexpected return format.
-            $this->logger->warning("[SaveObjects] Unexpected bulk result format, using fallback");
+            $this->logger->warning(
+                message: '[ChunkProcessingHandler] Unexpected bulk result format, using fallback',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             foreach ($transformedObjects ?? [] as $objData) {
                 $savedObjectIds[] = $objData['uuid'];
                 $result['statistics']['saved']++;
@@ -320,8 +341,10 @@ class ChunkProcessingHandler
         // The result arrays (saved, updated, unchanged) were populated during the classification loop above.
         if (empty($reconstructedObjects) === false) {
             $this->logger->info(
-                "[SaveObjects] Using database-computed pre-classified objects for response",
-                [
+                message: '[ChunkProcessingHandler] Using database-computed pre-classified objects for response',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'saved_objects'     => count($result['saved']),
                     'updated_objects'   => count($result['updated']),
                     'unchanged_objects' => count($result['unchanged']),
@@ -330,7 +353,10 @@ class ChunkProcessingHandler
         } else {
             // FALLBACK: Use traditional object reconstruction (placeholder).
             // This would need the reconstructSavedObjects method implementation.
-            $this->logger->info("[SaveObjects] Using fallback object reconstruction");
+            $this->logger->info(
+                message: '[ChunkProcessingHandler] Using fallback object reconstruction',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
 
             // Fallback classification (less precise).
             foreach ($transformedObjects ?? [] as $objData) {

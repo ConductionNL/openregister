@@ -160,8 +160,10 @@ class ElasticsearchHttpClient
             return $decoded;
         } catch (Exception $e) {
             $this->logger->error(
-                '[ElasticsearchHttpClient] GET failed',
-                [
+                message: '[ElasticsearchHttpClient] GET failed',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'url'   => $url,
                     'error' => $e->getMessage(),
                 ]
@@ -196,8 +198,10 @@ class ElasticsearchHttpClient
             return $decoded;
         } catch (Exception $e) {
             $this->logger->error(
-                '[ElasticsearchHttpClient] POST failed',
-                [
+                message: '[ElasticsearchHttpClient] POST failed',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'url'   => $url,
                     'error' => $e->getMessage(),
                 ]
@@ -235,8 +239,10 @@ class ElasticsearchHttpClient
             return $decoded;
         } catch (Exception $e) {
             $this->logger->error(
-                '[ElasticsearchHttpClient] POST (raw) failed',
-                [
+                message: '[ElasticsearchHttpClient] POST (raw) failed',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'url'   => $url,
                     'error' => $e->getMessage(),
                 ]
@@ -271,8 +277,10 @@ class ElasticsearchHttpClient
             return $decoded;
         } catch (Exception $e) {
             $this->logger->error(
-                '[ElasticsearchHttpClient] PUT failed',
-                [
+                message: '[ElasticsearchHttpClient] PUT failed',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'url'   => $url,
                     'error' => $e->getMessage(),
                 ]
@@ -301,8 +309,10 @@ class ElasticsearchHttpClient
             return $decoded;
         } catch (Exception $e) {
             $this->logger->error(
-                '[ElasticsearchHttpClient] DELETE failed',
-                [
+                message: '[ElasticsearchHttpClient] DELETE failed',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'url'   => $url,
                     'error' => $e->getMessage(),
                 ]

@@ -143,7 +143,11 @@ class ConversationManagementHandler
     public function generateConversationTitle(string $firstMessage): string
     {
         $this->logger->info(
-            message:'[ChatService] Generating conversation title'
+            message:'[ChatService] Generating conversation title',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
+            ]
         );
 
         try {
@@ -254,6 +258,8 @@ class ConversationManagementHandler
             $this->logger->warning(
                 message: '[ChatService] Failed to generate title, using fallback',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -306,6 +312,8 @@ class ConversationManagementHandler
         $this->logger->info(
             message: '[ChatService] Ensuring unique title',
             context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'baseTitle' => $baseTitle,
                 'userId'    => $userId,
                 'agentId'   => $agentId,
@@ -351,6 +359,8 @@ class ConversationManagementHandler
         $this->logger->info(
             message: '[ChatService] Generated unique title',
             context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'baseTitle'   => $baseTitle,
                 'uniqueTitle' => $uniqueTitle,
                 'foundTitles' => count($existingTitles),
@@ -395,6 +405,8 @@ class ConversationManagementHandler
         $this->logger->info(
             message: '[ChatService] Triggering conversation summarization',
             context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'conversationId' => $conversation->getId(),
                 'tokenCount'     => $tokenCount,
             ]
@@ -424,6 +436,8 @@ class ConversationManagementHandler
             $this->logger->info(
                 message: '[ChatService] Conversation summarized',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'conversationId' => $conversation->getId(),
                     'summaryLength'  => strlen($summary),
                 ]
@@ -432,6 +446,8 @@ class ConversationManagementHandler
             $this->logger->error(
                 message: '[ChatService] Failed to summarize conversation',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );

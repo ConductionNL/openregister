@@ -113,6 +113,8 @@ class ToolManagementHandler
             $this->logger->info(
                 message: '[ChatService] Filtering tools',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'agentTools'    => count($agent->getTools()),
                     'selectedTools' => count($selectedTools),
                     'filteredTools' => count($enabledToolIds),
@@ -135,14 +137,22 @@ class ToolManagementHandler
                 $tools[] = $tool;
                 $this->logger->debug(
                     message: '[ChatService] Loaded tool',
-                    context: ['id' => $fullToolId]
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
+                        'id' => $fullToolId
+                    ]
                 );
             }
 
             if ($tool === null) {
                 $this->logger->warning(
                     message: '[ChatService] Tool not found',
-                    context: ['id' => $fullToolId]
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
+                        'id' => $fullToolId
+                    ]
                 );
             }
         }//end foreach

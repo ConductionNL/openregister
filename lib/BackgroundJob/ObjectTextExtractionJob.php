@@ -110,15 +110,20 @@ class ObjectTextExtractionJob extends QueuedJob
         $objectSettings = json_decode($objMgmtValue, true);
         if (($objectSettings['objectExtractionMode'] ?? 'background') === 'none') {
             $message = '[ObjectTextExtractionJob] Object extraction is disabled. Not extracting text from objects.';
-            $this->logger->info($message);
+            $this->logger->info(
+                message: $message,
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return;
         }
 
         // Validate argument.
         if (isset($argument['object_id']) === false) {
             $this->logger->error(
-                '[ObjectTextExtractionJob] Missing object_id in job arguments',
-                [
+                message: '[ObjectTextExtractionJob] Missing object_id in job arguments',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'argument' => $argument,
                 ]
             );
@@ -128,8 +133,10 @@ class ObjectTextExtractionJob extends QueuedJob
         $objectId = (int) $argument['object_id'];
 
         $this->logger->info(
-            '[ObjectTextExtractionJob] Starting text extraction',
-            [
+            message: '[ObjectTextExtractionJob] Starting text extraction',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'object_id' => $objectId,
                 'job_id'    => $this->getId(),
             ]
@@ -144,8 +151,10 @@ class ObjectTextExtractionJob extends QueuedJob
             $processingTime = round((microtime(true) - $startTime) * 1000, 2);
 
             $this->logger->info(
-                '[ObjectTextExtractionJob] Text extraction completed successfully',
-                [
+                message: '[ObjectTextExtractionJob] Text extraction completed successfully',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'object_id'          => $objectId,
                     'processing_time_ms' => $processingTime,
                 ]
@@ -154,8 +163,10 @@ class ObjectTextExtractionJob extends QueuedJob
             $processingTime = round((microtime(true) - $startTime) * 1000, 2);
 
             $this->logger->error(
-                '[ObjectTextExtractionJob] Exception during text extraction',
-                [
+                message: '[ObjectTextExtractionJob] Exception during text extraction',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'object_id'          => $objectId,
                     'error'              => $e->getMessage(),
                     'trace'              => $e->getTraceAsString(),

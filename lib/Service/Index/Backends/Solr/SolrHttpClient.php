@@ -201,7 +201,10 @@ class SolrHttpClient
 
             return json_decode($body, true) ?? [];
         } catch (Exception $e) {
-            $this->logger->error('[SolrHttpClient] GET request failed', ['url' => $url, 'error' => $e->getMessage()]);
+            $this->logger->error(
+                message: '[SolrHttpClient] GET request failed',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'url' => $url, 'error' => $e->getMessage()]
+            );
             throw $e;
         }//end try
     }//end get()
@@ -226,7 +229,10 @@ class SolrHttpClient
 
             return json_decode($body, true) ?? [];
         } catch (Exception $e) {
-            $this->logger->error('[SolrHttpClient] POST request failed', ['url' => $url, 'error' => $e->getMessage()]);
+            $this->logger->error(
+                message: '[SolrHttpClient] POST request failed',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'url' => $url, 'error' => $e->getMessage()]
+            );
             throw $e;
         }//end try
     }//end post()

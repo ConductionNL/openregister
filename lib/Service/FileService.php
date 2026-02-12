@@ -379,7 +379,10 @@ class FileService
         FilePublishingHandler $filePubHandler
     ) {
         $this->logger = $logger;
-        $this->logger->debug('FileService constructor started.');
+        $this->logger->debug(
+            message: '[FileService] FileService constructor started.',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
         $this->config       = $config;
         $this->fileMapper   = $fileMapper;
         $this->groupManager = $groupManager;
@@ -406,41 +409,86 @@ class FileService
         $this->filePublishingHandler     = $filePubHandler;
 
         // Break circular dependency: FolderManagementHandler needs FileService for cross-handler coordination.
-        $this->logger->debug('About to call folderManagementHandler->setFileService.');
+        $this->logger->debug(
+            message: '[FileService] About to call folderManagementHandler->setFileService.',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
         $this->folderManagementHandler->setFileService($this);
-        $this->logger->debug('Called folderManagementHandler->setFileService.');
+        $this->logger->debug(
+            message: '[FileService] Called folderManagementHandler->setFileService.',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
 
         // Break circular dependency: UpdateFileHandler needs FileService for utility methods (tags, path extraction).
-        $this->logger->debug('About to call updateFileHandler->setFileService.');
+        $this->logger->debug(
+            message: '[FileService] About to call updateFileHandler->setFileService.',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
         $this->updateFileHandler->setFileService($this);
-        $this->logger->debug('Called updateFileHandler->setFileService.');
+        $this->logger->debug(
+            message: '[FileService] Called updateFileHandler->setFileService.',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
 
         // Break circular dependency: CreateFileHandler needs FileService for sharing and tagging.
-        $this->logger->debug('About to call createFileHandler->setFileService.');
+        $this->logger->debug(
+            message: '[FileService] About to call createFileHandler->setFileService.',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
         $this->createFileHandler->setFileService($this);
-        $this->logger->debug('Called createFileHandler->setFileService.');
+        $this->logger->debug(
+            message: '[FileService] Called createFileHandler->setFileService.',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
 
         // Break circular dependency: ReadFileHandler needs FileService for utility methods.
-        $this->logger->debug('About to call readFileHandler->setFileService.');
+        $this->logger->debug(
+            message: '[FileService] About to call readFileHandler->setFileService.',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
         $this->readFileHandler->setFileService($this);
-        $this->logger->debug('Called readFileHandler->setFileService.');
+        $this->logger->debug(
+            message: '[FileService] Called readFileHandler->setFileService.',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
 
         // Break circular dependency: FileFormattingHandler needs FileService for utility methods (shares, tags, etc.).
-        $this->logger->debug('About to call fileFormattingHandler->setFileService.');
+        $this->logger->debug(
+            message: '[FileService] About to call fileFormattingHandler->setFileService.',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
         $this->fileFormattingHandler->setFileService($this);
-        $this->logger->debug('Called fileFormattingHandler->setFileService.');
+        $this->logger->debug(
+            message: '[FileService] Called fileFormattingHandler->setFileService.',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
 
         // Break circular dependency: DocumentProcessingHandler needs FileService for cross-handler coordination.
-        $this->logger->debug('About to call documentProcessingHandler->setFileService.');
+        $this->logger->debug(
+            message: '[FileService] About to call documentProcessingHandler->setFileService.',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
         $this->documentProcessingHandler->setFileService($this);
-        $this->logger->debug('Called documentProcessingHandler->setFileService.');
+        $this->logger->debug(
+            message: '[FileService] Called documentProcessingHandler->setFileService.',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
 
         // Break circular dependency: FilePublishingHandler needs FileService for file operations and utilities.
-        $this->logger->debug('About to call filePublishingHandler->setFileService.');
+        $this->logger->debug(
+            message: '[FileService] About to call filePublishingHandler->setFileService.',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
         $this->filePublishingHandler->setFileService($this);
-        $this->logger->debug('Called filePublishingHandler->setFileService.');
+        $this->logger->debug(
+            message: '[FileService] Called filePublishingHandler->setFileService.',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
 
-        $this->logger->debug('FileService constructor completed.');
+        $this->logger->debug(
+            message: '[FileService] FileService constructor completed.',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
     }//end __construct()
 
     /**
@@ -569,8 +617,13 @@ class FileService
             return $this->createObjectFolderById(objectEntity: $entity, currentUser: $currentUser);
         } catch (exception $e) {
             $this->logger->error(
-                message: 'Failed to create folder for entity: {message}',
-                context: ['message' => $e->getMessage(), 'exception' => $e]
+                message: '[FileService] Failed to create folder for entity: {message}',
+                context: [
+                    'file' => __FILE__, 
+                    'line' => __LINE__,
+                    'message' => $e->getMessage(),
+                    'exception' => $e
+                ]
             );
             return null;
         }
@@ -970,15 +1023,21 @@ class FileService
             // Note: userId and userFolder not currently used - file retrieved from rootFolder.
             $this->getOpenRegisterUserFolder();
         } catch (Exception) {
-            $msg = "Can't create share link for $path because OpenRegister user folder couldn't be found.";
-            $this->logger->error(message: $msg);
+            $msg = "[FileService] Can't create share link for $path because OpenRegister user folder couldn't be found.";
+            $this->logger->error(message: $msg, context: ['file' => __FILE__, 'line' => __LINE__]);
             return "OpenRegister user folder couldn't be found.";
         }
 
         try {
             $file = $this->rootFolder->get($path);
         } catch (NotFoundException $e) {
-            $this->logger->error(message: "Can't create share link for $path because file doesn't exist.");
+            $this->logger->error(
+                message: "[FileService] Can't create share link for $path because file doesn't exist.", 
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
+                ]
+            );
             return 'File not found at '.$path;
         }
 
@@ -996,7 +1055,13 @@ class FileService
             );
             return $this->getShareLink($share);
         } catch (Exception $exception) {
-            $this->logger->error(message: "Can't create share link for $path: ".$exception->getMessage());
+            $this->logger->error(
+                message: "[FileService] Can't create share link for $path: ".$exception->getMessage(),
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
+                ]
+            );
             throw new Exception('Can\'t create share link.');
         }
     }//end createShareLink()
@@ -1330,7 +1395,13 @@ class FileService
 
             return $node;
         } catch (Exception $e) {
-            $this->logger->error(message: 'getFileById: Error finding file by ID '.$fileId.': '.$e->getMessage());
+            $this->logger->error(
+                message: '[FileService] getFileById: Error finding file by ID '.$fileId.': '.$e->getMessage(),
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
+                ]
+            );
             return null;
         }//end try
     }//end getFileById()
@@ -1456,7 +1527,13 @@ class FileService
             $nodes      = $userFolder->getById($fileId);
 
             if (empty($nodes) === true) {
-                $this->logger->info(message: "debugFindFileById: No file found with ID: $fileId");
+                $this->logger->info(
+                    message: "[FileService] debugFindFileById: No file found with ID: $fileId",
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
+                    ]
+                );
                 return null;
             }
 
@@ -1472,10 +1549,22 @@ class FileService
                 'parent_path' => $file->getParent()->getPath(),
             ];
 
-            $this->logger->info(message: "debugFindFileById: Found file with ID $fileId: ".json_encode($fileInfo));
+            $this->logger->info(
+                message: "[FileService] debugFindFileById: Found file with ID $fileId: ".json_encode($fileInfo),
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
+                ]
+            );
             return $fileInfo;
         } catch (Exception $e) {
-            $this->logger->error(message: "debugFindFileById: Error finding file by ID $fileId: ".$e->getMessage());
+            $this->logger->error(
+                message: "[FileService] debugFindFileById: Error finding file by ID $fileId: ".$e->getMessage(),
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
+                ]
+            );
             return null;
         }//end try
     }//end debugFindFileById()
@@ -1500,8 +1589,8 @@ class FileService
 
             if ($objectFolder === null) {
                 $objectId = $object->getId();
-                $msg      = "debugListObjectFiles: Could not get object folder for object ID: ".$objectId;
-                $this->logger->warning(message: $msg);
+                $msg      = "[FileService] debugListObjectFiles: Could not get object folder for object ID: ".$objectId;
+                $this->logger->warning(message: $msg, context: ['file' => __FILE__, 'line' => __LINE__]);
                 return [];
             }
 
@@ -1524,13 +1613,23 @@ class FileService
             $fileCount = count($fileList);
             $filesJson = json_encode($fileList);
             $this->logger->info(
-                message: "debugListObjectFiles: Object $objectId folder contains $fileCount files: $filesJson"
+                message: "[FileService] debugListObjectFiles: Object $objectId folder contains $fileCount files: $filesJson",
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
+                ]
             );
             return $fileList;
         } catch (Exception $e) {
             $objectId = $object->getId();
             $errorMsg = $e->getMessage();
-            $this->logger->error(message: "debugListObjectFiles: Error listing files for object $objectId: $errorMsg");
+            $this->logger->error(
+                message: "[FileService] debugListObjectFiles: Error listing files for object $objectId: $errorMsg",
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
+                ]
+            );
             return [];
         }//end try
     }//end debugListObjectFiles()

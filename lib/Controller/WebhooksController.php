@@ -201,8 +201,10 @@ class WebhooksController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                message: 'Error listing webhooks: '.$e->getMessage(),
+                message: '[WebhooksController] Error listing webhooks: '.$e->getMessage(),
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'trace' => $e->getTraceAsString(),
                 ]
             );
@@ -254,8 +256,10 @@ class WebhooksController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                message: 'Error retrieving webhook: '.$e->getMessage(),
+                message: '[WebhooksController] Error retrieving webhook: '.$e->getMessage(),
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'id'    => $id,
                     'trace' => $e->getTraceAsString(),
                 ]
@@ -316,8 +320,10 @@ class WebhooksController extends Controller
             $webhook = $this->webhookMapper->createFromArray($data);
 
             $this->logger->info(
-                message: 'Webhook created',
+                message: '[WebhooksController] Webhook created',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'id'   => $webhook->getId(),
                     'name' => $webhook->getName(),
                     'url'  => $webhook->getUrl(),
@@ -327,8 +333,10 @@ class WebhooksController extends Controller
             return new JSONResponse(data: $webhook, statusCode: 201);
         } catch (\Exception $e) {
             $this->logger->error(
-                'Error creating webhook: '.$e->getMessage(),
-                [
+                message: '[WebhooksController] Error creating webhook: '.$e->getMessage(),
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'data'  => $this->request->getParams(),
                     'trace' => $e->getTraceAsString(),
                 ]
@@ -367,8 +375,10 @@ class WebhooksController extends Controller
             $webhook = $this->webhookMapper->updateFromArray(id: $id, data: $data);
 
             $this->logger->info(
-                message: 'Webhook updated',
+                message: '[WebhooksController] Webhook updated',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'id'   => $webhook->getId(),
                     'name' => $webhook->getName(),
                 ]
@@ -384,8 +394,10 @@ class WebhooksController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                'Error updating webhook: '.$e->getMessage(),
-                [
+                message: '[WebhooksController] Error updating webhook: '.$e->getMessage(),
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'id'    => $id,
                     'data'  => $this->request->getParams(),
                     'trace' => $e->getTraceAsString(),
@@ -431,8 +443,10 @@ class WebhooksController extends Controller
             $this->webhookMapper->delete($webhook);
 
             $this->logger->info(
-                message: 'Webhook deleted',
+                message: '[WebhooksController] Webhook deleted',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'id'   => $webhook->getId(),
                     'name' => $webhook->getName(),
                 ]
@@ -448,8 +462,10 @@ class WebhooksController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                'Error deleting webhook: '.$e->getMessage(),
-                [
+                message: '[WebhooksController] Error deleting webhook: '.$e->getMessage(),
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'id'    => $id,
                     'trace' => $e->getTraceAsString(),
                 ]
@@ -545,8 +561,10 @@ class WebhooksController extends Controller
             );
         } catch (GuzzleException $e) {
             $this->logger->error(
-                'Error testing webhook: '.$e->getMessage(),
-                [
+                message: '[WebhooksController] Error testing webhook: '.$e->getMessage(),
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'id'    => $id,
                     'trace' => $e->getTraceAsString(),
                 ]
@@ -561,8 +579,10 @@ class WebhooksController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                'Error testing webhook: '.$e->getMessage(),
-                [
+                message: '[WebhooksController] Error testing webhook: '.$e->getMessage(),
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'id'    => $id,
                     'trace' => $e->getTraceAsString(),
                 ]
@@ -961,8 +981,10 @@ class WebhooksController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                message: 'Error retrieving webhook logs: '.$e->getMessage(),
+                message: '[WebhooksController] Error retrieving webhook logs: '.$e->getMessage(),
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'id'    => $id,
                     'trace' => $e->getTraceAsString(),
                 ]
@@ -1018,8 +1040,10 @@ class WebhooksController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                message: 'Error retrieving webhook log statistics: '.$e->getMessage(),
+                message: '[WebhooksController] Error retrieving webhook log statistics: '.$e->getMessage(),
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'id'    => $id,
                     'trace' => $e->getTraceAsString(),
                 ]
@@ -1129,8 +1153,10 @@ class WebhooksController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                message: 'Error retrieving webhook logs: '.$e->getMessage(),
+                message: '[WebhooksController] Error retrieving webhook logs: '.$e->getMessage(),
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'trace' => $e->getTraceAsString(),
                 ]
             );
@@ -1256,8 +1282,10 @@ class WebhooksController extends Controller
             );
         } catch (DoesNotExistException $e) {
             $this->logger->error(
-                message: 'Webhook log not found for retry: '.$e->getMessage(),
+                message: '[WebhooksController] Webhook log not found for retry: '.$e->getMessage(),
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'log_id' => $logId,
                     'trace'  => $e->getTraceAsString(),
                 ]
@@ -1271,8 +1299,10 @@ class WebhooksController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                message: 'Error retrying webhook: '.$e->getMessage(),
+                message: '[WebhooksController] Error retrying webhook: '.$e->getMessage(),
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'log_id' => $logId,
                     'trace'  => $e->getTraceAsString(),
                 ]

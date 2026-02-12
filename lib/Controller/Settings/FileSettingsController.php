@@ -419,8 +419,10 @@ class FileSettingsController extends Controller
             $batchSize = min($batchSize, 500);
             // Max 500 per batch.
             $this->logger->info(
-                '[SettingsController] Starting file warmup',
-                [
+                message: '[SettingsController] Starting file warmup',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'max_files'    => $maxFiles,
                     'batch_size'   => $batchSize,
                     'skip_indexed' => $skipIndexed,
@@ -487,8 +489,10 @@ class FileSettingsController extends Controller
             );
         } catch (Exception $e) {
             $this->logger->error(
-                '[SettingsController] File warmup failed',
-                [
+                message: '[SettingsController] File warmup failed',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -542,8 +546,10 @@ class FileSettingsController extends Controller
             );
         } catch (Exception $e) {
             $this->logger->error(
-                '[SettingsController] Failed to index file',
-                [
+                message: '[SettingsController] Failed to index file',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'file_id' => $fileId,
                     'error'   => $e->getMessage(),
                 ]
@@ -614,8 +620,10 @@ class FileSettingsController extends Controller
             );
         } catch (Exception $e) {
             $this->logger->error(
-                '[SettingsController] Reindex files failed',
-                [
+                message: '[SettingsController] Reindex files failed',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -650,8 +658,10 @@ class FileSettingsController extends Controller
             return new JSONResponse(data: $stats);
         } catch (Exception $e) {
             $this->logger->error(
-                '[SettingsController] Failed to get file index stats',
-                [
+                message: '[SettingsController] Failed to get file index stats',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );

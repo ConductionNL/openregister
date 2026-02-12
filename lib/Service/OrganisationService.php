@@ -205,8 +205,10 @@ class OrganisationService
             $age = time() - self::$defaultOrgCacheTs;
             if ($age < self::CACHE_TIMEOUT) {
                 $this->logger->debug(
-                    'Retrieved default organisation from static cache',
-                    [
+                    message: '[OrganisationService] Retrieved default organisation from static cache',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'cacheAge' => $age,
                     ]
                 );
@@ -277,7 +279,10 @@ class OrganisationService
             $settings = $this->getOrganisationSettingsOnly();
             return $settings['organisation']['default_organisation'] ?? null;
         } catch (Exception $e) {
-            $this->logger->warning('Failed to get default organisation UUID: '.$e->getMessage());
+            $this->logger->warning(
+                message: '[OrganisationService] Failed to get default organisation UUID: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return null;
         }
     }//end getDefaultOrganisationUuid()
@@ -305,16 +310,20 @@ class OrganisationService
                 try {
                     $defaultOrg = $this->organisationMapper->findByUuid($defaultOrgUuid);
                     $this->logger->info(
-                        'Found default organisation from settings',
-                        [
+                        message: '[OrganisationService] Found default organisation from settings',
+                        context: [
+                            'file' => __FILE__,
+                            'line' => __LINE__,
                             'uuid' => $defaultOrgUuid,
                             'name' => $defaultOrg->getName(),
                         ]
                     );
                 } catch (DoesNotExistException $e) {
                     $this->logger->warning(
-                        'Default organisation UUID in settings not found, falling back to creation',
-                        [
+                        message: '[OrganisationService] Default organisation UUID in settings not found, falling back to creation',
+                        context: [
+                            'file' => __FILE__,
+                            'line' => __LINE__,
                             'uuid' => $defaultOrgUuid,
                         ]
                     );
@@ -336,7 +345,7 @@ class OrganisationService
                 }//end try
             } else {
                 // No UUID in settings, create a new default organisation.
-                $this->logger->info(message: 'No default organisation found in settings, creating new one');
+                $this->logger->info(message: '[OrganisationService] No default organisation found in settings, creating new one', context: ['file' => __FILE__, 'line' => __LINE__]);
                 $defaultOrg = $this->createOrganisation(
                     name: 'Default Organisation',
                     description: 'Auto-generated default organisation',
@@ -373,8 +382,10 @@ class OrganisationService
             if ($updated === true) {
                 $defaultOrg = $this->organisationMapper->update($defaultOrg);
                 $this->logger->info(
-                    'Added admin users and RBAC permissions to existing default organisation',
-                    [
+                    message: '[OrganisationService] Added admin users and RBAC permissions to existing default organisation',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'adminUsersAdded'  => $adminUsers,
                         'adminGroupInAuth' => $adminGroupInAuth,
                     ]
@@ -386,8 +397,10 @@ class OrganisationService
             return $defaultOrg;
         } catch (Exception $e) {
             $this->logger->error(
-                'Failed to fetch or create default organisation',
-                [
+                message: '[OrganisationService] Failed to fetch or create default organisation',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]
@@ -409,8 +422,10 @@ class OrganisationService
         self::$defaultOrgCacheTs = time();
 
         $this->logger->debug(
-            'Cached default organisation in static memory',
-            [
+            message: '[OrganisationService] Cached default organisation in static memory',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'organisationUuid' => $organisation->getUuid(),
                 'organisationName' => $organisation->getName(),
             ]
@@ -491,8 +506,10 @@ class OrganisationService
             $age = time() - $cacheTimestamp;
             if ($age < self::CACHE_TIMEOUT) {
                 $this->logger->debug(
-                    'Retrieved active organisation from session cache',
-                    [
+                    message: '[OrganisationService] Retrieved active organisation from session cache',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'userId'           => $userId,
                         'organisationUuid' => $cachedOrganisation['uuid'] ?? 'unknown',
                         'cacheAge'         => $age,
@@ -561,8 +578,10 @@ class OrganisationService
         $this->cacheActiveOrganisation(organisation: $organisation, userId: $userId);
 
         $this->logger->info(
-            'Set active organisation in user config',
-            [
+            message: '[OrganisationService] Set active organisation in user config',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'userId'           => $userId,
                 'organisationUuid' => $organisationUuid,
                 'organisationName' => $organisation->getName(),
@@ -767,8 +786,10 @@ class OrganisationService
         }
 
         $this->logger->info(
-            'Created new organisation',
-            [
+            message: '[OrganisationService] Created new organisation',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'organisationUuid' => $saved->getUuid(),
                 'name'             => $name,
                 'owner'            => $userId,
@@ -845,7 +866,7 @@ class OrganisationService
         self::$defaultOrgCache   = null;
         self::$defaultOrgCacheTs = null;
 
-        $this->logger->info(message: 'Cleared default organisation static cache');
+        $this->logger->info(message: '[OrganisationService] Cleared default organisation static cache', context: ['file' => __FILE__, 'line' => __LINE__]);
     }//end clearDefaultOrganisationCache()
 
     /**
@@ -894,7 +915,7 @@ class OrganisationService
     {
         $adminGroup = $this->groupManager->get('admin');
         if ($adminGroup === null) {
-            $this->logger->warning(message: 'Admin group not found');
+            $this->logger->warning(message: '[OrganisationService] Admin group not found', context: ['file' => __FILE__, 'line' => __LINE__]);
             return [];
         }
 
@@ -932,8 +953,10 @@ class OrganisationService
         }
 
         $this->logger->info(
-            'Added admin users to organisation',
-            [
+            message: '[OrganisationService] Added admin users to organisation',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'organisationUuid' => $organisation->getUuid(),
                 'organisationName' => $organisation->getName(),
                 'adminUsersAdded'  => $adminUsers,
@@ -987,8 +1010,10 @@ class OrganisationService
         $organisation->setAuthorization($authorization);
 
         $this->logger->info(
-            'Added admin group to organisation RBAC authorization',
-            [
+            message: '[OrganisationService] Added admin group to organisation RBAC authorization',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'organisationUuid' => $organisation->getUuid(),
                 'organisationName' => $organisation->getName(),
                 'adminGroupId'     => $adminGroupId,
@@ -1070,9 +1095,11 @@ class OrganisationService
                     // User no longer has access, clear the setting and cache.
                     $this->config->deleteUserValue($userId, self::APP_NAME, self::CONFIG_ACTIVE_ORGANISATION);
                     $this->clearActiveOrganisationCache($userId);
-                    $this->logger->info(
-                        'Cleared invalid active organisation',
-                        [
+                        $this->logger->info(
+                        message: '[OrganisationService] Cleared invalid active organisation',
+                        context: [
+                            'file' => __FILE__,
+                            'line' => __LINE__,
                             'userId'           => $userId,
                             'organisationUuid' => $activeUuid,
                         ]
@@ -1083,8 +1110,10 @@ class OrganisationService
                 $this->config->deleteUserValue($userId, self::APP_NAME, self::CONFIG_ACTIVE_ORGANISATION);
                 $this->clearActiveOrganisationCache($userId);
                 $this->logger->info(
-                    'Cleared non-existent active organisation',
-                    [
+                    message: '[OrganisationService] Cleared non-existent active organisation',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'userId'           => $userId,
                         'organisationUuid' => $activeUuid,
                     ]
@@ -1113,14 +1142,16 @@ class OrganisationService
                 $oldestOrg->getUuid()
             );
 
-            $this->logger->info(
-                'Auto-set active organisation to oldest',
-                [
-                    'userId'           => $userId,
-                    'organisationUuid' => $oldestOrg->getUuid(),
-                    'organisationName' => $oldestOrg->getName(),
-                ]
-            );
+                $this->logger->info(
+                    message: '[OrganisationService] Auto-set active organisation to oldest',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
+                        'userId'           => $userId,
+                        'organisationUuid' => $oldestOrg->getUuid(),
+                        'organisationName' => $oldestOrg->getName(),
+                    ]
+                );
 
             return $oldestOrg;
         }//end if
@@ -1138,8 +1169,10 @@ class OrganisationService
                 $this->organisationMapper->update($defaultOrg);
 
                 $this->logger->info(
-                    'Added user to default organisation',
-                    [
+                    message: '[OrganisationService] Added user to default organisation',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'userId'           => $userId,
                         'organisationUuid' => $defaultOrg->getUuid(),
                         'organisationName' => $defaultOrg->getName(),
@@ -1156,8 +1189,10 @@ class OrganisationService
             );
 
             $this->logger->info(
-                'Auto-set active organisation to default',
-                [
+                message: '[OrganisationService] Auto-set active organisation to default',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'userId'           => $userId,
                     'organisationUuid' => $defaultOrg->getUuid(),
                     'organisationName' => $defaultOrg->getName(),
@@ -1167,8 +1202,10 @@ class OrganisationService
             return $defaultOrg;
         } catch (Exception $e) {
             $this->logger->error(
-                'Failed to set default organisation for user',
-                [
+                message: '[OrganisationService] Failed to set default organisation for user',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'userId' => $userId,
                     'error'  => $e->getMessage(),
                 ]
@@ -1207,8 +1244,10 @@ class OrganisationService
         $this->session->set($timestampKey, time());
 
         $this->logger->debug(
-            'Cached active organisation in session',
-            [
+            message: '[OrganisationService] Cached active organisation in session',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'userId'           => $userId,
                 'organisationUuid' => $organisation->getUuid(),
                 'organisationName' => $organisation->getName(),
@@ -1292,8 +1331,10 @@ class OrganisationService
         $this->session->remove($timestampKey);
 
         $this->logger->debug(
-            'Cleared active organisation cache',
-            [
+            message: '[OrganisationService] Cleared active organisation cache',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'userId' => $userId,
             ]
         );
@@ -1307,18 +1348,30 @@ class OrganisationService
      */
     public function getOrganisationForNewEntity(): string|null
     {
-        $this->logger->info('🔹 OrganisationService: getOrganisationForNewEntity called');
+        $this->logger->info(
+            message: '[OrganisationService] 🔹 OrganisationService: getOrganisationForNewEntity called',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
         $activeOrg = $this->getActiveOrganisation();
 
         if ($activeOrg !== null) {
-            $this->logger->info('🔹 OrganisationService: Found active organisation: '.$activeOrg->getUuid());
+            $this->logger->info(
+                message: '[OrganisationService] 🔹 OrganisationService: Found active organisation: '.$activeOrg->getUuid(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return $activeOrg->getUuid();
         }
 
         // Fallback to default organisation.
-        $this->logger->info('🔹 OrganisationService: No active org, calling ensureDefaultOrganisation');
+        $this->logger->info(
+            message: '[OrganisationService] 🔹 OrganisationService: No active org, calling ensureDefaultOrganisation',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
         $defaultOrg = $this->ensureDefaultOrganisation();
-        $this->logger->info('🔹 OrganisationService: Got default organisation: '.$defaultOrg->getUuid());
+        $this->logger->info(
+            message: '[OrganisationService] 🔹 OrganisationService: Got default organisation: '.$defaultOrg->getUuid(),
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
         return $defaultOrg->getUuid();
     }//end getOrganisationForNewEntity()
 
@@ -1409,7 +1462,7 @@ class OrganisationService
         $activeOrg = $this->getActiveOrganisation();
 
         if ($activeOrg === null) {
-            $this->logger->debug(message: 'No active organisation found for user');
+            $this->logger->debug(message: '[OrganisationService] No active organisation found for user', context: ['file' => __FILE__, 'line' => __LINE__]);
             return [];
         }
 
@@ -1423,8 +1476,10 @@ class OrganisationService
         $orgUuids = array_merge($orgUuids, $parents);
 
         $this->logger->debug(
-            'Retrieved active organisations (including parents)',
-            [
+            message: '[OrganisationService] Retrieved active organisations (including parents)',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'activeOrg'          => $activeOrg->getUuid(),
                 'activeOrgName'      => $activeOrg->getName(),
                 'parents'            => $parents,

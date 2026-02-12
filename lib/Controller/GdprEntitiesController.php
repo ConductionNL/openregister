@@ -190,8 +190,10 @@ class GdprEntitiesController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                '[GdprEntitiesController] Failed to list entities',
-                [
+                message: '[GdprEntitiesController] Failed to list entities',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]
@@ -243,8 +245,10 @@ class GdprEntitiesController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                '[GdprEntitiesController] Failed to get entity',
-                [
+                message: '[GdprEntitiesController] Failed to get entity',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'id'    => $id,
                     'error' => $e->getMessage(),
                 ]
@@ -294,8 +298,8 @@ class GdprEntitiesController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                '[GdprEntitiesController] Failed to get entity types',
-                ['error' => $e->getMessage()]
+                message: '[GdprEntitiesController] Failed to get entity types',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
             );
 
             return new JSONResponse(
@@ -342,8 +346,8 @@ class GdprEntitiesController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                '[GdprEntitiesController] Failed to get entity categories',
-                ['error' => $e->getMessage()]
+                message: '[GdprEntitiesController] Failed to get entity categories',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
             );
 
             return new JSONResponse(
@@ -431,8 +435,8 @@ class GdprEntitiesController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                '[GdprEntitiesController] Failed to get entity stats',
-                ['error' => $e->getMessage()]
+                message: '[GdprEntitiesController] Failed to get entity stats',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
             );
 
             return new JSONResponse(
@@ -478,8 +482,10 @@ class GdprEntitiesController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                '[GdprEntitiesController] Failed to delete entity',
-                [
+                message: '[GdprEntitiesController] Failed to delete entity',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'id'    => $id,
                     'error' => $e->getMessage(),
                 ]

@@ -196,7 +196,10 @@ class StatisticsHandler
                 'published' => (int) ($result['published'] ?? 0),
             ];
         } catch (Exception $e) {
-            $this->logger->error('Error getting statistics: '.$e->getMessage());
+            $this->logger->error(
+                message: '[StatisticsHandler] Error getting statistics: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return [
                 'total'     => 0,
                 'size'      => 0,
@@ -275,7 +278,10 @@ class StatisticsHandler
                 ),
             ];
         } catch (Exception $e) {
-            $this->logger->error('Error getting register chart data: '.$e->getMessage());
+            $this->logger->error(
+                message: '[StatisticsHandler] Error getting register chart data: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return [
                 'labels' => [],
                 'series' => [],
@@ -350,7 +356,10 @@ class StatisticsHandler
                 ),
             ];
         } catch (Exception $e) {
-            $this->logger->error('Error getting schema chart data: '.$e->getMessage());
+            $this->logger->error(
+                message: '[StatisticsHandler] Error getting schema chart data: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return [
                 'labels' => [],
                 'series' => [],
@@ -433,7 +442,10 @@ class StatisticsHandler
                 ),
             ];
         } catch (Exception $e) {
-            $this->logger->error('Error getting size distribution chart data: '.$e->getMessage());
+            $this->logger->error(
+                message: '[StatisticsHandler] Error getting size distribution chart data: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return [
                 'labels' => [],
                 'series' => [],

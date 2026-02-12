@@ -240,8 +240,10 @@ class RelationHandler
             // **PERFORMANCE BYPASS**: Stop early if we've extracted enough.
             if ($extractedCount >= $maxIds) {
                 $this->logger->info(
-                    message: '🛑 RELATIONSHIP EXTRACTION: Stopped early to prevent timeout',
+                    message: '[RelationHandler] 🛑 RELATIONSHIP EXTRACTION: Stopped early to prevent timeout',
                     context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'extractedIds'     => $extractedCount,
                         'maxIds'           => $maxIds,
                         'processedObjects' => $objectIndex,
@@ -277,8 +279,10 @@ class RelationHandler
                         // Log if we had to limit the array.
                         if (count($value) > 10) {
                             $this->logger->debug(
-                                message: '🔪 PERFORMANCE: Limited relationship array',
+                                message: '[RelationHandler] 🔪 PERFORMANCE: Limited relationship array',
                                 context: [
+                                    'file' => __FILE__,
+                                    'line' => __LINE__,
                                     'property'      => $extendProperty,
                                     'originalCount' => count($value),
                                     'limitedTo'     => count($limitedArray),
@@ -304,8 +308,10 @@ class RelationHandler
         $uniqueIds = array_unique($allIds);
 
         $this->logger->info(
-            message: '🔍 RELATIONSHIP EXTRACTION: Completed with limits',
+            message: '[RelationHandler] 🔍 RELATIONSHIP EXTRACTION: Completed with limits',
             context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'totalExtracted' => count($allIds),
                 'uniqueIds'      => count($uniqueIds),
                 'maxAllowed'     => $maxIds,
@@ -341,8 +347,10 @@ class RelationHandler
         // **HARD LIMIT**: Cap at 200 relationships total for safety.
         if (count($relationshipIds) > 200) {
             $this->logger->warning(
-                message: '⚠️ RELATIONSHIP LOADING: Capping at 200 relationships',
+                message: '[RelationHandler] ⚠️ RELATIONSHIP LOADING: Capping at 200 relationships',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'requested' => count($relationshipIds),
                     'capped'    => 200,
                     'reason'    => 'prevent_timeout',
@@ -358,8 +366,10 @@ class RelationHandler
         $loadedObjects = [];
 
         $this->logger->info(
-            message: '🔄 BULK RELATIONSHIP LOADING: Starting batched load',
+            message: '[RelationHandler] 🔄 BULK RELATIONSHIP LOADING: Starting batched load',
             context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'totalRelationships' => count($relationshipIds),
                 'batchSize'          => $batchSize,
                 'totalBatches'       => count($batches),
@@ -382,8 +392,10 @@ class RelationHandler
                 $batchTime = (microtime(true) - $batchStart) * 1000;
 
                 $this->logger->debug(
-                    message: '✅ Batch loaded',
+                    message: '[RelationHandler] ✅ Batch loaded',
                     context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'batch'         => ($batchIndex + 1),
                         'idsInBatch'    => count($batch),
                         'objectsLoaded' => count($chunkObjects),
@@ -392,8 +404,10 @@ class RelationHandler
                 );
             } catch (\Exception $e) {
                 $this->logger->error(
-                    message: '❌ BATCH LOADING FAILED',
+                    message: '[RelationHandler] ❌ BATCH LOADING FAILED',
                     context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'batch'      => ($batchIndex + 1),
                         'error'      => $e->getMessage(),
                         'idsInBatch' => count($batch),
@@ -406,8 +420,10 @@ class RelationHandler
         $totalTime = (microtime(true) - $startTime) * 1000;
 
         $this->logger->info(
-            message: '✅ BULK RELATIONSHIP LOADING: Completed',
+            message: '[RelationHandler] ✅ BULK RELATIONSHIP LOADING: Completed',
             context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'totalRequested' => count($relationshipIds),
                 'totalLoaded'    => count($loadedObjects),
                 'totalTime'      => round($totalTime, 2).'ms',
@@ -443,8 +459,10 @@ class RelationHandler
             return $this->objectEntityMapper->findAll(ids: $relationshipIds, includeDeleted: false);
         } catch (\Exception $e) {
             $this->logger->error(
-                message: 'Failed to load relationship chunk',
+                message: '[RelationHandler] Failed to load relationship chunk',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error'    => $e->getMessage(),
                     'idsCount' => count($relationshipIds),
                 ]
@@ -493,8 +511,10 @@ class RelationHandler
             ];
         } catch (\Exception $e) {
             $this->logger->error(
-                message: 'Failed to get contracts',
+                message: '[RelationHandler] Failed to get contracts',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error'    => $e->getMessage(),
                     'objectId' => $objectId,
                 ]
@@ -545,8 +565,8 @@ class RelationHandler
                     $schema         = $this->schemaMapper->find($_schemaId);
                 } catch (\Exception $e) {
                     $this->logger->debug(
-                        '[RelationHandler::getUses] Could not load register/schema for magic table lookup',
-                        ['registerId' => $_registerId, 'schemaId' => $_schemaId, 'error' => $e->getMessage()]
+                        message: '[RelationHandler::getUses] Could not load register/schema for magic table lookup',
+                        context: ['file' => __FILE__, 'line' => __LINE__, 'registerId' => $_registerId, 'schemaId' => $_schemaId, 'error' => $e->getMessage()]
                     );
                 }
             }
@@ -670,8 +690,10 @@ class RelationHandler
             }
 
             $this->logger->debug(
-                '[RelationHandler::getUses] Found related objects',
-                [
+                message: '[RelationHandler::getUses] Found related objects',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'searchedIds' => $uniqueIds,
                     'foundCount'  => count($relatedObjects),
                 ]
@@ -692,8 +714,10 @@ class RelationHandler
             ];
         } catch (\Exception $e) {
             $this->logger->error(
-                message: 'Failed to get uses',
+                message: '[RelationHandler] Failed to get uses',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error'    => $e->getMessage(),
                     'objectId' => $objectId,
                 ]
@@ -746,8 +770,8 @@ class RelationHandler
                     $schema         = $this->schemaMapper->find($_schemaId);
                 } catch (\Exception $e) {
                     $this->logger->warning(
-                        message: 'Failed to load register/schema for getUsedBy magic table support',
-                        context: ['error' => $e->getMessage()]
+                        message: '[RelationHandler] Failed to load register/schema for getUsedBy magic table support',
+                        context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
                     );
                 }
             }
@@ -803,8 +827,10 @@ class RelationHandler
                     $totalResults += count($searchResults);
                 } catch (\Exception $e) {
                     $this->logger->debug(
-                        message: 'Error searching magic table for usedBy',
+                        message: '[RelationHandler] Error searching magic table for usedBy',
                         context: [
+                            'file' => __FILE__,
+                            'line' => __LINE__,
                             'table' => $tableInfo['tableName'] ?? 'unknown',
                             'error' => $e->getMessage(),
                         ]
@@ -821,8 +847,10 @@ class RelationHandler
             ];
         } catch (\Exception $e) {
             $this->logger->error(
-                message: 'Failed to get used by',
+                message: '[RelationHandler] Failed to get used by',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error'    => $e->getMessage(),
                     'objectId' => $objectId,
                 ]

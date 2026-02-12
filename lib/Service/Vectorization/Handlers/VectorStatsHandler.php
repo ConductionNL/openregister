@@ -76,8 +76,8 @@ class VectorStatsHandler
             return $this->getStatsFromDatabase();
         } catch (Exception $e) {
             $this->logger->error(
-                message: 'Failed to get vector stats',
-                context: ['error' => $e->getMessage()]
+                message: '[VectorStatsHandler] Failed to get vector stats',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
             );
             return [
                 'total_vectors' => 0,
@@ -161,7 +161,8 @@ class VectorStatsHandler
             $solrBackend = $this->indexService->getBackend();
             if ($solrBackend->isAvailable() === false) {
                 $this->logger->warning(
-                    message: '[VectorStatsHandler] Solr not available for stats'
+                    message: '[VectorStatsHandler] Solr not available for stats',
+                    context: ['file' => __FILE__, 'line' => __LINE__]
                 );
                 return [
                     'total_vectors'  => 0,
@@ -197,7 +198,7 @@ class VectorStatsHandler
                 } catch (Exception $e) {
                     $this->logger->warning(
                         message: '[VectorStatsHandler] Failed to get object vector stats from Solr',
-                        context: ['error' => $e->getMessage()]
+                        context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
                     );
                 }
             }
@@ -217,7 +218,7 @@ class VectorStatsHandler
                 } catch (Exception $e) {
                     $this->logger->warning(
                         message: '[VectorStatsHandler] Failed to get file vector stats from Solr',
-                        context: ['error' => $e->getMessage()]
+                        context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
                     );
                 }
             }
@@ -238,7 +239,7 @@ class VectorStatsHandler
         } catch (Exception $e) {
             $this->logger->error(
                 message: '[VectorStatsHandler] Failed to get vector stats from Solr',
-                context: ['error' => $e->getMessage()]
+                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
             );
             return [
                 'total_vectors'  => 0,

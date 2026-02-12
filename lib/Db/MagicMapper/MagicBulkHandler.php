@@ -415,8 +415,8 @@ class MagicBulkHandler
 
                 // Log dropped columns for debugging purposes.
                 $this->logger->debug(
-                    '[MagicBulkHandler] Dropping column not in table',
-                    ['column' => $columnName, 'table' => $tableName]
+                    message: '[MagicBulkHandler] Dropping column not in table',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'column' => $columnName, 'table' => $tableName]
                 );
             }
 
@@ -495,8 +495,10 @@ class MagicBulkHandler
                 }
 
                 $this->logger->debug(
-                    '[MagicBulkHandler] Pre-upsert UUID check',
-                    [
+                    message: '[MagicBulkHandler] Pre-upsert UUID check',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'chunk'          => $chunkNumber,
                         'total_uuids'    => count($uuids),
                         'existing_uuids' => count($existingUuids),
@@ -505,8 +507,8 @@ class MagicBulkHandler
                 );
             } catch (\Exception $e) {
                 $this->logger->warning(
-                    '[MagicBulkHandler] Failed to check existing UUIDs, will use timestamp-based classification',
-                    ['error' => $e->getMessage()]
+                    message: '[MagicBulkHandler] Failed to check existing UUIDs, will use timestamp-based classification',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
                 );
             }//end try
         }//end if
@@ -578,8 +580,10 @@ class MagicBulkHandler
             $stmt->execute($parameters);
 
             $this->logger->info(
-                '[MagicBulkHandler] Executed UPSERT chunk',
-                [
+                message: '[MagicBulkHandler] Executed UPSERT chunk',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'chunk'       => $chunkNumber,
                     'objects'     => count($chunk),
                     'table'       => $tableName,
@@ -589,8 +593,10 @@ class MagicBulkHandler
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                '[MagicBulkHandler] UPSERT chunk failed',
-                [
+                message: '[MagicBulkHandler] UPSERT chunk failed',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'chunk' => $chunkNumber,
                     'table' => $tableName,
                     'error' => $e->getMessage(),
@@ -648,8 +654,10 @@ class MagicBulkHandler
             }//end foreach
 
             $this->logger->info(
-                '[MagicBulkHandler] Classification complete (using pre-upsert UUID check)',
-                [
+                message: '[MagicBulkHandler] Classification complete (using pre-upsert UUID check)',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'chunk'            => $chunkNumber,
                     'uuids_requested'  => count($uuids),
                     'objects_returned' => count($completeObjects),
@@ -714,16 +722,18 @@ class MagicBulkHandler
             }
 
             $this->logger->debug(
-                '[MagicBulkHandler] Retrieved columns',
-                ['table' => $tableName, 'columns' => $columns]
+                message: '[MagicBulkHandler] Retrieved columns',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'table' => $tableName, 'columns' => $columns]
             );
             $this->tableColumnsCache[$tableName] = $columns;
 
             return $columns;
         } catch (\Exception $e) {
             $this->logger->error(
-                '[MagicBulkHandler] Failed to get table columns',
-                [
+                message: '[MagicBulkHandler] Failed to get table columns',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'table' => $tableName,
                     'error' => $e->getMessage(),
                 ]
@@ -757,8 +767,10 @@ class MagicBulkHandler
             } catch (\Exception $e) {
                 // If parsing fails, return the default.
                 $this->logger->debug(
-                    '[MagicBulkHandler] Failed to parse datetime value',
-                    [
+                    message: '[MagicBulkHandler] Failed to parse datetime value',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'value' => $value,
                         'error' => $e->getMessage(),
                     ]

@@ -180,7 +180,10 @@ class HyperFacetHandler
                 $this->cardinalityCache = $this->cacheFactory->createLocal('openregister_cardinality');
             } catch (\Exception $fallbackError) {
                 // No caching available - will use in-memory caching.
-                $this->logger->warning('Facet caching unavailable, performance will be reduced');
+                $this->logger->warning(
+                    message: '[HyperFacetHandler] Facet caching unavailable, performance will be reduced',
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
             }//end try
         }//end try
     }//end initializeCaches()
@@ -236,8 +239,10 @@ class HyperFacetHandler
 
         if ($cachedResult !== null) {
             $this->logger->debug(
-                'Hyper cache hit - instant facet response',
-                [
+                message: '[HyperFacetHandler] Hyper cache hit - instant facet response',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'cacheKey'     => substr($cacheKey, 0, 20).'...',
                     'responseTime' => '<10ms',
                     'source'       => 'cache_layer_1',
@@ -251,8 +256,10 @@ class HyperFacetHandler
         $optimizationStrategy = $this->selectOptimizationStrategy($datasetStats);
 
             $this->logger->debug(
-                'Dataset analysis completed',
-                [
+                message: '[HyperFacetHandler] Dataset analysis completed',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'estimatedSize' => $datasetStats['estimated_size'],
                     'strategy'      => $optimizationStrategy,
                     'analysisTime'  => round((microtime(true) - $startTime) * 1000, 2).'ms',
@@ -313,8 +320,10 @@ class HyperFacetHandler
         );
 
         $this->logger->debug(
-            'Hyper-optimized facets completed',
-            [
+            message: '[HyperFacetHandler] Hyper-optimized facets completed',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'strategy'      => $optimizationStrategy,
                 'executionTime' => $executionTime.'ms',
                 'facetCount'    => count($results),
@@ -527,8 +536,10 @@ class HyperFacetHandler
         $sampleSize = max(100, (int) ($totalSize * $sampleRate));
 
         $this->logger->debug(
-            'Using smart sampling strategy',
-            [
+            message: '[HyperFacetHandler] Using smart sampling strategy',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'totalSize'           => $totalSize,
                 'sampleRate'          => $sampleRate,
                 'sampleSize'          => $sampleSize,
@@ -595,8 +606,10 @@ class HyperFacetHandler
     private function calculateApproximateFacetsHyperLogLog(array $facetConfig, array $baseQuery, array $datasetStats): array
     {
         $this->logger->debug(
-            'Using HyperLogLog estimation strategy',
-            [
+            message: '[HyperFacetHandler] Using HyperLogLog estimation strategy',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'datasetSize'        => $datasetStats['estimated_size'],
                 'expectedAccuracy'   => '~95%',
                 'targetResponseTime' => '<50ms',
@@ -680,8 +693,10 @@ class HyperFacetHandler
 
                     $executionTime = round((microtime(true) - $startTime) * 1000, 2);
                     $this->logger->debug(
-                        'Metadata facets completed',
-                        [
+                        message: '[HyperFacetHandler] Metadata facets completed',
+                        context: [
+                            'file' => __FILE__,
+                            'line' => __LINE__,
                             'executionTime'     => $executionTime.'ms',
                             'facetCount'        => count($results),
                             'batchOptimization' => 'enabled',

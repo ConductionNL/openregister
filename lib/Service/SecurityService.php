@@ -523,13 +523,19 @@ class SecurityService
         switch ($event) {
             case 'user_locked_out':
             case 'login_attempt_during_lockout':
-                $this->logger->warning("Security event: {$event}", $context);
+                $this->logger->warning(
+                    message: "[SecurityService] Security event: {$event}",
+                    context: array_merge(['file' => __FILE__, 'line' => __LINE__], $context)
+                );
                 break;
             case 'rate_limit_exceeded':
             case 'failed_login_attempt':
             case 'successful_login':
             default:
-                $this->logger->info("Security event: {$event}", $context);
+                $this->logger->info(
+                    message: "[SecurityService] Security event: {$event}",
+                    context: array_merge(['file' => __FILE__, 'line' => __LINE__], $context)
+                );
                 break;
         }
     }//end logSecurityEvent()

@@ -90,8 +90,10 @@ class FilePropertyHandler
             if ($fileInfo['error'] !== UPLOAD_ERR_OK) {
                 // Log the error but don't fail the entire request.
                 $this->logger->warning(
-                    'File upload error for field {field}: {error}',
-                    [
+                    message: '[FilePropertyHandler] File upload error for field {field}: {error}',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'app'   => 'openregister',
                         'field' => $fieldName,
                         'error' => $fileInfo['error'],
@@ -166,8 +168,8 @@ class FilePropertyHandler
 
             if (isset($schemaProperties[$propertyName]) === false) {
                 $this->logger->debug(
-                    'isFileProperty: Property not in schema',
-                    ['app' => 'openregister', 'property' => $propertyName]
+                    message: '[FilePropertyHandler] isFileProperty: Property not in schema',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister', 'property' => $propertyName]
                 );
                 return false;
                 // Property not in schema, not a file.
@@ -177,8 +179,10 @@ class FilePropertyHandler
             $propertyType   = $propertyConfig['type'] ?? '';
 
             $this->logger->warning(
-                'isFileProperty: Checking property type',
-                [
+                message: '[FilePropertyHandler] isFileProperty: Checking property type',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'app'      => 'openregister',
                     'property' => $propertyName,
                     'type'     => $propertyType,
@@ -480,8 +484,10 @@ class FilePropertyHandler
         // Handle file deletion: null for single files, empty array for array properties.
         if ($fileValue === null || (is_array($fileValue) === true && empty($fileValue) === true)) {
             $this->logger->info(
-                'File property deletion requested',
-                [
+                message: '[FilePropertyHandler] File property deletion requested',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'app'          => 'openregister',
                     'propertyName' => $propertyName,
                     'uuid'         => $objectEntity->getUuid(),
@@ -500,8 +506,10 @@ class FilePropertyHandler
             }
 
             $this->logger->info(
-                'Existing file IDs for deletion',
-                [
+                message: '[FilePropertyHandler] Existing file IDs for deletion',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'app'             => 'openregister',
                     'propertyName'    => $propertyName,
                     'existingFileIds' => $existingFileIds,
@@ -519,10 +527,16 @@ class FilePropertyHandler
                                     file: (int) $fileId,
                                     object: $objectEntity
                                 );
-                                $this->logger->info("Deleted file $fileId for property $propertyName");
+                                $this->logger->info(
+                                    message: "[FilePropertyHandler] Deleted file $fileId for property $propertyName",
+                                    context: ['file' => __FILE__, 'line' => __LINE__]
+                                );
                             } catch (Exception $e) {
                                 // Log but don't fail - file might already be deleted.
-                                $this->logger->warning("Failed to delete file $fileId: ".$e->getMessage());
+                                $this->logger->warning(
+                                    message: "[FilePropertyHandler] Failed to delete file $fileId: ".$e->getMessage(),
+                                    context: ['file' => __FILE__, 'line' => __LINE__]
+                                );
                             }
                         }
                     }
@@ -533,10 +547,16 @@ class FilePropertyHandler
                             file: (int) $existingFileIds,
                             object: $objectEntity
                         );
-                        $this->logger->info("Deleted file $existingFileIds for property $propertyName");
+                        $this->logger->info(
+                            message: "[FilePropertyHandler] Deleted file $existingFileIds for property $propertyName",
+                            context: ['file' => __FILE__, 'line' => __LINE__]
+                        );
                     } catch (Exception $e) {
                         // Log but don't fail - file might already be deleted.
-                        $this->logger->warning("Failed to delete file $existingFileIds: ".$e->getMessage());
+                        $this->logger->warning(
+                            message: "[FilePropertyHandler] Failed to delete file $existingFileIds: ".$e->getMessage(),
+                            context: ['file' => __FILE__, 'line' => __LINE__]
+                        );
                     }
                 }//end if
             }//end if
@@ -548,8 +568,10 @@ class FilePropertyHandler
             }
 
             $this->logger->info(
-                'File property set to null/empty',
-                [
+                message: '[FilePropertyHandler] File property set to null/empty',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'app'          => 'openregister',
                     'propertyName' => $propertyName,
                     'newValue'     => $object[$propertyName],
@@ -804,8 +826,10 @@ class FilePropertyHandler
                 if ($existingFile !== null) {
                     // File exists and belongs to this object - return the existing ID.
                     $this->logger->debug(
-                        'Using existing file ID {fileId} for property {property}',
-                        [
+                        message: '[FilePropertyHandler] Using existing file ID {fileId} for property {property}',
+                        context: [
+                            'file' => __FILE__,
+                            'line' => __LINE__,
                             'app'      => 'openregister',
                             'fileId'   => $fileId,
                             'property' => $propertyName,
@@ -816,8 +840,10 @@ class FilePropertyHandler
             } catch (Exception $e) {
                 // File doesn't exist or is not accessible - continue to create new file.
                 $this->logger->debug(
-                    'Could not retrieve existing file {fileId}: {error}',
-                    [
+                    message: '[FilePropertyHandler] Could not retrieve existing file {fileId}: {error}',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'app'    => 'openregister',
                         'fileId' => $fileId,
                         'error'  => $e->getMessage(),
@@ -1090,8 +1116,10 @@ class FilePropertyHandler
             $extension = strtolower(pathinfo($fileData['filename'], PATHINFO_EXTENSION));
             if (in_array($extension, $dangerousExtensions, true) === true) {
                 $this->logger->warning(
-                    'Executable file upload blocked',
-                    [
+                    message: '[FilePropertyHandler] Executable file upload blocked',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'app'       => 'openregister',
                         'filename'  => $fileData['filename'],
                         'extension' => $extension,
@@ -1117,8 +1145,10 @@ class FilePropertyHandler
         $mimeType = $fileData['mimeType'] ?? null;
         if ($mimeType !== null && in_array($mimeType, $executableMimeTypes, true) === true) {
             $this->logger->warning(
-                'Executable MIME type blocked',
-                [
+                message: '[FilePropertyHandler] Executable MIME type blocked',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'app'      => 'openregister',
                     'mimeType' => $mimeType,
                 ]
@@ -1175,8 +1205,10 @@ class FilePropertyHandler
 
             if (strpos($content, $signature) === 0) {
                 $this->logger->warning(
-                    'Executable magic bytes detected',
-                    [
+                    message: '[FilePropertyHandler] Executable magic bytes detected',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'app'  => 'openregister',
                         'type' => $description,
                     ]

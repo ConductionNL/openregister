@@ -78,8 +78,10 @@ class FileHandler
     public function indexFileChunks(int $fileId, array $chunks, array $metadata): array
     {
         $this->logger->info(
-            '[FileHandler] Indexing file chunks',
-            [
+            message: '[FileHandler] Indexing file chunks',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'file_id'     => $fileId,
                 'chunk_count' => count($chunks),
             ]
@@ -148,8 +150,10 @@ class FileHandler
             ];
         } catch (Exception $e) {
             $this->logger->error(
-                '[FileHandler] Failed to get file stats',
-                [
+                message: '[FileHandler] Failed to get file stats',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -175,8 +179,10 @@ class FileHandler
     public function processUnindexedChunks(?int $limit=null): array
     {
         $this->logger->info(
-            '[FileHandler] Starting chunk indexing',
-            [
+            message: '[FileHandler] Starting chunk indexing',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'limit' => $limit,
             ]
         );
@@ -238,8 +244,10 @@ class FileHandler
                 $stats['failed']++;
                 $stats['errors'][] = "File {$fileId}: ".$e->getMessage();
                 $this->logger->error(
-                    '[FileHandler] Failed to process file chunks',
-                    [
+                    message: '[FileHandler] Failed to process file chunks',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'file_id' => $fileId,
                         'error'   => $e->getMessage(),
                     ]
@@ -251,8 +259,10 @@ class FileHandler
         $stats['execution_time_ms'] = $executionTime;
 
         $this->logger->info(
-            '[FileHandler] Chunk indexing complete',
-            [
+            message: '[FileHandler] Chunk indexing complete',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'stats' => $stats,
             ]
         );
@@ -299,8 +309,10 @@ class FileHandler
     public function indexFiles(array $fileIds, ?string $collectionName=null): array
     {
         $this->logger->info(
-            '[FileHandler] Indexing files',
-            [
+            message: '[FileHandler] Indexing files',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'count'      => count($fileIds),
                 'collection' => $collectionName,
             ]
@@ -316,8 +328,10 @@ class FileHandler
             return $this->searchBackend->indexFiles($fileIds, $collectionName);
         } catch (Exception $e) {
             $this->logger->error(
-                '[FileHandler] Failed to index files',
-                [
+                message: '[FileHandler] Failed to index files',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -347,8 +361,10 @@ class FileHandler
             return $this->searchBackend->getFileIndexStats();
         } catch (Exception $e) {
             $this->logger->error(
-                '[FileHandler] Failed to get file index stats',
-                [
+                message: '[FileHandler] Failed to get file index stats',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );

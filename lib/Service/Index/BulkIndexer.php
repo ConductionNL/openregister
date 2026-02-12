@@ -134,7 +134,10 @@ class BulkIndexer
      */
     public function bulkIndexObjects(array $_objects, bool $_commit=true): array
     {
-        $this->logger->warning('[BulkIndexer] bulkIndexObjects not yet fully extracted - needs implementation');
+        $this->logger->warning(
+            message: '[BulkIndexer] bulkIndexObjects not yet fully extracted - needs implementation',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
 
         return [
             'success' => false,
@@ -184,7 +187,10 @@ class BulkIndexer
             $offset       = 0;
             $results      = ['skipped_non_searchable' => 0];
 
-            $this->logger->info('[BulkIndexer] Starting bulk index from database');
+            $this->logger->info(
+                message: '[BulkIndexer] Starting bulk index from database',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
 
             // Get count of searchable objects for planning.
             $totalObjects     = $this->countSearchableObjects($schemaIds);
@@ -196,8 +202,10 @@ class BulkIndexer
             }
 
             $this->logger->info(
-                '[BulkIndexer] Planning bulk index',
-                [
+                message: '[BulkIndexer] Planning bulk index',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'totalSearchableObjects' => $totalObjects,
                     'maxObjects'             => $maxObjects,
                     'batchSize'              => $batchSize,
@@ -229,8 +237,10 @@ class BulkIndexer
 
                 $fetchDuration = round((microtime(true) - $fetchStart) * 1000, 2);
                 $this->logger->info(
-                    '[BulkIndexer] Batch fetched',
-                    [
+                    message: '[BulkIndexer] Batch fetched',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'batch'        => $batchCount + 1,
                         'objectsFound' => $objectsCount,
                         'fetchTime'    => $fetchDuration.'ms',
@@ -254,8 +264,10 @@ class BulkIndexer
                         if (str_contains($e->getMessage(), 'Schema is not searchable') === true) {
                             $results['skipped_non_searchable']++;
                             $this->logger->warning(
-                                '[BulkIndexer] Unexpected non-searchable schema',
-                                [
+                                message: '[BulkIndexer] Unexpected non-searchable schema',
+                                context: [
+                                    'file' => __FILE__,
+                                    'line' => __LINE__,
                                     'objectId' => $object->getId(),
                                     'error'    => $e->getMessage(),
                                 ]
@@ -266,8 +278,10 @@ class BulkIndexer
                         throw $e;
                     } catch (\Exception $e) {
                         $this->logger->warning(
-                            '[BulkIndexer] Failed to create document',
-                            [
+                            message: '[BulkIndexer] Failed to create document',
+                            context: [
+                                'file' => __FILE__,
+                                'line' => __LINE__,
                                 'error'    => $e->getMessage(),
                                 'objectId' => $object->getId(),
                             ]
@@ -284,8 +298,10 @@ class BulkIndexer
 
                     $indexDuration = round((microtime(true) - $indexStart) * 1000, 2);
                     $this->logger->debug(
-                        '[BulkIndexer] Batch indexed',
-                        [
+                        message: '[BulkIndexer] Batch indexed',
+                        context: [
+                            'file' => __FILE__,
+                            'line' => __LINE__,
                             'documents' => $indexed,
                             'indexTime' => $indexDuration.'ms',
                         ]
@@ -298,8 +314,10 @@ class BulkIndexer
             } while ($objectsCount === $currentBatchSize && ($maxObjects === 0 || $totalIndexed < $maxObjects));
 
             $this->logger->info(
-                '[BulkIndexer] Bulk indexing completed',
-                [
+                message: '[BulkIndexer] Bulk indexing completed',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'totalIndexed' => $totalIndexed,
                     'totalBatches' => $batchCount,
                     'batchSize'    => $batchSize,
@@ -314,7 +332,10 @@ class BulkIndexer
                 'skipped_non_searchable' => $results['skipped_non_searchable'] ?? 0,
             ];
         } catch (\Exception $e) {
-            $this->logger->error('[BulkIndexer] Bulk indexing failed', ['error' => $e->getMessage()]);
+            $this->logger->error(
+                message: '[BulkIndexer] Bulk indexing failed',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+            );
             $indexed = ($totalIndexed ?? 0);
             $batches = ($batchCount ?? 0);
             $msg     = 'Bulk indexing failed: '.$e->getMessage().' (Indexed: '.$indexed.', Batches: '.$batches.')';
@@ -389,7 +410,10 @@ class BulkIndexer
                         $searchableIds[] = $schemaId;
                     }
                 } catch (\Exception $e) {
-                    $this->logger->warning('[BulkIndexer] Schema not found', ['schemaId' => $schemaId]);
+                    $this->logger->warning(
+                        message: '[BulkIndexer] Schema not found',
+                        context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $schemaId]
+                    );
                 }
             }
 
