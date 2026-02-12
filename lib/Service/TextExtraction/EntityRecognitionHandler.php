@@ -128,6 +128,8 @@ class EntityRecognitionHandler
         $this->logger->info(
             message: '[EntityRecognitionHandler] Processing chunks for entity extraction',
             context: [
+                'file'        => __FILE__,
+                'line'        => __LINE__,
                 'source_type' => $sourceType,
                 'source_id'   => $sourceId,
             ]
@@ -156,6 +158,8 @@ class EntityRecognitionHandler
                 $this->logger->error(
                     message: '[EntityRecognitionHandler] Failed to process chunk',
                     context: [
+                        'file'        => __FILE__,
+                        'line'        => __LINE__,
                         'chunk_id'    => $chunk->getId(),
                         'source_type' => $sourceType,
                         'source_id'   => $sourceId,
@@ -168,6 +172,8 @@ class EntityRecognitionHandler
         $this->logger->info(
             message: '[EntityRecognitionHandler] Source processing complete',
             context: [
+                'file'              => __FILE__,
+                'line'              => __LINE__,
                 'source_type'       => $sourceType,
                 'source_id'         => $sourceId,
                 'chunks_processed'  => $chunksProcessed,
@@ -206,6 +212,8 @@ class EntityRecognitionHandler
         $this->logger->debug(
             message: '[EntityRecognitionHandler] Extracting entities from chunk',
             context: [
+                'file'        => __FILE__,
+                'line'        => __LINE__,
                 'chunk_id'    => $chunk->getId(),
                 'source_type' => $chunk->getSourceType(),
                 'source_id'   => $chunk->getSourceId(),
@@ -294,6 +302,8 @@ class EntityRecognitionHandler
                 $this->logger->error(
                     message: '[EntityRecognitionHandler] Failed to store entity',
                     context: [
+                        'file'     => __FILE__,
+                        'line'     => __LINE__,
                         'chunk_id' => $chunk->getId(),
                         'type'     => $detected['type'] ?? 'unknown',
                         'value'    => substr($detected['value'] ?? '', 0, 50),

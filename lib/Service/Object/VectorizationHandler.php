@@ -138,7 +138,11 @@ class VectorizationHandler
     {
         $this->logger->debug(
             message: '[VectorizationHandler] Getting vectorization statistics',
-            context: ['views' => $views]
+            context: [
+                'file'  => __FILE__,
+                'line'  => __LINE__,
+                'views' => $views,
+            ]
         );
 
         try {
@@ -156,7 +160,7 @@ class VectorizationHandler
 
             $this->logger->debug(
                 message: '[VectorizationHandler] Statistics retrieved',
-                context: $stats
+                context: array_merge(['file' => __FILE__, 'line' => __LINE__], $stats)
             );
 
             return $stats;
@@ -189,7 +193,11 @@ class VectorizationHandler
     {
         $this->logger->debug(
             message: '[VectorizationHandler] Getting object count',
-            context: ['schemas' => $schemas]
+            context: [
+                'file'    => __FILE__,
+                'line'    => __LINE__,
+                'schemas' => $schemas,
+            ]
         );
 
         try {
@@ -199,7 +207,11 @@ class VectorizationHandler
 
             $this->logger->debug(
                 message: '[VectorizationHandler] Count retrieved',
-                context: ['count' => $count]
+                context: [
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
+                    'count' => $count,
+                ]
             );
 
             return $count;

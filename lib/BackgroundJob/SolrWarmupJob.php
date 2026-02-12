@@ -216,13 +216,13 @@ class SolrWarmupJob extends QueuedJob
             $logger->error(
                 message: '[SolrWarmupJob] 🚨 SOLR Warmup Job Exception',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'                   => __FILE__,
+                    'line'                   => __LINE__,
                     'job_id'                 => $this->getId(),
                     'execution_time_seconds' => round($executionTime, 2),
                     'exception'              => $e->getMessage(),
-                    'file'                   => $e->getFile(),
-                    'line'                   => $e->getLine(),
+                    'exception_file'         => $e->getFile(),
+                    'exception_line'         => $e->getLine(),
                     'triggered_by'           => $triggeredBy,
                     'trace'                  => $e->getTraceAsString(),
                 ]

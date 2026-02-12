@@ -5871,6 +5871,8 @@ class MagicMapper
                 $this->logger->debug(
                     message: '[MagicMapper] Failed to search table for relation',
                     context: [
+                        'file'      => __FILE__,
+                        'line'      => __LINE__,
                         'tableName' => $tableName,
                         'uuid'      => $uuid,
                         'error'     => $e->getMessage(),
@@ -5981,6 +5983,8 @@ class MagicMapper
                 $this->logger->debug(
                     message: '[MagicMapper] findByRelationUsingRelationsColumn table query failed',
                     context: [
+                        'file'      => __FILE__,
+                        'line'      => __LINE__,
                         'tableName' => $tableName,
                         'error'     => $e->getMessage(),
                     ]
@@ -6115,6 +6119,8 @@ class MagicMapper
             $this->logger->info(
                 message: '[MagicMapper] findByRelationBatchInSchema completed',
                 context: [
+                    'file'          => __FILE__,
+                    'line'          => __LINE__,
                     'tableName'     => $fullTableName,
                     'schemaId'      => $schemaId,
                     'registerId'    => $registerId,
@@ -6128,6 +6134,8 @@ class MagicMapper
             $this->logger->warning(
                 message: '[MagicMapper] findByRelationBatchInSchema failed',
                 context: [
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
                     'tableName'  => $fullTableName,
                     'schemaId'   => $schemaId,
                     'registerId' => $registerId,
@@ -6181,6 +6189,8 @@ class MagicMapper
             $this->logger->debug(
                 message: '[MagicMapper] findByRelationInTable query executed',
                 context: [
+                    'file'        => __FILE__,
+                    'line'        => __LINE__,
                     'tableName'   => $fullTableName,
                     'uuid'        => $uuid,
                     'resultCount' => count($rows),
@@ -6190,6 +6200,8 @@ class MagicMapper
             $this->logger->debug(
                 message: '[MagicMapper] findByRelationInTable query failed',
                 context: [
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
                     'tableName' => $fullTableName,
                     'uuid'      => $uuid,
                     'error'     => $e->getMessage(),
