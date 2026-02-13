@@ -109,8 +109,10 @@ class OrganisationController extends Controller
             return new JSONResponse(data: $stats, statusCode: Http::STATUS_OK);
         } catch (Exception $e) {
             $this->logger->error(
-                message: 'Failed to get user organisations',
+                message: '[OrganisationController] Failed to get user organisations',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]
@@ -177,8 +179,10 @@ class OrganisationController extends Controller
             );
         } catch (Exception $e) {
             $this->logger->error(
-                message: 'Failed to set active organisation',
+                message: '[OrganisationController] Failed to set active organisation',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'uuid'  => $uuid,
                     'error' => $e->getMessage(),
                 ]
@@ -232,8 +236,10 @@ class OrganisationController extends Controller
             );
         } catch (Exception $e) {
             $this->logger->error(
-                message: 'Failed to get active organisation',
+                message: '[OrganisationController] Failed to get active organisation',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -304,8 +310,10 @@ class OrganisationController extends Controller
             );
         } catch (Exception $e) {
             $this->logger->error(
-                message: 'Failed to create organisation',
+                message: '[OrganisationController] Failed to create organisation',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'name'  => $name,
                     'error' => $e->getMessage(),
                 ]
@@ -362,8 +370,10 @@ class OrganisationController extends Controller
             );
         } catch (Exception $e) {
             $this->logger->error(
-                message: 'Failed to join organisation',
+                message: '[OrganisationController] Failed to join organisation',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'uuid'   => $uuid,
                     'userId' => $requestData['userId'] ?? 'current_user',
                     'error'  => $e->getMessage(),
@@ -426,8 +436,10 @@ class OrganisationController extends Controller
             );
         } catch (Exception $e) {
             $this->logger->error(
-                message: 'Failed to leave organisation',
+                message: '[OrganisationController] Failed to leave organisation',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'uuid'   => $uuid,
                     'userId' => $userId ?? 'current-user',
                     'error'  => $e->getMessage(),
@@ -494,8 +506,10 @@ class OrganisationController extends Controller
             );
         } catch (Exception $e) {
             $this->logger->error(
-                message: 'Failed to get organisation',
+                message: '[OrganisationController] Failed to get organisation',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'uuid'  => $uuid,
                     'error' => $e->getMessage(),
                 ]
@@ -647,8 +661,10 @@ class OrganisationController extends Controller
             );
         } catch (Exception $e) {
             $this->logger->error(
-                message: 'Failed to search organisations',
+                message: '[OrganisationController] Failed to search organisations',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'query' => $query,
                     'error' => $e->getMessage(),
                 ]
@@ -689,8 +705,10 @@ class OrganisationController extends Controller
             );
         } catch (Exception $e) {
             $this->logger->error(
-                message: 'Failed to clear cache',
+                message: '[OrganisationController] Failed to clear cache',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -730,8 +748,10 @@ class OrganisationController extends Controller
             );
         } catch (Exception $e) {
             $this->logger->error(
-                message: 'Failed to get organisation statistics',
+                message: '[OrganisationController] Failed to get organisation statistics',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -930,8 +950,10 @@ class OrganisationController extends Controller
             return null;
         } catch (Exception $e) {
             $this->logger->warning(
-                message: 'Parent assignment validation failed',
+                message: '[OrganisationController] Parent assignment validation failed',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'organisationUuid' => $uuid,
                     'newParent'        => $newParent,
                     'error'            => $e->getMessage(),
@@ -973,8 +995,10 @@ class OrganisationController extends Controller
     private function handleUpdateError(string $uuid, Exception $exception): JSONResponse
     {
         $this->logger->error(
-            message: 'Failed to update organisation',
+            message: '[OrganisationController] Failed to update organisation',
             context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'uuid'  => $uuid,
                 'error' => $exception->getMessage(),
                 'trace' => $exception->getTraceAsString(),

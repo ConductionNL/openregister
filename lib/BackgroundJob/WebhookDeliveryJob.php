@@ -129,8 +129,10 @@ class WebhookDeliveryJob extends QueuedJob
 
         if ($webhookId === null || $eventName === null) {
             $this->logger->error(
-                'WebhookDeliveryJob called with invalid arguments',
-                [
+                message: '[WebhookDeliveryJob] WebhookDeliveryJob called with invalid arguments',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'argument' => $argument,
                 ]
             );
@@ -141,8 +143,10 @@ class WebhookDeliveryJob extends QueuedJob
             $webhook = $this->webhookMapper->find($webhookId);
 
             $this->logger->info(
-                'Executing webhook delivery job',
-                [
+                message: '[WebhookDeliveryJob] Executing webhook delivery job',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'webhook_id'   => $webhookId,
                     'webhook_name' => $webhook->getName(),
                     'event'        => $eventName,
@@ -160,8 +164,10 @@ class WebhookDeliveryJob extends QueuedJob
 
             if ($success === true) {
                 $this->logger->info(
-                    'Webhook delivery job completed successfully',
-                    [
+                    message: '[WebhookDeliveryJob] Webhook delivery job completed successfully',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'webhook_id'   => $webhookId,
                         'webhook_name' => $webhook->getName(),
                         'event'        => $eventName,
@@ -172,8 +178,10 @@ class WebhookDeliveryJob extends QueuedJob
 
             if ($success === false) {
                 $this->logger->warning(
-                    'Webhook delivery job failed',
-                    [
+                    message: '[WebhookDeliveryJob] Webhook delivery job failed',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'webhook_id'   => $webhookId,
                         'webhook_name' => $webhook->getName(),
                         'event'        => $eventName,
@@ -183,8 +191,10 @@ class WebhookDeliveryJob extends QueuedJob
             }//end if
         } catch (\Exception $e) {
             $this->logger->error(
-                'Webhook delivery job encountered an exception',
-                [
+                message: '[WebhookDeliveryJob] Webhook delivery job encountered an exception',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'webhook_id' => $webhookId,
                     'event'      => $eventName,
                     'attempt'    => $attempt,

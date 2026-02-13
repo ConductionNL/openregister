@@ -122,8 +122,8 @@ class MagicSearchHandler
             $this->hasPgTrgm = $count > 0;
         } catch (Exception $e) {
             $this->logger->warning(
-                'Failed to check pg_trgm extension availability',
-                ['error' => $e->getMessage()]
+                message: '[MagicSearchHandler] Failed to check pg_trgm extension availability',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
             );
             $this->hasPgTrgm = false;
         }
@@ -1138,8 +1138,10 @@ class MagicSearchHandler
             return $objectEntity;
         } catch (\Exception $e) {
             $this->logger->error(
-                'Failed to convert row to ObjectEntity',
-                [
+                message: '[MagicSearchHandler] Failed to convert row to ObjectEntity',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error'     => $e->getMessage(),
                     'tableName' => $tableName,
                     'row'       => $row,

@@ -91,8 +91,10 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
         $limit = $options['batch_size'] ?? 25;
 
         $this->logger->debug(
-            '[ObjectVectorizationStrategy] Fetching objects',
-            [
+            message: '[ObjectVectorizationStrategy] Fetching objects',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'views' => $views,
                 'limit' => $limit,
             ]
@@ -120,8 +122,10 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
         $count = count($objects);
 
         $this->logger->debug(
-            '[ObjectVectorizationStrategy] Fetched objects',
-            [
+            message: '[ObjectVectorizationStrategy] Fetched objects',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'count' => $count,
             ]
         );
@@ -210,8 +214,10 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
 
         // DEBUG: Log what we're receiving.
         $this->logger->debug(
-            '[ObjectVectorizationStrategy] Preparing metadata',
-            [
+            message: '[ObjectVectorizationStrategy] Preparing metadata',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'object_id'       => $objectId,
                 'has_@self'       => isset($objectData['@self']) === true,
                 '@self_keys'      => $this->extractSelfKeys($objectData),
@@ -361,8 +367,10 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
         $maxNestingDepth  = $config['maxNestingDepth'] ?? 10;
 
         $this->logger->debug(
-            '[ObjectVectorizationStrategy] Serializing object',
-            [
+            message: '[ObjectVectorizationStrategy] Serializing object',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'objectId'         => $object['id'] ?? 'unknown',
                 'includeMetadata'  => $includeMetadata,
                 'includeRelations' => $includeRelations,

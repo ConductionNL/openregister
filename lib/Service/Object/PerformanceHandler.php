@@ -76,8 +76,10 @@ class PerformanceHandler
         if ($isSimpleRequest === true) {
             $query['_fast_path'] = true;
             $this->logger->debug(
-                message: '🚀 FAST PATH: Simple request detected',
+                message: '[PerformanceHandler] 🚀 FAST PATH: Simple request detected',
                 context: [
+                    'file'            => __FILE__,
+                    'line'            => __LINE__,
                     'benefit'         => 'skip_heavy_processing',
                     'estimatedSaving' => '200-300ms',
                 ]
@@ -99,8 +101,10 @@ class PerformanceHandler
 
             if ($newExtendCount < $originalExtendCount) {
                 $this->logger->info(
-                    message: '⚡ EXTEND OPTIMIZATION: Reduced extend complexity',
+                    message: '[PerformanceHandler] ⚡ EXTEND OPTIMIZATION: Reduced extend complexity',
                     context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'original'        => $originalExtendCount,
                         'optimized'       => $newExtendCount,
                         'estimatedSaving' => ($originalExtendCount - $newExtendCount) * (100).'ms',
@@ -284,12 +288,14 @@ class PerformanceHandler
         $executionTime = round((microtime(true) - $startTime) * 1000, 2);
 
         $this->logger->debug(
-            message: '🔗 RELATED DATA EXTRACTED',
+            message: '[PerformanceHandler] 🔗 RELATED DATA EXTRACTED',
             context: [
-                'related_ids_found'     => count($allRelatedIds),
-                'include_related'       => $includeRelated,
-                'include_related_names' => $includeRelatedNames,
-                'execution_time'        => $executionTime.'ms',
+                'file'                   => __FILE__,
+                'line'                   => __LINE__,
+                'related_ids_found'      => count($allRelatedIds),
+                'include_related'        => $includeRelated,
+                'include_related_names'  => $includeRelatedNames,
+                'execution_time'         => $executionTime.'ms',
             ]
         );
 

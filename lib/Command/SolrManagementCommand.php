@@ -254,7 +254,10 @@ class SolrManagementCommand extends Command
             return self::SUCCESS;
         } catch (\Exception $e) {
             $output->writeln('<error>❌ Setup failed: '.$e->getMessage().'</error>');
-            $this->logger->error('SOLR setup failed', ['error' => $e->getMessage()]);
+            $this->logger->error(
+                message: '[SolrManagementCommand] SOLR setup failed',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+            );
             return self::FAILURE;
         }//end try
     }//end handleSetup()

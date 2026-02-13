@@ -113,8 +113,10 @@ class SolrWarmupJob extends QueuedJob
         $logger = \OC::$server->get(LoggerInterface::class);
 
         $logger->info(
-            message: '🔥 SOLR Warmup Job Started',
+            message: '[SolrWarmupJob] 🔥 SOLR Warmup Job Started',
             context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'job_id'         => $this->getId(),
                 'max_objects'    => $maxObjects,
                 'mode'           => $mode,
@@ -137,8 +139,10 @@ class SolrWarmupJob extends QueuedJob
             // Check if SOLR is available before proceeding.
             if ($this->isSolrAvailable(solrService: $solrService, logger: $logger) === false) {
                 $logger->warning(
-                    message: 'SOLR Warmup Job skipped - SOLR not available',
+                    message: '[SolrWarmupJob] SOLR Warmup Job skipped - SOLR not available',
                     context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'job_id'       => $this->getId(),
                         'triggered_by' => $triggeredBy,
                     ]
@@ -150,8 +154,10 @@ class SolrWarmupJob extends QueuedJob
             $schemas = $schemaMapper->findAll();
 
             $logger->info(
-                message: 'Starting SOLR index warmup',
+                message: '[SolrWarmupJob] Starting SOLR index warmup',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'schemas_found' => count($schemas),
                     'max_objects'   => $maxObjects,
                     'mode'          => $mode,
@@ -170,8 +176,10 @@ class SolrWarmupJob extends QueuedJob
 
             if (($result['success'] ?? false) === true) {
                 $logger->info(
-                    '✅ SOLR Warmup Job Completed Successfully',
-                    [
+                    message: '[SolrWarmupJob] ✅ SOLR Warmup Job Completed Successfully',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'job_id'                 => $this->getId(),
                         'execution_time_seconds' => round($executionTime, 2),
                         'objects_indexed'        => $result['operations']['objects_indexed'] ?? 0,
@@ -191,8 +199,10 @@ class SolrWarmupJob extends QueuedJob
 
             if (($result['success'] ?? false) === false) {
                 $logger->error(
-                    '❌ SOLR Warmup Job Failed',
-                    [
+                    message: '[SolrWarmupJob] ❌ SOLR Warmup Job Failed',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'job_id'                 => $this->getId(),
                         'execution_time_seconds' => round($executionTime, 2),
                         'error'                  => $result['error'] ?? 'Unknown error',
@@ -204,13 +214,15 @@ class SolrWarmupJob extends QueuedJob
             $executionTime = microtime(true) - $startTime;
 
             $logger->error(
-                message: '🚨 SOLR Warmup Job Exception',
+                message: '[SolrWarmupJob] 🚨 SOLR Warmup Job Exception',
                 context: [
+                    'file'                   => __FILE__,
+                    'line'                   => __LINE__,
                     'job_id'                 => $this->getId(),
                     'execution_time_seconds' => round($executionTime, 2),
                     'exception'              => $e->getMessage(),
-                    'file'                   => $e->getFile(),
-                    'line'                   => $e->getLine(),
+                    'exception_file'         => $e->getFile(),
+                    'exception_line'         => $e->getLine(),
                     'triggered_by'           => $triggeredBy,
                     'trace'                  => $e->getTraceAsString(),
                 ]
@@ -238,7 +250,7 @@ class SolrWarmupJob extends QueuedJob
         // Check if SOLR service is available and configured.
         // Returns false if SOLR is not configured or connection fails.
         if ($solrService->isAvailable() === false) {
-            $logger->debug(message: 'SOLR Warmup Job skipped - SOLR service not available');
+            $logger->debug(message: '[SolrWarmupJob] SOLR Warmup Job skipped - SOLR service not available', context: ['file' => __FILE__, 'line' => __LINE__]);
             return false;
         }
 

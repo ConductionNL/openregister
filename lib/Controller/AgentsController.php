@@ -222,8 +222,10 @@ class AgentsController extends Controller
         } catch (Exception $e) {
             // Log error with full context.
             $this->logger->error(
-                'Failed to get agents',
-                [
+                message: '[AgentsController] Failed to get agents',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]
@@ -278,8 +280,10 @@ class AgentsController extends Controller
         } catch (Exception $e) {
             // Log error with agent ID.
             $this->logger->error(
-                'Failed to get agent',
-                [
+                message: '[AgentsController] Failed to get agent',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'id'    => $id,
                     'error' => $e->getMessage(),
                 ]
@@ -342,8 +346,10 @@ class AgentsController extends Controller
 
             // Log successful creation.
             $this->logger->info(
-                'Agent created successfully',
-                [
+                message: '[AgentsController] Agent created successfully',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'id'           => $agent->getId(),
                     'organisation' => $agent->getOrganisation(),
                     'isPrivate'    => $agent->getIsPrivate(),
@@ -358,8 +364,10 @@ class AgentsController extends Controller
         } catch (Exception $e) {
             // Log error with full context.
             $this->logger->error(
-                'Failed to create agent',
-                [
+                message: '[AgentsController] Failed to create agent',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]
@@ -423,8 +431,8 @@ class AgentsController extends Controller
 
             // Log successful update.
             $this->logger->info(
-                message: 'Agent updated successfully',
-                context: ['id' => $id]
+                message: '[AgentsController] Agent updated successfully',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'id' => $id]
             );
 
             // Return successful response with updated agent.
@@ -435,8 +443,10 @@ class AgentsController extends Controller
         } catch (Exception $e) {
             // Log error with agent ID.
             $this->logger->error(
-                'Failed to update agent',
-                [
+                message: '[AgentsController] Failed to update agent',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'id'    => $id,
                     'error' => $e->getMessage(),
                 ]
@@ -510,8 +520,8 @@ class AgentsController extends Controller
 
             // Log successful deletion.
             $this->logger->info(
-                message: 'Agent deleted successfully',
-                context: ['id' => $id]
+                message: '[AgentsController] Agent deleted successfully',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'id' => $id]
             );
 
             // Return successful response.
@@ -522,8 +532,10 @@ class AgentsController extends Controller
         } catch (Exception $e) {
             // Log error with agent ID.
             $this->logger->error(
-                'Failed to delete agent',
-                [
+                message: '[AgentsController] Failed to delete agent',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'id'    => $id,
                     'error' => $e->getMessage(),
                 ]
@@ -566,8 +578,10 @@ class AgentsController extends Controller
             return new JSONResponse(data: $stats, statusCode: Http::STATUS_OK);
         } catch (Exception $e) {
             $this->logger->error(
-                'Failed to get agent statistics',
-                [
+                message: '[AgentsController] Failed to get agent statistics',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -600,8 +614,10 @@ class AgentsController extends Controller
 
             // Log debug information about tools returned.
             $this->logger->debug(
-                '[AgentsController] Returning available tools',
-                [
+                message: '[AgentsController] Returning available tools',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'count' => count($tools),
                 ]
             );
@@ -614,8 +630,10 @@ class AgentsController extends Controller
         } catch (Exception $e) {
             // Log error with full context.
             $this->logger->error(
-                'Failed to get available tools',
-                [
+                message: '[AgentsController] Failed to get available tools',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]

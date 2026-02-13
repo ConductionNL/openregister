@@ -200,8 +200,10 @@ class PreparationHandler
                 $publishedFromCsv = ($selfData['published'] ?? null) !== null && (empty($selfData['published']) === false);
                 if (($publishedFromCsv === false) === true && $tempEntity->getPublished() === null) {
                     $this->logger->debug(
-                        'Auto-publishing NEW object in bulk creation',
-                        [
+                        message: '[PreparationHandler] Auto-publishing NEW object in bulk creation',
+                        context: [
+                            'file' => __FILE__,
+                            'line' => __LINE__,
                             'schema'           => $schema->getTitle(),
                             'autoPublish'      => true,
                             'isNewObject'      => true,
@@ -211,8 +213,10 @@ class PreparationHandler
                     $tempEntity->setPublished(new DateTime());
                 } else if ($publishedFromCsv === true) {
                     $this->logger->debug(
-                        'Skipping auto-publish - published date provided from CSV',
-                        [
+                        message: '[PreparationHandler] Skipping auto-publish - published date provided from CSV',
+                        context: [
+                            'file' => __FILE__,
+                            'line' => __LINE__,
                             'schema'           => $schema->getTitle(),
                             'publishedFromCsv' => true,
                             'csvPublishedDate' => $selfData['published'],

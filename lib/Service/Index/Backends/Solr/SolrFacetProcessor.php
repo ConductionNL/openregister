@@ -91,7 +91,10 @@ class SolrFacetProcessor
         $collection = $this->collectionManager->getActiveCollectionName();
 
         if ($collection === null) {
-            $this->logger->warning('[SolrFacetProcessor] No active collection');
+            $this->logger->warning(
+                message: '[SolrFacetProcessor] No active collection',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return [];
         }
 
@@ -117,8 +120,10 @@ class SolrFacetProcessor
             }
 
             $this->logger->debug(
-                '[SolrFacetProcessor] Found facetable fields',
-                [
+                message: '[SolrFacetProcessor] Found facetable fields',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'count' => count($facetable),
                 ]
             );
@@ -126,8 +131,10 @@ class SolrFacetProcessor
             return $facetable;
         } catch (Exception $e) {
             $this->logger->error(
-                '[SolrFacetProcessor] Failed to get facetable fields',
-                [
+                message: '[SolrFacetProcessor] Failed to get facetable fields',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );

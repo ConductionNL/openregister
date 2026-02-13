@@ -418,7 +418,7 @@ class SolrManagementController extends Controller
         try {
             $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
             $logger->info(
-                message: '🗑️ Deleting SOLR field via API',
+                message: '[SolrManagementController] 🗑️ Deleting SOLR field via API',
                 context: [
                     'field_name' => $fieldName,
                     'user'       => $this->userId,
@@ -454,7 +454,7 @@ class SolrManagementController extends Controller
 
             if ($result['success'] === true) {
                 $logger->info(
-                    message: '✅ SOLR field deleted successfully via API',
+                    message: '[SolrManagementController] ✅ SOLR field deleted successfully via API',
                     context: [
                         'field_name' => $fieldName,
                         'user'       => $this->userId,
@@ -471,8 +471,10 @@ class SolrManagementController extends Controller
             }
 
             $logger->warning(
-                '❌ Failed to delete SOLR field via API',
-                [
+                message: '[SolrManagementController] ❌ Failed to delete SOLR field via API',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'field_name' => $fieldName,
                     'error'      => $result['message'],
                     'user'       => $this->userId,
@@ -490,7 +492,7 @@ class SolrManagementController extends Controller
         } catch (Exception $e) {
             $logger = $logger ?? \OC::$server->get(\Psr\Log\LoggerInterface::class);
             $logger->error(
-                message: 'Exception deleting SOLR field via API',
+                message: '[SolrManagementController] Exception deleting SOLR field via API',
                 context: [
                     'field_name' => $fieldName,
                     'error'      => $e->getMessage(),
@@ -778,8 +780,10 @@ class SolrManagementController extends Controller
             $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
 
             $logger->warning(
-                message: '🚨 SOLR collection deletion requested',
+                message: '[SolrManagementController] 🚨 SOLR collection deletion requested',
                 context: [
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
                     'timestamp'  => date('c'),
                     'user_id'    => $this->userId ?? 'unknown',
                     'collection' => $name,
@@ -795,8 +799,10 @@ class SolrManagementController extends Controller
 
             if ($result['success'] === true) {
                 $logger->info(
-                    message: '✅ SOLR collection deleted successfully',
+                    message: '[SolrManagementController] ✅ SOLR collection deleted successfully',
                     context: [
+                        'file'       => __FILE__,
+                        'line'       => __LINE__,
                         'collection' => $name,
                         'user_id'    => $this->userId ?? 'unknown',
                     ]
@@ -813,8 +819,10 @@ class SolrManagementController extends Controller
             }
 
             $logger->error(
-                '❌ SOLR collection deletion failed',
-                [
+                message: '[SolrManagementController] ❌ SOLR collection deletion failed',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error'      => $result['message'],
                     'error_code' => $result['error_code'] ?? 'unknown',
                     'collection' => $name,
@@ -834,8 +842,10 @@ class SolrManagementController extends Controller
         } catch (Exception $e) {
             $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
             $logger->error(
-                message: 'Exception during SOLR collection deletion',
+                message: '[SolrManagementController] Exception during SOLR collection deletion',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error'      => $e->getMessage(),
                     'collection' => $name,
                     'trace'      => $e->getTraceAsString(),

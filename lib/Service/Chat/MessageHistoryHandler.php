@@ -111,8 +111,10 @@ class MessageHistoryHandler
         );
 
         $this->logger->debug(
-            message: '[ChatService] Building message history',
+            message: '[MessageHistoryHandler] Building message history',
             context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'conversationId' => $conversationId,
                 'messageCount'   => count($messages),
             ]
@@ -124,8 +126,10 @@ class MessageHistoryHandler
             $role    = $message->getRole();
 
             $this->logger->debug(
-                message: '[ChatService] Adding message to history',
+                message: '[MessageHistoryHandler] Adding message to history',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'role'          => $role,
                     'contentLength' => strlen($content ?? ''),
                     'hasContent'    => empty($content) === false,
@@ -146,8 +150,10 @@ class MessageHistoryHandler
 
                 if ($role !== 'user' && $role !== 'assistant' && $role !== 'system') {
                     $this->logger->warning(
-                        message: '[ChatService] Unknown message role',
+                        message: '[MessageHistoryHandler] Unknown message role',
                         context: [
+                            'file' => __FILE__,
+                            'line' => __LINE__,
                             'role' => $role,
                         ]
                     );
@@ -156,8 +162,10 @@ class MessageHistoryHandler
 
             if (empty($role) === true || empty($content) === true) {
                 $this->logger->warning(
-                    message: '[ChatService] Skipping message with missing role or content',
+                    message: '[MessageHistoryHandler] Skipping message with missing role or content',
                     context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'hasRole'    => empty($role) === false,
                         'hasContent' => empty($content) === false,
                     ]
@@ -166,8 +174,10 @@ class MessageHistoryHandler
         }//end foreach
 
         $this->logger->info(
-            message: '[ChatService] Message history built',
+            message: '[MessageHistoryHandler] Message history built',
             context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'historyCount' => count($history),
             ]
         );
@@ -208,8 +218,10 @@ class MessageHistoryHandler
         $this->messageMapper->insert($message);
 
         $this->logger->debug(
-            message: '[ChatService] Message stored',
+            message: '[MessageHistoryHandler] Message stored',
             context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'messageId'      => $message->getId(),
                 'conversationId' => $conversationId,
                 'role'           => $role,

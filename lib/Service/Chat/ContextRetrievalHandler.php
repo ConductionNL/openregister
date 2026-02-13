@@ -108,8 +108,10 @@ class ContextRetrievalHandler
         array $ragSettings=[]
     ): array {
         $this->logger->info(
-            message: '[ChatService] Retrieving context',
+            message: '[ContextRetrievalHandler] Retrieving context',
             context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'query'       => substr($query, 0, 100),
                 'hasAgent'    => $agent !== null,
                 'ragSettings' => $ragSettings,
@@ -135,8 +137,10 @@ class ContextRetrievalHandler
             if (empty($selectedViews) === false) {
                 $viewFilters = array_intersect($agentViews, $selectedViews);
                 $this->logger->info(
-                    message: '[ChatService] Using filtered views',
+                    message: '[ContextRetrievalHandler] Using filtered views',
                     context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'agentViews'    => count($agentViews),
                         'selectedViews' => count($selectedViews),
                         'filteredViews' => count($viewFilters),
@@ -148,8 +152,10 @@ class ContextRetrievalHandler
                 // Use all agent views.
                 $viewFilters = $agentViews;
                 $this->logger->info(
-                    message: '[ChatService] Using all agent views',
+                    message: '[ContextRetrievalHandler] Using all agent views',
                     context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'views' => count($viewFilters),
                     ]
                 );
@@ -158,8 +164,10 @@ class ContextRetrievalHandler
             // User selected views but agent has no views configured - use selected ones.
             $viewFilters = $selectedViews;
             $this->logger->info(
-                message: '[ChatService] Using user-selected views (agent has none)',
+                message: '[ContextRetrievalHandler] Using user-selected views (agent has none)',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'views' => count($viewFilters),
                 ]
             );
@@ -218,8 +226,10 @@ class ContextRetrievalHandler
             // Ensure results is an array.
             if (is_array($results) === false) {
                 $this->logger->warning(
-                    message: '[ChatService] Search returned non-array result',
+                    message: '[ContextRetrievalHandler] Search returned non-array result',
                     context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'searchMode'  => $searchMode,
                         'resultType'  => gettype($results),
                         'resultValue' => $results,
@@ -242,8 +252,10 @@ class ContextRetrievalHandler
                 // Skip if result is not an array.
                 if (is_array($result) === false) {
                     $this->logger->warning(
-                        message: '[ChatService] Skipping non-array result',
+                        message: '[ContextRetrievalHandler] Skipping non-array result',
                         context: [
+                            'file' => __FILE__,
+                            'line' => __LINE__,
                             'resultType'  => gettype($result),
                             'resultValue' => $result,
                         ]
@@ -324,8 +336,10 @@ class ContextRetrievalHandler
             }//end foreach
 
             $this->logger->info(
-                message: '[ChatService] Context retrieved',
+                message: '[ContextRetrievalHandler] Context retrieved',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'numSources'        => count($sources),
                     'fileSources'       => $fileSourceCount,
                     'objectSources'     => $objectSourceCount,
@@ -342,8 +356,10 @@ class ContextRetrievalHandler
             // DEBUG: Log first source.
             if (empty($sources) === false) {
                 $this->logger->info(
-                    message: '[ChatService] First source details',
+                    message: '[ContextRetrievalHandler] First source details',
                     context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'source' => $sources[0],
                     ]
                 );
@@ -355,8 +371,10 @@ class ContextRetrievalHandler
             ];
         } catch (Exception $e) {
             $this->logger->error(
-                message: '[ChatService] Failed to retrieve context',
+                message: '[ContextRetrievalHandler] Failed to retrieve context',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );

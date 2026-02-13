@@ -130,7 +130,10 @@ class UserSettingsController extends Controller
                 statusCode: 200
             );
         } catch (Exception $e) {
-            $this->logger->error('Failed to get GitHub token status: '.$e->getMessage());
+            $this->logger->error(
+                message: '[UserSettingsController] Failed to get GitHub token status: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
 
             return new JSONResponse(data: ['error' => 'Failed to get token status'], statusCode: 500);
         }//end try
@@ -172,7 +175,7 @@ class UserSettingsController extends Controller
             }
 
             // Save the token (it's already saved by setUserToken).
-            $this->logger->info(message: "GitHub token set for user: {$user->getUID()}");
+            $this->logger->info(message: "[UserSettingsController] GitHub token set for user: {$user->getUID()}", context: ['file' => __FILE__, 'line' => __LINE__]);
 
             return new JSONResponse(
                 data: [
@@ -182,7 +185,7 @@ class UserSettingsController extends Controller
                 statusCode: 200
             );
         } catch (Exception $e) {
-            $this->logger->error(message: 'Failed to set GitHub token: '.$e->getMessage());
+            $this->logger->error(message: '[UserSettingsController] Failed to set GitHub token: '.$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
 
             return new JSONResponse(data: ['error' => 'Failed to save token: '.$e->getMessage()], statusCode: 500);
         }//end try
@@ -218,7 +221,7 @@ class UserSettingsController extends Controller
             // Clear the token.
             $this->gitHubService->setUserToken(token: null, userId: $user->getUID());
 
-            $this->logger->info(message: "GitHub token removed for user: {$user->getUID()}");
+            $this->logger->info(message: "[UserSettingsController] GitHub token removed for user: {$user->getUID()}", context: ['file' => __FILE__, 'line' => __LINE__]);
 
             return new JSONResponse(
                 data: [
@@ -228,7 +231,7 @@ class UserSettingsController extends Controller
                 statusCode: 200
             );
         } catch (Exception $e) {
-            $this->logger->error(message: 'Failed to remove GitHub token: '.$e->getMessage());
+            $this->logger->error(message: '[UserSettingsController] Failed to remove GitHub token: '.$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
 
             return new JSONResponse(data: ['error' => 'Failed to remove token'], statusCode: 500);
         }//end try

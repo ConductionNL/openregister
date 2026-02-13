@@ -104,6 +104,8 @@ class ExportHandler
         $this->logger->info(
             message: '[ExportHandler] Starting export',
             context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'register' => $register->getSlug(),
                 'schema'   => $schema->getSlug(),
                 'type'     => $type,
@@ -159,6 +161,8 @@ class ExportHandler
             $this->logger->info(
                 message: '[ExportHandler] Export completed',
                 context: [
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
                     'register' => $register->getSlug(),
                     'schema'   => $schema->getSlug(),
                     'type'     => $type,
@@ -171,6 +175,8 @@ class ExportHandler
             $this->logger->error(
                 message: '[ExportHandler] Export failed',
                 context: [
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
                     'register' => $register->getSlug(),
                     'schema'   => $schema->getSlug(),
                     'type'     => $type,
@@ -218,6 +224,8 @@ class ExportHandler
         $this->logger->info(
             message: '[ExportHandler] Starting import',
             context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'register'     => $register->getSlug(),
                 'filename'     => $filename,
                 'schema'       => $schema?->getSlug(),
@@ -246,6 +254,8 @@ class ExportHandler
                 $this->logger->debug(
                     message: '[ExportHandler] Auto-selected schema for CSV import',
                     context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'schema' => $schema->getSlug(),
                     ]
                 );
@@ -288,6 +298,8 @@ class ExportHandler
             $this->logger->info(
                 message: '[ExportHandler] Import completed',
                 context: [
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
                     'register' => $register->getSlug(),
                     'filename' => $filename,
                     'summary'  => $result['summary'] ?? [],
@@ -299,6 +311,8 @@ class ExportHandler
             $this->logger->error(
                 message: '[ExportHandler] Import failed',
                 context: [
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
                     'register' => $register->getSlug(),
                     'filename' => $filename,
                     'error'    => $e->getMessage(),
@@ -323,7 +337,11 @@ class ExportHandler
     {
         $this->logger->info(
             message: '[ExportHandler] Starting file download',
-            context: ['object_id' => $objectId]
+            context: [
+                'file'      => __FILE__,
+                'line'      => __LINE__,
+                'object_id' => $objectId,
+            ]
         );
 
         try {
@@ -359,6 +377,8 @@ class ExportHandler
             $this->logger->info(
                 message: '[ExportHandler] File download completed',
                 context: [
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
                     'object_id' => $objectId,
                     'filename'  => $filename,
                 ]
@@ -373,6 +393,8 @@ class ExportHandler
             $this->logger->error(
                 message: '[ExportHandler] File download failed',
                 context: [
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
                     'object_id' => $objectId,
                     'error'     => $e->getMessage(),
                 ]

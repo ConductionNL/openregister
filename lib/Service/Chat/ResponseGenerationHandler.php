@@ -126,8 +126,10 @@ class ResponseGenerationHandler
         $startTime = microtime(true);
 
         $this->logger->info(
-            message: '[ChatService] Generating response',
+            message: '[ResponseGenerationHandler] Generating response',
             context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'messageLength' => strlen($userMessage),
                 'contextLength' => strlen($context['text']),
                 'historyCount'  => count($messageHistory),
@@ -141,8 +143,10 @@ class ResponseGenerationHandler
         $toolsTime      = microtime(true) - $toolsStartTime;
         if (empty($tools) === false) {
             $this->logger->info(
-                message: '[ChatService] Agent has tools enabled',
+                message: '[ResponseGenerationHandler] Agent has tools enabled',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'toolCount' => count($tools),
                     'tools'     => array_map(fn($tool) => $tool->getName(), $tools),
                 ]
@@ -163,8 +167,10 @@ class ResponseGenerationHandler
         }
 
         $this->logger->info(
-            message: '[ChatService] Using chat provider',
+            message: '[ResponseGenerationHandler] Using chat provider',
             context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'provider'  => $chatProvider,
                 'llmConfig' => $llmConfig,
                 'hasTools'  => empty($tools) === false,
@@ -340,8 +346,10 @@ class ResponseGenerationHandler
             $totalTime = microtime(true) - $startTime;
 
             $this->logger->info(
-                message: '[ChatService] Response generated - PERFORMANCE',
+                message: '[ResponseGenerationHandler] Response generated - PERFORMANCE',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'provider'       => $chatProvider,
                     'model'          => $config->model,
                     'responseLength' => strlen($response),
@@ -357,8 +365,10 @@ class ResponseGenerationHandler
             return $response;
         } catch (Exception $e) {
             $this->logger->error(
-                message: '[ChatService] Failed to generate response',
+                message: '[ResponseGenerationHandler] Failed to generate response',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'provider' => $chatProvider ?? 'unknown',
                     'error'    => $e->getMessage(),
                 ]
@@ -400,16 +410,20 @@ class ResponseGenerationHandler
         // Functions will be ignored for Fireworks provider.
         if (empty($functions) === false) {
             $this->logger->warning(
-                message: '[ChatService] Function calling not yet supported for Fireworks AI. Tools will be ignored.',
+                message: '[ResponseGenerationHandler] Function calling not yet supported for Fireworks AI. Tools will be ignored.',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'functionCount' => count($functions),
                 ]
             );
         }
 
         $this->logger->debug(
-            message: '[ChatService] Calling Fireworks chat API with history',
+            message: '[ResponseGenerationHandler] Calling Fireworks chat API with history',
             context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'url'          => $url,
                 'model'        => $model,
                 'historyCount' => count($messageHistory),
@@ -432,8 +446,10 @@ class ResponseGenerationHandler
 
         // Log final message count.
         $this->logger->debug(
-            message: '[ChatService] Prepared messages for API',
+            message: '[ResponseGenerationHandler] Prepared messages for API',
             context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'messageCount' => count($messages),
             ]
         );

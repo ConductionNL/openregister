@@ -770,8 +770,10 @@ class SearchTrailMapper extends QBMapper
         } catch (\Exception $e) {
             // Log the error for debugging purposes.
             \OC::$server->getLogger()->error(
-                'Failed to clear expired search trail logs: '.$e->getMessage(),
-                [
+                message: '[SearchTrailMapper] Failed to clear expired search trail logs: '.$e->getMessage(),
+                context: [
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
                     'app'       => 'openregister',
                     'exception' => $e,
                 ]
@@ -1034,8 +1036,10 @@ class SearchTrailMapper extends QBMapper
         } catch (\Exception $e) {
             // Log the error for debugging purposes.
             \OC::$server->getLogger()->error(
-                'Failed to set expiry dates for search trails: '.$e->getMessage(),
-                [
+                message: '[SearchTrailMapper] Failed to set expiry dates for search trails: '.$e->getMessage(),
+                context: [
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
                     'app'       => 'openregister',
                     'exception' => $e,
                 ]

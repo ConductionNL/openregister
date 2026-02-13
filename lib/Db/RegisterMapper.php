@@ -206,8 +206,10 @@ class RegisterMapper extends QBMapper
         // Log search attempt for debugging.
         if (isset($this->logger) === true) {
             $this->logger->info(
-                '[RegisterMapper] Searching for register',
-                [
+                message: '[RegisterMapper] Searching for register',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'identifier' => $id,
                     'rbac'       => $_rbac,
                     'multi'      => $_multitenancy,
@@ -252,8 +254,10 @@ class RegisterMapper extends QBMapper
             $existsBeforeFilter = true;
             if (isset($this->logger) === true) {
                 $this->logger->debug(
-                    '[RegisterMapper] Register exists before filters',
-                    [
+                    message: '[RegisterMapper] Register exists before filters',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'identifier'   => $id,
                         'registerId'   => $testResult->getId(),
                         'organisation' => $testResult->getOrganisation(),
@@ -265,8 +269,10 @@ class RegisterMapper extends QBMapper
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             if (isset($this->logger) === true) {
                 $this->logger->warning(
-                    '[RegisterMapper] Register does not exist in database',
-                    [
+                    message: '[RegisterMapper] Register does not exist in database',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'identifier' => $id,
                     ]
                 );
@@ -302,8 +308,10 @@ class RegisterMapper extends QBMapper
             }
 
             $this->logger->info(
-                '[RegisterMapper] Applying multitenancy filters',
-                [
+                message: '[RegisterMapper] Applying multitenancy filters',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'identifier'           => $id,
                     'multiEnabled'         => $_multitenancy,
                     'enablePublished'      => $enablePublished,
@@ -331,8 +339,10 @@ class RegisterMapper extends QBMapper
             // Log detailed error information.
             if (isset($this->logger) === true) {
                 $this->logger->error(
-                    '[RegisterMapper] Register not found after filters',
-                    [
+                    message: '[RegisterMapper] Register not found after filters',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'identifier'         => $id,
                         'existsBeforeFilter' => $existsBeforeFilter,
                         'multiEnabled'       => $_multitenancy,

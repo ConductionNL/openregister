@@ -76,6 +76,8 @@ class VectorizationHandler
         $this->logger->info(
             message: '[VectorizationHandler] Starting batch vectorization',
             context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'batch_size' => $batchSize,
                 'views'      => $views,
             ]
@@ -96,6 +98,8 @@ class VectorizationHandler
             $this->logger->info(
                 message: '[VectorizationHandler] Batch vectorization completed',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'vectorized' => $result['vectorized'] ?? 0,
                     'success'    => $result['success'] ?? false,
                     'failed'     => $result['failed'] ?? 0,
@@ -107,6 +111,8 @@ class VectorizationHandler
             $this->logger->error(
                 message: '[VectorizationHandler] Batch vectorization failed',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                     'views' => $views,
                 ]
@@ -132,7 +138,11 @@ class VectorizationHandler
     {
         $this->logger->debug(
             message: '[VectorizationHandler] Getting vectorization statistics',
-            context: ['views' => $views]
+            context: [
+                'file'  => __FILE__,
+                'line'  => __LINE__,
+                'views' => $views,
+            ]
         );
 
         try {
@@ -150,7 +160,7 @@ class VectorizationHandler
 
             $this->logger->debug(
                 message: '[VectorizationHandler] Statistics retrieved',
-                context: $stats
+                context: array_merge(['file' => __FILE__, 'line' => __LINE__], $stats)
             );
 
             return $stats;
@@ -158,6 +168,8 @@ class VectorizationHandler
             $this->logger->error(
                 message: '[VectorizationHandler] Failed to get statistics',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                     'views' => $views,
                 ]
@@ -181,7 +193,11 @@ class VectorizationHandler
     {
         $this->logger->debug(
             message: '[VectorizationHandler] Getting object count',
-            context: ['schemas' => $schemas]
+            context: [
+                'file'    => __FILE__,
+                'line'    => __LINE__,
+                'schemas' => $schemas,
+            ]
         );
 
         try {
@@ -191,7 +207,11 @@ class VectorizationHandler
 
             $this->logger->debug(
                 message: '[VectorizationHandler] Count retrieved',
-                context: ['count' => $count]
+                context: [
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
+                    'count' => $count,
+                ]
             );
 
             return $count;
@@ -199,6 +219,8 @@ class VectorizationHandler
             $this->logger->error(
                 message: '[VectorizationHandler] Failed to get count',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error'   => $e->getMessage(),
                     'schemas' => $schemas,
                 ]

@@ -96,6 +96,8 @@ class CrudHandler
         $this->logger->debug(
             message: '[CrudHandler] Listing objects',
             context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'query_params'  => array_keys($query),
                 'rbac'          => $rbac,
                 '_multitenancy' => $_multitenancy,
@@ -120,6 +122,8 @@ class CrudHandler
             $this->logger->debug(
                 message: '[CrudHandler] Objects listed',
                 context: [
+                    'file'   => __FILE__,
+                    'line'   => __LINE__,
                     'total'   => $result['total'] ?? 0,
                     'results' => count($result['results'] ?? []),
                 ]
@@ -130,6 +134,8 @@ class CrudHandler
             $this->logger->error(
                 message: '[CrudHandler] Failed to list objects',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                     'query' => $query,
                 ]
@@ -156,6 +162,8 @@ class CrudHandler
         $this->logger->debug(
             message: '[CrudHandler] Getting object',
             context: [
+                'file'          => __FILE__,
+                'line'          => __LINE__,
                 'object_id'     => $objectId,
                 'rbac'          => $rbac,
                 '_multitenancy' => $_multitenancy,
@@ -166,13 +174,15 @@ class CrudHandler
             // TODO: Implement proper find logic (placeholder).
             $this->logger->warning(
                 message: '[CrudHandler] Object not found (TODO: implement find logic)',
-                context: ['object_id' => $objectId]
+                context: ['file' => __FILE__, 'line' => __LINE__, 'object_id' => $objectId]
             );
             return null;
         } catch (\Exception $e) {
             $this->logger->error(
                 message: '[CrudHandler] Failed to get object',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'object_id' => $objectId,
                     'error'     => $e->getMessage(),
                 ]
@@ -199,6 +209,8 @@ class CrudHandler
         $this->logger->info(
             message: '[CrudHandler] Creating object',
             context: [
+                'file'          => __FILE__,
+                'line'          => __LINE__,
                 'data_keys'     => array_keys($data),
                 'rbac'          => $rbac,
                 '_multitenancy' => $_multitenancy,
@@ -209,7 +221,7 @@ class CrudHandler
             // TODO: Implement proper save logic (placeholder).
             $this->logger->info(
                 message: '[CrudHandler] Object creation not implemented (TODO)',
-                context: ['data_keys' => array_keys($data)]
+                context: ['file' => __FILE__, 'line' => __LINE__, 'data_keys' => array_keys($data)]
             );
 
             return null;
@@ -217,6 +229,8 @@ class CrudHandler
             $this->logger->error(
                 message: '[CrudHandler] Failed to create object',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error'     => $e->getMessage(),
                     'data_keys' => array_keys($data),
                 ]
@@ -248,6 +262,8 @@ class CrudHandler
         $this->logger->info(
             message: '[CrudHandler] Updating object',
             context: [
+                'file'          => __FILE__,
+                'line'          => __LINE__,
                 'object_id'     => $objectId,
                 'data_keys'     => array_keys($data),
                 'rbac'          => $rbac,
@@ -260,6 +276,8 @@ class CrudHandler
             $this->logger->info(
                 message: '[CrudHandler] Object update not implemented (TODO)',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'object_id' => $objectId,
                     'data_keys' => array_keys($data),
                 ]
@@ -270,6 +288,8 @@ class CrudHandler
             $this->logger->error(
                 message: '[CrudHandler] Failed to update object',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'object_id' => $objectId,
                     'error'     => $e->getMessage(),
                 ]
@@ -301,6 +321,8 @@ class CrudHandler
         $this->logger->info(
             message: '[CrudHandler] Patching object',
             context: [
+                'file'          => __FILE__,
+                'line'          => __LINE__,
                 'object_id'     => $objectId,
                 'data_keys'     => array_keys($data),
                 'rbac'          => $rbac,
@@ -331,6 +353,8 @@ class CrudHandler
             $this->logger->info(
                 message: '[CrudHandler] Object patched',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'object_id' => $objectId,
                     'uuid'      => $updatedObject->getUuid(),
                 ]
@@ -341,6 +365,8 @@ class CrudHandler
             $this->logger->error(
                 message: '[CrudHandler] Failed to patch object',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'object_id' => $objectId,
                     'error'     => $e->getMessage(),
                 ]
@@ -367,6 +393,8 @@ class CrudHandler
         $this->logger->info(
             message: '[CrudHandler] Deleting object',
             context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'object_id'     => $objectId,
                 'rbac'          => $rbac,
                 '_multitenancy' => $_multitenancy,
@@ -382,7 +410,7 @@ class CrudHandler
             // );.
             $this->logger->info(
                 message: '[CrudHandler] Object deleted',
-                context: ['object_id' => $objectId]
+                context: ['file' => __FILE__, 'line' => __LINE__, 'object_id' => $objectId]
             );
 
             return true;
@@ -390,6 +418,8 @@ class CrudHandler
             $this->logger->error(
                 message: '[CrudHandler] Failed to delete object',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'object_id' => $objectId,
                     'error'     => $e->getMessage(),
                 ]
@@ -417,6 +447,8 @@ class CrudHandler
         $this->logger->debug(
             message: '[CrudHandler] Building search query',
             context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'params_count' => count($requestParams),
                 'register'     => $register,
                 'schema'       => $schema,

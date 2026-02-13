@@ -161,8 +161,10 @@ class ViewsController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                message: 'Error fetching views',
+                message: '[ViewsController] Error fetching views',
                 context: [
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
                     'exception' => $e->getMessage(),
                 ]
             );
@@ -221,8 +223,10 @@ class ViewsController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                message: 'Error fetching view',
+                message: '[ViewsController] Error fetching view',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'id'        => $id,
                     'exception' => $e->getMessage(),
                 ]
@@ -327,8 +331,10 @@ class ViewsController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                message: 'Error creating view',
+                message: '[ViewsController] Error creating view',
                 context: [
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
                     'exception' => $e->getMessage(),
                 ]
             );
@@ -441,8 +447,10 @@ class ViewsController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                message: 'Error updating view',
+                message: '[ViewsController] Error updating view',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'id'        => $id,
                     'exception' => $e->getMessage(),
                 ]
@@ -553,8 +561,10 @@ class ViewsController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                message: 'Error patching view',
+                message: '[ViewsController] Error patching view',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'id'        => $id,
                     'exception' => $e->getMessage(),
                 ]
@@ -626,8 +636,10 @@ class ViewsController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                message: 'Error deleting view',
+                message: '[ViewsController] Error deleting view',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'id'        => $id,
                     'exception' => $e->getMessage(),
                 ]

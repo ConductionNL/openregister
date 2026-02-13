@@ -131,7 +131,10 @@ class MagicRbacHandler
 
         // If no authorization is configured, schema is open to all.
         if (empty($authorization) === true) {
-            $this->logger->debug('MagicRbacHandler: No authorization configured, schema is open');
+            $this->logger->debug(
+                message: '[MagicRbacHandler] No authorization configured, schema is open',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return;
         }
 
@@ -140,7 +143,10 @@ class MagicRbacHandler
 
         // If action is not configured in authorization, it's open to all.
         if (empty($rules) === true) {
-            $this->logger->debug('MagicRbacHandler: Action not configured, open access', ['action' => $action]);
+            $this->logger->debug(
+                message: '[MagicRbacHandler] Action not configured, open access',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'action' => $action]
+            );
             return;
         }
 
@@ -175,12 +181,14 @@ class MagicRbacHandler
         // If no conditions were added, deny all access.
         if (empty($conditions) === true) {
             $this->logger->debug(
-                    'MagicRbacHandler: No access conditions met, denying all',
-                    [
-                        'userId' => $userId,
-                        'action' => $action,
-                    ]
-                    );
+                message: '[MagicRbacHandler] No access conditions met, denying all',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
+                    'userId' => $userId,
+                    'action' => $action,
+                ]
+            );
             // Add impossible condition to return no results.
             $qb->andWhere($qb->expr()->eq($qb->createNamedParameter(1), $qb->createNamedParameter(0)));
             return;
@@ -217,7 +225,10 @@ class MagicRbacHandler
         }
 
         // Invalid rule format.
-        $this->logger->warning('MagicRbacHandler: Invalid authorization rule format', ['rule' => $rule]);
+        $this->logger->warning(
+            message: '[MagicRbacHandler] Invalid authorization rule format',
+            context: ['file' => __FILE__, 'line' => __LINE__, 'rule' => $rule]
+        );
         return null;
     }//end processAuthorizationRule()
 
@@ -308,7 +319,10 @@ class MagicRbacHandler
 
         // If no valid conditions, return null.
         if (empty($conditions) === true) {
-            $this->logger->debug('MagicRbacHandler: No valid match conditions built');
+            $this->logger->debug(
+                message: '[MagicRbacHandler] No valid match conditions built',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return null;
         }
 
@@ -371,7 +385,10 @@ class MagicRbacHandler
                 return $this->cachedActiveOrg;
             }
         } catch (\Exception $e) {
-            $this->logger->debug('MagicRbacHandler: Could not get active organisation', ['error' => $e->getMessage()]);
+            $this->logger->debug(
+                message: '[MagicRbacHandler] Could not get active organisation',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+            );
         }
 
         return null;
@@ -473,7 +490,10 @@ class MagicRbacHandler
                     return $qb->expr()->lte("t.{$columnName}", $qb->createNamedParameter($operand));
 
                 default:
-                    $this->logger->warning('MagicRbacHandler: Unknown operator', ['operator' => $operator]);
+                    $this->logger->warning(
+                        message: '[MagicRbacHandler] Unknown operator',
+                        context: ['file' => __FILE__, 'line' => __LINE__, 'operator' => $operator]
+                    );
             }//end switch
         }//end foreach
 

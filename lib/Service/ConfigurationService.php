@@ -578,13 +578,25 @@ class ConfigurationService
     {
         // Only check remote sources.
         if ($configuration->isRemoteSource() === false) {
-            $this->logger->info(message: 'Configuration is not from a remote source, skipping version check');
+            $this->logger->info(
+                message: '[ConfigurationService] Configuration is not from a remote source, skipping version check',
+                context: [
+                    'file' => __FILE__, 
+                    'line' => __LINE__,
+                ]
+            );
             return null;
         }
 
         $sourceUrl = $configuration->getSourceUrl();
         if (empty($sourceUrl) === true) {
-            $this->logger->warning(message: 'Configuration has no source URL, cannot check remote version');
+            $this->logger->warning(
+                message: '[ConfigurationService] Configuration has no source URL, cannot check remote version',
+                context: [
+                    'file' => __FILE__, 
+                    'line' => __LINE__,
+                ]
+            );
             return null;
         }
 
@@ -594,8 +606,11 @@ class ConfigurationService
 
             if ($remoteData instanceof JSONResponse) {
                 $this->logger->error(
-                    message: 'Failed to fetch remote configuration',
-                    context: ['error' => $remoteData->getData()]
+                    message: '[ConfigurationService] Failed to fetch remote configuration',
+                    context: [
+                        'file' => __FILE__, 'line' => __LINE__,
+                        'error' => $remoteData->getData()
+                    ]
                 );
                 return null;
             }
@@ -604,7 +619,13 @@ class ConfigurationService
             $remoteVersion = $remoteData['version'] ?? $remoteData['info']['version'] ?? null;
 
             if ($remoteVersion === null) {
-                $this->logger->warning(message: 'Remote configuration does not contain a version field');
+                $this->logger->warning(
+                    message: '[ConfigurationService] Remote configuration does not contain a version field',
+                    context: [
+                        'file' => __FILE__, 
+                        'line' => __LINE__,
+                    ]
+                );
                 return null;
             }
 
@@ -615,7 +636,11 @@ class ConfigurationService
 
             $configId = $configuration->getId();
             $this->logger->info(
-                message: "Checked remote version for configuration {$configId}: {$remoteVersion}"
+                message: "[ConfigurationService] Checked remote version for configuration {$configId}: {$remoteVersion}",
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
+                ]
             );
 
             return $remoteVersion;
@@ -623,11 +648,21 @@ class ConfigurationService
             $configId = $configuration->getId();
             $errorMsg = $e->getMessage();
             $this->logger->error(
-                message: "Failed to check remote version for configuration {$configId}: {$errorMsg}"
+                message: "[ConfigurationService] Failed to check remote version for configuration {$configId}: {$errorMsg}",
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
+                ]
             );
             throw $e;
         } catch (Exception $e) {
-            $this->logger->error(message: "Unexpected error checking remote version: ".$e->getMessage());
+            $this->logger->error(
+                message: "[ConfigurationService] Unexpected error checking remote version: ".$e->getMessage(),
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
+                ]
+            );
             return null;
         }//end try
     }//end checkRemoteVersion()
@@ -786,8 +821,9 @@ class ConfigurationService
         } catch (Exception $e) {
             // Log error and return null.
             $this->logger->error(
-                message: 'Failed to get configured app version',
+                message: '[ConfigurationService] Failed to get configured app version',
                 context: [
+                    'file' => __FILE__, 'line' => __LINE__,
                     'appId' => $appId,
                     'error' => $e->getMessage(),
                 ]
@@ -822,8 +858,9 @@ class ConfigurationService
             );
 
             $this->logger->info(
-                message: 'Configured app version updated',
+                message: '[ConfigurationService] Configured app version updated',
                 context: [
+                    'file' => __FILE__, 'line' => __LINE__,
                     'appId'   => $appId,
                     'version' => $version,
                 ]
@@ -831,8 +868,9 @@ class ConfigurationService
         } catch (Exception $e) {
             // Log error but don't throw - version tracking is not critical.
             $this->logger->error(
-                message: 'Failed to set configured app version',
+                message: '[ConfigurationService] Failed to set configured app version',
                 context: [
+                    'file' => __FILE__, 'line' => __LINE__,
                     'appId'   => $appId,
                     'version' => $version,
                     'error'   => $e->getMessage(),

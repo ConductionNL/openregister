@@ -118,7 +118,10 @@ class N8nSettingsController extends Controller
 
             return new JSONResponse(data: $settings);
         } catch (Exception $e) {
-            $this->logger->error('Failed to retrieve n8n settings: '.$e->getMessage());
+            $this->logger->error(
+                message: '[N8nSettingsController] Failed to retrieve n8n settings: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return new JSONResponse(
                 data: ['error' => 'Failed to retrieve n8n settings: '.$e->getMessage()],
                 statusCode: 500
@@ -162,7 +165,10 @@ class N8nSettingsController extends Controller
                 ]
             );
         } catch (Exception $e) {
-            $this->logger->error('Failed to update n8n settings: '.$e->getMessage());
+            $this->logger->error(
+                message: '[N8nSettingsController] Failed to update n8n settings: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return new JSONResponse(
                 data: ['error' => 'Failed to update n8n settings: '.$e->getMessage()],
                 statusCode: 500
@@ -236,7 +242,10 @@ class N8nSettingsController extends Controller
                 statusCode: 400
             );
         } catch (Exception $e) {
-            $this->logger->error('n8n connection test failed: '.$e->getMessage());
+            $this->logger->error(
+                message: '[N8nSettingsController] n8n connection test failed: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return new JSONResponse(
                 data: [
                     'success' => false,
@@ -364,7 +373,10 @@ class N8nSettingsController extends Controller
                     ]
                 );
             } catch (Exception $e) {
-                $this->logger->error('Project initialization failed: '.$e->getMessage());
+                $this->logger->error(
+                    message: '[N8nSettingsController] Project initialization failed: '.$e->getMessage(),
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
                 return new JSONResponse(
                     data: [
                         'success' => false,
@@ -374,7 +386,10 @@ class N8nSettingsController extends Controller
                 );
             }//end try
         } catch (Exception $e) {
-            $this->logger->error('n8n initialization failed: '.$e->getMessage());
+            $this->logger->error(
+                message: '[N8nSettingsController] n8n initialization failed: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return new JSONResponse(
                 data: [
                     'success' => false,
@@ -469,7 +484,10 @@ class N8nSettingsController extends Controller
                 ]
             );
         } catch (Exception $e) {
-            $this->logger->error('Failed to get workflows: '.$e->getMessage());
+            $this->logger->error(
+                message: '[N8nSettingsController] Failed to get workflows: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return new JSONResponse(
                 data: [
                     'success' => false,

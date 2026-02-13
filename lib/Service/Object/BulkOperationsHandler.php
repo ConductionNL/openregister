@@ -131,8 +131,10 @@ class BulkOperationsHandler
 
             if ($totalAffected > 0) {
                 $this->logger->debug(
-                    message: 'Bulk operation cache invalidation starting',
+                    message: '[BulkOperationsHandler] Bulk operation cache invalidation starting',
                     context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'objectsCreated' => $createdCount,
                         'objectsUpdated' => $updatedCount,
                         'totalAffected'  => $totalAffected,
@@ -152,8 +154,10 @@ class BulkOperationsHandler
                 );
 
                 $this->logger->debug(
-                    message: 'Bulk operation cache invalidation completed',
+                    message: '[BulkOperationsHandler] Bulk operation cache invalidation completed',
                     context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'totalAffected'     => $totalAffected,
                         'cacheInvalidation' => 'success',
                     ]
@@ -162,8 +166,10 @@ class BulkOperationsHandler
         } catch (Exception $e) {
             // Log cache invalidation errors but don't fail the bulk operation.
             $this->logger->warning(
-                message: 'Bulk operation cache invalidation failed',
+                message: '[BulkOperationsHandler] Bulk operation cache invalidation failed',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error'         => $e->getMessage(),
                     'totalAffected' => $totalAffected ?? 0,
                 ]
@@ -224,8 +230,10 @@ class BulkOperationsHandler
         if (empty($deletedObjectIds) === false) {
             try {
                 $this->logger->debug(
-                    message: 'Bulk delete cache invalidation starting',
+                    message: '[BulkOperationsHandler] Bulk delete cache invalidation starting',
                     context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'deletedCount' => count($deletedObjectIds),
                         'operation'    => 'bulk_delete',
                     ]
@@ -242,16 +250,20 @@ class BulkOperationsHandler
                 );
 
                 $this->logger->debug(
-                    message: 'Bulk delete cache invalidation completed',
+                    message: '[BulkOperationsHandler] Bulk delete cache invalidation completed',
                     context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'deletedCount'      => count($deletedObjectIds),
                         'cacheInvalidation' => 'success',
                     ]
                 );
             } catch (Exception $e) {
                 $this->logger->warning(
-                    message: 'Bulk delete cache invalidation failed',
+                    message: '[BulkOperationsHandler] Bulk delete cache invalidation failed',
                     context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'error'        => $e->getMessage(),
                         'deletedCount' => count($deletedObjectIds),
                     ]
@@ -315,8 +327,10 @@ class BulkOperationsHandler
         if (empty($publishedObjectIds) === false) {
             try {
                 $this->logger->debug(
-                    message: 'Bulk publish cache invalidation starting',
+                    message: '[BulkOperationsHandler] Bulk publish cache invalidation starting',
                     context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'publishedCount' => count($publishedObjectIds),
                         'operation'      => 'bulk_publish',
                     ]
@@ -333,16 +347,20 @@ class BulkOperationsHandler
                 );
 
                 $this->logger->debug(
-                    message: 'Bulk publish cache invalidation completed',
+                    message: '[BulkOperationsHandler] Bulk publish cache invalidation completed',
                     context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'publishedCount'    => count($publishedObjectIds),
                         'cacheInvalidation' => 'success',
                     ]
                 );
             } catch (Exception $e) {
                 $this->logger->warning(
-                    message: 'Bulk publish cache invalidation failed',
+                    message: '[BulkOperationsHandler] Bulk publish cache invalidation failed',
                     context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'error'          => $e->getMessage(),
                         'publishedCount' => count($publishedObjectIds),
                     ]
@@ -406,8 +424,10 @@ class BulkOperationsHandler
         if (empty($depublishedObjectIds) === false) {
             try {
                 $this->logger->debug(
-                    message: 'Bulk depublish cache invalidation starting',
+                    message: '[BulkOperationsHandler] Bulk depublish cache invalidation starting',
                     context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'depublishedCount' => count($depublishedObjectIds),
                         'operation'        => 'bulk_depublish',
                     ]
@@ -424,16 +444,20 @@ class BulkOperationsHandler
                 );
 
                 $this->logger->debug(
-                    message: 'Bulk depublish cache invalidation completed',
+                    message: '[BulkOperationsHandler] Bulk depublish cache invalidation completed',
                     context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'depublishedCount'  => count($depublishedObjectIds),
                         'cacheInvalidation' => 'success',
                     ]
                 );
             } catch (Exception $e) {
                 $this->logger->warning(
-                    message: 'Bulk depublish cache invalidation failed',
+                    message: '[BulkOperationsHandler] Bulk depublish cache invalidation failed',
                     context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'error'            => $e->getMessage(),
                         'depublishedCount' => count($depublishedObjectIds),
                     ]
@@ -468,8 +492,10 @@ class BulkOperationsHandler
         if ($result['published_count'] > 0) {
             try {
                 $this->logger->debug(
-                    message: 'Schema objects publishing cache invalidation starting',
+                    message: '[BulkOperationsHandler] Schema objects publishing cache invalidation starting',
                     context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'publishedCount' => $result['published_count'],
                         'schemaId'       => $schemaId,
                         'operation'      => 'schema_publish',
@@ -485,8 +511,10 @@ class BulkOperationsHandler
                 );
 
                 $this->logger->debug(
-                    message: 'Schema objects publishing cache invalidation completed',
+                    message: '[BulkOperationsHandler] Schema objects publishing cache invalidation completed',
                     context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'publishedCount' => $result['published_count'],
                         'schemaId'       => $schemaId,
                         'publishAll'     => $publishAll,
@@ -494,8 +522,10 @@ class BulkOperationsHandler
                 );
             } catch (Exception $e) {
                 $this->logger->warning(
-                    message: 'Schema objects publishing cache invalidation failed',
+                    message: '[BulkOperationsHandler] Schema objects publishing cache invalidation failed',
                     context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'error'          => $e->getMessage(),
                         'schemaId'       => $schemaId,
                         'publishedCount' => $result['published_count'],
@@ -546,8 +576,10 @@ class BulkOperationsHandler
             if ($usesMagicTable === true) {
                 // Objects are in MAGIC TABLE - delete from there.
                 $this->logger->info(
-                    message: 'Schema uses magic table, deleting from magic table',
+                    message: '[BulkOperationsHandler] Schema uses magic table, deleting from magic table',
                     context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'schemaId'   => $schemaId,
                         'registerId' => $register->getId(),
                         'hardDelete' => $hardDelete,
@@ -564,8 +596,10 @@ class BulkOperationsHandler
                 $totalDeletedCount = $magicDeleteCount;
 
                 $this->logger->info(
-                    message: 'Objects deleted from magic table',
+                    message: '[BulkOperationsHandler] Objects deleted from magic table',
                     context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'magicDeleteCount' => $magicDeleteCount,
                         'schemaId'         => $schemaId,
                         'hardDelete'       => $hardDelete,
@@ -577,8 +611,10 @@ class BulkOperationsHandler
             } else {
                 // Objects are in BLOB STORAGE - delete from there.
                 $this->logger->info(
-                    message: 'Schema uses blob storage, deleting from blob storage',
+                    message: '[BulkOperationsHandler] Schema uses blob storage, deleting from blob storage',
                     context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'schemaId'   => $schemaId,
                         'hardDelete' => $hardDelete,
                     ]
@@ -590,8 +626,10 @@ class BulkOperationsHandler
                 $totalDeletedUuids = $result['deleted_uuids'];
 
                 $this->logger->info(
-                    message: 'Objects deleted from blob storage',
+                    message: '[BulkOperationsHandler] Objects deleted from blob storage',
                     context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'deletedCount' => $totalDeletedCount,
                         'schemaId'     => $schemaId,
                         'hardDelete'   => $hardDelete,
@@ -600,8 +638,10 @@ class BulkOperationsHandler
             }//end if
         } catch (Exception $e) {
             $this->logger->error(
-                message: 'Failed to delete objects for schema',
+                message: '[BulkOperationsHandler] Failed to delete objects for schema',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error'      => $e->getMessage(),
                     'schemaId'   => $schemaId,
                     'hardDelete' => $hardDelete,
@@ -614,8 +654,10 @@ class BulkOperationsHandler
         if ($totalDeletedCount > 0) {
             try {
                 $this->logger->debug(
-                    message: 'Schema objects deletion cache invalidation starting',
+                    message: '[BulkOperationsHandler] Schema objects deletion cache invalidation starting',
                     context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'deletedCount' => $totalDeletedCount,
                         'schemaId'     => $schemaId,
                         'operation'    => 'schema_delete',
@@ -631,8 +673,10 @@ class BulkOperationsHandler
                 );
 
                 $this->logger->debug(
-                    message: 'Schema objects deletion cache invalidation completed',
+                    message: '[BulkOperationsHandler] Schema objects deletion cache invalidation completed',
                     context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'deletedCount' => $totalDeletedCount,
                         'schemaId'     => $schemaId,
                         'hardDelete'   => $hardDelete,
@@ -640,8 +684,10 @@ class BulkOperationsHandler
                 );
             } catch (Exception $e) {
                 $this->logger->warning(
-                    message: 'Schema objects deletion cache invalidation failed',
+                    message: '[BulkOperationsHandler] Schema objects deletion cache invalidation failed',
                     context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'error'        => $e->getMessage(),
                         'schemaId'     => $schemaId,
                         'deletedCount' => $totalDeletedCount,
@@ -679,8 +725,10 @@ class BulkOperationsHandler
         if ($result['deleted_count'] > 0) {
             try {
                 $this->logger->debug(
-                    message: 'Register objects deletion cache invalidation starting',
+                    message: '[BulkOperationsHandler] Register objects deletion cache invalidation starting',
                     context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'deletedCount' => $result['deleted_count'],
                         'registerId'   => $registerId,
                         'operation'    => 'register_delete',
@@ -695,16 +743,20 @@ class BulkOperationsHandler
                 );
 
                 $this->logger->debug(
-                    message: 'Register objects deletion cache invalidation completed',
+                    message: '[BulkOperationsHandler] Register objects deletion cache invalidation completed',
                     context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'deletedCount' => $result['deleted_count'],
                         'registerId'   => $registerId,
                     ]
                 );
             } catch (Exception $e) {
                 $this->logger->warning(
-                    message: 'Register objects deletion cache invalidation failed',
+                    message: '[BulkOperationsHandler] Register objects deletion cache invalidation failed',
                     context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'error'        => $e->getMessage(),
                         'registerId'   => $registerId,
                         'deletedCount' => $result['deleted_count'],

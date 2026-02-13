@@ -90,8 +90,10 @@ class VectorEmbeddings
         $config = $this->getEmbeddingConfig($provider);
 
         $this->logger->debug(
-            message: 'Generating embedding',
+            message: '[VectorEmbeddings] Generating embedding',
             context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'text_length' => strlen($text),
                 'provider'    => $config['provider'],
                 'model'       => $config['model'],
@@ -104,8 +106,10 @@ class VectorEmbeddings
             $dimensions = count($embedding);
 
             $this->logger->debug(
-                message: 'Embedding generated successfully',
+                message: '[VectorEmbeddings] Embedding generated successfully',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'dimensions' => $dimensions,
                     'model'      => $config['model'],
                 ]
@@ -118,8 +122,10 @@ class VectorEmbeddings
             ];
         } catch (Exception $e) {
             $this->logger->error(
-                message: 'Failed to generate embedding',
+                message: '[VectorEmbeddings] Failed to generate embedding',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error'       => $e->getMessage(),
                     'provider'    => $config['provider'],
                     'text_length' => strlen($text),
@@ -146,8 +152,10 @@ class VectorEmbeddings
     public function generateEmbeddingWithCustomConfig(string $text, array $config): array
     {
         $this->logger->debug(
-            message: 'Generating embedding with custom config',
+            message: '[VectorEmbeddings] Generating embedding with custom config',
             context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'text_length' => strlen($text),
                 'provider'    => $config['provider'] ?? 'unknown',
                 'model'       => $config['model'] ?? 'unknown',
@@ -184,8 +192,10 @@ class VectorEmbeddings
             $embedding = $generator->embedText($text);
 
             $this->logger->debug(
-                message: 'Embedding generated successfully with custom config',
+                message: '[VectorEmbeddings] Embedding generated successfully with custom config',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'dimensions' => count($embedding),
                     'model'      => $normalizedConfig['model'],
                 ]
@@ -194,8 +204,10 @@ class VectorEmbeddings
             return $embedding;
         } catch (Exception $e) {
             $this->logger->error(
-                message: 'Failed to generate embedding with custom config',
+                message: '[VectorEmbeddings] Failed to generate embedding with custom config',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error'       => $e->getMessage(),
                     'provider'    => $config['provider'] ?? 'unknown',
                     'text_length' => strlen($text),
@@ -219,6 +231,8 @@ class VectorEmbeddings
         $this->logger->info(
             message: '[VectorEmbeddings] Testing embedding generation',
             context: [
+                'file'           => __FILE__,
+                'line'           => __LINE__,
                 'provider'       => $provider,
                 'model'          => $config['model'] ?? 'unknown',
                 'testTextLength' => strlen($testText),
@@ -239,6 +253,8 @@ class VectorEmbeddings
             $this->logger->info(
                 message: '[VectorEmbeddings] Embedding test successful',
                 context: [
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
                     'provider'   => $provider,
                     'model'      => $config['model'] ?? 'unknown',
                     'dimensions' => count($embedding),
@@ -260,6 +276,8 @@ class VectorEmbeddings
             $this->logger->error(
                 message: '[VectorEmbeddings] Embedding test failed',
                 context: [
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
                     'provider' => $provider,
                     'error'    => $e->getMessage(),
                 ]
@@ -288,8 +306,10 @@ class VectorEmbeddings
         $config = $this->getEmbeddingConfig($provider);
 
         $this->logger->info(
-            message: 'Generating batch embeddings',
+            message: '[VectorEmbeddings] Generating batch embeddings',
             context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'count'    => count($texts),
                 'provider' => $config['provider'],
                 'model'    => $config['model'],
@@ -311,8 +331,10 @@ class VectorEmbeddings
                     ];
                 } catch (Exception $e) {
                     $this->logger->warning(
-                        message: 'Failed to generate embedding for text',
+                        message: '[VectorEmbeddings] Failed to generate embedding for text',
                         context: [
+                            'file' => __FILE__,
+                            'line' => __LINE__,
                             'index' => $index,
                             'error' => $e->getMessage(),
                         ]
@@ -329,8 +351,10 @@ class VectorEmbeddings
             $successful = count(array_filter($results, fn($r) => $r['embedding'] !== null));
 
             $this->logger->info(
-                message: 'Batch embedding generation completed',
+                message: '[VectorEmbeddings] Batch embedding generation completed',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'total'      => count($texts),
                     'successful' => $successful,
                     'failed'     => count($texts) - $successful,
@@ -340,8 +364,10 @@ class VectorEmbeddings
             return $results;
         } catch (Exception $e) {
             $this->logger->error(
-                message: 'Failed to generate batch embeddings',
+                message: '[VectorEmbeddings] Failed to generate batch embeddings',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                     'count' => count($texts),
                 ]
@@ -600,8 +626,8 @@ class VectorEmbeddings
             ];
         } catch (Exception $e) {
             $this->logger->error(
-                message: 'Failed to check embedding model mismatch',
-                context: ['error' => $e->getMessage()]
+                message: '[VectorEmbeddings] Failed to check embedding model mismatch',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
             );
 
             return [
@@ -644,8 +670,8 @@ class VectorEmbeddings
             $deletedCount = $qb->executeStatement();
 
             $this->logger->info(
-                message: 'All embeddings cleared',
-                context: ['deleted_count' => $deletedCount]
+                message: '[VectorEmbeddings] All embeddings cleared',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'deleted_count' => $deletedCount]
             );
 
             return [
@@ -655,8 +681,8 @@ class VectorEmbeddings
             ];
         } catch (Exception $e) {
             $this->logger->error(
-                message: 'Failed to clear embeddings',
-                context: ['error' => $e->getMessage()]
+                message: '[VectorEmbeddings] Failed to clear embeddings',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
             );
 
             return [
@@ -684,7 +710,7 @@ class VectorEmbeddings
         } catch (Exception $e) {
             $this->logger->warning(
                 message: '[VectorEmbeddings] Failed to get vector search backend, defaulting to PHP',
-                context: ['error' => $e->getMessage()]
+                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
             );
             return 'php';
         }

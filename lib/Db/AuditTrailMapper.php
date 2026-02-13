@@ -1012,8 +1012,10 @@ class AuditTrailMapper extends QBMapper
         } catch (\Exception $e) {
             // Log the error for debugging purposes.
             \OC::$server->getLogger()->error(
-                'Failed to clear expired audit trail logs: '.$e->getMessage(),
-                [
+                message: '[AuditTrailMapper] Failed to clear expired audit trail logs: '.$e->getMessage(),
+                context: [
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
                     'app'       => 'openregister',
                     'exception' => $e,
                 ]
@@ -1051,8 +1053,10 @@ class AuditTrailMapper extends QBMapper
         } catch (\Exception $e) {
             // Log the error for debugging purposes.
             \OC::$server->getLogger()->error(
-                'Failed to clear all audit trail logs: '.$e->getMessage(),
-                [
+                message: '[AuditTrailMapper] Failed to clear all audit trail logs: '.$e->getMessage(),
+                context: [
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
                     'app'       => 'openregister',
                     'exception' => $e,
                 ]
@@ -1102,8 +1106,10 @@ class AuditTrailMapper extends QBMapper
         } catch (\Exception $e) {
             // Log the error for debugging purposes.
             \OC::$server->getLogger()->error(
-                'Failed to set expiry dates for audit trails: '.$e->getMessage(),
-                [
+                message: '[AuditTrailMapper] Failed to set expiry dates for audit trails: '.$e->getMessage(),
+                context: [
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
                     'app'       => 'openregister',
                     'exception' => $e,
                 ]

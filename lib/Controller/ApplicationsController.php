@@ -190,8 +190,10 @@ class ApplicationsController extends Controller
         } catch (Exception $e) {
             // Log error with full context.
             $this->logger->error(
-                message: 'Failed to get applications',
+                message: '[ApplicationsController] Failed to get applications',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]
@@ -237,8 +239,10 @@ class ApplicationsController extends Controller
         } catch (Exception $e) {
             // Log error with application ID.
             $this->logger->error(
-                message: 'Failed to get application',
+                message: '[ApplicationsController] Failed to get application',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'id'    => $id,
                     'error' => $e->getMessage(),
                 ]
@@ -282,8 +286,10 @@ class ApplicationsController extends Controller
         } catch (Exception $e) {
             // Log error with full context.
             $this->logger->error(
-                message: 'Failed to create application',
+                message: '[ApplicationsController] Failed to create application',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]
@@ -334,8 +340,10 @@ class ApplicationsController extends Controller
         } catch (Exception $e) {
             // Log error with application ID.
             $this->logger->error(
-                message: 'Failed to update application',
+                message: '[ApplicationsController] Failed to update application',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'id'    => $id,
                     'error' => $e->getMessage(),
                 ]
@@ -405,8 +413,10 @@ class ApplicationsController extends Controller
         } catch (Exception $e) {
             // Log error with application ID.
             $this->logger->error(
-                message: 'Failed to delete application',
+                message: '[ApplicationsController] Failed to delete application',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'id'    => $id,
                     'error' => $e->getMessage(),
                 ]

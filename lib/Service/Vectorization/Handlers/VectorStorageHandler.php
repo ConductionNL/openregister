@@ -92,6 +92,8 @@ class VectorStorageHandler
         $this->logger->debug(
             message: '[VectorStorageHandler] Routing vector storage',
             context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'backend'     => $backend,
                 'entity_type' => $entityType,
                 'entity_id'   => $entityId,
@@ -134,6 +136,8 @@ class VectorStorageHandler
             $this->logger->error(
                 message: '[VectorStorageHandler] Failed to store vector',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'backend'     => $backend,
                     'error'       => $e->getMessage(),
                     'entity_type' => $entityType,
@@ -178,6 +182,8 @@ class VectorStorageHandler
         $this->logger->debug(
             message: '[VectorStorageHandler] Storing vector in database',
             context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'entity_type' => $entityType,
                 'entity_id'   => $entityId,
                 'chunk_index' => $chunkIndex,
@@ -229,8 +235,10 @@ class VectorStorageHandler
             $vectorId = $qb->getLastInsertId();
 
             $this->logger->info(
-                message: 'Vector stored successfully in database',
+                message: '[VectorStorageHandler] Vector stored successfully in database',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'vector_id'   => $vectorId,
                     'entity_type' => $entityType,
                     'entity_id'   => $entityId,
@@ -240,8 +248,10 @@ class VectorStorageHandler
             return $vectorId;
         } catch (Exception $e) {
             $this->logger->error(
-                message: 'Failed to store vector in database',
+                message: '[VectorStorageHandler] Failed to store vector in database',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error'       => $e->getMessage(),
                     'entity_type' => $entityType,
                     'entity_id'   => $entityId,
@@ -291,6 +301,8 @@ class VectorStorageHandler
         $this->logger->debug(
             message: '[VectorStorageHandler] Storing vector in Solr',
             context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'entity_type' => $entityType,
                 'entity_id'   => $entityId,
                 'chunk_index' => $chunkIndex,
@@ -335,6 +347,8 @@ class VectorStorageHandler
             $this->logger->debug(
                 message: '[VectorStorageHandler] Preparing Solr atomic update',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'document_id'    => $documentId,
                     'collection'     => $collection,
                     'vector_field'   => $vectorField,
@@ -369,6 +383,8 @@ class VectorStorageHandler
             $this->logger->info(
                 message: '[VectorStorageHandler] Vector added to Solr document',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'document_id' => $documentId,
                     'collection'  => $collection,
                     'entity_type' => $entityType,
@@ -381,6 +397,8 @@ class VectorStorageHandler
             $this->logger->error(
                 message: '[VectorStorageHandler] Failed to store vector in Solr',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error'       => $e->getMessage(),
                     'entity_type' => $entityType,
                     'entity_id'   => $entityId,
@@ -422,7 +440,11 @@ class VectorStorageHandler
             if ($collection === null || $collection === '') {
                 $this->logger->warning(
                     message: '[VectorStorageHandler] No Solr collection configured for entity type',
-                    context: ['entity_type' => $entityType]
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
+                        'entity_type' => $entityType,
+                    ]
                 );
             }
 
@@ -431,6 +453,8 @@ class VectorStorageHandler
             $this->logger->warning(
                 message: '[VectorStorageHandler] Failed to get Solr collection for entity type',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'entity_type' => $entityType,
                     'error'       => $e->getMessage(),
                 ]
@@ -454,7 +478,11 @@ class VectorStorageHandler
         } catch (Exception $e) {
             $this->logger->warning(
                 message: '[VectorStorageHandler] Failed to get Solr vector field, using default',
-                context: ['error' => $e->getMessage()]
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
+                    'error' => $e->getMessage(),
+                ]
             );
             return '_embedding_';
         }

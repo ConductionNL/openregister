@@ -177,6 +177,8 @@ class FileSearchController extends Controller
             $this->logger->error(
                 message: '[FileSearchController] Keyword search failed',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -242,6 +244,8 @@ class FileSearchController extends Controller
             $this->logger->error(
                 message: '[FileSearchController] Semantic search failed',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -308,6 +312,8 @@ class FileSearchController extends Controller
             $this->logger->error(
                 message: '[FileSearchController] Hybrid search failed',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );

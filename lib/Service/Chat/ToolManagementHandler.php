@@ -111,8 +111,10 @@ class ToolManagementHandler
         if (empty($selectedTools) === false) {
             $enabledToolIds = array_intersect($enabledToolIds, $selectedTools);
             $this->logger->info(
-                message: '[ChatService] Filtering tools',
+                message: '[ToolManagementHandler] Filtering tools',
                 context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'agentTools'    => count($agent->getTools()),
                     'selectedTools' => count($selectedTools),
                     'filteredTools' => count($enabledToolIds),
@@ -134,15 +136,23 @@ class ToolManagementHandler
                 $tool->setAgent($agent);
                 $tools[] = $tool;
                 $this->logger->debug(
-                    message: '[ChatService] Loaded tool',
-                    context: ['id' => $fullToolId]
+                    message: '[ToolManagementHandler] Loaded tool',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
+                        'id' => $fullToolId
+                    ]
                 );
             }
 
             if ($tool === null) {
                 $this->logger->warning(
-                    message: '[ChatService] Tool not found',
-                    context: ['id' => $fullToolId]
+                    message: '[ToolManagementHandler] Tool not found',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
+                        'id' => $fullToolId
+                    ]
                 );
             }
         }//end foreach

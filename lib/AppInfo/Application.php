@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\FileTextMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\WebhookMapper;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\DashboardService;
@@ -330,6 +331,19 @@ class Application extends App implements IBootstrap
                     schemaMapper: $container->get(SchemaMapper::class),
                     eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
                     objectEntityMapper: $container->get(ObjectEntityMapper::class),
+                    organisationMapper: $container->get(OrganisationMapper::class),
+                    userSession: $container->get('OCP\IUserSession'),
+                    groupManager: $container->get('OCP\IGroupManager'),
+                    appConfig: $container->get('OCP\IAppConfig')
+                );
+            }
+        );
+
+        $context->registerService(
+            WebhookMapper::class,
+            function (ContainerInterface $container) {
+                return new WebhookMapper(
+                    db: $container->get('OCP\IDBConnection'),
                     organisationMapper: $container->get(OrganisationMapper::class),
                     userSession: $container->get('OCP\IUserSession'),
                     groupManager: $container->get('OCP\IGroupManager'),
@@ -683,23 +697,25 @@ class Application extends App implements IBootstrap
         $container->get(IEventDispatcher::class);
 
         $logger = $container->get(id: 'Psr\Log\LoggerInterface');
-        $logger->debug('OpenRegister boot() method started.');
-        $logger->debug('Got app container.');
-        $logger->debug('Got event dispatcher.');
-        $logger->debug('Got logger.');
+        $logger->debug(message: '[Application] OpenRegister boot() method started.', context: ['file' => __FILE__, 'line' => __LINE__]);
+        $logger->debug(message: '[Application] Got app container.', context: ['file' => __FILE__, 'line' => __LINE__]);
+        $logger->debug(message: '[Application] Got event dispatcher.', context: ['file' => __FILE__, 'line' => __LINE__]);
+        $logger->debug(message: '[Application] Got logger.', context: ['file' => __FILE__, 'line' => __LINE__]);
 
         // Log boot process.
         $logger->info(
-            'OpenRegister boot: Registering event listeners',
-            [
+            message: '[Application] OpenRegister boot: Registering event listeners',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'app'       => 'openregister',
                 'timestamp' => date('Y-m-d H:i:s'),
             ]
         );
-        $logger->debug('Logged boot message.');
+        $logger->debug(message: '[Application] Logged boot message.', context: ['file' => __FILE__, 'line' => __LINE__]);
 
         try {
-            $logger->info('OpenRegister boot: Event listeners registered successfully');
+            $logger->info(message: '[Application] OpenRegister boot: Event listeners registered successfully', context: ['file' => __FILE__, 'line' => __LINE__]);
 
             // Register recurring SOLR nightly warmup job.
             $jobList = $container->get('OCP\BackgroundJob\IJobList');
@@ -708,8 +724,10 @@ class Application extends App implements IBootstrap
             if ($jobList->has(SolrNightlyWarmupJob::class, null) === false) {
                 $jobList->add(SolrNightlyWarmupJob::class);
                 $logger->info(
-                    '🌙 SOLR Nightly Warmup Job registered successfully',
-                    [
+                    message: '[Application] 🌙 SOLR Nightly Warmup Job registered successfully',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'job_class' => SolrNightlyWarmupJob::class,
                         'interval'  => '24 hours (daily at 00:00)',
                     ]
@@ -717,15 +735,17 @@ class Application extends App implements IBootstrap
             }
 
             if ($jobList->has(SolrNightlyWarmupJob::class, null) === true) {
-                $logger->debug('SOLR Nightly Warmup Job already registered');
+                $logger->debug(message: '[Application] SOLR Nightly Warmup Job already registered', context: ['file' => __FILE__, 'line' => __LINE__]);
             }
 
             // Register recurring name cache warmup job.
             if ($jobList->has(NameCacheWarmupJob::class, null) === false) {
                 $jobList->add(NameCacheWarmupJob::class);
                 $logger->info(
-                    '🌙 Name Cache Warmup Job registered successfully',
-                    [
+                    message: '[Application] 🌙 Name Cache Warmup Job registered successfully',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'job_class' => NameCacheWarmupJob::class,
                         'interval'  => '24 hours (daily)',
                     ]
@@ -733,15 +753,17 @@ class Application extends App implements IBootstrap
             }
 
             if ($jobList->has(NameCacheWarmupJob::class, null) === true) {
-                $logger->debug('Name Cache Warmup Job already registered');
+                $logger->debug(message: '[Application] Name Cache Warmup Job already registered', context: ['file' => __FILE__, 'line' => __LINE__]);
             }
 
             // Register recurring cron file text extraction job.
             if ($jobList->has(CronFileTextExtractionJob::class, null) === false) {
                 $jobList->add(CronFileTextExtractionJob::class);
                 $logger->info(
-                    '🔄 Cron File Text Extraction Job registered successfully',
-                    [
+                    message: '[Application] 🔄 Cron File Text Extraction Job registered successfully',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'job_class' => CronFileTextExtractionJob::class,
                         'interval'  => '15 minutes',
                     ]
@@ -749,7 +771,7 @@ class Application extends App implements IBootstrap
             }
 
             if ($jobList->has(CronFileTextExtractionJob::class, null) === true) {
-                $logger->debug('Cron File Text Extraction Job already registered');
+                $logger->debug(message: '[Application] Cron File Text Extraction Job already registered', context: ['file' => __FILE__, 'line' => __LINE__]);
             }
 
             // Register recurring webhook retry job.
@@ -757,8 +779,10 @@ class Application extends App implements IBootstrap
             if ($jobList->has($webhookRetryJobClass, null) === false) {
                 $jobList->add($webhookRetryJobClass);
                 $logger->info(
-                    '🔄 Webhook Retry Job registered successfully',
-                    [
+                    message: '[Application] 🔄 Webhook Retry Job registered successfully',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
                         'job_class' => $webhookRetryJobClass,
                         'interval'  => '5 minutes',
                     ]
@@ -766,12 +790,14 @@ class Application extends App implements IBootstrap
             }
 
             if ($jobList->has($webhookRetryJobClass, null) === true) {
-                $logger->debug('Webhook Retry Job already registered');
+                $logger->debug(message: '[Application] Webhook Retry Job already registered', context: ['file' => __FILE__, 'line' => __LINE__]);
             }
         } catch (\Exception $e) {
             $logger->error(
-                'OpenRegister boot: Failed to register event listeners and background jobs',
-                [
+                message: '[Application] OpenRegister boot: Failed to register event listeners and background jobs',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'exception' => $e->getMessage(),
                     'trace'     => $e->getTraceAsString(),
                 ]

@@ -202,7 +202,10 @@ class SchemaCacheHandler
 
         // Check in-memory cache first.
         if ((self::$memoryCache[$cacheKey] ?? null) !== null) {
-            $this->logger->debug('Schema cache hit (memory)', ['schemaId' => $schemaId]);
+            $this->logger->debug(
+                message: '[SchemaCacheHandler] Schema cache hit (memory)',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $schemaId]
+            );
             return self::$memoryCache[$cacheKey];
         }
 
@@ -214,7 +217,10 @@ class SchemaCacheHandler
             if ($schema !== null) {
                 // Store in memory cache for future requests.
                 self::$memoryCache[$cacheKey] = $schema;
-                $this->logger->debug('Schema cache hit (database)', ['schemaId' => $schemaId]);
+                $this->logger->debug(
+                    message: '[SchemaCacheHandler] Schema cache hit (database)',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $schemaId]
+                );
                 return $schema;
             }
         }
@@ -223,7 +229,10 @@ class SchemaCacheHandler
         try {
             $schema = $this->schemaMapper->find($schemaId);
             $this->cacheSchema($schema);
-            $this->logger->debug('Schema loaded from database and cached', ['schemaId' => $schemaId]);
+            $this->logger->debug(
+                message: '[SchemaCacheHandler] Schema loaded from database and cached',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $schemaId]
+            );
             return $schema;
         } catch (DoesNotExistException $e) {
             return null;
@@ -253,11 +262,16 @@ class SchemaCacheHandler
         $sql = 'DELETE FROM '.self::CACHE_TABLE.' WHERE schema_id = ?';
         try {
             $this->db->executeQuery($sql, [(string) $schemaId]);
-            $this->logger->debug('Cleared schema cache', ['schemaId' => $schemaId]);
+            $this->logger->debug(
+                message: '[SchemaCacheHandler] Cleared schema cache',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $schemaId]
+            );
         } catch (Exception $e) {
             $this->logger->error(
-                'Failed to clear schema cache',
-                [
+                message: '[SchemaCacheHandler] Failed to clear schema cache',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'schemaId' => $schemaId,
                     'error'    => $e->getMessage(),
                 ]
@@ -358,8 +372,10 @@ class SchemaCacheHandler
             // If the cache table doesn't exist yet, just log a debug message and continue.
             // This allows the app to work even if the migration hasn't been run yet.
             $this->logger->debug(
-                'Schema cache table does not exist yet, skipping database cache invalidation',
-                [
+                message: '[SchemaCacheHandler] Schema cache table does not exist yet, skipping database cache invalidation',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'schemaId' => $schemaId,
                     'error'    => $e->getMessage(),
                 ]
@@ -381,8 +397,10 @@ class SchemaCacheHandler
         $executionTime = round((microtime(true) - $startTime) * 1000, 2);
 
         $this->logger->info(
-            'Schema cache invalidated',
-            [
+            message: '[SchemaCacheHandler] Schema cache invalidated',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'schemaId'       => $schemaId,
                 'operation'      => $operation,
                 'deletedEntries' => $deletedEntries,
@@ -417,8 +435,10 @@ class SchemaCacheHandler
         $executionTime = round((microtime(true) - $startTime) * 1000, 2);
 
         $this->logger->info(
-            'All schema caches cleared',
-            [
+            message: '[SchemaCacheHandler] All schema caches cleared',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'deletedDbEntries'     => $deletedEntries,
                 'clearedMemoryEntries' => $memoryCacheSize,
                 'executionTime'        => $executionTime.'ms',
@@ -453,8 +473,10 @@ class SchemaCacheHandler
 
         if ($deletedCount > 0) {
             $this->logger->info(
-                'Cleaned expired schema cache entries',
-                [
+                message: '[SchemaCacheHandler] Cleaned expired schema cache entries',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'count'         => $deletedCount,
                     'executionTime' => $executionTime.'ms',
                 ]
@@ -713,8 +735,10 @@ class SchemaCacheHandler
             return $schema;
         } catch (Exception $e) {
             $this->logger->error(
-                'Failed to reconstruct schema from cache',
-                [
+                message: '[SchemaCacheHandler] Failed to reconstruct schema from cache',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                     'schemaId' => $cachedData['id'] ?? 'unknown',
                     'error'    => $e->getMessage(),
                 ]

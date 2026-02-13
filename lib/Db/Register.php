@@ -66,7 +66,7 @@ use OCP\AppFramework\Db\Entity;
  * @method DateTime|null getDeleted()
  * @method void setDeleted(?DateTime $deleted)
  * @method array|null getConfiguration()
- * @method void setConfiguration(?array $configuration)
+ * @method void setConfiguration(array|string|null $configuration)
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.TooManyFields)
@@ -653,18 +653,58 @@ class Register extends Entity implements JsonSerializable
      */
     public function getConfiguration(): array
     {
-        return ($this->configuration ?? []);
+        if ($this->configuration === null) {
+            return [];
+        }
+
+        // If it's already an array, return it directly.
+        if (is_array($this->configuration) === true) {
+            return $this->configuration;
+        }
+
+        // If it's a JSON string, decode it.
+        if (is_string($this->configuration) === true) {
+            $decoded = json_decode($this->configuration, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                return $decoded;
+            }
+        }
+
+        // If we get here, something is wrong - return empty array.
+        return [];
     }//end getConfiguration()
 
     /**
      * Set configuration settings.
      *
-     * @param array|null $configuration Configuration settings.
+     * **TYPE SAFETY**: Handle both array and JSON string inputs for database hydration.
+     * The database stores configuration as JSON strings, but we want to work with arrays in PHP.
+     *
+     * @param array|string|null $configuration Configuration settings (array or JSON string).
      *
      * @return void
      */
-    public function setConfiguration(?array $configuration): void
+    public function setConfiguration(array|string|null $configuration): void
     {
+        // **TYPE SAFETY**: Handle JSON string from database.
+        if (is_string($configuration) === true) {
+            try {
+                $decoded = json_decode($configuration, true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                    $this->configuration = $decoded;
+                } else {
+                    // Invalid JSON, set to null.
+                    $this->configuration = null;
+                }
+            } catch (Exception $e) {
+                // If decoding fails, set to null.
+                $this->configuration = null;
+            }
+
+            $this->markFieldUpdated('configuration');
+            return;
+        }
+
         $this->configuration = $configuration;
         $this->markFieldUpdated('configuration');
     }//end setConfiguration()

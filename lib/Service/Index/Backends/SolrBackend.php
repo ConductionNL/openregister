@@ -353,8 +353,10 @@ class SolrBackend implements SearchBackendInterface
         // Simplified warmup - just test connection.
         // Full implementation is 200+ lines in SolrBackend.php.old.
         $this->logger->info(
-            '[SolrBackend] Warmup requested (simplified version)',
-            [
+            message: '[SolrBackend] Warmup requested (simplified version)',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'maxObjects' => $maxObjects,
                 'mode'       => $mode,
             ]
@@ -538,8 +540,10 @@ class SolrBackend implements SearchBackendInterface
     public function reindexAll(int $maxObjects=0, int $batchSize=1000, ?string $collectionName=null): array
     {
         $this->logger->info(
-            '[SolrBackend] Reindex requested (simplified version)',
-            [
+            message: '[SolrBackend] Reindex requested (simplified version)',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
                 'maxObjects' => $maxObjects,
                 'batchSize'  => $batchSize,
             ]
