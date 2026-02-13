@@ -708,9 +708,17 @@ class FileMapper extends QBMapper
             ->from('filecache', 'fc')
             ->leftJoin('fc', 'mimetypes', 'mt', $qb->expr()->eq('fc.mimetype', 'mt.id'))
             ->leftJoin('fc', 'storages', 'st', $qb->expr()->eq('fc.storage', 'st.numeric_id'))
-            ->leftJoin('fc', 'openregister_file_texts', 'ft', $qb->expr()->eq('fc.fileid', 'ft.file_id'))
-            ->where($qb->expr()->isNull('ft.id'))
-            // No corresponding record in file_texts.
+            ->leftJoin(
+                'fc',
+                'openregister_chunks',
+                'ch',
+                $qb->expr()->andX(
+                    $qb->expr()->eq('fc.fileid', 'ch.source_id'),
+                    $qb->expr()->eq('ch.source_type', $qb->createNamedParameter('file', IQueryBuilder::PARAM_STR))
+                )
+            )
+            ->where($qb->expr()->isNull('ch.id'))
+            // No corresponding record in chunks.
             ->andWhere($qb->expr()->neq('mt.mimetype', $dirType))
             // Exclude directories.
             ->andWhere($qb->expr()->like('st.id', $homePattern))
@@ -773,8 +781,16 @@ class FileMapper extends QBMapper
             ->from('filecache', 'fc')
             ->leftJoin('fc', 'mimetypes', 'mt', $qb->expr()->eq('fc.mimetype', 'mt.id'))
             ->leftJoin('fc', 'storages', 'st', $qb->expr()->eq('fc.storage', 'st.numeric_id'))
-            ->leftJoin('fc', 'openregister_file_texts', 'ft', $qb->expr()->eq('fc.fileid', 'ft.file_id'))
-            ->where($qb->expr()->isNull('ft.id'))
+            ->leftJoin(
+                'fc',
+                'openregister_chunks',
+                'ch',
+                $qb->expr()->andX(
+                    $qb->expr()->eq('fc.fileid', 'ch.source_id'),
+                    $qb->expr()->eq('ch.source_type', $qb->createNamedParameter('file', IQueryBuilder::PARAM_STR))
+                )
+            )
+            ->where($qb->expr()->isNull('ch.id'))
             ->andWhere($qb->expr()->neq('mt.mimetype', $dirType))
             ->andWhere($qb->expr()->like('st.id', $homePattern))
             ->andWhere($qb->expr()->notLike('fc.path', $trashPat))

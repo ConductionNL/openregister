@@ -361,7 +361,7 @@ class DocumentProcessingHandler
         // Apply replacements.
         $modifiedContent = $content;
         foreach ($replacements as $original => $replacement) {
-            $modifiedContent = str_ireplace($original, $replacement, $modifiedContent);
+            $modifiedContent = str_ireplace((string) $original, $replacement, $modifiedContent);
         }
 
         // Create output file.

@@ -42,6 +42,7 @@ use Psr\Log\LoggerInterface;
  * - Fallback chain: "name | ggm_naam | identifier" (tries each until one has value)
  * - Template: "{{ voornaam }} {{ achternaam }}"
  * - Template with fallbacks: "{{ name | ggm_naam }} ({{ type }})"
+ * - Template with map filter: "{{ field | map: val1=result1, val2=result2 }}"
  *
  * @category Handler
  * @package  OCA\OpenRegister\Service\Objects\SaveObject
@@ -294,6 +295,10 @@ class MetadataHydrationHandler
      * - "{{ name | ggm_naam | identifier }}" tries each field until one has a value
      * - "{{ name | ggm_naam }} - {{ type }}" combines fallbacks with concatenation
      *
+     * Supports map filter syntax within {{ }} blocks:
+     * - "{{ field | map: key1=val1, key2=val2 }}" looks up the field value in the map
+     * - Falls back to the raw field value if no mapping matches
+     *
      * @param array  $data     The object data.
      * @param string $template The twig-like template string.
      *
@@ -315,8 +320,11 @@ class MetadataHydrationHandler
         foreach ($matches[0] as $index => $fullMatch) {
             $fieldExpression = trim($matches[1][$index]);
 
-            // Check if this expression contains pipe (fallback syntax).
-            if (str_contains($fieldExpression, '|') === true) {
+            // Check if this expression uses the map filter syntax: "field | map: key1=val1, key2=val2".
+            if (preg_match('/^(.+?)\|\s*map\s*:\s*(.+)$/s', $fieldExpression, $mapMatch) === 1) {
+                $value = $this->processMapFilter(data: $data, fieldName: trim($mapMatch[1]), mapDefinition: trim($mapMatch[2]));
+            } elseif (str_contains($fieldExpression, '|') === true) {
+                // Pipe without "map:" means fallback syntax.
                 $value = $this->processFieldWithFallbacks(data: $data, fieldChain: $fieldExpression);
             } else {
                 $value = $this->getValueFromPath(data: $data, path: $fieldExpression);
@@ -346,6 +354,46 @@ class MetadataHydrationHandler
 
         return null;
     }//end processTwigLikeTemplate()
+
+    /**
+     * Processes a map filter expression by looking up a field value in a key-value map.
+     *
+     * Parses map definitions like "key1=val1, key2=val2" and returns the mapped value
+     * for the field's current value. Falls back to the raw field value if no mapping matches.
+     *
+     * Example: field "richting" has value "AnaarB", map is "AnaarB=→, BnaarA=←, bi-directioneel=↔"
+     * Result: "→"
+     *
+     * @param array  $data          The object data.
+     * @param string $fieldName     The field name to look up.
+     * @param string $mapDefinition The map definition string (e.g., "key1=val1, key2=val2").
+     *
+     * @return string|null The mapped value, the raw field value as fallback, or null if field is empty.
+     */
+    public function processMapFilter(array $data, string $fieldName, string $mapDefinition): ?string
+    {
+        $fieldValue = $this->getValueFromPath(data: $data, path: $fieldName);
+
+        if ($fieldValue === null || trim((string) $fieldValue) === '') {
+            return null;
+        }
+
+        $fieldValue = trim((string) $fieldValue);
+
+        // Parse the map definition: "key1=val1, key2=val2".
+        $mappings = array_map('trim', explode(',', $mapDefinition));
+        $map      = [];
+
+        foreach ($mappings as $mapping) {
+            $parts = explode('=', $mapping, 2);
+            if (count($parts) === 2) {
+                $map[trim($parts[0])] = trim($parts[1]);
+            }
+        }
+
+        // Return the mapped value or fall back to the raw field value.
+        return $map[$fieldValue] ?? $fieldValue;
+    }//end processMapFilter()
 
     /**
      * Creates a URL-friendly slug from a metadata value.

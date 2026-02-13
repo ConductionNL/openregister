@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCP\IUserManager;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -74,6 +75,13 @@ class ExportService
     private readonly ObjectService $objectService;
 
     /**
+     * Cache handler for UUID-to-name resolution
+     *
+     * @var CacheHandler
+     */
+    private readonly CacheHandler $cacheHandler;
+
+    /**
      * Constructor for the ExportService
      *
      * @param ObjectEntityMapper $_objectEntityMapper The object entity mapper (unused but kept for future use)
@@ -81,6 +89,7 @@ class ExportService
      * @param IUserManager       $_userManager        The user manager (unused but kept for future use)
      * @param IGroupManager      $groupManager        The group manager
      * @param ObjectService      $objectService       The object service
+     * @param CacheHandler       $cacheHandler        The cache handler for name resolution
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
@@ -89,11 +98,13 @@ class ExportService
         RegisterMapper $registerMapper,
         IUserManager $_userManager,
         IGroupManager $groupManager,
-        ObjectService $objectService
+        ObjectService $objectService,
+        CacheHandler $cacheHandler
     ) {
         $this->registerMapper = $registerMapper;
         $this->groupManager   = $groupManager;
         $this->objectService  = $objectService;
+        $this->cacheHandler   = $cacheHandler;
     }//end __construct()
 
     /**
@@ -210,6 +221,11 @@ class ExportService
     /**
      * Populate a worksheet with data
      *
+     * Uses a two-pass approach for optimal UUID-to-name resolution:
+     * 1. First pass: collect all UUIDs from relation columns across all objects
+     * 2. One bulk CacheHandler::getMultipleObjectNames() call
+     * 3. Second pass: populate the sheet with data and resolved names
+     *
      * @param Spreadsheet   $spreadsheet The spreadsheet to populate
      * @param Register|null $register    Optional register to export
      * @param Schema|null   $schema      Optional schema to export
@@ -303,10 +319,55 @@ class ExportService
             uses: null
         );
 
+        // Identify which headers are name-companion columns (prefixed with _).
+        $nameColumns = [];
+        foreach ($headers as $col => $header) {
+            if (str_starts_with($header, '_') === true && str_starts_with($header, '@') === false) {
+                // This is a companion name column; the source property is the header without the _ prefix.
+                $nameColumns[$col] = substr($header, 1);
+            }
+        }
+
+        // Bulk resolve UUIDs to names if there are relation columns.
+        $uuidToNameMap = [];
+        if (empty($nameColumns) === false) {
+            // First pass: collect all UUIDs from relation columns across all objects.
+            $allUuids = [];
+            foreach ($objects as $object) {
+                $objectData = $object->getObject();
+                foreach ($nameColumns as $sourceProperty) {
+                    $value = $objectData[$sourceProperty] ?? null;
+                    if ($value === null) {
+                        continue;
+                    }
+
+                    $this->collectUuids($value, $allUuids);
+                }
+            }
+
+            // One bulk call to resolve all UUIDs to names.
+            if (empty($allUuids) === false) {
+                $uuidToNameMap = $this->cacheHandler->getMultipleObjectNames(array_unique($allUuids));
+            }
+        }
+
+        // Second pass: populate the sheet with data and resolved names.
         foreach ($objects as $object) {
+            $objectData = $object->getObject();
+
             foreach ($headers as $col => $header) {
-                $value = $this->getObjectValue(object: $object, header: $header);
-                $sheet->setCellValue(coordinate: $col.$row, value: $value);
+                if (isset($nameColumns[$col]) === true) {
+                    // This is a companion name column — resolve UUIDs to names.
+                    $sourceProperty = $nameColumns[$col];
+                    $value          = $objectData[$sourceProperty] ?? null;
+                    $sheet->setCellValue(
+                        coordinate: $col.$row,
+                        value: $this->resolveUuidsToNames($value, $uuidToNameMap)
+                    );
+                } else {
+                    $value = $this->getObjectValue(object: $object, header: $header);
+                    $sheet->setCellValue(coordinate: $col.$row, value: $value);
+                }
             }
 
             $row++;
@@ -315,6 +376,10 @@ class ExportService
 
     /**
      * Get headers for export
+     *
+     * Detects relation properties (containing UUIDs) from the schema and inserts
+     * companion _propertyName columns immediately after each relation column.
+     * These companion columns will contain human-readable names resolved from UUIDs.
      *
      * @param Schema|null $schema      Optional schema to export
      * @param IUser|null  $currentUser Current user for permission checks
@@ -349,8 +414,13 @@ class ExportService
 
                 // Always use the property key as the header to ensure consistent data access.
                 $headers[$col] = $fieldName;
-
                 $col++;
+
+                // Insert companion _name column if this property contains UUID references.
+                if ($this->isRelationProperty($properties[$fieldName]) === true) {
+                    $headers[$col] = '_'.$fieldName;
+                    $col++;
+                }
             }
         }
 
@@ -540,6 +610,134 @@ class ExportService
         // Fallback for any other type.
         return (string) $value;
     }//end convertValueToString()
+
+    /**
+     * Check if a schema property contains UUID references to other objects
+     *
+     * Detects relation properties by checking for:
+     * - format: 'uuid' (single UUID reference)
+     * - $ref field (JSON Schema reference to another schema)
+     * - Array items with format: 'uuid' or $ref (array of UUID references)
+     *
+     * @param array $property The schema property definition
+     *
+     * @return bool True if the property contains UUID references
+     */
+    private function isRelationProperty(array $property): bool
+    {
+        $format = $property['format'] ?? '';
+        $ref    = $property['$ref'] ?? '';
+        $type   = $property['type'] ?? '';
+
+        // Single UUID reference: format is 'uuid' or has a non-empty $ref.
+        if ($format === 'uuid' || (empty($ref) === false)) {
+            return true;
+        }
+
+        // Array of UUID references: items have format 'uuid' or non-empty $ref.
+        if ($type === 'array' && isset($property['items']) === true) {
+            $items      = $property['items'];
+            $itemFormat = $items['format'] ?? '';
+            $itemRef    = $items['$ref'] ?? '';
+
+            if ($itemFormat === 'uuid' || (empty($itemRef) === false)) {
+                return true;
+            }
+        }
+
+        return false;
+    }//end isRelationProperty()
+
+    /**
+     * Collect UUIDs from a property value into a flat array
+     *
+     * Handles both single UUID strings and arrays/JSON arrays of UUIDs.
+     *
+     * @param mixed $value    The property value (string, array, or JSON string)
+     * @param array &$allUuids The array to collect UUIDs into (passed by reference)
+     *
+     * @return void
+     */
+    private function collectUuids(mixed $value, array &$allUuids): void
+    {
+        if (is_string($value) === true) {
+            // Try to decode as JSON array first.
+            $decoded = json_decode($value, true);
+            if (is_array($decoded) === true) {
+                foreach ($decoded as $item) {
+                    if (is_string($item) === true && empty($item) === false) {
+                        $allUuids[] = $item;
+                    }
+                }
+
+                return;
+            }
+
+            // Single UUID string.
+            if (empty($value) === false) {
+                $allUuids[] = $value;
+            }
+
+            return;
+        }
+
+        if (is_array($value) === true) {
+            foreach ($value as $item) {
+                if (is_string($item) === true && empty($item) === false) {
+                    $allUuids[] = $item;
+                }
+            }
+        }
+    }//end collectUuids()
+
+    /**
+     * Resolve UUIDs in a value to human-readable names
+     *
+     * Preserves the same format as the input:
+     * - Single UUID string → single name string
+     * - Array of UUIDs → JSON array of names
+     * - JSON-encoded array of UUIDs → JSON-encoded array of names
+     *
+     * Falls back to the UUID itself if no name is found in the map.
+     *
+     * @param mixed $value        The original value containing UUID(s)
+     * @param array $uuidToNameMap Map of UUID → name from bulk resolution
+     *
+     * @return string|null The resolved name(s) in the same format as input
+     */
+    private function resolveUuidsToNames(mixed $value, array $uuidToNameMap): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        if (is_string($value) === true) {
+            // Try to decode as JSON array first.
+            $decoded = json_decode($value, true);
+            if (is_array($decoded) === true) {
+                $names = array_map(
+                    fn($uuid) => $uuidToNameMap[$uuid] ?? $uuid,
+                    $decoded
+                );
+
+                return json_encode($names, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            }
+
+            // Single UUID string → single name.
+            return $uuidToNameMap[$value] ?? $value;
+        }
+
+        if (is_array($value) === true) {
+            $names = array_map(
+                fn($uuid) => $uuidToNameMap[$uuid] ?? $uuid,
+                $value
+            );
+
+            return json_encode($names, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        }
+
+        return $this->convertValueToString($value);
+    }//end resolveUuidsToNames()
 
     /**
      * Get all schemas for a register

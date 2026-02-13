@@ -277,7 +277,7 @@ class SchemaMapper extends QBMapper
                 var_export($_multitenancy, true),
                 var_export($_rbac, true)
             );
-            throw new ValidationException($debugInfo);
+            throw new DoesNotExistException($debugInfo);
         }
 
         $schema = Schema::fromRow($row);
@@ -2594,7 +2594,11 @@ class SchemaMapper extends QBMapper
             // Re-index array.
             return $schema;
         } catch (Exception $e) {
-            throw new Exception("Cannot extract allOf delta: ".$e->getMessage());
+            // If a parent schema doesn't exist yet (e.g. during import Pass 1),
+            // return the schema without delta extraction. The full properties are
+            // preserved and delta will be correctly extracted during Pass 2 (update)
+            // when all schemas exist in the database.
+            return $schema;
         }//end try
     }//end extractAllOfDelta()
 

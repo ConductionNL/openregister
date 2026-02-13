@@ -31,6 +31,9 @@ Create a [feature request](https://github.com/OpenRegister/.github/issues/new/ch
     <website>https://github.com/ConductionNL/OpenRegister</website>
     <bugs>https://github.com/ConductionNL/OpenRegister/issues</bugs>
     <repository>https://github.com/ConductionNL/OpenRegister</repository>
+
+    <screenshot>https://raw.githubusercontent.com/ConductionNL/openregister/main/img/screenshot.png</screenshot>
+
     <documentation>
         <user>https://conduction.gitbook.io/openregister-nextcloud/</user>
         <admin>https://conduction.gitbook.io/openregister-nextcloud/</admin>
@@ -44,6 +47,15 @@ Create a [feature request](https://github.com/OpenRegister/.github/issues/new/ch
         <database min-version="8.0">mysql</database>
         <nextcloud min-version="28" max-version="33"/>
     </dependencies>
+
+	<repair-steps>
+		<post-migration>
+			<step>OCA\OpenRegister\Repair\RegisterRiskLevelMetadata</step>
+		</post-migration>
+		<install>
+			<step>OCA\OpenRegister\Repair\RegisterRiskLevelMetadata</step>
+		</install>
+	</repair-steps>
 
 	<background-jobs>
 		<job>OCA\OpenRegister\Cron\LogCleanUpTask</job>

@@ -22,9 +22,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Service\RiskLevelService;
 use OCA\OpenRegister\Service\TextExtractionService;
 use OCA\OpenRegister\Service\VectorizationService;
 use OCA\OpenRegister\Db\ChunkMapper;
+use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\Files\NotFoundException;
@@ -55,13 +57,17 @@ class FileExtractionController extends Controller
      * @param TextExtractionService $textExtractor        Text extraction service
      * @param VectorizationService  $vectorizationService Unified vectorization service
      * @param ChunkMapper           $chunkMapper          Chunk mapper for text chunks
+     * @param EntityRelationMapper  $entityRelationMapper Entity relation mapper
+     * @param RiskLevelService      $riskLevelService     Risk level computation service
      */
     public function __construct(
         string $appName,
         IRequest $request,
         private readonly TextExtractionService $textExtractor,
         private readonly VectorizationService $vectorizationService,
-        private readonly ChunkMapper $chunkMapper
+        private readonly ChunkMapper $chunkMapper,
+        private readonly EntityRelationMapper $entityRelationMapper,
+        private readonly RiskLevelService $riskLevelService
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
@@ -69,33 +75,93 @@ class FileExtractionController extends Controller
     /**
      * Get all files tracked in the extraction system.
      *
+     * Returns file summaries with chunk counts and entity counts,
+     * sourced from the chunk-based extraction architecture.
+     *
      * @NoAdminRequired
      *
      * @return JSONResponse JSON response containing file extraction data
      *
      * @NoCSRFRequired
-     *
-     * @psalm-return JSONResponse<
-     *     200|500,
-     *     array{
-     *         success: bool,
-     *         error?: string,
-     *         data?: array<never, never>,
-     *         message?: 'This endpoint needs to be updated for chunk-based architecture'
-     *     },
-     *     array<never, never>
-     * >
      */
     public function index(): JSONResponse
     {
         try {
-            // TextExtractionService doesn't have findByStatus, use discoverUntrackedFiles or extractPendingFiles instead.
-            // For now, return empty array as this endpoint needs to be redesigned for chunk-based architecture.
+            $limit     = (int) ($this->request->getParam('limit', 50));
+            $offset    = (int) ($this->request->getParam('offset', 0));
+            $search    = $this->request->getParam('search');
+            $status    = $this->request->getParam('status');
+            $riskLevel = $this->request->getParam('riskLevel');
+            $sort      = $this->request->getParam('sort', 'extractedAt');
+            $order     = $this->request->getParam('order', 'DESC');
+
+            // All chunked files are "completed" — if filtering for another status, return empty.
+            if ($status !== null && $status !== '' && $status !== 'completed') {
+                return new JSONResponse(
+                    data: [
+                        'success' => true,
+                        'data'    => [],
+                        'count'   => 0,
+                    ]
+                );
+            }
+
+            $searchTerm = ($search !== null && $search !== '') ? $search : null;
+
+            // For riskLevel/entityCount sorting, fetch all then sort in PHP.
+            $phpSort    = in_array($sort, ['riskLevel', 'entityCount'], true);
+            $dbLimit    = $phpSort ? null : $limit;
+            $dbOffset   = $phpSort ? null : $offset;
+            $dbSort     = $phpSort ? 'extractedAt' : $sort;
+
+            $summaries  = $this->chunkMapper->getFileSourceSummaries($dbLimit, $dbOffset, $searchTerm, $dbSort, $order);
+            $totalCount = $this->chunkMapper->countFileSourceSummaries($searchTerm);
+
+            $data = [];
+            foreach ($summaries as $summary) {
+                $entityCount = count($this->entityRelationMapper->findByFileId($summary['sourceId']));
+                $fileRisk    = $this->riskLevelService->getRiskLevel($summary['sourceId']);
+
+                $data[] = [
+                    'id'               => $summary['sourceId'],
+                    'fileName'         => $summary['fileName'],
+                    'mimeType'         => $summary['mimeType'],
+                    'fileSize'         => $summary['fileSize'],
+                    'extractionStatus' => 'completed',
+                    'chunkCount'       => $summary['chunkCount'],
+                    'extractedAt'      => $summary['lastExtracted'],
+                    'extractionError'  => null,
+                    'entityCount'      => $entityCount,
+                    'riskLevel'        => $fileRisk,
+                ];
+            }
+
+            // Filter by risk level if requested.
+            if ($riskLevel !== null && $riskLevel !== '') {
+                $data = array_values(array_filter($data, fn($f) => $f['riskLevel'] === $riskLevel));
+                $totalCount = count($data);
+            }
+
+            // PHP-side sorting for fields not in the DB query.
+            if ($phpSort === true) {
+                $riskOrder = ['none' => 0, 'low' => 1, 'medium' => 2, 'high' => 3, 'very_high' => 4];
+                usort($data, function ($a, $b) use ($sort, $order, $riskOrder) {
+                    if ($sort === 'riskLevel') {
+                        $cmp = ($riskOrder[$a['riskLevel']] ?? 0) <=> ($riskOrder[$b['riskLevel']] ?? 0);
+                    } else {
+                        $cmp = ($a[$sort] ?? 0) <=> ($b[$sort] ?? 0);
+                    }
+                    return $order === 'ASC' ? $cmp : -$cmp;
+                });
+                $totalCount = count($data);
+                $data = array_slice($data, $offset, $limit);
+            }
+
             return new JSONResponse(
                 data: [
                     'success' => true,
-                    'data'    => [],
-                    'message' => 'This endpoint needs to be updated for chunk-based architecture',
+                    'data'    => $data,
+                    'count'   => $totalCount,
                 ]
             );
         } catch (\Exception $e) {

@@ -236,6 +236,109 @@ class ChunkMapper extends QBMapper
     }//end countVectorized()
 
     /**
+     * Get file source summaries grouped by source_id.
+     *
+     * Aggregates chunks where source_type='file', joining filecache and mimetypes
+     * to return file metadata alongside chunk statistics.
+     *
+     * @param int|null    $limit  Maximum number of results
+     * @param int|null    $offset Offset for pagination
+     * @param string|null $search Optional search filter on file name
+     * @param string      $sort   Sort field (fileName, fileSize, extractedAt, chunkCount)
+     * @param string      $order  Sort direction (ASC or DESC)
+     *
+     * @return array List of file source summaries
+     */
+    public function getFileSourceSummaries(?int $limit=null, ?int $offset=null, ?string $search=null, string $sort='extractedAt', string $order='DESC'): array
+    {
+        $sortMap = [
+            'fileName'    => 'fc.name',
+            'fileSize'    => 'fc.size',
+            'extractedAt' => 'last_extracted',
+            'chunkCount'  => 'chunk_count',
+        ];
+
+        $sqlSort  = $sortMap[$sort] ?? 'last_extracted';
+        $sqlOrder = strtoupper($order) === 'ASC' ? 'ASC' : 'DESC';
+
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select('ch.source_id')
+            ->selectAlias($qb->func()->count('ch.id'), 'chunk_count')
+            ->selectAlias($qb->createFunction('MIN(ch.created_at)'), 'first_extracted')
+            ->selectAlias($qb->createFunction('MAX(ch.created_at)'), 'last_extracted')
+            ->selectAlias('fc.name', 'file_name')
+            ->selectAlias('mt.mimetype', 'mime_type')
+            ->selectAlias('fc.size', 'file_size')
+            ->from($this->getTableName(), 'ch')
+            ->innerJoin('ch', 'filecache', 'fc', $qb->expr()->eq('ch.source_id', 'fc.fileid'))
+            ->leftJoin('fc', 'mimetypes', 'mt', $qb->expr()->eq('fc.mimetype', 'mt.id'))
+            ->where($qb->expr()->eq('ch.source_type', $qb->createNamedParameter('file', IQueryBuilder::PARAM_STR)))
+            ->groupBy('ch.source_id', 'fc.name', 'mt.mimetype', 'fc.size')
+            ->orderBy($sqlSort, $sqlOrder);
+
+        if ($search !== null && $search !== '') {
+            $qb->andWhere($qb->expr()->iLike('fc.name', $qb->createNamedParameter('%' . $this->db->escapeLikeParameter($search) . '%', IQueryBuilder::PARAM_STR)));
+        }
+
+        if ($limit !== null) {
+            $qb->setMaxResults($limit);
+        }
+
+        if ($offset !== null) {
+            $qb->setFirstResult($offset);
+        }
+
+        $result = $qb->executeQuery();
+        $rows   = [];
+
+        $row = $result->fetch();
+        while ($row !== false) {
+            $rows[] = [
+                'sourceId'       => (int) $row['source_id'],
+                'chunkCount'     => (int) $row['chunk_count'],
+                'firstExtracted' => $row['first_extracted'],
+                'lastExtracted'  => $row['last_extracted'],
+                'fileName'       => $row['file_name'],
+                'mimeType'       => $row['mime_type'],
+                'fileSize'       => (int) $row['file_size'],
+            ];
+            $row = $result->fetch();
+        }
+
+        $result->closeCursor();
+
+        return $rows;
+    }//end getFileSourceSummaries()
+
+    /**
+     * Count distinct file sources that have chunks.
+     *
+     * @param string|null $search Optional search filter on file name
+     *
+     * @return int Number of distinct file sources
+     */
+    public function countFileSourceSummaries(?string $search=null): int
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select($qb->createFunction('COUNT(DISTINCT ch.source_id) as count'))
+            ->from($this->getTableName(), 'ch')
+            ->innerJoin('ch', 'filecache', 'fc', $qb->expr()->eq('ch.source_id', 'fc.fileid'))
+            ->where($qb->expr()->eq('ch.source_type', $qb->createNamedParameter('file', IQueryBuilder::PARAM_STR)));
+
+        if ($search !== null && $search !== '') {
+            $qb->andWhere($qb->expr()->iLike('fc.name', $qb->createNamedParameter('%' . $this->db->escapeLikeParameter($search) . '%', IQueryBuilder::PARAM_STR)));
+        }
+
+        $result = $qb->executeQuery();
+        $count  = (int) $result->fetchOne();
+        $result->closeCursor();
+
+        return $count;
+    }//end countFileSourceSummaries()
+
+    /**
      * Find unindexed chunks.
      *
      * Retrieves chunks that need to be indexed.

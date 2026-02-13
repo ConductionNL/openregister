@@ -26,6 +26,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Configuration;
@@ -837,7 +838,7 @@ class ImportHandler
                                 $existingRegister = $this->registerMapper->find($registerSlug);
                                 $property['objectConfiguration']['register'] = $existingRegister->getId();
                                 $this->registersMap[$registerSlug]           = $existingRegister;
-                            } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+                            } catch (\OCP\AppFramework\Db\DoesNotExistException|ValidationException $e) {
                                 $msg  = 'Register with slug %s not found in current ';
                                 $msg .= 'organisation context during schema property import ';
                                 $msg .= '(will be resolved after registers are imported).';
@@ -863,7 +864,7 @@ class ImportHandler
                                     $existingSchema = $this->schemaMapper->find($schemaSlug);
                                     $property['objectConfiguration']['schema'] = $existingSchema->getId();
                                     $this->schemasMap[$schemaSlug] = $existingSchema;
-                                } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+                                } catch (\OCP\AppFramework\Db\DoesNotExistException|ValidationException $e) {
                                     $msg  = 'Schema with slug %s not found in current ';
                                     $msg .= 'organisation context during schema property import ';
                                     $msg .= '(will be resolved after schemas are imported).';
@@ -903,7 +904,7 @@ class ImportHandler
                                 $existingRegister = $this->registerMapper->find($registerSlug);
                                 $property['items']['objectConfiguration']['register'] = $existingRegister->getId();
                                 $this->registersMap[$registerSlug] = $existingRegister;
-                            } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+                            } catch (\OCP\AppFramework\Db\DoesNotExistException|ValidationException $e) {
                                 $msg  = 'Register with slug %s not found in current ';
                                 $msg .= 'organisation context during array items schema property ';
                                 $msg .= 'import (will be resolved after registers are imported).';
@@ -932,7 +933,7 @@ class ImportHandler
                                     $schemaId       = $existingSchema->getId();
                                     $property['items']['objectConfiguration']['schema'] = $schemaId;
                                     $this->schemasMap[$schemaSlug] = $existingSchema;
-                                } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+                                } catch (\OCP\AppFramework\Db\DoesNotExistException|ValidationException $e) {
                                     $msg  = 'Schema with slug %s not found in current ';
                                     $msg .= 'organisation context during array items schema ';
                                     $msg .= 'property import (will be resolved after schemas are imported).';
@@ -2176,7 +2177,7 @@ class ImportHandler
                         "Found schema '{$schemaSlug}' in database for seedData",
                         ['schemaId' => $schema->getId(), 'schemaApp' => $schema->getApplication()]
                     );
-                } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+                } catch (\OCP\AppFramework\Db\DoesNotExistException|ValidationException $e) {
                     $this->logger->warning(
                         "Skipping seed data for schema '{$schemaSlug}' - schema not found",
                         ['appId' => $appId, 'availableSchemasInMap' => array_keys($this->schemasMap)]

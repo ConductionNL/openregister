@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\RiskLevelService;
 use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionHandler;
 use OCA\OpenRegister\Service\TextExtraction\ObjectHandler;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -122,6 +123,7 @@ class TextExtractionService
      * @param GdprEntityMapper         $entityMapper         Mapper for GDPR entities
      * @param EntityRelationMapper     $entityRelationMapper Mapper for entity relations
      * @param SettingsService          $settingsService      Settings service
+     * @param RiskLevelService         $riskLevelService     Risk level computation service
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      */
@@ -137,7 +139,8 @@ class TextExtractionService
         private readonly EntityRecognitionHandler $entityHandler,
         private readonly GdprEntityMapper $entityMapper,
         private readonly EntityRelationMapper $entityRelationMapper,
-        private readonly SettingsService $settingsService
+        private readonly SettingsService $settingsService,
+        private readonly RiskLevelService $riskLevelService
     ) {
     }//end __construct()
 
@@ -234,6 +237,20 @@ class TextExtractionService
                     'relations_created' => $entityResult['relations_created'],
                 ]
             );
+
+            // Compute and persist risk level based on detected entities.
+            try {
+                $riskLevel = $this->riskLevelService->updateRiskLevel(fileId: $fileId);
+                $this->logger->info(
+                    '[TextExtractionService] Risk level updated',
+                    ['fileId' => $fileId, 'riskLevel' => $riskLevel]
+                );
+            } catch (Exception $e) {
+                $this->logger->warning(
+                    '[TextExtractionService] Failed to update risk level',
+                    ['fileId' => $fileId, 'error' => $e->getMessage()]
+                );
+            }
         } catch (Exception $e) {
             $this->logger->error(
                 '[TextExtractionService] Entity extraction failed',
