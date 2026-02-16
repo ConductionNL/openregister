@@ -36,6 +36,10 @@ return [
         ['name' => 'settings#update', 'url' => '/api/settings', 'verb' => 'PUT'],
         ['name' => 'settings#rebase', 'url' => '/api/settings/rebase', 'verb' => 'POST'],
         ['name' => 'settings#stats', 'url' => '/api/settings/stats', 'verb' => 'GET'],
+
+        // Migration - Move objects between blob storage and magic tables.
+        ['name' => 'migration#status', 'url' => '/api/migration/status/{register}/{schema}', 'verb' => 'GET', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+']],
+        ['name' => 'migration#migrate', 'url' => '/api/migration/migrate', 'verb' => 'POST'],
         
         // Settings - Focused endpoints for better performance.
         ['name' => 'settings#getSearchBackend', 'url' => '/api/settings/search-backend', 'verb' => 'GET'],
@@ -228,6 +232,7 @@ return [
         ['name' => 'objects#show', 'url' => '/api/objects/{register}/{schema}/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#update', 'url' => '/api/objects/{register}/{schema}/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#patch', 'url' => '/api/objects/{register}/{schema}/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'objects#postPatch', 'url' => '/api/objects/{register}/{schema}/{id}', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#destroy', 'url' => '/api/objects/{register}/{schema}/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#merge', 'url' => '/api/objects/{register}/{schema}/{id}/merge', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#migrate', 'url' => '/api/migrate', 'verb' => 'POST'],

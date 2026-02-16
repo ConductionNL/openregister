@@ -1833,6 +1833,104 @@ class ObjectsController extends Controller
     }//end patch()
 
     /**
+     * Partially updates an existing object via POST with multipart file upload support.
+     *
+     * PHP only populates $_FILES for POST requests, so PUT/PATCH cannot handle
+     * multipart/form-data file uploads. This endpoint allows clients to POST to
+     * an existing object to update it (PATCH semantics) while supporting file uploads.
+     *
+     * @param string        $register      The register slug or identifier
+     * @param string        $schema        The schema slug or identifier
+     * @param string        $id            The object ID or UUID
+     * @param ObjectService $objectService The object service
+     *
+     * @return JSONResponse A JSON response containing the updated object
+     *
+     * @PublicPage
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     */
+    public function postPatch(
+        string $register,
+        string $schema,
+        string $id,
+        ObjectService $objectService
+    ): JSONResponse {
+        try {
+            $resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
+        } catch (RegisterNotFoundException | SchemaNotFoundException $e) {
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 404);
+        }
+
+        // Get patch data from request and filter parameters.
+        $patchData = $this->request->getParams();
+        $patchData = array_filter(
+            $patchData,
+            fn ($key) => str_starts_with($key, '_') === false
+                && !($key !== '@self' && str_starts_with($key, '@'))
+                && in_array($key, ['uuid', 'register', 'schema', 'id']) === false,
+            ARRAY_FILTER_USE_KEY
+        );
+
+        // Extract uploaded files — works because this is a POST request.
+        $uploadedFiles = $this->extractAllUploadedFiles();
+        $uploadedFilesValue = empty($uploadedFiles) === false ? $uploadedFiles : null;
+
+        // Determine RBAC and multitenancy settings based on admin status.
+        $isAdmin = $this->isCurrentUserAdmin();
+        $rbac    = $isAdmin === false;
+        $multi   = $isAdmin === false;
+
+        try {
+            // Find the existing object to merge with.
+            try {
+                $existingObject = $this->objectService->findSilent(
+                    id: $id,
+                    _extend: [],
+                    files: false,
+                    register: $resolved['registerEntity'],
+                    schema: $resolved['schemaEntity'],
+                    _rbac: false,
+                    _multitenancy: false
+                );
+            } catch (\Exception $e) {
+                return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+            }
+
+            // Merge existing data with patch data (patch semantics).
+            $existingData = $existingObject->getObject();
+            $mergedData   = array_merge($existingData ?? [], $patchData);
+
+            $objectService->clearCreatedSubObjects();
+
+            $objectEntity = $objectService->saveObject(
+                register: $resolved['register'],
+                schema: $resolved['schema'],
+                object: $mergedData,
+                _rbac: $rbac,
+                _multitenancy: $multi,
+                uuid: $id,
+                uploadedFiles: $uploadedFilesValue
+            );
+
+            // Unlock the object after saving.
+            try {
+                $this->objectService->unlockObject($objectEntity->getUuid());
+            } catch (\Exception $e) {
+                // Ignore unlock errors since the update was successful.
+            }
+
+            return new JSONResponse(data: $objectEntity->jsonSerialize());
+        } catch (ValidationException | CustomValidationException $exception) {
+            return $objectService->handleValidationException(exception: $exception);
+        } catch (\Exception $exception) {
+            return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 500);
+        }
+    }//end postPatch()
+
+    /**
      * Deletes an object
      *
      * This method deletes an object based on its ID.

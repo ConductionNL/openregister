@@ -24,11 +24,6 @@
 					<FileTreeOutline :size="20" />
 				</template>
 			</NcAppNavigationItem>
-			<NcAppNavigationItem :active="$route.path.startsWith('/entities')" :name="t('openregister', 'Entities')" @click="handleNavigate('/entities')">
-				<template #icon>
-					<AccountOutline :size="20" />
-				</template>
-			</NcAppNavigationItem>
 			<NcAppNavigationItem :active="$route.path.startsWith('/templates')" :name="t('openregister', 'Templates')" @click="handleNavigate('/templates')">
 				<template #icon>
 					<FileOutline :size="20" />
@@ -75,6 +70,11 @@
 			<NcAppNavigationItem :active="$route.path.startsWith('/configurations')" :name="t('openregister', 'Configurations')" @click="handleNavigate('/configurations')">
 				<template #icon>
 					<CogOutline :size="20" />
+				</template>
+			</NcAppNavigationItem>
+			<NcAppNavigationItem :active="$route.path.startsWith('/entities')" :name="t('openregister', 'Entities')" @click="handleNavigate('/entities')">
+				<template #icon>
+					<AccountOutline :size="20" />
 				</template>
 			</NcAppNavigationItem>
 			<NcAppNavigationItem :active="$route.path.startsWith('/deleted')" :name="t('openregister', 'Deleted')" @click="handleNavigate('/deleted')">

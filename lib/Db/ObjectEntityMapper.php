@@ -1396,43 +1396,33 @@ class ObjectEntityMapper extends QBMapper
         bool $_rbac=true,
         bool $_multitenancy=true
     ): ObjectEntity {
-        // Check if magic mapping should be used.
-        $useMagic = $register !== null && $schema !== null
-            && $this->shouldUseMagicMapperForRegisterSchema(register: $register, schema: $schema) === true;
-
-        $useMagicStr = 'false';
-        if ($useMagic === true) {
-            $useMagicStr = 'true';
-        }
-
-        $registerNotNullStr = 'false';
-        if ($register !== null) {
-            $registerNotNullStr = 'true';
-        }
-
-        $schemaNotNullStr = 'false';
-        if ($schema !== null) {
-            $schemaNotNullStr = 'true';
-        }
+        // Route through UnifiedObjectMapper when register/schema context is available.
+        // This matches how collection endpoints work: always try magic tables first
+        // when we have register+schema context, regardless of configuration flags.
+        // Previously this only routed to UnifiedObjectMapper when config explicitly
+        // enabled magicMapping, causing 404s for objects stored in magic tables
+        // without explicit register configuration.
+        $hasContext = $register !== null && $schema !== null;
 
         $this->logger->debug(
-            message: '[ObjectEntityMapper::find] Magic mapper check',
+            message: '[ObjectEntityMapper::find] Routing check',
             context: [
                 'file' => __FILE__,
                 'line' => __LINE__,
-                'useMagic'        => $useMagicStr,
-                'registerNotNull' => $registerNotNullStr,
-                'schemaNotNull'   => $schemaNotNullStr,
+                'hasContext'       => $hasContext ? 'true' : 'false',
+                'registerNotNull' => $register !== null ? 'true' : 'false',
+                'schemaNotNull'   => $schema !== null ? 'true' : 'false',
             ]
         );
 
-        if ($useMagic === true) {
+        if ($hasContext === true) {
             try {
                 $this->logger->debug(
-                    message: '[ObjectEntityMapper] Routing find() to UnifiedObjectMapper (MagicMapper)',
+                    message: '[ObjectEntityMapper] Routing find() to UnifiedObjectMapper',
                     context: ['file' => __FILE__, 'line' => __LINE__]
                 );
-                // Use the UnifiedObjectMapper to handle the find, which will route to MagicMapper.
+                // Use the UnifiedObjectMapper to handle the find, which will route
+                // to MagicMapper or blob storage based on table existence.
                 $unifiedObjectMapper = \OC::$server->get(UnifiedObjectMapper::class);
                 return $unifiedObjectMapper->find(
                     identifier: $identifier,
@@ -1444,7 +1434,7 @@ class ObjectEntityMapper extends QBMapper
                 );
             } catch (Exception $e) {
                 $this->logger->error(
-                    message: '[ObjectEntityMapper] Magic mapper find failed, falling back to blob storage',
+                    message: '[ObjectEntityMapper] UnifiedObjectMapper find failed, falling back to blob storage',
                     context: [
                         'file' => __FILE__,
                         'line' => __LINE__,
@@ -1453,7 +1443,7 @@ class ObjectEntityMapper extends QBMapper
                         'trace'     => $e->getTraceAsString(),
                     ]
                 );
-                // Fallback to default blob storage if magic mapper fails.
+                // Fallback to default blob storage if UnifiedObjectMapper fails.
             }//end try
         }//end if
 

@@ -1,0 +1,26 @@
+schema: conduction
+
+context: |
+  Project: OpenRegister
+  Repo: ConductionNL/openregister
+  Type: Nextcloud App (PHP)
+  Description: Core data registration platform for structured data management
+  Key components: Registers, Schemas, Objects, Sources, ObjectService
+  Database: PostgreSQL with pgvector support
+  Mount path: /var/www/html/custom_apps/openregister
+
+  Shared specs: See ../openspec/specs/ for cross-project conventions
+  Project guidelines: See ../project.md for workspace-wide standards
+
+rules:
+  proposal:
+    - Reference shared nextcloud-app spec for app structure requirements
+    - Consider impact on dependent apps (opencatalogi, softwarecatalog)
+  specs:
+    - ObjectService.saveObject() takes entity/array as first arg (NOT a type string)
+    - Include migration specs for any schema changes
+  design:
+    - Use Nextcloud OCP interfaces for all framework interactions
+    - Include OpenRegister service layer patterns (RegisterService, SchemaService, ObjectService)
+  tasks:
+    - Test with opencatalogi and softwarecatalog to verify no regressions

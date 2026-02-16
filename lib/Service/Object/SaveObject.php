@@ -2235,7 +2235,8 @@ class SaveObject
 
         // Check property-level authorization for incoming data.
         // This throws a ValidationException if user tries to modify unauthorized properties.
-        if ($schema->hasPropertyAuthorization() === true) {
+        // Skip when _rbac is false (internal/system calls should bypass all authorization).
+        if ($_rbac === true && $schema->hasPropertyAuthorization() === true) {
             $isCreate           = ($uuid === null);
             $existingObjectData = [];
 

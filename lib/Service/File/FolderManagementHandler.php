@@ -628,11 +628,15 @@ class FolderManagementHandler
     }//end getNodeTypeFromFolder()
 
     /**
-     * Get the OpenRegister user from the session.
+     * Get the user for file operations.
      *
-     * @return IUser The OpenRegister user.
+     * Returns the session user if available, otherwise falls back to the
+     * OpenRegister system user. This enables file operations for public
+     * (unauthenticated) requests such as public form submissions.
      *
-     * @throws Exception If user is not logged in.
+     * @return IUser The user for file operations.
+     *
+     * @throws Exception If no user can be resolved.
      *
      * @psalm-return   IUser
      * @phpstan-return IUser
@@ -641,11 +645,16 @@ class FolderManagementHandler
     {
         $user = $this->userSession->getUser();
 
-        if ($user === null) {
-            throw new Exception('User not logged in');
+        if ($user !== null) {
+            return $user;
         }
 
-        return $user;
+        // Fall back to the OpenRegister system user for public/unauthenticated requests.
+        if ($this->fileService !== null) {
+            return $this->fileService->getUser();
+        }
+
+        throw new Exception('User not logged in and no system user available');
     }//end getUser()
 
     /**

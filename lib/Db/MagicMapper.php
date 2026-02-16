@@ -5319,10 +5319,13 @@ class MagicMapper
     public function insertObjectEntity(
         ObjectEntity $entity,
         Register $register,
-        Schema $schema
+        Schema $schema,
+        bool $dispatchEvents=true
     ): ObjectEntity {
         // Dispatch creating event for audit trails.
-        $this->eventDispatcher->dispatchTyped(new ObjectCreatingEvent(object: $entity));
+        if ($dispatchEvents === true) {
+            $this->eventDispatcher->dispatchTyped(new ObjectCreatingEvent(object: $entity));
+        }
 
         // Ensure table exists.
         $this->ensureTableForRegisterSchema(register: $register, schema: $schema);
@@ -5501,10 +5504,13 @@ class MagicMapper
         ObjectEntity $entity,
         Register $register,
         Schema $schema,
-        bool $hardDelete=false
+        bool $hardDelete=false,
+        bool $dispatchEvents=true
     ): ObjectEntity {
         // Dispatch deleting event for audit trails.
-        $this->eventDispatcher->dispatchTyped(new ObjectDeletingEvent(object: $entity));
+        if ($dispatchEvents === true) {
+            $this->eventDispatcher->dispatchTyped(new ObjectDeletingEvent(object: $entity));
+        }
 
         $tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
         $uuid      = $entity->getUuid();

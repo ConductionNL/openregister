@@ -711,6 +711,7 @@ class UserService
                 'fediverse'    => IAccountManager::PROPERTY_FEDIVERSE,
                 'organisation' => IAccountManager::PROPERTY_ORGANISATION,
                 'role'         => IAccountManager::PROPERTY_ROLE,
+                'functie'      => IAccountManager::PROPERTY_ROLE,
                 'headline'     => IAccountManager::PROPERTY_HEADLINE,
                 'biography'    => IAccountManager::PROPERTY_BIOGRAPHY,
             ];
@@ -770,6 +771,11 @@ class UserService
 
         if (empty($nameFields) === false) {
             $this->setCustomNameFields(user: $user, nameFields: $nameFields);
+        }
+
+        // Store 'functie' in user config as fallback for the /me endpoint.
+        if (isset($data['functie']) === true) {
+            $this->config->setUserValue($user->getUID(), 'core', 'functie', (string) $data['functie']);
         }
     }//end updateProfileProperties()
 

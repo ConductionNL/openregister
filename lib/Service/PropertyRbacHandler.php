@@ -209,6 +209,16 @@ class PropertyRbacHandler
                 continue;
             }
 
+            // Skip authorization check if the value hasn't actually changed.
+            // This allows PATCH operations to include unchanged protected fields
+            // without triggering authorization errors.
+            if ($isCreate === false
+                && array_key_exists($propertyName, $object) === true
+                && $incomingData[$propertyName] === $object[$propertyName]
+            ) {
+                continue;
+            }
+
             // Check if user can update this property.
             if ($this->canUpdateProperty(
                 schema: $schema,

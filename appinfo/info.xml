@@ -80,6 +80,7 @@ Create a [feature request](https://github.com/OpenRegister/.github/issues/new/ch
 	<commands>
 		<command>OCA\OpenRegister\Command\SolrDebugCommand</command>
 		<command>OCA\OpenRegister\Command\SolrManagementCommand</command>
+		<command>OCA\OpenRegister\Command\MigrateStorageCommand</command>
 	</commands>
 
 	<notification>

@@ -338,6 +338,216 @@ GET /api/objects/1/3/uuid?_extend=aanbieder,_registers,_schemas
 
 **Note:** For single objects, the `registers`, `schemas`, and `objects` are included in the object's own `@self` section (not at the response root level).
 
+### Create Object
+
+**POST** `/api/objects/{register}/{schema}`
+
+Creates a new object in the specified register and schema.
+
+**Authentication:** Public (`@PublicPage`) — no authentication required.
+
+#### Request Formats
+
+##### JSON
+
+```bash
+curl -X POST /api/objects/1/3 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "naam": "New Object",
+    "beschrijvingKort": "A short description",
+    "type": "Leverancier"
+  }'
+```
+
+##### Multipart Form Data (with file uploads)
+
+Use `multipart/form-data` to upload files alongside object data. Each form field maps to a schema property. Files are automatically stored in Nextcloud and linked to the object.
+
+```bash
+curl -X POST /api/objects/1/3 \
+  -F "naam=New Object" \
+  -F "type=Leverancier" \
+  -F "logo=@/path/to/logo.png" \
+  -F 'contactpersonen=[{"voornaam":"John","achternaam":"Doe"}]'
+```
+
+**Important notes for multipart requests:**
+- Each form field name must match a schema property name
+- File fields (like `logo`) should contain a file upload — the backend will store the file and set the property value
+- Complex fields (arrays, objects) must be JSON-stringified (e.g., `contactpersonen=[{"voornaam":"John"}]`)
+- There is no file size limit imposed by the API (only PHP/server limits apply)
+
+#### Response
+
+```json
+{
+  "id": "uuid",
+  "naam": "New Object",
+  "type": "Leverancier",
+  "logo": "data:image/png;base64,...",
+  "@self": {
+    "id": "uuid",
+    "register": "1",
+    "schema": "3",
+    "files": [
+      {
+        "id": "806",
+        "path": "files/Open Registers/.../logo_1234567890_abc123.png",
+        "title": "logo_1234567890_abc123.png",
+        "accessUrl": "http://localhost:8080/index.php/s/shareToken",
+        "downloadUrl": "http://localhost:8080/index.php/s/shareToken/download",
+        "type": "image/png",
+        "size": 12345,
+        "labels": ["property:logo"]
+      }
+    ],
+    "created": "2024-01-01T00:00:00Z"
+  }
+}
+```
+
+**Status:** `201 Created`
+
+### Update Object (Full Replace)
+
+**PUT** `/api/objects/{register}/{schema}/{id}`
+
+Replaces all fields of an existing object. Fields not included in the request body will be set to null.
+
+**Authentication:** Required (user must be logged in).
+
+> **Note:** PUT does not support multipart file uploads due to a PHP limitation (`$_FILES` is only populated for POST requests). Use JSON for PUT requests, or use the POST-as-PATCH endpoint below for file uploads on existing objects.
+
+```bash
+curl -X PUT /api/objects/1/3/uuid \
+  -u admin:admin \
+  -H "Content-Type: application/json" \
+  -d '{
+    "naam": "Updated Object",
+    "beschrijvingKort": "Updated description",
+    "type": "Gemeente"
+  }'
+```
+
+**Status:** `200 OK`
+
+### Patch Object (Partial Update)
+
+**PATCH** `/api/objects/{register}/{schema}/{id}`
+
+Partially updates an existing object. Only the fields included in the request body are updated; other fields remain unchanged.
+
+**Authentication:** Required (user must be logged in).
+
+> **Note:** PATCH does not support multipart file uploads due to the same PHP limitation as PUT. Use the POST-as-PATCH endpoint below for file uploads on existing objects.
+
+```bash
+curl -X PATCH /api/objects/1/3/uuid \
+  -u admin:admin \
+  -H "Content-Type: application/json" \
+  -d '{"naam": "Patched Name"}'
+```
+
+**Status:** `200 OK`
+
+### Update Object with File Upload (POST-as-PATCH)
+
+**POST** `/api/objects/{register}/{schema}/{id}`
+
+Partially updates an existing object using PATCH semantics, with support for multipart file uploads. This endpoint exists because PHP only populates `$_FILES` for POST requests — making it impossible to upload files via PUT or PATCH with `multipart/form-data`.
+
+**Authentication:** Public (`@PublicPage`) — no authentication required.
+
+#### When to Use
+
+Use this endpoint instead of PUT/PATCH when you need to:
+- Upload or replace files on an existing object
+- Update an object from a public (unauthenticated) context with file attachments
+- Submit form data with file inputs to an existing object
+
+#### Example Requests
+
+```bash
+# Update name and upload a new logo (no authentication needed)
+curl -X POST /api/objects/1/3/uuid \
+  -F "naam=Updated Name" \
+  -F "logo=@/path/to/new-logo.png"
+
+# Update only the logo file
+curl -X POST /api/objects/1/3/uuid \
+  -F "logo=@/path/to/new-logo.png"
+
+# With authentication
+curl -X POST /api/objects/1/3/uuid \
+  -u admin:admin \
+  -F "naam=Updated Name" \
+  -F "logo=@/path/to/new-logo.png"
+```
+
+#### Behavior
+
+- Fields included in the request are merged with existing object data (PATCH semantics)
+- Fields not included in the request remain unchanged
+- Uploaded files replace any previously stored file for that property
+- The object must already exist; returns `404` if not found
+
+**Status:** `200 OK`
+
+### Delete Object
+
+**DELETE** `/api/objects/{register}/{schema}/{id}`
+
+Deletes an existing object.
+
+**Authentication:** Required (user must be logged in).
+
+```bash
+curl -X DELETE /api/objects/1/3/uuid -u admin:admin
+```
+
+**Status:** `200 OK`
+
+## File Uploads
+
+### How File Uploads Work
+
+When a file is uploaded via multipart/form-data (on POST create or POST-as-PATCH), the following happens:
+
+1. The file is extracted from `$_FILES` by the controller
+2. The file is converted to a base64 data URI internally
+3. The file property handler stores the file in Nextcloud's file system under the object's folder
+4. A public share link is created for the file
+5. The file metadata is added to `@self.files` with a `property:{fieldName}` label
+
+### File Storage
+
+Files are stored in the Nextcloud file system under:
+```
+files/Open Registers/{Register Name}/{object-uuid}/{fieldName}_{timestamp}_{hash}.{ext}
+```
+
+For **unauthenticated** (public) requests, files are stored under the OpenRegister system user account. For authenticated requests, files are stored under the requesting user's account.
+
+### Accessing Files
+
+Each stored file has:
+- **`accessUrl`**: A public Nextcloud share link to view the file
+- **`downloadUrl`**: A direct download link (append `/download` to the share link)
+
+Both URLs are publicly accessible without authentication.
+
+### Endpoint Comparison for File Support
+
+| Method | URL | Auth Required | File Uploads | Use Case |
+|--------|-----|--------------|-------------|----------|
+| `POST` | `/api/objects/{register}/{schema}` | No | Yes | Create with files |
+| `POST` | `/api/objects/{register}/{schema}/{id}` | No | Yes | Update with files |
+| `PUT` | `/api/objects/{register}/{schema}/{id}` | Yes | No | Full replace (JSON only) |
+| `PATCH` | `/api/objects/{register}/{schema}/{id}` | Yes | No | Partial update (JSON only) |
+
+> **Why can't PUT/PATCH handle file uploads?** PHP only populates the `$_FILES` superglobal for POST requests. When using PUT or PATCH with `multipart/form-data`, the request body is not parsed into `$_FILES` by PHP, so uploaded files cannot be accessed. The POST-as-PATCH endpoint works around this limitation.
+
 ## Error Handling
 
 ### SOLR-Only Features in Database Mode

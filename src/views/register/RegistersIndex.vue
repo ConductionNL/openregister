@@ -1,5 +1,5 @@
 <script setup>
-import { dashboardStore, registerStore, navigationStore, configurationStore } from '../../store/store.js'
+import { dashboardStore, registerStore, schemaStore, navigationStore, configurationStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -273,6 +273,22 @@ import { dashboardStore, registerStore, navigationStore, configurationStore } fr
 														<CheckCircle :size="20" />
 													</template>
 													{{ t('openregister', 'Validate') }}
+												</NcActionButton>
+												<NcActionButton
+													close-after-click
+													@click="registerStore.setRegisterItem(register); schemaStore.setSchemaItem(schema); navigationStore.setModal('exportRegister')">
+													<template #icon>
+														<Export :size="20" />
+													</template>
+													{{ t('openregister', 'Export') }}
+												</NcActionButton>
+												<NcActionButton
+													close-after-click
+													@click="registerStore.setRegisterItem(register); schemaStore.setSchemaItem(schema); navigationStore.setModal('importRegister')">
+													<template #icon>
+														<Upload :size="20" />
+													</template>
+													{{ t('openregister', 'Import') }}
 												</NcActionButton>
 												<NcActionButton 
 													v-tooltip="(schema.stats?.objects?.total || 0) === 0 ? t('openregister', 'No objects to delete') : t('openregister', 'Soft delete all objects for this schema ({active} active, {deleted} already deleted)', { active: getSchemaObjectCount(schema), deleted: (schema.stats?.objects?.deleted || 0) })"
