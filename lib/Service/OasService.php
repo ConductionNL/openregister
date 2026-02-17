@@ -84,6 +84,23 @@ class OasService
     private readonly IURLGenerator $urlGenerator;
 
     /**
+     * Constructor for OasService
+     *
+     * @param RegisterMapper $registerMapper Register mapper for database operations
+     * @param SchemaMapper   $schemaMapper   Schema mapper for database operations
+     * @param IURLGenerator  $urlGenerator   URL generator for absolute URLs
+     */
+    public function __construct(
+        RegisterMapper $registerMapper,
+        SchemaMapper $schemaMapper,
+        IURLGenerator $urlGenerator
+    ) {
+        $this->registerMapper = $registerMapper;
+        $this->schemaMapper   = $schemaMapper;
+        $this->urlGenerator   = $urlGenerator;
+    }//end __construct()
+
+    /**
      * Create OpenAPI Specification for register(s)
      *
      * Generates complete OpenAPI Specification documentation for one or all registers.
@@ -188,19 +205,61 @@ class OasService
             }
         }//end foreach
 
+        // Step 9: Extract RBAC groups from all schemas and generate OAuth2 scopes.
+        $allReadGroups   = [];
+        $allUpdateGroups = [];
+        $schemaRbacMap   = [];
+        foreach ($schemas as $schemaId => $schema) {
+            $rbac = $this->extractSchemaGroups(schema: $schema);
+            $schemaRbacMap[$schemaId] = $rbac;
+            $allReadGroups            = array_merge($allReadGroups, $rbac['readGroups']);
+            $allUpdateGroups          = array_merge($allUpdateGroups, $rbac['updateGroups']);
+        }
+
+        $allGroups = array_unique(array_merge($allReadGroups, $allUpdateGroups));
+        if (empty($allGroups) === false) {
+            // Always include admin in scopes.
+            if (in_array('admin', $allGroups, true) === false) {
+                $allGroups[] = 'admin';
+            }
+
+            $scopes = [];
+            foreach ($allGroups as $group) {
+                $scopes[$group] = $this->getScopeDescription(group: $group);
+            }
+
+            $this->oas['components']['securitySchemes']['oauth2']['flows']['authorizationCode']['scopes'] = $scopes;
+        }
+
         // Initialize paths array.
         $this->oas['paths'] = [];
+
+        // Determine if we need operationId prefixes for uniqueness.
+        // When generating for all registers, prefix with register slug to avoid collisions.
+        $useRegisterPrefix = ($registerId === null && count($registers) > 1);
 
         // Add paths for each register.
         foreach ($registers ?? [] as $register) {
             // Get schema slugs for the current register.
             $schemaIds = $register->getSchemas();
 
+            // Build operationId prefix from register title (PascalCase).
+            $operationIdPrefix = '';
+            if ($useRegisterPrefix === true) {
+                $operationIdPrefix = $this->pascalCase($register->getTitle());
+            }
+
             // Loop through each schema slug to get the schema from the schemas array.
             foreach ($schemaIds ?? [] as $schemaId) {
                 if (($schemas[$schemaId] ?? null) !== null) {
                     $schema = $schemas[$schemaId];
-                    $this->addCrudPaths(register: $register, schema: $schema);
+                    $rbac   = $schemaRbacMap[$schemaId] ?? ['readGroups' => [], 'updateGroups' => []];
+                    $this->addCrudPaths(
+                        register: $register,
+                        schema: $schema,
+                        rbac: $rbac,
+                        operationIdPrefix: $operationIdPrefix
+                    );
                     $this->addExtendedPaths(register: $register, schema: $schema);
                 }
             }
@@ -235,6 +294,98 @@ class OasService
     }//end getBaseOas()
 
     /**
+     * Extract unique RBAC groups from a schema's property authorization rules
+     *
+     * @param object $schema The schema object
+     *
+     * @return array{readGroups: string[], updateGroups: string[]} Unique groups per action
+     */
+    private function extractSchemaGroups(object $schema): array
+    {
+        $readGroups   = [];
+        $updateGroups = [];
+        $properties   = $schema->getProperties();
+
+        foreach ($properties ?? [] as $propertyDefinition) {
+            if (is_array($propertyDefinition) === false) {
+                continue;
+            }
+
+            $auth = $propertyDefinition['authorization'] ?? null;
+            if ($auth === null || is_array($auth) === false) {
+                continue;
+            }
+
+            // Collect read groups.
+            foreach ($auth['read'] ?? [] as $rule) {
+                if (is_array($rule) === true && isset($rule['group']) === true) {
+                    $readGroups[] = $rule['group'];
+                } else if (is_string($rule) === true) {
+                    $readGroups[] = $rule;
+                }
+            }
+
+            // Collect update groups.
+            foreach ($auth['update'] ?? [] as $rule) {
+                if (is_array($rule) === true && isset($rule['group']) === true) {
+                    $updateGroups[] = $rule['group'];
+                } else if (is_string($rule) === true) {
+                    $updateGroups[] = $rule;
+                }
+            }
+        }//end foreach
+
+        return [
+            'readGroups'   => array_values(array_unique($readGroups)),
+            'updateGroups' => array_values(array_unique($updateGroups)),
+        ];
+    }//end extractSchemaGroups()
+
+    /**
+     * Get a human-readable description for an OAuth2 scope based on group name
+     *
+     * @param string $group The Nextcloud group name
+     *
+     * @return string The scope description
+     */
+    private function getScopeDescription(string $group): string
+    {
+        if ($group === 'admin') {
+            return 'Full administrative access';
+        }
+
+        if ($group === 'public') {
+            return 'Public (unauthenticated) access';
+        }
+
+        return 'Access for '.$group.' group';
+    }//end getScopeDescription()
+
+    /**
+     * Build per-operation security requirement based on RBAC groups
+     *
+     * @param string[] $groups The groups that have access to this operation
+     *
+     * @return array|null Security requirement array, or null if no RBAC rules
+     */
+    private function buildOperationSecurity(array $groups): ?array
+    {
+        if (empty($groups) === true) {
+            return null;
+        }
+
+        // Always include admin for write operations.
+        if (in_array('admin', $groups, true) === false) {
+            $groups[] = 'admin';
+        }
+
+        return [
+            ['oauth2'    => array_values(array_unique($groups))],
+            ['basicAuth' => []],
+        ];
+    }//end buildOperationSecurity()
+
+    /**
      * Extended endpoints that should be included in OAS generation
      * This whitelist ensures only stable, public-facing endpoints are documented
      *
@@ -264,8 +415,8 @@ class OasService
 
         // Start with core API properties.
         $cleanProperties = [
-            '@self' => [
-                '$ref'        => '#/components/schemas/@self',
+            '_self' => [
+                '$ref'        => '#/components/schemas/_self',
                 'readOnly'    => true,
                 'description' => 'Object metadata including timestamps, ownership, and system information',
             ],
@@ -392,10 +543,32 @@ class OasService
             'title',
         ];
 
-        // Copy only valid OpenAPI schema keywords.
+        // Copy only valid OpenAPI schema keywords (strips internal fields like
+        // objectConfiguration, inversedBy, authorization, defaultBehavior, etc.).
         foreach ($allowedKeywords as $keyword) {
             if (($propertyDefinition[$keyword] ?? null) !== null) {
                 $cleanDef[$keyword] = $propertyDefinition[$keyword];
+            }
+        }
+
+        // Recursively sanitize nested structures (items, properties, composition keywords).
+        if (isset($cleanDef['items']) === true && is_array($cleanDef['items']) === true) {
+            $cleanDef['items'] = $this->sanitizePropertyDefinition($cleanDef['items']);
+        }
+
+        if (isset($cleanDef['properties']) === true && is_array($cleanDef['properties']) === true) {
+            foreach ($cleanDef['properties'] as $subPropName => $subPropDef) {
+                $cleanDef['properties'][$subPropName] = $this->sanitizePropertyDefinition($subPropDef);
+            }
+        }
+
+        foreach (['oneOf', 'anyOf', 'allOf'] as $compositionKey) {
+            if (isset($cleanDef[$compositionKey]) === true && is_array($cleanDef[$compositionKey]) === true) {
+                foreach ($cleanDef[$compositionKey] as $idx => $item) {
+                    if (is_array($item) === true) {
+                        $cleanDef[$compositionKey][$idx] = $this->sanitizePropertyDefinition($item);
+                    }
+                }
             }
         }
 
@@ -448,12 +621,55 @@ class OasService
             unset($cleanDef['$ref']);
         }//end if
 
+        // Normalize bare $ref values (e.g., "vestiging") to proper component references.
+        if (isset($cleanDef['$ref']) === true
+            && is_string($cleanDef['$ref']) === true
+            && strpos($cleanDef['$ref'], '#/') !== 0
+        ) {
+            $cleanDef['$ref'] = '#/components/schemas/'.$this->sanitizeSchemaName($cleanDef['$ref']);
+        }
+
         // Enum must have at least 1 item, remove if empty.
         $hasEnum     = ($cleanDef['enum'] ?? null) !== null;
         $enumIsEmpty = empty($cleanDef['enum']) === true || is_array($cleanDef['enum']) === false;
         if ($hasEnum === true && $enumIsEmpty === true) {
             unset($cleanDef['enum']);
         }//end if
+
+        // Property-level `required` must be an array (list of required sub-properties),
+        // not a boolean. Booleans leak from schema config and violate OpenAPI spec.
+        if (isset($cleanDef['required']) === true && is_array($cleanDef['required']) === false) {
+            unset($cleanDef['required']);
+        }
+
+        // Validate `type` is a recognized OpenAPI 3.1 type.
+        $validTypes = ['object', 'array', 'string', 'number', 'integer', 'boolean', 'null'];
+        if (isset($cleanDef['type']) === true) {
+            if (is_string($cleanDef['type']) === true
+                && in_array($cleanDef['type'], $validTypes, true) === false
+            ) {
+                $cleanDef['type'] = 'string';
+            }
+        }
+
+        // `items` must be a JSON Schema object, not an array. Fix malformed items.
+        if (isset($cleanDef['items']) === true) {
+            if (is_array($cleanDef['items']) === true && array_is_list($cleanDef['items']) === true) {
+                // Sequential array (list) — not valid. Use first element or default.
+                $cleanDef['items'] = empty($cleanDef['items']) === false
+                    ? $cleanDef['items'][0]
+                    : ['type' => 'string'];
+            }
+
+            if (is_array($cleanDef['items']) === false || empty($cleanDef['items']) === true) {
+                $cleanDef['items'] = ['type' => 'string'];
+            }
+        }
+
+        // Array types must have items definition.
+        if (($cleanDef['type'] ?? null) === 'array' && isset($cleanDef['items']) === false) {
+            $cleanDef['items'] = ['type' => 'string'];
+        }
 
         // Ensure we have at least a type.
         if (isset($cleanDef['type']) === false && isset($cleanDef['$ref']) === false) {
@@ -471,26 +687,69 @@ class OasService
     /**
      * Add CRUD paths for a schema.
      *
-     * @param object $register The register object
-     * @param object $schema   The schema object
+     * @param object $register          The register object
+     * @param object $schema            The schema object
+     * @param array  $rbac              RBAC groups {readGroups: string[], updateGroups: string[]}
+     * @param string $operationIdPrefix Prefix for operationId to ensure uniqueness across registers
      *
      * @return void
      */
-    private function addCrudPaths(object $register, object $schema): void
+    private function addCrudPaths(object $register, object $schema, array $rbac = [], string $operationIdPrefix = ''): void
     {
         $basePath = '/'.$this->slugify($register->getTitle()).'/'.$this->slugify($schema->getTitle());
 
+        // Build per-operation security from RBAC groups.
+        $readSecurity  = $this->buildOperationSecurity(groups: $rbac['readGroups'] ?? []);
+        $writeSecurity = $this->buildOperationSecurity(groups: $rbac['updateGroups'] ?? []);
+
         // Collection endpoints (tags are inside individual operations).
+        $getCollection = $this->createGetCollectionOperation($schema);
+        $postOp        = $this->createPostOperation($schema);
+
+        // Apply operationId prefix for uniqueness across registers.
+        if ($operationIdPrefix !== '') {
+            $getCollection['operationId'] = $operationIdPrefix.$getCollection['operationId'];
+            $postOp['operationId']        = $operationIdPrefix.$postOp['operationId'];
+        }
+
+        if ($readSecurity !== null) {
+            $getCollection['security'] = $readSecurity;
+        }
+
+        if ($writeSecurity !== null) {
+            $postOp['security'] = $writeSecurity;
+        }
+
         $this->oas['paths'][$basePath] = [
-            'get'  => $this->createGetCollectionOperation($schema),
-            'post' => $this->createPostOperation($schema),
+            'get'  => $getCollection,
+            'post' => $postOp,
         ];
 
         // Individual resource endpoints (tags are inside individual operations).
+        $getOp    = $this->createGetOperation($schema);
+        $putOp    = $this->createPutOperation($schema);
+        $deleteOp = $this->createDeleteOperation($schema);
+
+        // Apply operationId prefix for uniqueness across registers.
+        if ($operationIdPrefix !== '') {
+            $getOp['operationId']    = $operationIdPrefix.$getOp['operationId'];
+            $putOp['operationId']    = $operationIdPrefix.$putOp['operationId'];
+            $deleteOp['operationId'] = $operationIdPrefix.$deleteOp['operationId'];
+        }
+
+        if ($readSecurity !== null) {
+            $getOp['security'] = $readSecurity;
+        }
+
+        if ($writeSecurity !== null) {
+            $putOp['security']    = $writeSecurity;
+            $deleteOp['security'] = $writeSecurity;
+        }
+
         $this->oas['paths'][$basePath.'/{id}'] = [
-            'get'    => $this->createGetOperation($schema),
-            'put'    => $this->createPutOperation($schema),
-            'delete' => $this->createDeleteOperation($schema),
+            'get'    => $getOp,
+            'put'    => $putOp,
+            'delete' => $deleteOp,
         ];
     }//end addCrudPaths()
 
@@ -629,9 +888,7 @@ class OasService
 
                     // Array types require an items field.
                     if ($propertyType === 'array') {
-                        $paramSchema['items'] = [
-                        // Default array item type for query parameters.
-                        ];
+                        $paramSchema['items'] = ['type' => 'string'];
                     }
 
                     $parameters[] = [
@@ -657,9 +914,13 @@ class OasService
      */
     private function getPropertyType($propertyDefinition): string
     {
+        $validTypes = ['object', 'array', 'string', 'number', 'integer', 'boolean', 'null'];
+
         // If the property definition is an array, look for the type key.
         if (is_array($propertyDefinition) === true && (($propertyDefinition['type'] ?? null) !== null)) {
-            return $propertyDefinition['type'];
+            $type = $propertyDefinition['type'];
+            // Validate the type is a recognized OpenAPI type.
+            return in_array($type, $validTypes, true) === true ? $type : 'string';
         }
 
         // If the property definition is a string, assume it's the type.
@@ -732,6 +993,14 @@ class OasService
                                     ],
                                 ],
                             ],
+                        ],
+                    ],
+                ],
+                '400' => [
+                    'description' => 'Invalid query parameters',
+                    'content'     => [
+                        'application/json' => [
+                            'schema' => ['$ref' => '#/components/schemas/Error'],
                         ],
                     ],
                 ],
@@ -908,6 +1177,14 @@ class OasService
                             'schema' => [
                                 '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName($schemaName),
                             ],
+                        ],
+                    ],
+                ],
+                '400' => [
+                    'description' => 'Invalid request body',
+                    'content'     => [
+                        'application/json' => [
+                            'schema' => ['$ref' => '#/components/schemas/Error'],
                         ],
                     ],
                 ],
@@ -1313,28 +1590,38 @@ class OasService
     private function validateOasIntegrity(): void
     {
         // Check for invalid $ref references in schemas.
-        if (($this->oas['components']['schemas'] ?? null) !== null) {
-            foreach ($this->oas['components']['schemas'] ?? [] as $schemaName => &$schema) {
-                if (is_array($schema) === true) {
-                    $this->validateSchemaReferences(schema: $schema, context: $schemaName);
+        if (isset($this->oas['components']['schemas']) === true) {
+            $schemaNames = array_keys($this->oas['components']['schemas']);
+            foreach ($schemaNames as $schemaName) {
+                if (is_array($this->oas['components']['schemas'][$schemaName]) === true) {
+                    $this->validateSchemaReferences(
+                        schema: $this->oas['components']['schemas'][$schemaName],
+                        context: $schemaName
+                    );
                 }
             }
         }
 
         // Check for invalid allOf constructs in paths.
-        if (($this->oas['paths'] ?? null) !== null) {
-            foreach ($this->oas['paths'] ?? [] as $pathName => &$path) {
-                foreach ($path ?? [] as $method => &$operation) {
-                    if (($operation['responses'] ?? null) !== null) {
-                        foreach ($operation['responses'] ?? [] as $statusCode => &$response) {
-                            if (($response['content']['application/json']['schema'] ?? null) !== null) {
+        if (isset($this->oas['paths']) === true) {
+            $pathNames = array_keys($this->oas['paths']);
+            foreach ($pathNames as $pathName) {
+                $methods = array_keys($this->oas['paths'][$pathName]);
+                foreach ($methods as $method) {
+                    $operation = &$this->oas['paths'][$pathName][$method];
+                    if (isset($operation['responses']) === true) {
+                        $statusCodes = array_keys($operation['responses']);
+                        foreach ($statusCodes as $statusCode) {
+                            if (isset($operation['responses'][$statusCode]['content']['application/json']['schema']) === true) {
                                 $this->validateSchemaReferences(
-                                    schema: $response['content']['application/json']['schema'],
+                                    schema: $operation['responses'][$statusCode]['content']['application/json']['schema'],
                                     context: "path:{$pathName}:{$method}:response:{$statusCode}"
                                 );
                             }
                         }
                     }
+
+                    unset($operation);
                 }
             }
         }
@@ -1397,29 +1684,63 @@ class OasService
         if (($schema['$ref'] ?? null) !== null) {
             if (empty($schema['$ref']) === true || is_string($schema['$ref']) === false) {
                 unset($schema['$ref']);
-            }
-
-            if (empty($schema['$ref']) === false && is_string($schema['$ref']) === true) {
+            } else {
                 // Check if reference points to existing schema.
                 $refPath = str_replace('#/components/schemas/', '', $schema['$ref']);
                 if (strpos($schema['$ref'], '#/components/schemas/') === 0
                     && isset($this->oas['components']['schemas'][$refPath]) === false
                 ) {
+                    // Try case-insensitive match against existing component names.
+                    $resolved = false;
+                    foreach (array_keys($this->oas['components']['schemas'] ?? []) as $existingName) {
+                        if (strtolower($existingName) === strtolower($refPath)) {
+                            $schema['$ref'] = '#/components/schemas/'.$existingName;
+                            $resolved       = true;
+                            break;
+                        }
+                    }
+
+                    // If no match found, remove the broken $ref and fall back to string type.
+                    if ($resolved === false) {
+                        unset($schema['$ref']);
+                        if (isset($schema['type']) === false) {
+                            $schema['type']        = 'string';
+                            $schema['description'] = $schema['description'] ?? 'Reference to '.$refPath;
+                        }
+                    }
                 }
             }
         }
 
-        // Recursively check nested schemas.
+        // Recursively check nested schemas (by reference so fixes are applied).
         if (($schema['properties'] ?? null) !== null) {
-            foreach ($schema['properties'] ?? [] as $propName => $property) {
+            foreach ($schema['properties'] as $propName => &$property) {
                 if (is_array($property) === true) {
                     $this->validateSchemaReferences(schema: $property, context: "{$context}.properties.{$propName}");
                 }
             }
+
+            unset($property);
         }
 
         if (($schema['items'] ?? null) !== null && is_array($schema['items']) === true) {
             $this->validateSchemaReferences(schema: $schema['items'], context: "{$context}.items");
+        }
+
+        // Recursively check oneOf/anyOf/allOf items for broken refs.
+        foreach (['oneOf', 'anyOf', 'allOf'] as $compositionKey) {
+            if (($schema[$compositionKey] ?? null) !== null && is_array($schema[$compositionKey]) === true) {
+                foreach ($schema[$compositionKey] as $idx => &$compositionItem) {
+                    if (is_array($compositionItem) === true) {
+                        $this->validateSchemaReferences(
+                            schema: $compositionItem,
+                            context: "{$context}.{$compositionKey}[{$idx}]"
+                        );
+                    }
+                }
+
+                unset($compositionItem);
+            }
         }
     }//end validateSchemaReferences()
 }//end class
