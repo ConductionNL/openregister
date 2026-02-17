@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionHandler;
 use OCA\OpenRegister\Service\TextExtraction\ObjectHandler;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\Files\File;
 use OCP\Files\IRootFolder;
 use OCP\Files\NotFoundException;
 use OCP\IDBConnection;
@@ -862,7 +863,7 @@ class TextExtractionService
 
             $file = $nodes[0];
 
-            if ($file instanceof \OCP\Files\File === false) {
+            if ($file instanceof File === false) {
                 throw new Exception("Node is not a file");
             }
 
@@ -897,7 +898,7 @@ class TextExtractionService
                 $extractedText = $this->extractPdf($file);
             } else if ($this->isWordDocument($mimeType) === true) {
                 // Extract text from DOCX/DOC using PhpWord.
-                $extractedText = $this->extractWord($file);
+                $extractedText = $this->extractWord(file: $file, mimeType: $mimeType);
             } else if ($this->isSpreadsheet($mimeType) === true) {
                 // Extract text from XLSX/XLS using PhpSpreadsheet.
                 $extractedText = $this->extractSpreadsheet($file);
@@ -1216,13 +1217,13 @@ class TextExtractionService
     /**
      * Extract text from PDF file using Smalot PdfParser
      *
-     * @param \OCP\Files\File $file Nextcloud file object
+     * @param File $file Nextcloud file object
      *
      * @return null|string Extracted text content
      *
      * @throws Exception If PDF parsing fails
      */
-    private function extractPdf(\OCP\Files\File $file): string|null
+    private function extractPdf(File $file): string|null
     {
         // Check if PdfParser library is available.
         if (class_exists('Smalot\PdfParser\Parser') === false) {
@@ -1298,7 +1299,7 @@ class TextExtractionService
     /**
      * Extract text from Word document (DOCX/DOC) using PhpWord
      *
-     * @param \OCP\Files\File $file Nextcloud file object
+     * @param File $file Nextcloud file object
      *
      * @return string|null Extracted text content
      *
@@ -1307,7 +1308,7 @@ class TextExtractionService
      * @SuppressWarnings(PHPMD.StaticAccess)         IOFactory::load is standard PhpWord pattern
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex document structure traversal
      */
-    private function extractWord(\OCP\Files\File $file): ?string
+    private function extractWord(File $file, string $mimeType): ?string
     {
         // Check if PhpWord library is available.
         if (class_exists('PhpOffice\PhpWord\IOFactory') === false) {
@@ -1339,8 +1340,21 @@ class TextExtractionService
             $tempPath = stream_get_meta_data($tempFile)['uri'];
             fwrite($tempFile, $content);
 
+			switch($mimeType) {
+				case 'application/msword':
+					$reader = 'MsDoc';
+					break;
+				case 'application/vnd.oasis.opendocument.text':
+					$reader = 'ODText';
+					break;
+				case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+				default:
+					$reader = 'Word2007';
+					break;
+			}
+
             // Load Word document.
-            $phpWord = WordIOFactory::load($tempPath);
+            $phpWord = WordIOFactory::load(filename: $tempPath, readerName: $reader);
 
             // Extract text from all sections.
             $text = '';
@@ -1391,6 +1405,9 @@ class TextExtractionService
                     'error'  => $e->getMessage(),
                 ]
             );
+
+
+
             throw new Exception("Word extraction failed: ".$e->getMessage());
         }//end try
     }//end extractWord()
@@ -1398,7 +1415,7 @@ class TextExtractionService
     /**
      * Extract text from spreadsheet (XLSX/XLS) using PhpSpreadsheet
      *
-     * @param \OCP\Files\File $file Nextcloud file object
+     * @param File $file Nextcloud file object
      *
      * @return string|null Extracted text content
      *
@@ -1408,7 +1425,7 @@ class TextExtractionService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex multi-sheet and cell iteration
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive spreadsheet extraction logic
      */
-    private function extractSpreadsheet(\OCP\Files\File $file): ?string
+    private function extractSpreadsheet(File $file): ?string
     {
         // PhpSpreadsheet should already be installed (in composer.json).
         if (class_exists('PhpOffice\PhpSpreadsheet\IOFactory') === false) {
@@ -1865,6 +1882,7 @@ class TextExtractionService
         $wordTypes = [
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             'application/msword',
+			'application/vnd.oasis.opendocument.text',
         ];
 
         return in_array($mimeType, $wordTypes, true) === true;
