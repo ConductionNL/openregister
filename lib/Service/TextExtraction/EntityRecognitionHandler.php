@@ -21,6 +21,8 @@ namespace OCA\OpenRegister\Service\TextExtraction;
 
 use DateTime;
 use Exception;
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Db\Chunk;
 use OCA\OpenRegister\Db\ChunkMapper;
 use OCA\OpenRegister\Db\EntityRelation;
@@ -432,6 +434,7 @@ class EntityRecognitionHandler
      */
     private function detectWithPresidio(string $text, ?array $entityTypes, float $confidenceThreshold): array
     {
+
         try {
             // Get Presidio settings.
             $fileSettings     = $this->settingsService->getFileSettingsOnly();
@@ -457,36 +460,52 @@ class EntityRecognitionHandler
                 }
             }
 
-            // Make HTTP request to Presidio.
-            $ch = curl_init($presidioEndpoint.'/analyze');
-            curl_setopt_array(
-                $ch,
-                [
-                    CURLOPT_RETURNTRANSFER => true,
-                    CURLOPT_POST           => true,
-                    CURLOPT_POSTFIELDS     => json_encode($requestBody),
-                    CURLOPT_HTTPHEADER     => [
-                        'Content-Type: application/json',
-                        'Accept: application/json',
-                    ],
-                    CURLOPT_TIMEOUT        => 30,
-                ]
-            );
+			$client = new Client(['base_uri' => rtrim($presidioEndpoint, '/').'/']);
 
-            $response  = curl_exec($ch);
-            $httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            $curlError = curl_error($ch);
-            curl_close($ch);
+//			var_dump($requestBody);
 
-            if ($curlError !== '') {
-                $this->logger->error('[EntityRecognitionHandler] Presidio connection error: '.$curlError);
-                return $this->detectWithRegex(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold);
-            }
+			try {
+				$response = $client->post('analyze', ['json' => $requestBody]);
+			} catch (GuzzleException $exception) {
+				var_dump($exception->getMessage());
+			}
 
-            if ($httpCode !== 200) {
-                $this->logger->error('[EntityRecognitionHandler] Presidio returned HTTP '.$httpCode);
-                return $this->detectWithRegex(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold);
-            }
+//            // Make HTTP request to Presidio.
+//            $ch = curl_init($presidioEndpoint.'/analyze');
+//            curl_setopt_array(
+//                $ch,
+//                [
+//                    CURLOPT_RETURNTRANSFER => true,
+//                    CURLOPT_POST           => true,
+//                    CURLOPT_POSTFIELDS     => json_encode($requestBody),
+//                    CURLOPT_HTTPHEADER     => [
+//                        'Content-Type: application/json',
+//                        'Accept: application/json',
+//                    ],
+//                    CURLOPT_TIMEOUT        => 30,
+//                ]
+//            );
+
+			$response = $response->getBody()->getContents();
+
+//			var_dump($response);
+
+//            $response  = curl_exec($ch);
+//            $httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+//            $curlError = curl_error($ch);
+//            curl_close($ch);
+//
+//			var_dump($response);
+
+//            if ($curlError !== '') {
+//                $this->logger->error('[EntityRecognitionHandler] Presidio connection error: '.$curlError);
+//                return $this->detectWithRegex(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold);
+//            }
+//
+//            if ($httpCode !== 200) {
+//                $this->logger->error('[EntityRecognitionHandler] Presidio returned HTTP '.$httpCode);
+//                return $this->detectWithRegex(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold);
+//            }
 
             $presidioResults = json_decode($response, true);
             if (json_last_error() !== JSON_ERROR_NONE || is_array($presidioResults) === false) {
@@ -494,11 +513,14 @@ class EntityRecognitionHandler
                 return $this->detectWithRegex(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold);
             }
 
-            $this->logger->debug('[EntityRecognitionHandler] Presidio found '.count($presidioResults).' entities');
+            $this->logger->debug('[EntityRecognitionHandler] Presidio found '.count($presidioResults/*['pii_entities']*/).' entities');
+
+//			var_dump(count($presidioResults['pii_entities']));
 
             // Convert Presidio results to our format.
             $entities = [];
-            foreach ($presidioResults as $result) {
+            foreach ($presidioResults/*['pii_entities']*/ as $result) {
+//				var_dump($result);
                 $score = $result['score'] ?? 0;
 
                 // Skip low confidence results.
@@ -522,6 +544,8 @@ class EntityRecognitionHandler
                     'method'         => self::METHOD_PRESIDIO,
                 ];
             }//end foreach
+
+//			var_dump($entities);
 
             return $entities;
         } catch (Exception $e) {
