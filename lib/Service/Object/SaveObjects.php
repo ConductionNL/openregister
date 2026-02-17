@@ -920,6 +920,10 @@ class SaveObjects
                 );
             }//end if
 
+                // PROPERTY DEFAULTS: Apply schema-defined default values to business data.
+                // This handles templates like "{{ fieldA }} {{ fieldB | map: key=val }}" for computed properties.
+                $businessData = $this->saveHandler->applyPropertyDefaults(schema: $schemaObj, data: $businessData);
+
                 // RELATIONS EXTRACTION: Scan the business data for relations (UUIDs and URLs).
                 // This ensures relations metadata is populated during bulk import.
                 $relations = $this->scanForRelations(data: $businessData, prefix: '', schema: $schemaObj);

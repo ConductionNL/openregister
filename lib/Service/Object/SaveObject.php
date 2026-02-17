@@ -1212,9 +1212,13 @@ class SaveObject
                             $renderedDefaults[$key] = null;
                         }
                     } else {
-                        // Complex template, use Twig rendering (converts to string).
-                        $template = $this->twig->createTemplate($defaultValue);
-                        $renderedDefaults[$key] = $template->render($twigContext);
+                        // Complex template, use MetadataHydrationHandler which supports
+                        // pipe-based filters (| map:) and fallback syntax (| field2).
+                        $rendered = $this->metaHydrationHandler->processTwigLikeTemplate(
+                            data: $twigContext,
+                            template: $defaultValue
+                        );
+                        $renderedDefaults[$key] = $rendered;
                     }
                 }
 
@@ -1311,9 +1315,15 @@ class SaveObject
 
                         // If source property not found, skip (don't overwrite with null).
                     } else {
-                        // Complex template, use Twig rendering (converts to string).
-                        $template   = $this->twig->createTemplate($defaultValue);
-                        $data[$key] = $template->render($twigContext);
+                        // Complex template, use MetadataHydrationHandler which supports
+                        // pipe-based filters (| map:) and fallback syntax (| field2).
+                        $rendered = $this->metaHydrationHandler->processTwigLikeTemplate(
+                            data: $twigContext,
+                            template: $defaultValue
+                        );
+                        if ($rendered !== null) {
+                            $data[$key] = $rendered;
+                        }
                     }
                 } else {
                     // Non-template value, use directly.
@@ -1327,6 +1337,88 @@ class SaveObject
 
         return $data;
     }//end applyAlwaysDefaults()
+
+    /**
+     * Apply property default values to a data array (for use in bulk save paths).
+     *
+     * This is the public counterpart to setDefaultValues() that can work without
+     * an ObjectEntity. It applies defaults based on defaultBehavior settings and
+     * renders templates using MetadataHydrationHandler's processTwigLikeTemplate().
+     *
+     * @param Schema $schema The schema containing property definitions.
+     * @param array  $data   The object data to apply defaults to.
+     *
+     * @return array The data with defaults applied.
+     */
+    public function applyPropertyDefaults(Schema $schema, array $data): array
+    {
+        try {
+            $schemaObject = json_decode(json_encode($schema->getSchemaObject($this->urlGenerator)), associative: true);
+
+            if (isset($schemaObject['properties']) === false || is_array($schemaObject['properties']) === false) {
+                return $data;
+            }
+        } catch (Exception $e) {
+            return $data;
+        }
+
+        foreach ($schemaObject['properties'] as $key => $property) {
+            $defaultValue = $property['default'] ?? null;
+            if ($defaultValue === null) {
+                continue;
+            }
+
+            $defaultBehavior = $property['defaultBehavior'] ?? 'false';
+
+            // Determine if default should be applied.
+            $shouldApply = isset($data[$key]) === false || $data[$key] === null;
+            if ($defaultBehavior === 'falsy') {
+                $shouldApply = isset($data[$key]) === false
+                    || $data[$key] === null
+                    || $data[$key] === ''
+                    || (is_array($data[$key]) === true && empty($data[$key]));
+            } else if ($defaultBehavior === 'always') {
+                $shouldApply = true;
+            }
+
+            if ($shouldApply === false) {
+                continue;
+            }
+
+            // Render templates using MetadataHydrationHandler (supports | map: syntax).
+            try {
+                if (is_string($defaultValue) === true
+                    && str_contains(haystack: $defaultValue, needle: '{{') === true
+                    && str_contains(haystack: $defaultValue, needle: '}}') === true
+                ) {
+                    // Simple property reference: preserve arrays.
+                    $simpleRefPattern = '/^\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}$/';
+                    if (preg_match($simpleRefPattern, $defaultValue, $matches) === 1) {
+                        $sourceProperty = $matches[1];
+                        if (isset($data[$sourceProperty]) === true) {
+                            $data[$key] = $data[$sourceProperty];
+                        }
+                    } else {
+                        // Complex template with map/fallback support.
+                        $rendered = $this->metaHydrationHandler->processTwigLikeTemplate(
+                            data: $data,
+                            template: $defaultValue
+                        );
+                        if ($rendered !== null) {
+                            $data[$key] = $rendered;
+                        }
+                    }
+                } else {
+                    $data[$key] = $defaultValue;
+                }
+            } catch (Exception $e) {
+                // Template failed, skip this default.
+                continue;
+            }//end try
+        }//end foreach
+
+        return $data;
+    }//end applyPropertyDefaults()
 
     /**
      * Generates a slug for an object based on its data and schema configuration.

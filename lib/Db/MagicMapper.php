@@ -1703,10 +1703,12 @@ class MagicMapper
                 'totalProperties'       => count($requiredColumns),
                 'columnsAdded'          => count($columnStats['columnsAdded']),
                 'columnsDeRequired'     => count($columnStats['columnsDeRequired']),
+                'columnsReRequired'     => count($columnStats['columnsReRequired']),
                 'columnsDropped'        => count($columnStats['columnsDropped']),
                 'columnsUnchanged'      => count($currentColumns) - count($columnStats['columnsAdded']) - count($columnStats['columnsDropped']),
                 'columnsAddedList'      => $columnStats['columnsAdded'],
                 'columnsDeRequiredList' => $columnStats['columnsDeRequired'],
+                'columnsReRequiredList' => $columnStats['columnsReRequired'],
                 'columnsDroppedList'    => $columnStats['columnsDropped'],
             ];
 
@@ -4097,6 +4099,7 @@ class MagicMapper
 
         $columnsAdded      = [];
         $columnsDeRequired = [];
+        $columnsReRequired = [];
         $columnsDropped    = [];
 
         // 1. Add missing columns.
@@ -4187,7 +4190,54 @@ class MagicMapper
             }//end if
         }//end foreach
 
-        // 3. Handle duplicate columns (camelCase versions when snake_case exists).
+        // 3. Re-require columns that are NOT NULL in schema but nullable in table.
+        foreach ($requiredColumns as $propertyName => $columnDef) {
+            // Get the actual column name (snake_case) from the column definition.
+            $columnName = $columnDef['name'] ?? $this->sanitizeColumnName($propertyName);
+
+            if (isset($currentColumns[$columnName]) === false) {
+                continue;
+            }
+
+            $currentCol       = $currentColumns[$columnName];
+            $schemaIsNullable = ($columnDef['nullable'] ?? true);
+            $tableIsNullable  = ($currentCol['nullable'] ?? true);
+
+            // If schema says NOT NULL but table says nullable, add NOT NULL constraint.
+            if ($schemaIsNullable === false && $tableIsNullable === true) {
+                $this->logger->info(
+                    message: '[MagicMapper] Making column NOT NULL (now required)',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
+                        'tableName'  => $tableName,
+                        'columnName' => $columnName,
+                    ]
+                );
+
+                $colNameQuoted = $isPostgres ? '"'.$columnName.'"' : '`'.$columnName.'`';
+
+                if ($isPostgres === true) {
+                    $sql = 'ALTER TABLE '.$tableNameQuoted.' ALTER COLUMN '.$colNameQuoted.' SET NOT NULL';
+                } else {
+                    // MySQL syntax - need to specify full column definition.
+                    $colType = $this->mapColumnTypeToSQL(type: $columnDef['type'], column: $columnDef);
+                    $sql     = 'ALTER TABLE '.$tableNameQuoted.' MODIFY COLUMN '.$colNameQuoted.' '.$colType.' NOT NULL';
+                }
+
+                try {
+                    $this->db->executeStatement($sql);
+                    $columnsReRequired[] = $columnName;
+                } catch (Exception $e) {
+                    $this->logger->warning(
+                        message: '[MagicMapper] Failed to make column NOT NULL (may contain null values)',
+                        context: ['file' => __FILE__, 'line' => __LINE__, 'columnName' => $columnName, 'error' => $e->getMessage()]
+                    );
+                }
+            }//end if
+        }//end foreach
+
+        // 5. Handle duplicate columns (camelCase versions when snake_case exists).
         // Build map of snake_case column names from required columns.
         $snakeCaseColumns = [];
         foreach ($requiredColumns as $propertyName => $colDef) {
@@ -4232,7 +4282,7 @@ class MagicMapper
             }//end if
         }//end foreach
 
-        // 4. Make obsolete columns nullable (columns in table but not in schema).
+        // 6. Make obsolete columns nullable (columns in table but not in schema).
         // This is safer than dropping them - data is preserved.
         foreach ($currentColumns as $colName => $colDef) {
             // Skip metadata columns.
@@ -4289,6 +4339,7 @@ class MagicMapper
                 'tableName'         => $tableName,
                 'columnsAdded'      => $columnsAdded,
                 'columnsDeRequired' => $columnsDeRequired,
+                'columnsReRequired' => $columnsReRequired,
                 'columnsDropped'    => $columnsDropped,
             ]
         );
@@ -4297,6 +4348,7 @@ class MagicMapper
         return [
             'columnsAdded'      => $columnsAdded,
             'columnsDeRequired' => $columnsDeRequired,
+            'columnsReRequired' => $columnsReRequired,
             'columnsDropped'    => $columnsDropped,
         ];
     }//end updateTableStructure()

@@ -449,13 +449,18 @@ services:
   # Access at: http://localhost:3000
   # Documentation: https://github.com/ConductionNL/tilburg-woo-ui
   tilburg-woo-ui:
-    image: ghcr.io/conductionnl/tilburg-woo-ui:performance
+    build:
+      context: ../tilburg-woo-ui
+      dockerfile: Dockerfile.dev
+      target: development
     container_name: openregister-tilburg-woo-ui
     restart: always
     ports:
       - "3000:81"
+    volumes:
+      - ../tilburg-woo-ui/src:/app/src
     environment:
-      - NGINX_ROOT_DIR=/usr/share/nginx/html
+      - NGINX_ROOT_DIR=/app/public_html
       - NGINX_NEXTCLOUD_UPSTREAM=http://nextcloud:80
       - NGINX_TARGET_HOST=nextcloud
     depends_on:
@@ -465,7 +470,23 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 120s
+    command:
+      - /bin/sh
+      - -c
+      - |
+        envsubst '$$NGINX_OPENCONNECTOR_UPSTREAM $$NGINX_NEXTCLOUD_UPSTREAM $$NGINX_NEXTCLOUD_DOMAIN $$NGINX_TARGET_HOST $$NGINX_ROOT_DIR' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
+        nginx
+        node scripts/generate-runtime-config.js /app/public_html/runtime-config.js
+        NODE_ENV=development yarn build:web
+        echo "Initial build complete. Watching for changes..."
+        while true; do
+          inotifywait -r -e modify,create,delete --exclude '\.tmp' src/ public/ package.json
+          sleep 2
+          echo "Change detected, rebuilding..."
+          NODE_ENV=development yarn build:web
+          echo "Rebuild complete."
+        done
 
   # OpenLLM Management Interface (Optional - use --profile llm-management)
   # Web UI for managing and downloading language models

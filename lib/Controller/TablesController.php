@@ -158,6 +158,11 @@ class TablesController extends Controller
                                     'list'        => $result['columnsDeRequiredList'] ?? [],
                                     'description' => 'Columns made nullable (no longer required)',
                                 ],
+                                'reRequired' => [
+                                    'count'       => $result['columnsReRequired'] ?? 0,
+                                    'list'        => $result['columnsReRequiredList'] ?? [],
+                                    'description' => 'Columns made NOT NULL (now required)',
+                                ],
                                 'unchanged'  => [
                                     'count' => $result['columnsUnchanged'] ?? 0,
                                 ],

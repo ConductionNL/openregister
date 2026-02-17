@@ -602,14 +602,13 @@ class ObjectsController extends Controller
                     $schemaEntity   = $schemaMapper->find(id: $schemaId, _multitenancy: false, _rbac: false);
 
                     // Check if magic mapping is enabled for this combination.
-                    $registerConfig      = $registerEntity->getConfiguration() ?? [];
-                    $enableMagicMapping  = ($registerConfig['enableMagicMapping'] ?? false) === true;
-                    $magicMappingSchemas = $registerConfig['magicMappingSchemas'] ?? [];
-
-                    if ($enableMagicMapping === true
-                        && (in_array((string) $schemaEntity->getId(), $magicMappingSchemas, true) === true
-                        || in_array($schemaEntity->getSlug(), $magicMappingSchemas, true) === true)
-                    ) {
+                    // Uses Register::isMagicMappingEnabledForSchema() which supports both
+                    // new format {"schemas": {"slug": {"magicMapping": true}}} and
+                    // legacy format {"enableMagicMapping": true, "magicMappingSchemas": [...]}.
+                    if ($registerEntity->isMagicMappingEnabledForSchema(
+                        schemaId: $schemaEntity->getId(),
+                        schemaSlug: $schemaEntity->getSlug()
+                    ) === true) {
                         $pairs[] = [
                             'register' => $registerEntity,
                             'schema'   => $schemaEntity,

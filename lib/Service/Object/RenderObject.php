@@ -1969,9 +1969,9 @@ class RenderObject
     public function renderEntities(
         array $entities,
         array | string | null $_extend=[],
-        ?array $_filter=null,
-        ?array $_fields=null,
-        ?array $_unset=null,
+        array | string | null $_filter=null,
+        array | string | null $_fields=null,
+        array | string | null $_unset=null,
         bool $_rbac=true,
         bool $_multitenancy=true
     ): array {
@@ -1981,6 +1981,21 @@ class RenderObject
         }
 
         $_extend = $_extend ?? [];
+
+        // Convert _fields to array if it's a string.
+        if (is_string($_fields) === true) {
+            $_fields = array_filter(array_map('trim', explode(',', $_fields)));
+        }
+
+        // Convert _filter to array if it's a string.
+        if (is_string($_filter) === true) {
+            $_filter = array_filter(array_map('trim', explode(',', $_filter)));
+        }
+
+        // Convert _unset to array if it's a string.
+        if (is_string($_unset) === true) {
+            $_unset = array_filter(array_map('trim', explode(',', $_unset)));
+        }
 
         // **PERFORMANCE OPTIMIZATION**: Batch preload ALL related objects BEFORE rendering.
         // This prevents N+1 query problem when extending relations across multiple entities.

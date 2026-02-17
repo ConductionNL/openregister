@@ -412,6 +412,11 @@ class ExportService
                     continue;
                 }
 
+                // Skip properties that are hidden on collection views.
+                if (($properties[$fieldName]['hideOnCollection'] ?? false) === true) {
+                    continue;
+                }
+
                 // Always use the property key as the header to ensure consistent data access.
                 $headers[$col] = $fieldName;
                 $col++;

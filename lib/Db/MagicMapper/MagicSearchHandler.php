@@ -957,9 +957,14 @@ class MagicSearchHandler
             }
 
             if (str_starts_with($field, '@self.') === true) {
-                // Metadata field sorting.
+                // Metadata field sorting (e.g., @self.created → t._created).
                 $metadataField = '_'.str_replace('@self.', '', $field);
                 $qb->addOrderBy("t.{$metadataField}", $direction);
+            } else if (in_array($field, ['_created', '_updated', '_name', '_description', '_summary',
+                '_uuid', '_register', '_schema', '_owner', '_organisation', '_published', '_depublished',
+            ], true) === true) {
+                // Direct metadata column reference (e.g., _created → t._created).
+                $qb->addOrderBy("t.{$field}", $direction);
             } else if (($properties[$field] ?? null) !== null) {
                 // Schema property field sorting.
                 $columnName = $this->sanitizeColumnName($field);
