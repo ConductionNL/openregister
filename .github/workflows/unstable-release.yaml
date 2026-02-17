@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - development
+      - feature/php-linting
 
 jobs:
   release-management:
