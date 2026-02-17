@@ -1,0 +1,60 @@
+name: Sync Beta to Beta-Release
+
+permissions:
+  contents: write
+  actions: write
+
+on:
+  push:
+    branches:
+      - beta
+
+jobs:
+  sync-to-beta-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          ref: ${{ github.sha }}
+          ssh-key: ${{ secrets.DEPLOY_KEY }}
+
+      - name: Configure Git SSH
+        run: |
+          git config --global user.email "action@github.com"
+          git config --global user.name "GitHub Action"
+          git remote set-url origin git@github.com:${{ github.repository }}.git
+
+      - name: Update beta-release branch
+        run: |
+          git fetch origin
+
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+
+          # Preserve existing version on beta-release
+          BETA_RELEASE_VERSION=""
+          if git show-ref --quiet refs/remotes/origin/beta-release; then
+            git checkout origin/beta-release
+            BETA_RELEASE_VERSION=$(grep -oP '(?<=<version>)[^<]+' appinfo/info.xml || echo "")
+            echo "Found existing beta-release version: $BETA_RELEASE_VERSION"
+          fi
+
+          # Reset or create beta-release from beta
+          if git show-ref --quiet refs/remotes/origin/beta-release; then
+            git checkout beta-release
+            git reset --hard origin/beta
+          else
+            git checkout -b beta-release origin/beta
+          fi
+
+          # Restore preserved version
+          if [ ! -z "$BETA_RELEASE_VERSION" ]; then
+            sed -i "s|<version>.*</version>|<version>${BETA_RELEASE_VERSION}</version>|" appinfo/info.xml
+            git add appinfo/info.xml
+            git commit -m "${COMMIT_MSG}
+
+            Restored beta-release version to ${BETA_RELEASE_VERSION} [skip ci]"
+          fi
+
+          git push -f origin beta-release
