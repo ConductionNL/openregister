@@ -305,6 +305,86 @@ class FileSettingsController extends Controller
     }//end testPresidioConnection()
 
     /**
+     * Test OpenAnonymiser API connection
+     *
+     * @param string $apiEndpoint OpenAnonymiser API endpoint URL
+     *
+     * @return JSONResponse
+     *
+     * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|400|500, array{success: bool, error?: string,
+     *     message?: string}, array<never, never>>
+     */
+    public function testOpenAnonymiserConnection(string $apiEndpoint): JSONResponse
+    {
+        try {
+            // Validate inputs.
+            if (empty($apiEndpoint) === true) {
+                return new JSONResponse(
+                    data: [
+                        'success' => false,
+                        'error'   => 'API endpoint is required',
+                    ],
+                    statusCode: 400
+                );
+            }
+
+            // Test the connection by making a health check request.
+            $ch = curl_init($apiEndpoint.'/api/v1/health');
+            curl_setopt_array(
+                $ch,
+                [
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_HTTPHEADER     => [
+                        'Content-Type: application/json',
+                    ],
+                    CURLOPT_TIMEOUT        => 10,
+                    CURLOPT_SSL_VERIFYPEER => true,
+                ]
+            );
+
+            $response  = curl_exec($ch);
+            $httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlError = curl_error($ch);
+            curl_close($ch);
+
+            if ($curlError !== '') {
+                return new JSONResponse(
+                    data: [
+                        'success' => false,
+                        'error'   => 'Connection failed: '.$curlError,
+                    ]
+                );
+            }
+
+            if ($httpCode === 200 || $httpCode === 201) {
+                return new JSONResponse(
+                    data: [
+                        'success' => true,
+                        'message' => 'OpenAnonymiser connection successful',
+                    ]
+                );
+            }
+
+            return new JSONResponse(
+                data: [
+                    'success' => false,
+                    'error'   => 'OpenAnonymiser API returned HTTP '.$httpCode,
+                ]
+            );
+        } catch (Exception $e) {
+            return new JSONResponse(
+                data: [
+                    'success' => false,
+                    'error'   => $e->getMessage(),
+                ],
+                statusCode: 500
+            );
+        }//end try
+    }//end testOpenAnonymiserConnection()
+
+    /**
      * Get file collection field status
      *
      * @NoCSRFRequired

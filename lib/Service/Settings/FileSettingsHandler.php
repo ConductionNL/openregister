@@ -122,9 +122,10 @@ class FileSettingsHandler
                     'dolphinApiKey'            => '',
                     // Presidio entity recognition settings.
                     'presidioApiEndpoint'      => '',
+                    'openAnonymiserApiEndpoint' => '',
                     'entityRecognitionEnabled' => false,
                     'entityRecognitionMethod'  => 'hybrid',
-                    // Regex, presidio, llm, hybrid.
+                    // Regex, presidio, openanonymiser, llm, hybrid.
                 ];
             }//end if
 
@@ -190,9 +191,10 @@ class FileSettingsHandler
                 'dolphinApiKey'            => $fileData['dolphinApiKey'] ?? '',
                 // Presidio entity recognition settings.
                 'presidioApiEndpoint'      => $fileData['presidioApiEndpoint'] ?? '',
+                'openAnonymiserApiEndpoint' => $fileData['openAnonymiserApiEndpoint'] ?? '',
                 'entityRecognitionEnabled' => $fileData['entityRecognitionEnabled'] ?? false,
                 'entityRecognitionMethod'  => $fileData['entityRecognitionMethod'] ?? 'hybrid',
-                // Regex, presidio, llm, hybrid.
+                // Regex, presidio, openanonymiser, llm, hybrid.
             ];
 
             $this->appConfig->setValueString($this->appName, 'fileManagement', json_encode($fileConfig));

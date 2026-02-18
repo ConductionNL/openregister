@@ -67,11 +67,12 @@ class EntityRecognitionHandler
     /**
      * Detection method constants.
      */
-    public const METHOD_REGEX    = 'regex';
-    public const METHOD_PRESIDIO = 'presidio';
-    public const METHOD_LLM      = 'llm';
-    public const METHOD_HYBRID   = 'hybrid';
-    public const METHOD_MANUAL   = 'manual';
+    public const METHOD_REGEX           = 'regex';
+    public const METHOD_PRESIDIO        = 'presidio';
+    public const METHOD_OPENANONYMISER  = 'openanonymiser';
+    public const METHOD_LLM             = 'llm';
+    public const METHOD_HYBRID          = 'hybrid';
+    public const METHOD_MANUAL          = 'manual';
 
     /**
      * Category constants.
@@ -343,6 +344,11 @@ class EntityRecognitionHandler
                 entityTypes: $entityTypes,
                 confidenceThreshold: $confidenceThreshold
             ),
+            self::METHOD_OPENANONYMISER => $this->detectWithOpenAnonymiser(
+                text: $text,
+                entityTypes: $entityTypes,
+                confidenceThreshold: $confidenceThreshold
+            ),
             self::METHOD_LLM => $this->detectWithLLM(
                 text: $text,
                 entityTypes: $entityTypes,
@@ -557,6 +563,143 @@ class EntityRecognitionHandler
             return $this->detectWithRegex(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold);
         }//end try
     }//end detectWithPresidio()
+
+    /**
+     * Detect entities using OpenAnonymiser service.
+     *
+     * OpenAnonymiser is a Dutch-focused PII detection service with an API similar
+     * to Presidio but with key differences: endpoint at /api/v1/analyze, response
+     * wrapped in {"pii_entities": [...]}, includes "text" field per entity, and
+     * defaults to Dutch language.
+     *
+     * @param string     $text                Text to analyze.
+     * @param array|null $entityTypes         Entity types to detect.
+     * @param float      $confidenceThreshold Minimum confidence.
+     *
+     * @return array Detected entities with type, value, category, position, and confidence.
+     */
+    private function detectWithOpenAnonymiser(string $text, ?array $entityTypes, float $confidenceThreshold): array
+    {
+        try {
+            // Get OpenAnonymiser settings.
+            $fileSettings              = $this->settingsService->getFileSettingsOnly();
+            $openAnonymiserEndpoint    = $fileSettings['openAnonymiserApiEndpoint'] ?? '';
+
+            if (empty($openAnonymiserEndpoint) === true) {
+                $this->logger->warning(
+                    message: '[EntityRecognitionHandler] OpenAnonymiser endpoint not configured, falling back to regex',
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
+                return $this->detectWithRegex(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold);
+            }
+
+            // Build request body.
+            $requestBody = [
+                'text'     => $text,
+                'language' => 'nl',
+            ];
+
+            // Add entity types filter if specified.
+            if ($entityTypes !== null && empty($entityTypes) === false) {
+                $presidioEntities = $this->mapToPresidioEntityTypes($entityTypes);
+                if (empty($presidioEntities) === false) {
+                    $requestBody['entities'] = $presidioEntities;
+                }
+            }
+
+            // Make HTTP request to OpenAnonymiser.
+            $ch = curl_init($openAnonymiserEndpoint.'/api/v1/analyze');
+            curl_setopt_array(
+                $ch,
+                [
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_POST           => true,
+                    CURLOPT_POSTFIELDS     => json_encode($requestBody),
+                    CURLOPT_HTTPHEADER     => [
+                        'Content-Type: application/json',
+                        'Accept: application/json',
+                    ],
+                    CURLOPT_TIMEOUT        => 30,
+                ]
+            );
+
+            $response  = curl_exec($ch);
+            $httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlError = curl_error($ch);
+            curl_close($ch);
+
+            if ($curlError !== '') {
+                $this->logger->error(
+                    message: '[EntityRecognitionHandler] OpenAnonymiser connection error: '.$curlError,
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
+                return $this->detectWithRegex(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold);
+            }
+
+            if ($httpCode !== 200) {
+                $this->logger->error(
+                    message: '[EntityRecognitionHandler] OpenAnonymiser returned HTTP '.$httpCode,
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
+                return $this->detectWithRegex(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold);
+            }
+
+            $responseData = json_decode($response, true);
+            if (json_last_error() !== JSON_ERROR_NONE || is_array($responseData) === false) {
+                $this->logger->error(
+                    message: '[EntityRecognitionHandler] Failed to parse OpenAnonymiser response',
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
+                return $this->detectWithRegex(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold);
+            }
+
+            // OpenAnonymiser wraps results in {"pii_entities": [...]}.
+            $anonymiserResults = $responseData['pii_entities'] ?? [];
+
+            $this->logger->debug(
+                message: '[EntityRecognitionHandler] OpenAnonymiser found '.count($anonymiserResults).' entities',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+
+            // Convert OpenAnonymiser results to our format.
+            $entities = [];
+            foreach ($anonymiserResults as $result) {
+                // OpenAnonymiser may return null score for NLP-detected entities (e.g. PERSON).
+                // Treat null as high confidence since these are spaCy NER detections.
+                $score = $result['score'] ?? 0.85;
+
+                // Skip low confidence results.
+                if ($score < $confidenceThreshold) {
+                    continue;
+                }
+
+                $start = $result['start'] ?? 0;
+                $end   = $result['end'] ?? 0;
+                // OpenAnonymiser includes the text directly.
+                $value = $result['text'] ?? substr($text, $start, ($end - $start));
+
+                $entityType = $this->mapFromPresidioEntityType($result['entity_type'] ?? 'UNKNOWN');
+
+                $entities[] = [
+                    'type'           => $entityType,
+                    'value'          => $value,
+                    'category'       => $this->getCategoryForType(type: $entityType),
+                    'position_start' => $start,
+                    'position_end'   => $end,
+                    'confidence'     => $score,
+                    'method'         => self::METHOD_OPENANONYMISER,
+                ];
+            }//end foreach
+
+            return $entities;
+        } catch (Exception $e) {
+            $this->logger->error(
+                message: '[EntityRecognitionHandler] OpenAnonymiser detection failed: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+            return $this->detectWithRegex(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold);
+        }//end try
+    }//end detectWithOpenAnonymiser()
 
     /**
      * Map our entity types to Presidio entity types.

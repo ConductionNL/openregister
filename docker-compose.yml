@@ -235,6 +235,28 @@ services:
       retries: 3
       start_period: 60s
 
+  # OpenAnonymiser - Custom anonymisation service
+  # Built by mwest2020, provides PII detection and anonymisation
+  # Access at: http://localhost:5002
+  openanonymiser:
+    image: mwest2020/openanonymiser:dev
+    container_name: openregister-openanonymiser
+    restart: always
+    ports:
+      - "5002:8080"
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 512M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/api/v1/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
   # Presidio Analyzer for PII detection and NER
   # Microsoft's open-source PII detection service (RECOMMENDED FOR PRODUCTION)
   # Access at: http://localhost:5001

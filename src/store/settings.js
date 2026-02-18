@@ -921,6 +921,46 @@ export const useSettingsStore = defineStore('settings', {
 		},
 
 		/**
+		 * Test Presidio API connection
+		 * @param {object} connectionData - API endpoint
+		 */
+		async testPresidioConnection(connectionData) {
+			try {
+				const response = await axios.post(
+					generateUrl('/apps/openregister/api/settings/files/test-presidio'),
+					connectionData,
+				)
+				return response.data
+			} catch (error) {
+				console.error('Failed to test Presidio connection:', error)
+				return {
+					success: false,
+					error: error.response?.data?.error || error.message,
+				}
+			}
+		},
+
+		/**
+		 * Test OpenAnonymiser API connection
+		 * @param {object} connectionData - API endpoint
+		 */
+		async testOpenAnonymiserConnection(connectionData) {
+			try {
+				const response = await axios.post(
+					generateUrl('/apps/openregister/api/settings/files/test-openanonymiser'),
+					connectionData,
+				)
+				return response.data
+			} catch (error) {
+				console.error('Failed to test OpenAnonymiser connection:', error)
+				return {
+					success: false,
+					error: error.response?.data?.error || error.message,
+				}
+			}
+		},
+
+		/**
 		 * Load version information
 		 */
 		async loadVersionInfo() {
