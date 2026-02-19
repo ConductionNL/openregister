@@ -125,6 +125,10 @@ class SchemasController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @PublicPage
+     *
+     * @CORS
+     *
      * @return JSONResponse JSON response with array of schemas
      *
      * @psalm-return JSONResponse<200,
@@ -239,6 +243,10 @@ class SchemasController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @PublicPage
+     *
+     * @CORS
      */
     public function show($id): JSONResponse
     {
