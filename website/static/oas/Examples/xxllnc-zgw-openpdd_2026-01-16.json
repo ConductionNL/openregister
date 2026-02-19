@@ -5602,6 +5602,7 @@
           "originIdsToReplace.resultaat.resultaattype": "true",
           "originIdsToReplace.eigenschappen.eigenschap": "true",
           "originIdsToReplace.zaakinformatieobjecten.informatieobject.informatieobjecttype": "true",
+          "originIdsToReplace.zaakinformatieobjecten.id": "true",
           "extraDataConfigs.0.staticEndpoint": "/api/v1/case/{{ originId }}/document",
           "extraDataConfigs.0.keyToSetExtraData": "documents",
           "extraDataConfigs.0.mergeExtraData": "true",
