@@ -1013,11 +1013,20 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         $schemaIds  = $query['@self']['schemas'] ?? $query['_schemas'] ?? null;
         $schemaId   = $query['@self']['schema'] ?? $query['_schema'] ?? $query['schema'] ?? null;
 
+        // Extract register IDs (plural) for multi-register faceting.
+        $registerIds = $query['@self']['registers'] ?? $query['_registers'] ?? null;
+
         // If _schemas is provided (array of schema IDs), use multi-schema faceting.
-        if ($registerId !== null && $schemaIds !== null && is_array($schemaIds) === true) {
+        // Supports both single-register and multi-register.
+        if ($schemaIds !== null && is_array($schemaIds) === true
+            && ($registerId !== null || ($registerIds !== null && is_array($registerIds) && count($registerIds) > 0))
+        ) {
+            $allRegisterIds = ($registerIds !== null && is_array($registerIds) && count($registerIds) > 0)
+                ? array_map('intval', $registerIds)
+                : [(int) $registerId];
             return $this->getSimpleFacetsMultiSchema(
                 query: $query,
-                registerId: (int) $registerId,
+                registerIds: $allRegisterIds,
                 schemaIds: array_map('intval', $schemaIds)
             );
         }
@@ -1049,39 +1058,71 @@ class UnifiedObjectMapper extends AbstractObjectMapper
     }//end getSimpleFacets()
 
     /**
-     * Get facets aggregated across multiple schemas.
+     * Get facets aggregated across multiple schemas and registers.
      *
-     * @param array $query      The search query.
-     * @param int   $registerId The register ID.
-     * @param array $schemaIds  Array of schema IDs to aggregate.
+     * @param array $query       The search query.
+     * @param array $registerIds Array of register IDs to search.
+     * @param array $schemaIds   Array of schema IDs to aggregate.
      *
      * @return array Merged facet results.
      */
-    private function getSimpleFacetsMultiSchema(array $query, int $registerId, array $schemaIds): array
+    private function getSimpleFacetsMultiSchema(array $query, array $registerIds, array $schemaIds): array
     {
-        try {
-            $register = $this->registerMapper->find($registerId, _multitenancy: false, _rbac: false);
-        } catch (\Exception $e) {
-            $this->logger->warning(
-                message: '[UnifiedObjectMapper] Failed to find register for multi-schema facets',
-                context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
-                    'registerId' => $registerId,
-                    'error'      => $e->getMessage(),
-                ]
-            );
+        // Load all registers.
+        $registers = [];
+        foreach ($registerIds as $registerId) {
+            try {
+                $register = $this->registerMapper->find($registerId, _multitenancy: false, _rbac: false);
+                $registers[$register->getId()] = $register;
+            } catch (\Exception $e) {
+                $this->logger->warning(
+                    message: '[UnifiedObjectMapper] Failed to find register for multi-schema facets',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
+                        'registerId' => $registerId,
+                        'error'      => $e->getMessage(),
+                    ]
+                );
+            }
+        }
+
+        if (empty($registers) === true) {
             return [];
         }
 
-        // Collect all schemas that use magic mapper.
-        $schemas = [];
+        // Collect register+schema pairs for UNION-based faceting.
+        $registerSchemaPairs = [];
         foreach ($schemaIds as $schemaId) {
             try {
                 $schema = $this->schemaMapper->find($schemaId, _multitenancy: false, _rbac: false);
 
-                if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
-                    $schemas[] = $schema;
+                // Find the correct register for this schema.
+                $matchedRegister = null;
+                foreach ($registers as $register) {
+                    $registerSchemas = $register->getSchemas();
+                    if (is_string($registerSchemas) === true) {
+                        $registerSchemas = json_decode($registerSchemas, true) ?? [];
+                    }
+                    // Handle both formats: sequential array [2, 3, 4] or keyed object {"2": {...}}.
+                    if (is_array($registerSchemas) === true) {
+                        $schemaIdStr = (string) $schemaId;
+                        $schemaIdInt = (int) $schemaId;
+                        $inValues = in_array($schemaIdInt, $registerSchemas, false) || in_array($schemaIdStr, $registerSchemas, false);
+                        $inKeys = array_key_exists($schemaIdInt, $registerSchemas) || array_key_exists($schemaIdStr, $registerSchemas);
+                        if ($inValues === true || $inKeys === true) {
+                            $matchedRegister = $register;
+                            break;
+                        }
+                    }
+                }
+
+                if ($matchedRegister === null) {
+                    $matchedRegister = reset($registers);
+                }
+
+                if ($this->shouldUseMagicMapper(register: $matchedRegister, schema: $schema) === true) {
+                    $registerSchemaPairs[] = ['register' => $matchedRegister, 'schema' => $schema];
                 }
             } catch (\Exception $e) {
                 $this->logger->warning(
@@ -1093,11 +1134,10 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                         'error'    => $e->getMessage(),
                     ]
                 );
-                // Continue with other schemas.
             }
         }
 
-        if (empty($schemas) === true) {
+        if (empty($registerSchemaPairs) === true) {
             return [];
         }
 
@@ -1105,8 +1145,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         // This executes ONE query per facet field instead of separate queries per schema.
         return $this->magicMapper->getSimpleFacetsUnion(
             query: $query,
-            register: $register,
-            schemas: $schemas
+            registerSchemaPairs: $registerSchemaPairs
         );
     }//end getSimpleFacetsMultiSchema()
 
@@ -1135,7 +1174,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
     private function searchObjectsPaginatedMultiSchema(
         array $searchQuery,
         array $countQuery,
-        int $registerId,
+        array $registerIds,
         array $schemaIds,
         ?string $activeOrgUuid=null,
         bool $rbac=true,
@@ -1147,20 +1186,27 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         $registersCache = [];
         $schemasCache   = [];
 
-        // Load register once.
-        try {
-            $register = $this->registerMapper->find($registerId, _multitenancy: false, _rbac: false);
-            $registersCache[$register->getId()] = $register->jsonSerialize();
-        } catch (\Exception $e) {
-            $this->logger->warning(
-                message: '[UnifiedObjectMapper] Failed to find register for multi-schema search',
-                context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
-                    'registerId' => $registerId,
-                    'error'      => $e->getMessage(),
-                ]
-            );
+        // Load all registers.
+        $registers = [];
+        foreach ($registerIds as $registerId) {
+            try {
+                $register = $this->registerMapper->find($registerId, _multitenancy: false, _rbac: false);
+                $registers[$register->getId()] = $register;
+                $registersCache[$register->getId()] = $register->jsonSerialize();
+            } catch (\Exception $e) {
+                $this->logger->warning(
+                    message: '[UnifiedObjectMapper] Failed to find register for multi-schema search',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
+                        'registerId' => $registerId,
+                        'error'      => $e->getMessage(),
+                    ]
+                );
+            }
+        }
+
+        if (empty($registers) === true) {
             return [
                 'results'   => [],
                 'total'     => 0,
@@ -1170,6 +1216,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         }
 
         // Build register+schema pairs for UNION-based search.
+        // Each schema belongs to a specific register; find the correct register for each schema.
         $registerSchemaPairs = [];
         $totalCount          = 0;
         $ignoredFilters      = [];
@@ -1179,8 +1226,34 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                 $schema = $this->schemaMapper->find((int) $schemaId, _multitenancy: false, _rbac: false);
                 $schemasCache[$schema->getId()] = $schema->jsonSerialize();
 
+                // Find which register contains this schema by checking register's schema list.
+                $matchedRegister = null;
+                foreach ($registers as $register) {
+                    $registerSchemas = $register->getSchemas();
+                    if (is_string($registerSchemas) === true) {
+                        $registerSchemas = json_decode($registerSchemas, true) ?? [];
+                    }
+                    // Handle both formats: sequential array [2, 3, 4] or keyed object {"2": {...}}.
+                    if (is_array($registerSchemas) === true) {
+                        // Check if schema ID is in the values (sequential) or keys (associative).
+                        $schemaIdStr = (string) $schemaId;
+                        $schemaIdInt = (int) $schemaId;
+                        $inValues = in_array($schemaIdInt, $registerSchemas, false) || in_array($schemaIdStr, $registerSchemas, false);
+                        $inKeys = array_key_exists($schemaIdInt, $registerSchemas) || array_key_exists($schemaIdStr, $registerSchemas);
+                        if ($inValues === true || $inKeys === true) {
+                            $matchedRegister = $register;
+                            break;
+                        }
+                    }
+                }
+
+                // Fallback: use first register if no match found (for backward compatibility).
+                if ($matchedRegister === null) {
+                    $matchedRegister = reset($registers);
+                }
+
                 // Check if magic mapper should be used for this schema.
-                if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === false) {
+                if ($this->shouldUseMagicMapper(register: $matchedRegister, schema: $schema) === false) {
                     $this->logger->debug(
                         message: '[UnifiedObjectMapper] Skipping non-magic-mapper schema',
                         context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $schemaId]
@@ -1189,7 +1262,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                 }
 
                 // Add to pairs for UNION search.
-                $registerSchemaPairs[] = ['register' => $register, 'schema' => $schema];
+                $registerSchemaPairs[] = ['register' => $matchedRegister, 'schema' => $schema];
 
                 // Get count for this schema using MagicSearchHandler (applies all filters correctly).
                 $schemaCountQuery          = $countQuery;
@@ -1197,7 +1270,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                 $schemaCountQuery['_multitenancy'] = $multitenancy;
                 $schemaCount = $this->magicMapper->countObjectsInRegisterSchemaTable(
                     query: $schemaCountQuery,
-                    register: $register,
+                    register: $matchedRegister,
                     schema: $schema
                 );
                 $totalCount += $schemaCount;
@@ -1450,17 +1523,25 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         $registersCache = [];
         $schemasCache   = [];
 
+        // Extract register IDs (plural) for multi-register search.
+        $registerIds = $searchQuery['@self']['registers'] ?? $searchQuery['_registers'] ?? null;
+
         // Check for multi-schema search (when _schemas is provided but _schema is not).
-        $isMultiSchemaSearch = $registerId !== null
-            && $schemaId === null
+        // Supports both single-register (_register + _schemas) and multi-register (_registers + _schemas).
+        $isMultiSchemaSearch = $schemaId === null
             && $schemaIds !== null
             && is_array($schemaIds) === true
-            && count($schemaIds) > 0;
+            && count($schemaIds) > 0
+            && ($registerId !== null || ($registerIds !== null && is_array($registerIds) && count($registerIds) > 0));
         if ($isMultiSchemaSearch === true) {
+            // Build array of register IDs: use _registers if available, otherwise wrap single _register.
+            $allRegisterIds = ($registerIds !== null && is_array($registerIds) && count($registerIds) > 0)
+                ? array_map('intval', $registerIds)
+                : [(int) $registerId];
             return $this->searchObjectsPaginatedMultiSchema(
                 searchQuery: $searchQuery,
                 countQuery: $countQuery,
-                registerId: (int) $registerId,
+                registerIds: $allRegisterIds,
                 schemaIds: $schemaIds,
                 activeOrgUuid: $activeOrgUuid,
                 rbac: $rbac,

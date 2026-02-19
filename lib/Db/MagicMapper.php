@@ -933,22 +933,39 @@ class MagicMapper
      *
      * @return array Merged facet results.
      */
-    public function getSimpleFacetsUnion(array $query, Register $register, array $schemas): array
+    public function getSimpleFacetsUnion(array $query, ?Register $register=null, array $schemas=[], array $registerSchemaPairs=[]): array
     {
         // Build table configs for each schema.
         $tableConfigs = [];
 
-        foreach ($schemas as $schema) {
-            if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
-                continue;
+        // Support new register+schema pairs format (multi-register).
+        if (empty($registerSchemaPairs) === false) {
+            foreach ($registerSchemaPairs as $pair) {
+                $pairRegister = $pair['register'];
+                $pairSchema   = $pair['schema'];
+                if ($this->existsTableForRegisterSchema(register: $pairRegister, schema: $pairSchema) === false) {
+                    continue;
+                }
+                $tableName      = $this->getTableNameForRegisterSchema(register: $pairRegister, schema: $pairSchema);
+                $tableConfigs[] = [
+                    'tableName' => $tableName,
+                    'register'  => $pairRegister,
+                    'schema'    => $pairSchema,
+                ];
             }
-
-            $tableName      = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
-            $tableConfigs[] = [
-                'tableName' => $tableName,
-                'register'  => $register,
-                'schema'    => $schema,
-            ];
+        } elseif ($register !== null) {
+            // Legacy single-register format.
+            foreach ($schemas as $schema) {
+                if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
+                    continue;
+                }
+                $tableName      = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
+                $tableConfigs[] = [
+                    'tableName' => $tableName,
+                    'register'  => $register,
+                    'schema'    => $schema,
+                ];
+            }
         }
 
         if (empty($tableConfigs) === true) {
