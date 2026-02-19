@@ -1778,9 +1778,9 @@ class ImportHandler
             // Update the configuration with the import results.
             if (count($result['registers']) > 0 || count($result['schemas']) > 0 || count($result['objects']) > 0) {
                 // Merge imported entity IDs with existing ones.
-                $existingRegisterIds = $configuration->getRegisters();
-                $existingSchemaIds   = $configuration->getSchemas();
-                $existingObjectIds   = $configuration->getObjects();
+                $existingRegisterIds = $configuration->getRegisters() ?? [];
+                $existingSchemaIds   = $configuration->getSchemas() ?? [];
+                $existingObjectIds   = $configuration->getObjects() ?? [];
 
                 foreach ($result['registers'] as $register) {
                     $isRegister    = $register instanceof Register;

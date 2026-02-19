@@ -370,8 +370,19 @@ class FacetHandler
             }
         }//end if
 
-        // **NON-AGGREGATED FACETS**: Make separate schema-scoped queries for non-aggregated fields.
+        // **NON-AGGREGATED CLEANUP**: Remove fields from aggregated results that are ONLY configured
+        // as non-aggregated (not present in object_fields). getSimpleFacets returns all fields from the
+        // magic table, but fields that are exclusively non-aggregated should not appear as aggregated facets.
         $nonAggregatedFields = $facetableConfig['non_aggregated_fields'] ?? [];
+        $aggregatedFieldKeys = array_keys($facetableConfig['object_fields'] ?? []);
+        foreach ($nonAggregatedFields as $naField) {
+            $fieldName = $naField['field'];
+            if (in_array($fieldName, $aggregatedFieldKeys, true) === false && isset($facets[$fieldName]) === true) {
+                unset($facets[$fieldName]);
+            }
+        }
+
+        // **NON-AGGREGATED FACETS**: Make separate schema-scoped queries for non-aggregated fields.
         foreach ($nonAggregatedFields as $naField) {
             $fieldName = $naField['field'];
             $schemaId  = $naField['schemaId'];

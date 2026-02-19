@@ -160,6 +160,50 @@ class ObjectsController extends Controller
     }//end isCurrentUserAdmin()
 
     /**
+     * Normalize form data values by decoding JSON strings.
+     *
+     * When a request is sent as multipart/form-data, nested objects and arrays
+     * arrive as JSON-encoded strings (e.g. contactpersonen = '[{"voornaam":"John"}]').
+     * This method detects such strings and decodes them back into PHP arrays/objects
+     * so the rest of the pipeline can process them uniformly.
+     *
+     * Only runs when the request content type is multipart/form-data.
+     *
+     * @param array $data The request parameters to normalize.
+     *
+     * @return array The normalized data with JSON strings decoded.
+     */
+    private function normalizeFormDataValues(array $data): array
+    {
+        $contentType = $this->request->getHeader('Content-Type');
+
+        // Only normalize for multipart/form-data requests.
+        if (stripos($contentType, 'multipart/form-data') === false) {
+            return $data;
+        }
+
+        foreach ($data as $key => $value) {
+            if (is_string($value) === false) {
+                continue;
+            }
+
+            $trimmed = trim($value);
+
+            // Only attempt decode on values that look like JSON arrays or objects.
+            if (($trimmed[0] ?? '') !== '[' && ($trimmed[0] ?? '') !== '{') {
+                continue;
+            }
+
+            $decoded = json_decode($trimmed, associative: true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded) === true) {
+                $data[$key] = $decoded;
+            }
+        }
+
+        return $data;
+    }//end normalizeFormDataValues()
+
+    /**
      * Extract all uploaded files from the current request.
      *
      * Uses IRequest::getUploadedFile() to retrieve files by known field names.
@@ -1467,6 +1511,9 @@ class ObjectsController extends Controller
             ARRAY_FILTER_USE_KEY
         );
 
+        // Normalize multipart/form-data: decode JSON-encoded strings back into arrays/objects.
+        $object = $this->normalizeFormDataValues($object);
+
         // Extract uploaded files from multipart/form-data using Request object.
         $uploadedFiles = $this->extractAllUploadedFiles();
 
@@ -1566,6 +1613,9 @@ class ObjectsController extends Controller
                 && in_array($key, ['uuid', 'register', 'schema']) === false,
             ARRAY_FILTER_USE_KEY
         );
+
+        // Normalize multipart/form-data: decode JSON-encoded strings back into arrays/objects.
+        $object = $this->normalizeFormDataValues($object);
 
         // Extract uploaded files from multipart/form-data using Request object.
         $uploadedFiles = $this->extractAllUploadedFiles();
@@ -1719,6 +1769,9 @@ class ObjectsController extends Controller
                 && in_array($key, ['uuid', 'register', 'schema']) === false,
             ARRAY_FILTER_USE_KEY
         );
+
+        // Normalize multipart/form-data: decode JSON-encoded strings back into arrays/objects.
+        $patchData = $this->normalizeFormDataValues($patchData);
 
         // Determine RBAC and multitenancy settings based on admin status.
         $isAdmin = $this->isCurrentUserAdmin();
@@ -1889,6 +1942,9 @@ class ObjectsController extends Controller
                 && in_array($key, ['uuid', 'register', 'schema', 'id']) === false,
             ARRAY_FILTER_USE_KEY
         );
+
+        // Normalize multipart/form-data: decode JSON-encoded strings back into arrays/objects.
+        $patchData = $this->normalizeFormDataValues($patchData);
 
         // Extract uploaded files — works because this is a POST request.
         $uploadedFiles = $this->extractAllUploadedFiles();

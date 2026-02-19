@@ -252,6 +252,13 @@ class SearchQueryHandler
 
         $query = array_merge($query, $specialParams);
 
+        // Normalize _ids from comma-separated string to array.
+        // URL query parameters like _ids=uuid1,uuid2 arrive as a single string,
+        // but downstream code (UnifiedObjectMapper, MagicMapper) expects an array.
+        if (isset($query['_ids']) === true && is_string($query['_ids']) === true) {
+            $query['_ids'] = array_filter(array_map('trim', explode(',', $query['_ids'])));
+        }
+
         return $query;
     }//end buildSearchQuery()
 
