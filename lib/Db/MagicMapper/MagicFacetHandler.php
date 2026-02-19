@@ -797,8 +797,9 @@ class MagicFacetHandler
             // Performance: Comparable or better than pre-computed (~73ms vs ~97ms in benchmarks)
             $properties = $schema->getProperties() ?? [];
             foreach ($properties as $propertyKey => $property) {
-                // Check if property is marked as facetable.
-                if (isset($property['facetable']) === true && $property['facetable'] === true) {
+                // Check if property is marked as facetable (boolean true or config object).
+                $facetable = $property['facetable'] ?? false;
+                if ($facetable === true || (is_array($facetable) === true && empty($facetable) === false)) {
                     // Determine facet type based on property type.
                     $facetType            = $this->determineFacetTypeFromProperty($property);
                     $config[$propertyKey] = [

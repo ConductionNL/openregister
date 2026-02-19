@@ -126,7 +126,7 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 															class="property-chip chip-success">Constant</span>
 														<span v-if="property.enum && property.enum.length > 0"
 															class="property-chip chip-success">Enumeration ({{ property.enum.length }})</span>
-														<span v-if="property.facetable === true"
+														<span v-if="property.facetable === true || (typeof property.facetable === 'object' && property.facetable !== null)"
 															class="property-chip chip-info">Facetable</span>
 														<span v-if="hasCustomTableSettings(key)"
 															class="property-chip chip-table">Table</span>
@@ -192,10 +192,32 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 													Hide in form view
 												</NcActionCheckbox>
 												<NcActionCheckbox
-													:checked="property.facetable === true"
-													@update:checked="updatePropertySetting(key, 'facetable', $event)">
+													:checked="isFacetableEnabled(property)"
+													@update:checked="toggleFacetable(key, $event)">
 													Facetable
 												</NcActionCheckbox>
+												<NcActionCheckbox
+													v-if="isFacetableEnabled(property)"
+													:checked="getFacetConfig(property).aggregated !== false"
+													@update:checked="updateFacetConfigField(key, property, 'aggregated', $event)">
+													Aggregated across schemas
+												</NcActionCheckbox>
+												<NcActionInput
+													v-if="isFacetableEnabled(property)"
+													:value="getFacetConfig(property).title || ''"
+													label="Facet Title"
+													@update:value="updateFacetConfigField(key, property, 'title', $event)" />
+												<NcActionInput
+													v-if="isFacetableEnabled(property)"
+													:value="getFacetConfig(property).description || ''"
+													label="Facet Description"
+													@update:value="updateFacetConfigField(key, property, 'description', $event)" />
+												<NcActionInput
+													v-if="isFacetableEnabled(property)"
+													:value="getFacetConfig(property).order != null ? String(getFacetConfig(property).order) : ''"
+													type="number"
+													label="Facet Order"
+													@update:value="updateFacetConfigField(key, property, 'order', $event)" />
 
 												<NcActionSeparator />
 												<NcActionCaption name="Properties" />
@@ -1854,6 +1876,60 @@ export default {
 				object: [],
 			}
 			return formatMap[type] || []
+		},
+		isFacetableEnabled(property) {
+			return property.facetable === true
+				|| (typeof property.facetable === 'object' && property.facetable !== null)
+		},
+		getFacetConfig(property) {
+			if (typeof property.facetable === 'object' && property.facetable !== null) {
+				return {
+					aggregated: property.facetable.aggregated ?? true,
+					title: property.facetable.title ?? '',
+					description: property.facetable.description ?? '',
+					order: property.facetable.order ?? null,
+				}
+			}
+			return { aggregated: true, title: '', description: '', order: null }
+		},
+		toggleFacetable(key, enabled) {
+			if (enabled) {
+				this.$set(this.schemaItem.properties[key], 'facetable', true)
+			} else {
+				this.$set(this.schemaItem.properties[key], 'facetable', false)
+			}
+			this.checkPropertiesModified()
+		},
+		updateFacetConfigField(key, property, field, value) {
+			// Get current config
+			const config = this.getFacetConfig(property)
+
+			// Update the specific field
+			if (field === 'aggregated') {
+				config.aggregated = value
+			} else if (field === 'order') {
+				config.order = value !== '' && value != null ? Number(value) : null
+			} else {
+				config[field] = value
+			}
+
+			// Check if we can simplify to boolean true
+			const hasCustomConfig = !config.aggregated
+				|| (config.title && config.title.trim())
+				|| (config.description && config.description.trim())
+				|| (config.order != null)
+
+			if (hasCustomConfig) {
+				this.$set(this.schemaItem.properties[key], 'facetable', {
+					aggregated: config.aggregated,
+					title: config.title?.trim() || null,
+					description: config.description?.trim() || null,
+					order: config.order,
+				})
+			} else {
+				this.$set(this.schemaItem.properties[key], 'facetable', true)
+			}
+			this.checkPropertiesModified()
 		},
 		updatePropertySetting(key, setting, value) {
 			if (this.schemaItem.properties[key]) {

@@ -296,9 +296,39 @@ import { navigationStore, schemaStore, registerStore } from '../../store/store.j
 
 			<NcCheckboxRadioSwitch
 				:disabled="loading"
-				:checked.sync="properties.facetable">
+				:checked.sync="facetableEnabled">
 				Facetable
 			</NcCheckboxRadioSwitch>
+
+			<!-- Faceting configuration (shown when facetable is enabled) -->
+			<div v-if="facetableEnabled" class="facetConfigContainer">
+				<div class="facetConfigTitle">
+					Faceting Configuration:
+				</div>
+				<NcCheckboxRadioSwitch
+					:disabled="loading"
+					:checked.sync="facetConfig.aggregated">
+					Aggregated across schemas
+				</NcCheckboxRadioSwitch>
+				<div v-if="!facetConfig.aggregated" class="helper-text">
+					When disabled, this facet will only show values from this schema and will include a schema filter when selected.
+				</div>
+				<NcTextField :disabled="loading"
+					label="Facet Title"
+					:value.sync="facetConfig.title"
+					placeholder="Custom display title for this facet" />
+				<NcTextField :disabled="loading"
+					label="Facet Description"
+					:value.sync="facetConfig.description"
+					placeholder="Description shown as tooltip" />
+				<NcInputField :disabled="loading"
+					type="number"
+					label="Facet Order"
+					:value.sync="facetConfig.order" />
+				<div class="helper-text">
+					Lower numbers appear first in the filter sidebar. Leave empty for automatic ordering.
+				</div>
+			</div>
 
 			<NcTextField :disabled="loading"
 				label="Example"
@@ -521,6 +551,13 @@ export default {
 	data() {
 		return {
 			propertyTitle: '',
+			facetableEnabled: true,
+			facetConfig: {
+				aggregated: true,
+				title: '',
+				description: '',
+				order: '',
+			},
 			properties: {
 				description: '',
 				title: '',
@@ -727,6 +764,24 @@ export default {
 			if (schemaStore.schemaPropertyKey) {
 				const schemaProperty = schemaStore.schemaItem.properties[schemaStore.schemaPropertyKey]
 
+				// Initialize facetable state from property value.
+				const facetableValue = schemaProperty.facetable
+				if (facetableValue === true) {
+					this.facetableEnabled = true
+					this.facetConfig = { aggregated: true, title: '', description: '', order: '' }
+				} else if (facetableValue && typeof facetableValue === 'object') {
+					this.facetableEnabled = true
+					this.facetConfig = {
+						aggregated: facetableValue.aggregated !== false,
+						title: facetableValue.title || '',
+						description: facetableValue.description || '',
+						order: facetableValue.order != null ? String(facetableValue.order) : '',
+					}
+				} else {
+					this.facetableEnabled = false
+					this.facetConfig = { aggregated: true, title: '', description: '', order: '' }
+				}
+
 				this.propertyTitle = schemaStore.schemaPropertyKey
 				this.properties = {
 					...this.properties, // Preserve default structure
@@ -787,12 +842,35 @@ export default {
 				delete schemaStore.schemaItem.properties[schemaStore.schemaPropertyKey]
 			}
 
+			// Compute facetable value: boolean true for defaults, config object otherwise.
+			let facetableValue = false
+			if (this.facetableEnabled) {
+				const hasCustomConfig = !this.facetConfig.aggregated
+					|| (this.facetConfig.title && this.facetConfig.title.trim())
+					|| (this.facetConfig.description && this.facetConfig.description.trim())
+					|| (this.facetConfig.order !== '' && this.facetConfig.order != null)
+
+				if (hasCustomConfig) {
+					facetableValue = {
+						aggregated: this.facetConfig.aggregated,
+						title: this.facetConfig.title?.trim() || null,
+						description: this.facetConfig.description?.trim() || null,
+						order: this.facetConfig.order !== '' && this.facetConfig.order != null
+							? parseFloat(this.facetConfig.order) || null
+							: null,
+					}
+				} else {
+					facetableValue = true
+				}
+			}
+
 			const newSchemaItem = {
 				...schemaStore.schemaItem,
 				properties: {
 					...schemaStore.schemaItem.properties,
 					[this.propertyTitle]: { // create the new property with title as key
 						...this.properties,
+						facetable: facetableValue,
 						// due to bad (no) support for number fields inside nextcloud/vue, parse the text to a number
 						order: parseFloat(this.properties.order) || null,
 						minLength: parseFloat(this.properties.minLength) || null,
@@ -963,11 +1041,13 @@ export default {
     gap: 1rem;
 }
 
-.objectConfigurationContainer {
+.objectConfigurationContainer,
+.facetConfigContainer {
 	margin-block-end: 15px;
 }
 
-.objectConfigurationTitle {
+.objectConfigurationTitle,
+.facetConfigTitle {
 	margin-block-end: 5px;
 	font-weight: bold;
 }

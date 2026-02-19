@@ -172,8 +172,16 @@ class FacetHandler
             return $cached;
         }
 
+        // Discover non-aggregated facet fields from schema configurations.
+        $schemas        = $this->getSchemasForQuery($facetQuery);
+        $facetableConfig = $this->getFacetableFieldsFromSchemas($schemas);
+
         // **INTELLIGENT FACETING**: Try current filters first, then smart fallback.
-            $result = $this->calculateFacetsWithFallback(facetQuery: $facetQuery, facetConfig: $facetConfig);
+            $result = $this->calculateFacetsWithFallback(
+                facetQuery: $facetQuery,
+                facetConfig: $facetConfig,
+                facetableConfig: $facetableConfig
+            );
 
         // **PERFORMANCE TRACKING**: Add timing metadata.
         $executionTime = round((microtime(true) - $startTime) * 1000, 2);
@@ -298,16 +306,17 @@ class FacetHandler
     /**
      * Calculate Facets with Intelligent Fallback Strategy.
      *
-     * CORE BREAKTHROUGH**: Implements the smart fallback logic that ensures users
-     * always see meaningful facet options, even when their current search/filters
-     * return zero results.
+     * Implements smart fallback logic that ensures users always see meaningful facet
+     * options, even when their current search/filters return zero results.
+     * Also handles non-aggregated facets by making separate schema-scoped queries.
      *
-     * @param array $facetQuery  Query for facet calculation (without pagination).
-     * @param array $facetConfig Facet configuration.
+     * @param array $facetQuery      Query for facet calculation (without pagination).
+     * @param array $facetConfig     Facet configuration.
+     * @param array $facetableConfig Facetable field configuration from schema discovery.
      *
      * @return array Facets with performance metadata including strategy and fallback status.
      */
-    private function calculateFacetsWithFallback(array $facetQuery, array $facetConfig): array
+    private function calculateFacetsWithFallback(array $facetQuery, array $facetConfig, array $facetableConfig=[]): array
     {
         // **STAGE 1**: Try facets with current filters.
         $facets = $this->unifiedObjectMapper->getSimpleFacets($facetQuery);
@@ -361,12 +370,61 @@ class FacetHandler
             }
         }//end if
 
+        // **NON-AGGREGATED FACETS**: Make separate schema-scoped queries for non-aggregated fields.
+        $nonAggregatedFields = $facetableConfig['non_aggregated_fields'] ?? [];
+        foreach ($nonAggregatedFields as $naField) {
+            $fieldName = $naField['field'];
+            $schemaId  = $naField['schemaId'];
+            $config    = $naField['facetConfig'];
+
+            // Build a schema-scoped query to get facets for this field only.
+            $scopedQuery = $facetQuery;
+            $scopedQuery['@self']['schema'] = $schemaId;
+
+            try {
+                $scopedFacets = $this->unifiedObjectMapper->getSimpleFacets($scopedQuery);
+
+                // Remove metrics from scoped results.
+                unset($scopedFacets['_metrics']);
+
+                if (isset($scopedFacets[$fieldName]) === true) {
+                    // Generate a unique key for this non-aggregated facet.
+                    $uniqueKey = $this->generateNonAggregatedFacetKey(
+                        fieldName: $fieldName,
+                        schemaId: $schemaId,
+                        facetConfig: $config
+                    );
+
+                    // Store the scoped facet data with metadata for the transform step.
+                    $facets[$uniqueKey] = $scopedFacets[$fieldName];
+                    $facets[$uniqueKey]['_nonAggregated'] = true;
+                    $facets[$uniqueKey]['_schemaId']      = $schemaId;
+                    $facets[$uniqueKey]['_facetConfig']    = $config;
+                    $facets[$uniqueKey]['_fieldName']      = $fieldName;
+                }
+            } catch (\Exception $e) {
+                $this->logger->warning(
+                    message: '[FacetHandler] Failed to get non-aggregated facet',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
+                        'field'    => $fieldName,
+                        'schemaId' => $schemaId,
+                        'error'    => $e->getMessage(),
+                    ]
+                );
+            }//end try
+        }//end foreach
+
         // Extract per-facet metrics before transformation (if available).
         $perFacetMetrics = $facets['_metrics'] ?? null;
         unset($facets['_metrics']);
 
         // **OUTPUT FORMAT**: Transform facets to standardized format matching external API.
-        $transformedFacets = $this->transformFacetsToStandardFormat($facets);
+        $transformedFacets = $this->transformFacetsToStandardFormat(
+            facets: $facets,
+            facetableConfig: $facetableConfig
+        );
 
         $performanceMetadata = [
             'strategy'                => $strategy,
@@ -387,6 +445,28 @@ class FacetHandler
     }//end calculateFacetsWithFallback()
 
     /**
+     * Generate a unique key for a non-aggregated facet entry.
+     *
+     * @param string $fieldName   The property/field name.
+     * @param int    $schemaId    The schema ID.
+     * @param array  $facetConfig The facet configuration.
+     *
+     * @return string A unique facet key.
+     */
+    private function generateNonAggregatedFacetKey(string $fieldName, int $schemaId, array $facetConfig): string
+    {
+        // Use sanitized title if available, otherwise use field_schema pattern.
+        if (empty($facetConfig['title']) === false) {
+            $key = preg_replace('/([a-z])([A-Z])/', '$1_$2', $facetConfig['title']);
+            $key = strtolower(str_replace(' ', '_', $key));
+            $key = preg_replace('/[^a-z0-9_]/', '', $key);
+            return $key;
+        }
+
+        return $fieldName.'_schema_'.$schemaId;
+    }//end generateNonAggregatedFacetKey()
+
+    /**
      * Transform facets from internal format to standardized external API format.
      *
      * Converts the internal structure:
@@ -400,14 +480,23 @@ class FacetHandler
      *                  "data": { "type": "terms", "total_count": N, "buckets": [{value, count, label}] } } }
      * ```
      *
-     * @param array $facets Raw facets from mapper.
+     * @param array $facets         Raw facets from mapper.
+     * @param array $facetableConfig Facetable field config from schema discovery.
      *
      * @return array Transformed facets in standardized format.
      */
-    private function transformFacetsToStandardFormat(array $facets): array
+    private function transformFacetsToStandardFormat(array $facets, array $facetableConfig=[]): array
     {
         $transformed = [];
         $order       = 0;
+
+        // Build a lookup of aggregated field configs for custom title/description/order.
+        $aggregatedConfigs = [];
+        foreach ($facetableConfig['object_fields'] ?? [] as $fieldKey => $fieldInfo) {
+            if (isset($fieldInfo['facetConfig']) === true) {
+                $aggregatedConfigs[$fieldKey] = $fieldInfo['facetConfig'];
+            }
+        }
 
         // Metadata facet definitions for @self fields.
         $metadataDefinitions = [
@@ -492,29 +581,89 @@ class FacetHandler
                 continue;
             }
 
-            $order++;
+            // Check if this is a non-aggregated facet (added by calculateFacetsWithFallback).
+            $isNonAggregated = $facetData['_nonAggregated'] ?? false;
 
-            // Use schema property title if available, otherwise auto-generate from field name.
-            $title = $facetData['title'] ?? $this->formatFieldTitle($field);
+            if ($isNonAggregated === true) {
+                // Non-aggregated facet: use config for title/description/order, include schema ID.
+                $naConfig    = $facetData['_facetConfig'] ?? [];
+                $naSchemaId  = $facetData['_schemaId'] ?? null;
+                $naFieldName = $facetData['_fieldName'] ?? $field;
 
-            // Create definition for object field.
-            $definition = [
-                'title'       => $title,
-                'description' => 'object field: '.$field,
-                'data_type'   => $this->inferDataType($facetData),
-                'index_field' => $this->sanitizeFieldName($field),
-                'index_type'  => 'string',
-                'enabled'     => true,
-            ];
+                // Clean internal metadata from facet data before processing.
+                unset(
+                    $facetData['_nonAggregated'],
+                    $facetData['_schemaId'],
+                    $facetData['_facetConfig'],
+                    $facetData['_fieldName']
+                );
 
-            $transformed[$field] = $this->buildFacetEntry(
-                name: $field,
-                facetData: $facetData,
-                definition: $definition,
-                source: 'object',
-                queryParameter: $field,
-                order: $order
-            );
+                $configOrder = $naConfig['order'] ?? null;
+                $facetOrder  = $configOrder !== null ? (int) $configOrder : ++$order;
+                if ($configOrder === null) {
+                    $order = $facetOrder;
+                }
+
+                $title       = $naConfig['title'] ?? $facetData['title'] ?? $this->formatFieldTitle($naFieldName);
+                $description = $naConfig['description'] ?? 'object field: '.$naFieldName;
+
+                $definition = [
+                    'title'       => $title,
+                    'description' => $description,
+                    'data_type'   => $this->inferDataType($facetData),
+                    'index_field' => $this->sanitizeFieldName($naFieldName),
+                    'index_type'  => 'string',
+                    'enabled'     => true,
+                ];
+
+                $entry = $this->buildFacetEntry(
+                    name: $naFieldName,
+                    facetData: $facetData,
+                    definition: $definition,
+                    source: 'object',
+                    queryParameter: $naFieldName,
+                    order: $facetOrder,
+                    schemaId: $naSchemaId
+                );
+
+                $transformed[$field] = $entry;
+            } else {
+                // Aggregated facet: use config overrides if available.
+                $fieldConfig = $aggregatedConfigs[$field] ?? null;
+
+                $configOrder = ($fieldConfig !== null) ? ($fieldConfig['order'] ?? null) : null;
+                $facetOrder  = $configOrder !== null ? (int) $configOrder : ++$order;
+                if ($configOrder === null) {
+                    $order = $facetOrder;
+                }
+
+                // Use config title/description if available, then fall back to facet data or auto-generated.
+                $title = ($fieldConfig !== null && ($fieldConfig['title'] ?? null) !== null)
+                    ? $fieldConfig['title']
+                    : ($facetData['title'] ?? $this->formatFieldTitle($field));
+
+                $description = ($fieldConfig !== null && ($fieldConfig['description'] ?? null) !== null)
+                    ? $fieldConfig['description']
+                    : 'object field: '.$field;
+
+                $definition = [
+                    'title'       => $title,
+                    'description' => $description,
+                    'data_type'   => $this->inferDataType($facetData),
+                    'index_field' => $this->sanitizeFieldName($field),
+                    'index_type'  => 'string',
+                    'enabled'     => true,
+                ];
+
+                $transformed[$field] = $this->buildFacetEntry(
+                    name: $field,
+                    facetData: $facetData,
+                    definition: $definition,
+                    source: 'object',
+                    queryParameter: $field,
+                    order: $facetOrder
+                );
+            }//end if
         }//end foreach
 
         return $transformed;
@@ -523,12 +672,13 @@ class FacetHandler
     /**
      * Build a single facet entry in the standardized format.
      *
-     * @param string $name           The facet name.
-     * @param array  $facetData      The raw facet data with type and buckets.
-     * @param array  $definition     The facet definition (title, description, etc.).
-     * @param string $source         The source type (metadata or object).
-     * @param string $queryParameter The query parameter for filtering.
-     * @param int    $order          The display order.
+     * @param string   $name           The facet name.
+     * @param array    $facetData      The raw facet data with type and buckets.
+     * @param array    $definition     The facet definition (title, description, etc.).
+     * @param string   $source         The source type (metadata or object).
+     * @param string   $queryParameter The query parameter for filtering.
+     * @param int      $order          The display order.
+     * @param int|null $schemaId       Optional schema ID for non-aggregated facets.
      *
      * @return array The formatted facet entry.
      */
@@ -538,7 +688,8 @@ class FacetHandler
         array $definition,
         string $source,
         string $queryParameter,
-        int $order
+        int $order,
+        ?int $schemaId=null
     ): array {
         $type    = $facetData['type'] ?? 'terms';
         $buckets = $facetData['buckets'] ?? [];
@@ -553,7 +704,7 @@ class FacetHandler
             ];
         }
 
-        return [
+        $entry = [
             'name'           => $name,
             'type'           => $type,
             'title'          => $definition['title'],
@@ -572,6 +723,13 @@ class FacetHandler
                 'buckets'     => $transformedBuckets,
             ],
         ];
+
+        // Add schema ID for non-aggregated facets so the frontend can scope queries.
+        if ($schemaId !== null) {
+            $entry['schema'] = $schemaId;
+        }
+
+        return $entry;
     }//end buildFacetEntry()
 
     /**
@@ -825,21 +983,61 @@ class FacetHandler
     }//end getSchemasForQuery()
 
     /**
+     * Normalize a facetable property value to a standard config array.
+     *
+     * Handles both boolean (`true`) and config object formats.
+     * Returns `null` if the property is not facetable.
+     *
+     * @param mixed $facetable The facetable value from a schema property.
+     *
+     * @return array|null Normalized config or null if not facetable.
+     */
+    private function normalizeFacetConfig(mixed $facetable): ?array
+    {
+        if ($facetable === false || $facetable === null) {
+            return null;
+        }
+
+        if ($facetable === true) {
+            return [
+                'aggregated'  => true,
+                'title'       => null,
+                'description' => null,
+                'order'       => null,
+            ];
+        }
+
+        if (is_array($facetable) === true && empty($facetable) === false) {
+            return [
+                'aggregated'  => $facetable['aggregated'] ?? true,
+                'title'       => $facetable['title'] ?? null,
+                'description' => $facetable['description'] ?? null,
+                'order'       => $facetable['order'] ?? null,
+            ];
+        }
+
+        return null;
+    }//end normalizeFacetConfig()
+
+    /**
      * Get facetable fields from schema configurations.
      *
-     * **PERFORMANCE OPTIMIZED**: Uses pre-computed schema facets instead of runtime analysis.
+     * Discovers facetable fields from schema properties, supporting both
+     * `facetable: true` (boolean) and `facetable: { aggregated, title, description, order }` (config object).
+     * Non-aggregated fields are tracked separately with their schema context.
      *
      * @param array $schemas Array of Schema objects.
      *
-     * @return array[] Facetable field configuration.
+     * @return array[] Facetable field configuration with non-aggregated field metadata.
      *
-     * @psalm-return array{'@self': array, object_fields: array}
+     * @psalm-return array{'@self': array, object_fields: array, non_aggregated_fields: array}
      */
     private function getFacetableFieldsFromSchemas(array $schemas): array
     {
         $facetableFields = [
-            '@self'         => $this->getDefaultMetadataFacets(),
-            'object_fields' => [],
+            '@self'                 => $this->getDefaultMetadataFacets(),
+            'object_fields'         => [],
+            'non_aggregated_fields' => [],
         ];
 
         foreach ($schemas as $schema) {
@@ -849,22 +1047,36 @@ class FacetHandler
             }
 
             try {
-                // RUNTIME COMPUTATION: Get facetable fields from schema properties.
-                // This is the single source of truth - no pre-computed facets needed.
+                $schemaId   = $schema->getId();
                 $properties = $schema->getProperties() ?? [];
                 foreach ($properties as $propertyKey => $property) {
-                    // Check if property is marked as facetable.
-                    if (isset($property['facetable']) === true && $property['facetable'] === true) {
-                        // Determine facet type based on property type.
-                        $facetType = $this->determineFacetTypeFromProperty($property);
+                    $facetConfig = $this->normalizeFacetConfig($property['facetable'] ?? false);
+                    if ($facetConfig === null) {
+                        continue;
+                    }
+
+                    // Determine facet type based on property type.
+                    $facetType = $this->determineFacetTypeFromProperty($property);
+
+                    if ($facetConfig['aggregated'] === false) {
+                        // Track non-aggregated fields separately with schema context.
+                        $facetableFields['non_aggregated_fields'][] = [
+                            'field'       => $propertyKey,
+                            'schemaId'    => $schemaId,
+                            'facetType'   => $facetType,
+                            'facetConfig' => $facetConfig,
+                            'title'       => $property['title'] ?? null,
+                        ];
+                    } else {
+                        // Aggregated fields: merge across schemas (existing behavior).
                         $facetableFields['object_fields'][$propertyKey] = [
-                            'type'  => $facetType,
-                            'title' => $property['title'] ?? null,
+                            'type'        => $facetType,
+                            'title'       => $property['title'] ?? null,
+                            'facetConfig' => $facetConfig,
                         ];
                     }
-                }
+                }//end foreach
             } catch (\Exception $e) {
-                // Get schema ID if method exists, otherwise use 'unknown'.
                 $schemaId = 'unknown';
                 if (method_exists($schema, 'getId') === true) {
                     $schemaId = $schema->getId();

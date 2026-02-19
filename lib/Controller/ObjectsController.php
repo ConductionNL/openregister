@@ -970,6 +970,7 @@ class ObjectsController extends Controller
                 }
 
                 // Build response data.
+                $ignoredFilters = $magicMapper->getIgnoredFilters();
                 $responseData = [
                     'results' => $serializedResults,
                     'total'   => $total,
@@ -988,6 +989,22 @@ class ObjectsController extends Controller
                         'activeOrganisation' => $activeOrganisation,
                     ],
                 ];
+
+                // Add ignored filters and developer hint if applicable.
+                if (empty($ignoredFilters) === false) {
+                    $responseData['@self']['ignoredFilters'] = $ignoredFilters;
+
+                    $controlParams = ['limit', 'offset', 'page', 'order', 'sort', 'search', 'extend', 'fields', 'filter', 'unset'];
+                    $mistakenParams = array_intersect($ignoredFilters, $controlParams);
+                    if (empty($mistakenParams) === false) {
+                        $suggestions = array_map(fn($p) => "_{$p}", $mistakenParams);
+                        $responseData['@self']['hint'] = 'Query returned 0 results because '
+                            . implode(', ', $mistakenParams)
+                            . ' was treated as an object property filter. Did you mean '
+                            . implode(', ', $suggestions)
+                            . '? Control parameters require an underscore prefix (e.g. _limit, _offset, _page).';
+                    }
+                }
 
                 // Add facets if requested via _facets parameter.
                 // Use MagicMapper's facet method for magic-mapped tables.

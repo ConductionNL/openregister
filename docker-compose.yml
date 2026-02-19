@@ -600,6 +600,8 @@ services:
       - ../openzaak:/var/www/html/custom_apps/openzaak
       - ../openklant:/var/www/html/custom_apps/openklant
       - ../docudesk:/var/www/html/custom_apps/docudesk
+      - ../procest:/var/www/html/custom_apps/procest
+      - ../pipelinq:/var/www/html/custom_apps/pipelinq
     environment:
       # Database configuration (PostgreSQL)
       - POSTGRES_DB=nextcloud
