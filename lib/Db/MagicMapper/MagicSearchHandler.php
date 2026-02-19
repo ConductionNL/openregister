@@ -845,11 +845,19 @@ class MagicSearchHandler
      */
     private function applyRelationsContainsFilter(IQueryBuilder $qb, string $uuid): void
     {
-        // Relations are stored as a JSON object like {"fieldName": "uuid", ...}.
-        // Use EXISTS with jsonb_each_text to check if any VALUE equals the UUID.
+        // Relations can be stored as either:
+        // - An array: ["uuid1", "uuid2", ...] (legacy/common format)
+        // - An object: {"fieldName": "uuid", ...} (new format)
+        // Handle both formats using jsonb_typeof to dispatch correctly.
         $param = $qb->createNamedParameter($uuid);
         $qb->andWhere(
-            "EXISTS (SELECT 1 FROM jsonb_each_text(t._relations) AS kv WHERE kv.value = {$param})"
+            "(
+                (jsonb_typeof(t._relations) = 'array' AND t._relations @> to_jsonb({$param}::text))
+                OR
+                (jsonb_typeof(t._relations) = 'object' AND EXISTS (
+                    SELECT 1 FROM jsonb_each_text(t._relations) AS kv WHERE kv.value = {$param}
+                ))
+            )"
         );
     }//end applyRelationsContainsFilter()
 

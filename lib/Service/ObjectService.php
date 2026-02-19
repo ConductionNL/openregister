@@ -310,6 +310,7 @@ class ObjectService
      * @param string|null $userId      User ID to check permissions for
      * @param string|null $objectOwner Object owner ID
      * @param bool        $_rbac       Whether to enforce RBAC checks
+     * @param ObjectEntity|null $object Optional object entity for conditional authorization matching
      *
      * @return void
      *
@@ -320,14 +321,16 @@ class ObjectService
         string $action,
         ?string $userId=null,
         ?string $objectOwner=null,
-        bool $_rbac=true
+        bool $_rbac=true,
+        ?ObjectEntity $object=null
     ): void {
         $this->permissionHandler->checkPermission(
             schema: $schema,
             action: $action,
             userId: $userId,
             objectOwner: $objectOwner,
-            rbac: $_rbac
+            rbac: $_rbac,
+            object: $object
         );
     }//end checkPermission()
 
@@ -614,7 +617,8 @@ class ObjectService
                 action: 'read',
                 userId: null,
                 objectOwner: $object->getOwner(),
-                _rbac: $_rbac
+                _rbac: $_rbac,
+                object: $object
             );
         }
 
@@ -1245,7 +1249,8 @@ class ObjectService
                 action: 'update',
                 userId: null,
                 objectOwner: $existingObject->getOwner(),
-                _rbac: $_rbac
+                _rbac: $_rbac,
+                object: $existingObject
             );
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             // Object not found, this is a CREATE operation with specific UUID.
@@ -1395,7 +1400,8 @@ class ObjectService
                 action: 'delete',
                 userId: null,
                 objectOwner: $objectToDelete->getOwner(),
-                _rbac: $_rbac
+                _rbac: $_rbac,
+                object: $objectToDelete
             );
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             // Object doesn't exist, no permission check needed but let deleteHandler handle.

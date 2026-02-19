@@ -796,20 +796,29 @@ class Schema extends Entity implements JsonSerializable
      * When $propertyName is provided, check the property's authorization array first,
      * then fall back to schema-level authorization if no property-level authorization exists.
      *
-     * @param string $groupId     The group ID to check
-     * @param string $action      The CRUD action (create, read, update, delete)
-     * @param string $userId      Optional user ID for owner check
-     * @param string $userGroup   Optional user group for admin check
-     * @param string $objectOwner Optional object owner for ownership check
+     * @param string $groupId             The group ID to check
+     * @param string $action              The CRUD action (create, read, update, delete)
+     * @param string $userId              Optional user ID for owner check
+     * @param string $userGroup           Optional user group for admin check
+     * @param string $objectOwner         Optional object owner for ownership check
+     * @param array  $objectData          Optional object data for conditional match evaluation
+     * @param string $objectOrganisation  Optional object organisation UUID (@self.organisation)
+     * @param string $activeOrganisation  Optional user's active organisation UUID for $organisation variable
      *
      * @return bool True if the group has permission for the action
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Conditional authorization rules require multiple checks
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Match condition evaluation creates multiple paths
      */
     public function hasPermission(
         string $groupId,
         string $action,
         ?string $userId=null,
         ?string $userGroup=null,
-        ?string $objectOwner=null
+        ?string $objectOwner=null,
+        ?array $objectData=null,
+        ?string $objectOrganisation=null,
+        ?string $activeOrganisation=null
     ): bool {
         // Admin group always has all permissions.
         if ($groupId === 'admin' || $userGroup === 'admin') {
@@ -831,9 +840,87 @@ class Schema extends Entity implements JsonSerializable
             return true;
         }
 
-        // Check if group is in the allowed groups for this action.
-        return in_array($groupId, $this->authorization[$action] ?? []);
+        // Check each authorization entry for this action.
+        foreach ($this->authorization[$action] as $entry) {
+            // Simple string entry: direct group match.
+            if (is_string($entry) === true) {
+                if ($entry === $groupId) {
+                    return true;
+                }
+                continue;
+            }
+
+            // Complex entry with match conditions: {"group": "...", "match": {"field": "value"}}.
+            if (is_array($entry) === true && isset($entry['group']) === true && $entry['group'] === $groupId) {
+                // If no match conditions, the group match alone is sufficient.
+                if (isset($entry['match']) === false || empty($entry['match']) === true) {
+                    return true;
+                }
+
+                // Evaluate all match conditions (all must pass).
+                if ($this->evaluateMatchConditions($entry['match'], $objectData, $objectOrganisation, $activeOrganisation) === true) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }//end hasPermission()
+
+    /**
+     * Evaluate match conditions from a conditional authorization entry.
+     *
+     * Supports variable substitution:
+     * - $organisation → replaced with the user's active organisation UUID
+     *
+     * Supports special field prefixes:
+     * - _organisation → matches against the object's @self.organisation
+     * - Other fields → matched against the object data
+     *
+     * @param array  $conditions          Key-value pairs of field => expected value
+     * @param array  $objectData          The object's data fields
+     * @param string $objectOrganisation  The object's @self.organisation
+     * @param string $activeOrganisation  The user's active organisation UUID
+     *
+     * @return bool True if all conditions are satisfied
+     */
+    private function evaluateMatchConditions(
+        array $conditions,
+        ?array $objectData,
+        ?string $objectOrganisation,
+        ?string $activeOrganisation
+    ): bool {
+        foreach ($conditions as $field => $expectedValue) {
+            // Resolve $organisation variable in the expected value.
+            if ($expectedValue === '$organisation') {
+                if ($activeOrganisation === null) {
+                    return false;
+                }
+                $expectedValue = $activeOrganisation;
+            }
+
+            // Get the actual value to compare against.
+            if ($field === '_organisation') {
+                // Special field: match against @self.organisation.
+                $actualValue = $objectOrganisation;
+            } else {
+                // Regular field: match against object data.
+                $actualValue = $objectData[$field] ?? null;
+            }
+
+            // If the actual value is an array with an 'id' key (resolved relation), use the id.
+            if (is_array($actualValue) === true && isset($actualValue['id']) === true) {
+                $actualValue = $actualValue['id'];
+            }
+
+            // Compare values.
+            if ($actualValue !== $expectedValue) {
+                return false;
+            }
+        }
+
+        return true;
+    }//end evaluateMatchConditions()
 
     /**
      * Get all groups that have permission for a specific action

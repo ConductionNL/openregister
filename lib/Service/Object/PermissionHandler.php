@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
@@ -81,11 +82,12 @@ class PermissionHandler
      * TODO: Implement property-level RBAC checks
      * Properties can have their own authorization arrays that provide fine-grained access control.
      *
-     * @param Schema      $schema      The schema to check permissions for.
-     * @param string      $action      The CRUD action (create, read, update, delete).
-     * @param string|null $userId      Optional user ID (defaults to current user).
-     * @param string|null $objectOwner Optional object owner for ownership check.
-     * @param bool        $rbac        Whether to apply RBAC checks (default: true).
+     * @param Schema            $schema      The schema to check permissions for.
+     * @param string            $action      The CRUD action (create, read, update, delete).
+     * @param string|null       $userId      Optional user ID (defaults to current user).
+     * @param string|null       $objectOwner Optional object owner for ownership check.
+     * @param bool              $rbac        Whether to apply RBAC checks (default: true).
+     * @param ObjectEntity|null $object      Optional object entity for conditional authorization matching.
      *
      * @return bool True if user has permission, false otherwise
      *
@@ -100,11 +102,33 @@ class PermissionHandler
         string $action,
         ?string $userId=null,
         ?string $objectOwner=null,
-        bool $rbac=true
+        bool $rbac=true,
+        ?ObjectEntity $object=null
     ): bool {
         // If RBAC is disabled, always return true (bypass all permission checks).
         if ($rbac === false) {
             return true;
+        }
+
+        // Resolve object context for conditional authorization matching.
+        $objectData         = null;
+        $objectOrganisation = null;
+        $activeOrganisation = null;
+
+        if ($object !== null) {
+            $objectData         = $object->getObject();
+            $objectOrganisation = $object->getOrganisation();
+        }
+
+        // Get the user's active organisation for $organisation variable resolution.
+        try {
+            $organisationService = $this->container->get('OCA\OpenRegister\Service\OrganisationService');
+            $activeOrg           = $organisationService->getActiveOrganisation();
+            if ($activeOrg !== null) {
+                $activeOrganisation = $activeOrg->getUuid();
+            }
+        } catch (\Throwable $e) {
+            // OrganisationService not available, conditional matching will be limited.
         }
 
         // Get current user if not provided.
@@ -117,7 +141,10 @@ class PermissionHandler
                     action: $action,
                     userId: null,
                     userGroup: null,
-                    objectOwner: $objectOwner
+                    objectOwner: $objectOwner,
+                    objectData: $objectData,
+                    objectOrganisation: $objectOrganisation,
+                    activeOrganisation: $activeOrganisation
                 );
             }
 
@@ -133,7 +160,10 @@ class PermissionHandler
                 action: $action,
                 userId: null,
                 userGroup: null,
-                objectOwner: $objectOwner
+                objectOwner: $objectOwner,
+                objectData: $objectData,
+                objectOrganisation: $objectOrganisation,
+                activeOrganisation: $activeOrganisation
             );
         }
 
@@ -158,7 +188,10 @@ class PermissionHandler
                     action: $action,
                     userId: $userId,
                     userGroup: $adminGroup,
-                    objectOwner: $objectOwner
+                    objectOwner: $objectOwner,
+                    objectData: $objectData,
+                    objectOrganisation: $objectOrganisation,
+                    activeOrganisation: $activeOrganisation
                 ) === true
             ) {
                 return true;
@@ -172,7 +205,10 @@ class PermissionHandler
                 action: $action,
                 userId: $userId,
                 userGroup: null,
-                objectOwner: $objectOwner
+                objectOwner: $objectOwner,
+                objectData: $objectData,
+                objectOrganisation: $objectOrganisation,
+                activeOrganisation: $activeOrganisation
             ) === true
         ) {
             return true;
@@ -184,11 +220,12 @@ class PermissionHandler
     /**
      * Check permission and throw exception if not granted
      *
-     * @param Schema      $schema      Schema to check permissions for.
-     * @param string      $action      Action to check permission for.
-     * @param string|null $userId      User ID to check permissions for.
-     * @param string|null $objectOwner Object owner ID.
-     * @param bool        $rbac        Whether to enforce RBAC checks.
+     * @param Schema            $schema      Schema to check permissions for.
+     * @param string            $action      Action to check permission for.
+     * @param string|null       $userId      User ID to check permissions for.
+     * @param string|null       $objectOwner Object owner ID.
+     * @param bool              $rbac        Whether to enforce RBAC checks.
+     * @param ObjectEntity|null $object      Optional object entity for conditional authorization matching.
      *
      * @return void
      *
@@ -201,14 +238,16 @@ class PermissionHandler
         string $action,
         ?string $userId=null,
         ?string $objectOwner=null,
-        bool $rbac=true
+        bool $rbac=true,
+        ?ObjectEntity $object=null
     ): void {
         if ($this->hasPermission(
                 schema: $schema,
                 action: $action,
                 userId: $userId,
                 objectOwner: $objectOwner,
-                rbac: $rbac
+                rbac: $rbac,
+                object: $object
             ) === false
         ) {
             $user     = $this->userSession->getUser();

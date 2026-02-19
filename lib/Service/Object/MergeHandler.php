@@ -89,10 +89,11 @@ class MergeHandler
     public function mergeObjects(string $sourceObjectId, array $mergeData): array
     {
         // Extract parameters from merge data.
-        $targetObjectId = $mergeData['target'] ?? null;
-        $mergedData     = $mergeData['object'] ?? [];
-        $fileAction     = $mergeData['fileAction'] ?? 'transfer';
-        $relationAction = $mergeData['relationAction'] ?? 'transfer';
+        $targetObjectId  = $mergeData['target'] ?? null;
+        $mergedData      = $mergeData['object'] ?? [];
+        $fileAction      = $mergeData['fileAction'] ?? 'transfer';
+        $relationAction  = $mergeData['relationAction'] ?? 'transfer';
+        $referenceAction = $mergeData['referenceAction'] ?? 'transfer';
 
         if ($targetObjectId === null || $targetObjectId === '') {
             throw new InvalidArgumentException('Target object ID is required');
@@ -259,35 +260,76 @@ class MergeHandler
                 schema: $schema
             );
 
-            // Update references to source object.
-            $referencingObjects = $this->objectEntityMapper->findByRelation(
-                search: $sourceObject->getUuid(),
-                partialMatch: true
-            );
-            $updatedReferences  = [];
+            // Update references to source object (only if referenceAction is 'transfer').
+            $updatedReferences = [];
 
-            foreach ($referencingObjects as $referencingObject) {
-                $relations     = $referencingObject->getRelations();
-                $updated       = false;
-                $relationCount = count($relations);
+            if ($referenceAction === 'transfer') {
+                $sourceUuid = $sourceObject->getUuid();
+                $targetUuid = $targetObject->getUuid();
 
-                for ($i = 0; $i < $relationCount; $i++) {
-                    if ($relations[$i] === $sourceObject->getUuid()) {
-                        $relations[$i] = $targetObject->getUuid();
-                        $updated       = true;
-                        $mergeReport['statistics']['referencesUpdated']++;
+                $referencingObjects = $this->objectEntityMapper->findByRelation(
+                    search: $sourceUuid,
+                    partialMatch: true
+                );
+
+                foreach ($referencingObjects as $referencingObject) {
+                    // 1. Update _relations metadata.
+                    $relations        = $referencingObject->getRelations();
+                    $relationsUpdated = false;
+                    array_walk_recursive(
+                        $relations,
+                        function (&$value) use ($sourceUuid, $targetUuid, &$relationsUpdated) {
+                            if ($value === $sourceUuid) {
+                                $value            = $targetUuid;
+                                $relationsUpdated = true;
+                            }
+                        }
+                    );
+
+                    if ($relationsUpdated === true) {
+                        $referencingObject->setRelations($relations);
                     }
-                }
 
-                if ($updated === true) {
-                    $referencingObject->setRelations($relations);
-                    $this->objectEntityMapper->update($referencingObject);
-                    $updatedReferences[] = [
-                        'objectId' => $referencingObject->getUuid(),
-                        'title'    => $referencingObject->getTitle() ?? $referencingObject->getUuid(),
-                    ];
-                }
-            }//end foreach
+                    // 2. Update actual object data properties.
+                    $objectData  = $referencingObject->getObject();
+                    $dataUpdated = false;
+                    if (is_array($objectData) === true) {
+                        array_walk_recursive(
+                            $objectData,
+                            function (&$value) use ($sourceUuid, $targetUuid, &$dataUpdated) {
+                                if ($value === $sourceUuid) {
+                                    $value       = $targetUuid;
+                                    $dataUpdated = true;
+                                }
+                            }
+                        );
+
+                        if ($dataUpdated === true) {
+                            $referencingObject->setObject($objectData);
+                        }
+                    }
+
+                    // 3. Persist with proper register/schema context.
+                    if ($relationsUpdated === true || $dataUpdated === true) {
+                        $refContext = $this->objectEntityMapper->findAcrossAllSources(
+                            identifier: $referencingObject->getUuid(),
+                            includeDeleted: false,
+                            _rbac: false,
+                            _multitenancy: false
+                        );
+                        $this->objectEntityMapper->update(
+                            entity: $referencingObject,
+                            register: $refContext['register'],
+                            schema: $refContext['schema']
+                        );
+                        $mergeReport['statistics']['referencesUpdated']++;
+                        $updatedReferences[] = [
+                            'objectId' => $referencingObject->getUuid(),
+                            'title'    => $referencingObject->getTitle() ?? $referencingObject->getUuid(),
+                        ];
+                    }
+                }//end foreach
+            }//end if
 
             $mergeReport['actions']['references'] = $updatedReferences;
 

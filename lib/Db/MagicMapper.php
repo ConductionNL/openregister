@@ -3210,11 +3210,15 @@ class MagicMapper
             // Also builds property type map for type conversion.
             $columnToPropertyMap = [];
             $propertyTypes       = [];
+            $propertyFormats     = [];
             $properties          = $_schema->getProperties() ?? [];
             foreach ($properties as $propertyName => $propertyDef) {
                 $columnName = $this->sanitizeColumnName($propertyName);
                 $columnToPropertyMap[$columnName] = $propertyName;
                 $propertyTypes[$propertyName]     = $propertyDef['type'] ?? 'string';
+                if (isset($propertyDef['format']) === true) {
+                    $propertyFormats[$propertyName] = $propertyDef['format'];
+                }
             }
 
             // Extract metadata fields (remove prefix).
@@ -3279,6 +3283,26 @@ class MagicMapper
                 if ($schemaType === 'string' && (is_int($value) === true || is_float($value) === true)) {
                     // Schema expects string but database returned numeric - cast to string.
                     $value = (string) $value;
+                }
+
+                // Format date/datetime values based on schema format.
+                $propertyFormat = $propertyFormats[$propertyName] ?? null;
+                if ($value !== null && is_string($value) === true && $propertyFormat !== null) {
+                    if ($propertyFormat === 'date') {
+                        // Schema expects date-only (Y-m-d), strip time component.
+                        try {
+                            $value = (new \DateTime($value))->format('Y-m-d');
+                        } catch (\Exception $e) {
+                            // Keep original value if parsing fails.
+                        }
+                    } else if ($propertyFormat === 'date-time') {
+                        // Schema expects full ISO 8601 datetime.
+                        try {
+                            $value = (new \DateTime($value))->format('c');
+                        } catch (\Exception $e) {
+                            // Keep original value if parsing fails.
+                        }
+                    }
                 }
 
                 // Decode JSON values if they're JSON strings.

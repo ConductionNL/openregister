@@ -1478,7 +1478,7 @@ export const useObjectStore = defineStore('object', {
 		 * @param {string} params.relationAction - Relation action: 'transfer' or 'drop'
 		 * @return {Promise} API response with merge result
 		 */
-		async mergeObjects({ register, schema, sourceObjectId, target, object, fileAction = 'transfer', relationAction = 'transfer' }) {
+		async mergeObjects({ register, schema, sourceObjectId, target, object, fileAction = 'transfer', relationAction = 'transfer', referenceAction = 'transfer' }) {
 			if (!register || !schema || !sourceObjectId || !target || !object) {
 				throw new Error('Missing required parameters for object merge')
 			}
@@ -1496,6 +1496,7 @@ export const useObjectStore = defineStore('object', {
 						object,
 						fileAction,
 						relationAction,
+						referenceAction,
 					}),
 				})
 
