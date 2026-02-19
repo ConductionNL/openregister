@@ -206,30 +206,30 @@ class OasService
         }//end foreach
 
         // Step 9: Extract RBAC groups from all schemas and generate OAuth2 scopes.
-        $allReadGroups   = [];
-        $allUpdateGroups = [];
-        $schemaRbacMap   = [];
+        $schemaRbacMap = [];
+        $allGroups     = [];
         foreach ($schemas as $schemaId => $schema) {
             $rbac = $this->extractSchemaGroups(schema: $schema);
             $schemaRbacMap[$schemaId] = $rbac;
-            $allReadGroups            = array_merge($allReadGroups, $rbac['readGroups']);
-            $allUpdateGroups          = array_merge($allUpdateGroups, $rbac['updateGroups']);
+            $allGroups = array_merge(
+                $allGroups,
+                $rbac['createGroups'],
+                $rbac['readGroups'],
+                $rbac['updateGroups'],
+                $rbac['deleteGroups']
+            );
         }
 
-        $allGroups = array_unique(array_merge($allReadGroups, $allUpdateGroups));
-        if (empty($allGroups) === false) {
-            // Always include admin in scopes.
-            if (in_array('admin', $allGroups, true) === false) {
-                $allGroups[] = 'admin';
-            }
+        // Always include admin since it has access to all endpoints.
+        $allGroups[] = 'admin';
+        $allGroups   = array_values(array_unique($allGroups));
 
-            $scopes = [];
-            foreach ($allGroups as $group) {
-                $scopes[$group] = $this->getScopeDescription(group: $group);
-            }
-
-            $this->oas['components']['securitySchemes']['oauth2']['flows']['authorizationCode']['scopes'] = $scopes;
+        $scopes = [];
+        foreach ($allGroups as $group) {
+            $scopes[$group] = $this->getScopeDescription(group: $group);
         }
+
+        $this->oas['components']['securitySchemes']['oauth2']['flows']['authorizationCode']['scopes'] = $scopes;
 
         // Initialize paths array.
         $this->oas['paths'] = [];
@@ -253,7 +253,12 @@ class OasService
             foreach ($schemaIds ?? [] as $schemaId) {
                 if (($schemas[$schemaId] ?? null) !== null) {
                     $schema = $schemas[$schemaId];
-                    $rbac   = $schemaRbacMap[$schemaId] ?? ['readGroups' => [], 'updateGroups' => []];
+                    $rbac   = $schemaRbacMap[$schemaId] ?? [
+                        'createGroups' => [],
+                        'readGroups'   => [],
+                        'updateGroups' => [],
+                        'deleteGroups' => [],
+                    ];
                     $this->addCrudPaths(
                         register: $register,
                         schema: $schema,
@@ -294,18 +299,38 @@ class OasService
     }//end getBaseOas()
 
     /**
-     * Extract unique RBAC groups from a schema's property authorization rules
+     * Extract unique RBAC groups from schema-level and property-level authorization rules
+     *
+     * Collects groups from the schema's authorization field (CRUD-level access control)
+     * and from individual property authorization rules (field-level access control).
      *
      * @param object $schema The schema object
      *
-     * @return array{readGroups: string[], updateGroups: string[]} Unique groups per action
+     * @return array{createGroups: string[], readGroups: string[], updateGroups: string[], deleteGroups: string[]}
+     *               Unique groups per CRUD action
      */
     private function extractSchemaGroups(object $schema): array
     {
+        $createGroups = [];
         $readGroups   = [];
         $updateGroups = [];
-        $properties   = $schema->getProperties();
+        $deleteGroups = [];
 
+        // Step 1: Extract groups from schema-level authorization.
+        $schemaAuth = $schema->getAuthorization();
+        if (is_array($schemaAuth) === true && empty($schemaAuth) === false) {
+            foreach (['create', 'read', 'update', 'delete'] as $action) {
+                foreach ($schemaAuth[$action] ?? [] as $rule) {
+                    $group = $this->extractGroupFromRule(rule: $rule);
+                    if ($group !== null) {
+                        ${$action.'Groups'}[] = $group;
+                    }
+                }
+            }
+        }
+
+        // Step 2: Extract groups from property-level authorization.
+        $properties = $schema->getProperties();
         foreach ($properties ?? [] as $propertyDefinition) {
             if (is_array($propertyDefinition) === false) {
                 continue;
@@ -316,30 +341,45 @@ class OasService
                 continue;
             }
 
-            // Collect read groups.
-            foreach ($auth['read'] ?? [] as $rule) {
-                if (is_array($rule) === true && isset($rule['group']) === true) {
-                    $readGroups[] = $rule['group'];
-                } else if (is_string($rule) === true) {
-                    $readGroups[] = $rule;
-                }
-            }
-
-            // Collect update groups.
-            foreach ($auth['update'] ?? [] as $rule) {
-                if (is_array($rule) === true && isset($rule['group']) === true) {
-                    $updateGroups[] = $rule['group'];
-                } else if (is_string($rule) === true) {
-                    $updateGroups[] = $rule;
+            foreach (['create', 'read', 'update', 'delete'] as $action) {
+                foreach ($auth[$action] ?? [] as $rule) {
+                    $group = $this->extractGroupFromRule(rule: $rule);
+                    if ($group !== null) {
+                        ${$action.'Groups'}[] = $group;
+                    }
                 }
             }
         }//end foreach
 
         return [
+            'createGroups' => array_values(array_unique($createGroups)),
             'readGroups'   => array_values(array_unique($readGroups)),
             'updateGroups' => array_values(array_unique($updateGroups)),
+            'deleteGroups' => array_values(array_unique($deleteGroups)),
         ];
     }//end extractSchemaGroups()
+
+    /**
+     * Extract group name from an authorization rule
+     *
+     * Rules can be either a plain string (group name) or an object with a 'group' key.
+     *
+     * @param mixed $rule The authorization rule (string or array)
+     *
+     * @return string|null The group name, or null if not extractable
+     */
+    private function extractGroupFromRule($rule): ?string
+    {
+        if (is_string($rule) === true) {
+            return $rule;
+        }
+
+        if (is_array($rule) === true && isset($rule['group']) === true) {
+            return $rule['group'];
+        }
+
+        return null;
+    }//end extractGroupFromRule()
 
     /**
      * Get a human-readable description for an OAuth2 scope based on group name
@@ -362,28 +402,43 @@ class OasService
     }//end getScopeDescription()
 
     /**
-     * Build per-operation security requirement based on RBAC groups
+     * Apply RBAC information to an operation by appending group info to description and adding 403 response
      *
-     * @param string[] $groups The groups that have access to this operation
+     * Always includes `admin` since admin users have access to all endpoints.
+     * Merges in any schema-specific groups for this CRUD action.
      *
-     * @return array|null Security requirement array, or null if no RBAC rules
+     * @param array    &$operation The operation array (passed by reference)
+     * @param string[]  $groups    The schema-specific groups that have access to this operation
+     *
+     * @return void
      */
-    private function buildOperationSecurity(array $groups): ?array
+    private function applyRbacToOperation(array &$operation, array $groups): void
     {
-        if (empty($groups) === true) {
-            return null;
-        }
-
-        // Always include admin for write operations.
+        // Admin always has access to every endpoint.
         if (in_array('admin', $groups, true) === false) {
-            $groups[] = 'admin';
+            array_unshift($groups, 'admin');
         }
 
-        return [
-            ['oauth2'    => array_values(array_unique($groups))],
-            ['basicAuth' => []],
+        // Build scope list as inline code fragments.
+        $scopeList = implode(', ', array_map(
+            static function (string $group): string {
+                return '`'.$group.'`';
+            },
+            $groups
+        ));
+
+        $operation['description'] .= "\n\n**Required scopes:** ".$scopeList;
+
+        // Add 403 response.
+        $operation['responses']['403'] = [
+            'description' => 'Forbidden — user does not have the required group membership for this action',
+            'content'     => [
+                'application/json' => [
+                    'schema' => ['$ref' => '#/components/schemas/Error'],
+                ],
+            ],
         ];
-    }//end buildOperationSecurity()
+    }//end applyRbacToOperation()
 
     /**
      * Extended endpoints that should be included in OAS generation
@@ -689,7 +744,7 @@ class OasService
      *
      * @param object $register          The register object
      * @param object $schema            The schema object
-     * @param array  $rbac              RBAC groups {readGroups: string[], updateGroups: string[]}
+     * @param array  $rbac              RBAC groups {createGroups, readGroups, updateGroups, deleteGroups}
      * @param string $operationIdPrefix Prefix for operationId to ensure uniqueness across registers
      *
      * @return void
@@ -697,10 +752,6 @@ class OasService
     private function addCrudPaths(object $register, object $schema, array $rbac = [], string $operationIdPrefix = ''): void
     {
         $basePath = '/'.$this->slugify($register->getTitle()).'/'.$this->slugify($schema->getTitle());
-
-        // Build per-operation security from RBAC groups.
-        $readSecurity  = $this->buildOperationSecurity(groups: $rbac['readGroups'] ?? []);
-        $writeSecurity = $this->buildOperationSecurity(groups: $rbac['updateGroups'] ?? []);
 
         // Collection endpoints (tags are inside individual operations).
         $getCollection = $this->createGetCollectionOperation($schema);
@@ -712,13 +763,9 @@ class OasService
             $postOp['operationId']        = $operationIdPrefix.$postOp['operationId'];
         }
 
-        if ($readSecurity !== null) {
-            $getCollection['security'] = $readSecurity;
-        }
-
-        if ($writeSecurity !== null) {
-            $postOp['security'] = $writeSecurity;
-        }
+        // Append RBAC group info to descriptions and add 403 responses.
+        $this->applyRbacToOperation(operation: $getCollection, groups: $rbac['readGroups'] ?? []);
+        $this->applyRbacToOperation(operation: $postOp, groups: $rbac['createGroups'] ?? []);
 
         $this->oas['paths'][$basePath] = [
             'get'  => $getCollection,
@@ -737,14 +784,10 @@ class OasService
             $deleteOp['operationId'] = $operationIdPrefix.$deleteOp['operationId'];
         }
 
-        if ($readSecurity !== null) {
-            $getOp['security'] = $readSecurity;
-        }
-
-        if ($writeSecurity !== null) {
-            $putOp['security']    = $writeSecurity;
-            $deleteOp['security'] = $writeSecurity;
-        }
+        // Append RBAC group info to descriptions and add 403 responses.
+        $this->applyRbacToOperation(operation: $getOp, groups: $rbac['readGroups'] ?? []);
+        $this->applyRbacToOperation(operation: $putOp, groups: $rbac['updateGroups'] ?? []);
+        $this->applyRbacToOperation(operation: $deleteOp, groups: $rbac['deleteGroups'] ?? []);
 
         $this->oas['paths'][$basePath.'/{id}'] = [
             'get'    => $getOp,

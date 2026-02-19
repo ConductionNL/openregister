@@ -20,10 +20,6 @@
       "description": "Base URL for API endpoints"
     }
   ],
-  "security": [
-    { "basicAuth": [] },
-    { "oauth2": [] }
-  ],
   "tags": [
     {
       "name": "Generic",
@@ -39,7 +35,7 @@
       },
       "oauth2": {
         "type": "oauth2",
-        "description": "OAuth2 authentication using Nextcloud's authentication server.",
+        "description": "OAuth2 authentication using Nextcloud's authentication server. Scopes correspond to Nextcloud group memberships. Each schema defines which groups may create, read, update, or delete its objects. Admin users and object owners always have full access regardless of scopes.",
         "flows": {
           "authorizationCode": {
             "authorizationUrl": "/apps/oauth2/authorize",
