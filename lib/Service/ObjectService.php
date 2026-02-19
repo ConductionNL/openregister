@@ -1119,6 +1119,11 @@ class ObjectService
             data: $object
         );
 
+        // Normalize date values BEFORE validation.
+        // Accepts datetime input (e.g. "2024-01-15T10:30:00+02:00") for date fields
+        // and casts it to date-only (e.g. "2024-01-15") so Opis validation passes.
+        $object = $this->normalizeDateValues($object);
+
         // Validate if hard validation is enabled.
         $this->validateObjectIfRequired($object);
 
@@ -1327,6 +1332,51 @@ class ObjectService
             }
         }
     }//end validateObjectIfRequired()
+
+    /**
+     * Normalize date values in object data before validation.
+     *
+     * For properties with format "date", this accepts datetime strings
+     * (e.g. "2024-01-15T10:30:00+02:00" or "2024-01-15 00:00:00") and
+     * casts them to date-only strings (e.g. "2024-01-15").
+     *
+     * @param array $object The object data to normalize.
+     *
+     * @return array The normalized object data.
+     */
+    private function normalizeDateValues(array $object): array
+    {
+        if ($this->currentSchema === null) {
+            return $object;
+        }
+
+        $properties = $this->currentSchema->getProperties() ?? [];
+
+        foreach ($properties as $propertyName => $propertyDef) {
+            if (isset($object[$propertyName]) === false || is_string($object[$propertyName]) === false) {
+                continue;
+            }
+
+            $format = $propertyDef['format'] ?? null;
+            if ($format !== 'date') {
+                continue;
+            }
+
+            // If the value is already a valid date (Y-m-d), skip.
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $object[$propertyName]) === 1) {
+                continue;
+            }
+
+            // Try to parse as datetime and extract just the date part.
+            try {
+                $object[$propertyName] = (new \DateTime($object[$propertyName]))->format('Y-m-d');
+            } catch (\Exception $e) {
+                // Leave the original value; validation will catch invalid formats.
+            }
+        }
+
+        return $object;
+    }//end normalizeDateValues()
 
     /**
      * Ensure object folder exists, create if needed.
