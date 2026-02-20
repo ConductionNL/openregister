@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Service\Object\SaveObject;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Object\CacheHandler;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -55,10 +56,12 @@ class MetadataHydrationHandler
     /**
      * Constructor for MetadataHydrationHandler.
      *
-     * @param LoggerInterface $logger Logger interface for logging operations.
+     * @param LoggerInterface $logger       Logger interface for logging operations.
+     * @param CacheHandler    $cacheHandler Cache handler for UUID-to-name resolution.
      */
     public function __construct(
         private readonly LoggerInterface $logger,
+        private readonly CacheHandler $cacheHandler,
     ) {
     }//end __construct()
 
@@ -96,12 +99,15 @@ class MetadataHydrationHandler
         // Otherwise use the objectData directly (flat format).
         $businessData = $objectData['object'] ?? $objectData;
 
+        // Get schema properties for relation field detection.
+        $schemaProperties = $schema->getProperties() ?? [];
+
         // Name field mapping - use configured field or fallback to common names.
         $nameField = $config['objectNameField'] ?? null;
         $name      = null;
 
         if ($nameField !== null) {
-            $name = $this->extractMetadataValue(data: $businessData, fieldPath: $nameField);
+            $name = $this->extractMetadataValue(data: $businessData, fieldPath: $nameField, schemaProperties: $schemaProperties);
         }
 
         // Fallback: try common name fields if not configured or configured field is empty.
@@ -212,8 +218,9 @@ class MetadataHydrationHandler
             $current = $current[$key];
         }
 
-        // Convert to string if it's not null and not already a string.
-        if ($current !== null && is_string($current) === false) {
+        // Return raw value — callers handle type conversion.
+        // Arrays/objects are kept as-is so relation fields can extract UUIDs.
+        if ($current !== null && is_string($current) === false && is_array($current) === false) {
             $current = (string) $current;
         }
 
@@ -232,16 +239,17 @@ class MetadataHydrationHandler
      * For twig-like templates, it extracts field names from {{ }} syntax and concatenates
      * their values with spaces, handling empty/null values gracefully.
      *
-     * @param array  $data      The object data.
-     * @param string $fieldPath The field path, fallback chain, or twig-like template.
+     * @param array  $data             The object data.
+     * @param string $fieldPath        The field path, fallback chain, or twig-like template.
+     * @param array  $schemaProperties Optional schema properties for relation field detection.
      *
      * @return string|null The extracted/concatenated value, or null if not found.
      */
-    public function extractMetadataValue(array $data, string $fieldPath): ?string
+    public function extractMetadataValue(array $data, string $fieldPath, array $schemaProperties=[]): ?string
     {
         // Check if this is a twig-like template with {{ }} syntax.
         if (str_contains($fieldPath, '{{') === true && str_contains($fieldPath, '}}') === true) {
-            return $this->processTwigLikeTemplate(data: $data, template: $fieldPath);
+            return $this->processTwigLikeTemplate(data: $data, template: $fieldPath, schemaProperties: $schemaProperties);
         }
 
         // Check if this is a pipe-separated fallback chain (without {{ }} syntax).
@@ -299,12 +307,13 @@ class MetadataHydrationHandler
      * - "{{ field | map: key1=val1, key2=val2 }}" looks up the field value in the map
      * - Falls back to the raw field value if no mapping matches
      *
-     * @param array  $data     The object data.
-     * @param string $template The twig-like template string.
+     * @param array  $data             The object data.
+     * @param string $template         The twig-like template string.
+     * @param array  $schemaProperties Optional schema properties for relation field detection.
      *
      * @return null|string The processed result or null if no values found.
      */
-    public function processTwigLikeTemplate(array $data, string $template): string|null
+    public function processTwigLikeTemplate(array $data, string $template, array $schemaProperties=[]): string|null
     {
         // Extract all {{ fieldName }} patterns.
         preg_match_all('/\{\{\s*([^}]+)\s*\}\}/', $template, $matches);
@@ -328,10 +337,22 @@ class MetadataHydrationHandler
                 $value = $this->processFieldWithFallbacks(data: $data, fieldChain: $fieldExpression);
             } else {
                 $value = $this->getValueFromPath(data: $data, path: $fieldExpression);
+
+                // Resolve UUID to object name for relation fields.
+                $value = $this->resolveRelationValue(
+                    fieldName: $fieldExpression,
+                    value: $value,
+                    schemaProperties: $schemaProperties
+                );
             }
 
-            if ($value !== null && trim((string) $value) !== '') {
-                $result    = str_replace($fullMatch, trim((string) $value), $result);
+            // Convert arrays to string representation if still an array at this point.
+            if (is_array($value) === true) {
+                $value = json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            }
+
+            if ($value !== null && is_string($value) === true && trim($value) !== '') {
+                $result    = str_replace($fullMatch, trim($value), $result);
                 $hasValues = true;
                 continue;
             }
@@ -394,6 +415,134 @@ class MetadataHydrationHandler
         // Return the mapped value or fall back to the raw field value.
         return $map[$fieldValue] ?? $fieldValue;
     }//end processMapFilter()
+
+    /**
+     * Resolve a relation field value (UUID) to an object name.
+     *
+     * Checks if the field is a relation property (has $ref or format: uuid) in the schema,
+     * extracts the UUID from the value (which may be a string, array, or object), and
+     * resolves it to the referenced object's name via CacheHandler.
+     *
+     * @param string $fieldName        The field name in the schema.
+     * @param mixed  $value            The raw field value (UUID string, array, or null).
+     * @param array  $schemaProperties The schema properties for relation detection.
+     *
+     * @return string|null The resolved name, or the original value if not a relation.
+     */
+    private function resolveRelationValue(string $fieldName, mixed $value, array $schemaProperties): ?string
+    {
+        if ($value === null || empty($schemaProperties) === true) {
+            return $value;
+        }
+
+        // Check if the field is a relation property in the schema.
+        $property = $schemaProperties[$fieldName] ?? null;
+        if ($property === null || $this->isRelationProperty($property) === false) {
+            return is_string($value) ? $value : null;
+        }
+
+        // Extract UUID from the value.
+        $uuid = $this->extractUuidFromValue($value);
+        if ($uuid === null) {
+            return is_string($value) ? $value : null;
+        }
+
+        // Resolve UUID to object name via CacheHandler.
+        try {
+            $names = $this->cacheHandler->getMultipleObjectNames([$uuid]);
+            if (empty($names[$uuid]) === false) {
+                return $names[$uuid];
+            }
+        } catch (\Exception $e) {
+            $this->logger->warning(
+                message: '[MetadataHydrationHandler] Failed to resolve UUID to name',
+                context: [
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
+                    'field' => $fieldName,
+                    'uuid'  => $uuid,
+                    'error' => $e->getMessage(),
+                ]
+            );
+        }
+
+        return is_string($value) ? $value : null;
+    }//end resolveRelationValue()
+
+    /**
+     * Check if a schema property is a relation (references another object).
+     *
+     * @param array $property The schema property definition.
+     *
+     * @return bool True if the property is a relation.
+     */
+    private function isRelationProperty(array $property): bool
+    {
+        // Has $ref pointing to another schema.
+        if (empty($property['$ref']) === false) {
+            return true;
+        }
+
+        // Has format: uuid.
+        if (($property['format'] ?? '') === 'uuid') {
+            return true;
+        }
+
+        // Array items with $ref or format: uuid.
+        if (($property['type'] ?? '') === 'array' && isset($property['items']) === true) {
+            $items = $property['items'];
+            if (empty($items['$ref']) === false || ($items['format'] ?? '') === 'uuid') {
+                return true;
+            }
+        }
+
+        // Object type with $ref.
+        if (($property['type'] ?? '') === 'object' && empty($property['$ref']) === false) {
+            return true;
+        }
+
+        // Object type with items containing oneOf with $ref.
+        if (($property['type'] ?? '') === 'object' && isset($property['items']['oneOf']) === true) {
+            foreach ($property['items']['oneOf'] as $option) {
+                if (empty($option['$ref']) === false) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }//end isRelationProperty()
+
+    /**
+     * Extract a UUID string from a value that may be a string, array, or object.
+     *
+     * Handles various formats:
+     * - Plain UUID string: "debe49c0-e770-5cd7-9003-e8f34274cc2a"
+     * - Object with value key: {"value": "uuid-here"}
+     * - Object with id key: {"id": "uuid-here"}
+     * - Object with uuid key: {"uuid": "uuid-here"}
+     *
+     * @param mixed $value The value to extract a UUID from.
+     *
+     * @return string|null The extracted UUID or null.
+     */
+    private function extractUuidFromValue(mixed $value): ?string
+    {
+        if (is_string($value) === true && empty($value) === false) {
+            return $value;
+        }
+
+        if (is_array($value) === true) {
+            // Try common keys that hold UUID references.
+            foreach (['value', 'id', 'uuid', '@self.id'] as $key) {
+                if (isset($value[$key]) === true && is_string($value[$key]) === true) {
+                    return $value[$key];
+                }
+            }
+        }
+
+        return null;
+    }//end extractUuidFromValue()
 
     /**
      * Creates a URL-friendly slug from a metadata value.
