@@ -1613,16 +1613,16 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             ];
         }//end if
 
-        // Check if this is a global ID search (no register/schema but _ids provided).
-        // In this case, search across ALL magic tables to find the objects.
-        $queryIds         = $searchQuery['_ids'] ?? null;
-        $isGlobalIdSearch = $registerId === null
-            && $schemaId === null
-            && $queryIds !== null
+        // Check if this is an ID search (_ids provided).
+        // Always search magic tables when _ids is present, regardless of register/schema context.
+        // This ensures RBAC is properly applied via filterBySchemaRbac and avoids the ORM
+        // fallback which does not enforce RBAC.
+        $queryIds   = $searchQuery['_ids'] ?? null;
+        $isIdSearch = $queryIds !== null
             && is_array($queryIds) === true
             && count($queryIds) > 0;
 
-        if ($isGlobalIdSearch === true) {
+        if ($isIdSearch === true) {
             return $this->searchObjectsGloballyByIds(
                 ids: $queryIds,
                 searchQuery: $searchQuery,
@@ -1651,18 +1651,21 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             );
         }
 
-        // Use objectEntityMapper for blob storage.
-        // DEBUG: Return debug info about why we reached blob storage path.
+        // Fallback: Use objectEntityMapper for blob storage.
+        // NOTE: The ORM blob storage does NOT enforce RBAC at the SQL level.
+        // We apply RBAC post-filtering below via filterBySchemaRbac().
+        $this->logger->warning(
+            message: '[UnifiedObjectMapper] Using blob storage fallback - magic mapper unavailable',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
+                'registerId' => $registerId,
+                'schemaId'   => $schemaId,
+            ]
+        );
+
         $results = $this->objectEntityMapper->searchObjects(
             query: $searchQuery,
-            _activeOrgUuid: $activeOrgUuid,
-            _rbac: $rbac,
-            _multitenancy: $multitenancy,
-            ids: $ids,
-            uses: $uses
-        );
-        $total   = $this->objectEntityMapper->countSearchObjects(
-            query: $countQuery,
             _activeOrgUuid: $activeOrgUuid,
             _rbac: $rbac,
             _multitenancy: $multitenancy,
@@ -1709,6 +1712,11 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                 // Skip if not found.
             }
         }
+
+        // Apply RBAC post-filtering since the ORM blob storage does not enforce RBAC.
+        // This ensures schema-level authorization (including conditional rules) is always applied.
+        $results = $this->filterBySchemaRbac(objects: $results, schemasCache: $schemasCache, rbac: $rbac);
+        $total   = count($results);
 
         // Return results with registers/schemas indexed by ID for frontend lookup.
         return [
@@ -1786,126 +1794,86 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             return $objects;
         }
 
-        $userId     = $this->rbacHandler->getCurrentUserId();
-        $userGroups = $this->rbacHandler->getCurrentUserGroups();
-        $now        = new DateTime();
-
-        $filtered = [];
+        // Cache Schema entities for RBAC permission checks.
+        $schemaEntityCache = [];
+        $filtered          = [];
 
         foreach ($objects as $object) {
+            if (($object instanceof ObjectEntity) === false) {
+                $filtered[] = $object;
+                continue;
+            }
+
             $schemaId = $object->getSchema();
 
-            // Check if object is published (override to make private objects public).
-            $published   = null;
-            $depublished = null;
-            $objectOwner = null;
-
-            if ($object instanceof ObjectEntity) {
-                $published   = $object->getPublished();
-                $depublished = $object->getDepublished();
-                $objectOwner = $object->getOwner();
-            }
-
-            $isPublished = $published !== null
-                && $published <= $now
-                && ($depublished === null || $depublished > $now);
-
-            // Published objects are always accessible (override for private objects).
-            if ($isPublished === true) {
-                $filtered[] = $object;
-                continue;
-            }
-
-            // Check if user is the owner of the object.
-            if ($userId !== null && $objectOwner !== null && $objectOwner === $userId) {
-                $filtered[] = $object;
-                continue;
-            }
-
+            // No schema = no RBAC restriction.
             if ($schemaId === null) {
-                // No schema - requires authentication.
-                if ($userId !== null) {
-                    $filtered[] = $object;
-                }
-
+                $filtered[] = $object;
                 continue;
             }
 
-            // Get schema from cache or fetch it.
-            if (isset($schemasCache[$schemaId]) === false) {
+            // Get Schema entity from cache or fetch it.
+            if (isset($schemaEntityCache[$schemaId]) === false) {
                 try {
                     $schema = $this->schemaMapper->find((int) $schemaId, _multitenancy: false, _rbac: false);
-                    $schemasCache[$schemaId] = $schema->jsonSerialize();
-                } catch (\Exception $e) {
-                    // Schema not found - requires authentication.
-                    if ($userId !== null) {
-                        $filtered[] = $object;
-                    }
+                    $schemaEntityCache[$schemaId] = $schema;
 
+                    // Also update serialized schemasCache for response metadata.
+                    if (isset($schemasCache[$schemaId]) === false) {
+                        $schemasCache[$schemaId] = $schema->jsonSerialize();
+                    }
+                } catch (\Exception $e) {
+                    // Schema not found - deny access.
+                    $this->logger->debug(
+                        message: '[UnifiedObjectMapper] filterBySchemaRbac: Schema not found, denying access',
+                        context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $schemaId]
+                    );
                     continue;
                 }
             }
 
-            $schemaData    = $schemasCache[$schemaId];
-            $authorization = $schemaData['authorization'] ?? [];
+            $schema = $schemaEntityCache[$schemaId];
 
-            // Get authorized groups for read action.
-            $authorizedGroups = $authorization['read'] ?? [];
+            // Build object data with metadata for conditional RBAC evaluation.
+            // Conditional rules like {"group": "x", "match": {"_organisation": "$organisation"}}
+            // need metadata fields (_organisation, _owner) in the object data for matching.
+            $objectData                  = $object->getObject() ?? [];
+            $objectData['_organisation'] = $object->getOrganisation();
+            $objectData['_owner']        = $object->getOwner();
 
-            // Check if schema has 'public' in read authorization.
-            // This means ALL objects from this schema are publicly readable (no multitenancy).
-            $hasPublicRead = in_array('public', $authorizedGroups, true);
-            if ($hasPublicRead === true) {
+            // Use MagicRbacHandler::hasPermission() which properly handles both
+            // simple string rules (e.g., "gebruik-beheerder") and conditional rules
+            // with match conditions (e.g., {"group": "x", "match": {"_organisation": "$organisation"}}).
+            if ($this->rbacHandler->hasPermission(
+                schema: $schema,
+                action: 'read',
+                objectOwner: $object->getOwner(),
+                objectData: $objectData
+            ) === true
+            ) {
                 $filtered[] = $object;
-                continue;
-            }
-
-            // Check if user has matching group access.
-            $hasGroupAccess = false;
-            foreach ($userGroups as $groupId) {
-                if (in_array($groupId, $authorizedGroups, true) === true) {
-                    $hasGroupAccess = true;
-                    break;
-                }
-            }
-
-            if ($hasGroupAccess === true) {
-                $filtered[] = $object;
-                continue;
-            }
-
-            // Schema has no authorization OR read is not configured = normal RBAC.
-            // Requires authentication (multitenancy applies).
-            if (empty($authorization) === true || empty($authorizedGroups) === true) {
-                if ($userId !== null) {
-                    $filtered[] = $object;
-                }
-
-                continue;
-            }
-
-            // No access conditions met - object is filtered out.
-            $this->logger->debug(
+            } else {
+                $this->logger->debug(
                     message: '[UnifiedObjectMapper] filterBySchemaRbac: Filtered out object',
                     context: [
                         'file' => __FILE__,
                         'line' => __LINE__,
-                        'uuid'        => $object->getUuid(),
-                        'schemaId'    => $schemaId,
-                        'schemaTitle' => $schemaData['title'] ?? 'unknown',
+                        'uuid'     => $object->getUuid(),
+                        'schemaId' => $schemaId,
                     ]
-                    );
+                );
+            }
         }//end foreach
 
         $this->logger->debug(
-                message: '[UnifiedObjectMapper] filterBySchemaRbac complete',
-                context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
-                    'inputCount'  => count($objects),
-                    'outputCount' => count($filtered),
-                ]
-                );
+            message: '[UnifiedObjectMapper] filterBySchemaRbac complete',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
+                'inputCount'  => count($objects),
+                'outputCount' => count($filtered),
+            ]
+        );
 
         return $filtered;
     }//end filterBySchemaRbac()

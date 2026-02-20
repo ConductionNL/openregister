@@ -15,6 +15,7 @@
 namespace OCA\OpenRegister\Service\Object;
 
 use Adbar\Dot;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -60,6 +61,7 @@ class RelationHandler
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly PerformanceHandler $performanceHandler,
+        private readonly MagicRbacHandler $rbacHandler,
         private readonly LoggerInterface $logger
     ) {
     }//end __construct()
@@ -689,6 +691,14 @@ class RelationHandler
                 $relatedObjects  = array_merge($relatedObjects, $fallbackObjects);
             }
 
+            // Apply RBAC filtering to all results.
+            // The magic mapper search applies RBAC at query level, but UUIDs denied by RBAC
+            // end up in $missingUuids and get fetched via findMultiple without RBAC.
+            // Filter all results to ensure RBAC is consistently enforced.
+            if ($_rbac === true) {
+                $relatedObjects = $this->filterByRbac($relatedObjects);
+            }
+
             $this->logger->debug(
                 message: '[RelationHandler::getUses] Found related objects',
                 context: [
@@ -730,6 +740,74 @@ class RelationHandler
             ];
         }//end try
     }//end getUses()
+
+
+    /**
+     * Filter objects by RBAC (schema-level authorization).
+     *
+     * Checks each object's schema authorization rules and removes objects
+     * the current user does not have read access to.
+     *
+     * @param ObjectEntity[] $objects The objects to filter.
+     *
+     * @return ObjectEntity[] Filtered objects the user has access to.
+     */
+    private function filterByRbac(array $objects): array
+    {
+        if ($this->rbacHandler->isAdmin() === true) {
+            return $objects;
+        }
+
+        $schemaCache = [];
+        $filtered    = [];
+
+        foreach ($objects as $object) {
+            if (($object instanceof ObjectEntity) === false) {
+                $filtered[] = $object;
+                continue;
+            }
+
+            $schemaId = $object->getSchema();
+            if ($schemaId === null) {
+                $filtered[] = $object;
+                continue;
+            }
+
+            // Cache schema lookups.
+            if (isset($schemaCache[$schemaId]) === false) {
+                try {
+                    $schemaCache[$schemaId] = $this->schemaMapper->find(
+                        (int) $schemaId,
+                        _multitenancy: false,
+                        _rbac: false
+                    );
+                } catch (\Exception $e) {
+                    // Schema not found, skip this object.
+                    continue;
+                }
+            }
+
+            $schema = $schemaCache[$schemaId];
+
+            // Build object data with metadata for condition evaluation.
+            $objectData                  = $object->getObject() ?? [];
+            $objectData['_organisation'] = $object->getOrganisation();
+            $objectData['_owner']        = $object->getOwner();
+
+            if ($this->rbacHandler->hasPermission(
+                schema: $schema,
+                action: 'read',
+                objectOwner: $object->getOwner(),
+                objectData: $objectData
+            ) === true) {
+                $filtered[] = $object;
+            }
+        }//end foreach
+
+        return $filtered;
+
+    }//end filterByRbac()
+
 
     /**
      * Get objects that use this object (incoming relations).
