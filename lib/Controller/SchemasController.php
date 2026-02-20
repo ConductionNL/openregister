@@ -127,7 +127,6 @@ class SchemasController extends Controller
      *
      * @PublicPage
      *
-     * @CORS
      *
      * @return JSONResponse JSON response with array of schemas
      *
@@ -246,7 +245,6 @@ class SchemasController extends Controller
      *
      * @PublicPage
      *
-     * @CORS
      */
     public function show($id): JSONResponse
     {
