@@ -142,12 +142,6 @@ import { dashboardStore, registerStore, schemaStore, navigationStore, configurat
 									</template>
 									Edit
 								</NcActionButton>
-									<NcActionButton close-after-click @click="registerStore.setRegisterItem(register); navigationStore.setModal('exportRegister')">
-										<template #icon>
-											<Export :size="20" />
-										</template>
-										Export
-									</NcActionButton>
 									<NcActionButton
 										v-if="!register.published || (register.depublished && new Date(register.depublished) <= new Date())"
 										close-after-click
@@ -427,12 +421,6 @@ import { dashboardStore, registerStore, schemaStore, navigationStore, configurat
 											</template>
 											Edit
 										</NcActionButton>
-											<NcActionButton close-after-click @click="registerStore.setRegisterItem(register); navigationStore.setModal('exportRegister')">
-												<template #icon>
-													<Export :size="20" />
-												</template>
-												Export
-											</NcActionButton>
 											<NcActionButton
 												v-if="!register.published || (register.depublished && new Date(register.depublished) <= new Date())"
 												close-after-click

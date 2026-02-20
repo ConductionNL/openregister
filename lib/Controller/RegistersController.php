@@ -31,11 +31,9 @@ use OCA\OpenRegister\Service\UploadService;
 use Exception;
 use RuntimeException;
 use DateTime;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;
 use OCA\OpenRegister\Service\OasService;
@@ -44,7 +42,6 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
-use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\DB\Exception as DBException;
 use OCP\IUserSession;
 use OCA\OpenRegister\Exception\DatabaseConstraintException;
@@ -92,13 +89,6 @@ class RegistersController extends Controller
      * @var AuditTrailMapper
      */
     private readonly AuditTrailMapper $auditTrailMapper;
-
-    /**
-     * Export service for handling data exports
-     *
-     * @var ExportService
-     */
-    private readonly ExportService $exportService;
 
     /**
      * Import service for handling data imports
@@ -157,7 +147,6 @@ class RegistersController extends Controller
      * @param IUserSession         $userSession          User session service
      * @param ConfigurationService $configurationService Configuration service for import/export
      * @param AuditTrailMapper     $auditTrailMapper     Audit trail mapper for log statistics
-     * @param ExportService        $exportService        Export service for data exports
      * @param ImportService        $importService        Import service for data imports
      * @param SchemaMapper         $schemaMapper         Schema mapper for schema operations
      * @param RegisterMapper       $registerMapper       Register mapper for database operations
@@ -179,7 +168,6 @@ class RegistersController extends Controller
         private readonly IUserSession $userSession,
         ConfigurationService $configurationService,
         AuditTrailMapper $auditTrailMapper,
-        ExportService $exportService,
         ImportService $importService,
         SchemaMapper $schemaMapper,
         RegisterMapper $registerMapper,
@@ -202,7 +190,6 @@ class RegistersController extends Controller
             context: ['file' => __FILE__, 'line' => __LINE__]
         );
         $this->auditTrailMapper = $auditTrailMapper;
-        $this->exportService    = $exportService;
         $this->importService    = $importService;
         $this->schemaMapper     = $schemaMapper;
         $this->registerMapper   = $registerMapper;
@@ -635,91 +622,6 @@ class RegistersController extends Controller
             data: $this->objectEntityMapper->searchObjects(query: $query)
         );
     }//end objects()
-
-    /**
-     * Export a register and its related data
-     *
-     * This method exports a register, its schemas, and optionally its objects
-     * in the specified format.
-     *
-     * @param int $id The ID of the register to export
-     *
-     * @return DataDownloadResponse|JSONResponse
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     */
-    public function export(int $id): JSONResponse|DataDownloadResponse
-    {
-        try {
-            // Get export format from query parameter.
-            $format          = $this->request->getParam(key: 'format', default: 'configuration');
-            $includeObjParam = $this->request->getParam(key: 'includeObjects', default: false);
-            $includeObjects  = filter_var($includeObjParam, FILTER_VALIDATE_BOOLEAN);
-            $register        = $this->registerService->find($id);
-
-            switch ($format) {
-                case 'excel':
-                    $spreadsheet = $this->exportService->exportToExcel(
-                        register: $register,
-                        schema: null,
-                        filters: [],
-                        currentUser: $this->userSession->getUser()
-                    );
-                    $writer      = new Xlsx($spreadsheet);
-                    $slug        = $register->getSlug() ?? 'register';
-                    $date        = (new DateTime())->format('Y-m-d_His');
-                    $filename    = sprintf('%s_%s.xlsx', $slug, $date);
-                    ob_start();
-                    $writer->save('php://output');
-                    $content = ob_get_clean();
-                    $mime    = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-                    return new DataDownloadResponse($content, $filename, $mime);
-                case 'csv':
-                    // CSV exports require a specific schema.
-                    $schemaId = $this->request->getParam('schema');
-
-                    if ($schemaId === null || $schemaId === '') {
-                        // If no schema specified, return error (CSV cannot handle multiple schemas).
-                        $errMsg = 'CSV export requires a specific schema to be selected';
-                        return new JSONResponse(data: ['error' => $errMsg], statusCode: 400);
-                    }
-
-                    $schema   = $this->schemaMapper->find($schemaId);
-                    $csv      = $this->exportService->exportToCsv(
-                        register: $register,
-                        schema: $schema,
-                        filters: [],
-                        currentUser: $this->userSession->getUser()
-                    );
-                    $filename = sprintf(
-                        '%s_%s_%s.csv',
-                        $register->getSlug() ?? 'register',
-                        $schema->getSlug() ?? 'schema',
-                        (new DateTime())->format('Y-m-d_His')
-                    );
-                    return new DataDownloadResponse($csv, $filename, 'text/csv');
-                case 'configuration':
-                default:
-                    $exportData  = $this->configurationService->exportConfig(
-                        input: $register,
-                        includeObjects: $includeObjects
-                    );
-                    $jsonContent = json_encode($exportData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-                    if ($jsonContent === false) {
-                        throw new Exception('Failed to encode register data to JSON');
-                    }
-
-                    $slug     = $register->getSlug() ?? 'register';
-                    $date     = (new DateTime())->format('Y-m-d_His');
-                    $filename = sprintf('%s_%s.json', $slug, $date);
-                    return new DataDownloadResponse($jsonContent, $filename, 'application/json');
-            }//end switch
-        } catch (Exception $e) {
-            return new JSONResponse(data: ['error' => 'Failed to export register: '.$e->getMessage()], statusCode: 400);
-        }//end try
-    }//end export()
 
     /**
      * Publish register OAS specification to GitHub
