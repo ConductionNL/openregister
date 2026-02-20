@@ -1628,11 +1628,37 @@ class SaveObject
 
         // Process array object properties that need cascading.
         foreach ($arrayObjProps as $property => $definition) {
-            // Skip if property not present, empty, or not an array.
+            // Check if property is present and is an array.
             $propIsSet   = isset($data[$property]);
+            $propIsArray = is_array($data[$property] ?? null);
+            if ($propIsSet === false || $propIsArray === false) {
+                continue;
+            }
+
+            // Determine handling type for orphan cleanup.
+            $objHandling     = $definition['objectConfiguration']['handling'] ?? null;
+            $itemsHandling   = $definition['items']['objectConfiguration']['handling'] ?? null;
+            $isRelatedObject = $objHandling === 'related-object' || $itemsHandling === 'related-object';
+            $isCascade       = $objHandling === 'cascade' || $itemsHandling === 'cascade';
+
+            // Capture old UUIDs from the existing object for orphan detection.
+            // This must happen BEFORE cascading modifies anything.
+            $oldUuids = [];
+            if ($isRelatedObject === true || $isCascade === true) {
+                $oldObjectData = $objectEntity->getObject();
+                if (isset($oldObjectData[$property]) === true && is_array($oldObjectData[$property]) === true) {
+                    $oldUuids = array_values(array_filter($oldObjectData[$property], 'is_string'));
+                }
+            }
+
+            // Handle empty array: clean up all related objects and continue.
             $propIsEmpty = empty($data[$property]) === true;
-            $propIsArray = is_array($data[$property]);
-            if ($propIsSet === false || $propIsEmpty === true || $propIsArray === false) {
+            if ($propIsEmpty === true) {
+                if (($isRelatedObject === true || $isCascade === true) && empty($oldUuids) === false) {
+                    $this->deleteOrphanedRelatedObjects($oldUuids);
+                }
+
+                $data[$property] = [];
                 continue;
             }
 
@@ -1642,11 +1668,6 @@ class SaveObject
                     property: $definition,
                     propData: $data[$property]
                 );
-
-                // Check if this is a related-object handling (stores UUIDs in parent).
-                $objHandling     = $definition['objectConfiguration']['handling'] ?? null;
-                $itemsHandling   = $definition['items']['objectConfiguration']['handling'] ?? null;
-                $isRelatedObject = $objHandling === 'related-object' || $itemsHandling === 'related-object';
 
                 // For related-object handling: always store UUIDs in parent property.
                 // This ensures the parent object contains references to the sub-objects.
@@ -1688,6 +1709,14 @@ class SaveObject
 
                     // Merge existing UUIDs with newly created ones.
                     $data[$property] = array_values(array_unique(array_merge($existingUuids, $createdUuids)));
+
+                    // Delete orphaned related objects (present in old data but not in new).
+                    if (empty($oldUuids) === false) {
+                        $orphanedUuids = array_diff($oldUuids, $data[$property]);
+                        if (empty($orphanedUuids) === false) {
+                            $this->deleteOrphanedRelatedObjects(array_values($orphanedUuids));
+                        }
+                    }
                 } else {
                     // Handle the result based on whether inversedBy is present.
                     $hasInversedBy      = ($definition['inversedBy'] ?? null) !== null;
@@ -1959,6 +1988,64 @@ class SaveObject
             throw $e;
         }//end try
     }//end cascadeSingleObject()
+
+    /**
+     * Deletes orphaned related objects that are no longer referenced by the parent.
+     *
+     * When a parent object's array property (with related-object or cascade handling)
+     * is updated and some sub-objects are removed, those orphaned sub-objects should
+     * be deleted from the database since they are "owned" by the parent.
+     *
+     * @param string[] $orphanedUuids Array of UUIDs of orphaned objects to delete.
+     *
+     * @return void
+     */
+    private function deleteOrphanedRelatedObjects(array $orphanedUuids): void
+    {
+        foreach ($orphanedUuids as $uuid) {
+            try {
+                $orphanedObject = $this->objectEntityMapper->find(
+                    identifier: $uuid,
+                    register: null,
+                    schema: null,
+                    includeDeleted: false,
+                    _rbac: false,
+                    _multitenancy: false
+                );
+                $this->objectEntityMapper->delete($orphanedObject);
+
+                $this->logger->info(
+                    message: '[SaveObject] Deleted orphaned related object',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
+                        'uuid' => $uuid,
+                    ]
+                );
+            } catch (DoesNotExistException $e) {
+                // Object already deleted or doesn't exist, nothing to clean up.
+                $this->logger->debug(
+                    message: '[SaveObject] Orphaned related object not found (already deleted?)',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
+                        'uuid' => $uuid,
+                    ]
+                );
+            } catch (Exception $e) {
+                // Log but continue — don't let cleanup failures block the parent update.
+                $this->logger->warning(
+                    message: '[SaveObject] Failed to delete orphaned related object',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
+                        'uuid'  => $uuid,
+                        'error' => $e->getMessage(),
+                    ]
+                );
+            }//end try
+        }//end foreach
+    }//end deleteOrphanedRelatedObjects()
 
     /**
      * Handles inverse relations write-back by updating target objects to include reference to current object
