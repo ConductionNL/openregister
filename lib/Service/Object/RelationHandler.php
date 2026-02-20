@@ -558,13 +558,15 @@ class RelationHandler
     ): array {
         try {
             // Get register and schema for magic table lookup if provided.
+            // Bypass RBAC/multitenancy for register/schema loading — the user's access
+            // to the actual objects will be checked by filterByRbac() later.
             $register = null;
             $schema   = null;
             if ($_registerId !== null && $_schemaId !== null) {
                 try {
                     $registerMapper = \OC::$server->get(\OCA\OpenRegister\Db\RegisterMapper::class);
-                    $register       = $registerMapper->find($_registerId);
-                    $schema         = $this->schemaMapper->find($_schemaId);
+                    $register       = $registerMapper->find($_registerId, _rbac: false, _multitenancy: false);
+                    $schema         = $this->schemaMapper->find($_schemaId, _rbac: false, _multitenancy: false);
                 } catch (\Exception $e) {
                     $this->logger->debug(
                         message: '[RelationHandler::getUses] Could not load register/schema for magic table lookup',
@@ -839,13 +841,14 @@ class RelationHandler
     ): array {
         try {
             // Get register and schema for magic table lookup if provided.
+            // Bypass RBAC/multitenancy — access to objects will be checked separately.
             $register = null;
             $schema   = null;
             if ($_registerId !== null && $_schemaId !== null) {
                 try {
                     $registerMapper = \OC::$server->get(\OCA\OpenRegister\Db\RegisterMapper::class);
-                    $register       = $registerMapper->find($_registerId);
-                    $schema         = $this->schemaMapper->find($_schemaId);
+                    $register       = $registerMapper->find($_registerId, _rbac: false, _multitenancy: false);
+                    $schema         = $this->schemaMapper->find($_schemaId, _rbac: false, _multitenancy: false);
                 } catch (\Exception $e) {
                     $this->logger->warning(
                         message: '[RelationHandler] Failed to load register/schema for getUsedBy magic table support',
