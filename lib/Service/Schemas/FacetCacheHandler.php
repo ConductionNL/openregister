@@ -29,6 +29,7 @@ use DateTime;
 use DateInterval;
 use RuntimeException;
 use OCP\IDBConnection;
+use OCP\ICacheFactory;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -151,6 +152,15 @@ class FacetCacheHandler
     private readonly SchemaMapper $schemaMapper;
 
     /**
+     * Cache factory for distributed/local cache access
+     *
+     * Used to clear the facet result caches used by FacetHandler and HyperFacetHandler.
+     *
+     * @var ICacheFactory Cache factory instance
+     */
+    private readonly ICacheFactory $cacheFactory;
+
+    /**
      * Logger for performance monitoring
      *
      * Used for logging cache operations and performance metrics.
@@ -162,11 +172,12 @@ class FacetCacheHandler
     /**
      * Constructor
      *
-     * Initializes service with database connection, schema mapper, and logger
+     * Initializes service with database connection, schema mapper, cache factory, and logger
      * for facet caching operations.
      *
      * @param IDBConnection   $db           Database connection for persistent facet cache
      * @param SchemaMapper    $schemaMapper Schema mapper for loading schemas
+     * @param ICacheFactory   $cacheFactory Cache factory for distributed cache access
      * @param LoggerInterface $logger       Logger for performance monitoring and debugging
      *
      * @return void
@@ -174,11 +185,13 @@ class FacetCacheHandler
     public function __construct(
         IDBConnection $db,
         SchemaMapper $schemaMapper,
+        ICacheFactory $cacheFactory,
         LoggerInterface $logger
     ) {
         // Store dependencies for use in service methods.
         $this->db           = $db;
         $this->schemaMapper = $schemaMapper;
+        $this->cacheFactory = $cacheFactory;
         $this->logger       = $logger;
     }//end __construct()
 
@@ -270,6 +283,11 @@ class FacetCacheHandler
             }
         }
 
+        // Clear the distributed/local facet result caches used by FacetHandler and HyperFacetHandler.
+        // These caches store computed facet results keyed by query hash, so we must clear all entries
+        // since we cannot selectively invalidate by schema ID.
+        $this->clearDistributedFacetCaches();
+
         $executionTime = round((microtime(true) - $startTime) * 1000, 2);
 
         $this->logger->info(
@@ -308,6 +326,9 @@ class FacetCacheHandler
         // Clear memory cache.
         $memoryCacheSize        = count(self::$facetConfigCache);
         self::$facetConfigCache = [];
+
+        // Clear the distributed/local facet result caches.
+        $this->clearDistributedFacetCaches();
 
         $executionTime = round((microtime(true) - $startTime) * 1000, 2);
 
@@ -396,6 +417,44 @@ class FacetCacheHandler
 
         return $stats;
     }//end getCacheStatistics()
+
+    /**
+     * Clear distributed/local facet result caches
+     *
+     * Clears the IMemcache caches used by FacetHandler, HyperFacetHandler,
+     * and MagicFacetHandler for storing computed facet results and labels.
+     * These caches use prefix-based keys, so we clear the entire cache prefix.
+     *
+     * @return void
+     */
+    private function clearDistributedFacetCaches(): void
+    {
+        $cacheNames = ['openregister_facets', 'openregister_facet_labels'];
+
+        foreach ($cacheNames as $cacheName) {
+            try {
+                $cache = $this->cacheFactory->createDistributed($cacheName);
+                $cache->clear();
+            } catch (\Exception $e) {
+                // Fallback to local cache.
+                try {
+                    $cache = $this->cacheFactory->createLocal($cacheName);
+                    $cache->clear();
+                } catch (\Exception $e) {
+                    // No cache available, nothing to clear.
+                }
+            }
+        }
+
+        $this->logger->debug(
+            message: '[FacetCacheHandler] Distributed facet result caches cleared',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
+                'caches' => $cacheNames,
+            ]
+        );
+    }//end clearDistributedFacetCaches()
 
     /**
      * Set cached facet data in database
