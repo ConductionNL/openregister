@@ -395,12 +395,6 @@ class MetadataHydrationHandler
     {
         $fieldValue = $this->getValueFromPath(data: $data, path: $fieldName);
 
-        if ($fieldValue === null || trim((string) $fieldValue) === '') {
-            return null;
-        }
-
-        $fieldValue = trim((string) $fieldValue);
-
         // Parse the map definition: "key1=val1, key2=val2".
         $mappings = array_map('trim', explode(',', $mapDefinition));
         $map      = [];
@@ -411,6 +405,14 @@ class MetadataHydrationHandler
                 $map[trim($parts[0])] = trim($parts[1]);
             }
         }
+
+        // When the field is empty, default to the first mapped value.
+        if ($fieldValue === null || trim((string) $fieldValue) === '') {
+            $firstValue = reset($map);
+            return $firstValue !== false ? $firstValue : null;
+        }
+
+        $fieldValue = trim((string) $fieldValue);
 
         // Return the mapped value or fall back to the raw field value.
         return $map[$fieldValue] ?? $fieldValue;
@@ -466,7 +468,8 @@ class MetadataHydrationHandler
             );
         }
 
-        return is_string($value) ? $value : null;
+        // Fall back to the extracted UUID when name resolution fails.
+        return $uuid;
     }//end resolveRelationValue()
 
     /**
