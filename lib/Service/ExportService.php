@@ -25,6 +25,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Object\CacheHandler;
@@ -53,6 +54,13 @@ class ExportService
 {
 
     /**
+     * Register mapper instance
+     *
+     * @var RegisterMapper
+     */
+    private readonly RegisterMapper $registerMapper;
+
+    /**
      * Group manager for checking admin group membership
      *
      * @var IGroupManager
@@ -77,6 +85,7 @@ class ExportService
      * Constructor for the ExportService
      *
      * @param ObjectEntityMapper $_objectEntityMapper The object entity mapper (unused but kept for future use)
+     * @param RegisterMapper     $registerMapper      The register mapper
      * @param IUserManager       $_userManager        The user manager (unused but kept for future use)
      * @param IGroupManager      $groupManager        The group manager
      * @param ObjectService      $objectService       The object service
@@ -86,11 +95,13 @@ class ExportService
      */
     public function __construct(
         ObjectEntityMapper $_objectEntityMapper,
+        RegisterMapper $registerMapper,
         IUserManager $_userManager,
         IGroupManager $groupManager,
         ObjectService $objectService,
         CacheHandler $cacheHandler
     ) {
+        $this->registerMapper = $registerMapper;
         $this->groupManager   = $groupManager;
         $this->objectService  = $objectService;
         $this->cacheHandler   = $cacheHandler;
@@ -143,6 +154,22 @@ class ExportService
 
         // Remove default sheet.
         $spreadsheet->removeSheetByIndex(0);
+
+        if ($register !== null && $schema === null) {
+            // Export all schemas in register.
+            $schemas = $this->getSchemasForRegister($register);
+            foreach ($schemas as $schema) {
+                $this->populateSheet(
+                    spreadsheet: $spreadsheet,
+                    register: $register,
+                    schema: $schema,
+                    filters: $filters,
+                    currentUser: $currentUser
+                );
+            }
+
+            return $spreadsheet;
+        }
 
         // Export single schema.
         $this->populateSheet(
@@ -716,5 +743,19 @@ class ExportService
 
         return $this->convertValueToString($value);
     }//end resolveUuidsToNames()
+
+    /**
+     * Get all schemas for a register
+     *
+     * @param Register $register The register to get schemas for
+     *
+     * @return Schema[]
+     *
+     * @psalm-return list<\OCA\OpenRegister\Db\Schema>
+     */
+    private function getSchemasForRegister(Register $register): array
+    {
+        return $this->registerMapper->getSchemasByRegisterId($register->getId());
+    }//end getSchemasForRegister()
 
 }//end class
