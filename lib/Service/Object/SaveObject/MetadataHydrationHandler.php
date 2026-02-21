@@ -272,7 +272,7 @@ class MetadataHydrationHandler
      *
      * @return string|null The first non-empty value found, or null if none found.
      */
-    public function processFieldWithFallbacks(array $data, string $fieldChain): ?string
+    public function processFieldWithFallbacks(array $data, string $fieldChain, array $schemaProperties = []): ?string
     {
         // Split by pipe and trim each field name.
         $fields = array_map('trim', explode('|', $fieldChain));
@@ -285,6 +285,17 @@ class MetadataHydrationHandler
             $value = $this->getValueFromPath(data: $data, path: $field);
 
             if ($value !== null && trim((string) $value) !== '') {
+                // Resolve UUID to object name for relation fields.
+                $resolved = $this->resolveRelationValue(
+                    fieldName: $field,
+                    value: $value,
+                    schemaProperties: $schemaProperties
+                );
+
+                if ($resolved !== null && trim($resolved) !== '') {
+                    return trim($resolved);
+                }
+
                 return trim((string) $value);
             }
         }
@@ -329,12 +340,15 @@ class MetadataHydrationHandler
         foreach ($matches[0] as $index => $fullMatch) {
             $fieldExpression = trim($matches[1][$index]);
 
-            // Check if this expression uses the map filter syntax: "field | map: key1=val1, key2=val2".
-            if (preg_match('/^(.+?)\|\s*map\s*:\s*(.+)$/s', $fieldExpression, $mapMatch) === 1) {
+            // Check if this expression uses the ifFilled filter: "field | ifFilled: valIfFilled, valIfEmpty".
+            if (preg_match('/^(.+?)\|\s*ifFilled\s*:\s*(.+)$/s', $fieldExpression, $ifFilledMatch) === 1) {
+                $value = $this->processIfFilledFilter(data: $data, fieldName: trim($ifFilledMatch[1]), definition: trim($ifFilledMatch[2]));
+            } elseif (preg_match('/^(.+?)\|\s*map\s*:\s*(.+)$/s', $fieldExpression, $mapMatch) === 1) {
+                // Check if this expression uses the map filter syntax: "field | map: key1=val1, key2=val2".
                 $value = $this->processMapFilter(data: $data, fieldName: trim($mapMatch[1]), mapDefinition: trim($mapMatch[2]));
             } elseif (str_contains($fieldExpression, '|') === true) {
                 // Pipe without "map:" means fallback syntax.
-                $value = $this->processFieldWithFallbacks(data: $data, fieldChain: $fieldExpression);
+                $value = $this->processFieldWithFallbacks(data: $data, fieldChain: $fieldExpression, schemaProperties: $schemaProperties);
             } else {
                 $value = $this->getValueFromPath(data: $data, path: $fieldExpression);
 
@@ -419,6 +433,45 @@ class MetadataHydrationHandler
     }//end processMapFilter()
 
     /**
+     * Processes an ifFilled filter expression that returns one value when a field is filled
+     * and another when it is empty.
+     *
+     * Example: field "buitengemeentelijkVoorziening" is filled, definition is "extern, intern"
+     * Result: "extern" (because field has a value)
+     *
+     * Example: field "buitengemeentelijkVoorziening" is null, definition is "extern, intern"
+     * Result: "intern" (because field is empty)
+     *
+     * @param array  $data       The object data.
+     * @param string $fieldName  The field name to check.
+     * @param string $definition The comma-separated pair "valueIfFilled, valueIfEmpty".
+     *
+     * @return string|null The selected value based on whether the field is filled or empty.
+     */
+    public function processIfFilledFilter(array $data, string $fieldName, string $definition): ?string
+    {
+        $parts = array_map('trim', explode(',', $definition, 2));
+        if (count($parts) < 2) {
+            return $parts[0] ?? null;
+        }
+
+        $valueIfFilled = $parts[0];
+        $valueIfEmpty  = $parts[1];
+
+        $fieldValue = $this->getValueFromPath(data: $data, path: $fieldName);
+
+        // Check if the field has a meaningful value.
+        if ($fieldValue !== null
+            && (is_string($fieldValue) === false || trim($fieldValue) !== '')
+            && (is_array($fieldValue) === false || empty($fieldValue) === false)
+        ) {
+            return $valueIfFilled;
+        }
+
+        return $valueIfEmpty;
+    }//end processIfFilledFilter()
+
+    /**
      * Resolve a relation field value (UUID) to an object name.
      *
      * Checks if the field is a relation property (has $ref or format: uuid) in the schema,
@@ -434,7 +487,7 @@ class MetadataHydrationHandler
     private function resolveRelationValue(string $fieldName, mixed $value, array $schemaProperties): ?string
     {
         if ($value === null || empty($schemaProperties) === true) {
-            return $value;
+            return is_string($value) ? $value : null;
         }
 
         // Check if the field is a relation property in the schema.

@@ -477,13 +477,23 @@ class MagicFacetHandler
         $unionParts = [];
         $prefix     = 'oc_';
 
+        // Cast field to text for consistent types in UNION ALL queries.
+        // Different magic tables may have the same field name but different types
+        // (e.g., 'type' as text in one table, jsonb in another).
+        $platform = $this->db->getDatabasePlatform();
+        if ($platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform === true) {
+            $castField = "{$field}::text";
+        } else {
+            $castField = "CAST({$field} AS CHAR)";
+        }
+
         foreach ($tableConfigs as $tc) {
             $tableName     = $tc['tableName'];
             $fullTableName = $prefix.$tableName;
             $tcSchema      = $tc['schema'];
 
             // Simple SELECT with GROUP BY - no jsonb_array_elements_text complexity.
-            $subSql = "SELECT {$field} as facet_value, COUNT(*) as cnt FROM {$fullTableName} WHERE {$field} IS NOT NULL";
+            $subSql = "SELECT {$castField} as facet_value, COUNT(*) as cnt FROM {$fullTableName} WHERE {$field} IS NOT NULL";
 
             // Use shared method for all filter conditions (single source of truth).
             if ($this->searchHandler !== null) {
@@ -502,7 +512,7 @@ class MagicFacetHandler
                 }
             }
 
-            $subSql      .= " GROUP BY {$field}";
+            $subSql      .= " GROUP BY {$castField}";
             $unionParts[] = $subSql;
         }//end foreach
 
