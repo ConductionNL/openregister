@@ -1216,7 +1216,8 @@ class SaveObject
                         // pipe-based filters (| map:) and fallback syntax (| field2).
                         $rendered = $this->metaHydrationHandler->processTwigLikeTemplate(
                             data: $twigContext,
-                            template: $defaultValue
+                            template: $defaultValue,
+                            schemaProperties: $schemaObject['properties'] ?? []
                         );
                         $renderedDefaults[$key] = $rendered;
                     }
@@ -1319,7 +1320,8 @@ class SaveObject
                         // pipe-based filters (| map:) and fallback syntax (| field2).
                         $rendered = $this->metaHydrationHandler->processTwigLikeTemplate(
                             data: $twigContext,
-                            template: $defaultValue
+                            template: $defaultValue,
+                            schemaProperties: $schemaObject['properties'] ?? []
                         );
                         if ($rendered !== null) {
                             $data[$key] = $rendered;
@@ -1402,7 +1404,8 @@ class SaveObject
                         // Complex template with map/fallback support.
                         $rendered = $this->metaHydrationHandler->processTwigLikeTemplate(
                             data: $data,
-                            template: $defaultValue
+                            template: $defaultValue,
+                            schemaProperties: $schemaObject['properties'] ?? []
                         );
                         if ($rendered !== null) {
                             $data[$key] = $rendered;
