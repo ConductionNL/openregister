@@ -269,7 +269,8 @@ class RegistersController extends Controller
             offset: $offset,
             filters: $filters,
             searchConditions: [],
-            searchParams: []
+            searchParams: [],
+            _multitenancy: false
         );
         $registersArr = array_map(fn($register) => $register->jsonSerialize(), $registers);
 
@@ -280,7 +281,7 @@ class RegistersController extends Controller
                     $expandedSchemas = [];
                     foreach ($register['schemas'] as $schemaId) {
                         try {
-                            $schema            = $this->schemaMapper->find($schemaId);
+                            $schema            = $this->schemaMapper->find(id: $schemaId, _multitenancy: false);
                             $expandedSchemas[] = $schema->jsonSerialize();
                         } catch (DoesNotExistException $e) {
                             // Schema not found, skip it.
@@ -373,7 +374,7 @@ class RegistersController extends Controller
             $extend = [$extend];
         }
 
-        $register    = $this->registerService->find(id: $id, _extend: []);
+        $register    = $this->registerService->find(id: $id, _extend: [], _multitenancy: false);
         $registerArr = $register->jsonSerialize();
         // If '@self.stats' is requested, attach statistics to the register.
         if (in_array('@self.stats', $extend, true) === true) {
