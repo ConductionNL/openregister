@@ -402,27 +402,10 @@ class ObjectEntityMapper extends QBMapper
         }//end if
 
         if ($useMagicMapper === true) {
-            try {
-                // Get UnifiedObjectMapper and delegate insertion.
-                // NOTE: UnifiedObjectMapper handles event dispatching, so we don't dispatch here.
-                $unifiedMapper = \OC::$server->get(UnifiedObjectMapper::class);
-                $result        = $unifiedMapper->insert(entity: $entity, register: $register, schema: $schema);
-
-                return $result;
-            } catch (Exception $e) {
-                // Log error and fallback to blob storage.
-                $this->logger->warning(
-                    message: '[ObjectEntityMapper] Magic mapper insert failed, falling back to blob storage',
-                    context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
-                        'error'    => $e->getMessage(),
-                        'register' => $entity->getRegister(),
-                        'schema'   => $entity->getSchema(),
-                    ]
-                );
-                // Continue with normal blob storage below.
-            }//end try
+            // No blob fallback — objects live in per-schema tables, not in the
+            // empty openregister_objects blob table. Let errors propagate.
+            $unifiedMapper = \OC::$server->get(UnifiedObjectMapper::class);
+            return $unifiedMapper->insert(entity: $entity, register: $register, schema: $schema);
         }//end if
 
         // Call parent QBMapper insert directly (CrudHandler has circular dependency).
@@ -499,12 +482,12 @@ class ObjectEntityMapper extends QBMapper
             // Delegate to the shared method that supports both configuration formats.
             return $this->shouldUseMagicMapperForRegisterSchema(register: $register, schema: $schema);
         } catch (Exception $e) {
-            // If anything goes wrong, fallback to blob storage.
-            $this->logger->debug(
-                message: '[ObjectEntityMapper] Failed to determine magic mapping status, using blob storage',
+            // Let errors propagate — defaulting to blob is wrong since blob table is empty.
+            $this->logger->error(
+                message: '[ObjectEntityMapper] Failed to determine magic mapping status',
                 context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
             );
-            return false;
+            throw $e;
         }//end try
     }//end shouldUseMagicMapper()
 
@@ -542,12 +525,12 @@ class ObjectEntityMapper extends QBMapper
 
             return $result;
         } catch (Exception $e) {
-            // If anything goes wrong, fallback to blob storage.
-            $this->logger->debug(
-                message: '[ObjectEntityMapper] Failed to determine magic mapping status, using blob storage',
+            // Let errors propagate — defaulting to blob is wrong since blob table is empty.
+            $this->logger->error(
+                message: '[ObjectEntityMapper] Failed to determine magic mapping status',
                 context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
             );
-            return false;
+            throw $e;
         }//end try
     }//end shouldUseMagicMapperForRegisterSchema()
 
@@ -623,27 +606,10 @@ class ObjectEntityMapper extends QBMapper
         }
 
         if ($useMagic === true) {
-            try {
-                // Get UnifiedObjectMapper and delegate update.
-                // NOTE: UnifiedObjectMapper handles event dispatching, so we don't dispatch here.
-                $unifiedMapper = \OC::$server->get(UnifiedObjectMapper::class);
-                $result        = $unifiedMapper->update(entity: $entity, register: $register, schema: $schema);
-
-                return $result;
-            } catch (Exception $e) {
-                // Log error and fallback to blob storage.
-                $this->logger->warning(
-                    message: '[ObjectEntityMapper] Magic mapper update failed, falling back to blob storage',
-                    context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
-                        'error'    => $e->getMessage(),
-                        'register' => $entity->getRegister(),
-                        'schema'   => $entity->getSchema(),
-                    ]
-                );
-                // Continue with normal blob storage below.
-            }//end try
+            // No blob fallback — objects live in per-schema tables, not in the
+            // empty openregister_objects blob table. Let errors propagate.
+            $unifiedMapper = \OC::$server->get(UnifiedObjectMapper::class);
+            return $unifiedMapper->update(entity: $entity, register: $register, schema: $schema);
         }//end if
 
         // Call parent QBMapper update directly (CrudHandler has circular dependency).
@@ -981,10 +947,8 @@ class ObjectEntityMapper extends QBMapper
 
                 return $deletedUuids;
             } catch (Exception $e) {
-                $this->logger->error(
-                    message: '[ObjectEntityMapper] Magic mapper deleteObjects failed, falling back to blob storage',
-                    context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
-                );
+                // No blob fallback — let errors propagate.
+                throw $e;
             }//end try
         }//end if
 
@@ -1055,11 +1019,8 @@ class ObjectEntityMapper extends QBMapper
 
                 return $publishedUuids;
             } catch (Exception $e) {
-                $this->logger->error(
-                    message: '[ObjectEntityMapper] Magic mapper publishObjects failed, falling back to blob storage',
-                    context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
-                );
-                // Fallback to blob storage.
+                // No blob fallback — let errors propagate.
+                throw $e;
             }//end try
         }//end if
 
@@ -1127,10 +1088,8 @@ class ObjectEntityMapper extends QBMapper
 
                 return $depublishedUuids;
             } catch (Exception $e) {
-                $this->logger->error(
-                    message: '[ObjectEntityMapper] Magic mapper depublishObjects failed, falling back to blob storage',
-                    context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
-                );
+                // No blob fallback — let errors propagate.
+                throw $e;
             }//end try
         }//end if
 
@@ -1416,35 +1375,23 @@ class ObjectEntityMapper extends QBMapper
         );
 
         if ($hasContext === true) {
-            try {
-                $this->logger->debug(
-                    message: '[ObjectEntityMapper] Routing find() to UnifiedObjectMapper',
-                    context: ['file' => __FILE__, 'line' => __LINE__]
-                );
-                // Use the UnifiedObjectMapper to handle the find, which will route
-                // to MagicMapper or blob storage based on table existence.
-                $unifiedObjectMapper = \OC::$server->get(UnifiedObjectMapper::class);
-                return $unifiedObjectMapper->find(
-                    identifier: $identifier,
-                    register: $register,
-                    schema: $schema,
-                    includeDeleted: $includeDeleted,
-                    _rbac: $_rbac,
-                    _multitenancy: $_multitenancy
-                );
-            } catch (Exception $e) {
-                $this->logger->error(
-                    message: '[ObjectEntityMapper] UnifiedObjectMapper find failed, falling back to blob storage',
-                    context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
-                        'error'     => $e->getMessage(),
-                        'exception' => get_class($e),
-                        'trace'     => $e->getTraceAsString(),
-                    ]
-                );
-                // Fallback to default blob storage if UnifiedObjectMapper fails.
-            }//end try
+            $this->logger->debug(
+                message: '[ObjectEntityMapper] Routing find() to UnifiedObjectMapper',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+            // Use the UnifiedObjectMapper to handle the find, which will route
+            // to MagicMapper or blob storage based on table existence.
+            // No blob fallback — objects live in per-schema tables, not in the
+            // empty openregister_objects blob table.
+            $unifiedObjectMapper = \OC::$server->get(UnifiedObjectMapper::class);
+            return $unifiedObjectMapper->find(
+                identifier: $identifier,
+                register: $register,
+                schema: $schema,
+                includeDeleted: $includeDeleted,
+                _rbac: $_rbac,
+                _multitenancy: $_multitenancy
+            );
         }//end if
 
         $qb = $this->db->getQueryBuilder();
@@ -1996,39 +1943,28 @@ class ObjectEntityMapper extends QBMapper
         ?Schema $schema,
         ?bool $published
     ): array|null {
-        try {
-            $this->logger->debug(
-                message: '[ObjectEntityMapper] Routing findAll() to UnifiedObjectMapper (MagicMapper)',
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-            $unifiedObjectMapper = \OC::$server->get(UnifiedObjectMapper::class);
-            return $unifiedObjectMapper->findAll(
-                limit: $limit,
-                offset: $offset,
-                filters: $filters,
-                searchConditions: $searchConditions,
-                searchParams: $searchParams,
-                sort: $sort,
-                search: $search,
-                ids: $ids,
-                uses: $uses,
-                includeDeleted: $includeDeleted,
-                register: $register,
-                schema: $schema,
-                published: $published
-            );
-        } catch (Exception $e) {
-            $this->logger->error(
-                message: '[ObjectEntityMapper] Magic mapper findAll failed, falling back to blob storage',
-                context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
-                    'error'     => $e->getMessage(),
-                    'exception' => get_class($e),
-                ]
-            );
-            return null;
-        }//end try
+        // No blob fallback — objects live in per-schema tables, not in the
+        // empty openregister_objects blob table. Let errors propagate.
+        $this->logger->debug(
+            message: '[ObjectEntityMapper] Routing findAll() to UnifiedObjectMapper (MagicMapper)',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
+        $unifiedObjectMapper = \OC::$server->get(UnifiedObjectMapper::class);
+        return $unifiedObjectMapper->findAll(
+            limit: $limit,
+            offset: $offset,
+            filters: $filters,
+            searchConditions: $searchConditions,
+            searchParams: $searchParams,
+            sort: $sort,
+            search: $search,
+            ids: $ids,
+            uses: $uses,
+            includeDeleted: $includeDeleted,
+            register: $register,
+            schema: $schema,
+            published: $published
+        );
     }//end tryMagicMapperFindAll()
 
     /**
