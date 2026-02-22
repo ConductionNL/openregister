@@ -1504,37 +1504,34 @@ class RenderObject
                     fieldName: $inversedByField
                 );
 
-                // If batch query found results, pre-initialize cache for ALL entities.
-                // If no results, DON'T cache - let the slow path run to verify.
-                // This ensures correctness while we optimize batch queries.
-                if (count($referencingObjects) > 0) {
-                    // Pre-initialize cache entries for ALL entities with empty arrays.
-                    foreach ($entityUuids as $entityUuid) {
-                        $cacheKey = $entityUuid.'_'.$propName;
-                        if (isset($this->inverseRelationCache[$cacheKey]) === false) {
-                            $this->inverseRelationCache[$cacheKey] = [];
+                // Pre-initialize cache entries for ALL entities with empty arrays.
+                // This prevents fallback to the slow per-entity findByRelation() path,
+                // which does expensive LIKE scans on the blob table and iterates all magic tables.
+                foreach ($entityUuids as $entityUuid) {
+                    $cacheKey = $entityUuid.'_'.$propName;
+                    if (isset($this->inverseRelationCache[$cacheKey]) === false) {
+                        $this->inverseRelationCache[$cacheKey] = [];
+                    }
+                }
+
+                // Index the results by which entity UUID they reference.
+                foreach ($referencingObjects as $refObject) {
+                    $refData        = $refObject->getObject();
+                    $referencedUuid = $refData[$inversedByField] ?? null;
+
+                    // Handle both single UUID and array of UUIDs.
+                    $referencedUuids = is_array($referencedUuid) ? $referencedUuid : [$referencedUuid];
+
+                    foreach ($referencedUuids as $uuid) {
+                        if ($uuid !== null && in_array($uuid, $entityUuids, true) === true) {
+                            $cacheKey = $uuid.'_'.$propName;
+                            $this->inverseRelationCache[$cacheKey][] = $refObject;
+
+                            // Also add to objects cache for extended rendering.
+                            $this->objectsCache[$refObject->getUuid()] = $refObject;
                         }
                     }
-
-                    // Index the results by which entity UUID they reference.
-                    foreach ($referencingObjects as $refObject) {
-                        $refData        = $refObject->getObject();
-                        $referencedUuid = $refData[$inversedByField] ?? null;
-
-                        // Handle both single UUID and array of UUIDs.
-                        $referencedUuids = is_array($referencedUuid) ? $referencedUuid : [$referencedUuid];
-
-                        foreach ($referencedUuids as $uuid) {
-                            if ($uuid !== null && in_array($uuid, $entityUuids, true) === true) {
-                                $cacheKey = $uuid.'_'.$propName;
-                                $this->inverseRelationCache[$cacheKey][] = $refObject;
-
-                                // Also add to objects cache for extended rendering.
-                                $this->objectsCache[$refObject->getUuid()] = $refObject;
-                            }
-                        }
-                    }
-                }//end if
+                }
 
                 $this->logger->debug(
                         message: '[RenderObject] [INVERSE_PRELOAD] Batch loaded inverse relationships',
