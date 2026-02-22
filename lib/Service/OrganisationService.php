@@ -755,7 +755,24 @@ class OrganisationService
                 );
 
                 try {
-                    return $this->organisationMapper->findBySlug($slug);
+                    $existingBySlug = $this->organisationMapper->findBySlug($slug);
+
+                    // If a specific UUID was requested and differs from the existing entity,
+                    // update the entity's UUID to match the requested one (the object UUID is canonical)
+                    if ($uuid !== '' && $existingBySlug->getUuid() !== $uuid) {
+                        $this->logger->info(
+                            message: '[OrganisationService] Updating existing entity UUID to match requested UUID',
+                            context: [
+                                'file' => __FILE__, 'line' => __LINE__,
+                                'oldUuid' => $existingBySlug->getUuid(),
+                                'newUuid' => $uuid, 'slug' => $slug
+                            ]
+                        );
+                        $existingBySlug->setUuid($uuid);
+                        $this->organisationMapper->save($existingBySlug);
+                    }
+
+                    return $existingBySlug;
                 } catch (DoesNotExistException $findException) {
                     // Slug not found either — re-throw the original error.
                     throw $e;
