@@ -534,6 +534,7 @@ class MagicSearchHandler
             'schema',
             'registers',
             'schemas',
+            'extend',
         ];
 
         $properties = $schema->getProperties() ?? [];

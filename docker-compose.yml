@@ -485,6 +485,7 @@ services:
       - NGINX_ROOT_DIR=/app/public_html
       - NGINX_NEXTCLOUD_UPSTREAM=http://nextcloud:80
       - NGINX_TARGET_HOST=nextcloud
+      - SITE_TITLE=Softwarecatalogus
     depends_on:
       - nextcloud
     healthcheck:
