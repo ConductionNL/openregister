@@ -385,7 +385,7 @@ class FolderManagementHandler
     public function createObjectFolderWithoutUpdate(ObjectEntity $objectEntity, ?IUser $currentUser=null): int
     {
         // Ensure register folder exists first.
-        $register       = $this->registerMapper->find($objectEntity->getRegister());
+        $register       = $this->registerMapper->find($objectEntity->getRegister(), _multitenancy: false);
         $registerFolder = $this->createRegisterFolderById(register: $register, currentUser: $currentUser);
 
         if (($registerFolder instanceof Folder) === false) {
@@ -773,7 +773,7 @@ class FolderManagementHandler
         $register = null;
 
         if ($objectEntity instanceof ObjectEntity === true) {
-            $register = $this->registerMapper->find($objectEntity->getRegister());
+            $register = $this->registerMapper->find($objectEntity->getRegister(), _multitenancy: false);
             if ($register === null) {
                 $registerUuid = $objectEntity->getRegister();
                 throw new Exception("Failed to create file, could not find register for objects register: {$registerUuid}");
@@ -783,7 +783,7 @@ class FolderManagementHandler
         }
 
         if ($registerId !== null) {
-            $register = $this->registerMapper->find($registerId);
+            $register = $this->registerMapper->find($registerId, _multitenancy: false);
             if ($register === null) {
                 throw new Exception("Failed to create file, could not find register with register id: $registerId");
             }
