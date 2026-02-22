@@ -1216,7 +1216,8 @@ class SaveObject
                         // pipe-based filters (| map:) and fallback syntax (| field2).
                         $rendered = $this->metaHydrationHandler->processTwigLikeTemplate(
                             data: $twigContext,
-                            template: $defaultValue
+                            template: $defaultValue,
+                            schemaProperties: $schemaObject['properties'] ?? []
                         );
                         $renderedDefaults[$key] = $rendered;
                     }
@@ -1319,7 +1320,8 @@ class SaveObject
                         // pipe-based filters (| map:) and fallback syntax (| field2).
                         $rendered = $this->metaHydrationHandler->processTwigLikeTemplate(
                             data: $twigContext,
-                            template: $defaultValue
+                            template: $defaultValue,
+                            schemaProperties: $schemaObject['properties'] ?? []
                         );
                         if ($rendered !== null) {
                             $data[$key] = $rendered;
@@ -1402,7 +1404,8 @@ class SaveObject
                         // Complex template with map/fallback support.
                         $rendered = $this->metaHydrationHandler->processTwigLikeTemplate(
                             data: $data,
-                            template: $defaultValue
+                            template: $defaultValue,
+                            schemaProperties: $schemaObject['properties'] ?? []
                         );
                         if ($rendered !== null) {
                             $data[$key] = $rendered;
@@ -1628,11 +1631,44 @@ class SaveObject
 
         // Process array object properties that need cascading.
         foreach ($arrayObjProps as $property => $definition) {
-            // Skip if property not present, empty, or not an array.
-            $propIsSet   = isset($data[$property]);
+            // Check if property is present and is an array.
+            if (isset($data[$property]) === false || is_array($data[$property] ?? null) === false) {
+                continue;
+            }
+
+            // Determine handling type for orphan cleanup.
+            $objHandling     = $definition['objectConfiguration']['handling'] ?? null;
+            $itemsHandling   = $definition['items']['objectConfiguration']['handling'] ?? null;
+            $isRelatedObject = $objHandling === 'related-object' || $itemsHandling === 'related-object';
+            $isCascade       = $objHandling === 'cascade' || $itemsHandling === 'cascade';
+
+            // Capture old UUIDs from the existing object for orphan detection.
+            // This must happen BEFORE cascading modifies anything.
+            $oldUuids = [];
+            if ($isRelatedObject === true || $isCascade === true) {
+                $oldObjectData = $objectEntity->getObject();
+                if (isset($oldObjectData[$property]) === true && is_array($oldObjectData[$property]) === true) {
+                    $oldUuids = array_values(array_filter($oldObjectData[$property], 'is_string'));
+                }
+            }
+
+            // Handle empty array: clean up all related objects and continue.
             $propIsEmpty = empty($data[$property]) === true;
-            $propIsArray = is_array($data[$property]);
-            if ($propIsSet === false || $propIsEmpty === true || $propIsArray === false) {
+            if ($propIsEmpty === true) {
+                if (($isRelatedObject === true || $isCascade === true) && empty($oldUuids) === false) {
+                    // Resolve the sub-object's schema and register for magic-mapped lookups.
+                    $subSchemaRef = $definition['items']['$ref'] ?? $definition['$ref'] ?? null;
+                    $subSchemaId  = $subSchemaRef !== null
+                        ? $this->resolveSchemaReference($subSchemaRef) : null;
+                    $subSchema    = $subSchemaId !== null
+                        ? $this->getCachedSchema($subSchemaId) : null;
+                    $subRegister  = $objectEntity->getRegister() !== null
+                        ? $this->getCachedRegister($objectEntity->getRegister()) : null;
+
+                    $this->deleteOrphanedRelatedObjects($oldUuids, $subRegister, $subSchema);
+                }
+
+                $data[$property] = [];
                 continue;
             }
 
@@ -1642,11 +1678,6 @@ class SaveObject
                     property: $definition,
                     propData: $data[$property]
                 );
-
-                // Check if this is a related-object handling (stores UUIDs in parent).
-                $objHandling     = $definition['objectConfiguration']['handling'] ?? null;
-                $itemsHandling   = $definition['items']['objectConfiguration']['handling'] ?? null;
-                $isRelatedObject = $objHandling === 'related-object' || $itemsHandling === 'related-object';
 
                 // For related-object handling: always store UUIDs in parent property.
                 // This ensures the parent object contains references to the sub-objects.
@@ -1688,6 +1719,27 @@ class SaveObject
 
                     // Merge existing UUIDs with newly created ones.
                     $data[$property] = array_values(array_unique(array_merge($existingUuids, $createdUuids)));
+
+                    // Delete orphaned related objects (present in old data but not in new).
+                    if (empty($oldUuids) === false) {
+                        $orphanedUuids = array_diff($oldUuids, $data[$property]);
+                        if (empty($orphanedUuids) === false) {
+                            // Resolve the sub-object's schema and register for magic-mapped lookups.
+                            $subSchemaRef = $definition['items']['$ref'] ?? $definition['$ref'] ?? null;
+                            $subSchemaId  = $subSchemaRef !== null
+                                ? $this->resolveSchemaReference($subSchemaRef) : null;
+                            $subSchema    = $subSchemaId !== null
+                                ? $this->getCachedSchema($subSchemaId) : null;
+                            $subRegister  = $objectEntity->getRegister() !== null
+                                ? $this->getCachedRegister($objectEntity->getRegister()) : null;
+
+                            $this->deleteOrphanedRelatedObjects(
+                                array_values($orphanedUuids),
+                                $subRegister,
+                                $subSchema
+                            );
+                        }
+                    }
                 } else {
                     // Handle the result based on whether inversedBy is present.
                     $hasInversedBy      = ($definition['inversedBy'] ?? null) !== null;
@@ -1931,6 +1983,13 @@ class SaveObject
             throw new Exception("Invalid schema reference: {$definition['$ref']}");
         }
 
+        // For updates (UUID present): fill in missing schema properties with null.
+        // This ensures the magic mapper explicitly sets removed properties to NULL
+        // instead of leaving old values intact (magic mapper does partial updates).
+        if ($uuid !== null) {
+            $object = $this->fillMissingSchemaPropertiesWithNull($object, $schemaId);
+        }
+
         try {
             // Use silent mode for cascaded sub-objects to improve performance.
             // This skips audit trail creation for each sub-object, reducing database writes.
@@ -1959,6 +2018,109 @@ class SaveObject
             throw $e;
         }//end try
     }//end cascadeSingleObject()
+
+    /**
+     * Deletes orphaned related objects that are no longer referenced by the parent.
+     *
+     * When a parent object's array property (with related-object or cascade handling)
+     * is updated and some sub-objects are removed, those orphaned sub-objects should
+     * be deleted from the database since they are "owned" by the parent.
+     *
+     * @param string[] $orphanedUuids Array of UUIDs of orphaned objects to delete.
+     *
+     * @return void
+     */
+    private function deleteOrphanedRelatedObjects(
+        array $orphanedUuids,
+        ?Register $register=null,
+        ?Schema $schema=null
+    ): void {
+        foreach ($orphanedUuids as $uuid) {
+            try {
+                $orphanedObject = $this->objectEntityMapper->find(
+                    identifier: $uuid,
+                    register: $register,
+                    schema: $schema,
+                    includeDeleted: false,
+                    _rbac: false,
+                    _multitenancy: false
+                );
+
+                // Soft delete: set deletion metadata and update (consistent with DeleteObject).
+                $user   = $this->userSession->getUser();
+                $userId = $user !== null ? $user->getUID() : 'system';
+
+                $deletionData = [
+                    'deletedBy' => $userId,
+                    'deletedAt' => (new DateTime())->format(DateTime::ATOM),
+                    'objectId'  => $orphanedObject->getUuid(),
+                    'reason'    => 'orphaned-related-object',
+                ];
+                $orphanedObject->setDeleted($deletionData);
+
+                $this->objectEntityMapper->update(
+                    entity: $orphanedObject,
+                    register: $register,
+                    schema: $schema
+                );
+
+                $this->logger->info(
+                    message: '[SaveObject] Soft-deleted orphaned related object',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
+                        'uuid' => $uuid,
+                    ]
+                );
+            } catch (DoesNotExistException $e) {
+                // Object already deleted or doesn't exist, nothing to clean up.
+            } catch (Exception $e) {
+                // Log but continue — don't let cleanup failures block the parent update.
+                $this->logger->warning(
+                    message: '[SaveObject] Failed to delete orphaned related object',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
+                        'uuid'  => $uuid,
+                        'error' => $e->getMessage(),
+                    ]
+                );
+            }//end try
+        }//end foreach
+    }//end deleteOrphanedRelatedObjects()
+
+    /**
+     * Fills in missing schema properties with null for an object being updated.
+     *
+     * The magic mapper performs partial updates (only columns present in the data
+     * are SET in SQL). When a property is removed from the object data, the
+     * corresponding column is NOT touched. This method ensures all schema-defined
+     * properties are present in the data, with missing ones set to null, so the
+     * magic mapper will explicitly NULL them in the database.
+     *
+     * @param array      $data     The object data (may have missing properties).
+     * @param int|string $schemaId The schema ID to look up properties.
+     *
+     * @return array The data with all schema properties present (missing ones set to null).
+     */
+    private function fillMissingSchemaPropertiesWithNull(array $data, int|string $schemaId): array
+    {
+        try {
+            $schema       = $this->getCachedSchema($schemaId);
+            $schemaObject = json_decode(json_encode($schema->getSchemaObject($this->urlGenerator)), associative: true);
+            $properties   = $schemaObject['properties'] ?? [];
+        } catch (Exception $e) {
+            return $data;
+        }
+
+        foreach ($properties as $propertyName => $propertyDef) {
+            if (array_key_exists($propertyName, $data) === false) {
+                $data[$propertyName] = null;
+            }
+        }
+
+        return $data;
+    }//end fillMissingSchemaPropertiesWithNull()
 
     /**
      * Handles inverse relations write-back by updating target objects to include reference to current object
@@ -3062,6 +3224,12 @@ class SaveObject
 
         // Prepare the data.
         $preparedData = $this->prepareObjectData(objectEntity: $existingObject, schema: $schema, data: $data);
+
+        // PUT semantics: fill missing schema properties with null to ensure complete replacement.
+        // For magic-mapped objects, the MagicMapper generates SET clauses only for properties
+        // present in the data. Without this, removed properties would retain their old values
+        // because the mapper never issues a SET column=NULL for missing keys.
+        $preparedData = $this->fillMissingSchemaPropertiesWithNull($preparedData, $schema->getId());
 
         // Set the prepared data.
         $existingObject->setObject($preparedData);

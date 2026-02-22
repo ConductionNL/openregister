@@ -1141,6 +1141,80 @@ class MagicSearchHandler
                 $objectEntity->setRelevance((float) $metadataData['relevance']);
             }
 
+            // Set JSON metadata fields (stored as JSONB in magic tables).
+            if (($metadataData['relations'] ?? null) !== null) {
+                $relations = is_string($metadataData['relations'])
+                    ? json_decode($metadataData['relations'], true)
+                    : $metadataData['relations'];
+                $objectEntity->setRelations(is_array($relations) ? $relations : []);
+            }
+
+            if (($metadataData['files'] ?? null) !== null) {
+                $files = is_string($metadataData['files'])
+                    ? json_decode($metadataData['files'], true)
+                    : $metadataData['files'];
+                $objectEntity->setFiles(is_array($files) ? $files : []);
+            }
+
+            if (($metadataData['locked'] ?? null) !== null) {
+                $locked = is_string($metadataData['locked'])
+                    ? json_decode($metadataData['locked'], true)
+                    : $metadataData['locked'];
+                $objectEntity->setLocked(is_array($locked) ? $locked : null);
+            }
+
+            if (($metadataData['groups'] ?? null) !== null) {
+                $groups = is_string($metadataData['groups'])
+                    ? json_decode($metadataData['groups'], true)
+                    : $metadataData['groups'];
+                $objectEntity->setGroups(is_array($groups) ? $groups : []);
+            }
+
+            if (($metadataData['authorization'] ?? null) !== null) {
+                $auth = is_string($metadataData['authorization'])
+                    ? json_decode($metadataData['authorization'], true)
+                    : $metadataData['authorization'];
+                $objectEntity->setAuthorization(is_array($auth) ? $auth : []);
+            }
+
+            if (($metadataData['validation'] ?? null) !== null) {
+                $validation = is_string($metadataData['validation'])
+                    ? json_decode($metadataData['validation'], true)
+                    : $metadataData['validation'];
+                $objectEntity->setValidation(is_array($validation) ? $validation : []);
+            }
+
+            if (($metadataData['geo'] ?? null) !== null) {
+                $geo = is_string($metadataData['geo'])
+                    ? json_decode($metadataData['geo'], true)
+                    : $metadataData['geo'];
+                $objectEntity->setGeo(is_array($geo) ? $geo : []);
+            }
+
+            if (($metadataData['retention'] ?? null) !== null) {
+                $retention = is_string($metadataData['retention'])
+                    ? json_decode($metadataData['retention'], true)
+                    : $metadataData['retention'];
+                $objectEntity->setRetention(is_array($retention) ? $retention : []);
+            }
+
+            // Set scalar metadata fields.
+            if (($metadataData['version'] ?? null) !== null) {
+                $objectEntity->setVersion($metadataData['version']);
+            }
+
+            if (($metadataData['folder'] ?? null) !== null) {
+                $objectEntity->setFolder($metadataData['folder']);
+            }
+
+            if (($metadataData['application'] ?? null) !== null) {
+                $objectEntity->setApplication($metadataData['application']);
+            }
+
+            if (($metadataData['size'] ?? null) !== null) {
+                $objectEntity->setSize($metadataData['size']);
+            }
+
             // Set register and schema.
             $objectEntity->setRegister((string) $register->getId());
             $objectEntity->setSchema((string) $schema->getId());

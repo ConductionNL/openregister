@@ -25,6 +25,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\Http\StreamResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\Files\NotFoundException;
 use OCP\IRequest;
@@ -111,6 +112,8 @@ class FilesController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @PublicPage
      */
     public function index(
         string $register,
@@ -147,7 +150,7 @@ class FilesController extends Controller
     /**
      * Get a specific file associated with an object
      *
-     * Retrieves file details and metadata for a specific file ID.
+     * Streams the actual file content back to the client.
      * Validates that the file belongs to the specified object.
      *
      * @param string $register The register slug or identifier (route parameter, used for validation)
@@ -157,18 +160,18 @@ class FilesController extends Controller
      *
      * @NoAdminRequired
      *
-     * @return JSONResponse JSON response containing file details
+     * @return JSONResponse|StreamResponse
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400|404, array<string, mixed>, array<never, never>>
+     * @PublicPage
      */
     public function show(
         string $register,
         string $schema,
         string $id,
         int $fileId
-    ): JSONResponse {
+    ): JSONResponse|StreamResponse {
         // Set the schema and register to the object service (forces a check if they are valid).
         $this->objectService->setSchema($schema);
         $this->objectService->setRegister($register);
@@ -186,7 +189,13 @@ class FilesController extends Controller
                 );
             }
 
-            return new JSONResponse(data: $this->fileService->formatFile($file));
+            // Stream the file inline so browsers display images/logos directly.
+            $response = new StreamResponse($file->fopen('r'));
+            $response->addHeader('Content-Type', $file->getMimeType());
+            $response->addHeader('Content-Disposition', 'inline; filename="'.$file->getName().'"');
+            $response->addHeader('Content-Length', (string) $file->getSize());
+
+            return $response;
         } catch (DoesNotExistException $e) {
             return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
         } catch (Exception $e) {
@@ -896,6 +905,8 @@ class FilesController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @PublicPage
      *
      * @phpstan-param int $fileId
      *

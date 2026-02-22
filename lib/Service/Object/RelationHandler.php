@@ -15,6 +15,7 @@
 namespace OCA\OpenRegister\Service\Object;
 
 use Adbar\Dot;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -60,6 +61,7 @@ class RelationHandler
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly PerformanceHandler $performanceHandler,
+        private readonly MagicRbacHandler $rbacHandler,
         private readonly LoggerInterface $logger
     ) {
     }//end __construct()
@@ -556,13 +558,15 @@ class RelationHandler
     ): array {
         try {
             // Get register and schema for magic table lookup if provided.
+            // Bypass RBAC/multitenancy for register/schema loading — the user's access
+            // to the actual objects will be checked by filterByRbac() later.
             $register = null;
             $schema   = null;
             if ($_registerId !== null && $_schemaId !== null) {
                 try {
                     $registerMapper = \OC::$server->get(\OCA\OpenRegister\Db\RegisterMapper::class);
-                    $register       = $registerMapper->find($_registerId);
-                    $schema         = $this->schemaMapper->find($_schemaId);
+                    $register       = $registerMapper->find($_registerId, _rbac: false, _multitenancy: false);
+                    $schema         = $this->schemaMapper->find($_schemaId, _rbac: false, _multitenancy: false);
                 } catch (\Exception $e) {
                     $this->logger->debug(
                         message: '[RelationHandler::getUses] Could not load register/schema for magic table lookup',
@@ -689,6 +693,14 @@ class RelationHandler
                 $relatedObjects  = array_merge($relatedObjects, $fallbackObjects);
             }
 
+            // Apply RBAC filtering to all results.
+            // The magic mapper search applies RBAC at query level, but UUIDs denied by RBAC
+            // end up in $missingUuids and get fetched via findMultiple without RBAC.
+            // Filter all results to ensure RBAC is consistently enforced.
+            if ($_rbac === true) {
+                $relatedObjects = $this->filterByRbac($relatedObjects);
+            }
+
             $this->logger->debug(
                 message: '[RelationHandler::getUses] Found related objects',
                 context: [
@@ -731,6 +743,74 @@ class RelationHandler
         }//end try
     }//end getUses()
 
+
+    /**
+     * Filter objects by RBAC (schema-level authorization).
+     *
+     * Checks each object's schema authorization rules and removes objects
+     * the current user does not have read access to.
+     *
+     * @param ObjectEntity[] $objects The objects to filter.
+     *
+     * @return ObjectEntity[] Filtered objects the user has access to.
+     */
+    private function filterByRbac(array $objects): array
+    {
+        if ($this->rbacHandler->isAdmin() === true) {
+            return $objects;
+        }
+
+        $schemaCache = [];
+        $filtered    = [];
+
+        foreach ($objects as $object) {
+            if (($object instanceof ObjectEntity) === false) {
+                $filtered[] = $object;
+                continue;
+            }
+
+            $schemaId = $object->getSchema();
+            if ($schemaId === null) {
+                $filtered[] = $object;
+                continue;
+            }
+
+            // Cache schema lookups.
+            if (isset($schemaCache[$schemaId]) === false) {
+                try {
+                    $schemaCache[$schemaId] = $this->schemaMapper->find(
+                        (int) $schemaId,
+                        _multitenancy: false,
+                        _rbac: false
+                    );
+                } catch (\Exception $e) {
+                    // Schema not found, skip this object.
+                    continue;
+                }
+            }
+
+            $schema = $schemaCache[$schemaId];
+
+            // Build object data with metadata for condition evaluation.
+            $objectData                  = $object->getObject() ?? [];
+            $objectData['_organisation'] = $object->getOrganisation();
+            $objectData['_owner']        = $object->getOwner();
+
+            if ($this->rbacHandler->hasPermission(
+                schema: $schema,
+                action: 'read',
+                objectOwner: $object->getOwner(),
+                objectData: $objectData
+            ) === true) {
+                $filtered[] = $object;
+            }
+        }//end foreach
+
+        return $filtered;
+
+    }//end filterByRbac()
+
+
     /**
      * Get objects that use this object (incoming relations).
      *
@@ -761,13 +841,14 @@ class RelationHandler
     ): array {
         try {
             // Get register and schema for magic table lookup if provided.
+            // Bypass RBAC/multitenancy — access to objects will be checked separately.
             $register = null;
             $schema   = null;
             if ($_registerId !== null && $_schemaId !== null) {
                 try {
                     $registerMapper = \OC::$server->get(\OCA\OpenRegister\Db\RegisterMapper::class);
-                    $register       = $registerMapper->find($_registerId);
-                    $schema         = $this->schemaMapper->find($_schemaId);
+                    $register       = $registerMapper->find($_registerId, _rbac: false, _multitenancy: false);
+                    $schema         = $this->schemaMapper->find($_schemaId, _rbac: false, _multitenancy: false);
                 } catch (\Exception $e) {
                     $this->logger->warning(
                         message: '[RelationHandler] Failed to load register/schema for getUsedBy magic table support',

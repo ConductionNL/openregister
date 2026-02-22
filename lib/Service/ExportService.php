@@ -721,7 +721,7 @@ class ExportService
             $decoded = json_decode($value, true);
             if (is_array($decoded) === true) {
                 $names = array_map(
-                    fn($uuid) => $uuidToNameMap[$uuid] ?? $uuid,
+                    fn($item) => is_string($item) ? ($uuidToNameMap[$item] ?? $item) : $this->convertValueToString($item),
                     $decoded
                 );
 
@@ -734,7 +734,7 @@ class ExportService
 
         if (is_array($value) === true) {
             $names = array_map(
-                fn($uuid) => $uuidToNameMap[$uuid] ?? $uuid,
+                fn($item) => is_string($item) ? ($uuidToNameMap[$item] ?? $item) : $this->convertValueToString($item),
                 $value
             );
 
@@ -757,4 +757,5 @@ class ExportService
     {
         return $this->registerMapper->getSchemasByRegisterId($register->getId());
     }//end getSchemasForRegister()
+
 }//end class

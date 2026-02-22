@@ -1011,8 +1011,8 @@ class ValidateObject
     {
         // Map of custom OpenRegister types to their JSON Schema equivalents.
         $customTypeMap = [
-            'file'     => 'string',
-        // File references are stored as strings (paths, UUIDs, etc.)
+            'file'     => ['integer', 'string', 'null'],
+        // File references are stored as integer file IDs, string data URIs, or null
             'datetime' => 'string',
         // Datetime values are stored as ISO 8601 strings
             'date'     => 'string',

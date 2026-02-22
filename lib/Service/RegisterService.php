@@ -161,9 +161,9 @@ class RegisterService
      * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple registers found (should not happen)
      * @throws \OCP\DB\Exception If database error occurs
      */
-    public function find(int | string $id, array $_extend=[]): Register
+    public function find(int | string $id, array $_extend=[], bool $_multitenancy=true): Register
     {
-        return $this->registerMapper->find(id: $id, _extend: $_extend);
+        return $this->registerMapper->find(id: $id, _extend: $_extend, _multitenancy: $_multitenancy);
     }//end find()
 
     /**
@@ -193,7 +193,8 @@ class RegisterService
         ?array $filters=[],
         ?array $searchConditions=[],
         ?array $searchParams=[],
-        ?array $_extend=[]
+        ?array $_extend=[],
+        bool $_multitenancy=true
     ): array {
         // Find all registers with optional filtering, pagination, and extensions.
         return $this->registerMapper->findAll(
@@ -202,7 +203,8 @@ class RegisterService
             filters: $filters,
             searchConditions: $searchConditions,
             searchParams: $searchParams,
-            _extend: $_extend
+            _extend: $_extend,
+            _multitenancy: $_multitenancy
         );
     }//end findAll()
 

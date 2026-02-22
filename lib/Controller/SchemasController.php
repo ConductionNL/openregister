@@ -125,6 +125,9 @@ class SchemasController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @PublicPage
+     *
+     *
      * @return JSONResponse JSON response with array of schemas
      *
      * @psalm-return JSONResponse<200,
@@ -191,7 +194,8 @@ class SchemasController extends Controller
             filters: $filters,
             searchConditions: [],
             searchParams: [],
-            _extend: []
+            _extend: [],
+            _multitenancy: false
         );
 
         // Serialize schemas to arrays.
@@ -239,6 +243,9 @@ class SchemasController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @PublicPage
+     *
      */
     public function show($id): JSONResponse
     {
@@ -248,7 +255,7 @@ class SchemasController extends Controller
                 $extend = [$extend];
             }
 
-            $schema    = $this->schemaMapper->find(id: $id, _extend: []);
+            $schema    = $this->schemaMapper->find(id: $id, _extend: [], _multitenancy: false);
             $schemaArr = $schema->jsonSerialize();
 
             // Add extendedBy property showing UUIDs of schemas that extend this schema.
