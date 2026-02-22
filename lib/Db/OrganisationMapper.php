@@ -504,6 +504,27 @@ class OrganisationMapper extends QBMapper
     }//end findByName()
 
     /**
+     * Find an organisation by its slug
+     *
+     * @param string $slug The slug to search for
+     *
+     * @return Organisation The found organisation
+     *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException If not found
+     */
+    public function findBySlug(string $slug): Organisation
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select('*')
+            ->from($this->getTableName())
+            ->where($qb->expr()->eq('slug', $qb->createNamedParameter($slug)))
+            ->setMaxResults(1);
+
+        return $this->findEntity($qb);
+    }//end findBySlug()
+
+    /**
      * Get organisation statistics
      *
      * @return int[] Statistics about organisations

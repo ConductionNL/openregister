@@ -740,7 +740,30 @@ class OrganisationService
         // Add admin group to RBAC authorization with full permissions.
         $organisation = $this->addAdminGroupToAuthorization($organisation);
 
-        $saved = $this->organisationMapper->save($organisation);
+        try {
+            $saved = $this->organisationMapper->save($organisation);
+        } catch (\OC\DB\Exceptions\DbalException $e) {
+            // Handle slug collision: if an organisation with the same slug already exists,
+            // return the existing one instead of crashing.
+            if (str_contains($e->getMessage(), 'organisations_slug_unique') === true
+                || str_contains($e->getMessage(), 'Unique violation') === true
+            ) {
+                $slug = $this->generateSlug($name);
+                $this->logger->info(
+                    message: '[OrganisationService] Slug collision, returning existing organisation',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'slug' => $slug, 'name' => $name]
+                );
+
+                try {
+                    return $this->organisationMapper->findBySlug($slug);
+                } catch (DoesNotExistException $findException) {
+                    // Slug not found either — re-throw the original error.
+                    throw $e;
+                }
+            }
+
+            throw $e;
+        }
 
         // If there's no default organisation set, make this one the default.
         $defaultOrgId = $this->appConfig->getValueString('openregister', 'defaultOrganisation', '');

@@ -178,7 +178,7 @@ class FilePropertyHandler
             $propertyConfig = $schemaProperties[$propertyName];
             $propertyType   = $propertyConfig['type'] ?? '';
 
-            $this->logger->warning(
+            $this->logger->debug(
                 message: '[FilePropertyHandler] isFileProperty: Checking property type',
                 context: [
                     'file' => __FILE__,
