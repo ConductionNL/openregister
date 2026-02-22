@@ -590,18 +590,29 @@ class FolderManagementHandler
      */
     public function getNodeById(int $nodeId): ?Node
     {
+        // First try via the current user's folder (handles most authenticated cases).
         try {
             $userFolder = $this->getOpenRegisterUserFolder();
             $nodes      = $userFolder->getById($nodeId);
             if (empty($nodes) === false) {
                 return $nodes[0];
             }
-
-            return null;
         } catch (Exception $e) {
-            $this->logger->error(message: "[FolderManagementHandler] Failed to get node by ID $nodeId: ".$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
-            return null;
+            $this->logger->debug(message: "[FolderManagementHandler] User folder lookup failed for node $nodeId: ".$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
         }
+
+        // Fall back to root folder lookup (works for files owned by any user,
+        // needed for public/anonymous access to files uploaded by non-system users).
+        try {
+            $nodes = $this->rootFolder->getById($nodeId);
+            if (empty($nodes) === false) {
+                return $nodes[0];
+            }
+        } catch (Exception $e) {
+            $this->logger->error(message: "[FolderManagementHandler] Root folder lookup also failed for node $nodeId: ".$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
+        }
+
+        return null;
     }//end getNodeById()
 
     /**

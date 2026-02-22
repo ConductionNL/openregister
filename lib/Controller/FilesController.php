@@ -27,8 +27,11 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\StreamResponse;
 use OCP\AppFramework\Http\TemplateResponse;
+use OCP\Files\File;
+use OCP\Files\IRootFolder;
 use OCP\Files\NotFoundException;
 use OCP\IRequest;
+use OCP\IUserManager;
 
 /**
  * FilesController handles file operations for objects in registers
@@ -90,7 +93,9 @@ class FilesController extends Controller
         string $appName,
         IRequest $request,
         FileService $fileService,
-        ObjectService $objectService
+        ObjectService $objectService,
+        private readonly IRootFolder $rootFolder,
+        private readonly IUserManager $userManager
     ) {
         // Call parent constructor to initialize base controller.
         parent::__construct(appName: $appName, request: $request);
@@ -182,6 +187,14 @@ class FilesController extends Controller
 
             $file = $this->fileService->getFile(object: $object, file: $fileId);
 
+            // Fall back to direct file ID lookup via known user contexts
+            // when the normal path fails (e.g. anonymous/public access to files
+            // uploaded by a different user whose folder is not accessible).
+            if ($file === null) {
+                $owner = $object->getOwner();
+                $file  = $this->getFileViaKnownUsers($fileId, $owner);
+            }
+
             if ($file === null) {
                 return new JSONResponse(
                     data: ['error' => 'File not found'],
@@ -202,6 +215,43 @@ class FilesController extends Controller
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
         }//end try
     }//end show()
+
+    /**
+     * Retrieve a file by ID by searching known user folder contexts.
+     *
+     * For public/anonymous requests, Nextcloud cannot resolve file IDs without
+     * a user context. This method tries the object owner, then the OpenRegister
+     * system user, to find the file.
+     *
+     * @param int         $fileId The Nextcloud file ID to retrieve.
+     * @param string|null $owner  The object owner's user ID (tried first).
+     *
+     * @return File|null The file node or null if not accessible.
+     */
+    private function getFileViaKnownUsers(int $fileId, ?string $owner=null): ?File
+    {
+        // Build list of user IDs to try: object owner first, then system user.
+        $userIds = array_filter(array_unique([$owner, 'OpenRegister', 'admin']));
+
+        foreach ($userIds as $userId) {
+            try {
+                $user = $this->userManager->get($userId);
+                if ($user === null) {
+                    continue;
+                }
+
+                $userFolder = $this->rootFolder->getUserFolder($user->getUID());
+                $nodes      = $userFolder->getById($fileId);
+                if (empty($nodes) === false && $nodes[0] instanceof File) {
+                    return $nodes[0];
+                }
+            } catch (Exception $e) {
+                continue;
+            }
+        }
+
+        return null;
+    }//end getFileViaKnownUsers()
 
     /**
      * Add a new file to an object
