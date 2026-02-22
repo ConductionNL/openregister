@@ -49,6 +49,20 @@ use Psr\Log\LoggerInterface;
 class FileChangeListener implements IEventListener
 {
     /**
+     * Cached extraction scope to avoid repeated DB reads within the same request.
+     *
+     * @var string|null
+     */
+    private static ?string $cachedExtractionScope = null;
+
+    /**
+     * Cached extraction mode.
+     *
+     * @var string|null
+     */
+    private static ?string $cachedExtractionMode = null;
+
+    /**
      * Constructor
      *
      * @param TextExtractionService $textExtractSvc  Text extraction service
@@ -91,61 +105,41 @@ class FileChangeListener implements IEventListener
             return;
         }
 
-        $fileId   = $node->getId();
-        $fileName = $node->getName();
         $filePath = $node->getPath();
 
-        // Skip anonymized files - they should not be scanned for entities.
-        // Anonymized files are created with '_anonymized' suffix by the anonymization process.
-        if (strpos($fileName, '_anonymized') !== false) {
-            $this->logger->debug(
-                message: '[FileChangeListener] Skipping anonymized file',
-                context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
-                    'file_id'   => $fileId,
-                    'file_name' => $fileName,
-                    'file_path' => $filePath,
-                ]
-            );
-            return;
-        }
-
-        // Get extraction settings to determine scope.
-        try {
-            $fileSettings    = $this->settingsService->getFileSettingsOnly();
-            $extractionScope = $fileSettings['extractionScope'] ?? 'objects';
-        } catch (\Exception $e) {
-            $extractionScope = 'objects';
-        }
-
-        // Determine if file should be processed based on extraction scope.
+        // Fast path: check if file is in OpenRegister directories BEFORE loading settings.
+        // This avoids DB reads for the vast majority of files (e.g., skeleton files on user creation).
         $isOpenRegisterFile = strpos($filePath, 'OpenRegister/files') !== false
             || strpos($filePath, '/Open Registers/') !== false;
 
-        // Check extraction scope to decide if we should process this file.
-        // - 'none': Skip all files.
-        // - 'objects': Only process OpenRegister files.
-        // - 'files': Process all user files (not OpenRegister-specific).
-        // - 'all': Process all files.
+        // Load extraction scope once per request (cached).
+        if (self::$cachedExtractionScope === null) {
+            try {
+                $fileSettings              = $this->settingsService->getFileSettingsOnly();
+                self::$cachedExtractionScope = $fileSettings['extractionScope'] ?? 'objects';
+                self::$cachedExtractionMode  = $fileSettings['extractionMode'] ?? 'background';
+            } catch (\Exception $e) {
+                self::$cachedExtractionScope = 'objects';
+                self::$cachedExtractionMode  = 'background';
+            }
+        }
+
+        $extractionScope = self::$cachedExtractionScope;
+
+        // Skip early based on scope — no DB reads needed for these checks.
         if ($extractionScope === 'none') {
-            $this->logger->debug(
-                message: '[FileChangeListener] Extraction scope is none, skipping',
-                context: ['file' => __FILE__, 'line' => __LINE__, 'file_id' => $fileId]
-            );
             return;
         }
 
         if ($extractionScope === 'objects' && $isOpenRegisterFile === false) {
-            $this->logger->debug(
-                message: '[FileChangeListener] Skipping non-OpenRegister file (scope: objects)',
-                context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
-                    'file_id'   => $fileId,
-                    'file_path' => $filePath,
-                ]
-            );
+            return;
+        }
+
+        $fileId   = $node->getId();
+        $fileName = $node->getName();
+
+        // Skip anonymized files.
+        if (strpos($fileName, '_anonymized') !== false) {
             return;
         }
 
@@ -162,9 +156,9 @@ class FileChangeListener implements IEventListener
             ]
         );
 
-        // Get extraction mode from settings to determine processing strategy.
+        // Get extraction mode from cached settings.
         try {
-            $extractionMode = $fileSettings['extractionMode'] ?? 'background';
+            $extractionMode = self::$cachedExtractionMode ?? 'background';
 
             // Handle different extraction modes.
             switch ($extractionMode) {

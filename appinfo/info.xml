@@ -60,6 +60,10 @@ Create a [feature request](https://github.com/OpenRegister/.github/issues/new/ch
 	<background-jobs>
 		<job>OCA\OpenRegister\Cron\LogCleanUpTask</job>
 		<job>OCA\OpenRegister\Cron\ConfigurationCheckJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\SolrNightlyWarmupJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\NameCacheWarmupJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\CronFileTextExtractionJob</job>
+		<job>OCA\OpenRegister\Cron\WebhookRetryJob</job>
 	</background-jobs>
 
     <navigations>
