@@ -126,9 +126,9 @@ class OasService
 
         // Step 2: Get registers to document.
         // If registerId provided, get only that register; otherwise get all registers.
-        $registers = $this->registerMapper->findAll();
+        $registers = $this->registerMapper->findAll(_rbac: false, _multitenancy: false);
         if ($registerId !== null) {
-            $registers = [$this->registerMapper->find($registerId)];
+            $registers = [$this->registerMapper->find($registerId, _rbac: false, _multitenancy: false)];
         }
 
         // Step 3: Extract unique schema IDs from all registers.
