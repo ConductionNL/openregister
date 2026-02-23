@@ -752,14 +752,14 @@ class ObjectEntityMapper extends QBMapper
 
         $multitenancyData = json_decode($multitenancyConfig, true);
         $bypassEnabled = $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false;
-        
+
         // Allow per-request override via _crossOrg query parameter.
         // _crossOrg=false: Disable bypass for this request (only your org's objects).
         // _crossOrg=true: Enable bypass for this request (include published from other orgs).
         if (isset($_GET['_crossOrg'])) {
             $bypassEnabled = filter_var($_GET['_crossOrg'], FILTER_VALIDATE_BOOLEAN);
         }
-        
+
         return $bypassEnabled;
 
     }//end shouldPublishedObjectsBypassMultiTenancy()
@@ -1071,6 +1071,33 @@ class ObjectEntityMapper extends QBMapper
         return $this->findEntities(query: $qb);
 
     }//end findAll()
+
+	public function findExpired(array $config): array
+	{
+		$limit = 1000;
+
+		$qb = $this->db->getQueryBuilder();
+
+		$qb->select('o.uuid', 'o.schema', 'o.register')
+			->from('openregister_objects', 'o')
+			->setMaxResults($limit);
+
+		foreach($config['schemas'] as $schema) {
+			$qb->orWhere(
+				$qb->expr()->andX(
+					$qb->expr()->eq('o.schema', $qb->createNamedParameter($schema['id'])),
+					$qb->expr()->lte('o.updated', $qb->createNamedParameter($schema['expiration']/*, IQueryBuilder::PARAM_DATE*/))
+				)
+			);
+		}
+		$qb->orWhere($qb->expr()->lte('o.updated', $qb->createNamedParameter($config['global']['expiration']/*, IQueryBuilder::PARAM_DATE*/)));
+
+//		var_dump($qb->getSQL(), $qb->getParameters());
+
+		$result = $qb->executeQuery();
+
+		return $result->fetchAll();
+	}
 
 
     /**

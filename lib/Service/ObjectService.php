@@ -7013,5 +7013,38 @@ class ObjectService
         }
     }//end isSearchTrailsEnabled()
 
+	public function getExpiredObjects(): array
+	{
+		$schemas = $this->schemaMapper->findAll(filters: ['configuration' => 'IS NOT NULL']); // and configuration.objectArchiveRetention IS NOT NULL OR configuration.objectDeleteRetention IS NOT NULL
+
+		$config = [];
+		foreach ($schemas as $schema) {
+
+			if(isset($schema->getConfiguration()['objectArchiveRetention']) === true && empty($schema->getConfiguration()['objectArchiveRetention']) === false) {
+				$config['schemas'][] = [
+					'id' => $schema->getId(),
+					'expiration' => new \DateTime('now - '.$schema->getConfiguration()['objectArchiveRetention'].'ms')->format('c'),
+				];
+			}
+		}
+		$config['global'] = ['expiration' => new \DateTime('now -'.$this->settingsService->getRetentionSettingsOnly()['objectArchiveRetention'].'ms')->format('c')];
+
+		return $this->getMapper()->findExpired(config: $config);
+
+	}
+
+	public function deleteExpiredObjects(): void
+	{
+		$objects = $this->getExpiredObjects();
+
+		foreach($objects as $object) {
+			$this->deleteHandler->deleteObject(
+				register: $this->registerMapper->find($object['register'], rbac: false, multi: false),
+				schema: $this->schemaMapper->find($object['schema'], rbac: false, multi: false),
+				uuid: $object['uuid']
+			);
+		}
+	}
+
 
 }//end class
