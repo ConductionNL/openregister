@@ -20,6 +20,7 @@
 namespace OCA\OpenRegister\Cron;
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Service\ObjectService;
 use OCP\BackgroundJob\IJobList;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;
@@ -65,6 +66,7 @@ class LogCleanUpTask extends TimedJob
         ITimeFactory $time,
         AuditTrailMapper $auditTrailMapper,
         LoggerInterface $logger,
+		private ObjectService $objectService
     ) {
         parent::__construct($time);
         $this->auditTrailMapper = $auditTrailMapper;
@@ -124,6 +126,18 @@ class LogCleanUpTask extends TimedJob
             ]
             );
         }//end try
+
+		try {
+			$this->objectService->deleteExpiredObjects();
+			$this->objectService->deleteExpiredObjects(); //second run to perform hard delete when delete-retention is small enough to enforce hard deletion.
+
+			$this->logger->info('Successfully cleared expired objects', ['app' => 'openregister']);
+		} catch (\Exception $e) {
+			$this->logger->error('Failed to clear expired objects: '.$e->getMessage(), [
+				'app'       => 'openregister',
+				'exception' => $e,
+			]);
+		}
 
     }//end run()
 

@@ -1841,22 +1841,4 @@ class ObjectsController extends Controller
         }
     }//end getObjectVectorizationCount()
 
-	/**
-	 * Get objects marked for deletion
-	 *
-	 * @NoAdminRequired
-	 * @NoCSRFRequired
-	 *
-	 * @return JSONResponse
-	 */
-	public function getExpiredObjects (): JSONResponse
-	{
-		$response = new JSONResponse($this->objectService->getExpiredObjects());
-
-		$this->objectService->deleteExpiredObjects();
-
-		return $response;
-	}
-
-
 }//end class

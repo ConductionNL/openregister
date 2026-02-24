@@ -1082,17 +1082,33 @@ class ObjectEntityMapper extends QBMapper
 			->from('openregister_objects', 'o')
 			->setMaxResults($limit);
 
-		foreach($config['schemas'] as $schema) {
+		$qb->createNamedParameter(
+			value: "$.timestamp",
+			placeHolder: ":path"
+		);
+
+		foreach ($config['schemas'] as $schema) {
 			$qb->orWhere(
 				$qb->expr()->andX(
 					$qb->expr()->eq('o.schema', $qb->createNamedParameter($schema['id'])),
-					$qb->expr()->lte('o.updated', $qb->createNamedParameter($schema['expiration']/*, IQueryBuilder::PARAM_DATE*/))
+					$qb->expr()->lte('o.updated', $qb->createNamedParameter($schema['expiration']/*, IQueryBuilder::PARAM_DATE*/)),
+					$qb->expr()->isNull('o.deleted'),
+				)
+			);
+			$qb->orWhere(
+				$qb->expr()->andX(
+					$qb->expr()->eq('o.schema', $qb->createNamedParameter($schema['id'])),
+					$qb->expr()->lte($qb->createFunction('json_unquote(json_extract(o.deleted, :path))'), $qb->createNamedParameter($schema['deletion'])),
 				)
 			);
 		}
-		$qb->orWhere($qb->expr()->lte('o.updated', $qb->createNamedParameter($config['global']['expiration']/*, IQueryBuilder::PARAM_DATE*/)));
+		if ($config['global']['expiration'] !== null) {
+			$qb->orWhere($qb->expr()->lte('o.updated', $qb->createNamedParameter($config['global']['expiration']/*, IQueryBuilder::PARAM_DATE*/)));
+		}
 
-//		var_dump($qb->getSQL(), $qb->getParameters());
+		if ($config['global']['deletion'] !== null) {
+			$qb->orWhere($qb->expr()->lte($qb->createFunction('json_unquote(json_extract(o.deleted, :path))'), $qb->createNamedParameter($config['global']['deletion'])));
+		}
 
 		$result = $qb->executeQuery();
 
@@ -4487,7 +4503,7 @@ class ObjectEntityMapper extends QBMapper
                 ->from($tableName)
                 ->where($qb->expr()->in('uuid', $qb->createNamedParameter($uuidChunk, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
 
-            $objects = $qb->execute()->fetchAll();
+            $objects = $qb->executeQuery()->fetchAll();
 
             // Separate objects for soft delete and hard delete
             $softDeleteIds = [];
