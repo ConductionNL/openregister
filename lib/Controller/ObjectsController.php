@@ -2439,8 +2439,10 @@ class ObjectsController extends Controller
         $type = $this->request->getParam(key: 'type', default: 'excel');
 
         // Get register and schema entities.
-        $registerEntity = $this->registerMapper->find($register);
-        $schemaEntity   = $this->schemaMapper->find($schema);
+        // Bypass multi-tenancy since the user already has access via setRegister/setSchema above,
+        // and this lookup is only needed for the export filename and metadata.
+        $registerEntity = $this->registerMapper->find($register, _multitenancy: false);
+        $schemaEntity   = $this->schemaMapper->find($schema, _multitenancy: false);
 
         // Generate filename base.
         $filenameBase = sprintf(
