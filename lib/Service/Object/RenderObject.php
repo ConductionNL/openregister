@@ -212,7 +212,9 @@ class RenderObject
         }
 
         try {
-            $schema = $this->schemaMapper->find($id);
+            // Bypass multi-tenancy for internal schema resolution — schemas must always
+            // be accessible when resolving references, regardless of the current user's organization.
+            $schema = $this->schemaMapper->find($id, _multitenancy: false);
             // Cache the result.
             $this->schemasCache[$id] = $schema;
             return $schema;
@@ -1749,12 +1751,13 @@ class RenderObject
                         // Handle both array and single value references.
                         if (is_array($referenceValue) === true) {
                             // Check if the current entity's UUID is in the array.
-                            return in_array($entity->getUuid(), $referenceValue, true) && $object->getSchema() === $schemaId;
+                            return in_array($entity->getUuid(), $referenceValue, true)
+                                && $object->getSchema() === $schemaId;
                         }
 
                         // Check if the reference value matches the current entity's UUID.
-                        $matchesUuid = str_ends_with(haystack: $referenceValue, needle: $entity->getUuid());
-                        return $matchesUuid && $object->getSchema() === $schemaId;
+                        return str_ends_with(haystack: $referenceValue, needle: $entity->getUuid())
+                            && $object->getSchema() === $schemaId;
                     }
                 )
             );
@@ -1903,8 +1906,9 @@ class RenderObject
             $lastSegment = preg_replace('/#.*$/', '', $lastSegment);
 
             // Try to find schema by slug (case-insensitive).
+            // Bypass RBAC and multi-tenancy since this is an internal schema resolution.
             try {
-                $schemas = $this->schemaMapper->findAll();
+                $schemas = $this->schemaMapper->findAll(_rbac: false, _multitenancy: false);
                 foreach ($schemas as $schema) {
                     if (strtolower($schema->getSlug() ?? '') === strtolower($lastSegment)) {
                         return (string) $schema->getId();
@@ -1916,7 +1920,8 @@ class RenderObject
         }
 
         // If it's a slug, try to find the schema by slug.
-        $schemas = $this->schemaMapper->findAll(filters: ['slug' => $cleanSchemaRef]);
+        // Bypass RBAC and multi-tenancy since this is an internal schema resolution.
+        $schemas = $this->schemaMapper->findAll(filters: ['slug' => $cleanSchemaRef], _rbac: false, _multitenancy: false);
 
         if (count($schemas) === 1) {
             return (string) array_shift($schemas)->getId();
