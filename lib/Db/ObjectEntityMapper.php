@@ -1072,12 +1072,20 @@ class ObjectEntityMapper extends QBMapper
 
     }//end findAll()
 
+	/**
+	 * Find objects that are expired
+	 *
+	 * @param array $config Config array containing the criteria for which objects are expired.
+	 * @return array An array of expired object by uuid, schema and register
+	 * @throws \OCP\DB\Exception
+	 */
 	public function findExpired(array $config): array
 	{
 		$limit = 1000;
 
 		$qb = $this->db->getQueryBuilder();
 
+		// Select only critical fields
 		$qb->select('o.uuid', 'o.schema', 'o.register')
 			->from('openregister_objects', 'o')
 			->setMaxResults($limit);
@@ -1087,7 +1095,9 @@ class ObjectEntityMapper extends QBMapper
 			placeHolder: ":path"
 		);
 
+		// First check on the basis of schema
 		foreach ($config['schemas'] as $schema) {
+			// Find the objects that have to be soft deleted
 			$qb->orWhere(
 				$qb->expr()->andX(
 					$qb->expr()->eq('o.schema', $qb->createNamedParameter($schema['id'])),
@@ -1095,6 +1105,8 @@ class ObjectEntityMapper extends QBMapper
 					$qb->expr()->isNull('o.deleted'),
 				)
 			);
+
+			// Find the objects that have to be hard deleted
 			$qb->orWhere(
 				$qb->expr()->andX(
 					$qb->expr()->eq('o.schema', $qb->createNamedParameter($schema['id'])),
@@ -1102,6 +1114,8 @@ class ObjectEntityMapper extends QBMapper
 				)
 			);
 		}
+
+		// Then check for global expiration parameters
 		if ($config['global']['expiration'] !== null) {
 			$qb->orWhere($qb->expr()->lte('o.updated', $qb->createNamedParameter($config['global']['expiration']/*, IQueryBuilder::PARAM_DATE*/)));
 		}
