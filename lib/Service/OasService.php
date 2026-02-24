@@ -143,8 +143,10 @@ class OasService
 
         // Step 4: Get all schemas using unique schema IDs and index by schema ID.
         // Indexing by ID allows fast lookup when processing registers.
+        // Bypass RBAC and multi-tenancy since OAS generation needs all schemas
+        // regardless of the current user's organization.
         $schemas = [];
-        foreach ($this->schemaMapper->findMultiple($uniqueSchemaIds) as $schema) {
+        foreach ($this->schemaMapper->findMultiple($uniqueSchemaIds, _rbac: false, _multitenancy: false) as $schema) {
             $schemas[$schema->getId()] = $schema;
         }
 
