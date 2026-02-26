@@ -1,7 +1,7 @@
 {
   "name": "openregister",
   "version": "1.0.0",
-  "license": "AGPL-3.0-or-later",
+  "license": "EUPL-1.2",
   "engines": {
     "node": "^20.0.0",
     "npm": "^10.0.0"

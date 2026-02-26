@@ -23,7 +23,7 @@ Create a [bug report](https://github.com/OpenRegister/.github/issues/new/choose)
 Create a [feature request](https://github.com/OpenRegister/.github/issues/new/choose)
     ]]></description>
     <version>0.2.12-unstable.25</version>
-    <licence>agpl</licence>
+    <licence>EUPL-1.2</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenRegister</namespace>
     <category>organization</category>
