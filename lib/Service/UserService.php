@@ -175,7 +175,12 @@ class UserService
 
         // Add organization information in the format expected by the frontend.
         // Frontend expects: { active: { uuid, naam, id, slug }, all: [...] }
-        $organisationStats = $this->organisationService->getUserOrganisationStats();
+        try {
+            $organisationStats = $this->organisationService->getUserOrganisationStats();
+        } catch (\Exception $e) {
+            $this->logger->warning('Failed to get user organisation stats: '.$e->getMessage());
+            $organisationStats = ['total' => 0, 'active' => null, 'results' => []];
+        }
 
         // Transform organisation data to include 'naam' field (Dutch) alongside 'name'.
         $transformOrg = function (?array $org): ?array {

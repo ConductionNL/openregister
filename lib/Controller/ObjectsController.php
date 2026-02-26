@@ -2436,7 +2436,8 @@ class ObjectsController extends Controller
         // Get filters and type from request.
         $filters = $this->request->getParams();
         unset($filters['_route']);
-        $type = $this->request->getParam(key: 'type', default: 'excel');
+        $type = $this->request->getParam(key: 'format')
+            ?? $this->request->getParam(key: 'type', default: 'excel');
 
         // Get register and schema entities.
         // Bypass multi-tenancy since the user already has access via setRegister/setSchema above,
