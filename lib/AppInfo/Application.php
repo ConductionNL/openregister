@@ -121,6 +121,8 @@ use OCA\OpenRegister\Command\SolrDebugCommand;
 use OCA\OpenRegister\Command\SolrManagementCommand;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Search\ObjectsProvider;
+use OCA\OpenRegister\Service\DeepLinkRegistryService;
+use OCA\OpenRegister\Event\DeepLinkRegistrationEvent;
 use OCA\OpenRegister\BackgroundJob\SolrWarmupJob;
 use OCA\OpenRegister\BackgroundJob\SolrNightlyWarmupJob;
 use OCA\OpenRegister\BackgroundJob\NameCacheWarmupJob;
@@ -132,10 +134,15 @@ use OCP\AppFramework\Bootstrap\IBootstrap;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCA\OpenRegister\EventListener\SolrEventListener;
+use OCA\OpenRegister\Listener\CommentsEntityListener;
 use OCA\OpenRegister\Listener\FileChangeListener;
 use OCA\OpenRegister\Listener\ObjectChangeListener;
+use OCA\OpenRegister\Listener\ObjectCleanupListener;
 use OCA\OpenRegister\Listener\ToolRegistrationListener;
 use OCA\OpenRegister\Listener\WebhookEventListener;
+use OCA\OpenRegister\Service\NoteService;
+use OCA\OpenRegister\Service\TaskService;
+use OCP\Comments\CommentsEntityEvent;
 use OCP\Files\Events\Node\NodeCreatedEvent;
 use OCP\Files\Events\Node\NodeWrittenEvent;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
@@ -235,6 +242,7 @@ class Application extends App implements IBootstrap
         $this->registerSettingsServices($context);
         $this->registerSearchBackend($context);
         $this->registerVectorizationService($context);
+        $this->registerObjectInteractionServices($context);
         $this->registerEventListeners($context);
     }//end register()
 
@@ -649,6 +657,41 @@ class Application extends App implements IBootstrap
     }//end registerVectorizationService()
 
     /**
+     * Register task and note services for object interactions.
+     *
+     * TaskService wraps CalDAV VTODO operations, NoteService wraps Nextcloud Comments.
+     *
+     * @param IRegistrationContext $context The registration context
+     *
+     * @return void
+     */
+    private function registerObjectInteractionServices(IRegistrationContext $context): void
+    {
+        $context->registerService(
+            TaskService::class,
+            function (ContainerInterface $container) {
+                return new TaskService(
+                    calDavBackend: $container->get('OCA\DAV\CalDAV\CalDavBackend'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            NoteService::class,
+            function (ContainerInterface $container) {
+                return new NoteService(
+                    commentsManager: $container->get('OCP\Comments\ICommentsManager'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    userManager: $container->get('OCP\IUserManager'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+    }//end registerObjectInteractionServices()
+
+    /**
      * Register all event listeners for the application.
      *
      * @param IRegistrationContext $context The registration context
@@ -680,6 +723,12 @@ class Application extends App implements IBootstrap
 
         // WebhookEventListener for webhook delivery.
         $context->registerEventListener(ObjectCreatedEvent::class, WebhookEventListener::class);
+
+        // CommentsEntityListener registers "openregister" objectType for Nextcloud Comments.
+        $context->registerEventListener(CommentsEntityEvent::class, CommentsEntityListener::class);
+
+        // ObjectCleanupListener cleans up notes and tasks when an object is deleted.
+        $context->registerEventListener(ObjectDeletedEvent::class, ObjectCleanupListener::class);
     }//end registerEventListeners()
 
     /**
@@ -691,8 +740,11 @@ class Application extends App implements IBootstrap
      */
     public function boot(IBootContext $context): void
     {
-        // Background jobs are registered declaratively in appinfo/info.xml.
-        // Event listeners are registered in register() above.
-        // No per-request work needed here.
+        // Dispatch deep link registration event so consuming apps can register
+        // their URL patterns for OpenRegister's unified search provider.
+        $server     = $context->getServerContainer();
+        $dispatcher = $server->get(IEventDispatcher::class);
+        $registry   = $server->get(DeepLinkRegistryService::class);
+        $dispatcher->dispatchTyped(event: new DeepLinkRegistrationEvent(registry: $registry));
     }//end boot()
 }//end class

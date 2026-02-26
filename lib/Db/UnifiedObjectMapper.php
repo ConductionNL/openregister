@@ -1651,6 +1651,25 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             );
         }
 
+        // Check if this is a global text search (no register/schema but _search is provided).
+        // In this case, search across ALL magic tables using UNION for multi-magic-table search.
+        $searchTerm          = $searchQuery['_search'] ?? null;
+        $isGlobalTextSearch  = $registerId === null
+            && $schemaId === null
+            && $searchTerm !== null
+            && is_string($searchTerm) === true
+            && trim($searchTerm) !== '';
+
+        if ($isGlobalTextSearch === true) {
+            return $this->searchObjectsGloballyBySearch(
+                searchQuery: $searchQuery,
+                countQuery: $countQuery,
+                activeOrgUuid: $activeOrgUuid,
+                rbac: $rbac,
+                multitenancy: $multitenancy
+            );
+        }
+
         // Fallback: Use objectEntityMapper for blob storage.
         // NOTE: The ORM blob storage does NOT enforce RBAC at the SQL level.
         // We apply RBAC post-filtering below via filterBySchemaRbac().
@@ -2111,6 +2130,129 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             'schemas'   => $schemasCache,
         ];
     }//end searchObjectsGloballyByRelations()
+
+    /**
+     * Search for objects across ALL magic tables using a text search term.
+     *
+     * This method is used when no register/schema is specified but _search is provided.
+     * It loads all registers and their schemas, builds register/schema pairs for all
+     * magic-mapped tables, and performs a UNION search across all of them.
+     *
+     * @param array       $searchQuery   The search query parameters (must contain _search).
+     * @param array       $countQuery    The count query parameters.
+     * @param string|null $activeOrgUuid The active organisation UUID for multitenancy.
+     * @param bool        $rbac          Whether to apply RBAC filtering.
+     * @param bool        $multitenancy  Whether to apply multitenancy filtering.
+     *
+     * @return array Search results with pagination info.
+     */
+    private function searchObjectsGloballyBySearch(
+        array $searchQuery,
+        array $countQuery,
+        ?string $activeOrgUuid=null,
+        bool $rbac=true,
+        bool $multitenancy=true
+    ): array {
+        $this->logger->debug(
+            message: '[UnifiedObjectMapper] searchObjectsGloballyBySearch starting',
+            context: [
+                'file'   => __FILE__,
+                'line'   => __LINE__,
+                'search' => $searchQuery['_search'] ?? '',
+                'rbac'   => $rbac,
+            ]
+        );
+
+        // Discover ALL magic tables and build register/schema pairs.
+        // Uses MagicMapper's existing table discovery instead of duplicating that logic.
+        $registersCache      = [];
+        $schemasCache        = [];
+        $registerSchemaPairs = [];
+
+        $idPairs = $this->magicMapper->getAllRegisterSchemaPairs();
+
+        foreach ($idPairs as $idPair) {
+            try {
+                $registerId = $idPair['registerId'];
+                $schemaId   = $idPair['schemaId'];
+
+                if (isset($registersCache[$registerId]) === false) {
+                    $register = $this->registerMapper->find($registerId, _multitenancy: false, _rbac: false);
+                    $registersCache[$registerId] = $register->jsonSerialize();
+                } else {
+                    $register = $this->registerMapper->find($registerId, _multitenancy: false, _rbac: false);
+                }
+
+                if (isset($schemasCache[$schemaId]) === false) {
+                    $schema = $this->schemaMapper->find($schemaId, _multitenancy: false, _rbac: false);
+                    $schemasCache[$schemaId] = $schema->jsonSerialize();
+                } else {
+                    $schema = $this->schemaMapper->find($schemaId, _multitenancy: false, _rbac: false);
+                }
+
+                $registerSchemaPairs[] = ['register' => $register, 'schema' => $schema];
+            } catch (\Exception $e) {
+                // Skip if register or schema can't be loaded.
+                continue;
+            }
+        }//end foreach
+
+        if (empty($registerSchemaPairs) === true) {
+            $this->logger->debug(
+                message: '[UnifiedObjectMapper] No magic tables found for global search',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+            return [
+                'results'   => [],
+                'total'     => 0,
+                'registers' => $registersCache,
+                'schemas'   => $schemasCache,
+                '@self'     => ['source' => 'magic_mapper'],
+            ];
+        }
+
+        // Build UNION query with RBAC and multitenancy flags.
+        $unionQuery                   = $searchQuery;
+        $unionQuery['_rbac']          = $rbac;
+        $unionQuery['_multitenancy']  = $multitenancy;
+
+        $results = $this->magicMapper->searchAcrossMultipleTables(
+            query: $unionQuery,
+            registerSchemaPairs: $registerSchemaPairs
+        );
+
+        // Count total across all tables.
+        $countQuery['_rbac']         = $rbac;
+        $countQuery['_multitenancy'] = $multitenancy;
+        $totalCount = 0;
+        foreach ($registerSchemaPairs as $pair) {
+            $totalCount += $this->magicMapper->countObjectsInRegisterSchemaTable(
+                query: $countQuery,
+                register: $pair['register'],
+                schema: $pair['schema']
+            );
+        }
+
+        $this->logger->debug(
+            message: '[UnifiedObjectMapper] searchObjectsGloballyBySearch complete',
+            context: [
+                'file'        => __FILE__,
+                'line'        => __LINE__,
+                'pairsCount'  => count($registerSchemaPairs),
+                'resultCount' => count($results),
+                'totalCount'  => $totalCount,
+            ]
+        );
+
+        return [
+            'results'        => $results,
+            'total'          => $totalCount,
+            'registers'      => $registersCache,
+            'schemas'        => $schemasCache,
+            'ignoredFilters' => [],
+            '@self'          => ['source' => 'magic_mapper'],
+        ];
+    }//end searchObjectsGloballyBySearch()
 
     /**
      * Get a field value from an ObjectEntity for sorting purposes.

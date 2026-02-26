@@ -302,6 +302,17 @@ return [
         
         // Direct file access by ID (authenticated).
         ['name' => 'files#downloadById', 'url' => '/api/files/{fileId}/download', 'verb' => 'GET', 'requirements' => ['fileId' => '\d+']],
+
+        // Tasks operations under objects (CalDAV VTODO wrapper).
+        ['name' => 'tasks#index', 'url' => '/api/objects/{register}/{schema}/{id}/tasks', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'tasks#create', 'url' => '/api/objects/{register}/{schema}/{id}/tasks', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'tasks#update', 'url' => '/api/objects/{register}/{schema}/{id}/tasks/{taskId}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+', 'taskId' => '[^/]+']],
+        ['name' => 'tasks#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/tasks/{taskId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'taskId' => '[^/]+']],
+
+        // Notes operations under objects (Nextcloud Comments wrapper).
+        ['name' => 'notes#index', 'url' => '/api/objects/{register}/{schema}/{id}/notes', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'notes#create', 'url' => '/api/objects/{register}/{schema}/{id}/notes', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'notes#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/notes/{noteId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'noteId' => '[^/]+']],
         
         // Schemas.
         ['name' => 'schemas#upload', 'url' => '/api/schemas/upload', 'verb' => 'POST'],

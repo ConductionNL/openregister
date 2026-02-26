@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search;
 
+use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -71,12 +72,20 @@ class ObjectsProvider implements IFilteringProvider
     private readonly LoggerInterface $logger;
 
     /**
+     * Deep link registry for resolving URLs to consuming apps
+     *
+     * @var DeepLinkRegistryService
+     */
+    private readonly DeepLinkRegistryService $deepLinkRegistry;
+
+    /**
      * Constructor for the ObjectsProvider class
      *
-     * @param IL10N           $l10n          The localization service
-     * @param IURLGenerator   $urlGenerator  The URL generator service
-     * @param ObjectService   $objectService The object service for search operations
-     * @param LoggerInterface $logger        Logger for debugging search operations
+     * @param IL10N                   $l10n             The localization service
+     * @param IURLGenerator           $urlGenerator     The URL generator service
+     * @param ObjectService           $objectService    The object service for search operations
+     * @param LoggerInterface         $logger           Logger for debugging search operations
+     * @param DeepLinkRegistryService $deepLinkRegistry Deep link registry for URL resolution
      *
      * @return void
      */
@@ -84,12 +93,14 @@ class ObjectsProvider implements IFilteringProvider
         IL10N $l10n,
         IURLGenerator $urlGenerator,
         ObjectService $objectService,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        DeepLinkRegistryService $deepLinkRegistry
     ) {
         $this->l10n          = $l10n;
         $this->urlGenerator  = $urlGenerator;
         $this->objectService = $objectService;
         $this->logger        = $logger;
+        $this->deepLinkRegistry = $deepLinkRegistry;
     }//end __construct()
 
     /**
@@ -289,8 +300,8 @@ class ObjectsProvider implements IFilteringProvider
         $this->logger->debug(
             message: '[ObjectsProvider] OpenRegister search requested',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'         => __FILE__,
+                'line'         => __LINE__,
                 'search_query' => $searchQuery,
                 'has_search'   => empty($search) === false,
             ]
@@ -303,31 +314,77 @@ class ObjectsProvider implements IFilteringProvider
         $searchResultEntries = [];
         if (empty($searchResults['results']) === false) {
             foreach ($searchResults['results'] as $result) {
-                // Generate URLs for the object.
-                $objectUrl = $this->urlGenerator->linkToRoute(
-                    'openregister.objects.show',
-                    ['id' => $result['uuid']]
+                // Normalize ObjectEntity to array if needed.
+                if ($result instanceof \OCA\OpenRegister\Db\ObjectEntity) {
+                    $result = $result->jsonSerialize();
+                }
+
+                // Extract metadata from @self (jsonSerialize puts metadata there).
+                $selfData   = $result['@self'] ?? [];
+                $registerId = (int) ($selfData['register'] ?? $result['register'] ?? 0);
+                $schemaId   = (int) ($selfData['schema'] ?? $result['schema'] ?? 0);
+                $uuid       = $selfData['id'] ?? $result['id'] ?? '';
+
+                // Build a flat data array for deep link URL resolution.
+                // The resolveUrl method needs {uuid} and other top-level keys.
+                $selfArray = [];
+                if (is_array($selfData) === true) {
+                    $selfArray = $selfData;
+                }
+
+                $flatData = array_merge(
+                    $selfArray,
+                    ['uuid' => $uuid, 'register' => $registerId, 'schema' => $schemaId]
                 );
 
+                // Try deep link registry first, fall back to OpenRegister's own route.
+                $objectUrl = $this->deepLinkRegistry->resolveUrl(
+                    registerId: $registerId,
+                    schemaId: $schemaId,
+                    objectData: $flatData
+                );
+                if ($objectUrl === null) {
+                    $objectUrl = $this->urlGenerator->linkToRoute(
+                        'openregister.objects.show',
+                        ['register' => $registerId, 'schema' => $schemaId, 'id' => $uuid]
+                    );
+                }
+
+                // Use registered app icon or fall back to OpenRegister icon.
+                $icon = $this->deepLinkRegistry->resolveIcon(
+                    registerId: $registerId,
+                    schemaId: $schemaId
+                ) ?? 'icon-openregister';
+
                 // Create descriptive title and description.
-                $title       = $result['title'] ?? $result['name'] ?? $result['uuid'] ?? 'Unknown Object';
-                $description = $this->buildDescription($result);
+                $name = $selfData['name'] ?? '';
+
+                $title = 'Unknown Object';
+                if (isset($result['title']) === true) {
+                    $title = $result['title'];
+                } else if ($name !== '') {
+                    $title = $name;
+                } else if ($uuid !== '') {
+                    $title = $uuid;
+                }
+
+                $description = $this->buildDescription(array_merge($result, $selfData));
 
                 $searchResultEntries[] = new SearchResultEntry(
                     $objectUrl,
                     $title,
                     $description,
                     $objectUrl,
-                    'icon-openregister'
+                    $icon
                 );
-            }
+            }//end foreach
         }//end if
 
         $this->logger->debug(
             message: '[ObjectsProvider] OpenRegister search completed',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'          => __FILE__,
+                'line'          => __LINE__,
                 'results_count' => count($searchResultEntries),
                 'total_results' => $searchResults['total'] ?? 0,
             ]
@@ -365,7 +422,7 @@ class ObjectsProvider implements IFilteringProvider
         // Add summary/description if available.
         if (empty($object['summary']) === false) {
             $parts[] = $object['summary'];
-        } else if (empty($object['description']) === false) {
+        } else if (empty($object['description']) === false && is_string($object['description']) === true) {
             $descriptionPart = substr($object['description'], 0, 100);
             if (strlen($object['description']) > 100) {
                 $descriptionPart .= '...';

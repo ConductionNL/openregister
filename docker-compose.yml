@@ -603,6 +603,7 @@ services:
       - ../docudesk:/var/www/html/custom_apps/docudesk
       - ../procest:/var/www/html/custom_apps/procest
       - ../pipelinq:/var/www/html/custom_apps/pipelinq
+      - ../zaakafhandelapp:/var/www/html/custom_apps/zaakafhandelapp
     environment:
       # Database configuration (PostgreSQL)
       - POSTGRES_DB=nextcloud

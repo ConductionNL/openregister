@@ -891,8 +891,12 @@ class MagicSearchHandler
         $searchTermParam = $qb->createNamedParameter($search);
 
         // Search in text-based schema properties (LIKE only for performance).
+        // Skip date/time formatted fields — PostgreSQL LOWER() only works on text columns.
+        $dateFormats = ['date', 'date-time', 'time'];
         foreach ($properties ?? [] as $field => $propertyConfig) {
-            if (($propertyConfig['type'] ?? '') === 'string') {
+            if (($propertyConfig['type'] ?? '') === 'string'
+                && in_array($propertyConfig['format'] ?? '', $dateFormats, true) === false
+            ) {
                 $columnName = $this->sanitizeColumnName($field);
                 $searchConditions->add(
                     $qb->expr()->like(

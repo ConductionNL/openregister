@@ -6024,6 +6024,9 @@ class MagicMapper
 
         $startTime = microtime(true);
 
+        // Apply multi-tenancy filtering to inverse relationship lookups.
+        [$orgFilter, $orgParams] = $this->buildOrganisationFilterForRelation();
+
         foreach ($tables as $tableName) {
             try {
                 $fullTableName = 'oc_'.$tableName;
@@ -6050,10 +6053,11 @@ class MagicMapper
                                     WHERE kv.value = ?
                                 ))
                             )
+                            {$orgFilter}
                             LIMIT 100";
                     // Need to pass UUID twice for both checks.
                     $stmt = $this->db->prepare($sql);
-                    $stmt->execute([$uuid, $uuid]);
+                    $stmt->execute(array_merge([$uuid, $uuid], $orgParams));
                     $rows = $stmt->fetchAll();
                 } else {
                     // MySQL: Use JSON_SEARCH to find the UUID as a value anywhere.
@@ -6061,9 +6065,10 @@ class MagicMapper
                     $sql  = "SELECT * FROM {$fullTableName}
                             WHERE _deleted IS NULL
                             AND JSON_SEARCH(_relations, 'one', ?) IS NOT NULL
+                            {$orgFilter}
                             LIMIT 100";
                     $stmt = $this->db->prepare($sql);
-                    $stmt->execute([$uuid]);
+                    $stmt->execute(array_merge([$uuid], $orgParams));
                     $rows = $stmt->fetchAll();
                 }//end if
 
@@ -6192,9 +6197,16 @@ class MagicMapper
             // Build the WHERE clause for _deleted check (different syntax for PostgreSQL vs MySQL).
             $deletedCheck = $isPostgres ? "(_deleted IS NULL OR _deleted = 'null'::jsonb)" : '_deleted IS NULL';
 
+            // Apply multi-tenancy filtering to inverse relationship lookups.
+            // This ensures that _extend does not bypass RBAC — preventing PII exposure
+            // (e.g., contactpersonen of gemeente organisations leaking to unauthenticated users).
+            [$orgFilter, $orgParams] = $this->buildOrganisationFilterForRelation();
+            $params = array_merge($params, $orgParams);
+
             $sql = "SELECT * FROM {$fullTableName}
                     WHERE {$deletedCheck}
                     AND ({$conditionSql})
+                    {$orgFilter}
                     LIMIT 1000";
 
             $stmt = $this->db->prepare($sql);
@@ -6249,6 +6261,55 @@ class MagicMapper
     }//end findByRelationBatchInSchema()
 
     /**
+     * Get the active organisation UUID for multi-tenancy filtering.
+     *
+     * Uses the OrganisationService (via the container) to resolve the current user's
+     * active organisation, matching the same logic used by the MultiTenancyTrait.
+     *
+     * @return string|null The active organisation UUID or null
+     */
+    private function getActiveOrganisationUuidForFilter(): ?string
+    {
+        try {
+            $organisationService = $this->container->get('OCA\OpenRegister\Service\OrganisationService');
+            $activeOrg           = $organisationService->getActiveOrganisation();
+            return $activeOrg?->getUuid();
+        } catch (\Exception $e) {
+            return null;
+        }
+    }//end getActiveOrganisationUuidForFilter()
+
+    /**
+     * Build a multi-tenancy SQL fragment and params for _organisation filtering.
+     *
+     * Returns the SQL condition string and any additional params to bind.
+     * Ensures that inverse relationship lookups (via _extend) respect RBAC:
+     * - Unauthenticated users: only see objects with no organisation (prevents PII exposure)
+     * - Authenticated users: can see all related objects (cross-org access via publications)
+     *
+     * This addresses the GDPR/AVG issue where contactpersonen of gemeente organisations
+     * were publicly accessible via the _extend=contactpersonen mechanism.
+     *
+     * @return array{string, array} Tuple of [sqlFragment, params]
+     */
+    private function buildOrganisationFilterForRelation(): array
+    {
+        $user = $this->userSession->getUser();
+
+        if ($user !== null) {
+            // Authenticated user: allow cross-org access for inverse relations.
+            // The publications endpoint is designed to show data from all orgs,
+            // and authenticated users should see contact information.
+            return ['', []];
+        }
+
+        // Unauthenticated: only objects with no organisation set.
+        // This prevents PII exposure (names, emails, phone numbers) of
+        // gemeente/samenwerking contact persons to the public internet.
+        return [" AND _organisation IS NULL", []];
+    }//end buildOrganisationFilterForRelation()
+
+    /**
      * Search for objects containing a UUID in a specific magic mapper table.
      *
      * @param string $uuid      The UUID to search for
@@ -6267,22 +6328,27 @@ class MagicMapper
         $searchPattern = '%'.$uuid.'%';
 
         try {
+            // Apply multi-tenancy filtering to inverse relationship lookups.
+            [$orgFilter, $orgParams] = $this->buildOrganisationFilterForRelation();
+
             // For PostgreSQL, use row_to_json to convert entire row to searchable text.
             // This approach works reliably for finding UUIDs in any column.
             if ($isPostgres === true) {
                 $sql = "SELECT * FROM {$fullTableName} WHERE _deleted IS NULL
                         AND row_to_json({$fullTableName}.*)::text LIKE ?
+                        {$orgFilter}
                         LIMIT 100";
             } else {
                 // MySQL/MariaDB: Use JSON_UNQUOTE and CONCAT to search all columns.
                 // This is a fallback approach - may need adjustment for MySQL.
                 $sql = "SELECT * FROM {$fullTableName} WHERE _deleted IS NULL
                         AND CAST({$fullTableName} AS CHAR) LIKE ?
+                        {$orgFilter}
                         LIMIT 100";
             }
 
             $stmt = $this->db->prepare($sql);
-            $stmt->execute([$searchPattern]);
+            $stmt->execute(array_merge([$searchPattern], $orgParams));
             $rows = $stmt->fetchAll();
 
             $this->logger->debug(
@@ -6379,6 +6445,32 @@ class MagicMapper
             return [];
         }//end try
     }//end getAllMagicMapperTables()
+
+    /**
+     * Get all register/schema pairs that have magic tables in the database.
+     *
+     * Discovers magic tables from information_schema and extracts register/schema IDs
+     * from table names (oc_openregister_table_{registerId}_{schemaId}).
+     *
+     * @return array<array{registerId: int, schemaId: int}> Array of register/schema ID pairs
+     */
+    public function getAllRegisterSchemaPairs(): array
+    {
+        $tables = $this->getAllMagicMapperTables();
+        $pairs  = [];
+
+        foreach ($tables as $tableName) {
+            // Table names are like "openregister_table_{registerId}_{schemaId}" (prefix already stripped).
+            if (preg_match('/^openregister_table_(\d+)_(\d+)$/', $tableName, $matches) === 1) {
+                $pairs[] = [
+                    'registerId' => (int) $matches[1],
+                    'schemaId'   => (int) $matches[2],
+                ];
+            }
+        }
+
+        return $pairs;
+    }//end getAllRegisterSchemaPairs()
 
     /**
      * Convert a database row from a magic mapper table to an ObjectEntity.
