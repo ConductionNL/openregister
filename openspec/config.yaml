@@ -1,4 +1,4 @@
-schema: conduction
+schema: spec-driven
 
 context: |
   Project: OpenRegister
