@@ -1,0 +1,79 @@
+name: Code Quality
+
+on:
+  pull_request:
+    branches: [main, master, development]
+
+concurrency:
+  group: quality-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  php-quality:
+    name: PHP Quality
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          extensions: mbstring, xml, ctype, iconv, intl, dom, filter, gd, json, posix, zip
+          tools: composer:v2
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Install dependencies
+        run: composer install --no-progress --prefer-dist --optimize-autoloader
+
+      - name: PHP Lint
+        run: composer lint
+
+      - name: PHPCS (Coding Standards)
+        run: composer phpcs
+
+      - name: PHPMD (Mess Detection)
+        run: composer phpmd
+
+      - name: phpmetrics (Code Metrics)
+        if: always()
+        run: |
+          mkdir -p phpmetrics
+          composer phpmetrics:violations || true
+          if [ -f phpmetrics/violations.xml ]; then
+            CRITICAL=$(grep -c 'priority="1"' phpmetrics/violations.xml || echo 0)
+            echo "### phpmetrics" >> $GITHUB_STEP_SUMMARY
+            echo "Critical violations: $CRITICAL" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  frontend-quality:
+    name: Frontend Quality
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: Stylelint
+        run: npm run stylelint
+        continue-on-error: true
