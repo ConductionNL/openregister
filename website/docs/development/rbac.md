@@ -468,8 +468,8 @@ Users without organisations are automatically added to the default organisation 
 
 ## Related Documentation
 
+- [Access Control (RBAC)](/docs/features/organisation-roles) — comprehensive RBAC reference
 - [Multi-Tenancy Feature](/docs/Features/multi-tenancy)
 - [Organisations Feature](/docs/Features/organisations)
-- [Access Control](/docs/Features/access-control)
 - [Testing](/docs/development/testing)
 
