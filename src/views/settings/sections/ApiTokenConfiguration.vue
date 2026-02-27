@@ -273,8 +273,8 @@
 </template>
 
 <script>
-import { CnSettingsSection as SettingsSection } from '@conduction/nextcloud-vue'
-import { CnSettingsCard as SettingsCard } from '@conduction/nextcloud-vue'
+import SettingsSection from '../../../components/shared/SettingsSection.vue'
+import SettingsCard from '../../../components/shared/SettingsCard.vue'
 import { NcPasswordField, NcTextField, NcButton, NcLoadingIcon } from '@nextcloud/vue'
 import Github from 'vue-material-design-icons/Github.vue'
 import Gitlab from 'vue-material-design-icons/Gitlab.vue'

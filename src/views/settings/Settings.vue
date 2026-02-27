@@ -74,7 +74,7 @@ import { useSettingsStore } from '../../store/settings.js'
 
 import { NcSettingsSection, NcButton, NcLoadingIcon } from '@nextcloud/vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
-import { CnVersionInfoCard as VersionInfoCard } from '@conduction/nextcloud-vue'
+import VersionInfoCard from '../../components/shared/VersionInfoCard.vue'
 import SolrConfiguration from './sections/SolrConfiguration.vue'
 import StatisticsOverview from './sections/StatisticsOverview.vue'
 import CacheManagement from './sections/CacheManagement.vue'

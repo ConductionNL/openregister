@@ -295,7 +295,7 @@
 <script>
 import { mapStores } from 'pinia'
 import { useSettingsStore } from '../../../store/settings.js'
-import { CnSettingsSection as SettingsSection } from '@conduction/nextcloud-vue'
+import SettingsSection from '../../../components/shared/SettingsSection.vue'
 
 import {
 	NcLoadingIcon,
