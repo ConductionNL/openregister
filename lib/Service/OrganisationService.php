@@ -286,8 +286,17 @@ class OrganisationService
                     $this->logger->warning('Default organisation UUID in settings not found, falling back to creation', [
                         'uuid' => $defaultOrgUuid,
                     ]);
-                    // UUID in settings doesn't exist, create new default
-                    $defaultOrg = $this->createOrganisation('Default Organisation', 'Auto-generated default organisation', false);
+                    // UUID in settings doesn't exist, first try existing default slug.
+                    try {
+                        $defaultOrg = $this->organisationMapper->findBySlug($this->generateSlug('Default Organisation'));
+                        $this->logger->info('Recovered existing default organisation by slug', [
+                            'uuid' => $defaultOrg->getUuid(),
+                            'slug' => $defaultOrg->getSlug(),
+                        ]);
+                    } catch (DoesNotExistException $slugException) {
+                        // Still not found, create new default.
+                        $defaultOrg = $this->createOrganisation('Default Organisation', 'Auto-generated default organisation', false);
+                    }
 
                     // Update settings with new UUID
                     if ($this->settingsService !== null) {
@@ -297,9 +306,17 @@ class OrganisationService
                     $this->setDefaultOrganisationId($defaultOrg->getUuid());
                 }
             } else {
-                // No UUID in settings, create a new default organisation
-                $this->logger->info('No default organisation found in settings, creating new one');
-                $defaultOrg = $this->createOrganisation('Default Organisation', 'Auto-generated default organisation', false);
+                // No UUID in settings: first try existing default slug, then create.
+                try {
+                    $defaultOrg = $this->organisationMapper->findBySlug($this->generateSlug('Default Organisation'));
+                    $this->logger->info('No default UUID set, but found existing default organisation by slug', [
+                        'uuid' => $defaultOrg->getUuid(),
+                        'slug' => $defaultOrg->getSlug(),
+                    ]);
+                } catch (DoesNotExistException $e) {
+                    $this->logger->info('No default organisation found in settings or by slug, creating new one');
+                    $defaultOrg = $this->createOrganisation('Default Organisation', 'Auto-generated default organisation', false);
+                }
 
                 // Store in settings
                 if ($this->settingsService !== null) {
