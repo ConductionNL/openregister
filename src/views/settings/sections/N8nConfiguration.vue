@@ -255,8 +255,8 @@
 </template>
 
 <script>
-import SettingsSection from '../../../components/shared/SettingsSection.vue'
-import SettingsCard from '../../../components/shared/SettingsCard.vue'
+import { CnSettingsSection as SettingsSection } from '@conduction/nextcloud-vue'
+import { CnSettingsCard as SettingsCard } from '@conduction/nextcloud-vue'
 import { NcPasswordField, NcTextField, NcButton, NcLoadingIcon, NcCheckboxRadioSwitch } from '@nextcloud/vue'
 import Connection from 'vue-material-design-icons/Connection.vue'
 import Web from 'vue-material-design-icons/Web.vue'

@@ -38,6 +38,12 @@ webpackConfig.resolve.extensions = [
 webpackConfig.resolve.alias = {
 	...(webpackConfig.resolve.alias || {}),
 	'@': path.resolve(__dirname, 'src'),
+	'@conduction/nextcloud-vue': path.resolve(__dirname, '../nextcloud-vue/src'),
+	// Deduplicate shared packages (prevents dual-Pinia / dual-Vue bugs)
+	// Use $ suffix for exact match so subpath imports (e.g. @nextcloud/vue/dist/...) still work
+	'vue$': path.resolve(__dirname, 'node_modules/vue'),
+	'pinia$': path.resolve(__dirname, 'node_modules/pinia'),
+	'@nextcloud/vue$': path.resolve(__dirname, 'node_modules/@nextcloud/vue'),
 }
 
 const appId = 'openregister'
