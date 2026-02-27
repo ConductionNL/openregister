@@ -1105,6 +1105,29 @@ class RenderObject
 
             // Extend the subobject(s).
             if (is_array($value) === true) {
+                $isListArray = array_is_list($value);
+
+                // Associative arrays are object payloads (e.g. betrokkeneIdentificatie),
+                // not arrays of relation identifiers. Never coerce them to [] by relation extension logic.
+                if ($isListArray === false) {
+                    if (empty($keyExtends) === false) {
+                        $tmpExtends = $keyExtends;
+                        $nested = $this->handleExtendDot(
+                            data: $value,
+                            extend: $tmpExtends,
+                            depth: $depth + 1,
+                            allFlag: $allFlag,
+                            visitedIds: $visitedIds
+                        );
+                        if (is_numeric($override) === true) {
+                            $dataDot->set(keys: $key, value: $nested);
+                        } else {
+                            $dataDot->set(keys: $override, value: $nested);
+                        }
+                    }
+                    continue;
+                }
+
                 // Filter out null values and values starting with '@' before mapping
                 $value         = array_filter(
                     $value,
@@ -1335,7 +1358,7 @@ class RenderObject
 
         // Process each inversed property.
         foreach ($inversedProperties as $propertyName => $propertyConfig) {
-            $objectData[$propertyName] = [];
+            $existingValue = $objectData[$propertyName] ?? null;
 
             // Extract inversedBy configuration based on property structure
             $inversedByProperty = null;
@@ -1404,11 +1427,25 @@ class RenderObject
                     $inversedObjects
                     );
 
+            // Preserve existing non-empty payload values when no inversed data is found.
+            // This prevents render-time clobbering of user-provided object fields.
+            if (empty($inversedUuids)) {
+                continue;
+            }
+
             // Set the inversed property value based on whether it's an array or single value
             if ($isArray) {
-                $objectData[$propertyName] = $inversedUuids;
+                if (is_array($existingValue) && !empty($existingValue)) {
+                    $objectData[$propertyName] = array_values(array_unique(array_merge($existingValue, $inversedUuids)));
+                } else {
+                    $objectData[$propertyName] = $inversedUuids;
+                }
             } else {
-                $objectData[$propertyName] = !empty($inversedUuids) ? end($inversedUuids) : null;
+                if ($existingValue !== null && $existingValue !== '') {
+                    $objectData[$propertyName] = $existingValue;
+                } else {
+                    $objectData[$propertyName] = end($inversedUuids);
+                }
             }
         }//end foreach
 
