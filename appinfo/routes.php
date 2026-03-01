@@ -334,6 +334,8 @@ return [
         ['name' => 'registers#stats', 'url' => '/api/registers/{id}/stats', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'oas#generate', 'url' => '/api/registers/{id}/oas', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'oas#generateAll', 'url' => '/api/registers/oas', 'verb' => 'GET'],
+        ['name' => 'oas#docs', 'url' => '/api/registers/{id}/docs', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'oas#docsAll', 'url' => '/api/docs', 'verb' => 'GET'],
         // Configurations - Management.
         ['name' => 'configuration#checkVersion', 'url' => '/api/configurations/{id}/check-version', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
         ['name' => 'configuration#preview', 'url' => '/api/configurations/{id}/preview', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
