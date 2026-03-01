@@ -389,8 +389,11 @@ class FacetHandler
             $config    = $naField['facetConfig'];
 
             // Build a schema-scoped query to get facets for this field only.
+            // IMPORTANT: Remove plural schema/register keys so getSimpleFacets() routes
+            // to the single-schema path instead of the multi-schema UNION path.
             $scopedQuery = $facetQuery;
             $scopedQuery['@self']['schema'] = $schemaId;
+            unset($scopedQuery['@self']['schemas'], $scopedQuery['_schemas']);
 
             try {
                 $scopedFacets = $this->unifiedObjectMapper->getSimpleFacets($scopedQuery);
@@ -972,25 +975,40 @@ class FacetHandler
      */
     private function getSchemasForQuery(array $baseQuery): array
     {
-        // Check if specific schemas are filtered in the query.
+        // Check for plural _schemas first (multi-schema publications queries).
+        // Disable RBAC/multitenancy since schemas are system-level entities needed for facet config.
+        $schemasPlural = $baseQuery['@self']['schemas'] ?? $baseQuery['_schemas'] ?? null;
+        if ($schemasPlural !== null && is_array($schemasPlural) === true && count($schemasPlural) > 0) {
+            return $this->schemaMapper->findMultiple(
+                ids: array_map('intval', $schemasPlural),
+                _rbac: false,
+                _multitenancy: false
+            );
+        }
+
+        // Check if specific schema (singular) is filtered in the query.
         $schemaFilter = $baseQuery['@self']['schema'] ?? null;
 
         if ($schemaFilter !== null) {
-            // Get specific schemas.
+            // Get specific schemas (bypass RBAC — schemas are system-level).
             if (is_array($schemaFilter) === true) {
-                return $this->schemaMapper->findMultiple($schemaFilter);
+                return $this->schemaMapper->findMultiple(
+                    ids: $schemaFilter,
+                    _rbac: false,
+                    _multitenancy: false
+                );
             }
 
             try {
-                return [$this->schemaMapper->find($schemaFilter)];
+                return [$this->schemaMapper->find(id: $schemaFilter, _multitenancy: false, _rbac: false)];
             } catch (\Exception $e) {
                 return [];
             }
         }
 
         // No specific schema filter - get all schemas for collection-wide facetable discovery.
-        // Null = no limit (get all).
-        return $this->schemaMapper->findAll(limit: null);
+        // Null = no limit (get all). Bypass RBAC since schemas are system-level.
+        return $this->schemaMapper->findAll(limit: null, _rbac: false, _multitenancy: false);
     }//end getSchemasForQuery()
 
     /**
