@@ -238,7 +238,10 @@ services:
   # OpenAnonymiser - Custom anonymisation service
   # Built by mwest2020, provides PII detection and anonymisation
   # Access at: http://localhost:5002
+  # Start with: docker compose --profile ai up
   openanonymiser:
+    profiles:
+      - ai
     image: mwest2020/openanonymiser:dev
     container_name: openregister-openanonymiser
     restart: always
@@ -262,6 +265,8 @@ services:
   # Access at: http://localhost:5001
   # Documentation: https://microsoft.github.io/presidio/
   presidio-analyzer:
+    profiles:
+      - ai
     image: mcr.microsoft.com/presidio-analyzer:latest
     container_name: openregister-presidio-analyzer
     restart: always
@@ -350,6 +355,8 @@ services:
   # OpenAI-compatible API endpoint: http://localhost:8081/v1
   # Documentation: https://huggingface.co/docs/text-generation-inference
   tgi-llm:
+    profiles:
+      - ai
     image: ghcr.io/huggingface/text-generation-inference:latest
     container_name: openregister-tgi-llm
     restart: always
@@ -404,6 +411,8 @@ services:
   # Access at: http://localhost:8083
   # Endpoints: /parse (image), /parse_pdf (PDF), /info, /health
   dolphin-vlm:
+    profiles:
+      - ai
     build:
       context: ./docker/dolphin
       dockerfile: Dockerfile
@@ -471,6 +480,8 @@ services:
   # Access at: http://localhost:3000
   # Documentation: https://github.com/ConductionNL/tilburg-woo-ui
   tilburg-woo-ui:
+    profiles:
+      - ui
     build:
       context: ../tilburg-woo-ui
       dockerfile: Dockerfile.dev
@@ -911,6 +922,8 @@ services:
   # Manages ExApp containers and routes requests
   # Documentation: https://github.com/nextcloud/HaRP
   harp:
+    profiles:
+      - exapps
     image: ghcr.io/nextcloud/nextcloud-appapi-harp:release
     container_name: openregister-harp
     restart: always
@@ -973,17 +986,17 @@ services:
       - APP_ID=n8n
       - APP_VERSION=1.0.0
       - APP_HOST=0.0.0.0
-      - APP_PORT=9000
+      - APP_PORT=23000
       - APP_PERSISTENT_STORAGE=/data
-      # These will be set by AppAPI when registered
-      - APP_SECRET=${N8N_APP_SECRET:-dev-secret}
+      - APP_SECRET=00iz5gkT+brtNwjpZR/28ttzZFdEFo9elARhgMQd0cMu7Kq6OF63KMFwFbxZTx9VbgsNBTVKhHnLUBo4RYg2pjINRluTUj0Vwb2aQDG0ffT4/8TX1UZC8tU42oi5MuV6
       - NEXTCLOUD_URL=http://nextcloud
       # n8n specific
       - N8N_TIMEZONE=Europe/Amsterdam
+      - N8N_PATH_PREFIX=/index.php/apps/app_api/proxy/n8n
     depends_on:
       - db
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:9000/heartbeat || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:23000/heartbeat || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -992,6 +1005,8 @@ services:
   # Ollama ExApp - Local LLM Inference
   # Access via Nextcloud: /index.php/apps/app_api/proxy/ollama
   exapp-ollama:
+    profiles:
+      - ai
     build:
       context: ./exapps/ollama
       dockerfile: Dockerfile
@@ -1034,6 +1049,8 @@ services:
   # Open WebUI ExApp - Chat Interface for LLMs
   # Access via Nextcloud: /index.php/apps/app_api/proxy/open_webui
   exapp-openwebui:
+    profiles:
+      - ai
     build:
       context: ./exapps/open-webui
       dockerfile: Dockerfile
