@@ -1,3 +1,8 @@
+---
+status: reviewed
+reviewed_date: 2026-02-28
+---
+
 # Object Interactions Specification
 
 ## Purpose
@@ -29,10 +34,26 @@ Any app that uses OpenRegister (Procest, Pipelinq, OpenCatalogi, etc.) can use t
 ┌──────────▼──────┐  ┌────────▼─────────────────┐
 │  Nextcloud      │  │  Nextcloud               │
 │  CalDAV (sabre) │  │  Comments (ICommentsManager)│
-│  VTODO items    │  │  objectType: openregister │
-│  + X-OPENREG-*  │  │  objectId: {uuid}        │
+│  CalDavBackend  │  │  objectType: openregister │
+│  VTODO items    │  │  objectId: {uuid}        │
+│  + X-OPENREG-*  │  │                           │
 │  + LINK (9253)  │  │                           │
 └─────────────────┘  └───────────────────────────┘
+
+Cleanup:
+┌──────────────────────────────────────────────────┐
+│  ObjectCleanupListener (listens: ObjectDeletedEvent)│
+│  - Deletes notes via NoteService::deleteNotesForObject() │
+│  - Deletes tasks via TaskService::getTasksForObject()    │
+│    + TaskService::deleteTask() per task                   │
+└──────────────────────────────────────────────────┘
+
+Comments Registration:
+┌──────────────────────────────────────────────────┐
+│  CommentsEntityListener (listens: CommentsEntityEvent)  │
+│  - Registers objectType "openregister"                   │
+│  - Validates UUIDs via ObjectEntityMapper::find()        │
+└──────────────────────────────────────────────────┘
 ```
 
 ---
@@ -89,7 +110,7 @@ The system MUST provide a `TaskService` that creates, reads, updates, and delete
 - GIVEN 3 VTODOs exist with `X-OPENREGISTER-OBJECT:abc-123`
 - WHEN the service queries tasks for object "abc-123"
 - THEN it MUST return all 3 tasks
-- AND each task MUST be returned as a JSON object with: `id`, `uid`, `summary`, `description`, `status`, `priority`, `due`, `completed`, `created`
+- AND each task MUST be returned as a JSON object with: `id` (URI), `uid`, `calendarId`, `summary`, `description`, `status`, `priority`, `due`, `completed`, `created`, `objectUuid`, `registerId`, `schemaId`
 
 #### Scenario: Update task status
 
@@ -105,11 +126,13 @@ The system MUST provide a `TaskService` that creates, reads, updates, and delete
 - WHEN the service deletes the task
 - THEN the VTODO MUST be removed from the calendar
 
-#### Scenario: Task query uses CalDAV REPORT
+#### Scenario: Task query uses in-memory filtering
 
 - GIVEN the service needs to find tasks for an object
-- THEN it MUST use CalDAV calendar-query REPORT with a prop-filter on `X-OPENREGISTER-OBJECT`
-- AND the text-match MUST use the object UUID
+- THEN `TaskService::getTasksForObject()` loads all calendar objects from the user's VTODO-supporting calendar via `CalDavBackend::getCalendarObjects()`
+- AND performs a quick `strpos()` check for the object UUID in each calendar object's data
+- AND parses matching VTODO objects with `Sabre\VObject\Reader` to extract X-OPENREGISTER-OBJECT for exact UUID matching
+- NOTE: This is a PHP-based post-filter approach, not a CalDAV REPORT query. Performance is adequate for typical task counts but may degrade with very large calendars.
 
 ### REQ-OI-002: Tasks Controller and API [MVP]
 
@@ -142,9 +165,9 @@ The system MUST expose task operations as REST endpoints under the existing obje
 #### Scenario: List tasks returns JSON
 
 - GIVEN a GET request to `.../objects/5/12/abc-123/tasks`
-- THEN the API MUST return a JSON array of task objects
-- AND each task object MUST include: `id`, `uid`, `summary`, `description`, `status`, `priority`, `due`, `completed`, `created`, `assignee`
-- AND the response MUST include `total` count
+- THEN the API MUST return a JSON object with `results` (array of task objects) and `total` (count)
+- AND each task object MUST include: `id` (URI), `uid`, `calendarId`, `summary`, `description`, `status`, `priority`, `due`, `completed`, `created`, `objectUuid`, `registerId`, `schemaId`
+- NOTE: `assignee` is NOT currently implemented in the task response
 
 #### Scenario: Task status mapping
 
@@ -170,13 +193,14 @@ The system MUST expose task operations as REST endpoints under the existing obje
 
 ### REQ-OI-003: Note Service [MVP]
 
-The system MUST provide a `NoteService` that wraps Nextcloud's ICommentsManager for creating, reading, and deleting notes (comments) on OpenRegister objects.
+The system MUST provide a `NoteService` that wraps Nextcloud's `ICommentsManager` for creating, reading, and deleting notes (comments) on OpenRegister objects. The service also depends on `IUserSession` (for current user context) and `IUserManager` (for resolving display names).
 
 #### Scenario: Register OpenRegister as a comments entity type
 
 - GIVEN the OpenRegister app is loaded
-- THEN it MUST register a `CommentsEntityEvent` listener
-- AND the listener MUST register objectType `"openregister"` with a validation closure that checks the object UUID exists
+- THEN it MUST register a `CommentsEntityListener` for `CommentsEntityEvent` (registered in `Application::registerEventListeners()`)
+- AND the listener calls `$event->addEntityCollection('openregister', ...)` with a validation closure
+- AND the closure uses `ObjectEntityMapper::find($objectUuid)` to validate whether the given object UUID exists in the database
 
 #### Scenario: Create a note on an object
 
@@ -191,16 +215,17 @@ The system MUST provide a `NoteService` that wraps Nextcloud's ICommentsManager 
 #### Scenario: List notes for an object
 
 - GIVEN 5 comments exist on object "abc-123"
-- WHEN the service queries notes for "abc-123"
-- THEN it MUST return all 5 notes in reverse chronological order
-- AND each note MUST include: `id`, `message`, `actorId`, `actorDisplayName`, `createdAt`
+- WHEN the service queries notes for "abc-123" via `NoteService::getNotesForObject(objectUuid, limit, offset)`
+- THEN it MUST return notes up to the limit (default 50)
+- AND each note MUST include: `id`, `message`, `actorType`, `actorId`, `actorDisplayName`, `createdAt`, `isCurrentUser`
+- AND `actorDisplayName` is resolved from `IUserManager` (falls back to `actorId` if user not found)
 
 #### Scenario: Delete a note
 
 - GIVEN a comment on an OpenRegister object
-- WHEN the service deletes the note
-- THEN the comment MUST be removed via ICommentsManager
-- AND only the note author or an admin MUST be able to delete
+- WHEN the service deletes the note via `NoteService::deleteNote(int $noteId)`
+- THEN the comment MUST be removed via `ICommentsManager::delete()`
+- NOTE: The current implementation does NOT enforce author/admin authorization on delete. Any authenticated user with access to the object can delete any note. Authorization enforcement is a future improvement.
 
 ### REQ-OI-004: Notes Controller and API [MVP]
 
@@ -227,25 +252,29 @@ The system MUST expose note operations as REST endpoints under the existing obje
 #### Scenario: List notes returns JSON with actor info
 
 - GIVEN a GET request to `.../objects/5/12/abc-123/notes`
-- THEN the API MUST return a JSON array of note objects
-- AND each note MUST include: `id`, `message`, `actorId`, `actorDisplayName`, `createdAt`
-- AND notes MUST be ordered newest-first
+- THEN the API MUST return a JSON object with `results` (array of note objects) and `total` (count)
+- AND each note MUST include: `id`, `message`, `actorType`, `actorId`, `actorDisplayName`, `createdAt`, `isCurrentUser`
+- AND display names are resolved via `IUserManager`
+- NOTE: Note ordering depends on `ICommentsManager::getForObject()` which returns newest-first by default. Pagination is supported via `limit` and `offset` query parameters.
 
 ### REQ-OI-005: Calendar Selection [MVP]
 
-The system MUST determine which CalDAV calendar to use for task storage.
+The system MUST determine which CalDAV calendar to use for task storage. The `TaskService::findUserCalendar()` method handles this.
 
-#### Scenario: Use user's default calendar
+#### Scenario: Use first VTODO-supporting calendar
 
-- GIVEN the user has a default calendar (personal)
+- GIVEN the user has one or more CalDAV calendars
+- WHEN creating or listing tasks
+- THEN the service finds the first calendar that supports VTODO components (by checking `supported-calendar-component-set`)
+- AND uses that calendar for all task operations
+- NOTE: This is NOT necessarily the user's "default" calendar; it is the first VTODO-capable calendar found
+
+#### Scenario: User has no VTODO-supporting calendars
+
+- GIVEN the user has no CalDAV calendars that support VTODO
 - WHEN creating a task
-- THEN the VTODO MUST be created in the user's default/personal calendar
-
-#### Scenario: User has no calendars
-
-- GIVEN the user has no CalDAV calendars
-- WHEN creating a task
-- THEN the API MUST return HTTP 400 with message "No calendar available"
+- THEN `TaskService` throws an Exception with message "No VTODO-supporting calendar found for user {uid}"
+- AND the controller catches this as a general Exception, returning HTTP 500
 
 ### REQ-OI-006: Object Deletion Cleanup [MVP]
 
@@ -257,12 +286,14 @@ The system MUST clean up tasks and notes when an OpenRegister object is deleted.
 - WHEN the object is deleted
 - THEN all comments with objectType "openregister" and objectId "abc-123" MUST be deleted via `ICommentsManager::deleteCommentsAtObject()`
 
-#### Scenario: Object deleted — optionally remove linked tasks
+#### Scenario: Object deleted — remove linked tasks
 
 - GIVEN an OpenRegister object with UUID "abc-123" that has 2 linked VTODOs
 - WHEN the object is deleted
-- THEN the linked VTODOs SHOULD be deleted (or marked CANCELLED)
-- AND the deletion SHOULD be logged
+- THEN the `ObjectCleanupListener` queries all tasks for the object UUID via `TaskService::getTasksForObject()`
+- AND deletes each task via `TaskService::deleteTask(calendarId, taskUri)`
+- AND logs the number of deleted tasks
+- NOTE: Tasks are always deleted (not marked CANCELLED). Failures on individual tasks are logged as warnings but do not block the deletion.
 
 ---
 

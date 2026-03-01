@@ -497,6 +497,6 @@ For detailed implementation guide, see: [External App Cache Optimization](../dev
 
 **Related Documentation**:
 - [External App Cache Optimization](../development/external-app-optimization.md)
-- [Schema-Based Facets](./schema-based-facets.md)
+- [Faceting](../Features/faceting.md)
 - [Bulk Operations Implementation](./bulk-operations-implementation.md)
 - [Object Handlers](../development/object-handlers.md)

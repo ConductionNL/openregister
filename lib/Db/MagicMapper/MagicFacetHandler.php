@@ -1410,6 +1410,7 @@ class MagicFacetHandler
             '_schema',
             '_schemas',
             '_includeDeleted',
+            '_empty',
             '@self',
         ];
 

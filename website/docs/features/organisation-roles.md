@@ -1,371 +1,832 @@
 ---
 sidebar_position: 8
-title: Organisation Roles (RBAC)
-description: Role-Based Access Control using Nextcloud Groups
+title: Access Control (RBAC)
+description: Role-Based Access Control — organisations, schemas, and properties
 ---
 
-# Organisation Roles
+# Access Control (RBAC)
 
-OpenRegister integrates with Nextcloud's group system to provide Role-Based Access Control (RBAC) at the organisation level.
+OpenRegister provides a multi-layered Role-Based Access Control system that controls access at three levels:
 
-## Overview
+| Level | What it controls | Where configured |
+|-------|-----------------|-----------------|
+| **Organisation** | Who can manage registers, schemas, views, agents, and special actions | `Organisation.authorization` |
+| **Schema** | Who can create, read, update, delete **objects** of a given type | `Schema.authorization` |
+| **Property** | Who can read or update **individual fields** within an object | Per-property `authorization` inside the schema |
 
-Each organisation can have one or more Nextcloud groups assigned as 'roles'. Users who belong to these groups automatically get access to the organisation's resources based on their group membership and Nextcloud's native permission system.
+All three levels integrate with **Nextcloud groups** — no separate role management is needed.
 
-## Key Features
+---
 
-- **Nextcloud Integration**: Uses existing Nextcloud groups - no separate role management needed
-- **Flexible Assignment**: Associate any number of Nextcloud groups with an organisation
-- **Native Permissions**: Leverage Nextcloud's built-in group permissions and access controls
-- **Easy Management**: Visual interface for assigning/removing groups from organisations
+## Core Concepts
 
-## Database Schema
+### Groups
 
-### Organisation Entity
+RBAC rules reference **Nextcloud groups** by their group ID. Two special group names exist:
 
-The `Organisation` entity includes:
+| Group | Meaning |
+|-------|---------|
+| `"admin"` | Nextcloud administrators — **always bypass all RBAC checks** |
+| `"public"` | Any logged-in user, regardless of group membership |
 
-```php
-protected ?array $roles = [];
+Unauthenticated (anonymous) requests are evaluated against `"public"` rules only.
+
+### Evaluation Priorities
+
+Permission checks follow this order (first match wins):
+
+1. **Admin bypass** — users in the `admin` group always have full access
+2. **Owner bypass** — the object owner always has full access to their own objects
+3. **No authorization configured** — if the `authorization` field is empty/missing, all users have all permissions
+4. **Missing action** — if a specific CRUD action is not listed, all users have that permission
+5. **Rule matching** — rules are evaluated in order; first matching rule grants access
+
+### RBAC Toggle
+
+RBAC enforcement can be enabled or disabled globally via the admin settings API:
+
+```
+GET  /api/settings/rbac
+PUT  /api/settings/rbac
 ```
 
-This JSON field stores an array of group definitions:
+When disabled, all permission checks are bypassed (all users can do everything).
+
+---
+
+## Level 1: Organisation Authorization
+
+Organisations define **what entity types** their members can manage. This controls access to administrative resources like registers, schemas, views, and agents — not to individual data objects (that's schema-level authorization).
+
+### Configuration
+
+The `authorization` field on an Organisation entity uses a hierarchical structure with CRUD permissions per entity type:
 
 ```json
 {
-  "roles": [
-    {
-      "id": "group-id",
-      "name": "Group Display Name",
-      "userCount": 5
+  "authorization": {
+    "register": {
+      "create": ["admin-group"],
+      "read": ["staff", "viewers"],
+      "update": ["admin-group"],
+      "delete": ["admin-group"]
+    },
+    "schema": {
+      "create": ["admin-group"],
+      "read": ["staff", "viewers"],
+      "update": ["admin-group"],
+      "delete": ["admin-group"]
+    },
+    "object": {
+      "create": ["staff"],
+      "read": ["staff", "viewers"],
+      "update": ["staff"],
+      "delete": ["admin-group"]
+    },
+    "view": {
+      "create": ["admin-group"],
+      "read": ["staff", "viewers"],
+      "update": ["admin-group"],
+      "delete": ["admin-group"]
+    },
+    "agent": {
+      "create": ["admin-group"],
+      "read": ["staff"],
+      "update": ["admin-group"],
+      "delete": ["admin-group"]
     }
-  ]
+  }
 }
 ```
 
-### Database Columns
+### Entity Types
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `roles` | `longtext` (JSON) | Array of Nextcloud group definitions |
-| `active` | `tinyint(1)` | Whether the organisation is active |
+| Type | Controls access to |
+|------|-------------------|
+| `register` | Register management |
+| `schema` | Schema management |
+| `object` | Object CRUD (general, overridden by schema-level auth) |
+| `view` | View management |
+| `agent` | Agent management |
 
-## Managing Organisation Roles
+### Special Rights
 
-### Via UI
+In addition to entity-type CRUD, organisations can define special action permissions:
 
-There are two ways to manage organisation roles through the user interface:
+| Key | Controls |
+|-----|---------|
+| `object_publish` | Who can publish/depublish objects |
+| `agent_use` | Who can execute agents |
+| `dashboard_view` | Who can access the dashboard |
+| `llm_use` | Who can use LLM features |
 
-#### Method 1: Edit Organisation Modal
+### Nextcloud Groups on Organisations
 
-1. Navigate to **Organisation Details** or **Organisation List**
-2. Click **Edit** on an organisation or **Create Organisation** to add a new one
-3. In the **Edit Organisation** modal:
-   - **Basic Information Tab**: Use the 'Nextcloud Groups' multi-select dropdown to quickly add or remove groups
-   - **Security Tab**: View the complete list of assigned groups with the ability to remove individual groups
-4. Click **Save** or **Create** to persist changes
-
-#### Method 2: Manage Roles Action (Legacy)
-
-1. Navigate to **Organisation Details** or **Organisation List**
-2. Click the **Actions** menu (three dots)
-3. Select **Manage Roles**
-4. In the modal:
-   - View currently assigned groups
-   - Add new groups from the dropdown
-   - Remove groups by clicking the X icon
-   - Click **Save Roles** to persist changes
-
-**Recommended Approach**: Use the Edit Organisation modal (Method 1) for a streamlined experience where you can manage groups alongside other organisation settings.
-
-### Via API
-
-#### Get Organisation Roles
-
-```bash
-GET /index.php/apps/openregister/api/organisations/{uuid}
-```
-
-Response includes:
+Each organisation has a `groups` field — an array of Nextcloud group IDs associated with it:
 
 ```json
 {
   "uuid": "org-uuid-123",
   "name": "My Organisation",
-  "roles": [
-    {
-      "id": "editors",
-      "name": "Editors",
-      "userCount": 10
-    }
-  ],
-  "roleCount": 1
+  "groups": ["staff", "editors", "viewers"]
 }
 ```
 
-#### Update Organisation Roles
+Users who belong to these Nextcloud groups automatically get access based on the organisation's `authorization` rules.
+
+### Managing via UI
+
+1. Navigate to **Organisation Details** or **Organisation List**
+2. Click **Edit** on an organisation
+3. In the **Edit Organisation** modal:
+   - **Basic Information Tab**: Use the "Nextcloud Groups" multi-select dropdown to assign groups
+   - **Security Tab**: View and manage the authorization rules
+4. Click **Save** to persist changes
+
+### Managing via API
 
 ```bash
-PUT /index.php/apps/openregister/api/organisations/{uuid}
+# Get organisation (includes groups and authorization)
+GET /api/organisations/{uuid}
+
+# Update organisation groups and authorization
+PUT /api/organisations/{uuid}
+{
+  "groups": ["staff", "editors"],
+  "authorization": {
+    "register": { "create": ["editors"], "read": ["staff"] }
+  }
+}
+
+# Join an organisation
+POST /api/organisations/{uuid}/join
+
+# Leave an organisation
+POST /api/organisations/{uuid}/leave
+
+# Get/set active organisation
+GET  /api/organisations/active
+POST /api/organisations/{uuid}/set-active
 ```
 
-Request body:
+### Organisation Hierarchy
+
+Organisations support parent-child relationships:
+
+- Set via the `parent` field (UUID of parent organisation)
+- **Children can see all resources from parent organisations** (including depublished items)
+- Parents **cannot** see child resources
+- Users can see depublished items from their **own** organisation
+
+---
+
+## Level 2: Schema Authorization
+
+Schema authorization controls who can **create, read, update, and delete objects** of a given type. This is the main RBAC mechanism for data access.
+
+### Configuration
+
+The `authorization` field on a Schema entity maps CRUD actions to arrays of rules:
 
 ```json
 {
-  "roles": [
-    {
-      "id": "editors",
-      "name": "Editors",
-      "userCount": 10
+  "authorization": {
+    "create": ["editors", "managers"],
+    "read": ["public"],
+    "update": ["editors", "managers"],
+    "delete": ["managers"]
+  }
+}
+```
+
+### Full Schema Examples
+
+Below are complete schema JSON examples showing different authorization patterns. These are the same configurations used in the OpenRegister test suite.
+
+#### Example 1: Open Access (No Restrictions)
+
+Any user (including unauthenticated) can perform all operations. This is the default when no `authorization` is set.
+
+```json
+{
+  "title": "Public Knowledge Base",
+  "description": "Open wiki-style content",
+  "properties": {
+    "title": { "type": "string", "required": true },
+    "content": { "type": "string" },
+    "category": { "type": "string" }
+  },
+  "authorization": {}
+}
+```
+
+| User | Create | Read | Update | Delete |
+|------|--------|------|--------|--------|
+| Admin | Yes | Yes | Yes | Yes |
+| Any logged-in user | Yes | Yes | Yes | Yes |
+| Anonymous | Yes | Yes | Yes | Yes |
+
+#### Example 2: Public Read, Restricted Write
+
+Anyone can read, but only specific groups can create, update, or delete. Good for catalogues, directories, and published content.
+
+```json
+{
+  "title": "Software Module",
+  "description": "Published software catalogue entry",
+  "properties": {
+    "naam": { "type": "string", "required": true },
+    "beschrijving": { "type": "string" },
+    "versie": { "type": "string" },
+    "status": { "type": "string", "enum": ["concept", "actief", "ingetrokken"] }
+  },
+  "authorization": {
+    "create": ["editors", "managers"],
+    "read": ["public"],
+    "update": ["editors", "managers"],
+    "delete": ["managers"]
+  }
+}
+```
+
+| User | Create | Read | Update | Delete |
+|------|--------|------|--------|--------|
+| Admin | Yes | Yes | Yes | Yes |
+| `editors` group | Yes | Yes* | Yes | No |
+| `managers` group | Yes | Yes* | Yes | Yes |
+| `viewers` group | No | Yes | No | No |
+| Anonymous | No | Yes | No | No |
+
+*Editors and managers also get read access because logged-in users inherit `public` rights.
+
+#### Example 3: Staff Only (Internal Data)
+
+All operations restricted to a single group, with deletion reserved for managers. Good for internal records, HR data, or confidential information.
+
+```json
+{
+  "title": "Medewerker",
+  "description": "Internal employee record",
+  "properties": {
+    "naam": { "type": "string", "required": true },
+    "email": { "type": "string", "format": "email" },
+    "afdeling": { "type": "string" },
+    "startdatum": { "type": "string", "format": "date" }
+  },
+  "authorization": {
+    "create": ["staff"],
+    "read": ["staff"],
+    "update": ["staff"],
+    "delete": ["managers", "staff"]
+  }
+}
+```
+
+| User | Create | Read | Update | Delete |
+|------|--------|------|--------|--------|
+| Admin | Yes | Yes | Yes | Yes |
+| `staff` group | Yes | Yes | Yes | Yes |
+| `managers` group | No | No | No | Yes |
+| Any other user | No | No | No | No |
+| Anonymous | No | No | No | No |
+
+#### Example 4: Collaborative (Tiered Access)
+
+Multiple groups with escalating privileges. Good for team workflows with viewers, editors, and administrators.
+
+```json
+{
+  "title": "Zaak",
+  "description": "Case management record",
+  "properties": {
+    "onderwerp": { "type": "string", "required": true },
+    "beschrijving": { "type": "string" },
+    "status": { "type": "string", "enum": ["open", "in_behandeling", "afgerond"] },
+    "verantwoordelijke": { "type": "string" },
+    "deadline": { "type": "string", "format": "date" }
+  },
+  "authorization": {
+    "create": ["editors", "managers"],
+    "read": ["viewers", "editors", "managers"],
+    "update": ["editors", "managers"],
+    "delete": ["managers"]
+  }
+}
+```
+
+| User | Create | Read | Update | Delete |
+|------|--------|------|--------|--------|
+| Admin | Yes | Yes | Yes | Yes |
+| `viewers` group | No | Yes | No | No |
+| `editors` group | Yes | Yes | Yes | No |
+| `managers` group | Yes | Yes | Yes | Yes |
+| Anonymous | No | No | No | No |
+
+#### Example 5: Conditional Access (Organisation-Scoped)
+
+Access depends on object data matching the user's context. Good for multi-tenant data where organisations should only see their own entries.
+
+```json
+{
+  "title": "Gebruik",
+  "description": "Software usage record per organisation",
+  "properties": {
+    "module": { "type": "string", "required": true },
+    "aanbieder": { "type": "string", "description": "Organisation UUID of the provider" },
+    "status": { "type": "string" },
+    "geregistreerdDoor": { "type": "string" }
+  },
+  "authorization": {
+    "read": [
+      { "group": "public", "match": { "geregistreerdDoor": "Leverancier" } },
+      "gebruik-beheerder"
+    ],
+    "create": ["gebruik-beheerder"],
+    "update": [
+      { "group": "gebruik-beheerder", "match": { "_organisation": "$organisation" } }
+    ],
+    "delete": ["admin"]
+  }
+}
+```
+
+| User | Create | Read | Update | Delete |
+|------|--------|------|--------|--------|
+| Admin | Yes | Yes | Yes | Yes |
+| `gebruik-beheerder` (same org) | Yes | Yes | Yes | No |
+| `gebruik-beheerder` (different org) | Yes | Yes | No | No |
+| Any logged-in (object has `geregistreerdDoor = "Leverancier"`) | No | Yes | No | No |
+| Any logged-in (other objects) | No | No | No | No |
+
+#### Example 6: Full Schema with Property-Level Authorization
+
+Combines schema-level and property-level authorization. Some fields have stricter access than the object itself.
+
+```json
+{
+  "title": "Gebruik",
+  "description": "Usage record with restricted internal notes",
+  "properties": {
+    "module": {
+      "type": "string",
+      "required": true
     },
-    {
-      "id": "viewers",
-      "name": "Viewers",
-      "userCount": 50
+    "status": {
+      "type": "string",
+      "enum": ["aangevraagd", "actief", "beeindigd"]
+    },
+    "aanbieder": {
+      "type": "string"
+    },
+    "interneAantekening": {
+      "type": "string",
+      "title": "Interne Aantekening",
+      "description": "Only visible to users in the same organisation",
+      "authorization": {
+        "read": [
+          { "group": "public", "match": { "_organisation": "$organisation" } }
+        ],
+        "update": [
+          { "group": "public", "match": { "_organisation": "$organisation" } }
+        ]
+      }
+    },
+    "beoordeling": {
+      "type": "string",
+      "title": "Beoordeling",
+      "description": "Only managers can modify this field",
+      "authorization": {
+        "read": ["gebruik-beheerder"],
+        "update": ["managers"]
+      }
     }
-  ]
+  },
+  "authorization": {
+    "create": ["gebruik-beheerder"],
+    "read": ["gebruik-beheerder"],
+    "update": ["gebruik-beheerder"],
+    "delete": ["managers"]
+  }
 }
 ```
 
-## PHP API
+**What happens:**
 
-### Organisation Entity Methods
+| Field | `gebruik-beheerder` (same org) | `gebruik-beheerder` (different org) | `managers` |
+|-------|-------------------------------|-------------------------------------|-----------|
+| `module` | Read + Write | Read + Write | Read + Write |
+| `status` | Read + Write | Read + Write | Read + Write |
+| `interneAantekening` | Read + Write | **Hidden** | Read + Write** |
+| `beoordeling` | Read only | Read only | Read + Write |
 
-```php
-// Add a role to the organisation
-$organisation->addRole([
-    'id' => 'group-id',
-    'name' => 'Group Name',
-    'userCount' => 5
-]);
+** Managers also get `interneAantekening` access if they're in the same organisation.
 
-// Remove a role
-$organisation->removeRole('group-id');
+### Rule Types
 
-// Check if organisation has a role
-if ($organisation->hasRole('group-id')) {
-    // ...
+#### Simple Rule (Unconditional)
+
+A string representing a group name. Users in this group always have access:
+
+```json
+{
+  "authorization": {
+    "read": ["admin", "editors"]
+  }
 }
-
-// Get a specific role
-$role = $organisation->getRole('group-id');
-
-// Get all roles
-$roles = $organisation->getRoles();
-
-// Set all roles at once
-$organisation->setRoles($rolesArray);
 ```
 
-### Example: Adding Groups on Organisation Creation
+#### Conditional Rule (Object-Based)
 
-```php
-use OCA\OpenRegister\Service\OrganisationService;
+An object with a `group` and optional `match` conditions. Access is granted only when the object matches the specified conditions:
 
-$organisation = $organisationService->createOrganisation(
-    'Research Department',
-    'Handles all research activities'
-);
-
-// Add groups as roles
-$organisation->addRole([
-    'id' => 'researchers',
-    'name' => 'Researchers',
-    'userCount' => 25
-]);
-
-$organisation->addRole([
-    'id' => 'lab-managers',
-    'name' => 'Lab Managers',
-    'userCount' => 5
-]);
-
-$organisationMapper->update($organisation);
+```json
+{
+  "authorization": {
+    "read": [
+      {
+        "group": "public",
+        "match": { "status": "published" }
+      }
+    ]
+  }
+}
 ```
 
-## How It Works
+### Multiple Rules (OR Logic)
 
-### Group-Based Access
+Multiple rules in the array are evaluated with **OR** logic — access is granted if **any** rule matches:
 
-1. **Group Assignment**: Nextcloud groups are assigned to organisations as 'roles'
-2. **User Membership**: Users are added to Nextcloud groups through normal Nextcloud user management
-3. **Access Control**: When a user tries to access organisation resources:
-   - Check if user is in the organisation
-   - Check if user belongs to any of the organisation's assigned groups
-   - Apply Nextcloud's native group permissions
-
-### Integration with Nextcloud Groups
-
-OpenRegister leverages Nextcloud's `/ocs/v2.php/cloud/groups/details` API to:
-- List available groups
-- Get group member counts
-- Display group metadata
-
-No duplication of user-role assignments - everything is managed through Nextcloud's native group system.
-
-## Permissions
-
-### Who Can Manage Roles?
-
-Only users who can **edit** the organisation can manage its roles:
-
-- Organisation owner
-- System administrators
-- Users with organisation edit permissions
-
-### UI Visibility
-
-The "Manage Roles" button only appears if:
-
-```javascript
-canEditOrganisation(organisation)
+```json
+{
+  "authorization": {
+    "read": [
+      "admin",
+      { "group": "public", "match": { "geregistreerdDoor": "Leverancier" } },
+      { "group": "gebruik-beheerder" }
+    ]
+  }
+}
 ```
 
-This ensures proper access control for role management.
+This grants read access if:
+- User is in `admin` group, **OR**
+- User is logged in AND object has `geregistreerdDoor = "Leverancier"`, **OR**
+- User is in `gebruik-beheerder` group
 
-## Use Cases
+### Dynamic Variables
 
-### Scenario 1: Department Organisation
+Match conditions support dynamic variables that are resolved at query time:
 
-```
-Organisation: 'Engineering Department'
-Roles:
-  - 'engineers' (50 users) - Full access to engineering resources
-  - 'engineering-managers' (5 users) - Administrative access
-  - 'interns' (10 users) - Read-only access
-```
+| Variable | Resolves to |
+|----------|------------|
+| `$organisation` | Current user's active organisation UUID |
+| `$activeOrganisation` | Alias for `$organisation` |
+| `$userId` | Current user's ID |
+| `$user` | Alias for `$userId` |
 
-### Scenario 2: Project-Based Organisation
-
-```
-Organisation: 'Website Redesign Project'
-Roles:
-  - 'designers' (8 users) - Design asset access
-  - 'developers' (12 users) - Code repository access
-  - 'project-managers' (2 users) - Full project oversight
-```
-
-### Scenario 3: Multi-Tenant Organisation
-
-```
-Organisation: 'Client: Acme Corp'
-Roles:
-  - 'acme-admins' (3 users) - Client administrators
-  - 'acme-users' (100 users) - Regular client users
-  - 'support-staff' (10 users) - Internal support team
+```json
+{
+  "group": "public",
+  "match": { "aanbieder": "$organisation" }
+}
 ```
 
-## Best Practices
+This grants access when the `aanbieder` property matches the user's active organisation.
 
-### 1. Use Descriptive Group Names
+If a dynamic variable cannot be resolved (e.g., user has no active organisation), the condition is **not** met.
 
-Create Nextcloud groups with clear, descriptive names:
-- ✅ `marketing-editors`, `finance-viewers`
-- ❌ `group1`, `temp-group`
+### Match Operators
 
-### 2. Organize Groups Hierarchically
+The `match` property supports various operators:
 
-Use prefixes for related groups:
+| Operator | Example | Description |
+|----------|---------|-------------|
+| *(shorthand)* | `{ "field": "value" }` | Equals |
+| `$eq` | `{ "field": { "$eq": "value" } }` | Equals (explicit) |
+| `$ne` | `{ "field": { "$ne": "value" } }` | Not equals |
+| `$in` | `{ "field": { "$in": ["a", "b"] } }` | In array |
+| `$nin` | `{ "field": { "$nin": ["a", "b"] } }` | Not in array |
+| `$exists` | `{ "field": { "$exists": true } }` | Not null |
+| `$gt` / `$gte` | `{ "field": { "$gt": 5 } }` | Greater than (or equal) |
+| `$lt` / `$lte` | `{ "field": { "$lt": 10 } }` | Less than (or equal) |
+
+### Multiple Conditions (AND Logic)
+
+When multiple properties are specified in `match`, **all** conditions must be met:
+
+```json
+{
+  "group": "public",
+  "match": {
+    "status": "published",
+    "visibility": "public"
+  }
+}
 ```
-hr-administrators
-hr-managers
-hr-staff
-hr-contractors
+
+### Special Fields
+
+| Field | Matches against |
+|-------|----------------|
+| `_organisation` | The object's `@self.organisation` metadata field |
+| *(any other)* | The object's data properties |
+
+### Complete Example
+
+A module schema where:
+- Modules registered by "Leverancier" are publicly readable
+- Other modules require the `gebruik-beheerder` group
+- Only `gebruik-beheerder` can create/update
+- Only `admin` can delete
+
+```json
+{
+  "authorization": {
+    "read": [
+      { "group": "public", "match": { "geregistreerdDoor": "Leverancier" } },
+      "gebruik-beheerder"
+    ],
+    "create": ["gebruik-beheerder"],
+    "update": ["gebruik-beheerder"],
+    "delete": ["admin"]
+  }
+}
 ```
 
-### 3. Regular Audits
+---
 
-Periodically review:
-- Which groups are assigned to each organisation
-- Whether group members still need access
-- Unused or obsolete groups
+## Level 3: Property Authorization
 
-### 4. Document Group Purposes
+Property-level authorization controls access to **individual fields** within objects, independently from the schema-level RBAC.
 
-In Nextcloud's group descriptions, document:
-- What access the group provides
-- Which organisations use this group
-- Who should be added to the group
+### Use Case
 
-### 5. Separate Concerns
+Consider a `gebruik` (usage) schema where most properties can be read by anyone with the `gebruik-beheerder` group, but the `interneAantekening` (internal notes) field should only be visible to users in the same organisation as the object.
 
-Don't mix unrelated permissions in a single group:
-- ✅ Create `project-a-editors` and `project-b-editors`
-- ❌ Use single `editors` group for all projects
+### Configuration
 
-## Troubleshooting
+Property authorization is configured inside the schema's `properties` definition using an `authorization` key on individual properties:
 
-### Groups Not Appearing in Dropdown
-
-**Problem**: Available groups list is empty
-
-**Solutions**:
-1. Verify Nextcloud groups exist: Settings → Users → Groups
-2. Check OCS API access: `curl -u admin:password http://nextcloud/ocs/v2.php/cloud/groups/details`
-3. Review browser console for API errors
-
-### Roles Not Saving
-
-**Problem**: Changes to roles are not persisted
-
-**Solutions**:
-1. Verify user has edit permissions for the organisation
-2. Check database column exists: `SHOW COLUMNS FROM oc_openregister_organisations LIKE 'roles'`
-3. Run migrations: `php occ migrations:migrate openregister`
-4. Check server logs for errors
-
-### Default Organisation Flag Missing
-
-**Problem**: Multiple organisations but none marked as default
-
-**Solutions**:
-1. Check database: `SELECT id, name, is_default FROM oc_openregister_organisations`
-2. Set default manually:
-```sql
-UPDATE oc_openregister_organisations SET is_default = 1 WHERE id = 1 LIMIT 1;
+```json
+{
+  "properties": {
+    "naam": {
+      "type": "string",
+      "title": "Naam"
+    },
+    "interneAantekening": {
+      "type": "string",
+      "title": "Interne Aantekening",
+      "authorization": {
+        "read": [
+          { "group": "public", "match": { "_organisation": "$organisation" } }
+        ],
+        "update": [
+          { "group": "public", "match": { "_organisation": "$organisation" } }
+        ]
+      }
+    }
+  }
+}
 ```
-3. Remove duplicates if needed
+
+- `naam`: No property-level authorization — follows schema-level RBAC
+- `interneAantekening`: Only readable/writable if user's active organisation matches the object's organisation
+
+### Supported Actions
+
+| Action | Effect |
+|--------|--------|
+| `read` | Controls whether the property appears in API responses |
+| `update` | Controls whether the property can be modified |
+
+### Rule Structure
+
+Property authorization uses the **exact same rule structure** as schema authorization — simple rules, conditional rules, dynamic variables, and match operators all work identically.
+
+### Read Filtering (Outgoing Data)
+
+When an API response is rendered, properties are filtered based on read rules:
+
+```
+GET /api/objects/register/schema/uuid
+
+# User in matching organisation:
+{ "naam": "Example", "interneAantekening": "Private note" }
+
+# User in different organisation:
+{ "naam": "Example" }
+```
+
+The `interneAantekening` field is silently removed from the response for unauthorized users.
+
+### Update Validation (Incoming Data)
+
+When an API request modifies an object, property update rules are checked:
+
+```
+PUT /api/objects/register/schema/uuid
+{ "naam": "Updated Name", "interneAantekening": "New note" }
+
+# If unauthorized for interneAantekening:
+{ "error": "You are not authorized to modify the following properties: interneAantekening" }
+```
+
+Unchanged properties are **skipped** during update validation — this allows PATCH-style updates without triggering authorization errors on fields the user didn't modify.
+
+### Object Creation
+
+During object creation, property authorization rules apply **except** for organisation matching. This is because there is no existing object to match the organisation against yet. Other match conditions (like `$userId`) still apply on create.
+
+### Extended Objects
+
+Property authorization is applied recursively to extended/nested objects. Each object is evaluated against its own schema's property authorization rules.
+
+---
+
+## Enforcement Architecture
+
+### Handler Pipeline
+
+RBAC is enforced by dedicated handlers in the object lifecycle:
+
+```
+Request → PermissionHandler → SaveObject/RenderObject → Response
+                                    ↓
+                          PropertyRbacHandler
+```
+
+| Handler | Responsibility |
+|---------|---------------|
+| `PermissionHandler` | Schema-level RBAC — checks if user can perform CRUD action |
+| `PropertyRbacHandler` | Property-level RBAC — filters fields on read, validates fields on write |
+| `MagicRbacHandler` | Applies RBAC filters directly in SQL for magic table queries |
+
+### Where Checks Happen
+
+| Operation | Schema RBAC | Property RBAC |
+|-----------|------------|---------------|
+| **Create** | `SaveObject` calls `PermissionHandler.checkPermission()` | `PropertyRbacHandler.getUnauthorizedProperties()` validates incoming data |
+| **Read** | `PermissionHandler.hasPermission()` filters the result set | `PropertyRbacHandler.filterReadableProperties()` strips unauthorized fields from response |
+| **Update** | `SaveObject` calls `PermissionHandler.checkPermission()` | `PropertyRbacHandler.getUnauthorizedProperties()` validates incoming data |
+| **Delete** | `SaveObject` calls `PermissionHandler.checkPermission()` | N/A |
+| **List** | `PermissionHandler.filterObjectsForPermissions()` filters results | Property filtering applied per-object during rendering |
+
+### Database-Level Enforcement
+
+For magic table queries, `MagicRbacHandler` pushes RBAC filters into SQL WHERE clauses, ensuring unauthorized objects are never loaded from the database. This provides:
+- Better performance (no post-load filtering)
+- Correct pagination (filtered before limit/offset)
+- Publication-based public access controls
+
+---
+
+## Multi-Tenancy Integration
+
+RBAC works alongside the multi-tenancy system. They are complementary but independent:
+
+| System | Controls | Toggle |
+|--------|---------|--------|
+| **Multi-tenancy** | Users only see objects from their active organisation | `/api/settings/multitenancy` |
+| **RBAC** | Users can only perform actions their groups allow | `/api/settings/rbac` |
+
+Both can be enabled or disabled independently. When both are active:
+
+1. Multi-tenancy filters objects by organisation **first**
+2. RBAC filters the remaining objects by permission
+
+### Active Organisation
+
+Users must have an **active organisation** set to access data (even admins). The active organisation:
+- Determines which objects are visible (multi-tenancy)
+- Resolves the `$organisation` / `$activeOrganisation` variable in match conditions (RBAC)
+- Is stamped on newly created objects as `@self.organisation`
+
+```bash
+# Get current user's active organisation
+GET /api/organisations/active
+
+# Set active organisation
+POST /api/organisations/{uuid}/set-active
+```
+
+### Published Object Bypass
+
+When `publishedObjectsBypassMultiTenancy` is enabled in config, published objects (with a `published` date set and no `depublished` date, or `depublished` in the future) are visible across all organisations. Depublished objects remain restricted to their own organisation.
+
+---
+
+## Validation
+
+### Schema Authorization Validation
+
+When a schema is saved, the authorization structure is validated:
+
+- Actions must be one of: `create`, `read`, `update`, `delete`
+- Each action maps to an array of rules
+- Each rule must be either a string (group name) or an object with a `group` key
+- Conditional rules may include a `match` object
+
+Invalid structures produce validation errors.
+
+### Property Authorization Validation
+
+Property authorization is validated alongside the schema:
+
+- Only `read` and `update` actions are supported (not `create` or `delete`)
+- Same rule structure validation as schema-level
+- Invalid dynamic variable names are flagged
+
+---
 
 ## API Reference
 
-### ManageOrganisationRoles Modal Component
+### Organisation Endpoints
 
-**Props**: None (uses organisationStore.organisationItem)
+```
+GET    /api/organisations                     # List all organisations (admin)
+POST   /api/organisations                     # Create organisation (admin)
+GET    /api/organisations/{uuid}              # Get organisation
+PUT    /api/organisations/{uuid}              # Update organisation
+PATCH  /api/organisations/{uuid}              # Partial update
+POST   /api/organisations/{uuid}/join         # Join organisation
+POST   /api/organisations/{uuid}/leave        # Leave organisation
+GET    /api/organisations/active              # Get active organisation
+POST   /api/organisations/{uuid}/set-active   # Set active organisation
+```
 
-**Events**:
-- Modal opened: Loads Nextcloud groups
-- Role added: Updates local state
-- Role removed: Updates local state
-- Save clicked: Persists to backend via organisationStore
+### Settings Endpoints
 
-**Methods**:
-- `loadNextcloudGroups()` - Fetches groups from Nextcloud OCS API
-- `addRole(group)` - Adds a group to selected roles
-- `removeRole(role)` - Removes a group from selected roles
-- `saveRoles()` - Saves changes to backend
+```
+GET    /api/settings/rbac                     # Get RBAC settings
+PUT    /api/settings/rbac                     # Update RBAC settings
+GET    /api/settings/multitenancy             # Get multi-tenancy settings
+PUT    /api/settings/multitenancy             # Update multi-tenancy settings
+GET    /api/settings/organisation             # Get organisation settings
+PUT    /api/settings/organisation             # Update organisation settings
+```
 
-## Migration History
+---
 
-| Version | Migration | Description |
-|---------|-----------|-------------|
-| 1.0 | `Version1Date20250102000000` | Added `roles` column (JSON, default `[]`) |
-| 1.0 | `Version1Date20250102000001` | Added `active` column (boolean, default `true`) |
+## Test Coverage
 
-## Future Enhancements
+The RBAC system has comprehensive test coverage:
 
-Potential improvements for future versions:
+| Test File | Tests | Coverage |
+|-----------|-------|---------|
+| `RbacTest.php` | 14 | Core Schema permission logic, admin/owner overrides |
+| `RbacComprehensiveTest.php` | 79 | All 64 RBAC scenarios (4 schema types x 4 user types x 4 operations) + owner privileges + validation |
+| `ObjectServiceRbacTest.php` | 13+ | Integration with ObjectService, Nextcloud dependency mocking |
 
-1. **Role Templates**: Pre-defined role sets for common scenarios
-2. **Nested Groups**: Support for Nextcloud group hierarchies
-3. **Permission Presets**: Quick-apply common permission patterns
-4. **Audit Logging**: Track role assignment changes
-5. **Bulk Operations**: Assign roles to multiple organisations at once
-6. **Role Inheritance**: Child organisations inherit parent roles
+### Tested Scenarios
 
-## Related Documentation
+The comprehensive test matrix covers:
 
-- [Organisation Management](../Features/organisations.md)
-- [RBAC (Role-Based Access Control)](../development/rbac.md)
-- [Nextcloud Groups Documentation](https://docs.nextcloud.com/server/latest/admin_manual/configuration_user/user_configuration.html)
+| Schema Type | Description |
+|-------------|-------------|
+| Open | No authorization — all access allowed |
+| Public-read | Read open, create/update/delete restricted |
+| Staff-only | All actions restricted to staff group |
+| Collaborative | Different groups for different actions |
 
+Each schema type is tested with 4 user types (admin, public, group1, group2) across all 4 CRUD operations, plus owner override tests.
+
+---
+
+## Best Practices
+
+1. **Start with schema authorization** — most use cases only need object-level CRUD control
+2. **Add property authorization sparingly** — it adds processing overhead; only use when fields truly need different access rules
+3. **Use `"public"` for open read access** — rather than listing every group
+4. **Leave actions unconfigured for open access** — an action not listed in `authorization` allows all users
+5. **Test with multiple user types** — verify admin, owner, group member, and unauthenticated access
+6. **Use descriptive Nextcloud group names** — e.g., `marketing-editors` instead of `group1`
+
+---
+
+## Troubleshooting
+
+### Users Can't Access Objects
+
+1. Check if RBAC is enabled: `GET /api/settings/rbac`
+2. Check the schema's `authorization` field — is the user's group listed for the action?
+3. Check if the user has an active organisation set: `GET /api/organisations/active`
+4. Check if multi-tenancy is enabled and the object belongs to the user's organisation
+
+### Admin Can't See Data
+
+Admins bypass RBAC but still need an **active organisation** when multi-tenancy is enabled. Set one via:
+```bash
+POST /api/organisations/{uuid}/set-active
+```
+
+### Property Fields Missing from Response
+
+This is likely property-level authorization filtering. Check the schema's property definitions for `authorization` rules on the missing field.
+
+### Conditional Rules Not Matching
+
+1. Verify the dynamic variable resolves — does the user have an active organisation?
+2. Check the field name matches exactly (case-sensitive)
+3. For `_organisation` matches, the comparison is against `@self.organisation`, not a data field
+4. If the object is a resolved relation (array with `id` key), the system extracts the `id` automatically

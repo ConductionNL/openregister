@@ -1,606 +1,14 @@
-# Comprehensive Faceting System
+# Faceting
 
-This document describes the new Elasticsearch-inspired faceting system implemented for the OpenRegister application. The system provides powerful, flexible faceting capabilities that support both metadata and object field facets with enumerated values and range buckets.
+OpenRegister provides an Elasticsearch-inspired faceting system for building faceted search interfaces. It supports disjunctive faceting, multiple facet types (terms, date histograms, numeric ranges), automatic UUID-to-label resolution, and schema-driven field discovery.
 
-## Overview
+## Configuring Facetable Properties
 
-The faceting system provides a modern, user-friendly approach to building faceted search interfaces. It supports:
+Facets are configured per property in a schema definition using the `facetable` field. Two formats are supported:
 
-- **Disjunctive faceting** - Facet options don't disappear when selected
-- **Multiple facet types** - Terms, date histograms, and numeric ranges
-- **Metadata and object field facets** - Both table columns and JSON data
-- **Facetable field discovery** - Automatic detection of available faceting options
-- **Elasticsearch-style API** - Familiar structure for developers
-- **Performance optimization** - Efficient database queries with proper indexing
+### Boolean Format (Simple)
 
-## Key Features
-
-### 1. Disjunctive Faceting
-Each facet shows counts as if its own filter were not applied. This prevents facet options from disappearing when selected, providing a better user experience.
-
-### 2. Multiple Facet Types
-- **Terms aggregation** - For categorical data (status, priority, etc.)
-- **Date histogram** - For time-based data with configurable intervals
-- **Range aggregation** - For numeric data with custom buckets
-
-### 3. Dual Data Sources
-- **Metadata facets** - Based on ObjectEntity table columns (@self)
-- **Object field facets** - Based on JSON object data
-
-### 4. Enhanced Labels with Caching
-Automatic resolution of register, schema, organisation IDs, and object UUIDs to human-readable names using an optimized caching mechanism. The system intelligently detects UUIDs in any facet and resolves them to object names (naam, name, title, etc.) using batch loading and multi-tier caching. Facet buckets are automatically sorted alphabetically by label for consistent, user-friendly display.
-
-#### UUID Resolution Technical Implementation
-
-The faceting system includes intelligent UUID-to-name resolution that works automatically:
-
-**Resolution Process:**
-1. **UUID Detection** - Identifies bucket values containing hyphens (UUID format)
-2. **Lazy Service Loading** - ObjectCacheService loaded from container only when needed
-3. **Batch Resolution** - All UUIDs in facets resolved in a single database query
-4. **Multi-Tier Caching** - Checks in-memory cache → distributed cache → database
-5. **Name Extraction** - Searches common name fields (naam, name, title, contractNummer, achternaam)
-6. **Alphabetical Sorting** - Facets sorted by resolved labels (case-insensitive A-Z)
-7. **Graceful Fallback** - Uses UUID if name cannot be resolved
-
-**Example Transformation:**
-
-Before UUID resolution:
-```json
-{
-  'value': '01c26b42-e047-4322-95ba-46d53a1696c0',
-  'count': 2,
-  'label': '01c26b42-e047-4322-95ba-46d53a1696c0'
-}
-```
-
-After UUID resolution:
-```json
-{
-  'value': '01c26b42-e047-4322-95ba-46d53a1696c0',
-  'count': 2,
-  'label': 'Component Name Here'
-}
-```
-
-**Performance Characteristics:**
-- **Batch queries**: All UUIDs resolved in one DB query (no N+1 problem)
-- **Cached**: &lt;10ms for cached names
-- **Uncached**: &lt;100ms for 100 UUIDs (batch DB query)
-- **Lazy loading**: Service only loaded when facets contain UUIDs
-
-**Service Integration:**
-```php
-// Lazy-loading pattern to avoid circular dependencies
-private function getObjectCacheService(): ?ObjectCacheService
-{
-    if ($this->objectCacheServiceAttempted) {
-        return $this->objectCacheService;
-    }
-    
-    $this->objectCacheServiceAttempted = true;
-    
-    try {
-        $this->objectCacheService = \OC::$server->get(ObjectCacheService::class);
-        $this->logger->debug('ObjectCacheService loaded successfully');
-    } catch (\Exception $e) {
-        $this->logger->warning('ObjectCacheService not available for UUID resolution', [
-            'error' => $e->getMessage()
-        ]);
-        return null;
-    }
-    
-    return $this->objectCacheService;
-}
-```
-
-This ensures the service is only loaded when facets containing UUIDs are encountered, avoiding performance overhead for regular facets.
-
-### 5. Facetable Field Discovery
-Automatic analysis of available fields and their characteristics to help frontends build dynamic facet interfaces.
-
-## Facetable Field Discovery
-
-The system includes powerful discovery capabilities that analyze your data to determine which fields can be used for faceting and what types of facets are appropriate.
-
-### Discovery API
-
-```php
-// Get facetable fields for a specific context
-$facetableFields = $objectService->getFacetableFields($baseQuery, $sampleSize);
-
-// Example with context filters
-$baseQuery = [
-    '@self' => ['register' => 1],
-    '_search' => 'customer'
-];
-
-$facetableFields = $objectService->getFacetableFields($baseQuery, 100);
-```
-
-### Discovery Response Structure
-
-```php
-[
-    '@self' => [
-        'register' => [
-            'type' => 'categorical',
-            'description' => 'Register that contains the object',
-            'facet_types' => ['terms'],
-            'has_labels' => true,
-            'sample_values' => [
-                ['value' => 1, 'label' => 'Publications Register', 'count' => 150],
-                ['value' => 2, 'label' => 'Events Register', 'count' => 75]
-            ]
-        ],
-        'created' => [
-            'type' => 'date',
-            'description' => 'Date and time when the object was created',
-            'facet_types' => ['date_histogram', 'range'],
-            'intervals' => ['day', 'week', 'month', 'year'],
-            'has_labels' => false,
-            'date_range' => [
-                'min' => '2023-01-01 00:00:00',
-                'max' => '2024-12-31 23:59:59'
-            ]
-        ]
-    ],
-    'object_fields' => [
-        'status' => [
-            'type' => 'string',
-            'description' => 'Object field: status',
-            'facet_types' => ['terms'],
-            'cardinality' => 'low',  // ≤50 unique values
-            'sample_values' => ['published', 'draft', 'archived'],
-            'appearance_rate' => 85  // Count of objects containing this field
-        ],
-        'priority' => [
-            'type' => 'integer',
-            'description' => 'Object field: priority',
-            'facet_types' => ['range', 'terms'],
-            'cardinality' => 'numeric',  // Numeric field type
-            'sample_values' => ['1', '2', '3', '4', '5'],
-            'appearance_rate' => 72  // Count of objects containing this field
-        ]
-    ]
-]
-```
-
-### Field Properties Explained
-
-#### Key Terms
-
-**`appearance_rate`**: The actual count of objects (from the analyzed sample) that contain this field. For example, if 100 objects were analyzed and 85 contained the 'status' field, the appearance_rate would be 85. This is not a percentage but an absolute count.
-
-**`cardinality`**: Indicates the uniqueness characteristics of field values:
-- `'low'` - String fields with ≤50 unique values (suitable for terms facets)
-- `'numeric'` - Integer, float, or numeric string fields
-- `'binary'` - Boolean fields (true/false values only)
-- Not set for date fields (they use intervals instead)
-
-### Field Types and Characteristics
-
-#### Metadata Fields (@self)
-Predefined fields from the ObjectEntity table:
-
-- **register** - Categorical with labels from register table
-- **schema** - Categorical with labels from schema table  
-- **uuid** - Identifier field (usually not suitable for faceting)
-- **owner** - Categorical user field
-- **organisation** - Categorical organisation field
-- **application** - Categorical application field
-- **created/updated/published/depublished** - Date fields with range support
-
-#### Object Fields
-Dynamically discovered from JSON object data:
-
-- **string** - Text fields (low cardinality suitable for terms facets)
-- **integer/float** - Numeric fields (suitable for range and terms facets)
-- **date** - Date fields (suitable for date_histogram and range facets)
-- **boolean** - Binary fields (suitable for terms facets)
-
-### Discovery Configuration
-
-#### Field Analysis Parameters
-
-- **Sample Size** - Number of objects to analyze (default: 100)
-- **Appearance Threshold** - Minimum percentage of objects that must contain the field (default: 10%)
-- **Cardinality Threshold** - Maximum unique values for terms facets (default: 50)
-- **Recursion Depth** - Maximum nesting level to analyze (default: 2)
-
-#### Field Filtering
-
-The discovery system automatically filters out:
-- System fields (starting with @ or _)
-- Nested objects and arrays of objects
-- High cardinality string fields (more than 50 unique values)
-- Fields appearing in less than 10% of objects
-- Fields with inconsistent types (less than 70% type consistency)
-
-### API Integration
-
-#### Discovery Parameter
-
-Add `_facetable=true` to any search endpoint to include facetable field information:
-
-```
-GET /api/objects?_facetable=true&limit=0
-```
-
-Response includes additional `facetable` property:
-
-```php
-[
-    'results' => [],
-    'total' => 0,
-    'facetable' => [
-        '@self' => [...],
-        'object_fields' => [...]
-    ]
-]
-```
-
-#### Dynamic Facet Configuration
-
-Use discovery results to build facet configurations:
-
-```javascript
-// Frontend example: Build facet config from discovery
-const buildFacetConfig = (facetableFields) => {
-    const config = { _facets: { '@self': {} } };
-    
-    // Add metadata facets
-    Object.entries(facetableFields['@self']).forEach(([field, info]) => {
-        if (info.facet_types.includes('terms')) {
-            config._facets['@self'][field] = { type: 'terms' };
-        } else if (info.facet_types.includes('date_histogram')) {
-            config._facets['@self'][field] = { 
-                type: 'date_histogram', 
-                interval: 'month' 
-            };
-        }
-    });
-    
-    // Add object field facets
-    Object.entries(facetableFields.object_fields).forEach(([field, info]) => {
-        if (info.facet_types.includes('terms')) {
-            config._facets[field] = { type: 'terms' };
-        } else if (info.facet_types.includes('range')) {
-            config._facets[field] = { 
-                type: 'range',
-                ranges: generateRanges(info.sample_values)
-            };
-        }
-    });
-    
-    return config;
-};
-```
-
-## API Structure
-
-### Basic Query Structure
-
-```php
-$query = [
-    // Search filters (same as searchObjects)
-    '@self' => [
-        'register' => 1,
-        'schema' => 2
-    ],
-    'status' => 'active',
-    '_search' => 'customer',
-    
-    // Facet configuration
-    '_facets' => [
-        // Metadata facets
-        '@self' => [
-            'register' => ['type' => 'terms'],
-            'schema' => ['type' => 'terms'],
-            'created' => [
-                'type' => 'date_histogram',
-                'interval' => 'month'
-            ]
-        ],
-        
-        // Object field facets
-        'status' => ['type' => 'terms'],
-        'priority' => ['type' => 'terms'],
-        'price' => [
-            'type' => 'range',
-            'ranges' => [
-                ['to' => 100],
-                ['from' => 100, 'to' => 500],
-                ['from' => 500]
-            ]
-        ]
-    ]
-];
-
-$facets = $objectService->getFacetsForObjects($query);
-```
-
-### Response Structure
-
-```php
-[
-    'facets' => [
-        '@self' => [
-            'register' => [
-                'type' => 'terms',
-                'buckets' => [
-                    ['key' => 1, 'doc_count' => 150, 'label' => 'Register Name'],
-                    ['key' => 2, 'doc_count' => 75, 'label' => 'Other Register']
-                ]
-            ],
-            'created' => [
-                'type' => 'date_histogram',
-                'interval' => 'month',
-                'buckets' => [
-                    ['key' => '2024-01', 'doc_count' => 45],
-                    ['key' => '2024-02', 'doc_count' => 67]
-                ]
-            ]
-        ],
-        'status' => [
-            'type' => 'terms',
-            'buckets' => [
-                ['key' => 'active', 'doc_count' => 134],
-                ['key' => 'inactive', 'doc_count' => 45]
-            ]
-        ],
-        'price' => [
-            'type' => 'range',
-            'buckets' => [
-                ['key' => '0-100', 'from' => 0, 'to' => 100, 'doc_count' => 120],
-                ['key' => '100-500', 'from' => 100, 'to' => 500, 'doc_count' => 80],
-                ['key' => '500+', 'from' => 500, 'doc_count' => 15]
-            ]
-        ]
-    ]
-]
-```
-
-## Facet Types
-
-### 1. Terms Aggregation
-
-For categorical data like status, priority, category, etc.
-
-```php
-'_facets' => [
-    'status' => ['type' => 'terms'],
-    'priority' => ['type' => 'terms'],
-    '@self' => [
-        'register' => ['type' => 'terms'],
-        'schema' => ['type' => 'terms']
-    ]
-]
-```
-
-**Response:**
-```php
-'status' => [
-    'type' => 'terms',
-    'buckets' => [
-        ['key' => 'active', 'doc_count' => 134],
-        ['key' => 'pending', 'doc_count' => 45],
-        ['key' => 'inactive', 'doc_count' => 23]
-    ]
-]
-```
-
-### 2. Date Histogram
-
-For time-based data with configurable intervals.
-
-**Supported intervals:** `day`, `week`, `month`, `year`
-
-```php
-'_facets' => [
-    'event_date' => [
-        'type' => 'date_histogram',
-        'interval' => 'month'
-    ],
-    '@self' => [
-        'created' => [
-            'type' => 'date_histogram',
-            'interval' => 'week'
-        ]
-    ]
-]
-```
-
-**Response:**
-```php
-'event_date' => [
-    'type' => 'date_histogram',
-    'interval' => 'month',
-    'buckets' => [
-        ['key' => '2024-01', 'doc_count' => 45],
-        ['key' => '2024-02', 'doc_count' => 67],
-        ['key' => '2024-03', 'doc_count' => 52]
-    ]
-]
-```
-
-### 3. Range Aggregation
-
-For numeric data with custom buckets.
-
-```php
-'_facets' => [
-    'price' => [
-        'type' => 'range',
-        'ranges' => [
-            ['to' => 100],                    // 0-100
-            ['from' => 100, 'to' => 500],     // 100-500
-            ['from' => 500, 'to' => 1000],    // 500-1000
-            ['from' => 1000]                  // 1000+
-        ]
-    ]
-]
-```
-
-**Response:**
-```php
-'price' => [
-    'type' => 'range',
-    'buckets' => [
-        ['key' => '0-100', 'to' => 100, 'doc_count' => 120],
-        ['key' => '100-500', 'from' => 100, 'to' => 500, 'doc_count' => 80],
-        ['key' => '500-1000', 'from' => 500, 'to' => 1000, 'doc_count' => 35],
-        ['key' => '1000+', 'from' => 1000, 'doc_count' => 15]
-    ]
-]
-```
-
-## Usage Examples
-
-### Basic Enumerated Facets
-
-```php
-$query = [
-    '@self' => ['register' => 1],
-    'status' => 'active',
-    '_facets' => [
-        '@self' => [
-            'register' => ['type' => 'terms'],
-            'schema' => ['type' => 'terms']
-        ],
-        'status' => ['type' => 'terms'],
-        'priority' => ['type' => 'terms']
-    ]
-];
-
-$facets = $objectService->getFacetsForObjects($query);
-
-// Use facet data for UI checkboxes
-foreach ($facets['facets']['status']['buckets'] as $bucket) {
-    $selected = ($bucket['key'] === 'active') ? 'checked' : '';
-    echo "<input type='checkbox' {$selected}> {$bucket['key']} ({$bucket['doc_count']})\n";
-}
-```
-
-### Date Timeline Facets
-
-```php
-$query = [
-    '_facets' => [
-        '@self' => [
-            'created' => [
-                'type' => 'date_histogram',
-                'interval' => 'month'
-            ]
-        ]
-    ]
-];
-
-$facets = $objectService->getFacetsForObjects($query);
-
-// Use for timeline visualization
-foreach ($facets['facets']['@self']['created']['buckets'] as $bucket) {
-    echo "{$bucket['key']}: {$bucket['doc_count']} objects\n";
-}
-```
-
-### Price Range Facets
-
-```php
-$query = [
-    '_facets' => [
-        'price' => [
-            'type' => 'range',
-            'ranges' => [
-                ['to' => 100],
-                ['from' => 100, 'to' => 500],
-                ['from' => 500]
-            ]
-        ]
-    ]
-];
-
-$facets = $objectService->getFacetsForObjects($query);
-
-// Use for price filter UI
-foreach ($facets['facets']['price']['buckets'] as $bucket) {
-    $from = $bucket['from'] ?? 0;
-    $to = $bucket['to'] ?? '∞';
-    echo "€{$from} - €{$to}: {$bucket['doc_count']} items\n";
-}
-```
-
-## Integration with Search
-
-### Combined Search and Facets
-
-```php
-$query = [
-    // Search filters
-    '@self' => [
-        'register' => [1, 2, 3],
-        'organisation' => 'IS NOT NULL'
-    ],
-    'status' => ['active', 'pending'],
-    '_search' => 'important customer',
-    '_published' => true,
-    
-    // Pagination
-    '_limit' => 25,
-    '_page' => 1,
-    
-    // Facet configuration
-    '_facets' => [
-        '@self' => [
-            'register' => ['type' => 'terms'],
-            'schema' => ['type' => 'terms']
-        ],
-        'status' => ['type' => 'terms'],
-        'priority' => ['type' => 'terms']
-    ]
-];
-
-// Get complete paginated results with facets
-$result = $objectService->searchObjectsPaginated($query);
-
-// Result contains:
-// - results: Array of objects
-// - total: Total count
-// - page/pages: Pagination info
-// - facets: Facet data
-```
-
-### Disjunctive Faceting Example
-
-```php
-// User has selected register=1 and status='active'
-$query = [
-    '@self' => ['register' => 1],
-    'status' => 'active',
-    '_facets' => [
-        '@self' => ['register' => ['type' => 'terms']],
-        'status' => ['type' => 'terms'],
-        'priority' => ['type' => 'terms']
-    ]
-];
-
-$facets = $objectService->getFacetsForObjects($query);
-
-// Register facet shows ALL registers (not just register 1)
-// Status facet shows ALL statuses (not just 'active')
-// Priority facet shows counts for register=1 AND status='active'
-
-// This allows users to change their register or status selection
-// without losing the ability to see other options
-```
-
-## Schema-Based Facet Configuration
-
-The faceting system supports schema-driven facet discovery, allowing you to define which fields are facetable directly in your schema definitions.
-
-### Schema Property Configuration
-
-Fields are marked as facetable in schema properties using the `facetable` flag:
+Set `"facetable": true` to enable a facet with default settings:
 
 ```json
 {
@@ -608,1307 +16,567 @@ Fields are marked as facetable in schema properties using the `facetable` flag:
     "status": {
       "type": "string",
       "title": "Status",
-      "description": "Current status of the item",
-      "facetable": true,
-      "example": "active"
+      "facetable": true
+    }
+  }
+}
+```
+
+This is equivalent to the object format with all defaults:
+```json
+{ "aggregated": true, "title": null, "description": null, "order": null }
+```
+
+### Object Format (Full Control)
+
+Use an object to configure facet behavior:
+
+```json
+{
+  "properties": {
+    "status": {
+      "type": "string",
+      "title": "Status",
+      "facetable": {
+        "aggregated": true,
+        "title": "Current Status",
+        "description": "Filter by the current status of the item",
+        "order": 1
+      }
+    },
+    "category": {
+      "type": "string",
+      "title": "Category",
+      "facetable": {
+        "aggregated": false,
+        "title": "Product Category",
+        "order": 2
+      }
+    }
+  }
+}
+```
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `aggregated` | boolean | `true` | When `true`, values from all schemas with the same property name are combined into one facet. When `false`, the facet is computed per-schema. |
+| `title` | string | `null` | Display name in the filter panel. Falls back to the property `title` or key name. |
+| `description` | string | `null` | Help text explaining what the facet filters on. |
+| `order` | integer | `null` | Controls display position relative to other facets. Lower numbers appear first. |
+
+### Backward Compatibility
+
+Both formats are normalized internally by `FacetHandler::normalizeFacetConfig()`. The boolean `true` is converted to the object format with defaults. Setting `"facetable": false` or omitting it disables faceting for that property.
+
+### What Makes a Good Facet
+
+**Good candidates:**
+- Status fields (Active, Archived, Draft)
+- Type/category fields
+- Organisation names
+- Boolean flags (yes/no)
+- Date fields (creation dates, deadlines)
+- Numeric ranges (priority, rating)
+- Tags/arrays with discrete values
+
+**Poor candidates:**
+- Free-text descriptions (high cardinality)
+- Unique identifiers (UUIDs, unique names)
+- Timestamps with second precision (use date histograms instead)
+
+### Complete Schema Example
+
+```json
+{
+  "title": "Publication",
+  "properties": {
+    "title": {
+      "type": "string",
+      "title": "Publication Title"
+    },
+    "category": {
+      "type": "string",
+      "title": "Category",
+      "facetable": {
+        "aggregated": true,
+        "title": "Publication Category",
+        "order": 1
+      }
+    },
+    "status": {
+      "type": "string",
+      "title": "Status",
+      "facetable": {
+        "aggregated": true,
+        "title": "Status",
+        "description": "Filter by publication status",
+        "order": 2
+      }
+    },
+    "published_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Publication Date",
+      "facetable": true
     },
     "priority": {
       "type": "integer",
-      "title": "Priority Level",
-      "description": "Priority from 1 to 10",
-      "facetable": true,
+      "title": "Priority",
       "minimum": 1,
-      "maximum": 10
+      "maximum": 5,
+      "facetable": {
+        "aggregated": false,
+        "title": "Priority Level",
+        "order": 3
+      }
     },
-    "created_date": {
-      "type": "string",
-      "format": "date",
-      "title": "Creation Date",
-      "description": "When the item was created",
+    "is_featured": {
+      "type": "boolean",
+      "title": "Featured",
+      "facetable": true
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "title": "Tags",
       "facetable": true
     },
     "internal_notes": {
       "type": "string",
-      "title": "Internal Notes",
-      "description": "Notes for internal use only",
-      "facetable": false
+      "title": "Internal Notes"
     }
   }
 }
 ```
 
-### Automatic Facet Type Detection
+Properties without `facetable` (like `title` and `internal_notes`) are not available as facets.
 
-Based on schema property definitions, the system automatically determines appropriate facet types:
+### Configuring Facets via the UI
 
-- **String fields**: 
-  - Regular strings → `terms` facet
-  - Date/datetime format → `date_histogram` and `range` facets
-  - Email/URI/UUID format → `terms` facet
+1. Navigate to **Schemas** in the left sidebar
+2. Open the schema you want to configure
+3. In the **Properties** tab, click the **three-dot menu** next to a property
+4. Enable **Facetable** and configure the settings (aggregated, title, description, order)
+5. Click **Save** on the schema
 
-- **Numeric fields** (integer/number): `range` and `terms` facets
+## Automatic Facet Type Detection
 
-- **Boolean fields**: `terms` facet
+The system determines the appropriate facet type from the property definition:
 
-- **Array fields**: `terms` facet
+| Property Type | Format | Facet Type |
+|---------------|--------|------------|
+| `string` | (none) | `terms` |
+| `string` | `date` or `date-time` | `date_histogram` |
+| `string` | `email`, `uri`, `uuid` | `terms` |
+| `integer` / `number` | — | `terms` (also supports `range`) |
+| `boolean` | — | `terms` |
+| `array` | — | `terms` (each array element becomes a bucket) |
 
-### Schema-Based Discovery Benefits
+## Facet Types
 
-**Performance Advantages:**
-- No object data analysis required - discovery is instant
-- Consistent behavior - facets always available based on schema design
-- No sampling overhead - works regardless of data volume
-- Efficient - eliminates runtime field discovery queries
+### 1. Terms Aggregation
 
-**Consistency:**
-- Facets are always available based on schema, not data content
-- No need to worry about sample sizes for discovery
-- Predictable facet availability across all registers
+For categorical data — status, priority, category, etc.
 
-### Backend Implementation
-
-The system uses schema-based facet discovery through:
-
-1. **Schema Analysis**: Pre-computes facet configuration when schema is saved
-2. **Facet Configuration Storage**: Stores facet metadata in schema entity
-3. **Efficient Retrieval**: Fast lookup without object data analysis
-
-**Core Components:**
-- `ObjectEntityMapper::getFacetableFieldsFromSchemas()` - Schema-based discovery
-- `Schema::regenerateFacetsFromProperties()` - Automatic facet configuration
-- `MariaDbFacetHandler` - Handles JSON object field facets
-- `MetaDataFacetHandler` - Handles database table column facets
-
-## Performance Considerations
-
-### Performance Impact
-
-Real-world performance testing shows the following response time impacts:
-
-- **Regular API calls** - Baseline response time
-- **With faceting (`_facets`)** - Adds approximately **~10ms**
-- **With discovery (`_facetable=true`)** - Adds approximately **~15ms**
-- **Combined faceting + discovery** - Adds approximately **~25ms** total
-
-These measurements are based on typical datasets and may vary depending on:
-- Database size and object complexity
-- Number of facet fields being analyzed
-- Sample size used for discovery (default: 100 objects)
-- Server hardware and database configuration
-
-### Asynchronous Operations
-
-For improved performance when using multiple operations (facets + facetable discovery), the system provides asynchronous methods that run database operations concurrently using ReactPHP.
-
-#### Performance Benefits
-
-Instead of sequential execution (~50ms total):
-1. Facetable discovery: ~15ms
-2. Search results: ~10ms  
-3. Facets: ~10ms
-4. Count: ~5ms
-
-Operations run concurrently, reducing total time to ~15ms (longest operation).
-
-#### Available Methods
-
-**`searchObjectsPaginatedAsync(array $query): PromiseInterface`**
-- Returns a ReactPHP promise that resolves to the same structure as `searchObjectsPaginated()`
-- Runs search, count, facets, and facetable discovery concurrently
-- Ideal for async/await patterns or promise chains
-
-**`searchObjectsPaginatedSync(array $query): array`**
-- Convenience method that executes the async version and waits for results
-- Provides performance benefits while maintaining synchronous interface
-- Drop-in replacement for `searchObjectsPaginated()` with better performance
-
-#### Usage Examples
-
-```php
-// Async with promise handling
-$promise = $objectService->searchObjectsPaginatedAsync($query);
-$promise->then(function ($results) {
-    // Handle results
-    return $results;
-});
-
-// Sync interface with async performance
-$results = $objectService->searchObjectsPaginatedSync($query);
-
-// Traditional sync method (slower for multiple operations)
-$results = $objectService->searchObjectsPaginated($query);
+Request:
+```bash
+curl "http://localhost:8080/index.php/apps/openregister/api/objects/5/24?_facets[status][type]=terms&_facets[priority][type]=terms" \
+  -u admin:admin
 ```
 
-#### When to Use Async Methods
+Response (facets section):
+```json
+{
+  "status": {
+    "type": "terms",
+    "buckets": [
+      { "key": "active", "results": 134, "label": "active" },
+      { "key": "pending", "results": 45, "label": "pending" },
+      { "key": "inactive", "results": 23, "label": "inactive" }
+    ]
+  }
+}
+```
 
-- **Use async methods when**: Requesting both facets and facetable discovery
-- **Use sync methods when**: Only requesting search results or single operation
-- **Performance gain**: Most significant with `_facets` + `_facetable=true` combinations
+### 2. Date Histogram
+
+For time-based data with configurable intervals (`day`, `week`, `month`, `year`).
+
+Request:
+```bash
+curl "http://localhost:8080/index.php/apps/openregister/api/objects/5/24?_facets[@self][created][type]=date_histogram&_facets[@self][created][interval]=month" \
+  -u admin:admin
+```
+
+Response:
+```json
+{
+  "@self": {
+    "created": {
+      "type": "date_histogram",
+      "interval": "month",
+      "buckets": [
+        { "key": "2024-01", "results": 45 },
+        { "key": "2024-02", "results": 67 },
+        { "key": "2024-03", "results": 52 }
+      ]
+    }
+  }
+}
+```
+
+### 3. Range Aggregation
+
+For numeric data with custom buckets.
+
+Request:
+```bash
+curl "http://localhost:8080/index.php/apps/openregister/api/objects/5/24?_facets[price][type]=range&_facets[price][ranges][0][to]=100&_facets[price][ranges][1][from]=100&_facets[price][ranges][1][to]=500&_facets[price][ranges][2][from]=500" \
+  -u admin:admin
+```
+
+Response:
+```json
+{
+  "price": {
+    "type": "range",
+    "buckets": [
+      { "key": "0-100", "to": 100, "results": 120 },
+      { "key": "100-500", "from": 100, "to": 500, "results": 80 },
+      { "key": "500+", "from": 500, "results": 15 }
+    ]
+  }
+}
+```
+
+## API Usage
+
+### Query Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `_facets` | object | Facet configuration — specifies which fields to facet and how |
+| `_facetable` | boolean | When `true`, returns the list of available facetable fields (discovery) |
+| `_limit` | integer | Use `_limit=0` for facet-only queries (no object results) |
+
+### Facetable Field Discovery
+
+Discover which fields are available for faceting:
+
+```bash
+curl "http://localhost:8080/index.php/apps/openregister/api/objects/5/24?_facetable=true&_limit=0" \
+  -u admin:admin
+```
+
+Response:
+```json
+{
+  "results": [],
+  "total": 150,
+  "facetable": {
+    "@self": {
+      "register": {
+        "type": "categorical",
+        "facet_types": ["terms"],
+        "description": "Register that contains the object"
+      },
+      "schema": {
+        "type": "categorical",
+        "facet_types": ["terms"]
+      },
+      "created": {
+        "type": "date",
+        "facet_types": ["date_histogram", "range"],
+        "intervals": ["day", "week", "month", "year"]
+      },
+      "updated": {
+        "type": "date",
+        "facet_types": ["date_histogram", "range"],
+        "intervals": ["day", "week", "month", "year"]
+      },
+      "owner": {
+        "type": "categorical",
+        "facet_types": ["terms"]
+      }
+    },
+    "object_fields": {
+      "status": {
+        "type": "terms",
+        "title": "Status",
+        "facetConfig": {
+          "aggregated": true,
+          "title": "Current Status",
+          "description": null,
+          "order": 1
+        }
+      },
+      "category": {
+        "type": "terms",
+        "title": "Category",
+        "facetConfig": {
+          "aggregated": true,
+          "title": null,
+          "description": null,
+          "order": null
+        }
+      }
+    },
+    "non_aggregated_fields": [
+      {
+        "field": "priority",
+        "schemaId": 24,
+        "facetType": "terms",
+        "facetConfig": {
+          "aggregated": false,
+          "title": "Priority Level",
+          "description": null,
+          "order": 3
+        },
+        "title": "Priority"
+      }
+    ]
+  }
+}
+```
+
+The three sections:
+- `@self` — Metadata fields always available (register, schema, created, updated, owner)
+- `object_fields` — Aggregated facetable fields from schema properties
+- `non_aggregated_fields` — Non-aggregated fields tracked with their schema context
+
+### Requesting Facets
+
+Request specific facets by field name and type:
+
+```bash
+curl "http://localhost:8080/index.php/apps/openregister/api/objects/5/24?_facets[@self][register][type]=terms&_facets[status][type]=terms&_facets[@self][created][type]=date_histogram&_facets[@self][created][interval]=month" \
+  -u admin:admin
+```
+
+### Combined Search and Facets
+
+Facets work alongside search filters and pagination:
+
+```bash
+curl "http://localhost:8080/index.php/apps/openregister/api/objects/5/24?status=active&_search=customer&_limit=25&_page=1&_facets[@self][register][type]=terms&_facets[status][type]=terms&_facets[priority][type]=terms" \
+  -u admin:admin
+```
+
+Response includes both results and facets:
+```json
+{
+  "results": ["..."],
+  "total": 150,
+  "page": 1,
+  "pages": 6,
+  "facets": {
+    "@self": {
+      "register": {
+        "type": "terms",
+        "buckets": [
+          { "key": 5, "results": 120, "label": "Publications Register" },
+          { "key": 6, "results": 30, "label": "Events Register" }
+        ]
+      }
+    },
+    "status": {
+      "type": "terms",
+      "buckets": [
+        { "key": "active", "results": 134, "label": "active" },
+        { "key": "inactive", "results": 16, "label": "inactive" }
+      ]
+    },
+    "priority": {
+      "type": "terms",
+      "buckets": [
+        { "key": "high", "results": 50, "label": "high" },
+        { "key": "medium", "results": 70, "label": "medium" },
+        { "key": "low", "results": 30, "label": "low" }
+      ]
+    }
+  }
+}
+```
+
+## Disjunctive Faceting
+
+Each facet shows counts as if its own filter were not applied. This prevents facet options from disappearing when selected.
+
+Example: if the user filters by `status=active`, the status facet still shows counts for `inactive` and `pending` — so the user can change their selection without losing options.
+
+```bash
+# User has selected status=active
+curl "http://localhost:8080/index.php/apps/openregister/api/objects/5/24?status=active&_facets[status][type]=terms&_facets[priority][type]=terms" \
+  -u admin:admin
+```
+
+- **Status facet**: Shows ALL statuses (not just active) — counts computed without the status filter
+- **Priority facet**: Shows priorities filtered by `status=active` — other filters still apply
+
+## Aggregated vs Non-Aggregated Facets
+
+### Aggregated (`"aggregated": true`, default)
+
+Values from all schemas sharing the same property name are combined into a single facet. This is useful for properties like `status` or `type` that appear across multiple schemas with the same meaning.
+
+Example: If both "Product" and "Module" schemas have a `status` property with `"aggregated": true`, a single "Status" facet shows all status values from both schemas combined.
+
+### Non-Aggregated (`"aggregated": false`)
+
+The facet is computed per-schema. Non-aggregated fields are tracked separately in the `non_aggregated_fields` array with their schema context. Use this when the same property name has different meanings across schemas.
+
+## Array Faceting
+
+When a property of type `array` is marked as facetable, the system creates separate facet buckets for each array element:
+
+```json
+{
+  "tags": {
+    "type": "array",
+    "items": { "type": "string" },
+    "facetable": true
+  }
+}
+```
+
+Given objects:
+```json
+[
+  { "id": 1, "tags": ["grocery", "pharmacy"] },
+  { "id": 2, "tags": ["grocery", "electronics"] },
+  { "id": 3, "tags": ["pharmacy"] }
+]
+```
+
+Facet result:
+```json
+{
+  "tags": {
+    "type": "terms",
+    "buckets": [
+      { "key": "grocery", "results": 2 },
+      { "key": "pharmacy", "results": 2 },
+      { "key": "electronics", "results": 1 }
+    ]
+  }
+}
+```
+
+## UUID Label Resolution
+
+The faceting system automatically resolves UUIDs in facet buckets to human-readable names.
+
+**Process:**
+1. Detects bucket values containing hyphens (UUID format)
+2. Batch-loads all UUIDs in a single database query
+3. Checks in-memory cache, then distributed cache, then database
+4. Extracts names from common fields (`naam`, `name`, `title`, `contractNummer`, `achternaam`)
+5. Sorts facet buckets alphabetically by resolved label (A-Z)
+6. Falls back to the UUID if no name can be resolved
+
+Before resolution:
+```json
+{
+  "customer": {
+    "buckets": [
+      { "key": "f47ac10b-58cc-4372-a567-0e02b2c3d479", "results": 42, "label": "f47ac10b-58cc-4372-a567-0e02b2c3d479" }
+    ]
+  }
+}
+```
+
+After resolution:
+```json
+{
+  "customer": {
+    "buckets": [
+      { "key": "f47ac10b-58cc-4372-a567-0e02b2c3d479", "results": 42, "label": "Acme Corporation" }
+    ]
+  }
+}
+```
+
+**Performance:**
+- Cached UUIDs: <10ms
+- Uncached batch (100 UUIDs): <100ms
+- Service is lazy-loaded — only initialized when UUIDs are detected
+
+## Performance
+
+### Response Time Impact
+
+| Scenario | Overhead |
+|----------|----------|
+| Search only (no faceting) | Baseline |
+| With facets (`_facets`) | ~10ms |
+| With discovery (`_facetable=true`) | ~15ms |
+| Combined facets + discovery | ~25ms |
+| With UUID resolution (100 UUIDs, cached) | ~10ms |
+| With UUID resolution (100 UUIDs, uncached) | ~100ms |
 
 ### Optimizations
 
-1. **Database-level aggregations** - Uses SQL GROUP BY for efficiency
-2. **Indexed fields** - Metadata facets use indexed table columns
-3. **Disjunctive queries** - Optimized to exclude only the relevant filter
-4. **Count optimization** - Uses COUNT(*) instead of selecting all data
-5. **Schema-based discovery** - No object data analysis required, instant discovery
-6. **Database indexes** - Critical indexes on `deleted`, `published`, `created`, `updated`, `organisation`, `owner`
-7. **Query batching** - Combines multiple facets where possible to reduce database round trips
+- **Schema-based discovery**: No object data analysis required — instant field detection from schema definitions
+- **Pre-computed facets**: The `facets` column on the `openregister_schemas` table stores pre-computed facet configurations, eliminating ~15ms runtime analysis per request
+- **Database-level aggregations**: Uses SQL `GROUP BY` for efficient counting
+- **Indexed metadata fields**: `deleted`, `published`, `created`, `updated`, `organisation`, `owner`
+- **Batch UUID resolution**: Single query for all UUIDs (no N+1 problem)
+- **Multi-tier caching**: In-memory → distributed cache → database
+- **Disjunctive optimization**: Excludes only the relevant filter per facet query
+- **`_limit=0`**: Use for facet-only queries to skip fetching objects
 
-### Database Index Optimization
+### Fallback Strategy
 
-For optimal facet performance, ensure these indexes exist:
+When faceting on a filtered dataset returns empty results (due to restrictive filters), the system automatically falls back to collection-wide facets so the user still sees useful filter options.
 
-**Critical Indexes:**
-- `deleted` - Used in every query for lifecycle filtering
-- `published` - Used for publication status filtering
-- `created`, `updated` - Common facet fields
-- `organisation`, `owner` - Common facet fields
-- Composite indexes for filter combinations
+## Metadata Facets (@self)
 
-**Performance Targets:**
-- **With Indexes**: 0.5-1 second for complex facet queries
-- **Without Indexes**: 7+ seconds for same queries
-- **Register/Schema/Organisation facets**: 50-100ms each (with proper indexes)
-- **JSON field facets**: Performance varies by dataset size
+In addition to object property facets, every search automatically supports metadata facets under the `@self` namespace:
 
-**Quick Performance Wins:**
-1. Apply database migrations to add critical indexes
-2. Use schema-based discovery instead of object analysis
-3. Limit facet scope to essential fields
-4. Use `_limit=0` for facet-only queries
-5. Remove `_facetable=true` if not needed (saves ~15ms)
+| Field | Type | Description |
+|-------|------|-------------|
+| `@self.register` | terms | Register that contains the object |
+| `@self.schema` | terms | Schema the object belongs to |
+| `@self.owner` | terms | User who created the object |
+| `@self.organisation` | terms | Organisation the object belongs to |
+| `@self.created` | date_histogram | Object creation date |
+| `@self.updated` | date_histogram | Last modification date |
 
-### Best Practices
+Metadata facets automatically resolve IDs to human-readable labels (register titles, schema names, etc.).
 
-1. **Use metadata facets when possible** - They perform better than JSON field facets
-2. **Limit range buckets** - Too many ranges can impact performance
-3. **Consider caching** - Facet results can be cached for frequently accessed data
-4. **Index JSON fields** - Consider adding indexes for frequently faceted JSON fields
-5. **Use `_facetable` sparingly** - Only request facetable discovery when building dynamic interfaces
-6. **Optimize sample size** - Balance accuracy vs performance for facetable discovery (default: 100 objects)
-7. **Cache facetable results** - Store discovery results for repeated interface building
+## Troubleshooting
 
-## Migration from Legacy System
+### No Facets Appear
 
-### Old Approach
+1. Check that the schema property has `"facetable": true` or a facetable object
+2. Verify the register and schema are selected in the query
+3. Ensure the schema contains at least one facetable property
+4. Check that objects exist for the schema
 
-```php
-// Legacy faceting
-$config = [
-    'filters' => ['register' => 1, 'status' => 'active'],
-    '_queries' => ['status', 'priority', 'category']
-];
+### Facets Show No Data
 
-$facets = $objectService->getFacets($config['filters'], $config['search']);
-```
+1. Verify object data contains the facetable fields
+2. Check that property names match between schema definition and stored objects
+3. Ensure the property has a reasonable number of distinct values
 
-### New Approach
+### Labels Showing as IDs
 
-```php
-// New comprehensive faceting
-$query = [
-    '@self' => ['register' => 1],
-    'status' => 'active',
-    '_facets' => [
-        '@self' => ['register' => ['type' => 'terms']],
-        'status' => ['type' => 'terms'],
-        'priority' => ['type' => 'terms'],
-        'category' => ['type' => 'terms']
-    ]
-];
+1. For metadata fields (`register`, `schema`, `organisation`): verify the entities exist and have `title`/`name` properties set
+2. For object fields with UUIDs: check that referenced objects exist and have name fields (`naam`, `name`, `title`)
+3. Review logs for label resolution errors
 
-$facets = $objectService->getFacetsForObjects($query);
-```
+### Performance Issues
 
-### Backward Compatibility
+1. Ensure database indexes exist on `deleted`, `published`, `created`, `updated`, `organisation`, `owner`
+2. Limit the number of facet fields to essentials
+3. Use `_limit=0` for facet-only queries
+4. Check cardinality — high-cardinality fields (thousands of unique values) are slow and unhelpful as facets
 
-The system maintains backward compatibility. If no `_facets` configuration is provided, it falls back to the legacy `getFacets` method.
+## Best Practices
 
-## UI Integration Examples
-
-### Dynamic Facet Discovery
-
-```javascript
-// React component that discovers and builds facets dynamically
-const DynamicFacetInterface = ({ baseQuery }) => {
-  const [facetableFields, setFacetableFields] = useState(null);
-  const [facetData, setFacetData] = useState(null);
-  const [filters, setFilters] = useState({});
-
-  useEffect(() => {
-    // Discover available facetable fields
-    const discoverFacets = async () => {
-      const response = await fetch('/api/objects?_facetable=true&limit=0', {
-        method: 'POST',
-        body: JSON.stringify(baseQuery)
-      });
-      const data = await response.json();
-      setFacetableFields(data.facetable);
-      
-      // Build initial facet configuration
-      const facetConfig = buildFacetConfig(data.facetable);
-      
-      // Get actual facet data
-      const facetResponse = await fetch('/api/objects', {
-        method: 'POST',
-        body: JSON.stringify(Object.assign({}, baseQuery, facetConfig))
-      });
-      const facetData = await facetResponse.json();
-      setFacetData(facetData.facets);
-    };
-
-    discoverFacets();
-  }, [baseQuery]);
-
-  const buildFacetConfig = (facetableFields) => {
-    const config = { _facets: { '@self': {} } };
-    
-    // Add metadata facets
-    Object.entries(facetableFields['@self'] || {}).forEach(([field, info]) => {
-      if (info.facet_types.includes('terms')) {
-        config._facets['@self'][field] = { type: 'terms' };
-      } else if (info.facet_types.includes('date_histogram')) {
-        config._facets['@self'][field] = { 
-          type: 'date_histogram', 
-          interval: 'month' 
-        };
-      }
-    });
-    
-    // Add object field facets
-    Object.entries(facetableFields.object_fields || {}).forEach(([field, info]) => {
-      if (info.facet_types.includes('terms')) {
-        config._facets[field] = { type: 'terms' };
-      }
-    });
-    
-    return config;
-  };
-
-  if (!facetableFields || !facetData) {
-    return <div>Loading facets...</div>;
-  }
-
-  return (
-    <div className="dynamic-facets">
-      <h2>Available Filters</h2>
-      
-      {/* Metadata facets */}
-      {Object.entries(facetData['@self'] || {}).map(([field, facet]) => (
-        <FacetFilter 
-          key={'@self.' + field}
-          field={'@self.' + field}
-          facet={facet}
-          fieldInfo={facetableFields['@self'][field]}
-          onFilterChange={handleFilterChange}
-        />
-      ))}
-      
-      {/* Object field facets */}
-      {Object.entries(facetData).filter(([key]) => key !== '@self').map(([field, facet]) => (
-        <FacetFilter 
-          key={field}
-          field={field}
-          facet={facet}
-          fieldInfo={facetableFields.object_fields[field]}
-          onFilterChange={handleFilterChange}
-        />
-      ))}
-    </div>
-  );
-};
-```
-
-### Enhanced Facet Component
-
-```javascript
-// Enhanced facet component with discovery information
-const FacetFilter = ({ field, facet, fieldInfo, onFilterChange }) => {
-  return (
-    <div className="facet-filter">
-      <h3>
-        {fieldInfo?.description || field}
-        <span className="facet-info">
-          ({fieldInfo?.type}, {fieldInfo?.appearance_rate} objects)
-        </span>
-      </h3>
-      
-      {facet.type === 'terms' && (
-        <div className="checkbox-list">
-          {facet.buckets.map(bucket => (
-            <label key={bucket.key}>
-              <input 
-                type="checkbox" 
-                onChange={() => onFilterChange(field, bucket.key)}
-              />
-              {bucket.label || bucket.key} ({bucket.results})
-            </label>
-          ))}
-        </div>
-      )}
-      
-      {facet.type === 'range' && (
-        <div className="range-list">
-          {facet.buckets.map(bucket => (
-            <button 
-              key={bucket.key}
-              onClick={() => onFilterChange(field, bucket)}
-            >
-              {bucket.key}: {bucket.results} items
-            </button>
-          ))}
-        </div>
-      )}
-      
-      {facet.type === 'date_histogram' && (
-        <div className="timeline">
-          <div className="interval-selector">
-            {fieldInfo?.intervals?.map(interval => (
-              <button 
-                key={interval}
-                onClick={() => changeInterval(field, interval)}
-              >
-                {interval}
-              </button>
-            ))}
-          </div>
-          {facet.buckets.map(bucket => (
-            <div key={bucket.key} className="timeline-item">
-              <span>{bucket.key}</span>
-              <span>{bucket.results}</span>
-            </div>
-          ))}
-        </div>
-      )}
-      
-      {fieldInfo?.sample_values && (
-        <div className="sample-values">
-          <small>Sample values: {fieldInfo.sample_values.slice(0, 3).join(', ')}</small>
-        </div>
-      )}
-    </div>
-  );
-};
-```
-
-### PHP Controller Example
-
-```php
-class SearchController extends Controller
-{
-    public function search(Request $request): JsonResponse
-    {
-        $query = [
-            // Extract filters from request
-            '@self' => [
-                'register' => $request->get('register'),
-                'schema' => $request->get('schema')
-            ],
-            'status' => $request->get('status'),
-            '_search' => $request->get('q'),
-            '_page' => $request->get('page', 1),
-            '_limit' => $request->get('limit', 20),
-            
-            // Facet configuration
-            '_facets' => [
-                '@self' => [
-                    'register' => ['type' => 'terms'],
-                    'schema' => ['type' => 'terms']
-                ],
-                'status' => ['type' => 'terms'],
-                'priority' => ['type' => 'terms'],
-                'category' => ['type' => 'terms']
-            ]
-        ];
-
-        $result = $this->objectService->searchObjectsPaginated($query);
-        
-        // Add facetable field discovery if requested
-        if ($request->get('_facetable') === 'true') {
-            $baseQuery = $query;
-            unset($baseQuery['_facets'], $baseQuery['_limit'], $baseQuery['_page']);
-            
-            $result['facetable'] = $this->objectService->getFacetableFields(
-                $baseQuery, 
-                (int) $request->get('_sample_size', 100)
-            );
-        }
-        
-        return new JsonResponse($result);
-    }
-    
-    public function getFacetableFields(Request $request): JsonResponse
-    {
-        $baseQuery = [
-            '@self' => [
-                'register' => $request->get('register'),
-                'schema' => $request->get('schema')
-            ],
-            '_search' => $request->get('q')
-        ];
-        
-        $sampleSize = (int) $request->get('sample_size', 100);
-        
-        $facetableFields = $this->objectService->getFacetableFields($baseQuery, $sampleSize);
-        
-        return new JsonResponse([
-            'facetable' => $facetableFields,
-            'sample_size' => $sampleSize,
-            'base_query' => $baseQuery
-        ]);
-    }
-}
-```
-
-## Testing
-
-### Unit Test Examples
-
-```php
-class FacetingTest extends TestCase
-{
-    public function testBasicTermsFacet(): void
-    {
-        $query = [
-            '_facets' => [
-                'status' => ['type' => 'terms']
-            ]
-        ];
-
-        $facets = $this->objectService->getFacetsForObjects($query);
-        
-        $this->assertArrayHasKey('facets', $facets);
-        $this->assertArrayHasKey('status', $facets['facets']);
-        $this->assertEquals('terms', $facets['facets']['status']['type']);
-        $this->assertIsArray($facets['facets']['status']['buckets']);
-    }
-
-    public function testDisjunctiveFaceting(): void
-    {
-        // Create test data with different statuses
-        $this->createTestObjects(['status' => 'active'], 10);
-        $this->createTestObjects(['status' => 'inactive'], 5);
-
-        $query = [
-            'status' => 'active',  // Filter by active
-            '_facets' => [
-                'status' => ['type' => 'terms']
-            ]
-        ];
-
-        $facets = $this->objectService->getFacetsForObjects($query);
-        
-        // Should show both active AND inactive in facets (disjunctive)
-        $statusBuckets = $facets['facets']['status']['buckets'];
-        $this->assertCount(2, $statusBuckets);
-        
-        $activeCount = $this->findBucketByKey($statusBuckets, 'active')['results'];
-        $inactiveCount = $this->findBucketByKey($statusBuckets, 'inactive')['results'];
-        
-        $this->assertEquals(10, $activeCount);
-        $this->assertEquals(5, $inactiveCount);
-    }
-
-    public function testFacetableFieldDiscovery(): void
-    {
-        // Create test objects with various field types
-        $this->createTestObjects([
-            'status' => 'active',
-            'priority' => 1,
-            'created_date' => '2024-01-15',
-            'is_featured' => true
-        ], 5);
-        
-        $this->createTestObjects([
-            'status' => 'inactive', 
-            'priority' => 2,
-            'created_date' => '2024-02-20',
-            'is_featured' => false
-        ], 3);
-
-        $baseQuery = ['@self' => ['register' => 1]];
-        $facetableFields = $this->objectService->getFacetableFields($baseQuery, 50);
-        
-        // Check structure
-        $this->assertArrayHasKey('@self', $facetableFields);
-        $this->assertArrayHasKey('object_fields', $facetableFields);
-        
-        // Check metadata fields
-        $this->assertArrayHasKey('register', $facetableFields['@self']);
-        $this->assertEquals('categorical', $facetableFields['@self']['register']['type']);
-        $this->assertContains('terms', $facetableFields['@self']['register']['facet_types']);
-        
-        // Check object fields
-        $this->assertArrayHasKey('status', $facetableFields['object_fields']);
-        $this->assertEquals('string', $facetableFields['object_fields']['status']['type']);
-        $this->assertContains('terms', $facetableFields['object_fields']['status']['facet_types']);
-        
-        $this->assertArrayHasKey('priority', $facetableFields['object_fields']);
-        $this->assertEquals('integer', $facetableFields['object_fields']['priority']['type']);
-        $this->assertContains('range', $facetableFields['object_fields']['priority']['facet_types']);
-        
-        $this->assertArrayHasKey('is_featured', $facetableFields['object_fields']);
-        $this->assertEquals('boolean', $facetableFields['object_fields']['is_featured']['type']);
-        $this->assertContains('terms', $facetableFields['object_fields']['is_featured']['facet_types']);
-    }
-
-    public function testFacetableFieldFiltering(): void
-    {
-        // Create objects with high cardinality field (should be filtered out)
-        for ($i = 0; $i < 100; $i++) {
-            $this->createTestObjects([
-                'unique_id' => 'id_' . $i,  // High cardinality
-                'category' => 'cat_' . ($i % 3)  // Low cardinality
-            ], 1);
-        }
-
-        $facetableFields = $this->objectService->getFacetableFields([], 100);
-        
-        // High cardinality field should be filtered out
-        $this->assertArrayNotHasKey('unique_id', $facetableFields['object_fields']);
-        
-        // Low cardinality field should be included
-        $this->assertArrayHasKey('category', $facetableFields['object_fields']);
-        $this->assertEquals('low', $facetableFields['object_fields']['category']['cardinality']);
-    }
-
-    public function testFacetableFieldAppearanceThreshold(): void
-    {
-        // Create objects where some fields appear in less than 10% of objects
-        $this->createTestObjects(['common_field' => 'value1'], 50);  // 100% appearance
-        $this->createTestObjects(['rare_field' => 'value2'], 2);     // 4% appearance
-        
-        $facetableFields = $this->objectService->getFacetableFields([], 50);
-        
-        // Common field should be included
-        $this->assertArrayHasKey('common_field', $facetableFields['object_fields']);
-        
-        // Rare field should be filtered out (below 10% threshold)
-        $this->assertArrayNotHasKey('rare_field', $facetableFields['object_fields']);
-    }
-}
-```
-
-## Caching and Label Resolution
-
-### Overview
-
-The faceting system includes an intelligent caching mechanism that resolves metadata field IDs (registers, schemas, organisations) and object UUIDs to human-readable names without sacrificing performance.
-
-### How It Works
-
-#### Label Resolution Process
-
-When facets are returned, the system automatically resolves IDs and UUIDs to human-readable names:
-
-**For metadata fields** ('\_register', '\_schema', '\_organisation'):
-1. **Collects IDs** from all facet buckets for batch processing
-2. **Batch loads entities** using optimized database queries
-3. **Caches results** to prevent repeated database calls
-4. **Resolves labels** by mapping IDs to entity names/titles
-5. **Sorts alphabetically** by label for consistent ordering (case-insensitive A-Z)
-
-**For object fields** (any field containing UUIDs):
-1. **Detects UUIDs** by checking for hyphenated values
-2. **Batch resolves** using ObjectCacheService.getMultipleObjectNames()
-3. **Searches caches** (in-memory and distributed) before database
-4. **Extracts names** from common fields (naam, name, title, etc.)
-5. **Sorts alphabetically** by resolved names for user-friendly display
-
-#### Example Response
-
-**Before label resolution:**
-```json
-{
-  "_register": {
-    "buckets": [
-      { "value": 5, "count": 114474, "label": 5 },
-      { "value": 6, "count": 8794, "label": 6 }
-    ]
-  }
-}
-```
-
-**After label resolution (alphabetically sorted):**
-```json
-{
-  "_register": {
-    "buckets": [
-      { "value": 6, "count": 8794, "label": "Events Register" },
-      { "value": 5, "count": 114474, "label": "Publications Register" }
-    ]
-  }
-}
-```
-
-**Note:** Buckets are sorted alphabetically by label (A-Z), not by count or value.
-
-#### Sorting Behavior
-
-All term-based facets are automatically sorted alphabetically by label:
-
-**Metadata facets** (`_register`, `_schema`, `_organisation`):
-- Sorted by resolved entity names (e.g., "Events Register", "Publications Register")
-- Case-insensitive alphabetical order (A, a, B, b, etc.)
-
-**Object field facets** (status, category, type, etc.):
-- Sorted by their resolved labels (UUIDs converted to object names)
-- Case-insensitive alphabetical order
-- Numeric strings sorted as text (e.g., "1", "10", "2")
-- UUIDs automatically resolved to human-readable object names using ObjectCacheService
-
-**Date histogram facets**:
-- Not sorted alphabetically (chronological order maintained)
-
-**Range facets**:
-- Not sorted alphabetically (range order maintained)
-
-### Caching Strategy
-
-#### Static Caching (SaveObjects)
-Used during bulk save operations:
-- **Schema Cache** - Stores loaded schemas to avoid repeated DB queries
-- **Register Cache** - Stores loaded registers to avoid repeated DB queries  
-- **Lifetime** - Lasts for the duration of the save operation
-- **Clearing** - Automatically cleared after bulk operation completes
-
-```php
-// Example: Schema caching during bulk save
-$schema = $this->loadSchemaWithCache($schemaId);
-// Subsequent calls for same $schemaId return cached instance
-```
-
-#### Entity Caching (ObjectService)
-Used during object retrieval and faceting:
-- **getCachedEntities()** - Generic caching method for schemas/registers
-- **Batch Loading** - Fetches multiple entities in a single query
-- **Fallback Mechanism** - Falls back to DB if cache unavailable
-
-```php
-// Example: Batch loading registers for facets
-$registers = $this->getCachedEntities(
-    'register', 
-    $registerIds, 
-    [$this->registerMapper, 'findMultiple']
-);
-```
-
-#### Mapper Optimizations
-Specialized batch loading methods:
-- **findMultipleOptimized()** - Single query for multiple IDs
-- **Returns keyed array** - ID => Entity for fast lookups
-- **Used by facet processing** - Resolves labels efficiently
-
-```php
-// Example: Optimized batch loading
-$schemas = $this->schemaMapper->findMultipleOptimized([1, 2, 3]);
-// Result: [1 => Schema1, 2 => Schema2, 3 => Schema3]
-```
-
-#### UUID Resolution for Object Field Facets
-When object fields contain references to other objects via UUIDs, the system automatically resolves them to human-readable names:
-
-**How it works:**
-1. **Detect UUIDs** - Identifies values that look like UUIDs (contain hyphens)
-2. **Batch lookup** - Uses `ObjectCacheService.getMultipleObjectNames()` for efficient batch retrieval
-3. **Cache first** - Checks in-memory and distributed caches before database
-4. **Multi-source** - Searches both organisations and objects tables
-5. **Name extraction** - Uses common name fields (naam, name, title, contractNummer, achternaam)
-6. **Fallback gracefully** - Uses UUID if name cannot be resolved
-
-**Example transformation:**
-```json
-// Before UUID resolution:
-{
-  "customer": {
-    "buckets": [
-      { "value": "f47ac10b-58cc-4372-a567-0e02b2c3d479", "count": 42, "label": "f47ac10b-58cc-4372-a567-0e02b2c3d479" }
-    ]
-  }
-}
-
-// After UUID resolution (alphabetically sorted):
-{
-  "customer": {
-    "buckets": [
-      { "value": "f47ac10b-58cc-4372-a567-0e02b2c3d479", "count": 42, "label": "Acme Corporation" }
-    ]
-  }
-}
-```
-
-**Performance considerations:**
-- **Cached UUIDs** - Already resolved names retrieved instantly from cache
-- **Batch loading** - New UUIDs loaded together in a single query
-- **Persistent cache** - Resolved names stored in distributed cache for all users
-- **Minimal overhead** - Only processes values that look like UUIDs (contain hyphens)
-
-### Performance Benefits
-
-#### Without Caching
-- **1 query per unique ID** in facet results
-- **N+1 query problem** for large facet sets
-- **Response time** increases linearly with unique values
-
-#### With Caching
-- **1 query for all IDs** per facet field
-- **No redundant queries** for same entities
-- **Consistent performance** regardless of facet size
-
-#### Real-World Impact
-
-For a facet with 20 unique register IDs:
-- **Without caching**: 20 separate queries = ~500ms
-- **With caching**: 1 batch query = ~25ms
-- **Performance gain**: 20x faster
-
-### Implementation Details
-
-#### Facet Processing Pipeline
-
-1. **SOLR returns raw facets** with numeric IDs
-2. **processFacetResponse()** detects metadata fields
-3. **formatMetadataFacetData()** called for register/schema/organisation
-4. **resolveRegisterLabels()/resolveSchemaLabels()** batch load entities
-5. **Labels mapped to buckets** before returning to frontend
-
-#### Code Flow Diagram
-
-```mermaid
-sequenceDiagram
-    participant API as API Request
-    participant GS as GuzzleSolrService
-    participant Cache as Entity Cache
-    participant Mapper as RegisterMapper
-    participant DB as Database
-
-    API->>GS: getFacets with _facets=extend
-    GS->>GS: Build facet query
-    GS->>GS: Execute SOLR query
-    GS->>GS: processFacetResponse()
-    
-    alt Metadata Field with Label Resolution
-        GS->>GS: formatMetadataFacetData()
-        GS->>GS: Extract IDs from buckets
-        GS->>GS: resolveRegisterLabels([5,6])
-        GS->>Cache: getCachedEntities('register', [5,6])
-        alt Cache Miss
-            Cache->>Mapper: findMultipleOptimized([5,6])
-            Mapper->>DB: SELECT * WHERE id IN (5,6)
-            DB-->>Mapper: Register entities
-            Mapper-->>Cache: [5=>Reg5, 6=>Reg6]
-            Cache->>Cache: Store in cache
-        end
-        Cache-->>GS: [5=>Reg5, 6=>Reg6]
-        GS->>GS: Map labels to buckets
-    else Regular Field
-        GS->>GS: formatFacetData()
-    end
-    
-    GS-->>API: Facets with resolved labels
-```
-
-#### Which Fields Get Label Resolution
-
-**Always Resolved:**
-- '\_register' → Register title
-- '\_schema' → Schema title or name
-- '\_organisation' → Organisation name
-
-**Never Resolved:**
-- '\_created', '\_updated' → Date fields use dates as labels
-- '\_application' → String values remain as-is
-- Object fields → Use raw values as labels
-
-### Configuration
-
-#### Facet Bucket Limits
-
-The system limits the number of buckets (unique values) returned per facet to prevent performance issues:
-
-**Default limit:** 1000 buckets per facet
-- Metadata facets (`_register`, `_schema`, `_organisation`): 1000 buckets
-- Object field facets (status, category, type, etc.): 1000 buckets
-
-**Why limit buckets?**
-- Prevents excessive memory usage
-- Keeps API responses manageable
-- Ensures consistent performance
-
-**Need more buckets?**
-You can modify the limit in `GuzzleSolrService.php`:
-- Line 7851: Metadata fields
-- Line 7876: Object fields  
-- Line 7906: Fallback facets
-- Line 8231: buildTermsFacet() method (accepts `$limit` parameter)
-
-**For unlimited buckets**, set `'limit' => -1` (use with caution!):
-```php
-$facetConfig = [
-    'type' => 'terms',
-    'field' => 'self_register',
-    'limit' => -1, // Unlimited buckets
-    'mincount' => 1
-];
-```
-
-**Note:** Very large facet sets may impact:
-- API response time
-- Frontend rendering performance
-- Memory usage on both server and client
-
-#### Disabling Caching
-Caching is currently always enabled, but can be modified by changing the 'getCachedEntities()' method implementation:
-
-```php
-private function getCachedEntities(...): array
-{
-    // Current: Always use fallback (cache disabled)
-    return call_user_func($fallbackFunc, $ids);
-    
-    // To enable caching: Implement cache logic here
-}
-```
-
-#### Customizing Label Format
-Modify the resolve methods to customize label formatting:
-
-```php
-private function resolveSchemaLabels(array $ids): array
-{
-    // Current: Uses title or name
-    $labels[$id] = $schema->getTitle() ?? $schema->getName() ?? "Schema $id";
-    
-    // Customize: Add more information
-    $labels[$id] = $schema->getTitle() . ' (' . $schema->getVersion() . ')';
-}
-```
-
-### Troubleshooting
-
-#### Labels Showing as IDs
-If facet labels are showing numeric IDs instead of names:
-1. Verify the field is in the metadata fields list ('\_register', '\_schema', '\_organisation')
-2. Check database has entities with those IDs
-3. Ensure entities have 'title'/'name' properties set
-4. Review logs for label resolution errors
-
-#### Performance Issues
-If facet queries are slow:
-1. Ensure batch loading methods are being used
-2. Check database indexes on ID columns
-3. Consider implementing actual caching in 'getCachedEntities()'
-4. Monitor number of unique IDs per facet
-
-#### Cache Invalidation
-If stale labels appear after entity updates:
-1. Static cache clears automatically after operations
-2. For persistent cache (when implemented), clear on entity updates
-3. Consider cache TTL for production deployments
-
-## Conclusion
-
-The new faceting system provides a powerful, flexible, and user-friendly approach to building faceted search interfaces. It combines the best practices from modern search systems like Elasticsearch with the specific needs of the OpenRegister application.
-
-Key benefits:
-- **Better UX** - Disjunctive faceting prevents options from disappearing
-- **More flexible** - Supports multiple facet types and data sources
-- **Better performance** - Optimized database queries and intelligent caching
-- **Smart label resolution** - Automatic conversion of IDs to human-readable names
-- **Modern API** - Familiar structure for developers
-- **Backward compatible** - Existing code continues to work
-- **Dynamic discovery** - Automatic detection of facetable fields helps build intelligent interfaces
-- **Database-oriented** - All analysis happens at the database level for optimal performance
-
-### Facetable Discovery Benefits
-
-The facetable field discovery system provides several key advantages:
-
-1. **Dynamic Interface Building** - Frontends can automatically discover and build facet interfaces without hardcoding field lists
-2. **Data-Driven Configuration** - Facet types and options are determined by analyzing actual data
-3. **Context Awareness** - Discovery respects current filters to show relevant faceting options
-4. **Performance Optimization** - Database-level analysis ensures efficient field discovery
-5. **Type Intelligence** - Automatic detection of field types enables appropriate facet configurations
-
-### Usage Recommendations
-
-1. **Use `_facetable=true`** for initial interface discovery
-2. **Cache discovery results** for frequently accessed configurations
-3. **Combine with regular faceting** for complete search interfaces
-4. **Leverage sample data** to show users what to expect
-5. **Respect appearance rates** to focus on commonly used fields
-
-The system is designed to grow with your application's needs while maintaining excellent performance and user experience. The addition of facetable discovery makes it even easier to build intelligent, data-driven search interfaces that adapt to your content automatically.
-
----
-
-## Technical Architecture
-
-This section provides detailed visualization of the faceting system's architecture and data flow.
-
-### Faceting Request Flow
-
-```mermaid
-sequenceDiagram
-    participant Client
-    participant API
-    participant ObjectService
-    participant FacetHandler
-    participant SolrService
-    participant Solr
-    participant Cache
-    
-    Client->>API: GET /api/objects?_facetable=true
-    API->>ObjectService: findObjects(_facetable=true)
-    
-    Note over ObjectService: Check if faceting requested
-    ObjectService->>FacetHandler: getFacetableFields(query)
-    
-    Note over FacetHandler: Analyze schema
-    FacetHandler->>FacetHandler: getSchemaFacets()
-    FacetHandler->>FacetHandler: discoverObjectFields()
-    
-    FacetHandler-->>ObjectService: Facetable field definitions
-    
-    ObjectService->>SolrService: searchObjects(query + facets)
-    
-    Note over SolrService: Build facet query
-    SolrService->>SolrService: buildJsonFacetQuery()
-    SolrService->>SolrService: buildTermsFacet()
-    SolrService->>SolrService: buildDateHistogramFacet()
-    
-    SolrService->>Solr: POST /collection/select + json.facet
-    Solr-->>SolrService: Facet results
-    
-    Note over SolrService: Process facet response
-    SolrService->>SolrService: processFacetResponse()
-    
-    Note over SolrService: UUID Resolution
-    SolrService->>SolrService: detectUUIDs()
-    SolrService->>Cache: getCachedObjects(uuids)
-    Cache-->>SolrService: Cached names
-    SolrService->>SolrService: resolveRemainingUUIDs()
-    
-    Note over SolrService: Sort alphabetically
-    SolrService->>SolrService: sortFacetsAlphabetically()
-    
-    SolrService-->>ObjectService: Enriched facet data
-    ObjectService-->>API: Results + Facets
-    API-->>Client: JSON Response
-```
-
-### Facet Processing Pipeline
-
-```mermaid
-graph TD
-    A[Faceting Request] --> B{_facetable parameter?}
-    B -->|true| C[Get Facetable Fields]
-    B -->|false| D[Skip Faceting]
-    
-    C --> E[Schema Analysis]
-    E --> F[Get Pre-computed Facets]
-    E --> G[Discover Object Fields]
-    
-    F --> H[Merge Facet Definitions]
-    G --> H
-    
-    H --> I[Build Solr Facet Query]
-    I --> J{Facet Type?}
-    J -->|Terms| K[buildTermsFacet]
-    J -->|Date Histogram| L[buildDateHistogramFacet]
-    J -->|Range| M[buildRangeFacet]
-    
-    K --> N[Execute Solr Query]
-    L --> N
-    M --> N
-    
-    N --> O[Solr Returns Buckets]
-    O --> P[Process Facet Response]
-    
-    P --> Q{Contains UUIDs?}
-    Q -->|Yes| R[UUID Resolution]
-    Q -->|No| S[Format Buckets]
-    
-    R --> T[Check Cache]
-    T --> U{In Cache?}
-    U -->|Yes| V[Use Cached Names]
-    U -->|No| W[Batch Load from DB]
-    
-    W --> X[Cache Results]
-    V --> Y[Merge with Buckets]
-    X --> Y
-    
-    Y --> Z[Sort Alphabetically]
-    S --> Z
-    
-    Z --> AA[Return Enriched Facets]
-    
-    style I fill:#e1f5ff
-    style R fill:#ffe1e1
-    style T fill:#fff4e1
-```
-
-### UUID Resolution Process
-
-```mermaid
-graph LR
-    A[Facet Buckets] --> B{Detect UUIDs}
-    B -->|UUID Pattern Found| C[Extract UUID List]
-    B -->|No UUIDs| D[Return Original]
-    
-    C --> E[Lazy Load ObjectCacheService]
-    E --> F{Service Available?}
-    F -->|No| G[Use UUIDs as Labels]
-    F -->|Yes| H[Batch Load Objects]
-    
-    H --> I[Check Memory Cache]
-    I --> J{In Memory?}
-    J -->|Yes| K[Use Cached]
-    J -->|No| L[Check Distributed Cache]
-    
-    L --> M{In Cache?}
-    M -->|Yes| N[Use Cached]
-    M -->|No| O[Load from Database]
-    
-    O --> P[Extract Name Fields]
-    P --> Q[naam, name, title, etc.]
-    
-    K --> R[Merge with Buckets]
-    N --> R
-    Q --> S[Cache Result]
-    S --> R
-    
-    R --> T[Sort by Label A-Z]
-    T --> U[Return Enriched Facets]
-    
-    G --> U
-    D --> U
-    
-    style E fill:#e1f5ff
-    style I fill:#fff4e1
-    style L fill:#fff4e1
-    style O fill:#ffe1e1
-```
-
-### Disjunctive Faceting Implementation
-
-```mermaid
-graph TD
-    A[User Applies Filter] --> B[Status=published]
-    B --> C[Build Facet Queries]
-    
-    C --> D{For Each Facet}
-    D --> E[Status Facet]
-    D --> F[Category Facet]
-    D --> G[Priority Facet]
-    
-    Note over E: Exclude its own filter
-    E --> H[Domain Filter without Status]
-    H --> I[Apply: Category + Priority]
-    
-    Note over F: Exclude its own filter
-    F --> J[Domain Filter without Category]
-    J --> K[Apply: Status + Priority]
-    
-    Note over G: Exclude its own filter
-    G --> L[Domain Filter without Priority]
-    L --> M[Apply: Status + Category]
-    
-    I --> N[Execute Solr Queries]
-    K --> N
-    M --> N
-    
-    N --> O[Merge Results]
-    O --> P[All Options Remain Visible]
-    
-    style C fill:#e1f5ff
-    style O fill:#e1ffe1
-```
-
-### Facet Type Selection Logic
-
-```mermaid
-graph TD
-    A[Analyze Field] --> B{Field Type?}
-    B -->|String| C{Cardinality?}
-    B -->|Numeric| D[Terms + Range]
-    B -->|Date| E[Date Histogram + Range]
-    B -->|Boolean| F[Terms Only]
-    
-    C -->|Low ≤50| G[Terms Facet]
-    C -->|High >50| H[Not Suitable]
-    
-    G --> I[categorical]
-    D --> J[numeric]
-    E --> K[date]
-    F --> L[binary]
-    H --> M[Skip Faceting]
-    
-    I --> N[Return Facet Config]
-    J --> N
-    K --> N
-    L --> N
-    M --> O[Exclude from Facets]
-    
-    style B fill:#e1f5ff
-    style N fill:#e1ffe1
-```
-
-### Caching Strategy
-
-```mermaid
-graph TD
-    A[UUID Resolution Request] --> B[Check Memory Cache]
-    B --> C{Exists?}
-    C -->|Yes| D[Return <10ms]
-    C -->|No| E[Check Distributed Cache]
-    
-    E --> F{Exists?}
-    F -->|Yes| G[Return <50ms]
-    F -->|No| H[Database Query]
-    
-    H --> I[Batch Load Objects]
-    I --> J[Extract Names]
-    
-    J --> K[Store in Distributed Cache]
-    K --> L[Store in Memory Cache]
-    
-    L --> M[Return <100ms for 100 UUIDs]
-    
-    D --> N[Facet Response]
-    G --> N
-    M --> N
-    
-    style B fill:#fff4e1
-    style E fill:#fff4e1
-    style H fill:#ffe1e1
-    style N fill:#e1ffe1
-```
-
-### Performance Characteristics
-
-**Facet Query Performance:**
-```
-Without Faceting:    ~50ms  (search only)
-With Faceting:       ~80ms  (search + 5 facets)
-With UUID Resolution: ~120ms (search + 5 facets + 100 UUID resolutions)
-With Full Caching:   ~60ms  (search + 5 facets + cached UUIDs)
-```
-
-**Caching Impact:**
-```
-Memory Cache Hit:     <10ms   per UUID resolution
-Distributed Cache:    <50ms   per batch (100 UUIDs)
-Database Query:       <100ms  per batch (100 UUIDs)
-No Cache:             ~1000ms for 100 individual queries
-```
-
-### Code Examples
-
-#### Building Custom Facet Query
-
-```php
-use OCA\OpenRegister\Service\Object\FacetHandler;
-
-// Get facetable fields
-$facetableFields = $facetHandler->getFacetableFields([
-    '@self' => ['register' => 5],
-    '_search' => 'budget'
-], 100);
-
-// Build facet configuration
-$facets = [
-    'status' => [
-        'type' => 'terms',
-        'field' => 'status_s',
-        'limit' => 50
-    ],
-    'created' => [
-        'type' => 'date_histogram',
-        'field' => 'self_created',
-        'interval' => 'month'
-    ]
-];
-
-// Execute search with facets
-$results = $objectService->findObjects([
-    '_source' => 'index',
-    '_facetable' => true,
-    '_facets' => $facets
-]);
-```
-
-#### Processing Facet Results
-
-```php
-// Access facet data
-$facets = $results['facets'];
-
-foreach ($facets['@self'] as $fieldName => $facetData) {
-    echo "Facet: " . $facetData['description'] . "\n";
-    
-    foreach ($facetData['data'] as $bucket) {
-        echo "  - " . $bucket['label'] . ": " . $bucket['count'] . "\n";
-    }
-}
-
-// Process object field facets
-foreach ($facets['object_fields'] as $fieldName => $facetData) {
-    echo "Object Field: " . $fieldName . "\n";
-    
-    foreach ($facetData['data'] as $bucket) {
-        echo "  - " . $bucket['value'] . ": " . $bucket['count'] . "\n";
-    }
-}
-```
-
-### Testing
-
-```bash
-# Run faceting tests
-vendor/bin/phpunit tests/Service/FacetServiceTest.php
-
-# Test specific scenarios
-vendor/bin/phpunit --filter testDisjunctiveFaceting
-vendor/bin/phpunit --filter testUUIDResolution
-vendor/bin/phpunit --filter testFacetDiscovery
-
-# Integration tests
-vendor/bin/phpunit tests/Integration/FacetIntegrationTest.php
-```
-
-**Test Coverage:**
-- Facet type detection
-- UUID resolution and caching
-- Disjunctive faceting behavior
-- Alphabetical sorting
-- Date histogram buckets
-- Range aggregations
-- Performance benchmarks
-
-## Architecture Changes (v2.0.0)
-
-**Consolidated Architecture:** As of version 2.0.0, the faceting system has been consolidated into a single handler for improved consistency and maintainability.
-
-**Previous Architecture:**
-- FacetService (standalone service with business logic)
-- FacetHandler (thin wrapper delegating to FacetService)
-- ObjectService used FacetService directly
-
-**Current Architecture:**
-- FacetHandler (unified handler with all faceting logic)
-- ObjectService uses FacetHandler following the established handler pattern
-- All faceting operations go through FacetHandler
-
-**Benefits:**
-- Consistent with ObjectService handler pattern (SaveObject, DeleteObject, etc.)
-- Simplified dependency injection
-- Cleaner architecture with single responsibility
-- Better alignment with other service patterns in OpenRegister
-
-**Migration Impact:**
-- Internal refactoring only - no API changes
-- All public methods remain the same
-- Frontend code requires no changes
-- Existing queries and responses unchanged 
+1. **Be selective** — Only make properties facetable if they have a manageable number of distinct values and are useful for filtering
+2. **Use clear titles** — Set human-readable `title` values so users understand each filter
+3. **Order thoughtfully** — Use the `order` field to put the most frequently used facets first
+4. **Use aggregation wisely** — Enable `"aggregated": true` only when the same property name truly represents the same concept across schemas
+5. **Test after configuring** — Verify facets appear and work correctly in the search interface
+6. **Prefer schema-based discovery** — Marking fields as facetable in schemas is faster and more predictable than runtime object analysis

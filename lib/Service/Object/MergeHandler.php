@@ -325,7 +325,7 @@ class MergeHandler
                         $mergeReport['statistics']['referencesUpdated']++;
                         $updatedReferences[] = [
                             'objectId' => $referencingObject->getUuid(),
-                            'title'    => $referencingObject->getTitle() ?? $referencingObject->getUuid(),
+                            'title'    => $referencingObject->getName() ?? $referencingObject->getUuid(),
                         ];
                     }
                 }//end foreach

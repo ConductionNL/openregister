@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCP\IUserManager;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -82,14 +83,22 @@ class ExportService
     private readonly CacheHandler $cacheHandler;
 
     /**
+     * Property RBAC handler for property-level authorization checks
+     *
+     * @var PropertyRbacHandler
+     */
+    private readonly PropertyRbacHandler $propertyRbacHandler;
+
+    /**
      * Constructor for the ExportService
      *
-     * @param ObjectEntityMapper $_objectEntityMapper The object entity mapper (unused but kept for future use)
-     * @param RegisterMapper     $registerMapper      The register mapper
-     * @param IUserManager       $_userManager        The user manager (unused but kept for future use)
-     * @param IGroupManager      $groupManager        The group manager
-     * @param ObjectService      $objectService       The object service
-     * @param CacheHandler       $cacheHandler        The cache handler for name resolution
+     * @param ObjectEntityMapper  $_objectEntityMapper  The object entity mapper (unused but kept for future use)
+     * @param RegisterMapper      $registerMapper       The register mapper
+     * @param IUserManager        $_userManager         The user manager (unused but kept for future use)
+     * @param IGroupManager       $groupManager         The group manager
+     * @param ObjectService       $objectService        The object service
+     * @param CacheHandler        $cacheHandler         The cache handler for name resolution
+     * @param PropertyRbacHandler $propertyRbacHandler   The property RBAC handler
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
@@ -99,12 +108,14 @@ class ExportService
         IUserManager $_userManager,
         IGroupManager $groupManager,
         ObjectService $objectService,
-        CacheHandler $cacheHandler
+        CacheHandler $cacheHandler,
+        PropertyRbacHandler $propertyRbacHandler
     ) {
-        $this->registerMapper = $registerMapper;
-        $this->groupManager   = $groupManager;
-        $this->objectService  = $objectService;
-        $this->cacheHandler   = $cacheHandler;
+        $this->registerMapper       = $registerMapper;
+        $this->groupManager         = $groupManager;
+        $this->objectService        = $objectService;
+        $this->cacheHandler         = $cacheHandler;
+        $this->propertyRbacHandler  = $propertyRbacHandler;
     }//end __construct()
 
     /**
@@ -414,6 +425,25 @@ class ExportService
 
                 // Skip properties that are hidden on collection views.
                 if (($properties[$fieldName]['hideOnCollection'] ?? false) === true) {
+                    continue;
+                }
+
+                // Skip properties explicitly marked as not visible.
+                if (isset($properties[$fieldName]['visible']) === true
+                    && $properties[$fieldName]['visible'] === false
+                ) {
+                    continue;
+                }
+
+                // Skip properties restricted by authorization rules the current user doesn't satisfy.
+                // Uses PropertyRbacHandler (the single source of truth for property-level RBAC).
+                // Empty object array causes conditional match rules to fail-closed (safe default for headers).
+                if ($this->propertyRbacHandler->canReadProperty(
+                    schema: $schema,
+                    property: $fieldName,
+                    object: []
+                ) === false
+                ) {
                     continue;
                 }
 

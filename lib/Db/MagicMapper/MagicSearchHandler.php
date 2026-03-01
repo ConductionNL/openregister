@@ -530,6 +530,7 @@ class MagicSearchHandler
             '_relations_contains',
             '_multitenancy_explicit',
             '_fuzzy',
+            '_empty',
             'register',
             'schema',
             'registers',
