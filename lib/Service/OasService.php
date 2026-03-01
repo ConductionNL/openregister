@@ -753,7 +753,9 @@ class OasService
      */
     private function addCrudPaths(object $register, object $schema, array $rbac = [], string $operationIdPrefix = ''): void
     {
-        $basePath = '/'.$this->slugify($register->getTitle()).'/'.$this->slugify($schema->getTitle());
+        $registerSlug = $register->getSlug() ?: $this->slugify($register->getTitle());
+        $schemaSlug   = $schema->getSlug() ?: $this->slugify($schema->getTitle());
+        $basePath     = '/objects/'.$registerSlug.'/'.$schemaSlug;
 
         // Collection endpoints (tags are inside individual operations).
         $getCollection = $this->createGetCollectionOperation($schema);
@@ -811,7 +813,9 @@ class OasService
      */
     private function addExtendedPaths(object $register, object $schema): void
     {
-        $basePath = '/'.$this->slugify($register->getTitle()).'/'.$this->slugify($schema->getTitle());
+        $registerSlug = $register->getSlug() ?: $this->slugify($register->getTitle());
+        $schemaSlug   = $schema->getSlug() ?: $this->slugify($schema->getTitle());
+        $basePath     = '/objects/'.$registerSlug.'/'.$schemaSlug;
 
         // Only add whitelisted extended endpoints.
         foreach (self::INCLUDED_EXTENDED_ENDPOINTS ?? [] as $endpoint) {

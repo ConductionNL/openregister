@@ -272,6 +272,9 @@ class MergeHandler
                     partialMatch: true
                 );
 
+                // Cache register/schema context lookups to avoid N+1 queries.
+                $contextCache = [];
+
                 foreach ($referencingObjects as $referencingObject) {
                     // 1. Update _relations metadata.
                     $relations        = $referencingObject->getRelations();
@@ -311,12 +314,18 @@ class MergeHandler
 
                     // 3. Persist with proper register/schema context.
                     if ($relationsUpdated === true || $dataUpdated === true) {
-                        $refContext = $this->objectEntityMapper->findAcrossAllSources(
-                            identifier: $referencingObject->getUuid(),
-                            includeDeleted: false,
-                            _rbac: false,
-                            _multitenancy: false
-                        );
+                        // Use cache key from register+schema IDs to avoid repeated lookups.
+                        $cacheKey = $referencingObject->getRegister().'_'.$referencingObject->getSchema();
+                        if (isset($contextCache[$cacheKey]) === false) {
+                            $contextCache[$cacheKey] = $this->objectEntityMapper->findAcrossAllSources(
+                                identifier: $referencingObject->getUuid(),
+                                includeDeleted: false,
+                                _rbac: false,
+                                _multitenancy: false
+                            );
+                        }
+
+                        $refContext = $contextCache[$cacheKey];
                         $this->objectEntityMapper->update(
                             entity: $referencingObject,
                             register: $refContext['register'],
@@ -325,7 +334,7 @@ class MergeHandler
                         $mergeReport['statistics']['referencesUpdated']++;
                         $updatedReferences[] = [
                             'objectId' => $referencingObject->getUuid(),
-                            'title'    => $referencingObject->getTitle() ?? $referencingObject->getUuid(),
+                            'title'    => $referencingObject->getName() ?? $referencingObject->getUuid(),
                         ];
                     }
                 }//end foreach

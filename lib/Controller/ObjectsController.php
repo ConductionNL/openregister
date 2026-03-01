@@ -2679,6 +2679,9 @@ class ObjectsController extends Controller
         $objectService->setRegister($register);
         $objectService->setSchema($schema);
 
+        // Merging large objects with many references can take a long time.
+        set_time_limit(0);
+
         try {
             // Get merge data from request body.
             $requestParams = $this->request->getParams();
