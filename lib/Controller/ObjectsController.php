@@ -710,6 +710,19 @@ class ObjectsController extends Controller
             $serializedResults[] = $entity->jsonSerialize();
         }
 
+        // Strip empty values from results unless _empty=true is set.
+        $params       = $this->request->getParams();
+        $includeEmpty = filter_var(
+            value: $params['_empty'] ?? false,
+            filter: FILTER_VALIDATE_BOOLEAN
+        );
+        if ($includeEmpty === false) {
+            $serializedResults = array_map(
+                callback: [$this, 'stripEmptyValues'],
+                array: $serializedResults
+            );
+        }
+
         // Calculate pagination.
         $limit  = $query['_limit'] ?? 20;
         $offset = $query['_offset'] ?? 0;
@@ -814,6 +827,9 @@ class ObjectsController extends Controller
      * - Debug: _debug (enable debug information in response - SOLR only)
      * - Source: _source (force search source: 'database' or 'index'/'solr')
      * - Sorting: _order
+     * - Empty values: _empty (boolean, default: false). When false (default), null, empty string,
+     *   and empty array values are stripped from the response to reduce payload size.
+     *   Set _empty=true to include all properties including empty values.
      *
      * @param string        $register      The register slug or identifier
      * @param string        $schema        The schema slug or identifier
@@ -1068,6 +1084,19 @@ class ObjectsController extends Controller
                     }
                 }
 
+                // Strip empty values from results unless _empty=true is set.
+                // This reduces response payload by omitting null/empty properties.
+                $includeEmpty = filter_var(
+                    value: $query['_empty'] ?? $params['_empty'] ?? false,
+                    filter: FILTER_VALIDATE_BOOLEAN
+                );
+                if ($includeEmpty === false) {
+                    $responseData['results'] = array_map(
+                        callback: [$this, 'stripEmptyValues'],
+                        array: $responseData['results']
+                    );
+                }
+
                 // Return in expected format.
                 $response = new JSONResponse(data: $responseData);
 
@@ -1096,6 +1125,25 @@ class ObjectsController extends Controller
             published: $published,
             deleted: $deleted
         );
+
+        // Strip empty values from results unless _empty=true is set.
+        $includeEmpty = filter_var(
+            value: $params['_empty'] ?? false,
+            filter: FILTER_VALIDATE_BOOLEAN
+        );
+        if ($includeEmpty === false && isset($result['results']) === true && is_array($result['results']) === true) {
+            $result['results'] = array_map(
+                callback: function ($item) {
+                    // Serialize ObjectEntity instances to arrays before stripping empty values.
+                    if (is_array($item) === false && method_exists(object_or_class: $item, method: 'jsonSerialize') === true) {
+                        $item = $item->jsonSerialize();
+                    }
+
+                    return is_array($item) === true ? $this->stripEmptyValues(data: $item) : $item;
+                },
+                array: $result['results']
+            );
+        }
 
         // **SUB-SECOND OPTIMIZATION**: Enable response compression for large payloads.
         $response = new JSONResponse(data: $result);
@@ -1131,6 +1179,9 @@ class ObjectsController extends Controller
      * - Debug: _debug (enable debug information in response - SOLR only)
      * - Source: _source (force search source: 'database' or 'index'/'solr')
      * - Sorting: _order
+     * - Empty values: _empty (boolean, default: false). When false (default), null, empty string,
+     *   and empty array values are stripped from the response to reduce payload size.
+     *   Set _empty=true to include all properties including empty values.
      *
      * @param ObjectService $objectService The object service
      *
@@ -1242,6 +1293,18 @@ class ObjectsController extends Controller
                             $page  = (int) floor($offset / $limit) + 1;
                         }
 
+                        // Strip empty values from results unless _empty=true is set.
+                        $includeEmpty = filter_var(
+                            value: $params['_empty'] ?? false,
+                            filter: FILTER_VALIDATE_BOOLEAN
+                        );
+                        if ($includeEmpty === false) {
+                            $serializedResults = array_map(
+                                callback: [$this, 'stripEmptyValues'],
+                                array: $serializedResults
+                            );
+                        }
+
                         // Return in expected format with magic_mapper source indicator.
                         return new JSONResponse(
                             data: [
@@ -1269,6 +1332,25 @@ class ObjectsController extends Controller
 
         // **INTELLIGENT SOURCE SELECTION**: ObjectService automatically chooses optimal source.
         $result = $objectService->searchObjectsPaginated($query);
+
+        // Strip empty values from results unless _empty=true is set.
+        $includeEmpty = filter_var(
+            value: $params['_empty'] ?? false,
+            filter: FILTER_VALIDATE_BOOLEAN
+        );
+        if ($includeEmpty === false && isset($result['results']) === true && is_array($result['results']) === true) {
+            $result['results'] = array_map(
+                callback: function ($item) {
+                    // Serialize ObjectEntity instances to arrays before stripping empty values.
+                    if (is_array($item) === false && method_exists(object_or_class: $item, method: 'jsonSerialize') === true) {
+                        $item = $item->jsonSerialize();
+                    }
+
+                    return is_array($item) === true ? $this->stripEmptyValues(data: $item) : $item;
+                },
+                array: $result['results']
+            );
+        }
 
         return new JSONResponse(data: $result);
     }//end objects()
@@ -1424,6 +1506,15 @@ class ObjectsController extends Controller
                     );
                 }
             }//end if
+
+            // Strip empty values from response unless _empty=true is set.
+            $includeEmpty = filter_var(
+                value: $requestParams['_empty'] ?? false,
+                filter: FILTER_VALIDATE_BOOLEAN
+            );
+            if ($includeEmpty === false) {
+                $renderedData = $this->stripEmptyValues(data: $renderedData);
+            }
 
             return new JSONResponse(data: $renderedData);
         } catch (DoesNotExistException $exception) {
@@ -3262,4 +3353,66 @@ class ObjectsController extends Controller
             );
         }//end try
     }//end clearBlob()
+
+    /**
+     * Recursively strips empty values (null, empty string, empty array) from an array.
+     *
+     * Used to reduce API response payload by omitting properties that have no value.
+     * Values of 0, false, and "0" are preserved as they are meaningful.
+     *
+     * By default, responses are stripped. Pass _empty=true in the query to include
+     * empty values in the response for debugging or schema-aware consumers.
+     *
+     * @param array $data The data array to strip empty values from.
+     *
+     * @return array The data with empty values removed.
+     */
+    private function stripEmptyValues(array $data): array
+    {
+        $result = [];
+        foreach ($data as $key => $value) {
+            // Recursively strip nested arrays (but not sequential arrays like relations/files).
+            if (is_array($value) === true) {
+                // Check if this is a sequential (indexed) array.
+                $isSequential = array_is_list($value);
+
+                if ($isSequential === true) {
+                    // For sequential arrays, strip each element if it's an associative array.
+                    $stripped = [];
+                    foreach ($value as $item) {
+                        if (is_array($item) === true) {
+                            $stripped[] = $this->stripEmptyValues(data: $item);
+                        } else {
+                            $stripped[] = $item;
+                        }
+                    }
+
+                    // Only include non-empty sequential arrays.
+                    if (empty($stripped) === false) {
+                        $result[$key] = $stripped;
+                    }
+
+                    continue;
+                }
+
+                // For associative arrays, recurse.
+                $stripped = $this->stripEmptyValues(data: $value);
+                if (empty($stripped) === false) {
+                    $result[$key] = $stripped;
+                }
+
+                continue;
+            }//end if
+
+            // Skip null and empty strings.
+            if ($value === null || $value === '') {
+                continue;
+            }
+
+            // Keep everything else (including 0, false, "0").
+            $result[$key] = $value;
+        }//end foreach
+
+        return $result;
+    }//end stripEmptyValues()
 }//end class
