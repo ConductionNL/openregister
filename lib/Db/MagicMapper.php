@@ -1061,6 +1061,10 @@ class MagicMapper
         $qb    = $this->db->getQueryBuilder();
         $parts = [];
 
+        // Collect superset of all property columns across all schemas for UNION compatibility.
+        // Each SELECT must include the same columns; schemas that lack a column get NULL AS alias.
+        $allPropertyColumns = $this->collectAllPropertyColumns(registerSchemaPairs: $registerSchemaPairs);
+
         // Build a SELECT for each table.
         foreach ($registerSchemaPairs as $pair) {
             $register = $pair['register'] ?? null;
@@ -1091,12 +1095,13 @@ class MagicMapper
 
             $tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
 
-            // Build SELECT for this table with schema/register metadata.
+            // Build SELECT for this table with schema/register metadata and property columns.
             $selectPart = $this->buildUnionSelectPart(
                 tableName: $tableName,
                 query: $query,
                 schema: $schema,
-                register: $register
+                register: $register,
+                allPropertyColumns: $allPropertyColumns
             );
 
             if ($selectPart !== null) {
@@ -1138,9 +1143,8 @@ class MagicMapper
                 if (str_starts_with($field, '@self.') === true) {
                     $columnName = self::METADATA_PREFIX.substr($field, 6);
                 } else if (str_starts_with($field, '_') === false) {
-                    // Non-metadata fields - add underscore prefix for metadata columns.
-                    // Note: In UNION, we only have metadata columns, not schema-specific properties.
-                    // For property ordering, the column must exist in the SELECT.
+                    // Non-metadata fields - property columns are included in UNION queries.
+                    // The column must exist in the SELECT for ordering to work.
                     $columnName = $this->sanitizeColumnName($field);
                 }
 
@@ -1194,10 +1198,11 @@ class MagicMapper
     /**
      * Build SELECT part for UNION ALL query.
      *
-     * @param string   $tableName Table name.
-     * @param array    $query     Search query.
-     * @param Schema   $schema    Schema entity.
-     * @param Register $register  Register entity.
+     * @param string   $tableName          Table name.
+     * @param array    $query              Search query.
+     * @param Schema   $schema             Schema entity.
+     * @param Register $register           Register entity.
+     * @param array    $allPropertyColumns Superset of all property columns across schemas.
      *
      * @return string|null SQL SELECT statement or null if table doesn't exist.
      *
@@ -1205,8 +1210,13 @@ class MagicMapper
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      */
-    private function buildUnionSelectPart(string $tableName, array $query, Schema $schema, Register $register): ?string
-    {
+    private function buildUnionSelectPart(
+        string $tableName,
+        array $query,
+        Schema $schema,
+        Register $register,
+        array $allPropertyColumns = []
+    ): ?string {
         $qb = $this->db->getQueryBuilder();
 
         // Add table prefix.
@@ -1215,8 +1225,23 @@ class MagicMapper
         // Get metadata column names (common across all tables).
         $metadataColumns = array_keys($this->getMetadataColumns());
 
-        // Base SELECT with only metadata columns (for UNION compatibility).
-        $selectColumns   = $metadataColumns;
+        // Base SELECT with metadata columns.
+        $selectColumns = $metadataColumns;
+
+        // Add schema property columns for UNION compatibility.
+        // Each schema's SELECT includes ALL property columns across all schemas.
+        // Columns that exist in this schema's table use the real column cast to text.
+        // Columns that don't exist use NULL::text AS placeholder.
+        // Cast to text ensures type compatibility across schemas in UNION
+        // (e.g., one schema has 'type' as text, another as jsonb).
+        foreach (array_keys($allPropertyColumns) as $columnName) {
+            if ($this->columnExistsInTable(tableName: $tableName, columnName: $columnName) === true) {
+                $selectColumns[] = "{$columnName}::text AS {$columnName}";
+            } else {
+                $selectColumns[] = "NULL::text AS {$columnName}";
+            }
+        }
+
         $selectColumns[] = "'{$register->getId()}' AS _union_register_id";
         $selectColumns[] = "'{$schema->getId()}' AS _union_schema_id";
 
@@ -1270,6 +1295,63 @@ class MagicMapper
 
         return $selectSql;
     }//end buildUnionSelectPart()
+
+    /**
+     * Collect the superset of all sanitized property column names across schemas.
+     *
+     * For UNION queries, all SELECTs must have the same columns.
+     * This method collects all unique property columns from all schemas
+     * so that each SELECT can include them (real column or NULL AS alias).
+     *
+     * @param array $registerSchemaPairs Array of register+schema pairs.
+     *
+     * @return array Associative array of sanitized_column_name => original_property_name.
+     */
+    private function collectAllPropertyColumns(array $registerSchemaPairs): array
+    {
+        $allColumns = [];
+
+        // List of metadata/configuration fields that should NOT be treated as properties.
+        // Same exclusion list as buildTableColumnsFromSchema().
+        $metadataFields = [
+            'objectNameField',
+            'objectDescriptionField',
+            'objectSummaryField',
+            'required',
+            '$schema',
+            '$id',
+        ];
+
+        foreach ($registerSchemaPairs as $pair) {
+            $schema = $pair['schema'] ?? null;
+            if ($schema === null) {
+                continue;
+            }
+
+            $properties = $schema->getProperties() ?? [];
+            if (is_array($properties) === false) {
+                continue;
+            }
+
+            foreach ($properties as $propertyName => $propertyConfig) {
+                if (in_array($propertyName, $metadataFields, true) === true) {
+                    continue;
+                }
+
+                if (is_array($propertyConfig) === false) {
+                    continue;
+                }
+
+                $columnName = $this->sanitizeColumnName(name: $propertyName);
+                // Only store the first mapping for each column name.
+                if (isset($allColumns[$columnName]) === false) {
+                    $allColumns[$columnName] = $propertyName;
+                }
+            }//end foreach
+        }//end foreach
+
+        return $allColumns;
+    }//end collectAllPropertyColumns()
 
     /**
      * Convert UNION query row to ObjectEntity.
@@ -3273,6 +3355,12 @@ class MagicMapper
                 }//end if
 
                 // This is a schema property.
+                // Skip NULL values for properties not in this schema's definition.
+                // In UNION queries, NULL placeholders exist for other schemas' columns.
+                if ($value === null && isset($columnToPropertyMap[$columnName]) === false) {
+                    continue;
+                }
+
                 // Map column name back to original property name using schema mapping.
                 // Falls back to camelCase conversion if not found in mapping.
                 $propertyName = $columnToPropertyMap[$columnName] ?? $this->columnNameToPropertyName($columnName);
