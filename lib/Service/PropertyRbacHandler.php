@@ -358,6 +358,11 @@ class PropertyRbacHandler
             return true;
         }
 
+        // 'authenticated' grants access to any logged-in user.
+        if ($rule === 'authenticated') {
+            return $userId !== null;
+        }
+
         // Check if user is in the specified group.
         return in_array($rule, $userGroups, true);
     }//end checkSimpleRule()
@@ -386,6 +391,8 @@ class PropertyRbacHandler
         // Check if user qualifies for this group.
         $userQualifies = false;
         if ($group === 'public') {
+            $userQualifies = true;
+        } else if ($group === 'authenticated' && $userId !== null) {
             $userQualifies = true;
         } else if (in_array($group, $userGroups, true) === true) {
             $userQualifies = true;

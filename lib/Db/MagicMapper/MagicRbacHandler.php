@@ -248,6 +248,11 @@ class MagicRbacHandler
             return true;
         }
 
+        // 'authenticated' grants access to any logged-in user.
+        if ($rule === 'authenticated') {
+            return $userId !== null;
+        }
+
         // Check if user is in the specified group.
         if (in_array($rule, $userGroups, true) === true) {
             return true;
@@ -279,6 +284,8 @@ class MagicRbacHandler
         $userQualifies = false;
         if ($group === 'public') {
             // Public group means anyone can access, including unauthenticated users.
+            $userQualifies = true;
+        } else if ($group === 'authenticated' && $userId !== null) {
             $userQualifies = true;
         } else if (in_array($group, $userGroups, true) === true) {
             $userQualifies = true;

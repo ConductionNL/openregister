@@ -417,6 +417,24 @@ class ExportService
                     continue;
                 }
 
+                // Skip properties explicitly marked as not visible.
+                if (isset($properties[$fieldName]['visible']) === true
+                    && $properties[$fieldName]['visible'] === false
+                ) {
+                    continue;
+                }
+
+                // Skip properties restricted by authorization rules the current user doesn't satisfy.
+                if (isset($properties[$fieldName]['authorization']['read']) === true
+                    && empty($properties[$fieldName]['authorization']['read']) === false
+                    && $this->isPropertyReadableByUser(
+                        rules: $properties[$fieldName]['authorization']['read'],
+                        currentUser: $currentUser
+                    ) === false
+                ) {
+                    continue;
+                }
+
                 // Always use the property key as the header to ensure consistent data access.
                 $headers[$col] = $fieldName;
                 $col++;
@@ -652,6 +670,38 @@ class ExportService
 
         return false;
     }//end isRelationProperty()
+
+    /**
+     * Check if a property is readable by the current user based on authorization rules
+     *
+     * @param array      $rules       Authorization rules (e.g. ['public', 'authenticated', 'admin'])
+     * @param IUser|null $currentUser Current user
+     *
+     * @return bool True if the user satisfies at least one rule
+     */
+    private function isPropertyReadableByUser(array $rules, ?IUser $currentUser): bool
+    {
+        $userId = $currentUser?->getUID();
+
+        foreach ($rules as $rule) {
+            if ($rule === 'public') {
+                return true;
+            }
+
+            if ($rule === 'authenticated' && $userId !== null) {
+                return true;
+            }
+
+            // Check group membership for other rules.
+            if (is_string($rule) === true && $userId !== null) {
+                if ($this->groupManager->isInGroup(uid: $userId, gid: $rule) === true) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }//end isPropertyReadableByUser()
 
     /**
      * Collect UUIDs from a property value into a flat array

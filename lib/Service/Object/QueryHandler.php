@@ -450,6 +450,7 @@ class QueryHandler
 
         // Check if any schema has property-level authorization.
         // If yes, we need to render to filter unauthorized properties.
+        // Schemas may be Entity objects or serialized arrays from UnifiedObjectMapper.
         $hasPropertyAuthorization = false;
         foreach ($schemas as $schema) {
             if ($schema instanceof \OCA\OpenRegister\Db\Schema
@@ -457,6 +458,16 @@ class QueryHandler
             ) {
                 $hasPropertyAuthorization = true;
                 break;
+            } else if (is_array($schema) === true && isset($schema['properties']) === true) {
+                foreach ($schema['properties'] as $propertyConfig) {
+                    if (is_array($propertyConfig) === true
+                        && isset($propertyConfig['authorization']) === true
+                        && empty($propertyConfig['authorization']) === false
+                    ) {
+                        $hasPropertyAuthorization = true;
+                        break 2;
+                    }
+                }
             }
         }
 
