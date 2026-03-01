@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCP\IUserManager;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -82,14 +83,22 @@ class ExportService
     private readonly CacheHandler $cacheHandler;
 
     /**
+     * Property RBAC handler for property-level authorization checks
+     *
+     * @var PropertyRbacHandler
+     */
+    private readonly PropertyRbacHandler $propertyRbacHandler;
+
+    /**
      * Constructor for the ExportService
      *
-     * @param ObjectEntityMapper $_objectEntityMapper The object entity mapper (unused but kept for future use)
-     * @param RegisterMapper     $registerMapper      The register mapper
-     * @param IUserManager       $_userManager        The user manager (unused but kept for future use)
-     * @param IGroupManager      $groupManager        The group manager
-     * @param ObjectService      $objectService       The object service
-     * @param CacheHandler       $cacheHandler        The cache handler for name resolution
+     * @param ObjectEntityMapper  $_objectEntityMapper  The object entity mapper (unused but kept for future use)
+     * @param RegisterMapper      $registerMapper       The register mapper
+     * @param IUserManager        $_userManager         The user manager (unused but kept for future use)
+     * @param IGroupManager       $groupManager         The group manager
+     * @param ObjectService       $objectService        The object service
+     * @param CacheHandler        $cacheHandler         The cache handler for name resolution
+     * @param PropertyRbacHandler $propertyRbacHandler   The property RBAC handler
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
@@ -99,12 +108,14 @@ class ExportService
         IUserManager $_userManager,
         IGroupManager $groupManager,
         ObjectService $objectService,
-        CacheHandler $cacheHandler
+        CacheHandler $cacheHandler,
+        PropertyRbacHandler $propertyRbacHandler
     ) {
-        $this->registerMapper = $registerMapper;
-        $this->groupManager   = $groupManager;
-        $this->objectService  = $objectService;
-        $this->cacheHandler   = $cacheHandler;
+        $this->registerMapper       = $registerMapper;
+        $this->groupManager         = $groupManager;
+        $this->objectService        = $objectService;
+        $this->cacheHandler         = $cacheHandler;
+        $this->propertyRbacHandler  = $propertyRbacHandler;
     }//end __construct()
 
     /**
@@ -425,12 +436,13 @@ class ExportService
                 }
 
                 // Skip properties restricted by authorization rules the current user doesn't satisfy.
-                if (isset($properties[$fieldName]['authorization']['read']) === true
-                    && empty($properties[$fieldName]['authorization']['read']) === false
-                    && $this->isPropertyReadableByUser(
-                        rules: $properties[$fieldName]['authorization']['read'],
-                        currentUser: $currentUser
-                    ) === false
+                // Uses PropertyRbacHandler (the single source of truth for property-level RBAC).
+                // Empty object array causes conditional match rules to fail-closed (safe default for headers).
+                if ($this->propertyRbacHandler->canReadProperty(
+                    schema: $schema,
+                    property: $fieldName,
+                    object: []
+                ) === false
                 ) {
                     continue;
                 }
@@ -670,38 +682,6 @@ class ExportService
 
         return false;
     }//end isRelationProperty()
-
-    /**
-     * Check if a property is readable by the current user based on authorization rules
-     *
-     * @param array      $rules       Authorization rules (e.g. ['public', 'authenticated', 'admin'])
-     * @param IUser|null $currentUser Current user
-     *
-     * @return bool True if the user satisfies at least one rule
-     */
-    private function isPropertyReadableByUser(array $rules, ?IUser $currentUser): bool
-    {
-        $userId = $currentUser?->getUID();
-
-        foreach ($rules as $rule) {
-            if ($rule === 'public') {
-                return true;
-            }
-
-            if ($rule === 'authenticated' && $userId !== null) {
-                return true;
-            }
-
-            // Check group membership for other rules.
-            if (is_string($rule) === true && $userId !== null) {
-                if ($this->groupManager->isInGroup(uid: $userId, gid: $rule) === true) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }//end isPropertyReadableByUser()
 
     /**
      * Collect UUIDs from a property value into a flat array

@@ -6391,10 +6391,16 @@ class MagicMapper
             return ['', []];
         }
 
-        // Unauthenticated: only objects with no organisation set.
+        // Unauthenticated: allow objects with no organisation set OR published objects.
         // This prevents PII exposure (names, emails, phone numbers) of
-        // gemeente/samenwerking contact persons to the public internet.
-        return [" AND _organisation IS NULL", []];
+        // gemeente/samenwerking contact persons to the public internet,
+        // while still allowing published objects (e.g. diensten) to appear
+        // in inverse relationship lookups like _extend=diensten on modules.
+        $now = (new \DateTime())->format(format: 'Y-m-d H:i:s');
+        return [
+            " AND (_organisation IS NULL OR (_published IS NOT NULL AND _published <= ? AND (_depublished IS NULL OR _depublished > ?)))",
+            [$now, $now],
+        ];
     }//end buildOrganisationFilterForRelation()
 
     /**

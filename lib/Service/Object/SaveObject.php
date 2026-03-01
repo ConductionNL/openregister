@@ -2905,6 +2905,14 @@ class SaveObject
         // Use UnifiedObjectMapper to route to MagicMapper when magic mapping is enabled.
         $savedEntity = $this->unifiedObjectMapper->insert(entity: $preparedObject, register: $register, schema: $schema);
 
+        // Update the name cache with the saved object's name.
+        // This ensures the name is available for subsequent operations and relation resolution.
+        $savedName = $savedEntity->getName();
+        $savedUuid = $savedEntity->getUuid();
+        if ($savedUuid !== null && $savedName !== null && trim($savedName) !== '') {
+            $this->cacheHandler->setObjectName(identifier: $savedUuid, name: $savedName);
+        }
+
         // Process file properties with rollback on failure.
         $savedEntity = $this->processFilePropertiesWithRollback(
             savedEntity: $savedEntity,
@@ -3395,6 +3403,13 @@ class SaveObject
             throw new Exception($errorMessage, 0, $e);
         }
 
+        // Pre-populate the name cache with the parent object's name before cascading.
+        // This ensures that when sub-objects (e.g., koppelingen) resolve relation fields
+        // (e.g., {{ moduleA }}) via the name template, they can find the parent's name
+        // in the cache even though the parent hasn't been persisted to the database yet.
+        // Without this, cascaded sub-objects fall back to showing the raw UUID as the name.
+        $this->preCacheParentName(objectEntity: $objectEntity, schema: $schema, data: $data);
+
         // Apply cascading operations.
         $data = $this->cascadeObjects(objectEntity: $objectEntity, schema: $schema, data: $data);
         $data = $this->handleInverseRelationsWriteBack(objectEntity: $objectEntity, schema: $schema, data: $data);
@@ -3404,6 +3419,67 @@ class SaveObject
 
         return $data;
     }//end prepareObjectData()
+
+    /**
+     * Pre-populate the name cache with the parent object's name before cascading.
+     *
+     * When a parent object (e.g., an applicatie) is being created with nested sub-objects
+     * (e.g., koppelingen), the sub-objects may reference the parent via inversedBy fields.
+     * The sub-object's name template (e.g., "{{ moduleA }} → {{ moduleB }}") needs to
+     * resolve the parent's UUID to a human-readable name. Since the parent hasn't been
+     * persisted yet, the name cache won't contain its name, causing the template to
+     * fall back to the raw UUID.
+     *
+     * This method computes the parent's name from its data and schema configuration,
+     * then stores it in the cache so sub-objects can resolve it during cascading.
+     *
+     * @param ObjectEntity $objectEntity The parent object entity (with UUID already set).
+     * @param Schema       $schema       The parent object's schema.
+     * @param array        $data         The parent object's data.
+     *
+     * @return void
+     */
+    private function preCacheParentName(ObjectEntity $objectEntity, Schema $schema, array $data): void
+    {
+        $uuid = $objectEntity->getUuid();
+        if ($uuid === null) {
+            return;
+        }
+
+        // Temporarily set the object data so hydrateObjectMetadata can extract the name.
+        $objectEntity->setObject($data);
+
+        try {
+            $this->metaHydrationHandler->hydrateObjectMetadata(entity: $objectEntity, schema: $schema);
+        } catch (\Exception $e) {
+            // Non-critical: if hydration fails, cascaded sub-objects will fall back to UUID.
+            $this->logger->debug(
+                message: '[SaveObject] Pre-cache name hydration failed, sub-objects may show UUID names',
+                context: [
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
+                    'uuid'  => $uuid,
+                    'error' => $e->getMessage(),
+                ]
+            );
+
+            return;
+        }
+
+        $name = $objectEntity->getName();
+        if ($name !== null && trim($name) !== '') {
+            $this->cacheHandler->setObjectName(identifier: $uuid, name: $name);
+        }
+
+        // Also try the 'naam' field as a fallback (common in Dutch schemas).
+        // This covers cases where objectNameField is not configured but naam exists in data.
+        if (($name === null || trim($name) === '') && isset($data['naam']) === true) {
+            $naam = trim((string) $data['naam']);
+            if ($naam !== '') {
+                $this->cacheHandler->setObjectName(identifier: $uuid, name: $naam);
+            }
+        }
+    }//end preCacheParentName()
 
     /**
      * Updates an existing object.
