@@ -315,7 +315,7 @@ class TextExtractionService
         try {
             $object = $this->objectEntityMapper->find($objectId);
         } catch (DoesNotExistException $e) {
-            $this->logger->warning(
+            $this->logger->info(
                 message: '[TextExtractionService] Object no longer exists, skipping extraction',
                 context: [
                     'file' => __FILE__,
