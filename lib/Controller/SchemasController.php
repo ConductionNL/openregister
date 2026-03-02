@@ -210,7 +210,11 @@ class SchemasController extends Controller
         foreach ($schemasArr as &$schema) {
             // @psalm-suppress InvalidArrayOffset
             $schema['@self'] = $schema['@self'] ?? [];
-            $schema['@self']['extendedBy'] = $this->schemaMapper->findExtendedBy($schema['id']);
+            $schema['@self']['extendedBy'] = $this->schemaMapper->findExtendedBy(
+                schemaIdentifier: $schema['id'],
+                knownUuid: $schema['uuid'] ?? null,
+                knownSlug: $schema['slug'] ?? null
+            );
         }
 
         unset($schema);

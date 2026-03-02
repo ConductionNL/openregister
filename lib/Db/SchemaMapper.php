@@ -2724,19 +2724,25 @@ class SchemaMapper extends QBMapper
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)      Schema composition search requires many conditional checks
      */
-    public function findExtendedBy(int|string $schemaIdentifier): array
+    public function findExtendedBy(int|string $schemaIdentifier, ?string $knownUuid = null, ?string $knownSlug = null): array
     {
-        // First, get the target schema to know all its identifiers.
-        try {
-            $targetSchema = $this->find(id: $schemaIdentifier);
-        } catch (Exception $e) {
-            // If schema not found, register: return empty array.
-            return [];
-        }
+        // Use pre-known values when available to avoid a redundant find() query per schema.
+        if ($knownUuid !== null || $knownSlug !== null) {
+            $targetId   = (string) $schemaIdentifier;
+            $targetUuid = $knownUuid;
+            $targetSlug = $knownSlug;
+        } else {
+            // Fallback: fetch the schema to get all its identifiers.
+            try {
+                $targetSchema = $this->find(id: $schemaIdentifier);
+            } catch (Exception $e) {
+                return [];
+            }
 
-        $targetId   = (string) $targetSchema->getId();
-        $targetUuid = $targetSchema->getUuid();
-        $targetSlug = $targetSchema->getSlug();
+            $targetId   = (string) $targetSchema->getId();
+            $targetUuid = $targetSchema->getUuid();
+            $targetSlug = $targetSchema->getSlug();
+        }
 
         // Build query to find schemas that reference this schema in composition.
         $qb = $this->db->getQueryBuilder();
