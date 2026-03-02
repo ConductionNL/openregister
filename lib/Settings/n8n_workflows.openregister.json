@@ -9,7 +9,7 @@
         "type": "integration",
         "app": "n8n",
         "sourceType": "github",
-        "sourceUrl": "https://github.com/ConductionNL/opencatalogi/blob/master/apps-extra/openregister/lib/Settings/n8n_workflows.openregister.json",
+        "sourceUrl": "https://raw.githubusercontent.com/ConductionNL/opencatalogi/master/apps-extra/openregister/lib/Settings/n8n_workflows.openregister.json",
         "openregister": "^v0.2.10",
         "github": {
             "repo": "ConductionNL/opencatalogi",

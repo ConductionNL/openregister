@@ -3406,8 +3406,8 @@ class MagicMapper
             // Set metadata fields on ObjectEntity.
             foreach ($metadata as $field => $value) {
                 if ($value === null) {
-                    // Log when metadata field is null.
-                    if ($field === 'uuid' || $field === 'id' || $field === 'owner') {
+                    // Log when critical metadata field is null (owner can be null for public objects).
+                    if ($field === 'uuid' || $field === 'id') {
                         $this->logger->warning(
                             message: '[MagicMapper] Critical metadata field is null',
                             context: ['file' => __FILE__, 'line' => __LINE__, 'field' => $field]
