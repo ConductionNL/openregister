@@ -305,75 +305,31 @@ class OrganisationMapper extends QBMapper
 
         $organisation->setUpdated($now);
 
-        // Debug logging before insert/update.
-        $this->logger->info(
-            message: '[OrganisationMapper] About to save organisation with UUID: '.$organisation->getUuid(),
-            context: ['file' => __FILE__, 'line' => __LINE__]
-        );
-        $this->logger->info(
-            message: '[OrganisationMapper] Organisation object properties:',
-            context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
-                'uuid'        => $organisation->getUuid(),
-                'name'        => $organisation->getName(),
-                'description' => $organisation->getDescription(),
-                'owner'       => $organisation->getOwner(),
-                'users'       => $organisation->getUsers(),
-            ]
-        );
-
         if ($organisation->getId() === null) {
-            $this->logger->info(
-                message: '[OrganisationMapper] Calling insert() method',
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-
-            // Debug: Log the entity state before insert.
-            $this->logger->info(
-                message: '[OrganisationMapper] Entity state before insert:',
-                context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
-                    'id'          => $organisation->getId(),
-                    'uuid'        => $organisation->getUuid(),
-                    'name'        => $organisation->getName(),
-                    'description' => $organisation->getDescription(),
-                    'owner'       => $organisation->getOwner(),
-                    'users'       => $organisation->getUsers(),
-                    'created'     => $organisation->getCreated(),
-                    'updated'     => $organisation->getUpdated(),
-                ]
-            );
 
             try {
                 $result = $this->insert($organisation);
-                $this->logger->info(
-                    message: '[OrganisationMapper] insert() completed successfully',
-                    context: ['file' => __FILE__, 'line' => __LINE__]
-                );
-
-                // Organization events are now handled by cron job - no event dispatching needed.
                 return $result;
             } catch (Exception $e) {
+                // Handle duplicate slug: find the existing org and update it instead.
+                if ($organisation->getSlug() !== null && str_contains($e->getMessage(), 'organisations_slug_unique')) {
+                    $this->logger->info(
+                        message: '[OrganisationMapper] Duplicate slug, updating existing organisation',
+                        context: ['slug' => $organisation->getSlug()]
+                    );
+                    $existing = $this->findBySlug($organisation->getSlug());
+                    $organisation->setId($existing->getId());
+                    $organisation->setCreated($existing->getCreated());
+                    return $this->update($organisation);
+                }
+
                 $this->logger->error(
                     message: '[OrganisationMapper] insert() failed: '.$e->getMessage(),
-                    context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
-                        'exception'      => $e->getMessage(),
-                        'exceptionClass' => get_class($e),
-                        'trace'          => $e->getTraceAsString(),
-                    ]
                 );
                 throw $e;
             }
         }//end if
 
-        $this->logger->info(
-            message: '[OrganisationMapper] Calling update() method',
-            context: ['file' => __FILE__, 'line' => __LINE__]
-        );
         return $this->update($organisation);
     }//end save()
 
