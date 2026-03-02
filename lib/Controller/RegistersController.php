@@ -71,10 +71,10 @@ use Symfony\Component\Uid\Uuid;
  *
  * @psalm-suppress UnusedClass
  *
- * @SuppressWarnings(PHPMD.ExcessiveClassLength)
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
- * @SuppressWarnings(PHPMD.TooManyPublicMethods)
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @suppressWarnings(PHPMD.ExcessiveClassLength)
+ * @suppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @suppressWarnings(PHPMD.TooManyPublicMethods)
+ * @suppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class RegistersController extends Controller
 {
@@ -167,7 +167,7 @@ class RegistersController extends Controller
      *
      * @return void
      *
-     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
+     * @suppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      */
     public function __construct(
         string $appName,
@@ -226,8 +226,8 @@ class RegistersController extends Controller
      *
      * @return JSONResponse The JSON response containing the list of registers
      *
-     * @SuppressWarnings(PHPMD.NPathComplexity)      Complex request parameter handling for flexible API
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @suppressWarnings(PHPMD.NPathComplexity)      Complex request parameter handling for flexible API
+     * @suppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function index(): JSONResponse
     {
@@ -397,7 +397,7 @@ class RegistersController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @SuppressWarnings(PHPMD.StaticAccess) DatabaseConstraintException factory method is standard pattern
+     * @suppressWarnings(PHPMD.StaticAccess) DatabaseConstraintException factory method is standard pattern
      *
      * @return JSONResponse JSON response with created register or error
      *
@@ -455,7 +455,7 @@ class RegistersController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @SuppressWarnings(PHPMD.StaticAccess) DatabaseConstraintException factory method is standard pattern
+     * @suppressWarnings(PHPMD.StaticAccess) DatabaseConstraintException factory method is standard pattern
      *
      * @return JSONResponse JSON response with updated register or error
      *
@@ -735,9 +735,9 @@ class RegistersController extends Controller
      *
      * @return JSONResponse JSON response with publish result or error
      *
-     * @SuppressWarnings(PHPMD.NPathComplexity)       GitHub publishing requires many conditional checks
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @suppressWarnings(PHPMD.NPathComplexity)       GitHub publishing requires many conditional checks
+     * @suppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @suppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function publishToGitHub(int $id): JSONResponse
     {
@@ -900,10 +900,10 @@ class RegistersController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Force flag to override version checks
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @suppressWarnings(PHPMD.BooleanArgumentFlag)   Force flag to override version checks
+     * @suppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @suppressWarnings(PHPMD.CyclomaticComplexity)
+     * @suppressWarnings(PHPMD.NPathComplexity)
      */
     public function import(int $id, bool $force=false): JSONResponse
     {
@@ -1183,7 +1183,7 @@ class RegistersController extends Controller
      *
      * @return bool The parsed boolean value
      *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Default value is needed for parameter parsing
+     * @suppressWarnings(PHPMD.BooleanArgumentFlag) Default value is needed for parameter parsing
      */
     private function parseBooleanParam(string $paramName, bool $default=false): bool
     {

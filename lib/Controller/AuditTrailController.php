@@ -58,8 +58,8 @@ class AuditTrailController extends Controller
      *
      * @return array The extracted request parameters
      *
-     * @SuppressWarnings(PHPMD.NPathComplexity)      Request parameter extraction requires many conditional checks
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @suppressWarnings(PHPMD.NPathComplexity)      Request parameter extraction requires many conditional checks
+     * @suppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function extractRequestParameters(): array
     {

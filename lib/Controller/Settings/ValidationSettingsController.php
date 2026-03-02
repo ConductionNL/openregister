@@ -95,7 +95,7 @@ class ValidationSettingsController extends Controller
      *
      * @return JSONResponse JSON response with mass validation results
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @suppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function massValidateObjects(): JSONResponse
     {

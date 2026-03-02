@@ -40,8 +40,8 @@ use Psr\Log\LoggerInterface;
  * @category Controller
  * @package  OCA\OpenRegister\Controller\Settings
  *
- * @SuppressWarnings(PHPMD.TooManyPublicMethods)
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @suppressWarnings(PHPMD.TooManyPublicMethods)
+ * @suppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class SolrManagementController extends Controller
 {
@@ -75,7 +75,7 @@ class SolrManagementController extends Controller
      *
      * @return JSONResponse JSON response with SOLR field configuration
      *
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      */
     public function getSolrFields(): JSONResponse
     {
@@ -186,8 +186,8 @@ class SolrManagementController extends Controller
      *
      * @return JSONResponse JSON response with field creation result
      *
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @suppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @suppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function createMissingSolrFields(): JSONResponse
     {
@@ -737,7 +737,7 @@ class SolrManagementController extends Controller
      *     array<never, never>
      * >|JSONResponse<500, array{success: false, error: string, trace: string}, array<never, never>>
      *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Toggle to enable/disable data copying
+     * @suppressWarnings(PHPMD.BooleanArgumentFlag) Toggle to enable/disable data copying
      */
     public function copySolrCollection(
         string $sourceCollection,

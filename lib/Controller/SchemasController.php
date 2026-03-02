@@ -65,10 +65,10 @@ use Psr\Log\LoggerInterface;
  *
  * @psalm-suppress UnusedClass
  *
- * @SuppressWarnings(PHPMD.ExcessiveClassLength)
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
- * @SuppressWarnings(PHPMD.TooManyPublicMethods)
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @suppressWarnings(PHPMD.ExcessiveClassLength)
+ * @suppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @suppressWarnings(PHPMD.TooManyPublicMethods)
+ * @suppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class SchemasController extends Controller
 {
@@ -94,7 +94,7 @@ class SchemasController extends Controller
      *
      * @return void
      *
-     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
+     * @suppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      */
     public function __construct(
         string $appName,
@@ -146,8 +146,8 @@ class SchemasController extends Controller
      *     configuration: array|null|string, allOf: array|null,
      *     oneOf: array|null, anyOf: array|null}>}, array<never, never>>
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @suppressWarnings(PHPMD.CyclomaticComplexity)
+     * @suppressWarnings(PHPMD.NPathComplexity)
      */
     public function index(): JSONResponse
     {
@@ -311,8 +311,8 @@ class SchemasController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @SuppressWarnings(PHPMD.StaticAccess)         DatabaseConstraintException factory method is standard pattern
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @suppressWarnings(PHPMD.StaticAccess)         DatabaseConstraintException factory method is standard pattern
+     * @suppressWarnings(PHPMD.CyclomaticComplexity)
      *
      * @return JSONResponse JSON response with created schema or error
      *
@@ -428,8 +428,8 @@ class SchemasController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @SuppressWarnings(PHPMD.StaticAccess)         DatabaseConstraintException factory method is standard pattern
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @suppressWarnings(PHPMD.StaticAccess)         DatabaseConstraintException factory method is standard pattern
+     * @suppressWarnings(PHPMD.CyclomaticComplexity)
      *
      * @return JSONResponse JSON response with updated schema or error
      *
@@ -626,10 +626,10 @@ class SchemasController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @SuppressWarnings(PHPMD.StaticAccess)          Uuid::v4 and DatabaseConstraintException factory are standard patterns
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @suppressWarnings(PHPMD.StaticAccess)          Uuid::v4 and DatabaseConstraintException factory are standard patterns
+     * @suppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @suppressWarnings(PHPMD.CyclomaticComplexity)
+     * @suppressWarnings(PHPMD.NPathComplexity)
      */
     public function upload(?int $id=null): JSONResponse
     {

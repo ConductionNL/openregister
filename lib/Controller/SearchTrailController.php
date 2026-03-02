@@ -33,8 +33,8 @@ use OCP\IRequest;
  *
  * @psalm-suppress UnusedClass
  *
- * @SuppressWarnings(PHPMD.TooManyPublicMethods)
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @suppressWarnings(PHPMD.TooManyPublicMethods)
+ * @suppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class SearchTrailController extends Controller
 {
@@ -58,9 +58,9 @@ class SearchTrailController extends Controller
      *
      * @return array Request parameters including pagination and filters
      *
-     * @SuppressWarnings(PHPMD.NPathComplexity)       Request parameter extraction requires many conditional checks
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @suppressWarnings(PHPMD.NPathComplexity)       Request parameter extraction requires many conditional checks
+     * @suppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @suppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function extractRequestParameters(): array
     {
@@ -204,8 +204,8 @@ class SearchTrailController extends Controller
      *     prev?: null|string
      * }
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @suppressWarnings(PHPMD.CyclomaticComplexity)
+     * @suppressWarnings(PHPMD.NPathComplexity)
      */
     private function paginate(array $results, ?int $total=0, ?int $limit=20, ?int $offset=0, ?int $page=1): array
     {

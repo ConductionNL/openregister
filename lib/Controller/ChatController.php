@@ -55,7 +55,7 @@ use Exception;
  *
  * @psalm-suppress UnusedClass
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @suppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class ChatController extends Controller
 {
@@ -161,7 +161,7 @@ class ChatController extends Controller
      *
      * @return void
      *
-     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
+     * @suppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      */
     public function __construct(
         string $appName,
@@ -679,7 +679,7 @@ class ChatController extends Controller
      *
      * @return JSONResponse JSON response with feedback confirmation or error
      *
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      */
     public function sendFeedback(string $conversationUuid, int $messageId): JSONResponse
     {

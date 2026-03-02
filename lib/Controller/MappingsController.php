@@ -301,7 +301,7 @@ class MappingsController extends Controller
      *
      * @return JSONResponse JSON response with test results
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @suppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function test(): JSONResponse
     {

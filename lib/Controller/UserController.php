@@ -91,7 +91,7 @@ class UserController extends Controller
      *
      * @return JSONResponse JSON response with user profile data
      *
-     * @SuppressWarnings(PHPMD.ShortMethodName) Standard REST API endpoint name for current user
+     * @suppressWarnings(PHPMD.ShortMethodName) Standard REST API endpoint name for current user
      */
     public function me(): JSONResponse
     {

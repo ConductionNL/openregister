@@ -45,7 +45,7 @@ use OCP\IRequest;
  *
  * @psalm-suppress UnusedClass
  *
- * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @suppressWarnings(PHPMD.TooManyPublicMethods)
  */
 class FileExtractionController extends Controller
 {
@@ -258,7 +258,7 @@ class FileExtractionController extends Controller
      *     array<never, never>
      * >
      *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag allows re-extraction bypass
+     * @suppressWarnings(PHPMD.BooleanArgumentFlag) Force flag allows re-extraction bypass
      */
     public function extract(int $id, bool $forceReExtract=false): JSONResponse
     {

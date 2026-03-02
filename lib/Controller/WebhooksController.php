@@ -46,9 +46,9 @@ use Psr\Log\LoggerInterface;
  *
  * @psalm-suppress UnusedClass
  *
- * @SuppressWarnings(PHPMD.ExcessiveClassLength)
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
- * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @suppressWarnings(PHPMD.ExcessiveClassLength)
+ * @suppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @suppressWarnings(PHPMD.TooManyPublicMethods)
  */
 class WebhooksController extends Controller
 {
@@ -128,8 +128,8 @@ class WebhooksController extends Controller
      *     array<never, never>
      * >
      *
-     * @SuppressWarnings(PHPMD.NPathComplexity) Complex request parameter handling for flexible API
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @suppressWarnings(PHPMD.NPathComplexity) Complex request parameter handling for flexible API
+     * @suppressWarnings(PHPMD.CyclomaticComplexity)
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -606,7 +606,7 @@ class WebhooksController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -1067,7 +1067,7 @@ class WebhooksController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @suppressWarnings(PHPMD.CyclomaticComplexity)
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -1181,9 +1181,9 @@ class WebhooksController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @suppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @suppressWarnings(PHPMD.CyclomaticComplexity)
+     * @suppressWarnings(PHPMD.NPathComplexity)
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]

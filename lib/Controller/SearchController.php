@@ -172,7 +172,7 @@ class SearchController extends Controller
      *
      * @return string The processed search query ready for the SOLR search service
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @suppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function processSearchQuery(string $query): string
     {

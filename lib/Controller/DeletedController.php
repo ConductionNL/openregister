@@ -87,7 +87,7 @@ class DeletedController extends Controller
      *
      * @return array Request parameters including pagination and filters
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @suppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function extractRequestParameters(): array
     {

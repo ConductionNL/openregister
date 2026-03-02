@@ -129,9 +129,9 @@ use Psr\Log\LoggerInterface;
  *
  * @psalm-suppress UnusedClass
  *
- * @SuppressWarnings(PHPMD.TooManyPublicMethods)
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @suppressWarnings(PHPMD.TooManyPublicMethods)
+ * @suppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @suppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class SettingsController extends Controller
 {
@@ -547,9 +547,9 @@ class SettingsController extends Controller
      *
      * @return JSONResponse JSON response with database info
      *
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @suppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @suppressWarnings(PHPMD.CyclomaticComplexity)
+     * @suppressWarnings(PHPMD.NPathComplexity)
      */
     public function getDatabaseInfo(): JSONResponse
     {
@@ -814,7 +814,7 @@ class SettingsController extends Controller
      *     type: 'NO TYPE'|mixed, object_json: mixed}>}},
      *     array<never, never>>
      *
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      */
     public function debugTypeFiltering(): JSONResponse
     {

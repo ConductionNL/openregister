@@ -35,7 +35,7 @@ use DateTime;
  *
  * @psalm-suppress UnusedClass
  *
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @suppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class BulkController extends Controller
 {
@@ -176,7 +176,7 @@ class BulkController extends Controller
      *
      * @return JSONResponse JSON response with bulk publish result
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @suppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function publish(string $register, string $schema): JSONResponse
     {
@@ -248,7 +248,7 @@ class BulkController extends Controller
      * @NoCSRFRequired
      *
      * @SuppressWarnings                             (PHPMD.UnusedFormalParameter) Parameters used by route resolver
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @suppressWarnings(PHPMD.CyclomaticComplexity)
      *
      * @return JSONResponse JSON response with bulk depublish result
      */

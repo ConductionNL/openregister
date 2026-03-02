@@ -65,13 +65,13 @@ use OCP\AppFramework\Http\DataDownloadResponse;
  *
  * @psalm-suppress UnusedClass
  *
- * @SuppressWarnings(PHPMD.ExcessiveClassLength)
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
- * @SuppressWarnings(PHPMD.TooManyMethods)
- * @SuppressWarnings(PHPMD.TooManyPublicMethods)
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
- * @SuppressWarnings(PHPMD.ElseExpression)           File upload extraction requires conditional branching
- * @SuppressWarnings(PHPMD.ExcessiveMethodLength)    Complex file upload handling with multiple formats
+ * @suppressWarnings(PHPMD.ExcessiveClassLength)
+ * @suppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @suppressWarnings(PHPMD.TooManyMethods)
+ * @suppressWarnings(PHPMD.TooManyPublicMethods)
+ * @suppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @suppressWarnings(PHPMD.ElseExpression)           File upload extraction requires conditional branching
+ * @suppressWarnings(PHPMD.ExcessiveMethodLength)    Complex file upload handling with multiple formats
  */
 class ObjectsController extends Controller
 {
@@ -112,7 +112,7 @@ class ObjectsController extends Controller
      *
      * @return void
      *
-     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
+     * @suppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      */
     public function __construct(
         string $appName,
@@ -212,8 +212,8 @@ class ObjectsController extends Controller
      * @return array<string, array{name: string, type: string, tmp_name: string, error: int, size: int}>
      *     Array of uploaded files keyed by field name
      *
-     * @SuppressWarnings(PHPMD.NPathComplexity)      File extraction requires handling many field scenarios
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @suppressWarnings(PHPMD.NPathComplexity)      File extraction requires handling many field scenarios
+     * @suppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function extractAllUploadedFiles(): array
     {
@@ -350,7 +350,7 @@ class ObjectsController extends Controller
      *     prev?: string
      * }
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @suppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function paginate(array $results, ?int $total=0, ?int $limit=20, ?int $offset=0, ?int $page=1): array
     {
@@ -461,7 +461,7 @@ class ObjectsController extends Controller
      *     ids: array|null
      * }
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @suppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function getConfig(?string $_register=null, ?string $_schema=null, ?array $ids=null): array
     {
@@ -627,8 +627,8 @@ class ObjectsController extends Controller
      *
      * @psalm-suppress UnusedParam Params are used in foreach loops and method calls.
      *
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @suppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @suppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function crossTableSearch(array $registers, array $schemas, ObjectService $objectService): JSONResponse
     {
@@ -845,9 +845,9 @@ class ObjectsController extends Controller
      *
      * @psalm-return JSONResponse<200|404, array<string, mixed>, array<never, never>>
      *
-     * @SuppressWarnings(PHPMD.NPathComplexity)       Complex request parameter handling for flexible API
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @suppressWarnings(PHPMD.NPathComplexity)       Complex request parameter handling for flexible API
+     * @suppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @suppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function index(string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -1205,9 +1205,9 @@ class ObjectsController extends Controller
      *
      * @psalm-return JSONResponse<200, array<string, mixed>, array<never, never>>
      *
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @suppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @suppressWarnings(PHPMD.CyclomaticComplexity)
+     * @suppressWarnings(PHPMD.NPathComplexity)
      */
     public function objects(ObjectService $objectService): JSONResponse
     {
@@ -1384,8 +1384,8 @@ class ObjectsController extends Controller
      *
      * @return JSONResponse JSON response with the object or error
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @suppressWarnings(PHPMD.CyclomaticComplexity)
+     * @suppressWarnings(PHPMD.NPathComplexity)
      */
     public function show(
         string $id,
@@ -1558,8 +1558,8 @@ class ObjectsController extends Controller
      * @psalm-suppress TypeDoesNotContainType
      * @psalm-suppress NoValue
      *
-     * @SuppressWarnings(PHPMD.NPathComplexity)      Object creation requires many validation and processing steps
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @suppressWarnings(PHPMD.NPathComplexity)      Object creation requires many validation and processing steps
+     * @suppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function create(
         string $register,
@@ -1683,9 +1683,9 @@ class ObjectsController extends Controller
      * @psalm-suppress TypeDoesNotContainType
      * @psalm-suppress NoValue
      *
-     * @SuppressWarnings(PHPMD.NPathComplexity)       Object update requires many validation and processing steps
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @suppressWarnings(PHPMD.NPathComplexity)       Object update requires many validation and processing steps
+     * @suppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @suppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function update(
         string $register,
@@ -1842,9 +1842,9 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @suppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @suppressWarnings(PHPMD.CyclomaticComplexity)
+     * @suppressWarnings(PHPMD.NPathComplexity)
      */
     public function patch(
         string $register,
@@ -2345,8 +2345,8 @@ class ObjectsController extends Controller
      *     message?: 'Object does not belong to specified register/schema'|'Object not found'},
      *     array<never, never>>
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @suppressWarnings(PHPMD.CyclomaticComplexity)
+     * @suppressWarnings(PHPMD.NPathComplexity)
      */
     public function logs(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -2827,7 +2827,7 @@ class ObjectsController extends Controller
      *
      * @return JSONResponse JSON response with migration result or error
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @suppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function migrate(ObjectService $objectService): JSONResponse
     {

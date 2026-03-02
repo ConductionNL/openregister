@@ -147,9 +147,9 @@ class ConfigurationsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @SuppressWarnings(PHPMD.StaticAccess)         Uuid::v4() is a standard utility pattern
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @suppressWarnings(PHPMD.StaticAccess)         Uuid::v4() is a standard utility pattern
+     * @suppressWarnings(PHPMD.CyclomaticComplexity)
+     * @suppressWarnings(PHPMD.NPathComplexity)
      *
      * @return JSONResponse JSON response with created configuration or error
      *
@@ -315,7 +315,7 @@ class ConfigurationsController extends Controller
      *     array<never, never>>|JSONResponse<400, array{error: string},
      *     array<never, never>>
      *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Toggle to include/exclude objects in export
+     * @suppressWarnings(PHPMD.BooleanArgumentFlag) Toggle to include/exclude objects in export
      */
     public function export(int $id, bool $includeObjects=false): JSONResponse|DataDownloadResponse
     {

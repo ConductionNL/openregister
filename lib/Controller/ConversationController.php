@@ -46,7 +46,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @psalm-suppress UnusedClass
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @suppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class ConversationController extends Controller
 {
@@ -121,7 +121,7 @@ class ConversationController extends Controller
      * @param LoggerInterface     $logger              Logger
      * @param string              $userId              User ID
      *
-     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
+     * @suppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      */
     public function __construct(
         string $appName,
@@ -668,7 +668,7 @@ class ConversationController extends Controller
      *     'Failed to delete conversation', message: string, uuid?: string,
      *     archived?: true}, array<never, never>>
      *
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      */
     public function destroy(string $uuid): JSONResponse
     {

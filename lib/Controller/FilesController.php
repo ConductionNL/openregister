@@ -52,8 +52,8 @@ use OCP\IUserManager;
  *
  * @psalm-suppress UnusedClass
  *
- * @SuppressWarnings(PHPMD.TooManyPublicMethods)
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @suppressWarnings(PHPMD.TooManyPublicMethods)
+ * @suppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class FilesController extends Controller
 {
@@ -346,7 +346,7 @@ class FilesController extends Controller
      *     array{error?: mixed|string, labels?: list<string>,...},
      *     array<never, never>>
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @suppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function save(
         string $register,
