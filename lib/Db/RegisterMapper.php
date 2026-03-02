@@ -136,6 +136,16 @@ class RegisterMapper extends QBMapper
     protected IAppConfig $appConfig;
 
     /**
+     * Request-scoped in-memory cache for find() results
+     *
+     * Prevents redundant DB queries when the same register is looked up
+     * multiple times within one request.
+     *
+     * @var array<string, Register>
+     */
+    private array $findCache = [];
+
+    /**
      * Constructor
      *
      * Initializes mapper with database connection and required dependencies
@@ -203,6 +213,12 @@ class RegisterMapper extends QBMapper
         bool $_rbac=true,
         bool $_multitenancy=true
     ): Register {
+        // Check request-scoped cache to avoid redundant DB queries for the same register.
+        $cacheKey = strtolower((string) $id).':'.($_rbac ? '1' : '0').':'.($_multitenancy ? '1' : '0');
+        if (isset($this->findCache[$cacheKey]) === true) {
+            return $this->findCache[$cacheKey];
+        }
+
         // Log search attempt for debugging.
         if (isset($this->logger) === true) {
             $this->logger->info(
@@ -334,7 +350,18 @@ class RegisterMapper extends QBMapper
 
         // Just return the entity; do not attach stats here.
         try {
-            return $this->findEntity(query: $qb);
+            $register = $this->findEntity(query: $qb);
+
+            // Cache by all possible identifiers to handle lookups by id, uuid, or slug.
+            $rbacSuffix = ':'.($_rbac ? '1' : '0').':'.($_multitenancy ? '1' : '0');
+            $this->findCache[$cacheKey] = $register;
+            $this->findCache[(string) $register->getId().$rbacSuffix]           = $register;
+            $this->findCache[strtolower($register->getUuid()).$rbacSuffix]      = $register;
+            if ($register->getSlug() !== null) {
+                $this->findCache[strtolower($register->getSlug()).$rbacSuffix] = $register;
+            }
+
+            return $register;
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             // Log detailed error information.
             if (isset($this->logger) === true) {

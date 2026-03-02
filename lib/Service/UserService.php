@@ -49,6 +49,17 @@ use Psr\Log\LoggerInterface;
  */
 class UserService
 {
+
+    /**
+     * Request-scoped cache for organisation stats to avoid duplicate lookups
+     *
+     * Populated on first call to buildUserDataArray() and reused on subsequent calls
+     * within the same request. Reset when organisation is switched.
+     *
+     * @var array|null Cached organisation stats or null if not yet fetched
+     */
+    private ?array $cachedOrgStats = null;
+
     /**
      * UserService constructor
      *
@@ -175,11 +186,18 @@ class UserService
 
         // Add organization information in the format expected by the frontend.
         // Frontend expects: { active: { uuid, naam, id, slug }, all: [...] }
-        try {
-            $organisationStats = $this->organisationService->getUserOrganisationStats();
-        } catch (\Exception $e) {
-            $this->logger->warning('Failed to get user organisation stats: '.$e->getMessage());
-            $organisationStats = ['total' => 0, 'active' => null, 'results' => []];
+        // Use cached result if available (avoids ~20-30 redundant queries when called twice in updateMe).
+        if ($this->cachedOrgStats !== null) {
+            $organisationStats = $this->cachedOrgStats;
+        } else {
+            try {
+                $organisationStats = $this->organisationService->getUserOrganisationStats();
+            } catch (\Exception $e) {
+                $this->logger->warning('Failed to get user organisation stats: '.$e->getMessage());
+                $organisationStats = ['total' => 0, 'active' => null, 'results' => []];
+            }
+
+            $this->cachedOrgStats = $organisationStats;
         }
 
         // Transform organisation data to include 'naam' field (Dutch) alongside 'name'.
@@ -225,6 +243,9 @@ class UserService
 
         // Handle organization switching if requested.
         if (isset($data['activeOrganisation']) === true && is_string($data['activeOrganisation']) === true) {
+            // Invalidate cached org stats since the active organisation is changing.
+            $this->cachedOrgStats = null;
+
             $organisationResult = $this->organisationService->setActiveOrganisation(
                 $data['activeOrganisation']
             );
@@ -244,6 +265,8 @@ class UserService
         $this->updateProfileProperties(user: $user, data: $data);
 
         // Collect new user data after updates.
+        // Organisation stats are cached from the first buildUserDataArray() call,
+        // saving ~20-30 queries on this second call.
         $newData = $this->buildUserDataArray($user);
 
         // Determine which fields changed.

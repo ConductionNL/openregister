@@ -2957,8 +2957,8 @@ class SaveObject
         Register $register,
         Schema $schema
     ): ObjectEntity {
-        $this->logger->error(
-            message: '[SaveObject] DEBUG: processFilePropertiesWithRollback called',
+        $this->logger->debug(
+            message: '[SaveObject] processFilePropertiesWithRollback called',
             context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister', 'uuid' => $savedEntity->getUuid(), 'dataKeys' => array_keys($data)]
         );
 

@@ -206,27 +206,30 @@ class SchemasController extends Controller
             $schemas
         );
 
-        // Add extendedBy property to each schema showing UUIDs of schemas that extend it.
+        // Batch-load all extendedBy relationships in a single query instead of N queries.
+        $allExtendedBy = $this->schemaMapper->findAllExtendedBy();
         foreach ($schemasArr as &$schema) {
             // @psalm-suppress InvalidArrayOffset
             $schema['@self'] = $schema['@self'] ?? [];
-            $schema['@self']['extendedBy'] = $this->schemaMapper->findExtendedBy(
-                schemaIdentifier: $schema['id'],
-                knownUuid: $schema['uuid'] ?? null,
-                knownSlug: $schema['slug'] ?? null
-            );
+            $schema['@self']['extendedBy'] = $allExtendedBy[$schema['id']] ?? [];
         }
 
         unset($schema);
         // Break the reference.
         // If '@self.stats' is requested, attach statistics to each schema.
         if (in_array('@self.stats', $extend, true) === true) {
-            // Get register counts for all schemas in one call.
+            // Collect all schema IDs for batch queries.
+            $schemaIds = array_map(fn($s) => $s['id'], $schemasArr);
+
+            // Batch-load all statistics in 3 queries instead of N*2 queries.
             $registerCounts = $this->schemaMapper->getRegisterCountPerSchema();
+            $objectStats    = $this->objectEntityMapper->getStatisticsGroupedBySchema(schemaIds: $schemaIds);
+            $logStats       = $this->auditTrailMapper->getStatisticsGroupedBySchema(schemaIds: $schemaIds);
+
             foreach ($schemasArr as &$schema) {
                 $schema['stats'] = [
-                    'objects'   => $this->objectEntityMapper->getStatistics(registerId: null, schemaId: $schema['id']),
-                    'logs'      => $this->auditTrailMapper->getStatistics(registerId: null, schemaId: $schema['id']),
+                    'objects'   => $objectStats[$schema['id']] ?? ['total' => 0, 'size' => 0, 'invalid' => 0, 'deleted' => 0, 'locked' => 0, 'published' => 0],
+                    'logs'      => $logStats[$schema['id']] ?? ['total' => 0, 'size' => 0],
                     'files'     => [ 'total' => 0, 'size' => 0 ],
                     // Add the number of registers referencing this schema.
                     'registers' => $registerCounts[$schema['id']] ?? 0,

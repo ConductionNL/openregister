@@ -452,4 +452,96 @@ class StatisticsHandler
             ];
         }//end try
     }//end getSizeDistributionChartData()
+    /**
+     * Get statistics grouped by schema for multiple schemas in a single query
+     *
+     * Returns per-schema statistics using GROUP BY instead of one query per schema.
+     * This replaces N individual getStatistics() calls with 1 query.
+     *
+     * @param int[] $schemaIds Array of schema IDs to get statistics for
+     *
+     * @return array<int, array{total: int, size: int, invalid: int, deleted: int, locked: int, published: int}>
+     *               Map of schemaId => statistics array
+     */
+    public function getStatisticsGroupedBySchema(array $schemaIds): array
+    {
+        if (empty($schemaIds) === true) {
+            return [];
+        }
+
+        $emptyStats = [
+            'total'     => 0,
+            'size'      => 0,
+            'invalid'   => 0,
+            'deleted'   => 0,
+            'locked'    => 0,
+            'published' => 0,
+        ];
+
+        try {
+            $qb  = $this->db->getQueryBuilder();
+            $now = (new DateTime())->format('Y-m-d H:i:s');
+
+            $part1 = "COUNT(CASE WHEN published IS NOT NULL AND published <= '".$now."'";
+            $part2 = " AND (depublished IS NULL OR depublished > '".$now."') THEN 1 END) as published";
+            $publishedCondition = $part1.$part2;
+
+            $stringIds = array_map('strval', $schemaIds);
+            $paramType = \Doctrine\DBAL\Connection::PARAM_STR_ARRAY;
+
+            $qb->select(
+                'schema',
+                $qb->createFunction('COUNT(id) as total'),
+                $qb->createFunction('COALESCE(SUM(size), 0) as size'),
+                $qb->createFunction('COUNT(CASE WHEN validation IS NOT NULL THEN 1 END) as invalid'),
+                $qb->createFunction('COUNT(CASE WHEN deleted IS NOT NULL THEN 1 END) as deleted'),
+                $qb->createFunction('COUNT(CASE WHEN locked IS NOT NULL THEN 1 END) as locked'),
+                $qb->createFunction($publishedCondition)
+            )
+                ->from($this->tableName)
+                ->where($qb->expr()->in('schema', $qb->createNamedParameter($stringIds, $paramType)))
+                ->groupBy('schema');
+
+            $result     = $qb->executeQuery();
+            $statsMap   = [];
+
+            while (($row = $result->fetch()) !== false) {
+                $schemaKey            = (int) $row['schema'];
+                $statsMap[$schemaKey] = [
+                    'total'     => (int) ($row['total'] ?? 0),
+                    'size'      => (int) ($row['size'] ?? 0),
+                    'invalid'   => (int) ($row['invalid'] ?? 0),
+                    'deleted'   => (int) ($row['deleted'] ?? 0),
+                    'locked'    => (int) ($row['locked'] ?? 0),
+                    'published' => (int) ($row['published'] ?? 0),
+                ];
+            }
+
+            $result->closeCursor();
+
+            // Fill in empty stats for schemas with no objects.
+            foreach ($schemaIds as $schemaId) {
+                if (isset($statsMap[$schemaId]) === false) {
+                    $statsMap[$schemaId] = $emptyStats;
+                }
+            }
+
+            return $statsMap;
+        } catch (Exception $e) {
+            $this->logger->error(
+                message: '[StatisticsHandler] Error getting grouped statistics: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+
+            // Return empty stats for all requested schemas.
+            $statsMap = [];
+            foreach ($schemaIds as $schemaId) {
+                $statsMap[$schemaId] = $emptyStats;
+            }
+
+            return $statsMap;
+        }//end try
+    }//end getStatisticsGroupedBySchema()
+
+
 }//end class

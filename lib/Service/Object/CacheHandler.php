@@ -1552,6 +1552,20 @@ class CacheHandler
             // Get all registers.
             $registers = $this->registerMapper->findAll();
 
+            // Collect all schema IDs across all registers to load in one batch.
+            $allSchemaIds = [];
+            foreach ($registers as $register) {
+                foreach ($register->getSchemas() ?? [] as $schemaId) {
+                    $allSchemaIds[(int) $schemaId] = true;
+                }
+            }
+
+            // Bulk-load all schemas in one query instead of N individual find() calls.
+            $schemaMap = [];
+            if (empty($allSchemaIds) === false) {
+                $schemaMap = $this->schemaMapper->findMultipleOptimized(ids: array_keys($allSchemaIds));
+            }
+
             foreach ($registers as $register) {
                 // If we found all UUIDs, stop searching.
                 if (count($results) >= count($uuidList)) {
@@ -1567,14 +1581,13 @@ class CacheHandler
                         break;
                     }
 
-                    // Get schema for config lookup.
-                    $schemaSlug = null;
-                    try {
-                        $schema     = $this->schemaMapper->find((int) $schemaId);
-                        $schemaSlug = $schema->getSlug();
-                    } catch (\Exception $e) {
+                    // Get schema slug from pre-loaded map (no individual query needed).
+                    $schema = $schemaMap[(int) $schemaId] ?? null;
+                    if ($schema === null) {
                         continue;
                     }
+
+                    $schemaSlug = $schema->getSlug();
 
                     // Check if this schema has magic mapping enabled.
                     if ($register->isMagicMappingEnabledForSchema(

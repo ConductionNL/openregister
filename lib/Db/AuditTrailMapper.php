@@ -1119,4 +1119,74 @@ class AuditTrailMapper extends QBMapper
             throw $e;
         }//end try
     }//end setExpiryDate()
+
+
+    /**
+     * Get audit trail statistics grouped by schema for multiple schemas in a single query
+     *
+     * Returns per-schema statistics using GROUP BY instead of one query per schema.
+     * This replaces N individual getStatistics() calls with 1 query.
+     *
+     * @param int[] $schemaIds Array of schema IDs to get statistics for
+     *
+     * @return array<int, array{total: int, size: int}> Map of schemaId => statistics array
+     */
+    public function getStatisticsGroupedBySchema(array $schemaIds): array
+    {
+        $emptyStats = [
+            'total' => 0,
+            'size'  => 0,
+        ];
+
+        if (empty($schemaIds) === true) {
+            return [];
+        }
+
+        try {
+            $qb = $this->db->getQueryBuilder();
+
+            $stringIds = array_map('strval', $schemaIds);
+            $paramType = \Doctrine\DBAL\Connection::PARAM_STR_ARRAY;
+
+            $qb->select(
+                'schema',
+                $qb->createFunction('COUNT(id) as total'),
+                $qb->createFunction('COALESCE(SUM(size), 0) as size')
+            )
+                ->from($this->getTableName())
+                ->where($qb->expr()->in('schema', $qb->createNamedParameter($stringIds, $paramType)))
+                ->groupBy('schema');
+
+            $result   = $qb->executeQuery();
+            $statsMap = [];
+
+            while (($row = $result->fetch()) !== false) {
+                $schemaKey            = (int) $row['schema'];
+                $statsMap[$schemaKey] = [
+                    'total' => (int) ($row['total'] ?? 0),
+                    'size'  => (int) ($row['size'] ?? 0),
+                ];
+            }
+
+            $result->closeCursor();
+
+            // Fill in empty stats for schemas with no audit trails.
+            foreach ($schemaIds as $schemaId) {
+                if (isset($statsMap[$schemaId]) === false) {
+                    $statsMap[$schemaId] = $emptyStats;
+                }
+            }
+
+            return $statsMap;
+        } catch (\Exception $e) {
+            $statsMap = [];
+            foreach ($schemaIds as $schemaId) {
+                $statsMap[$schemaId] = $emptyStats;
+            }
+
+            return $statsMap;
+        }//end try
+    }//end getStatisticsGroupedBySchema()
+
+
 }//end class

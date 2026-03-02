@@ -334,16 +334,49 @@ class RenderObject
             return $object;
         }
 
-        // Format the files to match FileService->formatFile() structure.
+        // Batch-load all file tags in 2 queries instead of 2*N queries.
+        $allFileIds = array_map(fn($f) => (string) $f['fileid'], $fileRecords);
+        $allTagIdsPerFile = $this->systemTagMapper->getTagIdsForObjects(
+            objIds: $allFileIds,
+            objectType: 'files'
+        );
+
+        // Collect all unique tag IDs across all files and load them in one call.
+        $uniqueTagIds = [];
+        foreach ($allTagIdsPerFile as $fileTagIds) {
+            foreach ($fileTagIds as $tagId) {
+                $uniqueTagIds[$tagId] = true;
+            }
+        }
+
+        $tagNameMap = [];
+        if (empty($uniqueTagIds) === false) {
+            $tags = $this->systemTagManager->getTagsByIds(tagIds: array_keys($uniqueTagIds));
+            foreach ($tags as $tag) {
+                $name = $tag->getName();
+                if (str_starts_with($name, 'object:') === false) {
+                    $tagNameMap[$tag->getId()] = $name;
+                }
+            }
+        }
+
+        // Format the files using the pre-loaded tag data.
         $formattedFiles = [];
         foreach ($fileRecords as $fileRecord) {
-            // Get file tags using our local getFileTags method.
-            $labels = $this->getFileTags((string) $fileRecord['fileid']);
+            $fileId = (string) $fileRecord['fileid'];
+
+            // Build labels from pre-loaded tags.
+            $labels = [];
+            foreach ($allTagIdsPerFile[$fileId] ?? [] as $tagId) {
+                if (isset($tagNameMap[$tagId]) === true) {
+                    $labels[] = $tagNameMap[$tagId];
+                }
+            }
 
             // Create formatted file metadata matching FileService->formatFile() structure.
             // Share information is now included directly from FileMapper.
             $formattedFile = [
-                'id'          => (string) $fileRecord['fileid'],
+                'id'          => $fileId,
                 'path'        => $fileRecord['path'],
                 'title'       => $fileRecord['name'],
                 'accessUrl'   => $fileRecord['accessUrl'] ?? null,

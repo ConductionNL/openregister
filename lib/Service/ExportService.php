@@ -342,6 +342,15 @@ class ExportService
         // Bulk resolve UUIDs to names if there are relation columns.
         $uuidToNameMap = [];
         if (empty($nameColumns) === false) {
+            // Pre-seed name map from already-loaded objects (saves DB lookups for self-references).
+            foreach ($objects as $object) {
+                $uuid = $object->getUuid();
+                $name = $object->getName();
+                if ($uuid !== null && $name !== null) {
+                    $uuidToNameMap[$uuid] = $name;
+                }
+            }
+
             // First pass: collect all UUIDs from relation columns across all objects.
             $allUuids = [];
             foreach ($objects as $object) {
@@ -356,9 +365,13 @@ class ExportService
                 }
             }
 
-            // One bulk call to resolve all UUIDs to names.
-            if (empty($allUuids) === false) {
-                $uuidToNameMap = $this->cacheHandler->getMultipleObjectNames(array_unique($allUuids));
+            // Only resolve UUIDs not already in the pre-seeded map.
+            $uniqueUuids   = array_unique($allUuids);
+            $externalUuids = array_diff($uniqueUuids, array_keys($uuidToNameMap));
+
+            if (empty($externalUuids) === false) {
+                $externalNames = $this->cacheHandler->getMultipleObjectNames(array_values($externalUuids));
+                $uuidToNameMap = array_merge($uuidToNameMap, $externalNames);
             }
         }
 

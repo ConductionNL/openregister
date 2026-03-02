@@ -781,6 +781,20 @@ class ObjectEntityMapper extends QBMapper
         return $this->statisticsHandler->getStatistics(registerId: $registerId, schemaId: $schemaId, exclude: $exclude);
     }//end getStatistics()
 
+
+    /**
+     * Get statistics grouped by schema for multiple schemas in a single query
+     *
+     * @param int[] $schemaIds Array of schema IDs to get statistics for
+     *
+     * @return array<int, array{total: int, size: int, invalid: int, deleted: int, locked: int, published: int}>
+     */
+    public function getStatisticsGroupedBySchema(array $schemaIds): array
+    {
+        return $this->statisticsHandler->getStatisticsGroupedBySchema(schemaIds: $schemaIds);
+    }//end getStatisticsGroupedBySchema()
+
+
     /**
      * Get chart data for objects grouped by register.
      *

@@ -122,6 +122,17 @@ class SchemaMapper extends QBMapper
     private IAppConfig $appConfig;
 
     /**
+     * Request-scoped in-memory cache for find() results
+     *
+     * Prevents redundant DB queries when the same schema is looked up
+     * multiple times within one request (e.g. controller → service → render).
+     * Keys are composed of identifier + RBAC + multitenancy flags.
+     *
+     * @var array<string, Schema>
+     */
+    private array $findCache = [];
+
+    /**
      * User session for current user
      *
      * Used to get current user context for RBAC and multi-tenancy.
@@ -209,6 +220,12 @@ class SchemaMapper extends QBMapper
         bool $_rbac=true,
         bool $_multitenancy=true
     ): Schema {
+        // Check request-scoped cache to avoid redundant DB queries for the same schema.
+        $cacheKey = strtolower((string) $id).':'.($_rbac ? '1' : '0').':'.($_multitenancy ? '1' : '0');
+        if (isset($this->findCache[$cacheKey]) === true) {
+            return $this->findCache[$cacheKey];
+        }
+
         // Verify RBAC permission to read if RBAC is enabled.
         if ($_rbac === true) {
             // @todo: remove this hotfix for solr - uncomment when ready
@@ -284,6 +301,15 @@ class SchemaMapper extends QBMapper
 
         // Resolve schema composition if present (allOf, oneOf, anyOf).
         $schema = $this->resolveSchemaExtension($schema);
+
+        // Cache by all possible identifiers to handle lookups by id, uuid, or slug.
+        $rbacSuffix = ':'.($_rbac ? '1' : '0').':'.($_multitenancy ? '1' : '0');
+        $this->findCache[$cacheKey] = $schema;
+        $this->findCache[(string) $schema->getId().$rbacSuffix]           = $schema;
+        $this->findCache[strtolower($schema->getUuid()).$rbacSuffix]      = $schema;
+        if ($schema->getSlug() !== null) {
+            $this->findCache[strtolower($schema->getSlug()).$rbacSuffix] = $schema;
+        }
 
         return $schema;
     }//end find()
@@ -2811,4 +2837,95 @@ class SchemaMapper extends QBMapper
 
         return $uuids;
     }//end findExtendedBy()
+
+
+    /**
+     * Find all schema extension relationships in a single query
+     *
+     * Scans all schemas for allOf/oneOf/anyOf references and builds a reverse map
+     * of which schemas extend which. Replaces N individual findExtendedBy() calls
+     * with 1 query.
+     *
+     * @return array<int, string[]> Map of targetSchemaId => [extendingSchemaUuid, ...]
+     */
+    public function findAllExtendedBy(): array
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('id', 'uuid', 'slug', 'all_of', 'one_of', 'any_of')
+            ->from($this->getTableName())
+            ->where(
+                $qb->expr()->orX(
+                    $qb->expr()->isNotNull('all_of'),
+                    $qb->expr()->isNotNull('one_of'),
+                    $qb->expr()->isNotNull('any_of')
+                )
+            );
+
+        $result = $qb->executeQuery();
+
+        // Build lookup of all schemas by id/uuid/slug for resolving references.
+        // We need a second query to get all schemas for reference resolution.
+        $allSchemasQb = $this->db->getQueryBuilder();
+        $allSchemasQb->select('id', 'uuid', 'slug')
+            ->from($this->getTableName());
+        $allSchemasResult = $allSchemasQb->executeQuery();
+
+        $schemaLookup = [];
+        while (($row = $allSchemasResult->fetch()) !== false) {
+            $schemaLookup[(string) $row['id']]  = (int) $row['id'];
+            if (($row['uuid'] ?? null) !== null) {
+                $schemaLookup[$row['uuid']] = (int) $row['id'];
+            }
+
+            if (($row['slug'] ?? null) !== null) {
+                $schemaLookup[$row['slug']] = (int) $row['id'];
+            }
+        }
+
+        $allSchemasResult->closeCursor();
+
+        // Build the reverse map: targetSchemaId => [extendingSchemaUuid, ...].
+        $extendedByMap = [];
+
+        while (($row = $result->fetch()) !== false) {
+            $extendingUuid = $row['uuid'] ?? null;
+            if ($extendingUuid === null) {
+                continue;
+            }
+
+            // Collect all referenced identifiers from allOf, oneOf, anyOf.
+            $references = [];
+            foreach (['all_of', 'one_of', 'any_of'] as $field) {
+                $value = $row[$field] ?? null;
+                if ($value === null) {
+                    continue;
+                }
+
+                $decoded = json_decode(json: $value, associative: true);
+                if (is_array($decoded) === true) {
+                    $references = array_merge($references, $decoded);
+                }
+            }
+
+            // Resolve each reference to a schema ID and add to reverse map.
+            foreach ($references as $ref) {
+                $ref = (string) $ref;
+                if (isset($schemaLookup[$ref]) === true) {
+                    $targetId = $schemaLookup[$ref];
+                    $extendedByMap[$targetId][] = $extendingUuid;
+                }
+            }
+        }
+
+        $result->closeCursor();
+
+        // Deduplicate UUIDs per target schema.
+        foreach ($extendedByMap as $targetId => $uuids) {
+            $extendedByMap[$targetId] = array_values(array_unique($uuids));
+        }
+
+        return $extendedByMap;
+    }//end findAllExtendedBy()
+
+
 }//end class
