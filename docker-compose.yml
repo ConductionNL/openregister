@@ -18,7 +18,6 @@ volumes:
   openproject-assets:
   xwiki-data:
   exapp-n8n:
-  exapp-ollama:
   exapp-openwebui:
   valtimo-data:
   openzaak-data:
@@ -634,9 +633,8 @@ services:
       - PRESIDIO_URL=http://openregister-presidio-analyzer:5001
       - N8N_URL=http://openregister-n8n:5678
       # AppAPI ExApp endpoints (when using --profile exapps)
-      - EXAPP_N8N_URL=http://openregister-exapp-n8n:9000
-      - EXAPP_OLLAMA_URL=http://openregister-exapp-ollama:9000
-      - EXAPP_OPENWEBUI_URL=http://openregister-exapp-openwebui:9000
+      - EXAPP_N8N_URL=http://openregister-exapp-n8n:23000
+      - EXAPP_OPENWEBUI_URL=http://openregister-exapp-openwebui:23000
 
   # Nextcloud Application Server (MariaDB - For Testing)
   # Start with: docker-compose --profile mariadb up
@@ -974,9 +972,6 @@ services:
   # n8n ExApp - Workflow Automation
   # Access via Nextcloud: /index.php/apps/app_api/proxy/n8n
   exapp-n8n:
-    build:
-      context: ./exapps/n8n
-      dockerfile: Dockerfile
     image: ghcr.io/conductionnl/n8n-nextcloud:latest
     container_name: openregister-exapp-n8n
     restart: always
@@ -1002,29 +997,26 @@ services:
       retries: 3
       start_period: 60s
 
-  # Ollama ExApp - Local LLM Inference
-  # Access via Nextcloud: /index.php/apps/app_api/proxy/ollama
-  exapp-ollama:
+  # Open WebUI + Ollama ExApp - AI Chat with built-in LLM inference
+  # Access via Nextcloud: /index.php/apps/app_api/proxy/open_webui
+  # Ollama API also available at: /index.php/apps/app_api/proxy/open_webui/ollama/api/*
+  exapp-openwebui:
     profiles:
       - ai
-    build:
-      context: ./exapps/ollama
-      dockerfile: Dockerfile
-    image: ghcr.io/conductionnl/ollama-nextcloud:latest
-    container_name: openregister-exapp-ollama
+    image: ghcr.io/conductionnl/open-webui-nextcloud:latest
+    container_name: openregister-exapp-openwebui
     restart: always
     volumes:
-      - exapp-ollama:/data
+      - exapp-openwebui:/data
     environment:
-      - APP_ID=ollama
+      - APP_ID=open_webui
       - APP_VERSION=1.0.0
       - APP_HOST=0.0.0.0
-      - APP_PORT=9000
+      - APP_PORT=23000
       - APP_PERSISTENT_STORAGE=/data
-      # These will be set by AppAPI when registered
-      - APP_SECRET=${OLLAMA_APP_SECRET:-dev-secret}
+      - APP_SECRET=${OPENWEBUI_APP_SECRET:-dev-secret}
       - NEXTCLOUD_URL=http://nextcloud
-      # Ollama specific - use small model for dev
+      # Ollama built-in - auto-pull model on first start
       - OLLAMA_DEFAULT_MODEL=llama3.2:1b
       - OLLAMA_NUM_PARALLEL=2
       - OLLAMA_KEEP_ALIVE=15m
@@ -1040,41 +1032,7 @@ services:
               capabilities: [gpu]
     shm_size: '2gb'
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:9000/heartbeat || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 120s
-
-  # Open WebUI ExApp - Chat Interface for LLMs
-  # Access via Nextcloud: /index.php/apps/app_api/proxy/open_webui
-  exapp-openwebui:
-    profiles:
-      - ai
-    build:
-      context: ./exapps/open-webui
-      dockerfile: Dockerfile
-    image: ghcr.io/conductionnl/open-webui-nextcloud:latest
-    container_name: openregister-exapp-openwebui
-    restart: always
-    volumes:
-      - exapp-openwebui:/data
-    environment:
-      - APP_ID=open_webui
-      - APP_VERSION=1.0.0
-      - APP_HOST=0.0.0.0
-      - APP_PORT=9000
-      - APP_PERSISTENT_STORAGE=/data
-      # These will be set by AppAPI when registered
-      - APP_SECRET=${OPENWEBUI_APP_SECRET:-dev-secret}
-      - NEXTCLOUD_URL=http://nextcloud
-      # Open WebUI specific - connect to Ollama ExApp
-      - OLLAMA_BASE_URL=http://openregister-exapp-ollama:11434
-      - ENABLE_SIGNUP=true
-    depends_on:
-      - exapp-ollama
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:9000/heartbeat || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:23000/heartbeat || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3

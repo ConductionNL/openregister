@@ -1092,7 +1092,17 @@ class ObjectsController extends Controller
                 );
                 if ($includeEmpty === false) {
                     $responseData['results'] = array_map(
-                        callback: [$this, 'stripEmptyValues'],
+                        callback: function ($item) {
+                            // Serialize ObjectEntity instances to arrays before stripping empty values.
+                            // renderEntities() returns ObjectEntity objects when _extend is used.
+                            if (is_array($item) === false
+                                && method_exists(object_or_class: $item, method: 'jsonSerialize') === true
+                            ) {
+                                $item = $item->jsonSerialize();
+                            }
+
+                            return is_array($item) === true ? $this->stripEmptyValues(data: $item) : $item;
+                        },
                         array: $responseData['results']
                     );
                 }

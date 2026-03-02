@@ -21,6 +21,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\Files\GenericFileException;
 use OCP\Files\NotFoundException;
+use OCP\IAppConfig;
 use OCP\IRequest;
 use Exception;
 use OCA\OpenRegister\Service\SettingsService;
@@ -34,6 +35,7 @@ use Psr\Log\LoggerInterface;
  * - Cache statistics
  * - Cache clearing operations
  * - Cache warmup operations
+ * - Cache warmup interval configuration
  *
  * @category Controller
  * @package  OCA\OpenRegister\Controller\Settings
@@ -49,6 +51,7 @@ class CacheSettingsController extends Controller
      * @param IndexService    $indexService    Index service.
      * @param LoggerInterface $logger          Logger.
      * @param Factory         $appDataFactory  App data factory.
+     * @param IAppConfig      $appConfig       App configuration.
      */
     public function __construct(
         $appName,
@@ -57,6 +60,7 @@ class CacheSettingsController extends Controller
         private readonly IndexService $indexService,
         private readonly LoggerInterface $logger,
         private readonly Factory $appDataFactory,
+        private readonly IAppConfig $appConfig,
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
@@ -123,6 +127,103 @@ class CacheSettingsController extends Controller
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 422);
         }
     }//end warmupNamesCache()
+
+    /**
+     * Get the cache warmup interval configuration.
+     *
+     * Returns the current interval in seconds and the last run timestamp.
+     *
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with warmup interval config
+     */
+    public function getWarmupInterval(): JSONResponse
+    {
+        try {
+            $interval = (int) $this->appConfig->getValueString(
+                app: 'openregister',
+                key: 'cache_warmup_interval',
+                default: '3600'
+            );
+            $lastRun  = $this->appConfig->getValueString(
+                app: 'openregister',
+                key: 'cache_warmup_last_run',
+                default: ''
+            );
+
+            $lastRunValue = null;
+            if (empty($lastRun) === false) {
+                $lastRunValue = $lastRun;
+            }
+
+            return new JSONResponse(
+                data: [
+                    'success'  => true,
+                    'interval' => $interval,
+                    'last_run' => $lastRunValue,
+                    'enabled'  => $interval > 0,
+                ]
+            );
+        } catch (Exception $e) {
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+        }//end try
+    }//end getWarmupInterval()
+
+    /**
+     * Set the cache warmup interval.
+     *
+     * Accepts an interval in seconds. Use 0 to disable the warmup job.
+     * Minimum non-zero value is 300 seconds (5 minutes).
+     *
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with updated interval config
+     */
+    public function setWarmupInterval(): JSONResponse
+    {
+        try {
+            $data     = $this->request->getParams();
+            $interval = (int) ($data['interval'] ?? 3600);
+
+            // Validate: 0 (disabled) or >= 300 seconds.
+            if ($interval !== 0 && $interval < 300) {
+                return new JSONResponse(
+                    data: [
+                        'success' => false,
+                        'error'   => 'Interval must be 0 (disabled) or at least 300 seconds (5 minutes)',
+                    ],
+                    statusCode: 422
+                );
+            }
+
+            $this->appConfig->setValueString(
+                app: 'openregister',
+                key: 'cache_warmup_interval',
+                value: (string) $interval
+            );
+
+            $this->logger->info(
+                message: '[CacheSettingsController] Cache warmup interval updated to '.$interval.' seconds',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+
+            $message = 'Cache warmup interval set to '.$interval.' seconds';
+            if ($interval === 0) {
+                $message = 'Cache warmup disabled';
+            }
+
+            return new JSONResponse(
+                data: [
+                    'success'  => true,
+                    'interval' => $interval,
+                    'enabled'  => $interval > 0,
+                    'message'  => $message,
+                ]
+            );
+        } catch (Exception $e) {
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+        }//end try
+    }//end setWarmupInterval()
 
     /**
      * Clear a specific SOLR collection by name
@@ -260,8 +361,8 @@ class CacheSettingsController extends Controller
             $this->logger->error(
                     message: '[CacheSettingsController] Failed to invalidate app store cache: '.$e->getMessage(),
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'      => __FILE__,
+                        'line'      => __LINE__,
                         'exception' => $e,
                     ]
                     );

@@ -193,6 +193,8 @@ return [
         ['name' => 'Settings\CacheSettings#getCacheStats', 'url' => '/api/settings/cache', 'verb' => 'GET'],
         ['name' => 'Settings\CacheSettings#clearCache', 'url' => '/api/settings/cache', 'verb' => 'DELETE'],
         ['name' => 'Settings\CacheSettings#warmupNamesCache', 'url' => '/api/settings/cache/warmup-names', 'verb' => 'POST'],
+        ['name' => 'Settings\CacheSettings#getWarmupInterval', 'url' => '/api/settings/cache/warmup-interval', 'verb' => 'GET'],
+        ['name' => 'Settings\CacheSettings#setWarmupInterval', 'url' => '/api/settings/cache/warmup-interval', 'verb' => 'PUT'],
         ['name' => 'Settings\CacheSettings#clearAppStoreCache', 'url' => '/api/settings/cache/appstore', 'verb' => 'DELETE'],
 
         // Security management - Rate limiting and IP blocking.

@@ -53,6 +53,10 @@ export const useSettingsStore = defineStore('settings', {
 		showClearCacheConfirmation: false,
 		clearCacheType: 'all',
 		clearingAppStoreCache: false,
+		warmupInterval: 3600,
+		warmupLastRun: null,
+		loadingWarmupInterval: false,
+		savingWarmupInterval: false,
 
 		// Mass validation states
 		massValidating: false,
@@ -1120,6 +1124,54 @@ export const useSettingsStore = defineStore('settings', {
 				throw error
 			} finally {
 				this.warmingUpCache = false
+			}
+		},
+
+		/**
+		 * Load cache warmup interval setting
+		 */
+		async loadWarmupInterval() {
+			this.loadingWarmupInterval = true
+			try {
+				const response = await axios.get(generateUrl('/apps/openregister/api/settings/cache/warmup-interval'))
+				if (response.data) {
+					this.warmupInterval = response.data.interval ?? 3600
+					this.warmupLastRun = response.data.last_run ?? null
+				}
+				return response.data
+			} catch (error) {
+				console.error('Failed to load warmup interval:', error)
+			} finally {
+				this.loadingWarmupInterval = false
+			}
+		},
+
+		/**
+		 * Save cache warmup interval setting
+		 * @param {number} interval - The interval in seconds (0 = disabled)
+		 */
+		async saveWarmupInterval(interval) {
+			this.savingWarmupInterval = true
+			try {
+				const response = await axios.put(
+					generateUrl('/apps/openregister/api/settings/cache/warmup-interval'),
+					{ interval },
+				)
+
+				if (response.data.success) {
+					this.warmupInterval = response.data.interval
+					showSuccess(response.data.message)
+				} else {
+					showError('Failed to save warmup interval: ' + (response.data.error || 'Unknown error'))
+				}
+
+				return response.data
+			} catch (error) {
+				console.error('Failed to save warmup interval:', error)
+				showError('Failed to save warmup interval: ' + error.message)
+				throw error
+			} finally {
+				this.savingWarmupInterval = false
 			}
 		},
 

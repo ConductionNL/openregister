@@ -27,35 +27,27 @@ jobs:
       - name: Get current version and append unstable suffix
         id: increment_version
         run: |
-          # Get version from main branch
-          git fetch origin main
-          main_version=$(git show origin/main:appinfo/info.xml | grep -oP '(?<=<version>)[^<]+' || echo "")
-          
-          # Get current version from development branch
+          # Get current version from the branch
           current_version=$(grep -oP '(?<=<version>)[^<]+' appinfo/info.xml || echo "")
-          
-          # Split main version into parts
-          IFS='.' read -ra main_version_parts <<< "$main_version"
-          
-          # Increment patch version by 1 from main
-          next_patch=$((main_version_parts[2] + 1))
-          
+
+          # Strip any existing suffix (-unstable.X, -beta.X) to get base version
+          base_version=$(echo "$current_version" | grep -oP '^[0-9]+\.[0-9]+\.[0-9]+')
+
+          # Split base version into parts
+          IFS='.' read -ra version_parts <<< "$base_version"
+
           # Extract unstable counter from current version if it exists
           unstable_counter=1
           if [[ $current_version =~ -unstable\.([0-9]+)$ ]]; then
-            # If current patch version is still ahead of main, increment counter
-            current_patch=$(echo $current_version | grep -oP '^[0-9]+\.[0-9]+\.(\d+)' | cut -d. -f3)
-            if [ "$current_patch" -eq "$next_patch" ]; then
-              unstable_counter=$((BASH_REMATCH[1] + 1))
-            fi
+            unstable_counter=$((BASH_REMATCH[1] + 1))
           fi
-          
-          unstable_version="${main_version_parts[0]}.${main_version_parts[1]}.${next_patch}-unstable.${unstable_counter}"
-          
+
+          unstable_version="${version_parts[0]}.${version_parts[1]}.${version_parts[2]}-unstable.${unstable_counter}"
+
           echo "NEW_VERSION=$unstable_version" >> $GITHUB_ENV
           echo "new_version=$unstable_version" >> $GITHUB_OUTPUT
-          echo "Main version: $main_version"
           echo "Current version: $current_version"
+          echo "Base version: $base_version"
           echo "Using unstable version: $unstable_version"
 
       # Step 4: Update the version in info.xml
