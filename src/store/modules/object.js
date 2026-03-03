@@ -15,6 +15,18 @@ import {
 import { useRegisterStore } from './register.js'
 import { useSchemaStore } from './schema.js'
 
+/**
+ * Get the base URL for API requests, automatically prepending /index.php if the current URL uses it.
+ * @return {string} - The base URL with optional /index.php prefix
+ */
+function getBaseUrl() {
+	const defaultBaseUrl = '/apps/openregister/api/objects'
+	if (typeof window !== 'undefined' && window.location.pathname.includes('/index.php')) {
+		return `/index.php${defaultBaseUrl}`
+	}
+	return defaultBaseUrl
+}
+
 const usePackageObjectStore = createObjectStore('openregister-objects', {
 	plugins: [
 		filesPlugin(),
@@ -22,7 +34,7 @@ const usePackageObjectStore = createObjectStore('openregister-objects', {
 		relationsPlugin(),
 		registerMappingPlugin(),
 	],
-	baseUrl: '/index.php/apps/openregister/api/objects',
+	baseUrl: getBaseUrl(),
 })
 
 /**
