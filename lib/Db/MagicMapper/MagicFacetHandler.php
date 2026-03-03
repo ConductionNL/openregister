@@ -213,6 +213,15 @@ class MagicFacetHandler
             $facetConfig = $this->expandFacetConfig(facetConfig: $facetConfig, schema: $schema);
         }
 
+        // Handle _facets as numerically-indexed array (e.g., _facets[]=standaardversies).
+        // PHP converts ?_facets[]=foo&_facets[]=bar into [0 => 'foo', 1 => 'bar'].
+        if (is_array($facetConfig) === true && array_is_list($facetConfig) === true) {
+            $facetConfig = $this->expandFacetConfig(
+                facetConfig: implode(separator: ',', array: $facetConfig),
+                schema: $schema
+            );
+        }
+
         // Extract base query (without facet config).
         $baseQuery = $query;
         unset($baseQuery['_facets']);
@@ -338,6 +347,15 @@ class MagicFacetHandler
         if (is_string($facetConfig) === true) {
             $facetConfig = $this->expandFacetConfigFromAllSchemas(
                 facetConfigString: $facetConfig,
+                tableConfigs: $tableConfigs
+            );
+        }
+
+        // Handle _facets as numerically-indexed array (e.g., _facets[]=standaardversies).
+        // PHP converts ?_facets[]=foo&_facets[]=bar into [0 => 'foo', 1 => 'bar'].
+        if (is_array($facetConfig) === true && array_is_list($facetConfig) === true) {
+            $facetConfig = $this->expandFacetConfigFromAllSchemas(
+                facetConfigString: implode(separator: ',', array: $facetConfig),
                 tableConfigs: $tableConfigs
             );
         }

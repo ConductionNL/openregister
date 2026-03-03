@@ -123,6 +123,15 @@ class FacetsHandler
             $facetConfig = $this->expandFacetConfig(facetConfig: $facetConfig, query: $query);
         }
 
+        // Handle _facets as numerically-indexed array (e.g., _facets[]=standaardversies).
+        // PHP converts ?_facets[]=foo&_facets[]=bar into [0 => 'foo', 1 => 'bar'].
+        if (is_array($facetConfig) === true && array_is_list($facetConfig) === true) {
+            $facetConfig = $this->expandFacetConfig(
+                facetConfig: implode(separator: ',', array: $facetConfig),
+                query: $query
+            );
+        }
+
         // Extract base query (without facet config).
         $baseQuery = $query;
         unset($baseQuery['_facets']);

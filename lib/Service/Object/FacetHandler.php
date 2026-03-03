@@ -161,6 +161,13 @@ class FacetHandler
             $facetConfig = [$facetConfig];
         }
 
+        // Handle _facets as numerically-indexed array (e.g., _facets[]=standaardversies).
+        // PHP converts ?_facets[]=foo&_facets[]=bar into [0 => 'foo', 1 => 'bar'].
+        // Ensure it stays a simple list of field names.
+        if (is_array($facetConfig) === true && array_is_list($facetConfig) === true) {
+            $facetConfig = array_values(array: $facetConfig);
+        }
+
         // **PAGINATION INDEPENDENCE**: Remove pagination params for facet calculation.
         $facetQuery = $query;
         unset($facetQuery['_limit'], $facetQuery['_offset'], $facetQuery['_page'], $facetQuery['_facetable']);
