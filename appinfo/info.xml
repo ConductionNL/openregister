@@ -47,6 +47,7 @@ Create a [feature request](https://github.com/OpenRegister/.github/issues/new/ch
 
 	<background-jobs>
 		<job>OCA\OpenRegister\Cron\LogCleanUpTask</job>
+		<job>OCA\OpenRegister\Cron\ObjectCleanUpTask</job>
 		<job>OCA\OpenRegister\Cron\ConfigurationCheckJob</job>
 	</background-jobs>
 

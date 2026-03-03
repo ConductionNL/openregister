@@ -7022,7 +7022,9 @@ class ObjectService
 	 */
 	public function getExpiredObjects(): array
 	{
-		$schemas = $this->schemaMapper->findAll(filters: ['configuration' => 'IS NOT NULL']); // and configuration.objectArchiveRetention IS NOT NULL OR configuration.objectDeleteRetention IS NOT NULL
+		$schemas = $this->schemaMapper->findAll(filters: ['configuration' => 'IS NOT NULL'], multi: false, rbac: false); // and configuration.objectArchiveRetention IS NOT NULL OR configuration.objectDeleteRetention IS NOT NULL
+
+		$this->logger->debug(message: "[ObjectService] Found schemas with config", context: ['count'  => count($schemas)]);
 
 		$config = [];
 		foreach ($schemas as $schema) {
@@ -7038,7 +7040,7 @@ class ObjectService
 			}
 		}
 
-		if (isset($this->settingsService->getRetentionSettingsOnly()['enableGlobalObjectRetention']) === true && $this->settingsService->getRetentionSettingsOnly()['enableGlobalObjectRetention'] !== false) {
+		if (isset($this->settingsService->getRetentionSettingsOnly()['enableGlobalObjectRetention']) === true && $this->settingsService->getRetentionSettingsOnly()['enableGlobalObjectRetention'] === true) {
 			$config['global'] = [
 				'expiration' => (new \DateTime('now -' . $this->settingsService->getRetentionSettingsOnly()['objectArchiveRetention'] . 'ms'))->format('c'),
 				'deletion' => $this->settingsService->getRetentionSettingsOnly()['objectDeleteRetention'] > 0 ? (new \DateTime('now -' . $this->settingsService->getRetentionSettingsOnly()['objectDeleteRetention'] . 'ms'))->format('c') : null,
@@ -7049,6 +7051,8 @@ class ObjectService
 				'deletion' => null,
 			];
 		}
+
+		$this->logger->debug(message: "[ObjectService] Finding exipred objects", context: $config);
 
 		return $this->getMapper()->findExpired(config: $config);
 
@@ -7062,6 +7066,8 @@ class ObjectService
 	public function deleteExpiredObjects(): void
 	{
 		$objects = $this->getExpiredObjects();
+
+		$this->logger->debug(message: '[ObjectService] Expired objects found', context: $objects);
 
 		$this->deleteObjects(
 			uuids: array_map(function ($object) {return $object['uuid'];}, $objects),

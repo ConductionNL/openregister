@@ -1095,6 +1095,14 @@ class ObjectEntityMapper extends QBMapper
 			placeHolder: ":path"
 		);
 
+		if (
+			$config['global']['expiration'] === null
+			&& $config['global']['deletion'] === null
+			&& empty($config['schemas']) === true
+		) {
+			return [];
+		}
+
 		// First check on the basis of schema
 		foreach ($config['schemas'] as $schema) {
 			// Find the objects that have to be soft deleted
@@ -1125,6 +1133,7 @@ class ObjectEntityMapper extends QBMapper
 		}
 
 		$result = $qb->executeQuery();
+		$this->logger->debug(message: '[ObjectEntityMapper] Running SQL statement', context: ['sql-statement' => $qb->getSQL(), 'parameters' => $qb->getParameters()]);
 
 		return $result->fetchAll();
 	}
