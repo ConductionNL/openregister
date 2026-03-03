@@ -1,4 +1,20 @@
-# Open Registers
+<p align="center">
+  <img src="img/app-store.svg" alt="OpenRegister logo" width="80" height="80">
+</p>
+
+<h1 align="center">OpenRegister</h1>
+
+<p align="center">
+  <strong>Flexible object storage for Nextcloud — schema-driven registers with REST APIs, multi-tenancy, and audit trails</strong>
+</p>
+
+<p align="center">
+  <a href="https://github.com/ConductionNL/openregister/releases"><img src="https://img.shields.io/github/v/release/ConductionNL/openregister" alt="Latest release"></a>
+  <a href="https://github.com/ConductionNL/openregister/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue" alt="License"></a>
+  <a href="https://github.com/ConductionNL/openregister/actions"><img src="https://img.shields.io/github/actions/workflow/status/ConductionNL/openregister/code-quality.yml?label=quality" alt="Code quality"></a>
+</p>
+
+---
 
 Open Registers provides a way to quicly build and deploy standardized registers based on [NLGov REST API Design Rules](https://logius-standaarden.github.io/API-Design-Rules/) and [Common Ground Principles](https://common-ground.nl/common-ground-principes/). It is based on based on the concepts of defining object types in [`schema.json`](https://json-schema.org/) and storing objects in configurable source.
 
