@@ -496,9 +496,9 @@ class UserService
             $connection = \OC::$server->getDatabaseConnection();
             $query      = $connection->getQueryBuilder();
 
-            $query->select('size')
-                ->from('storages')
-                ->join('storages', 'mounts', 'm', 'storages.id = m.storage_id')
+            $query->select('s.size')
+                ->from('storages', 's')
+                ->join('s', 'mounts', 'm', $query->expr()->eq('s.id', $query->quoteIdentifier('m.storage_id')))
                 ->where($query->expr()->eq('m.user_id', $query->createNamedParameter($userId)))
                 ->setMaxResults(1);
 
