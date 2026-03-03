@@ -61,11 +61,15 @@ import { dashboardStore, registerStore, schemaStore, navigationStore, configurat
 							</template>
 							Add Register
 						</NcActionButton>
-						<NcActionButton close-after-click @click="registerStore.refreshRegisterList()">
+						<NcActionButton
+							close-after-click
+							:disabled="isRefreshing"
+							@click="handleRefresh">
 							<template #icon>
-								<Refresh :size="20" />
+								<NcLoadingIcon v-if="isRefreshing" :size="20" />
+								<Refresh v-else :size="20" />
 							</template>
-							Refresh
+							{{ isRefreshing ? t('openregister', 'Refreshing...') : t('openregister', 'Refresh') }}
 						</NcActionButton>
 						<NcActionButton close-after-click @click="registerStore.setRegisterItem(null); navigationStore.setModal('importRegister')">
 							<template #icon>
@@ -566,6 +570,7 @@ export default {
 			selectedRegisters: [],
 			expandedRegisters: [], // Track which registers are expanded
 			expandedDescriptions: [], // Track which descriptions are expanded
+			isRefreshing: false,
 		}
 	},
 	computed: {
@@ -621,6 +626,17 @@ export default {
 		}
 	},
 	methods: {
+		/**
+		 * Refreshes the register list and shows a loading state on the Refresh button.
+		 */
+		async handleRefresh() {
+			this.isRefreshing = true
+			try {
+				await registerStore.refreshRegisterList()
+			} finally {
+				this.isRefreshing = false
+			}
+		},
 		onPageChanged(page) {
 			registerStore.setPagination(page, registerStore.pagination.limit)
 		},
