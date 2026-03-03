@@ -148,7 +148,7 @@ class TaskService
      * @param string $objectTitle The object title for the LINK label
      * @param array  $data        Task data: summary, description, priority, due, status
      *
-     * @return array The created task in JSON-friendly format
+     * @return array|null The created task in JSON-friendly format, or null if the calendar data was not a VTODO
      *
      * @throws Exception If no user is logged in or no calendar found
      */
@@ -158,7 +158,7 @@ class TaskService
         string $objectUuid,
         string $objectTitle,
         array $data
-    ): array {
+    ): ?array {
         $calendar   = $this->findUserCalendar();
         $calendarId = $calendar['id'];
 
@@ -220,11 +220,11 @@ class TaskService
      * @param string $taskUri    The URI of the task to update
      * @param array  $data       Fields to update: summary, description, priority, due, status
      *
-     * @return array The updated task in JSON-friendly format
+     * @return array|null The updated task in JSON-friendly format, or null if calendar data was not a VTODO
      *
      * @throws Exception If the task is not found or update fails
      */
-    public function updateTask(string $calendarId, string $taskUri, array $data): array
+    public function updateTask(string $calendarId, string $taskUri, array $data): ?array
     {
         $calendarIdInt = (int) $calendarId;
         $existing      = $this->calDavBackend->getCalendarObject($calendarIdInt, $taskUri);

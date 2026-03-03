@@ -881,6 +881,8 @@ class MagicRbacHandler
      * @param string|null $userId     Current user ID.
      *
      * @return mixed True if unconditional access, SQL string for conditional, false if no access.
+     *
+     * @psalm-suppress UnusedParam $userId reserved for user-specific match conditions in future RBAC rules
      */
     private function processConditionalRuleSql(array $rule, array $userGroups, ?string $userId): mixed
     {

@@ -2501,8 +2501,8 @@ class SaveObject
                         identifier: $uuid,
                         register: $register,
                         schema: $schema,
-                        _rbac: false,
-                        _multitenancy: false
+                        rbac: false,
+                        multitenancy: false
                     );
                     if ($tempExistingObject !== null) {
                         $existingObjectData = $tempExistingObject->getObject();

@@ -77,6 +77,13 @@ class ImportHandler
     private static bool $depCheckActive = false;
 
     /**
+     * Guard flag used by ensureDependenciesForSeedData() to prevent recursive dependency checking.
+     *
+     * @var boolean
+     */
+    private static bool $isDependencyCheckActive = false;
+
+    /**
      * Schema mapper instance for handling schema operations.
      *
      * @var SchemaMapper The schema mapper instance.
@@ -2455,8 +2462,8 @@ class ImportHandler
                                 register: $objectRegister,
                                 schema: $objectSchema,
                                 includeDeleted: false,
-                                _rbac: false,
-                                _multitenancy: false
+                                rbac: false,
+                                multitenancy: false
                             );
                         } else {
                             // Fallback to blob storage only if UnifiedObjectMapper not available or no register.

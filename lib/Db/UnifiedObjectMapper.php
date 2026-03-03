@@ -218,8 +218,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         ?Register $register=null,
         ?Schema $schema=null,
         bool $includeDeleted=false,
-        bool $_rbac=true,
-        bool $_multitenancy=true
+        bool $rbac=true,
+        bool $multitenancy=true
     ): ObjectEntity {
         if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
             $this->logger->debug(
@@ -230,8 +230,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                 identifier: $identifier,
                 register: $register,
                 schema: $schema,
-                rbac: $_rbac,
-                multitenancy: $_multitenancy
+                rbac: $rbac,
+                multitenancy: $multitenancy
             );
             // Set source to indicate data came from magic tables (ORM).
             $entity->setSource('orm');
@@ -247,8 +247,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             register: $register,
             schema: $schema,
             includeDeleted: $includeDeleted,
-            _rbac: $_rbac,
-            _multitenancy: $_multitenancy
+            _rbac: $rbac,
+            _multitenancy: $multitenancy
         );
         // Set source to indicate data came from blob storage.
         $entity->setSource('blob');
@@ -520,9 +520,9 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                     register: $register,
                     schema: $schema,
                     includeDeleted: false,
-                    _rbac: false,
+                    rbac: false,
                 // Skip RBAC for internal fetch
-                    _multitenancy: false
+                    multitenancy: false
                 // Skip multitenancy for internal fetch
                 );
             } catch (\Exception $e) {
@@ -1910,6 +1910,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      * @param bool        $multitenancy  Whether to apply multitenancy filtering.
      *
      * @return array Search results with pagination info.
+     *
+     * @psalm-suppress UnusedParam $multitenancy reserved for future multitenancy filtering implementation
      */
     private function searchObjectsGloballyByIds(
         array $ids,
@@ -2030,6 +2032,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      * @param bool        $multitenancy  Whether to apply multitenancy filtering.
      *
      * @return array Search results with pagination info.
+     *
+     * @psalm-suppress UnusedParam $multitenancy reserved for future multitenancy filtering implementation
      */
     private function searchObjectsGloballyByRelations(
         string $uuid,

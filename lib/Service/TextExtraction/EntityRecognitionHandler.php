@@ -513,6 +513,14 @@ class EntityRecognitionHandler
                 return $this->detectWithRegex(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold);
             }
 
+            if (is_string($response) === false) {
+                $this->logger->error(
+                    message: '[EntityRecognitionHandler] Presidio returned non-string response',
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
+                return $this->detectWithRegex(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold);
+            }
+
             $presidioResults = json_decode($response, true);
             if (json_last_error() !== JSON_ERROR_NONE || is_array($presidioResults) === false) {
                 $this->logger->error(
@@ -639,6 +647,14 @@ class EntityRecognitionHandler
             if ($httpCode !== 200) {
                 $this->logger->error(
                     message: '[EntityRecognitionHandler] OpenAnonymiser returned HTTP '.$httpCode,
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
+                return $this->detectWithRegex(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold);
+            }
+
+            if (is_string($response) === false) {
+                $this->logger->error(
+                    message: '[EntityRecognitionHandler] OpenAnonymiser returned non-string response',
                     context: ['file' => __FILE__, 'line' => __LINE__]
                 );
                 return $this->detectWithRegex(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold);

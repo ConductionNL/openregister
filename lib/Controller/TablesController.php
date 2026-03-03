@@ -85,7 +85,7 @@ class TablesController extends Controller
             if (is_numeric($registerId) === true) {
                 $register = $this->registerMapper->find((int) $registerId);
             } else {
-                $register = $this->registerMapper->findBySlug($registerId);
+                $register = $this->registerMapper->find($registerId);
             }
 
             if ($register === null) {

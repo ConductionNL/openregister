@@ -75,6 +75,6 @@ class DeepLinkRegistration
             }
         }
 
-        return strtr(string: $this->urlTemplate, replacePairs: $replacements);
+        return strtr($this->urlTemplate, $replacements);
     }//end resolveUrl()
 }//end class

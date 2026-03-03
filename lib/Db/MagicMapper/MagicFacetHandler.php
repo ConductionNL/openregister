@@ -1654,6 +1654,8 @@ class MagicFacetHandler
      * @param string   $tableName The magic mapper table name (optional, for cache key).
      *
      * @return array<string, string> Map of UUID to label.
+     *
+     * @psalm-suppress UnusedParam $tableName reserved for cache key usage in future optimization
      */
     private function batchResolveUuidLabels(
         array $uuids,

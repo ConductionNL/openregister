@@ -92,12 +92,12 @@ class FilePropertyHandler
                 $this->logger->warning(
                     message: '[FilePropertyHandler] File upload error for field {field}: {error}',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
-                        'app'   => 'openregister',
-                        'field' => $fieldName,
-                        'error' => $fileInfo['error'],
-                        'file'  => $fileInfo['name'] ?? 'unknown',
+                        'file'     => __FILE__,
+                        'line'     => __LINE__,
+                        'app'      => 'openregister',
+                        'field'    => $fieldName,
+                        'error'    => $fileInfo['error'],
+                        'filename' => $fileInfo['name'] ?? 'unknown',
                     ]
                 );
                 continue;
