@@ -498,7 +498,7 @@ class UserService
 
             $query->select('s.size')
                 ->from('storages', 's')
-                ->join('s', 'mounts', 'm', $query->expr()->eq('s.id', $query->quoteIdentifier('m.storage_id')))
+                ->join('s', 'mounts', 'm', $query->expr()->eq('s.id', 'm.storage_id'))
                 ->where($query->expr()->eq('m.user_id', $query->createNamedParameter($userId)))
                 ->setMaxResults(1);
 
