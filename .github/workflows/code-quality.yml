@@ -54,6 +54,9 @@ jobs:
             echo "Critical violations: $CRITICAL" >> $GITHUB_STEP_SUMMARY
           fi
 
+      - name: Psalm (Static Analysis)
+        run: ./vendor/bin/psalm --threads=1 --no-cache --output-format=github
+
   frontend-quality:
     name: Frontend Quality
     runs-on: ubuntu-latest
