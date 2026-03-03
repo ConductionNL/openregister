@@ -122,9 +122,20 @@ class OrganisationMapper extends QBMapper
          * @var Organisation $oldEntity
          */
 
-        // QBMapper doesn't have a find() method, use findByUuid instead.
-        // FIXED: Use getUuid() instead of getId() to fetch the old entity by UUID
-        $oldEntity = $this->findByUuid((string) $entity->getUuid());
+        // Find old entity by database ID (not UUID) so this works even when the UUID
+        // is being changed (e.g. slug collision path sets a new UUID before saving).
+        $oldEntity = null;
+        if ($entity->getId() !== null) {
+            try {
+                $qb = $this->db->getQueryBuilder();
+                $qb->select('*')
+                    ->from($this->getTableName())
+                    ->where($qb->expr()->eq('id', $qb->createNamedParameter($entity->getId(), IQueryBuilder::PARAM_INT)));
+                $oldEntity = $this->findEntity($qb);
+            } catch (DoesNotExistException $e) {
+                // Old entity not found — proceed without old state in event.
+            }
+        }
 
         if ($entity instanceof Organisation) {
             $entity->setUpdated(new DateTime());
@@ -135,7 +146,7 @@ class OrganisationMapper extends QBMapper
         // Dispatch update event.
         $event = new OrganisationUpdatedEvent(
             newOrganisation: $entity,
-            oldOrganisation: $oldEntity
+            oldOrganisation: $oldEntity ?? $entity
         );
         $this->eventDispatcher->dispatchTyped($event);
 
@@ -306,13 +317,13 @@ class OrganisationMapper extends QBMapper
         $organisation->setUpdated($now);
 
         if ($organisation->getId() === null) {
-
             try {
                 $result = $this->insert($organisation);
                 return $result;
             } catch (Exception $e) {
                 // Handle duplicate slug: find the existing org and update it instead.
-                if ($organisation->getSlug() !== null && str_contains($e->getMessage(), 'organisations_slug_unique')) {
+                $isSlugConflict = str_contains(haystack: $e->getMessage(), needle: 'organisations_slug_unique') === true;
+                if ($organisation->getSlug() !== null && $isSlugConflict === true) {
                     $this->logger->info(
                         message: '[OrganisationMapper] Duplicate slug, updating existing organisation',
                         context: ['slug' => $organisation->getSlug()]
@@ -327,7 +338,7 @@ class OrganisationMapper extends QBMapper
                     message: '[OrganisationMapper] insert() failed: '.$e->getMessage(),
                 );
                 throw $e;
-            }
+            }//end try
         }//end if
 
         return $this->update($organisation);
@@ -602,8 +613,8 @@ class OrganisationMapper extends QBMapper
             $this->logger->debug(
                 message: '[OrganisationMapper] Found parent chain for organisation',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'         => __FILE__,
+                    'line'         => __LINE__,
                     'organisation' => $organisationUuid,
                     'parents'      => $parents,
                     'count'        => count($parents),
@@ -615,8 +626,8 @@ class OrganisationMapper extends QBMapper
             $this->logger->error(
                 message: '[OrganisationMapper] Error finding parent chain',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'         => __FILE__,
+                    'line'         => __LINE__,
                     'organisation' => $organisationUuid,
                     'error'        => $e->getMessage(),
                 ]
@@ -687,8 +698,8 @@ class OrganisationMapper extends QBMapper
             $this->logger->debug(
                 message: '[OrganisationMapper] Found children chain for organisation',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'         => __FILE__,
+                    'line'         => __LINE__,
                     'organisation' => $organisationUuid,
                     'children'     => $children,
                     'count'        => count($children),
@@ -700,8 +711,8 @@ class OrganisationMapper extends QBMapper
             $this->logger->error(
                 message: '[OrganisationMapper] Error finding children chain',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'         => __FILE__,
+                    'line'         => __LINE__,
                     'organisation' => $organisationUuid,
                     'error'        => $e->getMessage(),
                 ]
@@ -772,8 +783,8 @@ class OrganisationMapper extends QBMapper
         $this->logger->debug(
             message: '[OrganisationMapper] Parent assignment validated',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'         => __FILE__,
+                'line'         => __LINE__,
                 'organisation' => $organisationUuid,
                 'newParent'    => $newParentUuid,
                 'parentChain'  => $parentChain,
@@ -925,8 +936,8 @@ class OrganisationMapper extends QBMapper
             $this->logger->debug(
                 message: '[OrganisationMapper] Found active organisation for user in preferences',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'             => __FILE__,
+                    'line'             => __LINE__,
                     'userId'           => $userId,
                     'organisationUuid' => $activeOrgUuid,
                 ]
@@ -950,8 +961,8 @@ class OrganisationMapper extends QBMapper
             $this->logger->info(
                 message: '[OrganisationMapper] Set default organisation as active for user',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'             => __FILE__,
+                    'line'             => __LINE__,
                     'userId'           => $userId,
                     'organisationUuid' => $defaultOrgUuid,
                 ]
@@ -960,13 +971,13 @@ class OrganisationMapper extends QBMapper
             $this->logger->warning(
                 message: '[OrganisationMapper] Failed to set active organisation in preferences: '.$e->getMessage(),
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'             => __FILE__,
+                    'line'             => __LINE__,
                     'userId'           => $userId,
                     'organisationUuid' => $defaultOrgUuid,
                 ]
             );
-        }
+        }//end try
 
         return $defaultOrgUuid;
     }//end getActiveOrganisationWithFallback()
