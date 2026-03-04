@@ -11,6 +11,7 @@ import {
 	auditTrailsPlugin,
 	relationsPlugin,
 	registerMappingPlugin,
+	buildHeaders,
 } from '@conduction/nextcloud-vue'
 import { useRegisterStore } from './register.js'
 import { useSchemaStore } from './schema.js'
@@ -27,7 +28,21 @@ function getBaseUrl() {
 	return defaultBaseUrl
 }
 
-const usePackageObjectStore = createObjectStore('openregister-objects', {
+/**
+ * Get the schema API URL with /index.php prefix when the app is served via index.php.
+ * @param {string|number} schemaId - Schema ID
+ * @return {string} - Full URL path for the schema endpoint
+ */
+function getSchemaApiUrl(schemaId) {
+	const path = '/apps/openregister/api/schemas/' + String(schemaId)
+	if (typeof window !== 'undefined' && window.location.pathname.includes('/index.php')) {
+		return '/index.php' + path
+	}
+	return path
+}
+
+/** Package object store — use for type 'search' on the search page; exported for SearchIndex/SearchSideBar. */
+export const usePackageObjectStore = createObjectStore('openregister-objects', {
 	plugins: [
 		filesPlugin(),
 		auditTrailsPlugin(),
@@ -51,6 +66,8 @@ function getCurrentType(pinia) {
 	return `${registerId}-${schemaId}`.replace(/^-|-$/g, '') || ''
 }
 
+const SEARCH_TYPE = 'search'
+
 export const useObjectStore = defineStore('object', {
 	state: () => ({
 		objectItem: false,
@@ -60,6 +77,20 @@ export const useObjectStore = defineStore('object', {
 		columnFilters: {},
 		metadata: {},
 		properties: {},
+		/** Search page: params used for fetchCollection('search', …). Updated by SearchSideBar and SearchIndex. */
+		searchParams: {
+			registerId: null,
+			schemaId: null,
+			search: '',
+			filters: {},
+			source: 'auto',
+			sortKey: null,
+			sortOrder: 'asc',
+			page: 1,
+			limit: 20,
+		},
+		/** Search page: column keys to show (null = all). Set by CnIndexSidebar @columns-change. */
+		searchVisibleColumns: null,
 	}),
 
 	getters: {
@@ -137,9 +168,107 @@ export const useObjectStore = defineStore('object', {
 			const pkg = usePackageObjectStore(pinia)
 			return pkg.getContracts ?? { results: [], total: 0, page: 1, pages: 1, limit: 20, offset: 0 }
 		},
+
+		/** Search page: collection for type 'search' from package store. */
+		searchCollection() {
+			const pinia = getActivePinia()
+			if (!pinia) return []
+			return usePackageObjectStore(pinia).getCollection(SEARCH_TYPE)
+		},
+
+		/** Search page: pagination for type 'search'. */
+		searchPagination() {
+			const pinia = getActivePinia()
+			if (!pinia) return { total: 0, page: 1, pages: 1, limit: 20 }
+			return usePackageObjectStore(pinia).getPagination(SEARCH_TYPE)
+		},
+
+		/** Search page: loading for type 'search'. */
+		searchLoading() {
+			const pinia = getActivePinia()
+			if (!pinia) return false
+			return usePackageObjectStore(pinia).isLoading(SEARCH_TYPE)
+		},
+
+		/** Search page: schema for type 'search'. */
+		searchSchema() {
+			const pinia = getActivePinia()
+			if (!pinia) return null
+			return usePackageObjectStore(pinia).getSchema(SEARCH_TYPE)
+		},
+
+		/** Search page: facets for type 'search' (CnIndexSidebar format). */
+		searchFacets() {
+			const pinia = getActivePinia()
+			if (!pinia) return {}
+			return usePackageObjectStore(pinia).getFacets(SEARCH_TYPE)
+		},
 	},
 
 	actions: {
+		/**
+		 * Update search params (partial). Used by SearchSideBar and SearchIndex.
+		 * @param updates
+		 */
+		setSearchParams(updates) {
+			Object.assign(this.searchParams, updates)
+		},
+
+		/**
+		 * Set visible columns for search table (null = all).
+		 * @param columns
+		 */
+		setSearchVisibleColumns(columns) {
+			this.searchVisibleColumns = columns
+		},
+
+		/** Clear search params and package store collection for type 'search' when register/schema are deselected. */
+		clearSearchCollection() {
+			this.setSearchParams({ registerId: null, schemaId: null })
+			const pinia = getActivePinia()
+			if (!pinia) return
+			const pkg = usePackageObjectStore(pinia)
+			pkg.collections = { ...pkg.collections, [SEARCH_TYPE]: [] }
+			pkg.pagination = { ...pkg.pagination, [SEARCH_TYPE]: { total: 0, page: 1, pages: 1, limit: 20 } }
+			pkg.loading = { ...pkg.loading, [SEARCH_TYPE]: false }
+		},
+
+		/**
+		 * Register type 'search' with current searchParams and fetch schema + collection.
+		 * Call when register/schema/search/filters/sort/page change. No-op if registerId or schemaId missing.
+		 * @param {object} [extraParams] - Params merged into the request (e.g. { _facets: 'extend', _limit: 0 } for facet discovery).
+		 */
+		async refetchSearchCollection(extraParams = {}) {
+			const pinia = getActivePinia()
+			if (!pinia) return
+			const { registerId, schemaId, search, filters, source, sortKey, sortOrder, page, limit } = this.searchParams
+			if (!registerId || !schemaId) return
+			const pkg = usePackageObjectStore(pinia)
+			pkg.registerObjectType(SEARCH_TYPE, String(schemaId), String(registerId))
+			// Fetch schema with correct base URL (index.php) instead of package's hardcoded path
+			if (!pkg.schemas[SEARCH_TYPE]) {
+				try {
+					const res = await fetch(getSchemaApiUrl(schemaId), { method: 'GET', headers: buildHeaders() })
+					if (res.ok) {
+						const schema = await res.json()
+						pkg.schemas = { ...pkg.schemas, [SEARCH_TYPE]: schema }
+					}
+				} catch {
+					// leave schema null; collection can still load
+				}
+			}
+			const params = {
+				_limit: limit || 20,
+				_page: page || 1,
+				...(search ? { _search: search } : {}),
+				...(sortKey ? { _order: { [sortKey]: sortOrder || 'asc' } } : {}),
+				...(source && source !== 'auto' ? { _source: source } : {}),
+				...filters,
+				...extraParams,
+			}
+			await pkg.fetchCollection(SEARCH_TYPE, params)
+		},
+
 		/**
 		 * Ensure the current register/schema type is registered in the package store, then fetch collection.
 		 * @param options
@@ -165,6 +294,11 @@ export const useObjectStore = defineStore('object', {
 			if (options.search != null) params._search = options.search
 			const results = await pkg.fetchCollection(type, params)
 			const pag = pkg.getPagination(type)
+			// When modals (e.g. mass delete/copy) refresh this type and it matches search page context, keep search type in sync
+			if (this.searchParams?.registerId === registerId && this.searchParams?.schemaId === schemaId) {
+				pkg.collections = { ...pkg.collections, [SEARCH_TYPE]: results }
+				pkg.pagination = { ...pkg.pagination, [SEARCH_TYPE]: { ...pag } }
+			}
 			return {
 				response: {},
 				data: { results, total: pag.total, page: pag.page, pages: pag.pages, limit: pag.limit, offset: (pag.page - 1) * pag.limit },
