@@ -1,12 +1,3 @@
-/**
- * @file ViewObject.vue
- * @module Modals/Object
- * @author Your Name
- * @copyright 2024 Your Organization
- * @license AGPL-3.0-or-later
- * @version 1.0.0
- */
-
 <script setup>
 import { objectStore, navigationStore, registerStore, schemaStore } from '../../store/store.js'
 </script>
