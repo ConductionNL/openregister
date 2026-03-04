@@ -1403,8 +1403,8 @@ class ObjectEntityMapper extends QBMapper
                 register: $register,
                 schema: $schema,
                 includeDeleted: $includeDeleted,
-                _rbac: $_rbac,
-                _multitenancy: $_multitenancy
+                rbac: $_rbac,
+                multitenancy: $_multitenancy
             );
         }//end if
 
