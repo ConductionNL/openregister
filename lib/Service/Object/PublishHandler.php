@@ -56,7 +56,8 @@ class PublishHandler
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly AuditTrailMapper $auditTrailMapper,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+		private readonly SaveObject $saveObject,
     ) {
     }//end __construct()
 
@@ -139,6 +140,9 @@ class PublishHandler
 
             // Clear depublication date if set.
             $objectBefore->setDepublished(null);
+
+			// Write fixed defaults in case the published or depublished field is mirrored to a data field.
+			$objectBefore->setObject($this->saveObject->applyAlwaysDefaults(schema: $schema, data: $objectBefore->jsonSerialize()));
 
             // Save object (with register/schema context for magic mapper routing).
             $object = $this->objectEntityMapper->update(
@@ -250,7 +254,13 @@ class PublishHandler
             // Clear publication date if set.
             $objectBefore->setPublished(null);
 
-            // Save object (with register/schema context for magic mapper routing).
+
+
+			// Write fixed defaults in case the published or depublished field is mirrored to a data field.
+			$objectBefore->setObject($this->saveObject->applyAlwaysDefaults(schema: $schema, data: $objectBefore->jsonSerialize()));
+
+
+			// Save object (with register/schema context for magic mapper routing).
             $object = $this->objectEntityMapper->update(
                 entity: $objectBefore,
                 register: $register,

@@ -1083,15 +1083,15 @@ class ObjectService
 
         // Track if UUID was originally null (to distinguish user-provided vs auto-generated UUIDs).
         $uuidWasNull = ($uuid === null);
-        
+
         // Handle cascading relations while preserving context.
         [$object, $uuid] = $this->handleCascadingWithContextPreservation(
             object: $object,
             uuid: $uuid
         );
-        
+
         // If UUID was null and is now set, mark it as auto-generated in object data.
-        // This allows SaveObject to distinguish between user-provided UUIDs (UPDATE) 
+        // This allows SaveObject to distinguish between user-provided UUIDs (UPDATE)
         // and auto-generated UUIDs (CREATE).
         if ($uuidWasNull && $uuid !== null && is_array($object) === true) {
             // Store flag in @self to indicate this is a CREATE operation
