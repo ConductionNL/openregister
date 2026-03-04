@@ -40,7 +40,7 @@ Open Register drijft apps zoals OpenCatalogi, Procest, Pipelinq en Software Cata
 
 Vrij en open source onder de EUPL-licentie.
     ]]></description>
-    <version>0.2.13-unstable.13</version>
+    <version>0.2.13-unstable.16</version>
     <licence>agpl</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenRegister</namespace>

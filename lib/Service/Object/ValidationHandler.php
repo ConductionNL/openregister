@@ -249,9 +249,9 @@ class ValidationHandler
      *
      * Example: 671K objects processed in ~5 minutes with 1K chunks
      *
-     * @param int      $registerId   The ID of the register containing the schema
-     * @param int      $schemaId     The ID of the schema whose objects should be validated
-     * @param callable $saveCallback Callback to save objects (unused - uses ObjectService directly)
+     * @param int   $registerId   The ID of the register containing the schema
+     * @param int   $schemaId     The ID of the schema whose objects should be validated
+     * @param array $saveCallback Array-callable to save objects, e.g. [$objectService, 'saveObject']
      * @param int|null $limit        Maximum number of objects to process (null = all)
      * @param int      $offset       Number of objects to skip before processing
      *
@@ -268,7 +268,7 @@ class ValidationHandler
     public function validateAndSaveObjectsBySchema(
         int $registerId,
         int $schemaId,
-        callable $saveCallback,
+        array $saveCallback,
         ?int $limit=null,
         int $offset=0
     ): array {

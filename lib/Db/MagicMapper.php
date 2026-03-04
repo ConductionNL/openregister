@@ -4212,7 +4212,7 @@ class MagicMapper
      *
      * @throws Exception If table update fails
      *
-     * @return void
+     * @return array Column operation statistics with keys columnsAdded, columnsDeRequired, columnsReRequired, columnsDropped
      */
     private function updateTableStructure(string $tableName, array $currentColumns, array $requiredColumns): array
     {

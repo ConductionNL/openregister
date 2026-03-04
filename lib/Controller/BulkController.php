@@ -472,7 +472,7 @@ class BulkController extends Controller
             $this->objectService->setSchema($schema);
 
             // Perform schema deletion operation.
-            $result = $this->objectService->deleteObjectsBySchema(schemaId: (int) $schema, hardDelete: $hardDelete);
+            $result = $this->objectService->deleteObjectsBySchema(registerId: (int) $register, schemaId: (int) $schema, hardDelete: $hardDelete);
 
             return new JSONResponse(
                 data: [

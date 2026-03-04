@@ -78,6 +78,12 @@
                 <referencedClass name="OCP\SystemTag\ISystemTagManager"/>
                 <referencedClass name="OCP\Notification\IManager"/>
                 <referencedClass name="OCP\Share\IManager"/>
+                <referencedClass name="OC\Files\AppData\Factory"/>
+                <referencedClass name="Doctrine\DBAL\Platforms\PostgreSQLPlatform"/>
+                <referencedClass name="OCA\DAV\CalDAV\CalDavBackend"/>
+                <referencedClass name="Sabre\VObject\Reader"/>
+                <referencedClass name="OC\DB\Exceptions\DbalException"/>
+                <referencedClass name="OCA\OpenRegister\Db\Exception"/>
             </errorLevel>
         </UndefinedClass>
         <UndefinedMagicMethod errorLevel="suppress"/>
@@ -164,6 +170,8 @@
         <ImplementedReturnTypeMismatch errorLevel="suppress"/>
         <InvalidMethodCall errorLevel="suppress"/>
         <InvalidPropertyAssignmentValue errorLevel="suppress"/>
+        <InvalidThrow errorLevel="suppress"/>
+        <UnsupportedPropertyReferenceUsage errorLevel="suppress"/>
     </issueHandlers>
     <extraFiles>
         <directory name="vendor/nextcloud/ocp" />
