@@ -921,6 +921,7 @@ export default {
 
 			if (this.selectedRegisters.length === 0) {
 				objectStore.clearSearchCollection()
+				this.resetFacets()
 			}
 			// Only update URL; route watcher will trigger applyQueryParamsFromRoute -> performSearchWithFacets once
 			this.updateRouteQueryFromState()
@@ -937,6 +938,7 @@ export default {
 
 			if (this.selectedSchemas.length === 0) {
 				objectStore.clearSearchCollection()
+				this.resetFacets()
 			}
 			// Only update URL; route watcher will trigger applyQueryParamsFromRoute -> performSearchWithFacets once
 			this.updateRouteQueryFromState()
@@ -1117,12 +1119,16 @@ export default {
 			return { _facets: config }
 		},
 
-		// Reset all facets
+		/** Reset all facet/filter state (local and store) so CnIndexSidebar and Advanced Filters UI are cleared. */
 		resetFacets() {
 			this.enabledFacets = {}
 			this.facetFilters = {}
 			this.facetData = null
 			this.facetDataLoading = false
+			objectStore.setSearchParams({ filters: {} })
+			if (this.canSearch) {
+				objectStore.refetchSearchCollection()
+			}
 		},
 
 		async performSearchWithFacets() {

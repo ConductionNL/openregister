@@ -222,15 +222,17 @@ export const useObjectStore = defineStore('object', {
 			this.searchVisibleColumns = columns
 		},
 
-		/** Clear search params and package store collection for type 'search' when register/schema are deselected. */
+		/** Clear search params and package store state for type 'search' when register/schema are deselected. */
 		clearSearchCollection() {
-			this.setSearchParams({ registerId: null, schemaId: null })
+			this.setSearchParams({ registerId: null, schemaId: null, filters: {} })
 			const pinia = getActivePinia()
 			if (!pinia) return
 			const pkg = usePackageObjectStore(pinia)
 			pkg.collections = { ...pkg.collections, [SEARCH_TYPE]: [] }
 			pkg.pagination = { ...pkg.pagination, [SEARCH_TYPE]: { total: 0, page: 1, pages: 1, limit: 20 } }
 			pkg.loading = { ...pkg.loading, [SEARCH_TYPE]: false }
+			pkg.facets = { ...pkg.facets, [SEARCH_TYPE]: {} }
+			pkg.schemas = { ...pkg.schemas, [SEARCH_TYPE]: null }
 		},
 
 		/**
