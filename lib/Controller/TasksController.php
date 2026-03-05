@@ -93,7 +93,7 @@ class TasksController extends Controller
         string $id
     ): JSONResponse {
         try {
-            $object = $this->validateObject($register, $schema, $id);
+            $object = $this->validateObject(register: $register, schema: $schema, id: $id);
             if ($object === null) {
                 return new JSONResponse(
                     data: ['error' => 'Object not found'],
@@ -129,7 +129,7 @@ class TasksController extends Controller
         string $id
     ): JSONResponse {
         try {
-            $object = $this->validateObject($register, $schema, $id);
+            $object = $this->validateObject(register: $register, schema: $schema, id: $id);
             if ($object === null) {
                 return new JSONResponse(
                     data: ['error' => 'Object not found'],
@@ -183,7 +183,7 @@ class TasksController extends Controller
         string $taskId
     ): JSONResponse {
         try {
-            $object = $this->validateObject($register, $schema, $id);
+            $object = $this->validateObject(register: $register, schema: $schema, id: $id);
             if ($object === null) {
                 return new JSONResponse(
                     data: ['error' => 'Object not found'],
@@ -243,7 +243,7 @@ class TasksController extends Controller
         string $taskId
     ): JSONResponse {
         try {
-            $object = $this->validateObject($register, $schema, $id);
+            $object = $this->validateObject(register: $register, schema: $schema, id: $id);
             if ($object === null) {
                 return new JSONResponse(
                     data: ['error' => 'Object not found'],

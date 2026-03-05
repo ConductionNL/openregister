@@ -89,7 +89,10 @@ class NotificationService
     public function notifyConfigurationUpdate(Configuration $configuration): int
     {
         // Log start of notification process for monitoring.
-        $this->logger->info(message: "[NotificationService] Sending configuration update notification for: {$configuration->getTitle()}", context: ['file' => __FILE__, 'line' => __LINE__]);
+        $this->logger->info(
+            message: "[NotificationService] Sending configuration update notification for: {$configuration->getTitle()}",
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
 
         // Step 1: Get notification groups from configuration.
         // These are groups that should be notified about updates.
@@ -109,7 +112,10 @@ class NotificationService
             $group = $this->groupManager->get($groupId);
             if ($group === null) {
                 // Log warning if group doesn't exist but continue with other groups.
-                $this->logger->warning(message: "[NotificationService] Group {$groupId} not found, skipping", context: ['file' => __FILE__, 'line' => __LINE__]);
+                $this->logger->warning(
+                    message: "[NotificationService] Group {$groupId} not found, skipping",
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
                 continue;
             }
 
@@ -136,12 +142,18 @@ class NotificationService
                 $notificationCount++;
             } catch (\Exception $e) {
                 // Log error but continue sending to other users.
-                $this->logger->error(message: "[NotificationService] Failed to send notification to user {$userId}: ".$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
+                $this->logger->error(
+                    message: "[NotificationService] Failed to send notification to user {$userId}: ".$e->getMessage(),
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
             }
         }
 
         // Log completion with notification count.
-        $this->logger->info(message: "[NotificationService] Sent {$notificationCount} notifications for configuration update", context: ['file' => __FILE__, 'line' => __LINE__]);
+        $this->logger->info(
+            message: "[NotificationService] Sent {$notificationCount} notifications for configuration update",
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
 
         return $notificationCount;
     }//end notifyConfigurationUpdate()
@@ -209,6 +221,9 @@ class NotificationService
         // This will remove all notifications for this configuration.
         $this->notificationManager->markProcessed($notification);
 
-        $this->logger->info(message: "[NotificationService] Marked configuration {$configuration->getTitle()} notifications as processed", context: ['file' => __FILE__, 'line' => __LINE__]);
+        $this->logger->info(
+            message: "[NotificationService] Marked configuration {$configuration->getTitle()} notifications as processed",
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
     }//end markConfigurationUpdated()
 }//end class

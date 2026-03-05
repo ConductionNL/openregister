@@ -720,7 +720,7 @@ class IndexService
      */
     public function collectionExists(string $collectionName): bool
     {
-        return $this->searchBackend->collectionExists($collectionName);
+        return $this->searchBackend->collectionExists(collectionName: $collectionName);
     }//end collectionExists()
 
     /**
@@ -768,10 +768,10 @@ class IndexService
      */
     public function ensureTenantCollection(?string $tenant=null): array
     {
-        $collectionName = $this->getTenantSpecificCollectionName($tenant);
+        $collectionName = $this->getTenantSpecificCollectionName(tenant: $tenant);
 
-        if ($this->collectionExists($collectionName) === false) {
-            $this->createCollection($collectionName);
+        if ($this->collectionExists(collectionName: $collectionName) === false) {
+            $this->createCollection(name: $collectionName);
         }
 
         return [

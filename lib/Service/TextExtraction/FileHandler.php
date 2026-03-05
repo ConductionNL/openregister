@@ -88,7 +88,14 @@ class FileHandler implements TextExtractionHandlerInterface
      */
     public function extractText(int $sourceId, array $sourceMeta, bool $force=false): array
     {
-        $this->logger->info(message: '[FileHandler] Extracting text from file', context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $sourceId]);
+        $this->logger->info(
+            message: '[FileHandler] Extracting text from file',
+            context: [
+                'file'   => __FILE__,
+                'line'   => __LINE__,
+                'fileId' => $sourceId,
+            ]
+        );
 
         // Get file node from Nextcloud.
         $files = $this->rootFolder->getById($sourceId);
@@ -113,7 +120,7 @@ class FileHandler implements TextExtractionHandlerInterface
         $checksum = hash('sha256', $text);
 
         // Detect language (simplified - can be enhanced).
-        $language = $this->detectLanguage($text);
+        $language = $this->detectLanguage(_text: $text);
 
         return [
             'source_type'         => 'file',
@@ -201,7 +208,7 @@ class FileHandler implements TextExtractionHandlerInterface
     public function getSourceTimestamp(int $sourceId): int
     {
         try {
-            $ncFile = $this->getSourceMetadata($sourceId);
+            $ncFile = $this->getSourceMetadata(sourceId: $sourceId);
             return (int) ($ncFile['mtime'] ?? time());
         } catch (DoesNotExistException $e) {
             return time();

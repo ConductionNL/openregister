@@ -1204,7 +1204,7 @@ class ConfigurationController extends Controller
             if (count($existingConfigs) > 0) {
                 return new JSONResponse(
                     data: [
-                        'error'                   => $this->getExistingConfigErrorMessage($appId),
+                        'error'                   => $this->getExistingConfigErrorMessage(appId: $appId),
                         'existingConfigurationId' => $existingConfigs[0]->getId(),
                     ],
                     statusCode: 409
@@ -1240,8 +1240,9 @@ class ConfigurationController extends Controller
 
             $configuration = $this->configurationMapper->insert($configuration);
 
+            $msg = '[ConfigurationController] Created configuration'." entity with ID {$configuration->getId()} for app {$appId}";
             $this->logger->info(
-                message: "[ConfigurationController] Created configuration entity with ID {$configuration->getId()} for app {$appId}",
+                message: $msg,
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
 
@@ -1264,8 +1265,9 @@ class ConfigurationController extends Controller
             // But we need to save the sync status.
             $this->configurationMapper->update($configuration);
 
+            $msg = '[ConfigurationController] Successfully imported'." configuration {$configuration->getTitle()} from {$sourceType}";
             $this->logger->info(
-                message: "[ConfigurationController] Successfully imported configuration {$configuration->getTitle()} from {$sourceType}",
+                message: $msg,
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
 
@@ -1318,7 +1320,7 @@ class ConfigurationController extends Controller
     public function importFromGitHub(): JSONResponse
     {
         return $this->importFromSource(
-            fetchConfig: fn(array $params) => $this->fetchConfigFromGitHub($params),
+            fetchConfig: fn(array $params) => $this->fetchConfigFromGitHub(params: $params),
             params: $this->request->getParams(),
             sourceType: 'github'
         );
@@ -1340,7 +1342,7 @@ class ConfigurationController extends Controller
     public function importFromGitLab(): JSONResponse
     {
         return $this->importFromSource(
-            fetchConfig: fn(array $params) => $this->fetchConfigFromGitLab($params),
+            fetchConfig: fn(array $params) => $this->fetchConfigFromGitLab(params: $params),
             params: $this->request->getParams(),
             sourceType: 'gitlab'
         );
@@ -1362,7 +1364,7 @@ class ConfigurationController extends Controller
     public function importFromUrl(): JSONResponse
     {
         return $this->importFromSource(
-            fetchConfig: fn(array $params) => $this->fetchConfigFromUrl($params),
+            fetchConfig: fn(array $params) => $this->fetchConfigFromUrl(params: $params),
             params: $this->request->getParams(),
             sourceType: 'url'
         );
@@ -1503,7 +1505,7 @@ class ConfigurationController extends Controller
         $path = ltrim($path, '/');
         if (empty($path) === true) {
             $title          = $configuration->getTitle();
-            $snakeCaseTitle = $this->toSnakeCase($title ?? 'configuration');
+            $snakeCaseTitle = $this->toSnakeCase(string: $title ?? 'configuration');
             $path           = $snakeCaseTitle.'_openregister.json';
         }
 

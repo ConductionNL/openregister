@@ -470,7 +470,7 @@ class EntityRecognitionHandler
             // Add entity types filter if specified.
             if ($entityTypes !== null && empty($entityTypes) === false) {
                 // Map our entity types to Presidio entity types.
-                $presidioEntities = $this->mapToPresidioEntityTypes($entityTypes);
+                $presidioEntities = $this->mapToPresidioEntityTypes(entityTypes: $entityTypes);
                 if (empty($presidioEntities) === false) {
                     $requestBody['entities'] = $presidioEntities;
                 }
@@ -541,7 +541,7 @@ class EntityRecognitionHandler
                 $end   = $result['end'] ?? 0;
                 $value = substr($text, $start, ($end - $start));
 
-                $entityType = $this->mapFromPresidioEntityType($result['entity_type'] ?? 'UNKNOWN');
+                $entityType = $this->mapFromPresidioEntityType(presidioType: $result['entity_type'] ?? 'UNKNOWN');
 
                 $entities[] = [
                     'type'           => $entityType,
@@ -601,7 +601,7 @@ class EntityRecognitionHandler
 
             // Add entity types filter if specified.
             if ($entityTypes !== null && empty($entityTypes) === false) {
-                $presidioEntities = $this->mapToPresidioEntityTypes($entityTypes);
+                $presidioEntities = $this->mapToPresidioEntityTypes(entityTypes: $entityTypes);
                 if (empty($presidioEntities) === false) {
                     $requestBody['entities'] = $presidioEntities;
                 }
@@ -678,7 +678,7 @@ class EntityRecognitionHandler
                 // OpenAnonymiser includes the text directly.
                 $value = $result['text'] ?? substr($text, $start, ($end - $start));
 
-                $entityType = $this->mapFromPresidioEntityType($result['entity_type'] ?? 'UNKNOWN');
+                $entityType = $this->mapFromPresidioEntityType(presidioType: $result['entity_type'] ?? 'UNKNOWN');
 
                 $entities[] = [
                     'type'           => $entityType,
@@ -773,7 +773,10 @@ class EntityRecognitionHandler
     {
         // TODO: Implement LLM-based entity extraction.
         // For now, fall back to regex.
-        $this->logger->debug(message: '[EntityRecognitionHandler] LLM extraction not yet implemented, using regex fallback', context: ['file' => __FILE__, 'line' => __LINE__]);
+        $this->logger->debug(
+            message: '[EntityRecognitionHandler] LLM extraction not yet implemented, using regex fallback',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
 
         return $this->detectWithRegex(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold);
     }//end detectWithLLM()

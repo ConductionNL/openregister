@@ -148,7 +148,7 @@ class SaveObjects
         }
 
         // Generate analysis and cache.
-        $analysis = $this->performComprehensiveSchemaAnalysis($schema);
+        $analysis = $this->performComprehensiveSchemaAnalysis(schema: $schema);
         self::$schemaAnalysisCache[$schemaId] = $analysis;
 
         return $analysis;
@@ -235,7 +235,7 @@ class SaveObjects
         // This prevents PostgreSQL "ON CONFLICT DO UPDATE cannot affect row a second time" errors.
         $dedupeResult = ['objects' => $objects, 'duplicateCount' => 0, 'duplicateIds' => []];
         if ($deduplicateIds === true) {
-            $dedupeResult = $this->deduplicateBatchObjects($objects);
+            $dedupeResult = $this->deduplicateBatchObjects(objects: $objects);
             $objects      = $dedupeResult['objects'];
 
             // Log if duplicates were found and removed.
@@ -461,7 +461,7 @@ class SaveObjects
         Register|string|int|null $register=null,
         Schema|string|int|null $schema=null
     ): array {
-        $chunkSize = $this->calculateOptimalChunkSize(count($processedObjects));
+        $chunkSize = $this->calculateOptimalChunkSize(totalObjects: count($processedObjects));
         $chunks    = array_chunk($processedObjects, $chunkSize);
 
         foreach ($chunks as $chunkIndex => $objectsChunk) {
@@ -658,7 +658,7 @@ class SaveObjects
         } else {
             $registerId = $register;
             // PERFORMANCE: Use cached register loading.
-            $this->loadRegisterWithCache($registerId);
+            $this->loadRegisterWithCache(registerId: $registerId);
         }
 
         // Initialize schema variables before conditional assignment.
@@ -673,12 +673,12 @@ class SaveObjects
         } else {
             $schemaId = $schema;
             // PERFORMANCE: Use cached schema loading.
-            $schemaObj = $this->loadSchemaWithCache($schemaId);
+            $schemaObj = $this->loadSchemaWithCache(schemaId: $schemaId);
         }
 
         // PERFORMANCE OPTIMIZATION: Single cached schema analysis for all objects.
         $schemaCache    = [$schemaId => $schemaObj];
-        $schemaAnalysis = [$schemaId => $this->getSchemaAnalysisWithCache($schemaObj)];
+        $schemaAnalysis = [$schemaId => $this->getSchemaAnalysisWithCache(schema: $schemaObj)];
 
         // PERFORMANCE OPTIMIZATION: Pre-calculate metadata once.
         $currentUser  = $this->userSession->getUser();
@@ -1181,7 +1181,7 @@ class SaveObjects
                             $relations     = array_merge($relations, $itemRelations);
                         } else if (is_string($item) === true && empty($item) === false && trim($item) !== '') {
                             // Check if the string looks like a reference.
-                            if ($this->isReference($item) === true) {
+                            if ($this->isReference(value: $item) === true) {
                                 $relations[$currentPath.'.'.$index] = $item;
                             }
                         }
@@ -1207,7 +1207,7 @@ class SaveObjects
 
                 // If not determined by schema, check for reference patterns.
                 if ($treatAsRelation === false) {
-                    $treatAsRelation = $this->isReference($value);
+                    $treatAsRelation = $this->isReference(value: $value);
                 }
 
                 if ($treatAsRelation === true) {
@@ -1265,7 +1265,7 @@ class SaveObjects
             // AND must not contain spaces or common text words.
             if ((strpos($value, '-') !== false || strpos($value, '_') !== false)
                 && preg_match('/\s/', $value) === false
-                && $this->isCommonTextWord($value) === false
+                && $this->isCommonTextWord(value: $value) === false
             ) {
                 return true;
             }

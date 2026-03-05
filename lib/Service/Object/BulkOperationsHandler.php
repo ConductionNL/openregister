@@ -606,7 +606,8 @@ class BulkOperationsHandler
                     ]
                 );
 
-                // For magic tables, we return the count but no UUIDs since magic tables don't always track them individually.
+                // For magic tables, we return the count but no UUIDs since magic
+                // tables don't always track them individually.
                 $totalDeletedUuids = [];
             } else {
                 // Objects are in BLOB STORAGE - delete from there.

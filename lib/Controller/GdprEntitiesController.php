@@ -164,7 +164,7 @@ class GdprEntitiesController extends Controller
             $result   = $qb->executeQuery();
             $entities = [];
 
-            while ($row = $result->fetch()) {
+            while (($row = $result->fetch()) !== false) {
                 $entities[] = [
                     'id'            => (int) $row['id'],
                     'uuid'          => $row['uuid'],
@@ -284,7 +284,7 @@ class GdprEntitiesController extends Controller
             $result = $qb->executeQuery();
             $types  = [];
 
-            while ($row = $result->fetch()) {
+            while (($row = $result->fetch()) !== false) {
                 $types[] = $row['type'];
             }
 
@@ -332,7 +332,7 @@ class GdprEntitiesController extends Controller
             $result     = $qb->executeQuery();
             $categories = [];
 
-            while ($row = $result->fetch()) {
+            while (($row = $result->fetch()) !== false) {
                 $categories[] = $row['category'];
             }
 
@@ -391,7 +391,7 @@ class GdprEntitiesController extends Controller
             $typeResult = $typeQb->executeQuery();
             $byType     = [];
 
-            while ($row = $typeResult->fetch()) {
+            while (($row = $typeResult->fetch()) !== false) {
                 $byType[$row['type']] = (int) $row['count'];
             }
 
@@ -408,7 +408,7 @@ class GdprEntitiesController extends Controller
             $catResult  = $catQb->executeQuery();
             $byCategory = [];
 
-            while ($row = $catResult->fetch()) {
+            while (($row = $catResult->fetch()) !== false) {
                 $byCategory[$row['category']] = (int) $row['count'];
             }
 

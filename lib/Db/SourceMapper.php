@@ -120,7 +120,7 @@ class SourceMapper extends QBMapper
         IEventDispatcher $eventDispatcher,
         IAppConfig $appConfig
     ) {
-        parent::__construct($db, 'openregister_sources', Source::class);
+        parent::__construct(db: $db, tableName: 'openregister_sources', entityClass: Source::class);
         $this->organisationMapper = $organisationMapper;
         $this->userSession        = $userSession;
         $this->groupManager       = $groupManager;
@@ -150,7 +150,7 @@ class SourceMapper extends QBMapper
             );
 
         // Apply organisation filter (all users including admins must have active org).
-        $this->applyOrganisationFilter($qb);
+        $this->applyOrganisationFilter(qb: $qb);
 
         return $this->findEntity(query: $qb);
     }//end find()
@@ -209,7 +209,7 @@ class SourceMapper extends QBMapper
         }
 
         // Apply organisation filter (all users including admins must have active org).
-        $this->applyOrganisationFilter($qb);
+        $this->applyOrganisationFilter(qb: $qb);
 
         return $this->findEntities(query: $qb);
     }//end findAll()
@@ -240,12 +240,12 @@ class SourceMapper extends QBMapper
         }
 
         // Auto-set organisation from active session.
-        $this->setOrganisationOnCreate($entity);
+        $this->setOrganisationOnCreate(entity: $entity);
 
-        $entity = parent::insert($entity);
+        $entity = parent::insert(entity: $entity);
 
         // Dispatch creation event.
-        $this->eventDispatcher->dispatchTyped(new SourceCreatedEvent($entity));
+        $this->eventDispatcher->dispatchTyped(new SourceCreatedEvent(source: $entity));
 
         return $entity;
     }//end insert()
@@ -264,7 +264,7 @@ class SourceMapper extends QBMapper
         $this->verifyRbacPermission(action: 'update', entityType: 'source');
 
         // Verify user has access to this organisation.
-        $this->verifyOrganisationAccess($entity);
+        $this->verifyOrganisationAccess(entity: $entity);
 
         // Get old state before update.
         $oldEntity = $this->find(id: $entity->getId());
@@ -273,10 +273,10 @@ class SourceMapper extends QBMapper
             $entity->setUpdated(new DateTime());
         }
 
-        $entity = parent::update($entity);
+        $entity = parent::update(entity: $entity);
 
         // Dispatch update event.
-        $this->eventDispatcher->dispatchTyped(new SourceUpdatedEvent($entity, $oldEntity));
+        $this->eventDispatcher->dispatchTyped(new SourceUpdatedEvent(newSource: $entity, oldSource: $oldEntity));
 
         return $entity;
     }//end update()
@@ -297,12 +297,12 @@ class SourceMapper extends QBMapper
         $this->verifyRbacPermission(action: 'delete', entityType: 'source');
 
         // Verify user has access to this organisation.
-        $this->verifyOrganisationAccess($entity);
+        $this->verifyOrganisationAccess(entity: $entity);
 
-        $entity = parent::delete($entity);
+        $entity = parent::delete(entity: $entity);
 
         // Dispatch deletion event.
-        $this->eventDispatcher->dispatchTyped(new SourceDeletedEvent($entity));
+        $this->eventDispatcher->dispatchTyped(new SourceDeletedEvent(source: $entity));
 
         return $entity;
     }//end delete()
@@ -349,6 +349,6 @@ class SourceMapper extends QBMapper
             $obj->setVersion(implode('.', $version));
         }
 
-        return $this->update($obj);
+        return $this->update(entity: $obj);
     }//end updateFromArray()
 }//end class

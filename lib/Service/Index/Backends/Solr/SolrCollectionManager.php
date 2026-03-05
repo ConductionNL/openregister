@@ -111,7 +111,7 @@ class SolrCollectionManager
         $baseCollection   = $this->config['objectCollection'] ?? $this->config['core'] ?? 'openregister';
         $tenantCollection = $this->httpClient->getTenantSpecificCollectionName($baseCollection);
 
-        if ($this->collectionExists($tenantCollection) === true) {
+        if ($this->collectionExists(collectionName: $tenantCollection) === true) {
             return $tenantCollection;
         }
 

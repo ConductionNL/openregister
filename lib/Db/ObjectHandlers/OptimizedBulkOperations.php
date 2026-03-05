@@ -248,7 +248,7 @@ class OptimizedBulkOperations
         $tableName = 'oc_openregister_objects';
 
         // Map object columns to actual database columns.
-        $dbColumns   = $this->mapObjectColumnsToDatabase($columns);
+        $dbColumns   = $this->mapObjectColumnsToDatabase(objectColumns: $columns);
         $objectCount = count($objects);
         $sql         = $this->buildMassiveInsertOnDuplicateKeyUpdateSQL(
             tableName: $tableName,
@@ -725,7 +725,7 @@ class OptimizedBulkOperations
                 // Only set if explicitly provided (for migrations or special cases).
                 $value = $objectData[$dbColumn] ?? null;
                 if ($value !== null && $value !== '') {
-                    return $this->convertDateTimeToMySQLFormat($value);
+                    return $this->convertDateTimeToMySQLFormat(value: $value);
                 }
                 return null;
             // Let database handle with DEFAULT CURRENT_TIMESTAMP.
@@ -734,7 +734,7 @@ class OptimizedBulkOperations
                 // Only set if explicitly provided (for migrations or special cases).
                 $value = $objectData[$dbColumn] ?? null;
                 if ($value !== null && $value !== '') {
-                    return $this->convertDateTimeToMySQLFormat($value);
+                    return $this->convertDateTimeToMySQLFormat(value: $value);
                 }
                 return null;
             // Let database handle with ON UPDATE CURRENT_TIMESTAMP.
@@ -747,7 +747,7 @@ class OptimizedBulkOperations
                     return null;
                     // These fields can be null.
                 }
-                return $this->convertDateTimeToMySQLFormat($value);
+                return $this->convertDateTimeToMySQLFormat(value: $value);
 
             case 'name':
                 // SIMPLE METADATA EXTRACTION: Look for 'naam' in object data.
@@ -841,7 +841,7 @@ class OptimizedBulkOperations
         foreach ($insertObjects as $objectData) {
             try {
                 // Create ObjectEntity from raw data for event dispatching.
-                $entity = $this->createEntityFromData($objectData);
+                $entity = $this->createEntityFromData(data: $objectData);
 
                 if ($entity !== null) {
                     $this->eventDispatcher->dispatchTyped(

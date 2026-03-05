@@ -101,14 +101,14 @@ class MagicOrganizationHandler
     ): void {
         $user = $this->userSession->getUser();
 
-        // Check if user is admin - admins can see all objects including those with null organization
+        // Check if user is admin - admins can see all objects including those with null organization.
         $isAdmin = false;
         if ($user !== null) {
             $userGroups = $this->groupManager->getUserGroupIds($user);
             $isAdmin    = in_array('admin', $userGroups, true);
         }
 
-        // Check if admin bypass is enabled
+        // Check if admin bypass is enabled.
         if ($adminBypassEnabled === true && $isAdmin === true) {
             $this->logger->debug(
                 message: '[MagicOrganizationHandler] Admin bypass enabled, skipping org filter',
@@ -117,7 +117,7 @@ class MagicOrganizationHandler
             return;
         }
 
-        // Get the active organization UUID(s) for the current user
+        // Get the active organization UUID(s) for the current user.
         $activeOrgUuids = $this->getActiveOrganizationUuids();
 
         if (empty($activeOrgUuids) === true) {
@@ -126,15 +126,15 @@ class MagicOrganizationHandler
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
 
-            // No active organization - only show published objects (NOT null org objects for non-admins)
+            // No active organization - only show published objects (NOT null org objects for non-admins).
             $conditions = [];
 
-            // Admins can see objects with null organization
+            // Admins can see objects with null organization.
             if ($isAdmin === true) {
                 $conditions[] = $qb->expr()->isNull('t._organisation');
             }
 
-            // Published objects (if allowed)
+            // Published objects (if allowed).
             if ($allowPublishedAccess === true) {
                 $now          = (new DateTime())->format('Y-m-d H:i:s');
                 $conditions[] = $qb->expr()->andX(
@@ -147,7 +147,7 @@ class MagicOrganizationHandler
                 );
             }
 
-            // If no conditions (non-admin, no published access), return no results
+            // If no conditions (non-admin, no published access), return no results.
             if (empty($conditions) === true) {
                 $qb->andWhere('1 = 0');
                 return;
@@ -157,10 +157,10 @@ class MagicOrganizationHandler
             return;
         }//end if
 
-        // Build conditions for organization filtering
+        // Build conditions for organization filtering.
         $conditions = [];
 
-        // Condition 1: Objects belonging to the user's active organization(s)
+        // Condition 1: Objects belonging to the user's active organization(s).
         if (count($activeOrgUuids) === 1) {
             $conditions[] = $qb->expr()->eq(
                 't._organisation',
@@ -173,12 +173,12 @@ class MagicOrganizationHandler
             );
         }
 
-        // Condition 2: Objects with null organization - ONLY for admin users
+        // Condition 2: Objects with null organization - ONLY for admin users.
         if ($isAdmin === true) {
             $conditions[] = $qb->expr()->isNull('t._organisation');
         }
 
-        // Condition 3: Published objects from other organizations (if allowed)
+        // Condition 3: Published objects from other organizations (if allowed).
         if ($allowPublishedAccess === true) {
             $now          = (new DateTime())->format('Y-m-d H:i:s');
             $conditions[] = $qb->expr()->andX(
@@ -191,7 +191,7 @@ class MagicOrganizationHandler
             );
         }
 
-        // Apply OR of all conditions
+        // Apply OR of all conditions.
         $qb->andWhere($qb->expr()->orX(...$conditions));
 
         $this->logger->debug(
@@ -218,10 +218,10 @@ class MagicOrganizationHandler
     public function getActiveOrganizationUuids(): array
     {
         try {
-            // Get OrganisationService from container (lazy loading to avoid circular dependencies)
+            // Get OrganisationService from container (lazy loading to avoid circular dependencies).
             $organisationService = $this->container->get('OCA\OpenRegister\Service\OrganisationService');
 
-            // Get active organisations including parent chain
+            // Get active organisations including parent chain.
             $orgUuids = $organisationService->getUserActiveOrganisations();
 
             $this->logger->debug(
@@ -238,7 +238,7 @@ class MagicOrganizationHandler
                 return $orgUuids;
             }
 
-            // Fallback: try to get just the active organisation
+            // Fallback: try to get just the active organisation.
             $activeOrg = $organisationService->getActiveOrganisation();
             if ($activeOrg !== null) {
                 $this->logger->debug(
@@ -291,7 +291,7 @@ class MagicOrganizationHandler
     public function belongsToActiveOrganization(?string $objectOrganisation): bool
     {
         if ($objectOrganisation === null) {
-            // Objects with null organization are only accessible to admin users
+            // Objects with null organization are only accessible to admin users.
             $user = $this->userSession->getUser();
             if ($user !== null) {
                 $userGroups = $this->groupManager->getUserGroupIds($user);
@@ -314,7 +314,11 @@ class MagicOrganizationHandler
     public function getDefaultOrganizationUuid(): ?string
     {
         $defaultOrgId = $this->appConfig->getValueString('openregister', 'defaultOrganisation', '');
-        return $defaultOrgId !== '' ? $defaultOrgId : null;
+        if ($defaultOrgId !== '') {
+            return $defaultOrgId;
+        }
+
+        return null;
     }//end getDefaultOrganizationUuid()
 
     /**
@@ -349,7 +353,7 @@ class MagicOrganizationHandler
     {
         $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
 
-        // Default to true when no config exists (matches ConfigurationSettingsHandler defaults)
+        // Default to true when no config exists (matches ConfigurationSettingsHandler defaults).
         if (empty($multitenancyConfig) === true) {
             return true;
         }
@@ -359,7 +363,7 @@ class MagicOrganizationHandler
             return true;
         }
 
-        // Default to true if not explicitly set (matches ConfigurationSettingsHandler)
+        // Default to true if not explicitly set (matches ConfigurationSettingsHandler).
         return $multitenancyData['adminOverride'] ?? true;
     }//end isAdminOverrideEnabled()
 

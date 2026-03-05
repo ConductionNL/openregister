@@ -83,7 +83,7 @@ class AuditHandler
 
         try {
             // Prepare filters for audit trail mapper.
-            $auditFilters = $this->prepareFilters($uuid, $filters);
+            $auditFilters = $this->prepareFilters(uuid: $uuid, filters: $filters);
 
             // Fetch logs from mapper.
             $logs = $this->auditTrailMapper->findAll(filters: $auditFilters);
@@ -141,8 +141,8 @@ class AuditHandler
             $registerMatch      = ($objectRegisterNorm === $reqRegisterNorm);
 
             // Normalize schema (handle array/object/string).
-            $objectSchemaId   = $this->extractSchemaId($objectSchema);
-            $objectSchemaSlug = $this->extractSchemaSlug($objectSchema);
+            $objectSchemaId   = $this->extractSchemaId(schema: $objectSchema);
+            $objectSchemaSlug = $this->extractSchemaSlug(schema: $objectSchema);
 
             $requestedSchemaNorm  = strtolower($requestedSchema);
             $objectSchemaIdNorm   = strtolower((string) $objectSchemaId);

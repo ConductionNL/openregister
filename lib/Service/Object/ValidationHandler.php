@@ -272,7 +272,7 @@ class ValidationHandler
         ?int $limit=null,
         int $offset=0
     ): array {
-        // Get the schema and register entities
+        // Get the schema and register entities.
         try {
             $schema   = $this->schemaMapper->find($schemaId);
             $register = $this->registerMapper->find($registerId);
@@ -295,7 +295,7 @@ class ValidationHandler
             ];
         }//end try
 
-        // Check if schema uses magic tables
+        // Check if schema uses magic tables.
         $usesMagic  = false;
         $properties = $schema->getProperties() ?? [];
         foreach ($properties as $property) {
@@ -305,20 +305,25 @@ class ValidationHandler
             }
         }
 
-        // Load objects with optional limit/offset for API-level chunking
+        // Load objects with optional limit/offset for API-level chunking.
+        $storageType = 'blob_storage';
+        if ($usesMagic === true) {
+            $storageType = 'magic_table';
+        }
+
         $this->logger->info(
             message: '[ValidationHandler] Loading objects for validation',
             context: [
                 'file'         => __FILE__,
                 'line'         => __LINE__,
                 'schema_id'    => $schemaId,
-                'storage_type' => $usesMagic ? 'magic_table' : 'blob_storage',
+                'storage_type' => $storageType,
                 'limit'        => $limit,
                 'offset'       => $offset,
             ]
         );
 
-        // Load objects based on storage type
+        // Load objects based on storage type.
         $allObjects = [];
         if ($usesMagic === true) {
             try {
@@ -342,7 +347,7 @@ class ValidationHandler
                 ];
             }
         } else {
-            // For blob storage
+            // For blob storage.
             try {
                 $allObjects = $this->objectEntityMapper->findBySchema($schemaId);
             } catch (\Exception $e) {
@@ -367,7 +372,7 @@ class ValidationHandler
 
         $totalObjects = count($allObjects);
 
-        // Apply limit/offset for API-level chunking (allows processing in smaller batches via API calls)
+        // Apply limit/offset for API-level chunking (allows processing in smaller batches via API calls).
         if ($limit !== null || $offset > 0) {
             $allObjects = array_slice($allObjects, $offset, $limit);
             $this->logger->info(
@@ -386,24 +391,28 @@ class ValidationHandler
 
         $objectsToProcess = count($allObjects);
 
-        // Calculate chunk size based on batch size (for internal memory management)
-        // When limit is provided, use smaller internal chunks
+        // Calculate chunk size based on batch size (for internal memory management).
+        // When limit is provided, use smaller internal chunks.
         if ($objectsToProcess <= 1000) {
             $chunkSize = $objectsToProcess;
-            // Process all at once
+            // Process all at once.
         } else if ($objectsToProcess <= 10000) {
             $chunkSize = 2000;
         } else if ($objectsToProcess <= 50000) {
             $chunkSize = 3000;
         } else if ($objectsToProcess <= 200000) {
             $chunkSize = 2000;
-            // Smaller chunks for better memory management
+            // Smaller chunks for better memory management.
         } else {
             $chunkSize = 1000;
-            // Very small chunks for 671K+ datasets
+            // Very small chunks for 671K+ datasets.
         }
 
-        $estimatedChunks = $objectsToProcess > 0 ? ceil($objectsToProcess / $chunkSize) : 0;
+        if ($objectsToProcess > 0) {
+            $estimatedChunks = ceil($objectsToProcess / $chunkSize);
+        } else {
+            $estimatedChunks = 0;
+        }//end if
 
         $this->logger->info(
             message: '[ValidationHandler] Starting chunked validation',
@@ -422,28 +431,33 @@ class ValidationHandler
         $totalUpdated   = 0;
         $totalFailed    = 0;
 
-        // Process in chunks with aggressive memory cleanup
-        // Use $chunkOffset to avoid conflict with $offset parameter
+        // Process in chunks with aggressive memory cleanup.
+        // Use $chunkOffset to avoid conflict with $offset parameter.
         for ($chunkOffset = 0; $chunkOffset < $objectsToProcess; $chunkOffset += $chunkSize) {
             $currentChunk = ($chunkOffset / $chunkSize) + 1;
 
-            // Extract just this chunk
+            // Extract just this chunk.
             $objectsChunk = array_slice($allObjects, $chunkOffset, $chunkSize);
 
             if (empty($objectsChunk) === true) {
                 break;
             }
 
-            // Convert objects to arrays for bulk processing
+            // Convert objects to arrays for bulk processing.
             $objectsData = [];
             foreach ($objectsChunk as $object) {
                 if (is_array($object) === true) {
-                    // Already an array from magic table
+                    // Already an array from magic table.
                     $objectsData[] = $object;
                 } else {
-                    // ObjectEntity - get the object data
+                    // ObjectEntity - get the object data.
                     $objectsData[] = $object->getObject();
                 }
+            }
+
+            $progressPct = 100;
+            if ($objectsToProcess > 0) {
+                $progressPct = round(($chunkOffset / $objectsToProcess) * 100, 1);
             }
 
             $this->logger->info(
@@ -454,21 +468,21 @@ class ValidationHandler
                     'schema_id'    => $schemaId,
                     'chunk'        => $currentChunk.'/'.$estimatedChunks,
                     'chunk_size'   => count($objectsChunk),
-                    'progress_pct' => $objectsToProcess > 0 ? round(($chunkOffset / $objectsToProcess) * 100, 1) : 100,
+                    'progress_pct' => $progressPct,
                     'memory_usage' => round(memory_get_usage(true) / 1024 / 1024).' MB',
                 ]
             );
 
-            // Use bulk save operation for this chunk
+            // Use bulk save operation for this chunk.
             try {
-                // Get the ObjectService instance from the saveCallback
+                // Get the ObjectService instance from the saveCallback.
                 $objectService = $saveCallback[0] ?? null;
 
                 if ($objectService === null || method_exists($objectService, 'saveObjects') === false) {
                     throw new \Exception('Cannot access bulk save method');
                 }
 
-                // Use bulk saveObjects method for this chunk
+                // Use bulk saveObjects method for this chunk.
                 $result = $objectService->saveObjects(
                     objects: $objectsData,
                     register: $registerId,
@@ -476,12 +490,12 @@ class ValidationHandler
                     _rbac: false,
                     _multitenancy: false,
                     validation: true,
-                // Enable validation
+                // Enable validation.
                     events: false,
-                // Disable events for performance
+                // Disable events for performance.
                     deduplicateIds: false,
                     enrich: true
-                // Enable enrichment to update metadata like _name
+                // Enable enrichment to update metadata like _name.
                 );
 
                 $statistics     = $result['statistics'] ?? [];
@@ -519,16 +533,16 @@ class ValidationHandler
                         'error'       => $e->getMessage(),
                     ]
                 );
-                // Continue with next chunk despite error
+                // Continue with next chunk despite error.
                 $totalFailed += count($objectsChunk);
             }//end try
 
-            // Aggressive memory cleanup after each chunk
+            // Aggressive memory cleanup after each chunk.
             unset($objectsChunk, $objectsData, $result);
             gc_collect_cycles();
         }//end for
 
-        // Final cleanup
+        // Final cleanup.
         unset($allObjects);
         gc_collect_cycles();
 

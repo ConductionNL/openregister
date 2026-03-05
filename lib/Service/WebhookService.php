@@ -651,7 +651,7 @@ class WebhookService
     public function interceptRequest(IRequest $request, string $eventType): array
     {
         // Find webhooks configured for this event type.
-        $webhooks = $this->findWebhooksForInterception($eventType);
+        $webhooks = $this->findWebhooksForInterception(eventType: $eventType);
 
         if (empty($webhooks) === true) {
             // No webhooks configured, return original request data.
@@ -699,7 +699,7 @@ class WebhookService
                 // Process response if webhook is configured to handle responses.
                 // Note: This is currently limited as we're using fire-and-forget delivery.
                 // TODO: Implement response handling if needed.
-                if ($success === true && $this->shouldProcessResponse($webhook) === true) {
+                if ($success === true && $this->shouldProcessResponse(webhook: $webhook) === true) {
                     $this->logger->info(
                         message: '[WebhookService] Webhook delivery successful but response processing not yet implemented',
                         context: [
@@ -767,7 +767,7 @@ class WebhookService
             $events = $webhook->getEventsArray();
             if (empty($events) === false) {
                 // Check if event type matches.
-                $eventClass = $this->eventTypeToEventClass($eventType);
+                $eventClass = $this->eventTypeToEventClass(eventType: $eventType);
                 if ($webhook->matchesEvent($eventClass) === false) {
                     continue;
                 }

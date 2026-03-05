@@ -205,11 +205,11 @@ class WebhookLog extends Entity implements JsonSerializable
     public function setPayloadArray(?array $payload): void
     {
         if ($payload === null) {
-            $this->setPayload(null);
+            $this->setPayload(payload: null);
             return;
         }
 
-        $this->setPayload(json_encode($payload));
+        $this->setPayload(payload: json_encode($payload));
     }//end setPayloadArray()
 
     /**

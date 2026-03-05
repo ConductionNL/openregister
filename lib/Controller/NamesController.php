@@ -496,13 +496,13 @@ class NamesController extends Controller
         $startTime = microtime(true);
 
         try {
-            // Capture old cache stats before clearing
+            // Capture old cache stats before clearing.
             $oldStats = $this->objectCacheService->getStats();
 
-            // Clear existing name cache before warmup
+            // Clear existing name cache before warmup.
             $this->objectCacheService->clearNameCache();
 
-            // Warmup and capture new stats
+            // Warmup and capture new stats.
             $loadedCount   = $this->objectCacheService->warmupNameCache();
             $newStats      = $this->objectCacheService->getStats();
             $executionTime = round((microtime(true) - $startTime) * 1000, 2);

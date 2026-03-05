@@ -164,7 +164,7 @@ class MetricsService
                             'user_id'       => $qb->createNamedParameter($userId),
                             'status'        => $qb->createNamedParameter($status),
                             'duration_ms'   => $qb->createNamedParameter($durationMs),
-                            'metadata'      => $qb->createNamedParameter($this->encodeMetadata($metadata)),
+                            'metadata'      => $qb->createNamedParameter($this->encodeMetadata(metadata: $metadata)),
                             'error_message' => $qb->createNamedParameter($errorMessage),
                             'created_at'    => $qb->createNamedParameter(time()),
                         ],
@@ -346,7 +346,7 @@ class MetricsService
             // Store statistics for this search type.
             $stats[$type] = [
                 'count'  => (int) ($row['count'] ?? 0),
-                'avg_ms' => $this->roundAverageMs($row['avg_ms']),
+                'avg_ms' => $this->roundAverageMs(avgMs: $row['avg_ms']),
                 'min_ms' => (int) ($row['min_ms'] ?? 0),
                 'max_ms' => (int) ($row['max_ms'] ?? 0),
             ];
@@ -425,7 +425,7 @@ class MetricsService
             'daily_vectors_added'   => $growthData,
             'current_storage_bytes' => $totalBytes,
             'current_storage_mb'    => round($totalMB, 2),
-            'avg_vectors_per_day'   => $this->calculateAverageVectorsPerDay($growthData),
+            'avg_vectors_per_day'   => $this->calculateAverageVectorsPerDay(growthData: $growthData),
             'period_days'           => $days,
         ];
     }//end getStorageGrowth()
@@ -447,10 +447,10 @@ class MetricsService
     public function getDashboardMetrics(): array
     {
         return [
-            'files_processed' => $this->getFilesProcessedPerDay(30),
-            'embedding_stats' => $this->getEmbeddingStats(30),
-            'search_latency'  => $this->getSearchLatencyStats(7),
-            'storage_growth'  => $this->getStorageGrowth(30),
+            'files_processed' => $this->getFilesProcessedPerDay(days: 30),
+            'embedding_stats' => $this->getEmbeddingStats(days: 30),
+            'search_latency'  => $this->getSearchLatencyStats(days: 7),
+            'storage_growth'  => $this->getStorageGrowth(days: 30),
         ];
     }//end getDashboardMetrics()
 

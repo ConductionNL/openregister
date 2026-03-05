@@ -134,7 +134,7 @@ class VectorizationService
         );
 
         // Get strategy for entity type.
-        $strategy = $this->getStrategy($entityType);
+        $strategy = $this->getStrategy(entityType: $entityType);
 
         try {
             // Strategy fetches entities to process.

@@ -504,7 +504,7 @@ class FileTextController extends Controller
             }
 
             // Build entities array in the format expected by anonymizeDocument.
-            // Format: [['text' => 'value', 'entityType' => 'TYPE', 'key' => 'unique_key'], ...]
+            // Format: [['text' => 'value', 'entityType' => 'TYPE', 'key' => 'unique_key'], ...].
             $entities        = [];
             $processedValues = [];
             // Track unique values to avoid duplicates.

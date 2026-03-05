@@ -152,8 +152,9 @@ class RegisterService
      * Retrieves register entity by ID with optional extended data.
      * Extensions can include related entities like schemas, objects, etc.
      *
-     * @param int|string    $id      The ID of the register to find
-     * @param array<string> $_extend Optional array of extension names to include
+     * @param int|string    $id            The ID of the register to find.
+     * @param array<string> $_extend       Optional array of extension names to include.
+     * @param bool          $_multitenancy Whether to apply multitenancy filtering.
      *
      * @return Register The found register entity
      *
@@ -178,7 +179,8 @@ class RegisterService
      * @param array<string, mixed>|null $filters          Filters to apply (e.g., ['organisation_id' => 1])
      * @param array<string, mixed>|null $searchConditions Search conditions for advanced filtering
      * @param array<string, mixed>|null $searchParams     Search parameters for query building
-     * @param array<string>             $_extend          Optional extensions to include in results
+     * @param array<string>             $_extend          Optional extensions to include in results.
+     * @param bool                      $_multitenancy    Whether to apply multitenancy filtering.
      *
      * @return Register[] Array of found register entities
      *
@@ -255,7 +257,7 @@ class RegisterService
             message: '[RegisterService] 🔹 RegisterService: Calling ensureRegisterFolderExists',
             context: ['file' => __FILE__, 'line' => __LINE__]
         );
-        $this->ensureRegisterFolderExists($register);
+        $this->ensureRegisterFolderExists(entity: $register);
         $this->logger->info(
             message: '[RegisterService] 🔹 RegisterService: Folder creation completed',
             context: ['file' => __FILE__, 'line' => __LINE__]
@@ -280,7 +282,7 @@ class RegisterService
         $register = $this->registerMapper->updateFromArray(id: $id, object: $data);
 
         // Ensure folder exists for the updated register (handles legacy folder properties).
-        $this->ensureRegisterFolderExists($register);
+        $this->ensureRegisterFolderExists(entity: $register);
 
         return $register;
     }//end updateFromArray()
@@ -327,7 +329,10 @@ class RegisterService
                 $folderNode = $this->fileService->createEntityFolder($entity);
 
                 if ($folderNode === null) {
-                    $this->logger->warning(message: "[RegisterService] Failed to create folder for register {$entity->getId()}", context: ['file' => __FILE__, 'line' => __LINE__]);
+                    $this->logger->warning(
+                        message: "[RegisterService] Failed to create folder for register {$entity->getId()}",
+                        context: ['file' => __FILE__, 'line' => __LINE__]
+                    );
                     return;
                 }
 
@@ -339,11 +344,17 @@ class RegisterService
 
                 $folderId   = $folderNode->getId();
                 $registerId = $entity->getId();
-                $this->logger->info(message: "[RegisterService] Created folder with ID {$folderId} for register {$registerId}", context: ['file' => __FILE__, 'line' => __LINE__]);
+                $this->logger->info(
+                    message: "[RegisterService] Created folder with ID {$folderId} for register {$registerId}",
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
             } catch (Exception $e) {
                 // Log the error but don't fail the register creation/update.
                 // The register can still function without a folder.
-                $this->logger->error(message: "[RegisterService] Failed to create folder for register {$entity->getId()}: ".$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
+                $this->logger->error(
+                    message: "[RegisterService] Failed to create folder for register {$entity->getId()}: ".$e->getMessage(),
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
             }//end try
         }//end if
     }//end ensureRegisterFolderExists()
@@ -363,7 +374,7 @@ class RegisterService
      */
     public function getSchemaObjectCounts(int $registerId, array $schemas): array
     {
-        // Initialize result array
+        // Initialize result array.
         $result = [];
 
         if (empty($schemas) === true) {
@@ -376,7 +387,7 @@ class RegisterService
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
 
-            // Build a UNION query that counts objects for each schema
+            // Build a UNION query that counts objects for each schema.
             $unionQueries = [];
             $blobSchemas  = [];
 
@@ -395,7 +406,7 @@ class RegisterService
                     context: ['file' => __FILE__, 'line' => __LINE__]
                 );
 
-                // Check if this schema uses magic table (has 'table' configuration in properties)
+                // Check if this schema uses magic table (has 'table' configuration in properties).
                 $isMagicTable = false;
                 if (isset($schema['properties']) === true && is_array($schema['properties']) === true) {
                     foreach ($schema['properties'] as $property) {
@@ -406,17 +417,22 @@ class RegisterService
                     }
                 }
 
+                $magicTableLabel = 'no';
+                if ($isMagicTable === true) {
+                    $magicTableLabel = 'yes';
+                }
+
                 $this->logger->debug(
-                    message: "[RegisterService] Schema {$schemaId} is magic table: ".($isMagicTable ? 'yes' : 'no'),
+                    message: "[RegisterService] Schema {$schemaId} is magic table: ".($magicTableLabel),
                     context: ['file' => __FILE__, 'line' => __LINE__]
                 );
 
                 if ($isMagicTable === true) {
-                    // Magic table: check if table exists, then query it
-                    // Note: Nextcloud's IDBConnection doesn't have getPrefix(), we use the table name directly
+                    // Magic table: check if table exists, then query it.
+                    // Note: Nextcloud's IDBConnection doesn't have getPrefix(), we use the table name directly.
                     $tableName = 'openregister_table_'.$registerId.'_'.$schemaId;
 
-                    // Check if table exists
+                    // Check if table exists.
                     $tableExists = $this->db->tableExists($tableName);
 
                     if ($tableExists === true) {
@@ -425,7 +441,7 @@ class RegisterService
                         // The _deleted column is JSONB and should be NULL for non-deleted objects.
                         // Cast schema_id to VARCHAR to match blob storage query type.
                         $unionQueries[] = "
-                            SELECT 
+                            SELECT
                                 CAST({$schemaId} AS VARCHAR) as schema_id,
                                 COUNT(*) as total,
                                 COUNT(CASE WHEN _deleted IS NOT NULL THEN 1 END) as deleted,
@@ -447,7 +463,7 @@ class RegisterService
                         ];
                     }//end if
                 } else {
-                    // Blob storage: add to blob schemas list
+                    // Blob storage: add to blob schemas list.
                     $blobSchemas[] = (int) $schemaId;
                 }//end if
             }//end foreach
@@ -458,13 +474,13 @@ class RegisterService
                 $qb            = $this->db->getQueryBuilder();
                 $tableName     = $qb->getTableName('openregister_objects');
                 $unionQueries[] = "
-                    SELECT 
+                    SELECT
                         schema as schema_id,
                         COUNT(*) as total,
                         COUNT(CASE WHEN deleted IS NOT NULL THEN 1 END) as deleted,
                         COUNT(CASE WHEN validation IS NOT NULL THEN 1 END) as invalid,
                         COUNT(CASE WHEN locked IS NOT NULL THEN 1 END) as locked,
-                        COUNT(CASE WHEN published IS NOT NULL AND published <= NOW() 
+                        COUNT(CASE WHEN published IS NOT NULL AND published <= NOW()
                               AND (depublished IS NULL OR depublished > NOW()) THEN 1 END) as published,
                         COALESCE(SUM(size), 0) as size
                     FROM {$tableName}
@@ -478,21 +494,21 @@ class RegisterService
                 return $result;
             }
 
-            // Combine all queries with UNION ALL
+            // Combine all queries with UNION ALL.
             $sql = implode(' UNION ALL ', $unionQueries);
 
-            // Log the SQL for debugging
+            // Log the SQL for debugging.
             $this->logger->debug(
                 message: '[RegisterService] Schema object counts SQL: '.$sql,
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
 
-            // Execute the query
+            // Execute the query.
             $stmt = $this->db->prepare($sql);
             $stmt->execute();
 
             // Process results.
-            while ($row = $stmt->fetch(\PDO::FETCH_ASSOC)) {
+            while (($row = $stmt->fetch(\PDO::FETCH_ASSOC)) !== false) {
                 $result[(int) $row['schema_id']] = [
                     'total'     => (int) $row['total'],
                     'deleted'   => (int) $row['deleted'],
@@ -519,7 +535,7 @@ class RegisterService
                 }
             }
         } catch (\Exception $e) {
-            // Log error but don't fail - return empty counts
+            // Log error but don't fail - return empty counts.
             $this->logger->error(
                 message: '[RegisterService] Error getting schema object counts: '.$e->getMessage(),
                 context: ['file' => __FILE__, 'line' => __LINE__]

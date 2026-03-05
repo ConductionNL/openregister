@@ -158,7 +158,7 @@ class SolrQueryExecutor
         bool $deleted=false
     ): array {
         // Build Solr query from OpenRegister query format.
-        $solrQuery = $this->buildSolrQuery($query);
+        $solrQuery = $this->buildSolrQuery(query: $query);
 
         // Apply filters.
         if ($rbac === true || $multitenancy === true || $published === true || $deleted === false) {
@@ -180,10 +180,10 @@ class SolrQueryExecutor
         $solrQuery['wt'] = 'json';
 
         // Execute search.
-        $result = $this->search($solrQuery);
+        $result = $this->search(params: $solrQuery);
 
         // Convert to OpenRegister paginated format.
-        return $this->convertToPaginatedFormat($result, $query);
+        return $this->convertToPaginatedFormat(solrResult: $result, query: $query);
     }//end searchPaginated()
 
     /**
@@ -207,7 +207,7 @@ class SolrQueryExecutor
 
         // Handle sorting.
         if (isset($query['_order']) === true) {
-            $solrQuery['sort'] = $this->translateSortField($query['_order']);
+            $solrQuery['sort'] = $this->translateSortField(order: $query['_order']);
         }
 
         // Handle field selection.
@@ -307,7 +307,7 @@ class SolrQueryExecutor
             $params['fl'] = $fields;
         }
 
-        return $this->search($params);
+        return $this->search(params: $params);
     }//end inspectIndex()
 
     /**
@@ -330,7 +330,7 @@ class SolrQueryExecutor
 
         try {
             // Get basic stats.
-            $result = $this->search(['q' => '*:*', 'rows' => 0, 'wt' => 'json']);
+            $result = $this->search(params: ['q' => '*:*', 'rows' => 0, 'wt' => 'json']);
 
             return [
                 'available'  => true,

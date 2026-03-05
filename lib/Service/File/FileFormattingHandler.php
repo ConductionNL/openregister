@@ -206,12 +206,12 @@ class FileFormattingHandler
         // Format all files first.
         $formattedFiles = [];
         foreach ($files as $file) {
-            $formattedFiles[] = $this->formatFile($file);
+            $formattedFiles[] = $this->formatFile(file: $file);
         }
 
         // Extract and apply filters.
-        $filters        = $this->extractFilterParameters($requestParams ?? []);
-        $formattedFiles = $this->applyFileFilters($formattedFiles, $filters);
+        $filters        = $this->extractFilterParameters(requestParams: $requestParams ?? []);
+        $formattedFiles = $this->applyFileFilters(formattedFiles: $formattedFiles, filters: $filters);
 
         // Apply pagination.
         $page   = max(1, (int) ($requestParams['page'] ?? 1));

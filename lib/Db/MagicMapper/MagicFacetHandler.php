@@ -79,29 +79,39 @@ class MagicFacetHandler
     private const FACET_LABEL_CACHE_TTL = 86400;
 
     /**
-     * In-memory cache for facet results within a single request
+     * In-memory cache for facet results within a single request.
+     *
+     * @var array
      */
     private array $facetCache = [];
 
     /**
-     * In-memory cache for UUID to label mappings (batch-resolved)
+     * In-memory cache for UUID to label mappings (batch-resolved).
+     *
+     * @var array
      */
     private array $uuidLabelCache = [];
 
     /**
      * In-memory cache for field-level label maps (persistent across searches).
      * Structure: ['tableName:fieldName' => ['uuid1' => 'label1', ...]]
+     *
+     * @var array
      */
     private array $fieldLabelCache = [];
 
     /**
      * Tracks which fields have been warmed in the distributed cache.
+     *
+     * @var array
      */
     private array $warmedFields = [];
 
     /**
      * Cache statistics for performance debugging.
      * Tracks hits/misses for facet label resolution.
+     *
+     * @var array
      */
     private array $cacheStats = [
         'field_cache_hits'       => 0,
@@ -114,6 +124,8 @@ class MagicFacetHandler
      * In-memory cache for column existence checks.
      * Structure: ['tableName' => ['column1' => true, 'column2' => true, ...]]
      * This avoids repeated information_schema queries which add up quickly.
+     *
+     * @var array
      */
     private array $columnCache = [];
 
@@ -273,7 +285,7 @@ class MagicFacetHandler
             $facetStart = microtime(true);
             $type       = $config['type'] ?? 'terms';
             // Sanitize field name to match database column (camelCase -> snake_case).
-            $columnName = $this->sanitizeColumnName($field);
+            $columnName = $this->sanitizeColumnName(name: $field);
 
             if ($type === 'terms') {
                 $facets[$field] = $this->getTermsFacet(
@@ -380,7 +392,7 @@ class MagicFacetHandler
         foreach ($objectFacetConfig as $field => $config) {
             $facetStart = microtime(true);
             $type       = $config['type'] ?? 'terms';
-            $columnName = $this->sanitizeColumnName($field);
+            $columnName = $this->sanitizeColumnName(name: $field);
 
             if ($type === 'terms') {
                 // Find which tables have this column.
@@ -539,7 +551,10 @@ class MagicFacetHandler
         }
 
         // Combine with UNION ALL and aggregate.
-        $sql = "SELECT facet_value, SUM(cnt) as doc_count FROM (\n".implode("\nUNION ALL\n", $unionParts)."\n) combined GROUP BY facet_value ORDER BY doc_count DESC LIMIT ".self::MAX_FACET_BUCKETS;
+        $unionSql = implode("\nUNION ALL\n", $unionParts);
+        $limit    = self::MAX_FACET_BUCKETS;
+        $innerSql = "SELECT facet_value, SUM(cnt) as doc_count FROM (\n".$unionSql."\n) combined";
+        $sql      = $innerSql." GROUP BY facet_value ORDER BY doc_count DESC LIMIT ".$limit;
 
         try {
             $stmt = $this->db->prepare($sql);
@@ -557,7 +572,7 @@ class MagicFacetHandler
             // PHP POST-PROCESSING: Normalize array values.
             // This splits JSON array values like '["uuid1", "uuid2"]' into individual values
             // and merges their counts. Much more reliable than SQL-based array detection.
-            $normalizedBuckets = $this->normalizeArrayFacetBuckets($rawBuckets);
+            $normalizedBuckets = $this->normalizeArrayFacetBuckets(rawBuckets: $rawBuckets);
 
             // Collect UUIDs for label resolution.
             $uuidsToResolve = [];
@@ -638,7 +653,7 @@ class MagicFacetHandler
      */
     private function normalizeArrayFacetBuckets(array $rawBuckets): array
     {
-        // Map to accumulate counts: value => count
+        // Map to accumulate counts: value => count.
         $valueCounts = [];
 
         foreach ($rawBuckets as $bucket) {
@@ -677,7 +692,7 @@ class MagicFacetHandler
 
             // Not an array - use value as-is.
             // Clean up JSON-encoded single values (e.g., "\"value\"" -> "value").
-            $cleanKey    = $this->cleanJsonValue($key);
+            $cleanKey    = $this->cleanJsonValue(value: $key);
             $cleanKeyStr = (string) $cleanKey;
 
             if (isset($valueCounts[$cleanKeyStr]) === false) {
@@ -723,7 +738,7 @@ class MagicFacetHandler
             return ['type' => 'date_histogram', 'interval' => $interval, 'buckets' => []];
         }
 
-        $dateFormat = $this->getDateFormatForInterval($interval);
+        $dateFormat = $this->getDateFormatForInterval(interval: $interval);
         $unionParts = [];
         $prefix     = 'oc_';
 
@@ -736,7 +751,7 @@ class MagicFacetHandler
                 continue;
             }
 
-            $subSql = "SELECT TO_CHAR({$field}, '{$dateFormat}') as date_key, COUNT(*) as cnt "."FROM {$fullTableName} WHERE {$field} IS NOT NULL";
+            $subSql = "SELECT TO_CHAR({$field}, '{$dateFormat}') as date_key, COUNT(*) as cnt FROM {$fullTableName} WHERE {$field} IS NOT NULL";
 
             // Use shared method for all filter conditions (single source of truth).
             if ($this->searchHandler !== null && $tcSchema !== null) {
@@ -761,7 +776,8 @@ class MagicFacetHandler
             return ['type' => 'date_histogram', 'interval' => $interval, 'buckets' => []];
         }
 
-        $sql = "SELECT date_key, SUM(cnt) as doc_count FROM (\n".implode("\nUNION ALL\n", $unionParts)."\n) combined GROUP BY date_key ORDER BY date_key ASC";
+        $unionSql = implode("\nUNION ALL\n", $unionParts);
+        $sql      = "SELECT date_key, SUM(cnt) as doc_count FROM (\n".$unionSql."\n) combined GROUP BY date_key ORDER BY date_key ASC";
 
         try {
             $stmt = $this->db->prepare($sql);
@@ -808,7 +824,7 @@ class MagicFacetHandler
             $config = [
                 '@self' => [
                     // Disabled for performance - uncomment if needed:
-                    // 'register'     => ['type' => 'terms'],
+                    // 'register'     => ['type' => 'terms'].
                     'schema' => ['type' => 'terms'],
                     // 'organisation' => ['type' => 'terms'],
                     // 'created'      => ['type' => 'date_histogram', 'interval' => 'month'],
@@ -822,14 +838,14 @@ class MagicFacetHandler
             // - No sync issues between property settings and pre-computed facets
             // - Changes to facetable take effect immediately (after cache expires)
             // - Simpler mental model - just set facetable: true on properties
-            // Performance: Comparable or better than pre-computed (~73ms vs ~97ms in benchmarks)
+            // Performance: Comparable or better than pre-computed (~73ms vs ~97ms in benchmarks).
             $properties = $schema->getProperties() ?? [];
             foreach ($properties as $propertyKey => $property) {
                 // Check if property is marked as facetable (boolean true or config object).
                 $facetable = $property['facetable'] ?? false;
                 if ($facetable === true || (is_array($facetable) === true && empty($facetable) === false)) {
                     // Determine facet type based on property type.
-                    $facetType            = $this->determineFacetTypeFromProperty($property);
+                    $facetType            = $this->determineFacetTypeFromProperty(property: $property);
                     $config[$propertyKey] = [
                         'type'  => $facetType,
                         'title' => $property['title'] ?? null,
@@ -1001,9 +1017,9 @@ class MagicFacetHandler
         Register $register,
         Schema $schema
     ): array {
-        // Create cache key
-        $cacheKey = md5(json_encode([$tableName, $field, $baseQuery, $isMetadata]));
-        if (isset($this->facetCache[$cacheKey])) {
+        // Create cache key.
+        $cacheKey = md5(json_encode(value: [$tableName, $field, $baseQuery, $isMetadata]));
+        if (isset($this->facetCache[$cacheKey]) === true) {
             return $this->facetCache[$cacheKey];
         }
 
@@ -1070,7 +1086,7 @@ class MagicFacetHandler
 
         // PHP POST-PROCESSING: Normalize array values.
         // This splits JSON array values into individual values and merges counts.
-        $normalizedBuckets = $this->normalizeArrayFacetBuckets($rawBuckets);
+        $normalizedBuckets = $this->normalizeArrayFacetBuckets(rawBuckets: $rawBuckets);
 
         // Collect UUIDs for label resolution.
         $uuidsToResolve = [];
@@ -1194,7 +1210,7 @@ class MagicFacetHandler
         }
 
         // Build date histogram query based on interval using PostgreSQL-compatible syntax.
-        $dateFormat = $this->getDateFormatForInterval($interval);
+        $dateFormat = $this->getDateFormatForInterval(interval: $interval);
 
         // Use shared query builder from MagicSearchHandler (single source of truth for filters).
         if ($this->searchHandler !== null && $schema !== null) {
@@ -1562,7 +1578,7 @@ class MagicFacetHandler
                     $type = $propertyConfig['type'] ?? 'string';
                     // Only search in string fields (same as MagicMapper).
                     if ($type === 'string') {
-                        $columnName = $this->sanitizeColumnName($propertyName);
+                        $columnName = $this->sanitizeColumnName(name: $propertyName);
                         if ($this->columnExists(tableName: $tableName, columnName: $columnName) === true) {
                             $searchableColumns[] = $columnName;
                         }

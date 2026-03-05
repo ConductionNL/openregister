@@ -240,7 +240,7 @@ class ChunkProcessingHandler
             $firstItem = reset($bulkResult);
 
             if (is_array($firstItem) === true
-                && isset($firstItem['object_status'])
+                && isset($firstItem['object_status']) === true
             ) {
                 // NEW APPROACH: Complete objects with database-computed classification returned.
                 $this->logger->info(

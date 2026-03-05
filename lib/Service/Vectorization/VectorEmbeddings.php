@@ -87,7 +87,7 @@ class VectorEmbeddings
      */
     public function generateEmbedding(string $text, ?string $provider=null): array
     {
-        $config = $this->getEmbeddingConfig($provider);
+        $config = $this->getEmbeddingConfig(provider: $provider);
 
         $this->logger->debug(
             message: '[VectorEmbeddings] Generating embedding',
@@ -303,7 +303,7 @@ class VectorEmbeddings
      */
     public function generateBatchEmbeddings(array $texts, ?string $provider=null): array
     {
-        $config = $this->getEmbeddingConfig($provider);
+        $config = $this->getEmbeddingConfig(provider: $provider);
 
         $this->logger->info(
             message: '[VectorEmbeddings] Generating batch embeddings',

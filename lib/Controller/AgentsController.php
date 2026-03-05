@@ -476,7 +476,7 @@ class AgentsController extends Controller
     public function patch(int $id): JSONResponse
     {
         // Delegate to update method (both handle partial updates).
-        return $this->update($id);
+        return $this->update(id: $id);
     }//end patch()
 
     /**

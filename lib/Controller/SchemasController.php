@@ -227,14 +227,21 @@ class SchemasController extends Controller
 
             foreach ($schemasArr as &$schema) {
                 $schema['stats'] = [
-                    'objects'   => $objectStats[$schema['id']] ?? ['total' => 0, 'size' => 0, 'invalid' => 0, 'deleted' => 0, 'locked' => 0, 'published' => 0],
+                    'objects'   => $objectStats[$schema['id']] ?? [
+                        'total'     => 0,
+                        'size'      => 0,
+                        'invalid'   => 0,
+                        'deleted'   => 0,
+                        'locked'    => 0,
+                        'published' => 0,
+                    ],
                     'logs'      => $logStats[$schema['id']] ?? ['total' => 0, 'size' => 0],
                     'files'     => [ 'total' => 0, 'size' => 0 ],
                     // Add the number of registers referencing this schema.
                     'registers' => $registerCounts[$schema['id']] ?? 0,
                 ];
             }
-        }
+        }//end if
 
         return new JSONResponse(data: ['results' => $schemasArr]);
     }//end index()
@@ -544,7 +551,7 @@ class SchemasController extends Controller
      */
     public function patch(int $id): JSONResponse
     {
-        return $this->update($id);
+        return $this->update(id: $id);
     }//end patch()
 
     /**
@@ -611,7 +618,7 @@ class SchemasController extends Controller
      */
     public function uploadUpdate(?int $id=null): JSONResponse
     {
-        return $this->upload($id);
+        return $this->upload(id: $id);
     }//end uploadUpdate()
 
     /**

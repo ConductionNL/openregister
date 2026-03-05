@@ -104,7 +104,7 @@ class SearchController extends Controller
 
         // Step 2: Process the search query to handle multiple search words.
         // This handles comma-separated values, arrays, and case-insensitive matching.
-        $processedQuery = $this->processSearchQuery($query);
+        $processedQuery = $this->processSearchQuery(query: $query);
 
         // Step 3: Build search parameters for SOLR query.
         // Note: This is a simplified search endpoint. For full Nextcloud search integration,

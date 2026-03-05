@@ -64,7 +64,7 @@ class ObjectsTool extends AbstractTool
         LoggerInterface $logger,
         ObjectService $objectService
     ) {
-        parent::__construct($userSession, $logger);
+        parent::__construct(userSession: $userSession, logger: $logger);
         $this->objectService = $objectService;
     }//end __construct()
 
@@ -218,7 +218,7 @@ class ObjectsTool extends AbstractTool
     {
         $this->log(functionName: $functionName, parameters: $parameters);
 
-        if ($this->hasUserContext($userId) === false) {
+        if ($this->hasUserContext(explicitUserId: $userId) === false) {
             return $this->formatError(message: 'No user context available. Tool cannot execute without user session.');
         }
 
@@ -269,7 +269,7 @@ class ObjectsTool extends AbstractTool
             $filters['_search'] = $query;
         }
 
-        $filters = $this->applyViewFilters($filters);
+        $filters = $this->applyViewFilters(params: $filters);
 
         $result = $this->objectService->findAll(
             config: [

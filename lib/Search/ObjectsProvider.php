@@ -368,7 +368,7 @@ class ObjectsProvider implements IFilteringProvider
                     $title = $uuid;
                 }
 
-                $description = $this->buildDescription(array_merge($result, $selfData));
+                $description = $this->buildDescription(object: array_merge($result, $selfData));
 
                 $searchResultEntries[] = new SearchResultEntry(
                     $objectUrl,

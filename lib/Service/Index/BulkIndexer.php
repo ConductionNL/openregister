@@ -193,7 +193,7 @@ class BulkIndexer
             );
 
             // Get count of searchable objects for planning.
-            $totalObjects     = $this->countSearchableObjects($schemaIds);
+            $totalObjects     = $this->countSearchableObjects(schemaIds: $schemaIds);
             $estimatedBatches = ceil($totalObjects / $batchSize);
             $willProcess      = $totalObjects;
             if ($maxObjects > 0) {
@@ -353,7 +353,7 @@ class BulkIndexer
     private function countSearchableObjects(array $schemaIds=[]): int
     {
         // Get searchable schema IDs.
-        $searchableSchemaIds = $this->getSearchableSchemaIds($schemaIds);
+        $searchableSchemaIds = $this->getSearchableSchemaIds(schemaIds: $schemaIds);
 
         if (empty($searchableSchemaIds) === true) {
             return 0;
@@ -377,7 +377,7 @@ class BulkIndexer
     private function fetchSearchableObjects(int $limit, int $offset, array $schemaIds=[]): array
     {
         // Get searchable schema IDs.
-        $searchableSchemaIds = $this->getSearchableSchemaIds($schemaIds);
+        $searchableSchemaIds = $this->getSearchableSchemaIds(schemaIds: $schemaIds);
 
         if (empty($searchableSchemaIds) === true) {
             return [];

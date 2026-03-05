@@ -25,11 +25,11 @@
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
- * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12.
  *
  * @version GIT: <git_id>
  *
- * @link https://OpenRegister.app
+ * @link https://OpenRegister.app.
  */
 
 declare(strict_types=1);
@@ -467,8 +467,8 @@ class MagicMapper
 
             // Create new table or recreate if forced.
             if (($tableExists === true) && ($force === true)) {
-                $this->dropTable($tableName);
-                $this->invalidateTableCache($cacheKey);
+                $this->dropTable(tableName: $tableName);
+                $this->invalidateTableCache(cacheKey: $cacheKey);
             }
 
             return $this->createTableForRegisterSchema(register: $register, schema: $schema);
@@ -565,7 +565,7 @@ class MagicMapper
 
         // Check database for table existence.
         $tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
-        $exists    = $this->checkTableExistsInDatabase($tableName);
+        $exists    = $this->checkTableExistsInDatabase(tableName: $tableName);
 
         if ($exists === true) {
             // Cache positive result.
@@ -819,7 +819,11 @@ class MagicMapper
                 tableName: $tableName
             );
 
-            $count = is_int($result) ? $result : 0;
+            if (is_int($result) === true) {
+                $count = $result;
+            } else {
+                $count = 0;
+            }
 
             $this->logger->debug(
                 message: '[MagicMapper] Count query completed',
@@ -927,9 +931,10 @@ class MagicMapper
      * per facet field using UNION ALL, instead of separate queries per table.
      * Benchmarks show 2-2.5x speedup for large datasets.
      *
-     * @param array    $query    Search parameters including _facets configuration.
-     * @param Register $register The register context.
-     * @param array    $schemas  Array of Schema objects to include.
+     * @param array    $query               Search parameters including _facets configuration.
+     * @param Register $register            The register context.
+     * @param array    $schemas             Array of Schema objects to include.
+     * @param array    $registerSchemaPairs Register/schema pairs.
      *
      * @return array Merged facet results.
      */
@@ -1005,7 +1010,7 @@ class MagicMapper
 
         // OPTIMIZATION: Use UNION ALL for multi-table search in a single query.
         // This is MUCH faster than looping through tables individually.
-        if (count($registerSchemaPairs) > 1 && $this->shouldUseUnionQuery($query) === true) {
+        if (count($registerSchemaPairs) > 1 && $this->shouldUseUnionQuery(query: $query) === true) {
             return $this->searchAcrossMultipleTablesWithUnion(
                 query: $query,
                 registerSchemaPairs: $registerSchemaPairs
@@ -1127,12 +1132,17 @@ class MagicMapper
             $orderClauses = [];
             foreach ($orderParams as $field => $direction) {
                 // Special handling for _relevance: map to _search_score in UNION queries.
-                // The _relevance column is used by MagicSearchHandler for single-table queries,
+                // The _relevance column is used by MagicSearchHandler for single-table queries,.
                 // but UNION queries use _search_score for relevance scoring.
                 if ($field === '_relevance') {
                     // Only use _search_score if we have a search term.
                     if ($hasSearch === true) {
-                        $dir            = strtoupper($direction) === 'DESC' ? 'DESC' : 'ASC';
+                        if (strtoupper($direction) === 'DESC') {
+                            $dir = 'DESC';
+                        } else {
+                            $dir = 'ASC';
+                        }
+
                         $orderClauses[] = "_search_score {$dir}";
                     }
 
@@ -1141,16 +1151,21 @@ class MagicMapper
                 }
 
                 // Translate field name to column name.
-                $columnName = $this->sanitizeColumnName($field);
+                $columnName = $this->sanitizeColumnName(name: $field);
                 if (str_starts_with($field, '@self.') === true) {
                     $columnName = self::METADATA_PREFIX.substr($field, 6);
                 } else if (str_starts_with($field, '_') === false) {
                     // Non-metadata fields - property columns are included in UNION queries.
                     // The column must exist in the SELECT for ordering to work.
-                    $columnName = $this->sanitizeColumnName($field);
+                    $columnName = $this->sanitizeColumnName(name: $field);
                 }
 
-                $dir            = strtoupper($direction) === 'DESC' ? 'DESC' : 'ASC';
+                if (strtoupper($direction) === 'DESC') {
+                    $dir = 'DESC';
+                } else {
+                    $dir = 'ASC';
+                }
+
                 $orderClauses[] = "{$columnName} {$dir}";
             }//end foreach
 
@@ -1176,7 +1191,7 @@ class MagicMapper
         $results = [];
         foreach ($rows as $row) {
             try {
-                $entity = $this->convertUnionRowToObjectEntity($row);
+                $entity = $this->convertUnionRowToObjectEntity(row: $row);
                 if ($entity !== null) {
                     $results[] = $entity;
                 }
@@ -1234,7 +1249,7 @@ class MagicMapper
         // Each schema's SELECT includes ALL property columns across all schemas.
         // Columns that exist in this schema's table use the real column cast to text.
         // Columns that don't exist use NULL::text AS placeholder.
-        // Cast to text ensures type compatibility across schemas in UNION
+        // Cast to text ensures type compatibility across schemas in UNION.
         // (e.g., one schema has 'type' as text, another as jsonb).
         foreach (array_keys($allPropertyColumns) as $columnName) {
             if ($this->columnExistsInTable(tableName: $tableName, columnName: $columnName) === true) {
@@ -1262,7 +1277,7 @@ class MagicMapper
             foreach ($schemaProps as $propName => $propDef) {
                 $type = $propDef['type'] ?? 'string';
                 if (in_array($type, ['string', 'text'], true) === true) {
-                    $columnName = $this->sanitizeColumnName($propName);
+                    $columnName = $this->sanitizeColumnName(name: $propName);
                     if ($hasTrgm === true) {
                         // Use similarity() for fuzzy scoring when pg_trgm is available.
                         $searchColumns[] = "COALESCE(similarity({$columnName}::text, {$quotedTerm}), 0)";
@@ -1554,8 +1569,8 @@ class MagicMapper
             $fullTableName = $prefix.$tableName;
 
             // Get database platform to use correct schema check.
-            // MySQL/MariaDB: table_schema = DATABASE()
-            // PostgreSQL: table_schema = current_schema()
+            // MySQL/MariaDB: table_schema = DATABASE().
+            // PostgreSQL: table_schema = current_schema().
             $platform   = $this->db->getDatabasePlatform();
             $isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
 
@@ -1636,7 +1651,7 @@ class MagicMapper
         );
 
         // Get table structure from schema.
-        $columns = $this->buildTableColumnsFromSchema($schema);
+        $columns = $this->buildTableColumnsFromSchema(schema: $schema);
 
         // Create table with columns.
         $this->createTable(tableName: $tableName, columns: $columns);
@@ -1717,7 +1732,7 @@ class MagicMapper
         );
 
         try {
-            // Check if table exists - if not, create it instead of trying to update
+            // Check if table exists - if not, create it instead of trying to update.
             $tableExists = $this->tableExistsForRegisterSchema(register: $register, schema: $schema);
 
             if ($tableExists === false) {
@@ -1732,16 +1747,28 @@ class MagicMapper
                     ]
                 );
 
-                // Create the table
+                // Create the table.
                 $this->createTableForRegisterSchema(register: $register, schema: $schema);
 
-                // Get the columns that were created
-                $requiredColumns        = $this->buildTableColumnsFromSchema($schema);
-                $metadataColumns        = ['id', 'uuid', 'register', 'schema', 'object', 'deleted', 'locked', 'published', 'updated', 'created', 'version'];
+                // Get the columns that were created.
+                $requiredColumns        = $this->buildTableColumnsFromSchema(schema: $schema);
+                $metadataColumns        = [
+                    'id',
+                    'uuid',
+                    'register',
+                    'schema',
+                    'object',
+                    'deleted',
+                    'locked',
+                    'published',
+                    'updated',
+                    'created',
+                    'version',
+                ];
                 $metadataCount          = count(array_intersect(array_keys($requiredColumns), $metadataColumns));
                 $regularPropertiesCount = count($requiredColumns) - $metadataCount;
 
-                // Return statistics for newly created table
+                // Return statistics for newly created table.
                 return [
                     'success'               => true,
                     'created'               => true,
@@ -1758,7 +1785,7 @@ class MagicMapper
                 ];
             }//end if
 
-            // Table exists, update its structure
+            // Table exists, update its structure.
             $this->logger->info(
                 message: '[MagicMapper] Table exists, updating structure',
                 context: [
@@ -1771,16 +1798,16 @@ class MagicMapper
             );
 
             // Get current table structure.
-            $currentColumns = $this->getExistingTableColumns($tableName);
+            $currentColumns = $this->getExistingTableColumns(tableName: $tableName);
 
             // Get required columns from schema.
-            $requiredColumns = $this->buildTableColumnsFromSchema($schema);
+            $requiredColumns = $this->buildTableColumnsFromSchema(schema: $schema);
 
-            // Count metadata properties (non-schema columns)
+            // Count metadata properties (non-schema columns).
             $metadataColumns = ['id', 'uuid', 'register', 'schema', 'object', 'deleted', 'locked', 'published', 'updated', 'created', 'version'];
             $metadataCount   = count(array_intersect(array_keys($requiredColumns), $metadataColumns));
 
-            // Compare and update table structure - this returns statistics
+            // Compare and update table structure - this returns statistics.
             $columnStats = $this->updateTableStructure(
                 tableName: $tableName,
                 currentColumns: $currentColumns,
@@ -1794,7 +1821,7 @@ class MagicMapper
             $this->storeRegisterSchemaVersion(register: $register, schema: $schema);
             self::$tableExistsCache[$cacheKey] = time();
             // Refresh cache timestamp.
-            // Calculate regular properties (excluding metadata)
+            // Calculate regular properties (excluding metadata).
             $regularPropertiesCount = count($requiredColumns) - $metadataCount;
 
             $result = [
@@ -1861,10 +1888,10 @@ class MagicMapper
         $schemaProperties = $schema->getProperties();
 
         // List of metadata/configuration fields that should NOT be treated as properties.
-        // NOTE: 'title', 'description', and 'type' are NOT included here because they are
+        // NOTE: 'title', 'description', and 'type' are NOT included here because they are.
         // legitimate schema properties (e.g., catalog.title, module.type).
         // The metadata columns _name and _description serve a different purpose.
-        // Root-level JSON Schema fields like "type": "object" are filtered by checking
+        // Root-level JSON Schema fields like "type": "object" are filtered by checking.
         // if propertyConfig is an array (real properties have array configs).
         $metadataFields = [
             'objectNameField',
@@ -1877,12 +1904,12 @@ class MagicMapper
 
         if (is_array($schemaProperties) === true) {
             foreach ($schemaProperties as $propertyName => $propertyConfig) {
-                // Skip metadata/configuration fields that are not actual properties
+                // Skip metadata/configuration fields that are not actual properties.
                 if (in_array($propertyName, $metadataFields, true) === true) {
                     continue;
                 }
 
-                // Skip if propertyConfig is not an array (it should be an object/array for real properties)
+                // Skip if propertyConfig is not an array (it should be an object/array for real properties).
                 if (is_array($propertyConfig) === false) {
                     $this->logger->debug(
                         message: '[MagicMapper] Skipping non-array property in schema',
@@ -1983,7 +2010,7 @@ class MagicMapper
                 'name'     => self::METADATA_PREFIX.'uuid',
                 'type'     => 'string',
                 'length'   => 40,
-            // ArchiMate identifiers are max 39 chars (id-{uuid-36})
+            // ArchiMate identifiers are max 39 chars (id-{uuid-36}).
                 'nullable' => false,
                 'unique'   => true,
                 'index'    => true,
@@ -2061,7 +2088,7 @@ class MagicMapper
             self::METADATA_PREFIX.'summary'        => [
                 'name'     => self::METADATA_PREFIX.'summary',
                 'type'     => 'text',
-            // Changed from varchar(500) to text to support longer summaries
+            // Changed from varchar(500) to text to support longer summaries.
                 'nullable' => true,
             ],
             self::METADATA_PREFIX.'image'          => [
@@ -2179,7 +2206,7 @@ class MagicMapper
         $format = $propertyConfig['format'] ?? null;
 
         // Sanitize column name.
-        $columnName = $this->sanitizeColumnName($propertyName);
+        $columnName = $this->sanitizeColumnName(name: $propertyName);
 
         switch ($type) {
             case 'string':
@@ -2217,7 +2244,7 @@ class MagicMapper
             case 'file':
                 // File properties store file IDs (integers) after processing by FilePropertyHandler.
                 // Use TEXT to safely store the file ID reference without JSON parsing issues.
-                // This prevents "invalid input syntax for type json" errors if raw base64 data
+                // This prevents "invalid input syntax for type json" errors if raw base64 data.
                 // accidentally gets stored instead of the processed file ID.
                 $required   = $propertyConfig['required'] ?? false;
                 $isRequired = false;
@@ -2252,7 +2279,7 @@ class MagicMapper
                 $hasRef       = isset($propertyConfig['$ref']);
 
                 // Also check for nested items.oneOf[] pattern (e.g., moduleB with multiple possible types).
-                // Pattern: { "type": "object", "items": { "oneOf": [{ "$ref": "...", "objectConfiguration": {...} }] } }
+                // Pattern: { "type": "object", "items": { "oneOf": [{ "$ref": "...", "objectConfiguration": {...} }] } }.
                 if ($handling === null && isset($propertyConfig['items']['oneOf']) === true) {
                     foreach ($propertyConfig['items']['oneOf'] as $oneOfItem) {
                         if (isset($oneOfItem['objectConfiguration']['handling']) === true
@@ -2714,7 +2741,7 @@ class MagicMapper
             $fullTableName = 'oc_'.$tableName;
 
             // Create unique index on UUID.
-            // Phpcs:ignore Generic.Files.LineLength.TooLong
+            // Phpcs:ignore Generic.Files.LineLength.TooLong.
             $this->db->executeStatement(
                 "CREATE UNIQUE INDEX IF NOT EXISTS {$tableName}_uuid_idx ON {$fullTableName} (".self::METADATA_PREFIX."uuid)"
             );
@@ -2770,7 +2797,7 @@ class MagicMapper
 
             if (is_array($schemaProperties) === true) {
                 foreach ($schemaProperties as $propertyName => $propertyConfig) {
-                    $columnName = $this->sanitizeColumnName($propertyName);
+                    $columnName = $this->sanitizeColumnName(name: $propertyName);
 
                     // Create indexes on relation properties (object references) for _extend queries.
                     $hasRef       = isset($propertyConfig['$ref']);
@@ -3054,8 +3081,8 @@ class MagicMapper
         // Map schema properties to columns.
         $schemaProperties = $schema->getProperties();
 
-        // DEBUG: Log schema property mapping for gemmaType
-        if ($schema->getSlug() === 'element' && isset($schemaProperties['gemmaType'])) {
+        // DEBUG: Log schema property mapping for gemmaType.
+        if ($schema->getSlug() === 'element' && isset($schemaProperties['gemmaType']) === true) {
             $this->logger->error(
                 message: '[MagicMapper] MAGIC_MAPPER_DEBUG: Mapping element properties',
                 context: [
@@ -3072,16 +3099,16 @@ class MagicMapper
 
         if (is_array($schemaProperties) === true) {
             foreach (array_keys($schemaProperties) as $propertyName) {
-                // Use array_key_exists to distinguish between:
-                // - Property exists with null value → include in prepared data (update DB to null)
-                // - Property doesn't exist at all → skip (don't change DB value)
+                // Use array_key_exists to distinguish between:.
+                // - Property exists with null value → include in prepared data (update DB to null).
+                // - Property doesn't exist at all → skip (don't change DB value).
                 if (array_key_exists($propertyName, $data) === true) {
                     $value          = $data[$propertyName];
                     $propertyConfig = $schemaProperties[$propertyName] ?? [];
                     $propertyType   = $propertyConfig['type'] ?? 'string';
 
-                    // Safety check for file properties: if a base64 data URL is still present,
-                    // the FilePropertyHandler didn't process it. Log a warning and set to null
+                    // Safety check for file properties: if a base64 data URL is still present,.
+                    // the FilePropertyHandler didn't process it. Log a warning and set to null.
                     // to prevent "invalid input syntax for type json" errors in PostgreSQL.
                     $isFileProperty = $propertyType === 'file';
                     $isArrayOfFiles = $propertyType === 'array'
@@ -3120,14 +3147,22 @@ class MagicMapper
                             $cleanedArray[] = $item;
                         }
 
-                        $value = empty($cleanedArray) === true ? null : $cleanedArray;
+                        if (empty($cleanedArray) === true) {
+                            $value = null;
+                        } else {
+                            $value = $cleanedArray;
+                        }
                     }//end if
 
                     // Convert boolean values to integers (0/1) for database compatibility.
                     // PHP's false can be incorrectly converted to empty string '' by some drivers.
                     // Using 0/1 integers ensures PostgreSQL and other databases handle booleans correctly.
                     if (is_bool($value) === true) {
-                        $value = $value === true ? 1 : 0;
+                        if ($value === true) {
+                            $value = 1;
+                        } else {
+                            $value = 0;
+                        }
                     }
 
                     // Convert complex types to JSON.
@@ -3136,7 +3171,7 @@ class MagicMapper
                         $value = json_encode($value);
                     }
 
-                    $preparedData[$this->sanitizeColumnName($propertyName)] = $value;
+                    $preparedData[$this->sanitizeColumnName(name: $propertyName)] = $value;
                 }//end if
             }//end foreach
         }//end if
@@ -3199,7 +3234,7 @@ class MagicMapper
             $qb->addOrderBy('_search_score', 'DESC');
         } else if (($query['_order'] ?? null) !== null && is_array($query['_order']) === true) {
             foreach ($query['_order'] as $field => $direction) {
-                $columnName = $this->sanitizeColumnName($field);
+                $columnName = $this->sanitizeColumnName(name: $field);
                 if (str_starts_with($field, '@self.') === true) {
                     $columnName = self::METADATA_PREFIX.substr($field, 6);
                 }
@@ -3287,7 +3322,7 @@ class MagicMapper
             $objectEntity->setSchema((string) $_schema->getId());
 
             // Build column-to-property mapping and property types from schema.
-            // This allows us to restore original property names (e.g., 'e-mailadres')
+            // This allows us to restore original property names (e.g., 'e-mailadres').
             // from their sanitized column names (e.g., 'e_mailadres').
             // Also builds property type map for type conversion.
             $columnToPropertyMap = [];
@@ -3295,7 +3330,7 @@ class MagicMapper
             $propertyFormats     = [];
             $properties          = $_schema->getProperties() ?? [];
             foreach ($properties as $propertyName => $propertyDef) {
-                $columnName = $this->sanitizeColumnName($propertyName);
+                $columnName = $this->sanitizeColumnName(name: $propertyName);
                 $columnToPropertyMap[$columnName] = $propertyName;
                 $propertyTypes[$propertyName]     = $propertyDef['type'] ?? 'string';
                 if (isset($propertyDef['format']) === true) {
@@ -3363,7 +3398,7 @@ class MagicMapper
 
                 // Map column name back to original property name using schema mapping.
                 // Falls back to camelCase conversion if not found in mapping.
-                $propertyName = $columnToPropertyMap[$columnName] ?? $this->columnNameToPropertyName($columnName);
+                $propertyName = $columnToPropertyMap[$columnName] ?? $this->columnNameToPropertyName(columnName: $columnName);
 
                 // Apply type conversion based on schema type.
                 // This ensures values match the expected schema type (e.g., numeric strings stay as strings).
@@ -3395,7 +3430,7 @@ class MagicMapper
 
                 // Decode JSON values if they're JSON strings.
                 $objectData[$propertyName] = $value;
-                if (is_string($value) === true && $this->isJsonString($value) === true) {
+                if (is_string($value) === true && $this->isJsonString(string: $value) === true) {
                     $decodedValue = json_decode($value, true);
                     if ($decodedValue !== null) {
                         $objectData[$propertyName] = $decodedValue;
@@ -3798,7 +3833,7 @@ class MagicMapper
             }
 
             // Handle schema property filters.
-            $columnName = $this->sanitizeColumnName($key);
+            $columnName = $this->sanitizeColumnName(name: $key);
 
             // Check if property exists in schema - if not, this schema can't match the filter.
             // This is critical for multi-schema searches where some schemas don't have the property.
@@ -3810,7 +3845,7 @@ class MagicMapper
 
             // Also check if the column actually exists in the database table.
             // The schema might define the property but the table column might not be synced yet.
-            if ($tableName !== null && $this->columnExistsInTable($tableName, $columnName) === false) {
+            if ($tableName !== null && $this->columnExistsInTable(tableName: $tableName, columnName: $columnName) === false) {
                 // Column doesn't exist in table - add impossible condition to return 0 results.
                 $qb->andWhere('1 = 0');
                 return;
@@ -3860,7 +3895,7 @@ class MagicMapper
                 $type = $propertyConfig['type'] ?? 'string';
                 // Only search in string fields.
                 if ($type === 'string') {
-                    $columnName         = $this->sanitizeColumnName($propertyName);
+                    $columnName         = $this->sanitizeColumnName(name: $propertyName);
                     $searchableFields[] = $columnName;
                 }
             }
@@ -3950,7 +3985,7 @@ class MagicMapper
                 $type = $propertyConfig['type'] ?? 'string';
                 // Only search in string fields.
                 if ($type === 'string') {
-                    $columnName         = $this->sanitizeColumnName($propertyName);
+                    $columnName         = $this->sanitizeColumnName(name: $propertyName);
                     $searchableFields[] = $columnName;
                 }
             }
@@ -4039,7 +4074,7 @@ class MagicMapper
 
         // Multiple values use AND logic: array must contain ALL specified values.
         // Use raw SQL expression that properly handles the column name and JSONB cast.
-        // Note: We can't use createFunction because QueryBuilder adds table aliases
+        // Note: We can't use createFunction because QueryBuilder adds table aliases.
         // that interfere with the ::jsonb type cast syntax.
         foreach ($values as $v) {
             $jsonValue = json_encode([$v]);
@@ -4168,8 +4203,8 @@ class MagicMapper
             // Nextcloud default prefix.
             $fullTableName = $prefix.$tableName;
 
-            $sql = "SELECT column_name, data_type, character_maximum_length, is_nullable, column_default 
-                    FROM information_schema.columns 
+            $sql = "SELECT column_name, data_type, character_maximum_length, is_nullable, column_default
+                    FROM information_schema.columns
                     WHERE table_name = ? AND table_schema = 'public'";
 
             $stmt = $this->db->prepare($sql);
@@ -4232,12 +4267,12 @@ class MagicMapper
         $columnsDropped    = [];
 
         // 1. Add missing columns.
-        // NOTE: $requiredColumns is keyed by property name (camelCase), but the actual
-        // column name to use is in $columnDef['name'] (snake_case). We must use
+        // NOTE: $requiredColumns is keyed by property name (camelCase), but the actual.
+        // column name to use is in $columnDef['name'] (snake_case). We must use.
         // $columnDef['name'] to check for existing columns and create new ones.
         foreach ($requiredColumns as $propertyName => $columnDef) {
             // Get the actual column name (snake_case) from the column definition.
-            $columnName = $columnDef['name'] ?? $this->sanitizeColumnName($propertyName);
+            $columnName = $columnDef['name'] ?? $this->sanitizeColumnName(name: $propertyName);
 
             if (isset($currentColumns[$columnName]) === false) {
                 $this->logger->info(
@@ -4252,9 +4287,14 @@ class MagicMapper
                     ]
                 );
 
-                $colNameQuoted = $isPostgres ? '"'.$columnName.'"' : '`'.$columnName.'`';
-                $colType       = $this->mapColumnTypeToSQL(type: $columnDef['type'], column: $columnDef);
-                $sql           = 'ALTER TABLE '.$tableNameQuoted.' ADD COLUMN '.$colNameQuoted.' '.$colType;
+                if ($isPostgres === true) {
+                    $colNameQuoted = '"'.$columnName.'"';
+                } else {
+                    $colNameQuoted = '`'.$columnName.'`';
+                }
+
+                $colType = $this->mapColumnTypeToSQL(type: $columnDef['type'], column: $columnDef);
+                $sql     = 'ALTER TABLE '.$tableNameQuoted.' ADD COLUMN '.$colNameQuoted.' '.$colType;
 
                 // Add NOT NULL if specified.
                 if (($columnDef['nullable'] ?? true) === false) {
@@ -4263,7 +4303,7 @@ class MagicMapper
 
                 // Add DEFAULT if specified.
                 if (isset($columnDef['default']) === true) {
-                    $defaultValue = $this->formatDefaultValueForSQL($columnDef['default']);
+                    $defaultValue = $this->formatDefaultValueForSQL(default: $columnDef['default']);
                     $sql         .= ' DEFAULT '.$defaultValue;
                 }
 
@@ -4275,7 +4315,7 @@ class MagicMapper
         // 2. De-require columns that are now nullable in schema but NOT NULL in table.
         foreach ($requiredColumns as $propertyName => $columnDef) {
             // Get the actual column name (snake_case) from the column definition.
-            $columnName = $columnDef['name'] ?? $this->sanitizeColumnName($propertyName);
+            $columnName = $columnDef['name'] ?? $this->sanitizeColumnName(name: $propertyName);
 
             if (isset($currentColumns[$columnName]) === false) {
                 continue;
@@ -4297,7 +4337,11 @@ class MagicMapper
                     ]
                 );
 
-                $colNameQuoted = $isPostgres ? '"'.$columnName.'"' : '`'.$columnName.'`';
+                if ($isPostgres === true) {
+                    $colNameQuoted = '"'.$columnName.'"';
+                } else {
+                    $colNameQuoted = '`'.$columnName.'`';
+                }
 
                 if ($isPostgres === true) {
                     $sql = 'ALTER TABLE '.$tableNameQuoted.' ALTER COLUMN '.$colNameQuoted.' DROP NOT NULL';
@@ -4322,7 +4366,7 @@ class MagicMapper
         // 3. Re-require columns that are NOT NULL in schema but nullable in table.
         foreach ($requiredColumns as $propertyName => $columnDef) {
             // Get the actual column name (snake_case) from the column definition.
-            $columnName = $columnDef['name'] ?? $this->sanitizeColumnName($propertyName);
+            $columnName = $columnDef['name'] ?? $this->sanitizeColumnName(name: $propertyName);
 
             if (isset($currentColumns[$columnName]) === false) {
                 continue;
@@ -4344,7 +4388,11 @@ class MagicMapper
                     ]
                 );
 
-                $colNameQuoted = $isPostgres ? '"'.$columnName.'"' : '`'.$columnName.'`';
+                if ($isPostgres === true) {
+                    $colNameQuoted = '"'.$columnName.'"';
+                } else {
+                    $colNameQuoted = '`'.$columnName.'`';
+                }
 
                 if ($isPostgres === true) {
                     $sql = 'ALTER TABLE '.$tableNameQuoted.' ALTER COLUMN '.$colNameQuoted.' SET NOT NULL';
@@ -4370,7 +4418,7 @@ class MagicMapper
         // Build map of snake_case column names from required columns.
         $snakeCaseColumns = [];
         foreach ($requiredColumns as $propertyName => $colDef) {
-            $actualColName = $colDef['name'] ?? $this->sanitizeColumnName($propertyName);
+            $actualColName = $colDef['name'] ?? $this->sanitizeColumnName(name: $propertyName);
             $snakeCaseColumns[$actualColName] = true;
         }
 
@@ -4382,7 +4430,7 @@ class MagicMapper
             }
 
             // Check if this looks like a camelCase version of a snake_case column.
-            $snakeVersion = $this->sanitizeColumnName($colName);
+            $snakeVersion = $this->sanitizeColumnName(name: $colName);
             if ($snakeVersion !== $colName && isset($snakeCaseColumns[$snakeVersion]) === true) {
                 // This is a camelCase duplicate - drop it.
                 $this->logger->info(
@@ -4396,8 +4444,13 @@ class MagicMapper
                     ]
                 );
 
-                $colNameQuoted = $isPostgres ? '"'.$colName.'"' : '`'.$colName.'`';
-                $sql           = 'ALTER TABLE '.$tableNameQuoted.' DROP COLUMN IF EXISTS '.$colNameQuoted;
+                if ($isPostgres === true) {
+                    $colNameQuoted = '"'.$colName.'"';
+                } else {
+                    $colNameQuoted = '`'.$colName.'`';
+                }
+
+                $sql = 'ALTER TABLE '.$tableNameQuoted.' DROP COLUMN IF EXISTS '.$colNameQuoted;
 
                 try {
                     $this->db->executeStatement($sql);
@@ -4440,7 +4493,11 @@ class MagicMapper
                 ]
             );
 
-            $colNameQuoted = $isPostgres ? '"'.$colName.'"' : '`'.$colName.'`';
+            if ($isPostgres === true) {
+                $colNameQuoted = '"'.$colName.'"';
+            } else {
+                $colNameQuoted = '`'.$colName.'`';
+            }
 
             if ($isPostgres === true) {
                 $sql = 'ALTER TABLE '.$tableNameQuoted.' ALTER COLUMN '.$colNameQuoted.' DROP NOT NULL';
@@ -4473,7 +4530,7 @@ class MagicMapper
             ]
         );
 
-        // Return statistics about what was changed
+        // Return statistics about what was changed.
         return [
             'columnsAdded'      => $columnsAdded,
             'columnsDeRequired' => $columnsDeRequired,
@@ -4492,7 +4549,11 @@ class MagicMapper
     private function formatDefaultValueForSQL(mixed $default): string
     {
         if (is_bool($default) === true) {
-            return $default === true ? 'TRUE' : 'FALSE';
+            if ($default === true) {
+                return 'TRUE';
+            }
+
+            return 'FALSE';
         }
 
         if (is_string($default) === true) {
@@ -4548,7 +4609,7 @@ class MagicMapper
                 if ((self::$regSchemaTableCache[$cacheKey] ?? null) !== null
                     && self::$regSchemaTableCache[$cacheKey] === $tableName
                 ) {
-                    $this->invalidateTableCache($cacheKey);
+                    $this->invalidateTableCache(cacheKey: $cacheKey);
                     break;
                 }
             }
@@ -4619,7 +4680,7 @@ class MagicMapper
 
         // Clear cache for specific register+schema combination.
         $cacheKey = $this->getCacheKey(registerId: $registerId, schemaId: $schemaId);
-        $this->invalidateTableCache($cacheKey);
+        $this->invalidateTableCache(cacheKey: $cacheKey);
 
         $this->logger->debug(
             message: '[MagicMapper] Cleared MagicMapper cache for register+schema',
@@ -4764,18 +4825,20 @@ class MagicMapper
         return $globalEnabled === 'true';
     }//end isMagicMappingEnabledForSchema()
 
-    // ==================================================================================
-    // OBJECTENTITY-COMPATIBLE METHODS (UnifiedObjectMapper Integration)
-    // ==================================================================================
+    // ==================================================================================.
+    // OBJECTENTITY-COMPATIBLE METHODS (UnifiedObjectMapper Integration).
+    // ==================================================================================.
 
     /**
      * Find object in register+schema table by identifier (ID, UUID, slug, or URI).
      *
      * This method provides ObjectEntity compatibility for the UnifiedObjectMapper.
      *
-     * @param string|int $identifier Object identifier (ID, UUID, slug, or URI).
-     * @param Register   $register   The register context.
-     * @param Schema     $schema     The schema context.
+     * @param string|int $identifier   Object identifier (ID, UUID, slug, or URI).
+     * @param Register   $register     The register context.
+     * @param Schema     $schema       The schema context.
+     * @param bool       $rbac         Whether to apply RBAC.
+     * @param bool       $multitenancy Whether to apply multi-tenancy.
      *
      * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found.
      * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple objects found.
@@ -4845,10 +4908,10 @@ class MagicMapper
         $qb->andWhere($qb->expr()->isNull(self::METADATA_PREFIX.'deleted'));
 
         // Apply multitenancy filtering if enabled.
-        // Note: For MagicMapper, we rely on the table structure itself for multitenancy,
-        // as the organisation column is part of the schema. The $multitenancy parameter
+        // Note: For MagicMapper, we rely on the table structure itself for multitenancy,.
+        // as the organisation column is part of the schema. The $multitenancy parameter.
         // is primarily used to decide whether to filter at all.
-        // For now, we skip adding explicit organisation filters in MagicMapper
+        // For now, we skip adding explicit organisation filters in MagicMapper.
         // as that's handled by RBAC and the table structure.
         // Apply RBAC filtering if enabled.
         if ($rbac === true) {
@@ -4928,7 +4991,7 @@ class MagicMapper
                 );
 
         // Get all magic tables from information_schema.
-        // NOTE: We use raw SQL here because the query builder adds the table prefix
+        // NOTE: We use raw SQL here because the query builder adds the table prefix.
         // to information_schema, which is a system schema and shouldn't be prefixed.
         $prefix       = 'oc_';
         $tablePattern = $prefix.'openregister_table_%';
@@ -4958,7 +5021,7 @@ class MagicMapper
                 continue;
             }
 
-            // Extract register and schema IDs from table name: oc_openregister_table_{registerId}_{schemaId}
+            // Extract register and schema IDs from table name: oc_openregister_table_{registerId}_{schemaId}.
             $tableName = str_replace($prefix, '', $fullTableName);
             if (preg_match('/^openregister_table_(\d+)_(\d+)$/', $tableName, $matches) !== 1) {
                 continue;
@@ -5126,8 +5189,21 @@ class MagicMapper
             $tableInfoMap[$fullTableName] = ['registerId' => $registerId, 'schemaId' => $schemaId];
 
             // Build UNION part for this table - select only metadata columns for efficiency.
-            $deletedCondition = $includeDeleted ? '' : " AND {$deletedCol} IS NULL";
-            $unionParts[]     = "SELECT '{$fullTableName}' AS _source_table, {$uuidCol} AS found_uuid "."FROM {$fullTableName} "."WHERE {$uuidCol} IN ({$uuidPlaceholders}){$deletedCondition}";
+            if ($includeDeleted === true) {
+                $deletedCondition = '';
+            } else {
+                $deletedCondition = " AND {$deletedCol} IS NULL";
+            }
+
+            $unionParts[] = sprintf(
+                "SELECT '%s' AS _source_table, %s AS found_uuid FROM %s WHERE %s IN (%s)%s",
+                $fullTableName,
+                $uuidCol,
+                $fullTableName,
+                $uuidCol,
+                $uuidPlaceholders,
+                $deletedCondition
+            );
         }//end foreach
 
         if (empty($unionParts) === true) {
@@ -5308,8 +5384,20 @@ class MagicMapper
 
             // Build UNION part - search for UUID in relation VALUES using text search.
             // This is more reliable than jsonb_each_text as it handles various JSON formats.
-            $deletedCondition = $includeDeleted ? '' : " AND {$deletedCol} IS NULL";
-            $unionParts[]     = "SELECT '{$fullTableName}' AS _source_table, {$uuidCol} AS found_uuid "."FROM {$fullTableName} "."WHERE {$relationsCol}::text LIKE ?"."{$deletedCondition}";
+            if ($includeDeleted === true) {
+                $deletedCondition = '';
+            } else {
+                $deletedCondition = " AND {$deletedCol} IS NULL";
+            }
+
+            $unionParts[] = sprintf(
+                "SELECT '%s' AS _source_table, %s AS found_uuid FROM %s WHERE %s::text LIKE ?%s",
+                $fullTableName,
+                $uuidCol,
+                $fullTableName,
+                $relationsCol,
+                $deletedCondition
+            );
         }//end foreach
 
         if (empty($unionParts) === true) {
@@ -5489,9 +5577,10 @@ class MagicMapper
     /**
      * Insert ObjectEntity into register+schema table.
      *
-     * @param ObjectEntity $entity   The object entity to insert.
-     * @param Register     $register The register context.
-     * @param Schema       $schema   The schema context.
+     * @param ObjectEntity $entity         The object entity to insert.
+     * @param Register     $register       The register context.
+     * @param Schema       $schema         The schema context.
+     * @param bool         $dispatchEvents Whether to dispatch events.
      *
      * @throws Exception If insertion fails.
      *
@@ -5585,9 +5674,10 @@ class MagicMapper
     /**
      * Update ObjectEntity in register+schema table.
      *
-     * @param ObjectEntity $entity   The object entity to update.
-     * @param Register     $register The register context.
-     * @param Schema       $schema   The schema context.
+     * @param ObjectEntity      $entity    The object entity to update.
+     * @param Register          $register  The register context.
+     * @param Schema            $schema    The schema context.
+     * @param ObjectEntity|null $oldEntity The old entity for comparison.
      *
      * @throws Exception If update fails.
      *
@@ -5670,10 +5760,11 @@ class MagicMapper
      *
      * Supports both soft delete (sets _deleted field) and hard delete (removes from table).
      *
-     * @param ObjectEntity $entity     The object entity to delete.
-     * @param Register     $register   The register context.
-     * @param Schema       $schema     The schema context.
-     * @param bool         $hardDelete Whether to perform hard delete (default: false for soft delete).
+     * @param ObjectEntity $entity         The object entity to delete.
+     * @param Register     $register       The register context.
+     * @param Schema       $schema         The schema context.
+     * @param bool         $hardDelete     Whether to perform hard delete (default: false for soft delete).
+     * @param bool         $dispatchEvents Whether to dispatch events.
      *
      * @throws Exception If deletion fails.
      *
@@ -6120,15 +6211,15 @@ class MagicMapper
                 $fullTableName = 'oc_'.$tableName;
 
                 // Search for the UUID as a VALUE within the _relations JSONB.
-                // The _relations column can be either:
-                // - An object: {"propertyName": "uuid", ...} (new format)
-                // - An array: ["uuid1", "uuid2", ...] (legacy format)
+                // The _relations column can be either:.
+                // - An object: {"propertyName": "uuid", ...} (new format).
+                // - An array: ["uuid1", "uuid2", ...] (legacy format).
                 // We need to find rows where the UUID appears in either format.
                 if ($isPostgres === true) {
                     // PostgreSQL: Handle both object and array formats.
-                    // - For objects: use jsonb_each_text to search values
-                    // - For arrays: use @> containment operator (can't use ? as it conflicts with PDO placeholders)
-                    // Note: We use @> with a JSON array literal instead of ? operator
+                    // - For objects: use jsonb_each_text to search values.
+                    // - For arrays: use @> containment operator (can't use ? as it conflicts with PDO placeholders).
+                    // Note: We use @> with a JSON array literal instead of ? operator.
                     $sql = "SELECT * FROM {$fullTableName}
                             WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb)
                             AND (
@@ -6211,10 +6302,11 @@ class MagicMapper
      *
      * Uses the _relations GIN index for efficient containment queries.
      *
-     * @param array  $uuids      Array of UUIDs to search for in _relations
-     * @param int    $schemaId   The target schema ID to search in
-     * @param int    $registerId The register ID for the magic table
-     * @param string $fieldName  The field name to check (for logging/debugging)
+     * @param array  $uuids                Array of UUIDs to search for in _relations.
+     * @param int    $schemaId             The target schema ID to search in.
+     * @param int    $registerId           The register ID for the magic table.
+     * @param string $fieldName            The field name to check (for logging/debugging).
+     * @param array  $additionalFieldNames Additional field names to check.
      *
      * @return ObjectEntity[] Array of objects that have ANY of the UUIDs in _relations
      *
@@ -6225,18 +6317,18 @@ class MagicMapper
         int $schemaId,
         int $registerId,
         string $fieldName,
-        array $additionalFieldNames = []
+        array $additionalFieldNames=[]
     ): array {
         if (empty($uuids) === true) {
             return [];
         }
 
-        // Construct the magic table name directly: openregister_table_{registerId}_{schemaId}
+        // Construct the magic table name directly: openregister_table_{registerId}_{schemaId}.
         $tableName     = self::TABLE_PREFIX.$registerId.'_'.$schemaId;
         $fullTableName = 'oc_'.$tableName;
 
         // Check if the table exists.
-        if ($this->checkTableExistsInDatabase($tableName) === false) {
+        if ($this->checkTableExistsInDatabase(tableName: $tableName) === false) {
             $this->logger->debug(
                 message: '[MagicMapper] findByRelationBatchInSchema: table does not exist',
                 context: [
@@ -6258,9 +6350,9 @@ class MagicMapper
 
         try {
             // Build a query that finds objects whose _relations contains ANY of the given UUIDs.
-            // The _relations column can be either:
-            // - An object: {"propertyName": "uuid", ...} (new format)
-            // - An array: ["uuid1", "uuid2", ...] (legacy format)
+            // The _relations column can be either:.
+            // - An object: {"propertyName": "uuid", ...} (new format).
+            // - An array: ["uuid1", "uuid2", ...] (legacy format).
             // We need to find rows where ANY UUID appears in either format.
             $conditions = [];
             $params     = [];
@@ -6268,9 +6360,11 @@ class MagicMapper
             foreach ($uuids as $uuid) {
                 if ($isPostgres === true) {
                     // PostgreSQL: Handle both array and object formats.
-                    // - For arrays: use @> containment operator (can't use ? as it conflicts with PDO placeholders)
-                    // - For objects: use jsonb_each_text to search values
-                    $conditions[] = '((jsonb_typeof(_relations) = \'array\' AND _relations @> to_jsonb(?::text)) OR (jsonb_typeof(_relations) = \'object\' AND EXISTS (SELECT 1 FROM jsonb_each_text(_relations) AS kv WHERE kv.value = ?)))';
+                    // - For arrays: use @> containment operator (can't use ? as it conflicts with PDO placeholders).
+                    // - For objects: use jsonb_each_text to search values.
+                    $arrSql       = '(jsonb_typeof(_relations)=\'array\' AND _relations @> to_jsonb(?::text))';
+                    $objSql       = '(jsonb_typeof(_relations)=\'object\' AND EXISTS(SELECT 1 FROM jsonb_each_text(_relations) kv WHERE kv.value=?))';
+                    $conditions[] = "({$arrSql} OR {$objSql})";
                     $params[]     = $uuid;
                     $params[]     = $uuid;
                 } else {
@@ -6296,10 +6390,14 @@ class MagicMapper
             $conditionSql = implode(' OR ', $conditions);
 
             // Build the WHERE clause for _deleted check (different syntax for PostgreSQL vs MySQL).
-            $deletedCheck = $isPostgres ? "(_deleted IS NULL OR _deleted = 'null'::jsonb)" : '_deleted IS NULL';
+            if ($isPostgres === true) {
+                $deletedCheck = "(_deleted IS NULL OR _deleted = 'null'::jsonb)";
+            } else {
+                $deletedCheck = '_deleted IS NULL';
+            }
 
             // Apply multi-tenancy filtering to inverse relationship lookups.
-            // This ensures that _extend does not bypass RBAC — preventing PII exposure
+            // This ensures that _extend does not bypass RBAC — preventing PII exposure.
             // (e.g., contactpersonen of gemeente organisations leaking to unauthenticated users).
             [$orgFilter, $orgParams] = $this->buildOrganisationFilterForRelation();
             $params = array_merge($params, $orgParams);
@@ -6399,15 +6497,15 @@ class MagicMapper
 
         if ($user !== null) {
             // Authenticated user: allow cross-org access for inverse relations.
-            // The publications endpoint is designed to show data from all orgs,
+            // The publications endpoint is designed to show data from all orgs,.
             // and authenticated users should see contact information.
             return ['', []];
         }
 
         // Unauthenticated: allow objects with no organisation set OR published objects.
-        // This prevents PII exposure (names, emails, phone numbers) of
-        // gemeente/samenwerking contact persons to the public internet,
-        // while still allowing published objects (e.g. diensten) to appear
+        // This prevents PII exposure (names, emails, phone numbers) of.
+        // gemeente/samenwerking contact persons to the public internet,.
+        // while still allowing published objects (e.g. diensten) to appear.
         // in inverse relationship lookups like _extend=diensten on modules.
         $now = (new \DateTime())->format(format: 'Y-m-d H:i:s');
         return [
@@ -6533,7 +6631,7 @@ class MagicMapper
             $stmt->execute();
             $tables = [];
 
-            while ($row = $stmt->fetch()) {
+            while (($row = $stmt->fetch()) !== false) {
                 // Remove the 'oc_' prefix to get the table name for query builder.
                 $tableName = $row['table_name'];
                 if (str_starts_with($tableName, 'oc_') === true) {
@@ -6610,7 +6708,7 @@ class MagicMapper
         }
 
         // Build column-to-property mapping from schema if available.
-        // This allows us to restore original property names (e.g., 'e-mailadres')
+        // This allows us to restore original property names (e.g., 'e-mailadres').
         // from their sanitized column names (e.g., 'e_mailadres').
         $columnToPropertyMap = [];
         if (isset($row['_schema']) === true) {
@@ -6619,7 +6717,7 @@ class MagicMapper
                 if ($schema !== null) {
                     $properties = $schema->getProperties() ?? [];
                     foreach ($properties as $propertyName => $propertyDef) {
-                        $columnName = $this->sanitizeColumnName($propertyName);
+                        $columnName = $this->sanitizeColumnName(name: $propertyName);
                         $columnToPropertyMap[$columnName] = $propertyName;
                     }
                 }

@@ -164,7 +164,7 @@ class MetadataHydrationHandler
             $slug = $this->extractMetadataValue(data: $businessData, fieldPath: $config['objectSlugField']);
             if ($slug !== null && trim($slug) !== '') {
                 // Generate URL-friendly slug.
-                $generatedSlug = $this->createSlugFromValue(trim($slug));
+                $generatedSlug = $this->createSlugFromValue(value: trim($slug));
                 if ($generatedSlug !== null) {
                     $entity->setSlug($generatedSlug);
                 }
@@ -267,8 +267,9 @@ class MetadataHydrationHandler
      * This method parses strings like "name | ggm_naam | identifier" and tries each
      * field in order, returning the first one that has a non-empty value.
      *
-     * @param array  $data       The object data.
-     * @param string $fieldChain The pipe-separated field chain (e.g., "name | ggm_naam | identifier").
+     * @param array  $data             The object data.
+     * @param string $fieldChain       The pipe-separated field chain (e.g., "name | ggm_naam | identifier").
+     * @param array  $schemaProperties Optional schema properties for relation field detection.
      *
      * @return string|null The first non-empty value found, or null if none found.
      */
@@ -423,7 +424,11 @@ class MetadataHydrationHandler
         // When the field is empty, default to the first mapped value.
         if ($fieldValue === null || trim((string) $fieldValue) === '') {
             $firstValue = reset($map);
-            return $firstValue !== false ? $firstValue : null;
+            if ($firstValue !== false) {
+                return $firstValue;
+            }
+
+            return null;
         }
 
         $fieldValue = trim((string) $fieldValue);
@@ -487,19 +492,31 @@ class MetadataHydrationHandler
     private function resolveRelationValue(string $fieldName, mixed $value, array $schemaProperties): ?string
     {
         if ($value === null || empty($schemaProperties) === true) {
-            return is_string($value) ? $value : null;
+            if (is_string($value) === true) {
+                return $value;
+            }
+
+            return null;
         }
 
         // Check if the field is a relation property in the schema.
         $property = $schemaProperties[$fieldName] ?? null;
-        if ($property === null || $this->isRelationProperty($property) === false) {
-            return is_string($value) ? $value : null;
+        if ($property === null || $this->isRelationProperty(property: $property) === false) {
+            if (is_string($value) === true) {
+                return $value;
+            }
+
+            return null;
         }
 
         // Extract UUID from the value.
-        $uuid = $this->extractUuidFromValue($value);
+        $uuid = $this->extractUuidFromValue(value: $value);
         if ($uuid === null) {
-            return is_string($value) ? $value : null;
+            if (is_string($value) === true) {
+                return $value;
+            }
+
+            return null;
         }
 
         // Resolve UUID to object name via CacheHandler.
@@ -618,7 +635,7 @@ class MetadataHydrationHandler
         }
 
         // Use the existing createSlug method for consistency.
-        return $this->createSlug(trim($value));
+        return $this->createSlug(name: trim($value));
     }//end createSlugFromValue()
 
     /**
@@ -673,7 +690,7 @@ class MetadataHydrationHandler
 
         // Generate slug from source.
         if (is_string($slugSource) === true && empty($slugSource) === false) {
-            return $this->createSlug($slugSource);
+            return $this->createSlug(text: $slugSource);
         }
 
         return null;

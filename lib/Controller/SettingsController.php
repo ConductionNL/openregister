@@ -631,7 +631,7 @@ class SettingsController extends Controller
                 try {
                     $stmt   = $this->db->prepare('SELECT extname, extversion FROM pg_extension ORDER BY extname');
                     $result = $stmt->execute();
-                    while ($row = $result->fetch()) {
+                    while (($row = $result->fetch()) !== false) {
                         $extensions[] = [
                             'name'    => $row['extname'],
                             'version' => $row['extversion'],
@@ -731,7 +731,7 @@ class SettingsController extends Controller
         // Clear the cached database info to force a refresh.
         $this->config->deleteKey('openregister', 'databaseInfo');
 
-        // getDatabaseInfo will now fetch fresh data since cache is empty.
+        // The getDatabaseInfo method will now fetch fresh data since cache is empty.
         return $this->getDatabaseInfo();
     }//end refreshDatabaseInfo()
 

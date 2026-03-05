@@ -350,11 +350,11 @@ class TextExtractionService
 
         // Create ObjectHandler and extract text.
         $objectHandler = new ObjectHandler(
-            $this->objectEntityMapper,
-            $this->chunkMapper,
-            $this->schemaMapper,
-            $this->registerMapper,
-            $this->logger
+            objectMapper: $this->objectEntityMapper,
+            chunkMapper: $this->chunkMapper,
+            schemaMapper: $this->schemaMapper,
+            registerMapper: $this->registerMapper,
+            logger: $this->logger
         );
 
         // Get object metadata.
@@ -362,14 +362,14 @@ class TextExtractionService
 
         // Extract text using ObjectHandler.
         $extractedData = $objectHandler->extractText(sourceId: $objectId, sourceMeta: $sourceMeta, force: $forceReExtract);
-        $cleanText     = $this->sanitizeText($extractedData['text']);
+        $cleanText     = $this->sanitizeText(text: $extractedData['text']);
 
         if ($cleanText === '') {
             throw new Exception('Text extraction resulted in an empty payload for object.');
         }
 
         // Collect lightweight language metadata to enrich chunk storage.
-        $languageSignals = $this->detectLanguageSignals($cleanText);
+        $languageSignals = $this->detectLanguageSignals(text: $cleanText);
 
         $payload = [
             'source_type'         => 'object',
@@ -517,13 +517,13 @@ class TextExtractionService
             throw new Exception('Text extraction returned no result for source.');
         }
 
-        $cleanText = $this->sanitizeText($rawText);
+        $cleanText = $this->sanitizeText(text: $rawText);
         if ($cleanText === '') {
             throw new Exception('Text extraction resulted in an empty payload.');
         }
 
         // Collect lightweight language metadata to enrich chunk storage.
-        $languageSignals = $this->detectLanguageSignals($cleanText);
+        $languageSignals = $this->detectLanguageSignals(text: $cleanText);
 
         return [
             'source_type'         => $sourceType,
@@ -573,7 +573,7 @@ class TextExtractionService
             'language'            => $language,
             'language_level'      => null,
             'language_confidence' => $confidence,
-            'detection_method'    => $this->getDetectionMethod($language),
+            'detection_method'    => $this->getDetectionMethod(language: $language),
         ];
     }//end detectLanguageSignals()
 
@@ -793,7 +793,7 @@ class TextExtractionService
     {
         try {
             $metadataText = json_encode(
-                $this->summarizeMetadataPayload($payload),
+                $this->summarizeMetadataPayload(payload: $payload),
                 JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT
             );
         } catch (JsonException $exception) {
@@ -949,13 +949,13 @@ class TextExtractionService
                 );
             } else if ($mimeType === 'application/pdf') {
                 // Extract text from PDF using Smalot PdfParser.
-                $extractedText = $this->extractPdf($file);
-            } else if ($this->isWordDocument($mimeType) === true) {
+                $extractedText = $this->extractPdf(content: $file);
+            } else if ($this->isWordDocument(mimeType: $mimeType) === true) {
                 // Extract text from DOCX/DOC using PhpWord.
-                $extractedText = $this->extractWord($file);
-            } else if ($this->isSpreadsheet($mimeType) === true) {
+                $extractedText = $this->extractWord(content: $file);
+            } else if ($this->isSpreadsheet(mimeType: $mimeType) === true) {
                 // Extract text from XLSX/XLS using PhpSpreadsheet.
-                $extractedText = $this->extractSpreadsheet($file);
+                $extractedText = $this->extractSpreadsheet(content: $file);
             } else {
                 // Unsupported file type.
                 $this->logger->info(
@@ -1214,9 +1214,9 @@ class TextExtractionService
     public function getStats(): array
     {
         $untrackedCount = $this->fileMapper->countUntrackedFiles();
-        $chunkCount     = $this->getTableCountSafe('openregister_chunks');
-        $objectCount    = $this->getTableCountSafe('openregister_objects');
-        $entityCount    = $this->getTableCountSafe('openregister_entities');
+        $chunkCount     = $this->getTableCountSafe(spreadsheet: 'openregister_chunks');
+        $objectCount    = $this->getTableCountSafe(spreadsheet: 'openregister_objects');
+        $entityCount    = $this->getTableCountSafe(spreadsheet: 'openregister_entities');
 
         return [
             'totalFiles'     => $untrackedCount + $chunkCount,
@@ -1663,7 +1663,7 @@ class TextExtractionService
         $startTime = microtime(true);
 
         // Clean the text first.
-        $text = $this->cleanText($text);
+        $text = $this->cleanText(text: $text);
 
         // Choose chunking strategy.
         $chunks = match ($strategy) {
@@ -1705,7 +1705,7 @@ class TextExtractionService
                 'line'             => __LINE__,
                 'chunk_count'      => count($chunks),
                 'chunking_time_ms' => $chunkingTime,
-                'avg_chunk_size'   => $this->calculateAvgChunkSize($chunks),
+                'avg_chunk_size'   => $this->calculateAvgChunkSize(chunks: $chunks),
             ]
         );
 

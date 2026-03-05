@@ -263,7 +263,7 @@ class CacheHandler
             $object = $this->objectEntityMapper->find($identifier);
 
             // Cache the object with both ID and UUID as keys.
-            $this->cacheObject($object);
+            $this->cacheObject(object: $object);
 
             return $object;
         } catch (\Exception $e) {
@@ -438,8 +438,8 @@ class CacheHandler
                 $dynamicFields[$fieldName.$suffix] = $value;
             } else if (is_bool($value) === true) {
                 $dynamicFields[$fieldName.'_b'] = $value;
-            } else if ($this->isDateString($value) === true) {
-                $dynamicFields[$fieldName.'_dt'] = $this->formatDateForSolr($value);
+            } else if ($this->isDateString(value: $value) === true) {
+                $dynamicFields[$fieldName.'_dt'] = $this->formatDateForSolr(dateString: $value);
             }//end if
         }//end foreach
 
@@ -526,7 +526,7 @@ class CacheHandler
 
             // Cache all loaded objects.
             foreach ($objects as $object) {
-                $this->cacheObject($object);
+                $this->cacheObject(object: $object);
             }
 
             $this->stats['preloads'] += count($objects);
@@ -614,7 +614,7 @@ class CacheHandler
             $nameHitRate = ($this->stats['name_hits'] / $totalNameRequests) * 100;
         }
 
-        // Get distributed cache count (persists across requests)
+        // Get distributed cache count (persists across requests).
         $distributedNameCacheCount = $this->getDistributedNameCacheCount();
 
         return array_merge(
@@ -677,7 +677,10 @@ class CacheHandler
             }
         }
 
-        $this->logger->debug(message: '[CacheHandler] 🧹 SEARCH CACHE CLEARED', context: ['file' => __FILE__, 'line' => __LINE__, 'pattern' => $pattern ?? 'all']);
+        $this->logger->debug(
+            message: '[CacheHandler] 🧹 SEARCH CACHE CLEARED',
+            context: ['file' => __FILE__, 'line' => __LINE__, 'pattern' => $pattern ?? 'all']
+        );
     }//end clearSearchCache()
 
     /**
@@ -799,7 +802,7 @@ class CacheHandler
             $object->getOrganisation();
             // Track organization for future use.
             // Clear individual object from cache.
-            $this->clearObjectFromCache($object);
+            $this->clearObjectFromCache(object: $object);
 
             // **INDEX INTEGRATION**: Index or remove from search index based on operation.
             if ($operation === 'create' || $operation === 'update') {
@@ -1049,7 +1052,10 @@ class CacheHandler
         // Check in-memory cache first (fastest).
         if (($this->nameCache[$key] ?? null) !== null) {
             $this->stats['name_hits']++;
-            $this->logger->debug(message: '[CacheHandler] 🚀 NAME CACHE HIT (in-memory)', context: ['file' => __FILE__, 'line' => __LINE__, 'identifier' => $key]);
+            $this->logger->debug(
+                message: '[CacheHandler] 🚀 NAME CACHE HIT (in-memory)',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'identifier' => $key]
+            );
             return $this->nameCache[$key];
         }
 
@@ -1061,7 +1067,10 @@ class CacheHandler
                     // Store in in-memory cache for faster future access.
                     $this->nameCache[$key] = $cachedName;
                     $this->stats['name_hits']++;
-                    $this->logger->debug(message: '[CacheHandler] ⚡ NAME CACHE HIT (distributed)', context: ['file' => __FILE__, 'line' => __LINE__, 'identifier' => $key]);
+                    $this->logger->debug(
+                        message: '[CacheHandler] ⚡ NAME CACHE HIT (distributed)',
+                        context: ['file' => __FILE__, 'line' => __LINE__, 'identifier' => $key]
+                    );
                     return $cachedName;
                 }
             } catch (\Exception $e) {
@@ -1074,7 +1083,7 @@ class CacheHandler
                             'error'      => $e->getMessage(),
                         ]
                     );
-            }
+            }//end try
         }//end if
 
         // Cache miss - load from database.
@@ -1240,7 +1249,7 @@ class CacheHandler
                 // STEP 3: Batch load any still-missing identifiers from magic tables.
                 // This replaces the N+1 individual lookups with batch queries per table.
                 if (empty($missingIdentifiers) === false) {
-                    $batchResults = $this->batchLoadNamesFromMagicTables($missingIdentifiers);
+                    $batchResults = $this->batchLoadNamesFromMagicTables(uuids: $missingIdentifiers);
                     foreach ($batchResults as $uuid => $name) {
                         $results[$uuid] = $name;
                         $this->setObjectName(identifier: $uuid, name: $name);
@@ -1407,7 +1416,7 @@ class CacheHandler
                 ]
             );
 
-            // Store breakdown for diagnostics
+            // Store breakdown for diagnostics.
             $this->stats['warmup_breakdown'] = [
                 'organisations' => count($organisations),
                 'objects_table' => count($objects),
@@ -1482,7 +1491,12 @@ class CacheHandler
 
                             if ($uuid !== null) {
                                 // Use name if available, otherwise fall back to UUID.
-                                $effectiveName = (($name !== null) && trim($name) !== '') ? $name : $uuid;
+                                if (($name !== null) && trim($name) !== '') {
+                                    $effectiveName = $name;
+                                } else {
+                                    $effectiveName = $uuid;
+                                }
+
                                 // Overwrite any existing name (magic table has enriched names).
                                 $this->nameCache[$uuid] = $effectiveName;
                                 $loadedCount++;
@@ -1722,11 +1736,11 @@ class CacheHandler
             }
         }
 
-        // Store metadata with the count for cross-request stats
+        // Store metadata with the count for cross-request stats.
         try {
             $this->nameDistributedCache->set('_metadata_count', $storedCount, $ttl);
         } catch (\Exception $e) {
-            // Ignore metadata storage failures
+            // Ignore metadata storage failures.
         }
 
         return $storedCount;
@@ -1748,7 +1762,11 @@ class CacheHandler
 
         try {
             $count = $this->nameDistributedCache->get('_metadata_count');
-            return $count !== null ? (int) $count : 0;
+            if ($count !== null) {
+                return (int) $count;
+            }
+
+            return 0;
         } catch (\Exception $e) {
             return 0;
         }

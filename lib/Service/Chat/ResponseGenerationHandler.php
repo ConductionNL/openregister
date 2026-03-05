@@ -299,14 +299,13 @@ class ResponseGenerationHandler
                  */
 
                 $response = $this->callFireworksChatAPIWithHistory(
-                    $config->apiKey,
-                    $config->model,
-                    $config->url,
-                    $messageHistory,
-                    $functions
-                    // Pass functions.
+                    apiKey: $config->apiKey,
+                    model: $config->model,
+                    baseUrl: $config->url,
+                    messageHistory: $messageHistory,
+                    functions: $functions
                 );
-                $llmTime = microtime(true) - $llmStartTime;
+                $llmTime  = microtime(true) - $llmStartTime;
             } else if ($chatProvider === 'ollama') {
                 // Use native Ollama chat with LLPhant's built-in tool support.
                 $chat = new OllamaChat($config);
@@ -409,8 +408,9 @@ class ResponseGenerationHandler
             // Note: Function calling with Fireworks AI is not yet implemented.
         // Functions will be ignored for Fireworks provider.
         if (empty($functions) === false) {
+            $msg = '[ResponseGenerationHandler] Function calling not yet supported for Fireworks AI. Tools will be ignored.';
             $this->logger->warning(
-                message: '[ResponseGenerationHandler] Function calling not yet supported for Fireworks AI. Tools will be ignored.',
+                message: $msg,
                 context: [
                     'file'          => __FILE__,
                     'line'          => __LINE__,

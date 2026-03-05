@@ -116,7 +116,7 @@ class NoteService
 
         $notes = [];
         foreach ($comments as $comment) {
-            $notes[] = $this->commentToArray($comment);
+            $notes[] = $this->commentToArray(comment: $comment);
         }
 
         return $notes;
@@ -149,7 +149,7 @@ class NoteService
         $comment->setMessage($message);
         $this->commentsManager->save($comment);
 
-        return $this->commentToArray($comment);
+        return $this->commentToArray(comment: $comment);
     }//end createNote()
 
     /**

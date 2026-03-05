@@ -65,18 +65,18 @@ class LogCleanUpTask extends TimedJob
         AuditTrailMapper $auditTrailMapper,
         LoggerInterface $logger,
     ) {
-        parent::__construct($time);
+        parent::__construct(time: $time);
         $this->auditTrailMapper = $auditTrailMapper;
         $this->logger           = $logger;
 
         // Run every hour (3600 seconds).
-        $this->setInterval(3600);
+        $this->setInterval(seconds: 3600);
 
         // Delay until low-load time.
-        $this->setTimeSensitivity(IJob::TIME_INSENSITIVE);
+        $this->setTimeSensitivity(sensitivity: IJob::TIME_INSENSITIVE);
 
         // Only run one instance of this job at a time.
-        $this->setAllowParallelRuns(false);
+        $this->setAllowParallelRuns(allow: false);
     }//end __construct()
 
     /**

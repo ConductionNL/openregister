@@ -118,6 +118,7 @@ class RenderObject
      * @param CacheHandler           $objectCacheService  Object cache service for optimized loading.
      * @param PropertyRbacHandler    $propertyRbacHandler Property-level RBAC handler.
      * @param LoggerInterface        $logger              Logger for performance monitoring.
+     * @param FileService            $fileService         File service for file operations.
      */
     public function __construct(
         private readonly FileMapper $fileMapper,
@@ -474,7 +475,7 @@ class RenderObject
     {
         try {
             // Get the schema for this object to understand property configurations.
-            $schema = $this->getSchema($entity->getSchema());
+            $schema = $this->getSchema(id: $entity->getSchema());
             if ($schema === null) {
                 // If no schema found, return entity unchanged.
                 return $entity;
@@ -486,7 +487,7 @@ class RenderObject
             // First, ensure all file array properties exist in objectData (even if empty).
             // This is important for properties that have been set to empty arrays.
             foreach ($schemaProperties as $propertyName => $propertyConfig) {
-                if ($this->isFilePropertyConfig($propertyConfig) === true) {
+                if ($this->isFilePropertyConfig(propertyConfig: $propertyConfig) === true) {
                     $isArrayProperty = ($propertyConfig['type'] ?? '') === 'array';
 
                     // If it's an array property and not set, initialize it as empty array.
@@ -511,7 +512,7 @@ class RenderObject
                 $propertyConfig = $schemaProperties[$propertyName];
 
                 // Check if this is a file property (direct or array[file]).
-                if ($this->isFilePropertyConfig($propertyConfig) === true) {
+                if ($this->isFilePropertyConfig(propertyConfig: $propertyConfig) === true) {
                     $objectData[$propertyName] = $this->hydrateFileProperty(
                         propertyValue: $propertyValue,
                         propertyConfig: $propertyConfig,
@@ -591,7 +592,12 @@ class RenderObject
 
         // Determine if base64 format is requested.
         // Check both the property config and items config (for arrays).
-        $fileConfig   = $isArrayProperty ? ($propertyConfig['items'] ?? []) : $propertyConfig;
+        if ($isArrayProperty === true) {
+            $fileConfig = ($propertyConfig['items'] ?? []);
+        } else {
+            $fileConfig = $propertyConfig;
+        }
+
         $returnBase64 = ($fileConfig['format'] ?? '') === 'base64';
 
         if ($isArrayProperty === true) {
@@ -604,12 +610,12 @@ class RenderObject
             $hydratedFiles = [];
             foreach ($propertyValue as $fileId) {
                 if ($returnBase64 === true) {
-                    $base64Content = $this->getFileAsBase64($fileId);
+                    $base64Content = $this->getFileAsBase64(fileId: $fileId);
                     if ($base64Content !== null) {
                         $hydratedFiles[] = $base64Content;
                     }
                 } else {
-                    $fileObject = $this->getFileObject($fileId);
+                    $fileObject = $this->getFileObject(fileId: $fileId);
                     if ($fileObject !== null) {
                         $hydratedFiles[] = $fileObject;
                     }
@@ -623,10 +629,10 @@ class RenderObject
         $isDigitString = is_string($propertyValue) === true && ctype_digit($propertyValue) === true;
         if (is_numeric($propertyValue) === true || $isDigitString === true) {
             if ($returnBase64 === true) {
-                return $this->getFileAsBase64($propertyValue);
+                return $this->getFileAsBase64(fileId: $propertyValue);
             }
 
-            return $this->getFileObject($propertyValue);
+            return $this->getFileObject(fileId: $propertyValue);
         }
 
         return $propertyValue;
@@ -687,7 +693,7 @@ class RenderObject
     {
         try {
             // Get the schema for this object to understand property configurations.
-            $schema = $this->getSchema($entity->getSchema());
+            $schema = $this->getSchema(id: $entity->getSchema());
             if ($schema === null) {
                 return $entity;
             }
@@ -786,7 +792,7 @@ class RenderObject
             }
 
             // Get file tags.
-            $labels = $this->getFileTags((string) $fileRecord['fileid']);
+            $labels = $this->getFileTags(fileId: (string) $fileRecord['fileid']);
 
             // Format the file object (same structure as renderFiles method).
             return [
@@ -883,13 +889,13 @@ class RenderObject
             }
         }
 
-        $entity = $this->renderFiles($entity);
+        $entity = $this->renderFiles(object: $entity);
 
         // Hydrate file properties (replace file IDs with file objects).
-        $entity = $this->renderFileProperties($entity);
+        $entity = $this->renderFileProperties(entity: $entity);
 
         // Hydrate metadata from file properties (e.g., extract accessUrl for image metadata).
-        $entity = $this->hydrateMetadataFromFileProperties($entity);
+        $entity = $this->hydrateMetadataFromFileProperties(entity: $entity);
 
         // Get the object data as an array for manipulation.
         $objectData = $entity->getObject();
@@ -935,15 +941,19 @@ class RenderObject
         // This is a performance optimization: inverse lookups are expensive (search all magic tables),
         // so we only do them when explicitly requested via _extend.
         if ($depth < 10 && empty($_extend) === false) {
-            $schema = $this->getSchema($entity->getSchema());
+            $schema = $this->getSchema(id: $entity->getSchema());
             if ($schema !== null) {
-                $inversedProperties = $this->getInversedProperties($schema);
+                $inversedProperties = $this->getInversedProperties(schema: $schema);
                 // Get the property names that have inversedBy configs (e.g., "contactpersonen").
                 // These are the properties that need inverse lookups to populate their data.
                 $inversePropertyNames = array_keys($inversedProperties);
 
                 // Normalize extend to array.
-                $extendArray = is_array($_extend) ? $_extend : explode(',', $_extend);
+                if (is_array($_extend) === true) {
+                    $extendArray = $_extend;
+                } else {
+                    $extendArray = explode(',', $_extend);
+                }
 
                 // Check if any inverse property is being extended (or 'all' is specified).
                 $shouldHandleInverse = in_array('all', $extendArray, true)
@@ -1014,7 +1024,7 @@ class RenderObject
 
         // Apply property-level RBAC filtering.
         // This filters out properties that the current user is not authorized to read.
-        $schema = $this->getSchema($entity->getSchema());
+        $schema = $this->getSchema(id: $entity->getSchema());
         if ($schema !== null && $schema->hasPropertyAuthorization() === true) {
             // Ensure @self metadata is available for property-level RBAC checks.
             // Property authorization can reference @self.organisation or _organisation,
@@ -1329,14 +1339,14 @@ class RenderObject
             $self = $objectData['@self'] ?? [];
 
             if (in_array('@self.register', $_extend) === true) {
-                $register = $this->getRegister($entity->getRegister());
+                $register = $this->getRegister(id: $entity->getRegister());
                 if ($register !== null) {
                     $self['register'] = $register->jsonSerialize();
                 }
             }
 
             if (in_array('@self.schema', $_extend) === true) {
-                $schema = $this->getSchema($entity->getSchema());
+                $schema = $this->getSchema(id: $entity->getSchema());
                 if ($schema !== null) {
                     $self['schema'] = $schema->jsonSerialize();
                 }
@@ -1414,8 +1424,8 @@ class RenderObject
             if (is_array($value) === true) {
                 foreach ($value as $item) {
                     // Use regex-based UUID validation to support non-RFC 4122 compliant UUIDs
-                    // (e.g., GEMMA ArchiMate UUIDs which have non-standard variant bits)
-                    if (is_string($item) === true && $this->isUuidLike($item) === true) {
+                    // (e.g., GEMMA ArchiMate UUIDs which have non-standard variant bits).
+                    if (is_string($item) === true && $this->isUuidLike(value: $item) === true) {
                         $uuids[] = $item;
                     }
                 }
@@ -1424,8 +1434,8 @@ class RenderObject
             }
 
             // Handle single UUID.
-            // Use regex-based UUID validation to support non-RFC 4122 compliant UUIDs
-            if (is_string($value) === true && $this->isUuidLike($value) === true) {
+            // Use regex-based UUID validation to support non-RFC 4122 compliant UUIDs.
+            if (is_string($value) === true && $this->isUuidLike(value: $value) === true) {
                 $uuids[] = $value;
             }
         }//end foreach
@@ -1461,13 +1471,13 @@ class RenderObject
             return;
         }
 
-        $schema = $this->getSchema($firstEntity->getSchema());
+        $schema = $this->getSchema(id: $firstEntity->getSchema());
         if ($schema === null) {
             return;
         }
 
         // Get properties that have inversedBy configurations.
-        $inversedProperties = $this->getInversedProperties($schema);
+        $inversedProperties = $this->getInversedProperties(schema: $schema);
         if (empty($inversedProperties) === true) {
             return;
         }
@@ -1518,16 +1528,20 @@ class RenderObject
 
             // Normalize inversedBy to an array to support multi-field inverse relations.
             // Example: "inversedBy": ["moduleA", "moduleB"] means the entity can appear in either field.
-            $inversedByFields = is_array(value: $inversedByField) ? $inversedByField : [$inversedByField];
+            if (is_array(value: $inversedByField) === true) {
+                $inversedByFields = $inversedByField;
+            } else {
+                $inversedByFields = [$inversedByField];
+            }
 
             // Resolve schema reference to ID.
-            $targetSchemaId = $this->resolveSchemaReference($targetSchemaRef);
+            $targetSchemaId = $this->resolveSchemaReference(schemaRef: $targetSchemaRef);
             if (empty($targetSchemaId) === true) {
                 continue;
             }
 
             // Get the target schema to find its register.
-            $targetSchema = $this->getSchema($targetSchemaId);
+            $targetSchema = $this->getSchema(id: $targetSchemaId);
             if ($targetSchema === null) {
                 continue;
             }
@@ -1535,10 +1549,15 @@ class RenderObject
             // Batch find all objects of the target schema that reference ANY of our entity UUIDs.
             // This uses the _relations column with GIN index for efficiency.
             try {
-                $magicMapper        = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
+                $magicMapper = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
                 // Pass additional field names for multi-field inversedBy so the SQL also searches
                 // columns that may store references in {"value": "uuid"} format not in _relations.
-                $additionalFields = count($inversedByFields) > 1 ? array_slice($inversedByFields, 1) : [];
+                if (count($inversedByFields) > 1) {
+                    $additionalFields = array_slice($inversedByFields, 1);
+                } else {
+                    $additionalFields = [];
+                }
+
                 $referencingObjects = $magicMapper->findByRelationBatchInSchema(
                     uuids: $entityUuids,
                     schemaId: (int) $targetSchemaId,
@@ -1571,7 +1590,11 @@ class RenderObject
                         }
 
                         // Handle both single UUID and array of UUIDs.
-                        $referencedUuids = is_array($referencedUuid) ? $referencedUuid : [$referencedUuid];
+                        if (is_array($referencedUuid) === true) {
+                            $referencedUuids = $referencedUuid;
+                        } else {
+                            $referencedUuids = [$referencedUuid];
+                        }
 
                         foreach ($referencedUuids as $uuid) {
                             if ($uuid !== null && in_array($uuid, $entityUuids, true) === true) {
@@ -1590,7 +1613,7 @@ class RenderObject
                             }
                         }
                     }//end foreach
-                }
+                }//end foreach
 
                 $this->logger->debug(
                         message: '[RenderObject] [INVERSE_PRELOAD] Batch loaded inverse relationships',
@@ -1678,13 +1701,13 @@ class RenderObject
         ?array $_objects=[]
     ): array {
         // Get the schema for this object.
-        $schema = $this->getSchema($entity->getSchema());
+        $schema = $this->getSchema(id: $entity->getSchema());
         if ($schema === null) {
             return $objectData;
         }
 
         // Get properties that have inversedBy configurations.
-        $inversedProperties = $this->getInversedProperties($schema);
+        $inversedProperties = $this->getInversedProperties(schema: $schema);
         if (empty($inversedProperties) === true) {
             return $objectData;
         }
@@ -1705,7 +1728,7 @@ class RenderObject
 
         // If we have preloaded cache, use it directly instead of querying.
         if ($hasCache === true) {
-            return $this->handleInversedPropertiesFromCache($entity, $objectData, $inversedProperties);
+            return $this->handleInversedPropertiesFromCache(entity: $entity, objectData: $objectData, inversedProperties: $inversedProperties);
         }
 
         // Fallback: Query for referencing objects (original slower path).
@@ -1723,12 +1746,12 @@ class RenderObject
                     continue;
                 }
 
-                $targetSchemaId = $this->resolveSchemaReference($targetSchemaRef);
+                $targetSchemaId = $this->resolveSchemaReference(schemaRef: $targetSchemaRef);
                 if (empty($targetSchemaId) === true) {
                     continue;
                 }
 
-                $additionalFields = array_slice($inversedByValue, 1);
+                $additionalFields  = array_slice($inversedByValue, 1);
                 $additionalResults = $magicMapper->findByRelationBatchInSchema(
                     uuids: [$entityUuid],
                     schemaId: (int) $targetSchemaId,
@@ -1736,17 +1759,16 @@ class RenderObject
                     fieldName: $inversedByValue[0],
                     additionalFieldNames: $additionalFields
                 );
-
                 // Merge results, deduplicating by UUID.
                 $existingUuids = array_map(fn(ObjectEntity $o) => $o->getUuid(), $referencingObjects);
                 foreach ($additionalResults as $obj) {
                     if (in_array($obj->getUuid(), $existingUuids, true) === false) {
                         $referencingObjects[] = $obj;
-                        $existingUuids[] = $obj->getUuid();
+                        $existingUuids[]      = $obj->getUuid();
                     }
                 }
-            }
-        }
+            }//end if
+        }//end foreach
 
         // Set all found objects to the objectsCache.
         $ids = array_map(
@@ -1772,8 +1794,8 @@ class RenderObject
         // Process each inversed property.
         // For a property like 'deelnemers' with inversedBy='deelnames':
         // - Keep the original 'deelnemers' values (forward references to other orgs)
-        // - Find objects that have our UUID in THEIR 'deelnemers' field
-        // - Put those objects' UUIDs in OUR 'deelnames' field (inverse references)
+        // - Find objects that have our UUID in THEIR 'deelnemers' field.
+        // - Put those objects' UUIDs in OUR 'deelnames' field (inverse references).
         foreach ($inversedProperties as $propertyName => $propertyConfig) {
             // Extract inversedBy configuration based on property structure.
             // Check if this is an array property with inversedBy in items.
@@ -1805,13 +1827,17 @@ class RenderObject
             }
 
             // Normalize inversedBy to an array to support multi-field inverse relations.
-            $inversedByProperties = is_array(value: $inversedByProperty) ? $inversedByProperty : [$inversedByProperty];
+            if (is_array(value: $inversedByProperty) === true) {
+                $inversedByProperties = $inversedByProperty;
+            } else {
+                $inversedByProperties = [$inversedByProperty];
+            }
 
             // Resolve schema reference to actual schema ID.
             $schemaId = $entity->getSchema();
             // Use current schema if no target specified.
             if ($targetSchema !== null) {
-                $schemaId = $this->resolveSchemaReference($targetSchema);
+                $schemaId = $this->resolveSchemaReference(schemaRef: $targetSchema);
             }
 
             // Always use $propertyName as the target property to populate.
@@ -1822,7 +1848,11 @@ class RenderObject
 
             // Initialize the target property if not already set to preserve any existing values.
             if (isset($objectData[$targetProperty]) === false) {
-                $objectData[$targetProperty] = $isArray ? [] : null;
+                if ($isArray === true) {
+                    $objectData[$targetProperty] = [];
+                } else {
+                    $objectData[$targetProperty] = null;
+                }
             }
 
             // Find objects that have our UUID in ANY of their inversedBy fields.
@@ -1943,7 +1973,7 @@ class RenderObject
             // Resolve schema reference.
             $schemaId = $entity->getSchema();
             if ($targetSchema !== null) {
-                $schemaId = $this->resolveSchemaReference($targetSchema);
+                $schemaId = $this->resolveSchemaReference(schemaRef: $targetSchema);
             }
 
             // Always use $propertyName as the target property to populate.
@@ -1973,7 +2003,11 @@ class RenderObject
             if ($isArray === true) {
                 $objectData[$targetProperty] = $renderedObjects;
             } else {
-                $objectData[$targetProperty] = empty($renderedObjects) === false ? end($renderedObjects) : null;
+                if (empty($renderedObjects) === false) {
+                    $objectData[$targetProperty] = end($renderedObjects);
+                } else {
+                    $objectData[$targetProperty] = null;
+                }
             }
         }//end foreach
 
@@ -1990,7 +2024,7 @@ class RenderObject
     private function resolveSchemaReference(string $schemaRef): string
     {
         // Remove query parameters if present (e.g., "schema?key=value" -> "schema").
-        $cleanSchemaRef = $this->removeQueryParameters($schemaRef);
+        $cleanSchemaRef = $this->removeQueryParameters(reference: $schemaRef);
 
         // If it's already a numeric ID, return it.
         if (is_numeric($cleanSchemaRef) === true) {
@@ -2135,7 +2169,7 @@ class RenderObject
                 }
 
                 // Use the existing collectUuidsForExtend method to extract UUIDs.
-                $entityUuids       = $this->collectUuidsForExtend($objectData, $_extend);
+                $entityUuids       = $this->collectUuidsForExtend(objectData: $objectData, extend: $_extend);
                 $allUuidsToPreload = array_merge($allUuidsToPreload, $entityUuids);
             }
 
@@ -2175,7 +2209,7 @@ class RenderObject
 
             // **INVERSE RELATIONSHIP OPTIMIZATION**: Batch preload objects that REFERENCE our entities.
             // This prevents N+1 queries when extending inverse properties like 'contactpersonen'.
-            $this->preloadInverseRelationships($entities, $_extend);
+            $this->preloadInverseRelationships(entities: $entities, extend: $_extend);
         }//end if
 
         $renderedEntities = [];

@@ -106,7 +106,10 @@ class SchemaService
      */
     public function exploreSchemaProperties(int $schemaId): array
     {
-        $this->logger->info(message: '[SchemaService] Starting schema exploration for schema ID: '.$schemaId, context: ['file' => __FILE__, 'line' => __LINE__]);
+        $this->logger->info(
+            message: '[SchemaService] Starting schema exploration for schema ID: '.$schemaId,
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
 
         // Get the schema to validate it exists.
         try {
@@ -118,7 +121,10 @@ class SchemaService
         // Get all objects for this schema.
         $objects = $this->objectEntityMapper->findBySchema($schemaId);
 
-        $this->logger->info(message: '[SchemaService] Found '.count($objects).' objects to analyze', context: ['file' => __FILE__, 'line' => __LINE__]);
+        $this->logger->info(
+            message: '[SchemaService] Found '.count($objects).' objects to analyze',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
 
         if (empty($objects) === true) {
             return [
@@ -212,7 +218,7 @@ class SchemaService
                 }
 
                 // Analyze data type and characteristics.
-                $propertyAnalysis = $this->analyzePropertyValue($propertyValue);
+                $propertyAnalysis = $this->analyzePropertyValue(value: $propertyValue);
 
                 if (isset($discoveredProperties[$propertyName]) === false) {
                     $discoveredProperties[$propertyName] = [
@@ -291,8 +297,8 @@ class SchemaService
                 $analysis['min_length'] = $length;
 
                 // Detect format based on string patterns.
-                $analysis['detected_format']   = $this->detectStringFormat($value);
-                $analysis['string_patterns'][] = $this->analyzeStringPattern($value);
+                $analysis['detected_format']   = $this->detectStringFormat(value: $value);
+                $analysis['string_patterns'][] = $this->analyzeStringPattern(value: $value);
                 break;
 
             case 'integer':
@@ -311,17 +317,17 @@ class SchemaService
                 // Check if this is an associative array (object-like).
                 if (array_is_list($value) === true) {
                     // Analyze array structure for list arrays.
-                    $analysis['array_structure'] = $this->analyzezArrayStructure($value);
+                    $analysis['array_structure'] = $this->analyzezArrayStructure(array: $value);
                     break;
                 }
 
                 // Treat associative arrays as objects.
-                $analysis['object_structure'] = $this->analyzeObjectStructure($value);
+                $analysis['object_structure'] = $this->analyzeObjectStructure(object: $value);
                 break;
 
             case 'object':
                 // Analyze object structure.
-                $analysis['object_structure'] = $this->analyzeObjectStructure($value);
+                $analysis['object_structure'] = $this->analyzeObjectStructure(object: $value);
                 break;
         }//end switch
 
@@ -790,7 +796,7 @@ class SchemaService
             }
 
             // Skip internal/metadata properties.
-            if ($this->isInternalProperty($propertyName) === true) {
+            if ($this->isInternalProperty(propertyName: $propertyName) === true) {
                 continue;
             }
 
@@ -805,7 +811,7 @@ class SchemaService
             }
 
             // Determine recommended type.
-            $recommendedType = $this->recommendPropertyType($analysis);
+            $recommendedType = $this->recommendPropertyType(analysis: $analysis);
 
             // Determine max length value.
             $maxLengthValue = null;
@@ -850,22 +856,22 @@ class SchemaService
             }
 
             // Handle enum-like properties.
-            if ($this->detectEnumLike($analysis) === true) {
+            if ($this->detectEnumLike(analysis: $analysis) === true) {
                 $suggestion['type']        = 'string';
-                $suggestion['enum']        = $this->extractEnumValues($analysis['examples']);
+                $suggestion['enum']        = $this->extractEnumValues(examples: $analysis['examples']);
                 $suggestion['description'] = 'Enum-like property with predefined values';
             }
 
             // Handle nested objects.
             if (empty($analysis['object_structure']) === false && $analysis['object_structure']['type'] === 'object') {
                 $suggestion['type']       = 'object';
-                $suggestion['properties'] = $this->generateNestedProperties($analysis['object_structure']);
+                $suggestion['properties'] = $this->generateNestedProperties(objectStructure: $analysis['object_structure']);
             }
 
             // Handle arrays.
             if (empty($analysis['array_structure']) === false && $analysis['array_structure']['type'] === 'list') {
                 $suggestion['type']  = 'array';
-                $suggestion['items'] = $this->generateArrayItemType($analysis['array_structure']);
+                $suggestion['items'] = $this->generateArrayItemType(arrayStructure: $analysis['array_structure']);
             }
 
             $suggestions[] = $suggestion;
@@ -1006,7 +1012,7 @@ class SchemaService
     {
         $issues          = [];
         $suggestions     = [];
-        $recommendedType = $this->recommendPropertyType($analysis);
+        $recommendedType = $this->recommendPropertyType(analysis: $analysis);
 
         // Delegate to focused comparison methods for each aspect.
         $typeComparison = $this->compareType(
@@ -1415,13 +1421,13 @@ class SchemaService
         $types = $analysis['types'];
 
         // Try format-based recommendation first (most specific).
-        $formatType = $this->getTypeFromFormat($analysis['detected_format'] ?? null);
+        $formatType = $this->getTypeFromFormat(format: $analysis['detected_format'] ?? null);
         if ($formatType !== null) {
             return $formatType;
         }
 
         // Try pattern-based recommendation (e.g., numeric strings).
-        $patternType = $this->getTypeFromPatterns($analysis['string_patterns'] ?? []);
+        $patternType = $this->getTypeFromPatterns(patterns: $analysis['string_patterns'] ?? []);
         if ($patternType !== null) {
             return $patternType;
         }
@@ -1733,7 +1739,10 @@ class SchemaService
      */
     public function updateSchemaFromExploration(int $schemaId, array $propertyUpdates): Schema
     {
-        $this->logger->info(message: '[SchemaService] Updating schema '.$schemaId.' with '.count($propertyUpdates).' property updates', context: ['file' => __FILE__, 'line' => __LINE__]);
+        $this->logger->info(
+            message: '[SchemaService] Updating schema '.$schemaId.' with '.count($propertyUpdates).' property updates',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
 
         try {
             // Get existing schema.
@@ -1754,11 +1763,17 @@ class SchemaService
             // Save updated schema.
             $updatedSchema = $this->schemaMapper->update($schema);
 
-            $this->logger->info(message: '[SchemaService] Schema '.$schemaId.' successfully updated with exploration results', context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->info(
+                message: '[SchemaService] Schema '.$schemaId.' successfully updated with exploration results',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
 
             return $updatedSchema;
         } catch (\Exception $e) {
-            $this->logger->error(message: '[SchemaService] Failed to update schema '.$schemaId.': '.$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->error(
+                message: '[SchemaService] Failed to update schema '.$schemaId.': '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             throw new Exception('Failed to update schema properties: '.$e->getMessage());
         }//end try
     }//end updateSchemaFromExploration()

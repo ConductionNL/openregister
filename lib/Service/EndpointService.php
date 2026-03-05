@@ -108,7 +108,7 @@ class EndpointService
         try {
             // Step 1: Check if user has permission to execute this endpoint.
             // Validates user group membership and endpoint access permissions.
-            if ($this->canExecuteEndpoint($endpoint) === false) {
+            if ($this->canExecuteEndpoint(endpoint: $endpoint) === false) {
                 return [
                     'success'    => false,
                     'statusCode' => 403,
@@ -371,12 +371,12 @@ class EndpointService
 
                 // Call Ollama API directly.
                 $response = $this->callOllamaWithTools(
-                    $ollamaUrl,
-                    $agent->getModel(),
-                    $messages,
-                    $functions,
-                    $agent,
-                    $toolRegistry
+                    url: $ollamaUrl,
+                    model: $agent->getModel(),
+                    messages: $messages,
+                    functions: $functions,
+                    agent: $agent,
+                    toolRegistry: $toolRegistry
                 );
 
                 return [

@@ -125,7 +125,7 @@ class WebhookMapper extends QBMapper
         IAppConfig $appConfig
     ) {
         // Call parent constructor to initialize base mapper with table name and entity class.
-        parent::__construct($db, 'openregister_webhooks', Webhook::class);
+        parent::__construct(db: $db, tableName: 'openregister_webhooks', entityClass: Webhook::class);
 
         // Store dependencies for use in mapper methods.
         $this->organisationMapper = $organisationMapper;
@@ -189,10 +189,10 @@ class WebhookMapper extends QBMapper
 
         // Step 5: Apply organisation filter for multi-tenancy.
         // This ensures users only see webhooks from their organisation.
-        $this->applyOrganisationFilter($qb);
+        $this->applyOrganisationFilter(qb: $qb);
 
         // Step 6: Execute query and return entities.
-        return $this->findEntities($qb);
+        return $this->findEntities(query: $qb);
     }//end findAll()
 
     /**
@@ -225,10 +225,10 @@ class WebhookMapper extends QBMapper
 
         // Step 3: Apply organisation filter for multi-tenancy.
         // This ensures users can only access webhooks from their organisation.
-        $this->applyOrganisationFilter($qb);
+        $this->applyOrganisationFilter(qb: $qb);
 
         // Step 4: Execute query and return single entity.
-        return $this->findEntity($qb);
+        return $this->findEntity(query: $qb);
     }//end find()
 
     /**
@@ -256,9 +256,9 @@ class WebhookMapper extends QBMapper
             ->where($qb->expr()->eq('enabled', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL)));
 
         // Apply organisation filter.
-        $this->applyOrganisationFilter($qb);
+        $this->applyOrganisationFilter(qb: $qb);
 
-        return $this->findEntities($qb);
+        return $this->findEntities(query: $qb);
     }//end findEnabled()
 
     /**
@@ -308,9 +308,9 @@ class WebhookMapper extends QBMapper
         }
 
         // Auto-set organisation from active session.
-        $this->setOrganisationOnCreate($entity);
+        $this->setOrganisationOnCreate(entity: $entity);
 
-        return parent::insert($entity);
+        return parent::insert(entity: $entity);
     }//end insert()
 
     /**
@@ -327,13 +327,13 @@ class WebhookMapper extends QBMapper
         $this->verifyRbacPermission(action: 'update', entityType: 'webhook');
 
         // Verify user has access to this organisation.
-        $this->verifyOrganisationAccess($entity);
+        $this->verifyOrganisationAccess(entity: $entity);
 
         if ($entity instanceof Webhook) {
             $entity->setUpdated(new DateTime());
         }
 
-        return parent::update($entity);
+        return parent::update(entity: $entity);
     }//end update()
 
     /**
@@ -350,9 +350,9 @@ class WebhookMapper extends QBMapper
         $this->verifyRbacPermission(action: 'delete', entityType: 'webhook');
 
         // Verify user has access to this organisation.
-        $this->verifyOrganisationAccess($entity);
+        $this->verifyOrganisationAccess(entity: $entity);
 
-        return parent::delete($entity);
+        return parent::delete(entity: $entity);
     }//end delete()
 
     /**
@@ -382,7 +382,7 @@ class WebhookMapper extends QBMapper
                 $webhook->setLastSuccessAt(new DateTime());
             }
 
-            return $this->update($webhook);
+            return $this->update(entity: $webhook);
         }
 
         $webhook->setFailedDeliveries($webhook->getFailedDeliveries() + 1);
@@ -390,7 +390,7 @@ class WebhookMapper extends QBMapper
             $webhook->setLastFailureAt(new DateTime());
         }
 
-        return $this->update($webhook);
+        return $this->update(entity: $webhook);
     }//end updateStatistics()
 
     /**
@@ -405,7 +405,7 @@ class WebhookMapper extends QBMapper
         $webhook = new Webhook();
         $webhook->hydrate($data);
 
-        return $this->insert($webhook);
+        return $this->insert(entity: $webhook);
     }//end createFromArray()
 
     /**
@@ -420,10 +420,10 @@ class WebhookMapper extends QBMapper
      */
     public function updateFromArray(int $id, array $data): Webhook
     {
-        $webhook = $this->find($id);
+        $webhook = $this->find(id: $id);
         $webhook->hydrate($data);
 
-        return $this->update($webhook);
+        return $this->update(entity: $webhook);
     }//end updateFromArray()
 
     /**

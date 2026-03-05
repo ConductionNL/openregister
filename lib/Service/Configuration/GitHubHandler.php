@@ -437,7 +437,14 @@ class GitHubHandler
             // Try to get from cache.
             $cached = $this->cache->get($cacheKey);
             if ($cached !== null) {
-                $this->logger->debug(message: '[GitHubHandler] Using cached config details', context: ['file' => __FILE__, 'line' => __LINE__, 'cache_key' => $cacheKey]);
+                $this->logger->debug(
+                    message: '[GitHubHandler] Using cached config details',
+                    context: [
+                        'file'      => __FILE__,
+                        'line'      => __LINE__,
+                        'cache_key' => $cacheKey,
+                    ]
+                );
                 return $cached;
             }
         }
@@ -455,7 +462,14 @@ class GitHubHandler
             $cacheKey = "config_{$owner}_{$repo}_{$fileSha}";
             // Cache for 7 days (file content won't change as long as SHA is the same).
             $this->cache->set($cacheKey, $enriched, 7 * 24 * 60 * 60);
-            $this->logger->debug(message: '[GitHubHandler] Cached config details', context: ['file' => __FILE__, 'line' => __LINE__, 'cache_key' => $cacheKey]);
+            $this->logger->debug(
+                message: '[GitHubHandler] Cached config details',
+                context: [
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
+                    'cache_key' => $cacheKey,
+                ]
+            );
         }
 
         return $enriched;
@@ -862,7 +876,10 @@ class GitHubHandler
         // Check if GitHub API token is configured.
         $token = $this->appConfig->getValueString('openregister', 'github_api_token', '');
         if (empty($token) === true) {
-            $this->logger->info(message: '[GitHubHandler] GitHub API token not configured - returning empty repositories list', context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->info(
+                message: '[GitHubHandler] GitHub API token not configured - returning empty repositories list',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return [];
         }
 
@@ -925,7 +942,7 @@ class GitHubHandler
             // If authentication failed (401) or token not configured, return empty array instead of error.
             if ($statusCode === 401 || empty($token) === true) {
                 $this->logger->info(
-                    message: '[GitHubHandler] GitHub API authentication failed or not configured - returning empty repositories list',
+                    message: '[GitHubHandler] GitHub API auth failed or not configured - returning empty list',
                     context: [
                         'file'        => __FILE__,
                         'line'        => __LINE__,
@@ -1271,7 +1288,7 @@ class GitHubHandler
             // Get user token if userId provided, otherwise use app-level token.
             $token = $this->appConfig->getValueString('openregister', 'github_api_token', '');
             if ($userId !== null) {
-                $token = $this->getUserToken($userId);
+                $token = $this->getUserToken(userId: $userId);
             }
 
             if ($token === null || $token === '') {
@@ -1293,7 +1310,14 @@ class GitHubHandler
 
             return $response->getStatusCode() === 200;
         } catch (Exception $e) {
-            $this->logger->error(message: '[GitHubHandler] GitHub token validation failed', context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]);
+            $this->logger->error(
+                message: '[GitHubHandler] GitHub token validation failed',
+                context: [
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
+                    'error' => $e->getMessage(),
+                ]
+            );
             return false;
         }//end try
     }//end validateToken()

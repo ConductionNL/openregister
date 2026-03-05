@@ -185,7 +185,7 @@ class ElasticsearchIndexManager
      */
     public function ensureIndex(string $indexName): bool
     {
-        if ($this->indexExists($indexName) === true) {
+        if ($this->indexExists(indexName: $indexName) === true) {
             $this->logger->debug(
                 message: '[ElasticsearchIndexManager] Index already exists',
                 context: [
@@ -197,7 +197,7 @@ class ElasticsearchIndexManager
             return true;
         }
 
-        return $this->createIndex($indexName);
+        return $this->createIndex(indexName: $indexName);
     }//end ensureIndex()
 
     /**

@@ -325,7 +325,7 @@ class EmbeddingGeneratorHandler
              */
             public function embedDocument(\LLPhant\Embeddings\Document $document): \LLPhant\Embeddings\Document
             {
-                $document->embedding = $this->embedText($document->content);
+                $document->embedding = $this->embedText(text: $document->content);
                 return $document;
             }//end embedDocument()
 
@@ -339,7 +339,7 @@ class EmbeddingGeneratorHandler
             public function embedDocuments(array $documents): array
             {
                 foreach ($documents as $document) {
-                    $document->embedding = $this->embedText($document->content);
+                    $document->embedding = $this->embedText(text: $document->content);
                 }
 
                 return $documents;

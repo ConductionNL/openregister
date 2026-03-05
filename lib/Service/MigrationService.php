@@ -1,4 +1,14 @@
 <?php
+/**
+ * MigrationService for OpenRegister.
+ *
+ * @category  Service
+ * @package   OCA\OpenRegister\Service
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @link      https://www.OpenRegister.app
+ */
 
 declare(strict_types=1);
 
@@ -23,6 +33,16 @@ use Psr\Log\LoggerInterface;
  */
 class MigrationService
 {
+    /**
+     * Constructor.
+     *
+     * @param ObjectEntityMapper $objectEntityMapper The object entity mapper.
+     * @param MagicMapper        $magicMapper        The magic mapper.
+     * @param RegisterMapper     $registerMapper     The register mapper.
+     * @param SchemaMapper       $schemaMapper       The schema mapper.
+     * @param IDBConnection      $db                 The database connection.
+     * @param LoggerInterface    $logger             The logger.
+     */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly MagicMapper $magicMapper,
@@ -354,6 +374,12 @@ class MigrationService
 
     /**
      * Check if an object with the given UUID exists in a magic table.
+     *
+     * @param string   $uuid     The UUID to check.
+     * @param Register $register The register.
+     * @param Schema   $schema   The schema.
+     *
+     * @return bool True if exists.
      */
     private function existsInMagicTable(string $uuid, Register $register, Schema $schema): bool
     {
@@ -375,6 +401,12 @@ class MigrationService
 
     /**
      * Check if an object with the given UUID exists in blob storage.
+     *
+     * @param string   $uuid     The UUID to check.
+     * @param Register $register The register.
+     * @param Schema   $schema   The schema.
+     *
+     * @return bool True if exists.
      */
     private function existsInBlobStorage(string $uuid, Register $register, Schema $schema): bool
     {

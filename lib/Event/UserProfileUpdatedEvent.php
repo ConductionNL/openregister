@@ -121,7 +121,7 @@ class UserProfileUpdatedEvent extends Event
     {
         $nameFields = ['firstName', 'lastName', 'middleName', 'displayName'];
         foreach ($nameFields as $field) {
-            if ($this->hasChanged($field) === true) {
+            if ($this->hasChanged(fieldName: $field) === true) {
                 return true;
             }
         }

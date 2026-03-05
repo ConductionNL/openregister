@@ -143,11 +143,11 @@ class ObjectChangeListener implements IEventListener
                 break;
 
             case 'cron':
-                $this->processCronMode($objectId);
+                $this->processCronMode(objectId: $objectId);
                 break;
 
             case 'manual':
-                $this->processManualMode($objectId);
+                $this->processManualMode(objectId: $objectId);
                 break;
 
             default:

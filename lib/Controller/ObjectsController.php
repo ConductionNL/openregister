@@ -240,7 +240,12 @@ class ObjectsController extends Controller
                 $nameValue = $uploadedFile['name'] ?? null;
                 if (is_array($nameValue) === true) {
                     // Handle multiple files with indexed keys.
-                    $this->extractMultipleFiles($uploadedFiles, $fieldName, $uploadedFile, $nameValue);
+                    $this->extractMultipleFiles(
+                        uploadedFiles: $uploadedFiles,
+                        fieldName: $fieldName,
+                        uploadedFile: $uploadedFile,
+                        nameValue: $nameValue
+                    );
                     continue;
                 }
 
@@ -269,7 +274,12 @@ class ObjectsController extends Controller
             if ($uploadedFile !== null && isset($uploadedFile['tmp_name']) === true) {
                 $nameValue = $uploadedFile['name'] ?? null;
                 if (is_array($nameValue) === true) {
-                    $this->extractMultipleFiles($uploadedFiles, $fieldName, $uploadedFile, $nameValue);
+                    $this->extractMultipleFiles(
+                        uploadedFiles: $uploadedFiles,
+                        fieldName: $fieldName,
+                        uploadedFile: $uploadedFile,
+                        nameValue: $nameValue
+                    );
                     continue;
                 }
 
@@ -300,10 +310,29 @@ class ObjectsController extends Controller
     ): void {
         $fileCount = count($nameValue);
         for ($i = 0; $i < $fileCount; $i++) {
-            $typeArray    = is_array($uploadedFile['type'] ?? null) ? $uploadedFile['type'] : [];
-            $tmpNameArray = is_array($uploadedFile['tmp_name'] ?? null) ? $uploadedFile['tmp_name'] : [];
-            $errorArray   = is_array($uploadedFile['error'] ?? null) ? $uploadedFile['error'] : [];
-            $sizeArray    = is_array($uploadedFile['size'] ?? null) ? $uploadedFile['size'] : [];
+            if (is_array($uploadedFile['type'] ?? null) === true) {
+                $typeArray = $uploadedFile['type'];
+            } else {
+                $typeArray = [];
+            }
+
+            if (is_array($uploadedFile['tmp_name'] ?? null) === true) {
+                $tmpNameArray = $uploadedFile['tmp_name'];
+            } else {
+                $tmpNameArray = [];
+            }
+
+            if (is_array($uploadedFile['error'] ?? null) === true) {
+                $errorArray = $uploadedFile['error'];
+            } else {
+                $errorArray = [];
+            }
+
+            if (is_array($uploadedFile['size'] ?? null) === true) {
+                $sizeArray = $uploadedFile['size'];
+            } else {
+                $sizeArray = [];
+            }
 
             // Only add if tmp_name is not empty.
             if (empty($tmpNameArray[$i]) === false) {
@@ -315,7 +344,7 @@ class ObjectsController extends Controller
                     'size'     => $sizeArray[$i] ?? 0,
                 ];
             }
-        }
+        }//end for
     }//end extractMultipleFiles()
 
     /**
@@ -502,7 +531,7 @@ class ObjectsController extends Controller
             'filters' => $params,
             'sort'    => ($params['order'] ?? $params['_order'] ?? []),
             '_search' => ($params['_search'] ?? null),
-            '_extend' => $this->normalizeExtendParameter($params['extend'] ?? $params['_extend'] ?? null),
+            '_extend' => $this->normalizeExtendParameter(extend: $params['extend'] ?? $params['_extend'] ?? null),
             '_fields' => ($params['fields'] ?? $params['_fields'] ?? null),
             '_unset'  => ($params['unset'] ?? $params['_unset'] ?? null),
             'ids'     => $ids,
@@ -1055,13 +1084,31 @@ class ObjectsController extends Controller
                 if (empty($ignoredFilters) === false) {
                     $responseData['@self']['ignoredFilters'] = $ignoredFilters;
 
-                    $controlParams  = ['limit', 'offset', 'page', 'order', 'sort', 'search', 'extend', 'fields', 'filter', 'unset'];
+                    $controlParams  = [
+                        'limit',
+                        'offset',
+                        'page',
+                        'order',
+                        'sort',
+                        'search',
+                        'extend',
+                        'fields',
+                        'filter',
+                        'unset',
+                    ];
                     $mistakenParams = array_intersect($ignoredFilters, $controlParams);
                     if (empty($mistakenParams) === false) {
                         $suggestions = array_map(fn($p) => "_{$p}", $mistakenParams);
-                        $responseData['@self']['hint'] = 'Query returned 0 results because '.implode(', ', $mistakenParams).' was treated as an object property filter. Did you mean '.implode(', ', $suggestions).'? Control parameters require an underscore prefix (e.g. _limit, _offset, _page).';
+                        $hint        = 'Query returned 0 results because ';
+                        $hint       .= implode(', ', $mistakenParams);
+                        $hint       .= ' was treated as an object property filter.';
+                        $hint       .= ' Did you mean ';
+                        $hint       .= implode(', ', $suggestions);
+                        $hint       .= '? Control parameters require an';
+                        $hint       .= ' underscore prefix (e.g. _limit, _offset, _page).';
+                        $responseData['@self']['hint'] = $hint;
                     }
-                }
+                }//end if
 
                 // Add facets if requested via _facets parameter.
                 // Use MagicMapper's facet method for magic-mapped tables.
@@ -1098,7 +1145,11 @@ class ObjectsController extends Controller
                                 $item = $item->jsonSerialize();
                             }
 
-                            return is_array($item) === true ? $this->stripEmptyValues(data: $item) : $item;
+                            if (is_array($item) === true) {
+                                return $this->stripEmptyValues(data: $item);
+                            }
+
+                            return $item;
                         },
                         array: $responseData['results']
                     );
@@ -1141,12 +1192,18 @@ class ObjectsController extends Controller
         if ($includeEmpty === false && isset($result['results']) === true && is_array($result['results']) === true) {
             $result['results'] = array_map(
                 callback: function ($item) {
-                    // Serialize ObjectEntity instances to arrays before stripping empty values.
-                    if (is_array($item) === false && method_exists(object_or_class: $item, method: 'jsonSerialize') === true) {
+                    // Serialize ObjectEntity instances to arrays before stripping.
+                    if (is_array($item) === false
+                        && method_exists(object_or_class: $item, method: 'jsonSerialize') === true
+                    ) {
                         $item = $item->jsonSerialize();
                     }
 
-                    return is_array($item) === true ? $this->stripEmptyValues(data: $item) : $item;
+                    if (is_array($item) === true) {
+                        return $this->stripEmptyValues(data: $item);
+                    }
+
+                    return $item;
                 },
                 array: $result['results']
             );
@@ -1348,12 +1405,18 @@ class ObjectsController extends Controller
         if ($includeEmpty === false && isset($result['results']) === true && is_array($result['results']) === true) {
             $result['results'] = array_map(
                 callback: function ($item) {
-                    // Serialize ObjectEntity instances to arrays before stripping empty values.
-                    if (is_array($item) === false && method_exists(object_or_class: $item, method: 'jsonSerialize') === true) {
+                    // Serialize ObjectEntity instances to arrays before stripping.
+                    if (is_array($item) === false
+                        && method_exists(object_or_class: $item, method: 'jsonSerialize') === true
+                    ) {
                         $item = $item->jsonSerialize();
                     }
 
-                    return is_array($item) === true ? $this->stripEmptyValues(data: $item) : $item;
+                    if (is_array($item) === true) {
+                        return $this->stripEmptyValues(data: $item);
+                    }
+
+                    return $item;
                 },
                 array: $result['results']
             );
@@ -1408,7 +1471,7 @@ class ObjectsController extends Controller
         $unset  = ($requestParams['unset'] ?? $requestParams['_unset'] ?? null);
 
         // Normalize extend parameter for backwards compatibility (@self.schema -> _schema).
-        $extend = $this->normalizeExtendParameter($extend);
+        $extend = $this->normalizeExtendParameter(extend: $extend);
 
         // Convert fields to array if it's a string.
         if (is_string($fields) === true) {
@@ -1610,7 +1673,7 @@ class ObjectsController extends Controller
         );
 
         // Normalize multipart/form-data: decode JSON-encoded strings back into arrays/objects.
-        $object = $this->normalizeFormDataValues($object);
+        $object = $this->normalizeFormDataValues(data: $object);
 
         // Extract uploaded files from multipart/form-data using Request object.
         $uploadedFiles = $this->extractAllUploadedFiles();
@@ -1713,7 +1776,7 @@ class ObjectsController extends Controller
         );
 
         // Normalize multipart/form-data: decode JSON-encoded strings back into arrays/objects.
-        $object = $this->normalizeFormDataValues($object);
+        $object = $this->normalizeFormDataValues(data: $object);
 
         // Extract uploaded files from multipart/form-data using Request object.
         $uploadedFiles = $this->extractAllUploadedFiles();
@@ -1869,7 +1932,7 @@ class ObjectsController extends Controller
         );
 
         // Normalize multipart/form-data: decode JSON-encoded strings back into arrays/objects.
-        $patchData = $this->normalizeFormDataValues($patchData);
+        $patchData = $this->normalizeFormDataValues(data: $patchData);
 
         // Determine RBAC and multitenancy settings based on admin status.
         $isAdmin = $this->isCurrentUserAdmin();
@@ -2042,11 +2105,15 @@ class ObjectsController extends Controller
         );
 
         // Normalize multipart/form-data: decode JSON-encoded strings back into arrays/objects.
-        $patchData = $this->normalizeFormDataValues($patchData);
+        $patchData = $this->normalizeFormDataValues(data: $patchData);
 
         // Extract uploaded files — works because this is a POST request.
-        $uploadedFiles      = $this->extractAllUploadedFiles();
-        $uploadedFilesValue = empty($uploadedFiles) === false ? $uploadedFiles : null;
+        $uploadedFiles = $this->extractAllUploadedFiles();
+        if (empty($uploadedFiles) === false) {
+            $uploadedFilesValue = $uploadedFiles;
+        } else {
+            $uploadedFilesValue = null;
+        }
 
         // Determine RBAC and multitenancy settings based on admin status.
         $isAdmin = $this->isCurrentUserAdmin();
@@ -3229,12 +3296,12 @@ class ObjectsController extends Controller
         $relations = $renderedData['@self']['relations'] ?? [];
         if (is_array($relations) === true) {
             foreach ($relations as $relation) {
-                if (is_string($relation) === true && $this->isUuid($relation) === true) {
+                if (is_string($relation) === true && $this->isUuid(value: $relation) === true) {
                     $uuids[] = $relation;
                 } else if (is_array($relation) === true) {
                     // Handle nested relation arrays.
                     foreach ($relation as $uuid) {
-                        if (is_string($uuid) === true && $this->isUuid($uuid) === true) {
+                        if (is_string($uuid) === true && $this->isUuid(value: $uuid) === true) {
                             $uuids[] = $uuid;
                         }
                     }
@@ -3245,7 +3312,7 @@ class ObjectsController extends Controller
         // Collect UUIDs from object properties (for extended relations).
         $objectData = $renderedData['@self']['object'] ?? $renderedData;
         if (is_array($objectData) === true) {
-            $this->collectUuidsFromArray($objectData, $uuids);
+            $this->collectUuidsFromArray(data: $objectData, uuids: $uuids);
         }
 
         // Remove duplicates.
@@ -3262,8 +3329,8 @@ class ObjectsController extends Controller
     /**
      * Recursively collect UUIDs from an array structure.
      *
-     * @param array $data   The array to scan for UUIDs.
-     * @param array &$uuids Reference to array collecting UUIDs.
+     * @param array $data  The array to scan for UUIDs.
+     * @param array $uuids Reference to array collecting UUIDs.
      *
      * @return void
      */
@@ -3275,16 +3342,16 @@ class ObjectsController extends Controller
                 continue;
             }
 
-            if (is_string($value) === true && $this->isUuid($value) === true) {
+            if (is_string($value) === true && $this->isUuid(value: $value) === true) {
                 $uuids[] = $value;
             } else if (is_array($value) === true) {
                 // Check if it's an array of UUIDs.
                 foreach ($value as $item) {
-                    if (is_string($item) === true && $this->isUuid($item) === true) {
+                    if (is_string($item) === true && $this->isUuid(value: $item) === true) {
                         $uuids[] = $item;
                     } else if (is_array($item) === true) {
                         // Recurse into nested arrays.
-                        $this->collectUuidsFromArray($item, $uuids);
+                        $this->collectUuidsFromArray(data: $item, uuids: $uuids);
                     }
                 }
             }

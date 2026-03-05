@@ -288,7 +288,7 @@ class ContextRetrievalHandler
                 $source = [
                     'id'         => $result['entity_id'] ?? null,
                     'type'       => $result['entity_type'] ?? 'unknown',
-                    'name'       => $this->extractSourceName($result),
+                    'name'       => $this->extractSourceName(result: $result),
                     'similarity' => $result['similarity'] ?? $result['score'] ?? 1.0,
                     'text'       => $result['chunk_text'] ?? $result['text'] ?? '',
                 ];

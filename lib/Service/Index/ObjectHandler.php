@@ -113,7 +113,7 @@ class ObjectHandler
         $results = $this->searchBackend->search($solrQuery);
 
         // Convert Solr results to OpenRegister format.
-        return $this->convertToOpenRegisterFormat($results);
+        return $this->convertToOpenRegisterFormat(solrResults: $results);
     }//end searchObjects()
 
     /**

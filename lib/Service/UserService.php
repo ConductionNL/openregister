@@ -108,11 +108,11 @@ class UserService
         $userGroups = $this->groupManager->getUserGroups($user);
         $groupNames = array_values(array_map(fn($group) => $group->getGID(), $userGroups));
 
-        $quota = $this->buildQuotaInformation($user);
+        $quota = $this->buildQuotaInformation(user: $user);
 
-        [$language, $locale] = $this->getLanguageAndLocale($user);
+        [$language, $locale] = $this->getLanguageAndLocale(user: $user);
 
-        $additionalInfo = $this->getAdditionalProfileInfo($user);
+        $additionalInfo = $this->getAdditionalProfileInfo(user: $user);
 
         $emailVerified = null;
         if (method_exists($user, 'getEmailVerified') === true) {
@@ -239,7 +239,7 @@ class UserService
         ];
 
         // Collect old user data before updates for event dispatching.
-        $oldData = $this->buildUserDataArray($user);
+        $oldData = $this->buildUserDataArray(user: $user);
 
         // Handle organization switching if requested.
         if (isset($data['activeOrganisation']) === true && is_string($data['activeOrganisation']) === true) {
@@ -267,10 +267,10 @@ class UserService
         // Collect new user data after updates.
         // Organisation stats are cached from the first buildUserDataArray() call,
         // saving ~20-30 queries on this second call.
-        $newData = $this->buildUserDataArray($user);
+        $newData = $this->buildUserDataArray(user: $user);
 
         // Determine which fields changed.
-        $changes = $this->determineChangedFields($oldData, $newData);
+        $changes = $this->determineChangedFields(oldData: $oldData, newData: $newData);
 
         // Dispatch event if there are changes.
         if (empty($changes) === false) {
@@ -417,7 +417,7 @@ class UserService
 
             try {
                 // Default to memory-safe method, override if native method exists.
-                $usedSpace = $this->getUsedSpaceMemorySafe($userId);
+                $usedSpace = $this->getUsedSpaceMemorySafe(userId: $userId);
                 if (method_exists($user, 'getUsedSpace') === true) {
                     $usedSpace = $user->getUsedSpace();
                 }
@@ -431,7 +431,7 @@ class UserService
                     ]
                 );
 
-                $usedSpace = $this->getUsedSpaceMemorySafe($userId);
+                $usedSpace = $this->getUsedSpaceMemorySafe(userId: $userId);
             }
 
             $quota = [
@@ -573,7 +573,7 @@ class UserService
         $additionalInfo = [];
 
         try {
-            $additionalInfo = $this->getAccountManagerPropertiesSelectively($user);
+            $additionalInfo = $this->getAccountManagerPropertiesSelectively(user: $user);
         } catch (\Exception $e) {
             $this->logger->warning(
                 message: '[UserService] AccountManager failed for user: '.$user->getUID(),
@@ -602,7 +602,7 @@ class UserService
             }
         }//end try
 
-        $customNameFields = $this->getCustomNameFields($user);
+        $customNameFields = $this->getCustomNameFields(user: $user);
         $additionalInfo   = array_merge($additionalInfo, $customNameFields);
 
         $userId           = $user->getUID();
@@ -611,7 +611,7 @@ class UserService
             $additionalInfo['organisation'] = $organizationUuid;
         }
 
-        // Fallback: check for 'functie' in user config if not found via AccountManager's 'role'
+        // Fallback: check for 'functie' in user config if not found via AccountManager's 'role'.
         if (empty($additionalInfo['role']) === true) {
             $functie = $this->config->getUserValue($userId, 'core', 'functie', '');
             if (empty($functie) === false) {
@@ -762,7 +762,7 @@ class UserService
                 }
 
                 // Property doesn't exist, create it.
-                $scope    = $this->getDefaultPropertyScope($accountProperty);
+                $scope    = $this->getDefaultPropertyScope(propertyName: $accountProperty);
                 $verified = IAccountManager::NOT_VERIFIED;
 
                 $account->setProperty(

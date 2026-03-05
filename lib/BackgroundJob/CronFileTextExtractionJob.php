@@ -126,7 +126,7 @@ class CronFileTextExtractionJob extends TimedJob
 
             if ($extractionMode !== 'cron') {
                 $logger->debug(
-                    message: '[CronFileTextExtractionJob] Cron File Text Extraction Job skipped - extraction mode is not cron',
+                    message: '[CronFileTextExtractionJob] Skipped - mode is not cron',
                     context: ['file' => __FILE__, 'line' => __LINE__, 'extraction_mode' => $extractionMode]
                 );
                 return;

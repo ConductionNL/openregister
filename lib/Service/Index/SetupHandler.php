@@ -388,7 +388,7 @@ class SetupHandler
                             'error'      => 'SOLR connectivity test failed',
                             'host'       => $this->solrConfig['host'] ?? 'unknown',
                             'port'       => $this->solrConfig['port'] ?? 'unknown',
-                            'url_tested' => $this->buildSolrUrl('/admin/info/system?wt=json'),
+                            'url_tested' => $this->buildSolrUrl(path: '/admin/info/system?wt=json'),
                         ]
                     );
 
@@ -537,7 +537,7 @@ class SetupHandler
             );
 
             try {
-                $propagationResult = $this->forceConfigSetPropagation($tenantConfigSetName);
+                $propagationResult = $this->forceConfigSetPropagation(configSetName: $tenantConfigSetName);
 
                 if ($propagationResult['success'] !== true) {
                     $this->trackStep(
@@ -552,7 +552,7 @@ class SetupHandler
                                 'successful_operations' => $propagationResult['successful_operations'] ?? 0,
                                 'total_operations'      => $propagationResult['total_operations'] ?? 0,
                                 'operations_attempted'  => $propagationResult['operations'] ?? [],
-                                'api_calls'             => $this->getApiCallsFromResult($propagationResult),
+                                'api_calls'             => $this->getApiCallsFromResult(propagationResult: $propagationResult),
                                 'detailed_operations'   => $propagationResult['operations'] ?? [],
                             ],
                         ]
@@ -584,7 +584,7 @@ class SetupHandler
                                 'operations_performed'  => $propagationResult['operations'] ?? [],
                                 'cluster_sync_status'   => $propagationResult['cluster_sync'] ?? 'unknown',
                                 'cache_refresh_status'  => $propagationResult['cache_refresh'] ?? 'unknown',
-                                'api_calls'             => $this->getApiCallsFromResult($propagationResult),
+                                'api_calls'             => $this->getApiCallsFromResult(propagationResult: $propagationResult),
                                 'detailed_operations'   => $propagationResult['operations'] ?? [],
                             ],
                         ]
@@ -923,7 +923,7 @@ class SetupHandler
                         'Verify host/port configuration in settings',
                         'Check network connectivity between containers',
                         'Verify authentication credentials if required',
-                        'Check SOLR admin UI manually: '.$this->buildSolrUrl('/solr/'),
+                        'Check SOLR admin UI manually: '.$this->buildSolrUrl(path: '/solr/'),
                     ],
                 ];
 
@@ -937,7 +937,7 @@ class SetupHandler
                     'line'                      => __LINE__,
                     'test_message'              => $connectionTest['message'] ?? 'Connection test passed',
                     'components_tested'         => array_keys($connectionTest['components'] ?? []),
-                    'all_components_successful' => $this->allComponentsSuccessful($connectionTest['components'] ?? []),
+                    'all_components_successful' => $this->allComponentsSuccessful(components: $connectionTest['components'] ?? []),
                 ]
             );
             return true;
@@ -1001,7 +1001,7 @@ class SetupHandler
         $tenantConfigSetName = $this->getTenantConfigSetName();
 
         // Check if configSet already exists.
-        if ($this->configSetExists($tenantConfigSetName) === true) {
+        if ($this->configSetExists(configSetName: $tenantConfigSetName) === true) {
             $this->logger->info(
                 message: '[SetupHandler] Tenant configSet already exists (skipping creation)',
                 context: [
@@ -1017,7 +1017,7 @@ class SetupHandler
 
             // Even for existing configSets, force propagation to ensure availability.
             // This handles cases where configSet exists but isn't fully propagated.
-            $propagationResult = $this->forceConfigSetPropagation($tenantConfigSetName);
+            $propagationResult = $this->forceConfigSetPropagation(configSetName: $tenantConfigSetName);
             $this->logger->info(
                 message: '[SetupHandler] ConfigSet propagation attempted for existing configSet',
                 context: [
@@ -1041,7 +1041,7 @@ class SetupHandler
                 'method'    => 'ZIP upload (avoids SolrCloud authentication issues)',
             ]
         );
-        return $this->uploadConfigSet($tenantConfigSetName);
+        return $this->uploadConfigSet(configSetName: $tenantConfigSetName);
     }//end ensureTenantConfigSet()
 
     /**
@@ -1053,7 +1053,7 @@ class SetupHandler
      */
     private function configSetExists(string $configSetName): bool
     {
-        $url = $this->buildSolrUrl('/admin/configs?action=LIST&wt=json');
+        $url = $this->buildSolrUrl(path: '/admin/configs?action=LIST&wt=json');
 
         $this->logger->debug(
             message: '[SetupHandler] Checking if configSet exists',
@@ -1382,7 +1382,7 @@ class SetupHandler
                 }
             } catch (\Exception $e) {
                 $errorMessage     = $e->getMessage();
-                $isConfigSetError = $this->isConfigSetPropagationError($errorMessage);
+                $isConfigSetError = $this->isConfigSetPropagationError(errorMessage: $errorMessage);
 
                 // Capture the detailed error information.
                 $retryDetails['last_error'] = $errorMessage;
@@ -1575,7 +1575,7 @@ class SetupHandler
         ];
 
         try {
-            $url = $this->buildSolrUrl('/admin/configs?action=LIST&wt=json');
+            $url = $this->buildSolrUrl(path: '/admin/configs?action=LIST&wt=json');
             $listOperation['url'] = $url;
             $response = $this->httpClient->get($url, ['timeout' => 10]);
 
@@ -1624,7 +1624,7 @@ class SetupHandler
         ];
 
         try {
-            $url = $this->buildSolrUrl('/admin/collections?action=CLUSTERSTATUS&wt=json');
+            $url = $this->buildSolrUrl(path: '/admin/collections?action=CLUSTERSTATUS&wt=json');
             $clusterOperation['url'] = $url;
             $response = $this->httpClient->get($url, ['timeout' => 10]);
 
@@ -1754,7 +1754,7 @@ class SetupHandler
         }//end if
 
         $url = $this->buildSolrUrl(
-            sprintf(
+            path: sprintf(
                 '/admin/configs?action=UPLOAD&name=%s&wt=json',
                 urlencode($configSetName)
             )
@@ -1880,7 +1880,7 @@ class SetupHandler
                 // Force configSet propagation immediately after successful upload.
                 // This proactively triggers cache refresh and ZooKeeper sync to reduce.
                 // The likelihood of propagation delays when creating collections.
-                $propagationResult = $this->forceConfigSetPropagation($configSetName);
+                $propagationResult = $this->forceConfigSetPropagation(configSetName: $configSetName);
                 $this->logger->info(
                     message: '[SetupHandler] ConfigSet propagation attempted after upload',
                     context: [
@@ -2120,7 +2120,7 @@ class SetupHandler
     private function addSchemaFieldWithResult(string $fieldName, array $fieldConfig): array
     {
         $tenantCollectionName = $this->getTenantCollectionName();
-        $url = $this->buildSolrUrl('/'.$tenantCollectionName.'/schema');
+        $url = $this->buildSolrUrl(path: '/'.$tenantCollectionName.'/schema');
 
         $payload = [
             'add-field' => array_merge(['name' => $fieldName], $fieldConfig),
@@ -2179,7 +2179,7 @@ class SetupHandler
     private function replaceSchemaFieldWithResult(string $fieldName, array $fieldConfig): array
     {
         $tenantCollectionName = $this->getTenantCollectionName();
-        $url = $this->buildSolrUrl('/'.$tenantCollectionName.'/schema');
+        $url = $this->buildSolrUrl(path: '/'.$tenantCollectionName.'/schema');
 
         $payload = [
             'replace-field' => array_merge(['name' => $fieldName], $fieldConfig),
@@ -2487,7 +2487,7 @@ class SetupHandler
 
         // Check tenant configSet exists.
         $tenantConfigSetName = $this->getTenantConfigSetName();
-        if ($this->configSetExists($tenantConfigSetName) === false) {
+        if ($this->configSetExists(configSetName: $tenantConfigSetName) === false) {
             $this->logger->error(
                 message: '[SetupHandler] Validation failed: tenant configSet missing',
                 context: [
@@ -2513,7 +2513,7 @@ class SetupHandler
         }
 
         // Test tenant collection query functionality.
-        if ($this->testCollectionQuery($tenantCollectionName) === false) {
+        if ($this->testCollectionQuery(collectionName: $tenantCollectionName) === false) {
             $this->logger->error(
                 message: '[SetupHandler] Validation failed: tenant collection query test failed',
                 context: [
@@ -2542,7 +2542,7 @@ class SetupHandler
     private function testCollectionQuery(string $collectionName): bool
     {
         $url = $this->buildSolrUrl(
-            sprintf(
+            path: sprintf(
                 '/%s/select?q=*:*&rows=0&wt=json',
                 urlencode($collectionName)
             )

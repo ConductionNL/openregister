@@ -602,7 +602,7 @@ class ConfigurationService
 
         try {
             // Fetch the remote configuration.
-            $remoteData = $this->getJSONfromURL($sourceUrl);
+            $remoteData = $this->getJSONfromURL(url: $sourceUrl);
 
             if ($remoteData instanceof JSONResponse) {
                 $this->logger->error(

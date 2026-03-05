@@ -130,7 +130,7 @@ class ApplicationMapper extends QBMapper
         IEventDispatcher $eventDispatcher
     ) {
         // Initialize parent mapper with table name and entity class.
-        parent::__construct($db, 'openregister_applications', Application::class);
+        parent::__construct(db: $db, tableName: 'openregister_applications', entityClass: Application::class);
 
         // Store dependencies for use in mapper methods.
         // REMOVED: Services should not be in mappers.
@@ -174,10 +174,10 @@ class ApplicationMapper extends QBMapper
             );
 
         // Apply organisation filter (all users including admins must have active org).
-        $this->applyOrganisationFilter($qb);
+        $this->applyOrganisationFilter(qb: $qb);
 
         // Execute query and return entity.
-        return $this->findEntity($qb);
+        return $this->findEntity(query: $qb);
     }//end find()
 
     /**
@@ -214,10 +214,10 @@ class ApplicationMapper extends QBMapper
             );
 
         // Apply organisation filter to ensure user can only access their organisation's applications.
-        $this->applyOrganisationFilter($qb);
+        $this->applyOrganisationFilter(qb: $qb);
 
         // Execute query and return entity.
-        return $this->findEntity($qb);
+        return $this->findEntity(query: $qb);
     }//end findByUuid()
 
     /**
@@ -257,7 +257,7 @@ class ApplicationMapper extends QBMapper
             ->orderBy('created', 'DESC');
 
         // Execute query and return entities.
-        return $this->findEntities($qb);
+        return $this->findEntities(query: $qb);
     }//end findByOrganisation()
 
     /**
@@ -319,10 +319,10 @@ class ApplicationMapper extends QBMapper
         }
 
         // Apply organisation filter (all users including admins must have active org).
-        $this->applyOrganisationFilter($qb);
+        $this->applyOrganisationFilter(qb: $qb);
 
         // Execute query and return entities.
-        return $this->findEntities($qb);
+        return $this->findEntities(query: $qb);
     }//end findAll()
 
     /**
@@ -358,13 +358,13 @@ class ApplicationMapper extends QBMapper
         }
 
         // Auto-set organisation from active session (multi-tenancy).
-        $this->setOrganisationOnCreate($entity);
+        $this->setOrganisationOnCreate(entity: $entity);
 
         // Insert entity into database using parent method.
-        $entity = parent::insert($entity);
+        $entity = parent::insert(entity: $entity);
 
         // Dispatch creation event for other components to react to.
-        $this->eventDispatcher->dispatchTyped(new ApplicationCreatedEvent($entity));
+        $this->eventDispatcher->dispatchTyped(new ApplicationCreatedEvent(application: $entity));
 
         return $entity;
     }//end insert()
@@ -390,7 +390,7 @@ class ApplicationMapper extends QBMapper
         $this->verifyRbacPermission(action: 'update', entityType: 'application');
 
         // Verify user has access to this application's organisation.
-        $this->verifyOrganisationAccess($entity);
+        $this->verifyOrganisationAccess(entity: $entity);
 
         // Get old state before update for event payload.
         $oldEntity = $this->find(id: $entity->getId());
@@ -401,11 +401,11 @@ class ApplicationMapper extends QBMapper
         }
 
         // Update entity in database using parent method.
-        $entity = parent::update($entity);
+        $entity = parent::update(entity: $entity);
 
         // Dispatch update event with old and new state for other components.
         $this->eventDispatcher->dispatchTyped(
-            new ApplicationUpdatedEvent($entity, $oldEntity)
+            new ApplicationUpdatedEvent(newApplication: $entity, oldApplication: $oldEntity)
         );
 
         return $entity;
@@ -433,13 +433,13 @@ class ApplicationMapper extends QBMapper
         $this->verifyRbacPermission(action: 'delete', entityType: 'application');
 
         // Verify user has access to this application's organisation.
-        $this->verifyOrganisationAccess($entity);
+        $this->verifyOrganisationAccess(entity: $entity);
 
         // Delete entity from database using parent method.
-        $entity = parent::delete($entity);
+        $entity = parent::delete(entity: $entity);
 
         // Dispatch deletion event for other components to react to.
-        $this->eventDispatcher->dispatchTyped(new ApplicationDeletedEvent($entity));
+        $this->eventDispatcher->dispatchTyped(new ApplicationDeletedEvent(application: $entity));
 
         return $entity;
     }//end delete()
@@ -465,7 +465,7 @@ class ApplicationMapper extends QBMapper
         $application->hydrate($data);
 
         // Insert entity into database (handles UUID, timestamps, organisation).
-        return $this->insert($application);
+        return $this->insert(entity: $application);
     }//end createFromArray()
 
     /**
@@ -486,13 +486,13 @@ class ApplicationMapper extends QBMapper
     public function updateFromArray(int $id, array $data): Application
     {
         // Find existing application (throws exception if not found).
-        $application = $this->find($id);
+        $application = $this->find(id: $id);
 
         // Hydrate entity with new data.
         $application->hydrate($data);
 
         // Update entity in database (handles timestamp, organisation verification).
-        return $this->update($application);
+        return $this->update(entity: $application);
     }//end updateFromArray()
 
     /**
@@ -560,7 +560,7 @@ class ApplicationMapper extends QBMapper
             ->from($this->tableName);
 
         // Apply organisation filter (all users including admins must have active org).
-        $this->applyOrganisationFilter($qb);
+        $this->applyOrganisationFilter(qb: $qb);
 
         // Execute query and get count.
         $result = $qb->executeQuery();

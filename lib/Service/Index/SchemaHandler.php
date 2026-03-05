@@ -165,7 +165,7 @@ class SchemaHandler
             $schemas = $this->schemaMapper->findAll();
 
             // Analyze schemas for field conflicts.
-            $conflictAnalysis = $this->analyzeAndResolveFieldConflicts($schemas);
+            $conflictAnalysis = $this->analyzeAndResolveFieldConflicts(schemas: $schemas);
 
             $this->logger->info(
                 message: '[SchemaHandler] Field conflict analysis complete',
@@ -179,7 +179,7 @@ class SchemaHandler
             );
 
             // Ensure core metadata fields exist.
-            $coreFieldsResult = $this->ensureCoreMetadataFields($force);
+            $coreFieldsResult = $this->ensureCoreMetadataFields(force: $force);
             if ($coreFieldsResult === true) {
                 $stats['core_fields_created'] = 52;
                 // Assuming 52 core fields.
@@ -278,7 +278,7 @@ class SchemaHandler
                     $fieldTypes[$propName] = [];
                 }
 
-                $solrType = $this->determineSolrFieldType($propDef);
+                $solrType = $this->determineSolrFieldType(fieldDefinition: $propDef);
                 $fieldTypes[$propName][] = [
                     'type'      => $solrType,
                     'schema_id' => $schema->getId(),
@@ -298,7 +298,7 @@ class SchemaHandler
                 $conflicts[$fieldName] = $uniqueTypes;
 
                 // Resolve to most permissive type.
-                $resolvedType         = $this->getMostPermissiveType($uniqueTypes);
+                $resolvedType         = $this->getMostPermissiveType(types: $uniqueTypes);
                 $resolved[$fieldName] = $resolvedType;
 
                 $this->logger->warning(
@@ -375,17 +375,17 @@ class SchemaHandler
         $properties = $schema->getProperties() ?? [];
 
         foreach ($properties as $propName => $propDef) {
-            $fieldName = $this->generateSolrFieldName($propName);
+            $fieldName = $this->generateSolrFieldName(fieldName: $propName);
 
             // Use resolved type if available, otherwise determine from property.
-            $fieldType = $resolvedTypes[$propName] ?? $this->determineSolrFieldType($propDef);
+            $fieldType = $resolvedTypes[$propName] ?? $this->determineSolrFieldType(fieldDefinition: $propDef);
 
             $solrFields[$fieldName] = [
                 'name'        => $fieldName,
                 'type'        => $fieldType,
                 'indexed'     => true,
                 'stored'      => true,
-                'multiValued' => $this->isMultiValued($propDef),
+                'multiValued' => $this->isMultiValued(fieldDefinition: $propDef),
             ];
         }
 

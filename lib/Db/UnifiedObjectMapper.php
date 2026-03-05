@@ -203,8 +203,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      * @param Register|null $register       Optional register to filter by.
      * @param Schema|null   $schema         Optional schema to filter by.
      * @param bool          $includeDeleted Whether to include deleted objects.
-     * @param bool          $rbac           Whether to apply RBAC checks (default: true).
-     * @param bool          $multitenancy   Whether to apply multitenancy filtering (default: true).
+     * @param bool          $_rbac          Whether to apply RBAC checks (default: true).
+     * @param bool          $_multitenancy  Whether to apply multitenancy filtering (default: true).
      *
      * @return ObjectEntity The found object.
      *
@@ -450,7 +450,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
 
         // Use provided register/schema or resolve from entity.
         if ($register === null || $schema === null) {
-            [$register, $schema] = $this->resolveRegisterAndSchema($entity);
+            [$register, $schema] = $this->resolveRegisterAndSchema(entity: $entity);
         }
 
         if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
@@ -479,7 +479,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                 'entityUuid' => $insertedEntity->getUuid(),
             ]
         );
-        $this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent($insertedEntity));
+        $this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent(object: $insertedEntity));
 
         return $insertedEntity;
     }//end insert()
@@ -489,9 +489,10 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      *
      * Routes based on the entity's register and schema fields.
      *
-     * @param Entity    $entity   Entity to update.
-     * @param ?Register $register Optional register for magic mapper routing.
-     * @param ?Schema   $schema   Optional schema for magic mapper routing.
+     * @param Entity            $entity    Entity to update.
+     * @param Register|null     $register  Optional register for magic mapper routing.
+     * @param Schema|null       $schema    Optional schema for magic mapper routing.
+     * @param ObjectEntity|null $oldEntity Old entity for comparison.
      *
      * @return ObjectEntity Updated entity.
      *
@@ -505,7 +506,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
 
         // Use provided register/schema or resolve from entity.
         if ($register === null || $schema === null) {
-            [$register, $schema] = $this->resolveRegisterAndSchema($entity);
+            [$register, $schema] = $this->resolveRegisterAndSchema(entity: $entity);
         }
 
         // Use provided oldEntity (preferred) or fetch from DB as fallback.
@@ -521,9 +522,9 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                     schema: $schema,
                     includeDeleted: false,
                     _rbac: false,
-                // Skip RBAC for internal fetch
+                // Skip RBAC for internal fetch.
                     _multitenancy: false
-                // Skip multitenancy for internal fetch
+                // Skip multitenancy for internal fetch.
                 );
             } catch (\Exception $e) {
                 // If old object doesn't exist (shouldn't happen in update), use current entity.
@@ -564,7 +565,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                 'entityUuid' => $updatedEntity->getUuid(),
             ]
         );
-        $this->eventDispatcher->dispatchTyped(new ObjectUpdatedEvent($updatedEntity, $oldEntity));
+        $this->eventDispatcher->dispatchTyped(new ObjectUpdatedEvent(newObject: $updatedEntity, oldObject: $oldEntity));
 
         return $updatedEntity;
     }//end update()
@@ -586,7 +587,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             throw new Exception('Entity must be an instance of ObjectEntity');
         }
 
-        [$register, $schema] = $this->resolveRegisterAndSchema($entity);
+        [$register, $schema] = $this->resolveRegisterAndSchema(entity: $entity);
 
         if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
             $this->logger->debug(
@@ -609,7 +610,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                     'entityUuid' => $deletedEntity->getUuid(),
                 ]
             );
-            $this->eventDispatcher->dispatchTyped(new ObjectDeletedEvent($deletedEntity));
+            $this->eventDispatcher->dispatchTyped(new ObjectDeletedEvent(object: $deletedEntity));
         } else {
             $this->logger->debug(
                 message: '[UnifiedObjectMapper] Routing delete() to ObjectEntityMapper',
@@ -1019,9 +1020,14 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         // If _schemas is provided (array of schema IDs), use multi-schema faceting.
         // Supports both single-register and multi-register.
         if ($schemaIds !== null && is_array($schemaIds) === true
-            && ($registerId !== null || ($registerIds !== null && is_array($registerIds) && count($registerIds) > 0))
+            && ($registerId !== null || ($registerIds !== null && is_array($registerIds) === true && count($registerIds) > 0))
         ) {
-            $allRegisterIds = ($registerIds !== null && is_array($registerIds) && count($registerIds) > 0) ? array_map('intval', $registerIds) : [(int) $registerId];
+            if ($registerIds !== null && is_array($registerIds) === true && count($registerIds) > 0) {
+                $allRegisterIds = array_map('intval', $registerIds);
+            } else {
+                $allRegisterIds = [(int) $registerId];
+            }
+
             return $this->getSimpleFacetsMultiSchema(
                 query: $query,
                 registerIds: $allRegisterIds,
@@ -1155,15 +1161,15 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      * with proper pagination support. For efficient pagination across multiple tables,
      * we fetch more results than needed and then apply final pagination.
      *
-     * @param array       $searchQuery   Search query parameters
-     * @param array       $countQuery    Count query parameters
-     * @param int         $registerId    Register ID
-     * @param array       $schemaIds     Array of schema IDs to search
-     * @param string|null $activeOrgUuid Organisation UUID
-     * @param bool        $rbac          Apply RBAC
-     * @param bool        $multitenancy  Apply multitenancy
-     * @param array|null  $ids           Specific IDs to filter
-     * @param string|null $uses          Uses filter
+     * @param array       $searchQuery   Search query parameters.
+     * @param array       $countQuery    Count query parameters.
+     * @param array       $registerIds   Register IDs to search.
+     * @param array       $schemaIds     Array of schema IDs to search.
+     * @param string|null $activeOrgUuid Organisation UUID.
+     * @param bool        $rbac          Apply RBAC.
+     * @param bool        $multitenancy  Apply multitenancy.
+     * @param array|null  $ids           Specific IDs to filter.
+     * @param string|null $uses          Uses filter.
      *
      * @return array{results: ObjectEntity[], total: int, registers: array, schemas: array}
      *
@@ -1532,10 +1538,15 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             && $schemaIds !== null
             && is_array($schemaIds) === true
             && count($schemaIds) > 0
-            && ($registerId !== null || ($registerIds !== null && is_array($registerIds) && count($registerIds) > 0));
+            && ($registerId !== null || ($registerIds !== null && is_array($registerIds) === true && count($registerIds) > 0));
         if ($isMultiSchemaSearch === true) {
             // Build array of register IDs: use _registers if available, otherwise wrap single _register.
-            $allRegisterIds = ($registerIds !== null && is_array($registerIds) && count($registerIds) > 0) ? array_map('intval', $registerIds) : [(int) $registerId];
+            if ($registerIds !== null && is_array($registerIds) === true && count($registerIds) > 0) {
+                $allRegisterIds = array_map('intval', $registerIds);
+            } else {
+                $allRegisterIds = [(int) $registerId];
+            }
+
             return $this->searchObjectsPaginatedMultiSchema(
                 searchQuery: $searchQuery,
                 countQuery: $countQuery,

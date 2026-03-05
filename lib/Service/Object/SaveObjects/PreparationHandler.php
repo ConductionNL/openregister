@@ -125,11 +125,11 @@ class PreparationHandler
             // Load schema (implementation would use schema mapper).
             // For this extracted handler, we assume schema loading is done externally.
             // This is a placeholder - actual implementation needs schema mapper injection.
-            $schema = $this->loadSchemaWithCache($schemaId);
+            $schema = $this->loadSchemaWithCache(schemaId: $schemaId);
             $schemaCache[$schemaId] = $schema;
 
             // Get schema analysis (implementation would use bulk validation handler).
-            $schemaAnalysis[$schemaId] = $this->getSchemaAnalysisWithCache($schema);
+            $schemaAnalysis[$schemaId] = $this->getSchemaAnalysisWithCache(schema: $schema);
         }
 
         // Pre-process objects using cached schema analysis.

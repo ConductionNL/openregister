@@ -403,35 +403,35 @@ class Agent extends Entity implements JsonSerializable
             $uuid = $object['uuid'];
         }
 
-        $this->setUuid($uuid);
+        $this->setUuid(uuid: $uuid);
 
-        $this->setName($object['name'] ?? null);
-        $this->setDescription($object['description'] ?? null);
-        $this->setType($object['type'] ?? null);
-        $this->setProvider($object['provider'] ?? null);
-        $this->setModel($object['model'] ?? null);
-        $this->setPrompt($object['prompt'] ?? null);
-        $this->setTemperature($object['temperature'] ?? null);
-        $this->setMaxTokens($object['maxTokens'] ?? $object['max_tokens'] ?? null);
-        $this->setConfiguration($object['configuration'] ?? null);
-        $this->setOrganisation($object['organisation'] ?? null);
-        $this->setOwner($object['owner'] ?? null);
-        $this->setActive($object['active'] ?? true);
-        $this->setEnableRag($object['enableRag'] ?? $object['enable_rag'] ?? false);
-        $this->setRagSearchMode($object['ragSearchMode'] ?? $object['rag_search_mode'] ?? null);
-        $this->setRagNumSources($object['ragNumSources'] ?? $object['rag_num_sources'] ?? null);
-        $this->setRagIncludeFiles($object['ragIncludeFiles'] ?? $object['rag_include_files'] ?? false);
-        $this->setRagIncludeObjects($object['ragIncludeObjects'] ?? $object['rag_include_objects'] ?? false);
-        $this->setRequestQuota($object['requestQuota'] ?? $object['request_quota'] ?? null);
-        $this->setTokenQuota($object['tokenQuota'] ?? $object['token_quota'] ?? null);
-        $this->setViews($object['views'] ?? null);
-        $this->setSearchFiles($object['searchFiles'] ?? $object['search_files'] ?? true);
-        $this->setSearchObjects($object['searchObjects'] ?? $object['search_objects'] ?? true);
-        $this->setIsPrivate($object['isPrivate'] ?? $object['is_private'] ?? true);
-        $this->setInvitedUsers($object['invitedUsers'] ?? $object['invited_users'] ?? null);
-        $this->setGroups($object['groups'] ?? null);
-        $this->setTools($object['tools'] ?? null);
-        $this->setUser($object['user'] ?? null);
+        $this->setName(name: $object['name'] ?? null);
+        $this->setDescription(description: $object['description'] ?? null);
+        $this->setType(type: $object['type'] ?? null);
+        $this->setProvider(provider: $object['provider'] ?? null);
+        $this->setModel(model: $object['model'] ?? null);
+        $this->setPrompt(prompt: $object['prompt'] ?? null);
+        $this->setTemperature(temperature: $object['temperature'] ?? null);
+        $this->setMaxTokens(maxTokens: $object['maxTokens'] ?? $object['max_tokens'] ?? null);
+        $this->setConfiguration(configuration: $object['configuration'] ?? null);
+        $this->setOrganisation(organisation: $object['organisation'] ?? null);
+        $this->setOwner(owner: $object['owner'] ?? null);
+        $this->setActive(active: $object['active'] ?? true);
+        $this->setEnableRag(enableRag: $object['enableRag'] ?? $object['enable_rag'] ?? false);
+        $this->setRagSearchMode(ragSearchMode: $object['ragSearchMode'] ?? $object['rag_search_mode'] ?? null);
+        $this->setRagNumSources(ragNumSources: $object['ragNumSources'] ?? $object['rag_num_sources'] ?? null);
+        $this->setRagIncludeFiles(ragIncludeFiles: $object['ragIncludeFiles'] ?? $object['rag_include_files'] ?? false);
+        $this->setRagIncludeObjects(ragIncludeObjects: $object['ragIncludeObjects'] ?? $object['rag_include_objects'] ?? false);
+        $this->setRequestQuota(requestQuota: $object['requestQuota'] ?? $object['request_quota'] ?? null);
+        $this->setTokenQuota(tokenQuota: $object['tokenQuota'] ?? $object['token_quota'] ?? null);
+        $this->setViews(views: $object['views'] ?? null);
+        $this->setSearchFiles(searchFiles: $object['searchFiles'] ?? $object['search_files'] ?? true);
+        $this->setSearchObjects(searchObjects: $object['searchObjects'] ?? $object['search_objects'] ?? true);
+        $this->setIsPrivate(isPrivate: $object['isPrivate'] ?? $object['is_private'] ?? true);
+        $this->setInvitedUsers(invitedUsers: $object['invitedUsers'] ?? $object['invited_users'] ?? null);
+        $this->setGroups(groups: $object['groups'] ?? null);
+        $this->setTools(tools: $object['tools'] ?? null);
+        $this->setUser(user: $object['user'] ?? null);
 
         return $this;
     }//end hydrate()

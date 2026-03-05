@@ -332,12 +332,12 @@ class ChatController extends Controller
     {
         // Load existing conversation by UUID.
         if (empty($conversationUuid) === false) {
-            return $this->loadExistingConversation($conversationUuid);
+            return $this->loadExistingConversation(uuid: $conversationUuid);
         }
 
         // Create new conversation with specified agent.
         if (empty($agentUuid) === false) {
-            return $this->createNewConversation($agentUuid);
+            return $this->createNewConversation(agentUuid: $agentUuid);
         }
 
         // Neither parameter provided.
@@ -432,7 +432,7 @@ class ChatController extends Controller
             );
 
             // Verify user has access to conversation.
-            $this->verifyConversationAccess($conversation);
+            $this->verifyConversationAccess(conversation: $conversation);
 
             // Process message through ChatService.
             $result = $this->chatService->processMessage(

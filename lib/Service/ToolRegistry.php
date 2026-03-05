@@ -124,7 +124,7 @@ class ToolRegistry
             context: ['file' => __FILE__, 'line' => __LINE__]
         );
 
-        $event = new ToolRegistrationEvent($this);
+        $event = new ToolRegistrationEvent(registry: $this);
         $this->eventDispatcher->dispatchTyped($event);
 
         $this->loaded = true;

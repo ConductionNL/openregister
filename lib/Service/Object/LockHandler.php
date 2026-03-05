@@ -131,7 +131,7 @@ class LockHandler
 
         try {
             // Find the object and determine its storage type.
-            $context      = $this->findObjectWithContext($identifier);
+            $context      = $this->findObjectWithContext(identifier: $identifier);
             $objectBefore = $context['object'];
 
             if ($context['isMagic'] === true) {
@@ -152,7 +152,7 @@ class LockHandler
                 $lockResult = $this->objectEntityMapper->lockObject($identifier, $duration);
 
                 // Reload the object after locking to get updated state.
-                $reloadContext = $this->findObjectWithContext($identifier);
+                $reloadContext = $this->findObjectWithContext(identifier: $identifier);
                 $objectAfter   = $reloadContext['object'];
             }//end if
 
@@ -217,7 +217,7 @@ class LockHandler
 
         try {
             // Find the object and determine its storage type.
-            $context      = $this->findObjectWithContext($identifier);
+            $context      = $this->findObjectWithContext(identifier: $identifier);
             $objectBefore = $context['object'];
 
             if ($context['isMagic'] === true) {
@@ -232,7 +232,7 @@ class LockHandler
                 $this->objectEntityMapper->unlockObject(uuid: $identifier);
 
                 // Reload the object after unlocking to get updated state.
-                $reloadContext = $this->findObjectWithContext($identifier);
+                $reloadContext = $this->findObjectWithContext(identifier: $identifier);
                 $objectAfter   = $reloadContext['object'];
             }
 
@@ -276,7 +276,7 @@ class LockHandler
     public function isLocked(string $identifier): bool
     {
         try {
-            $context = $this->findObjectWithContext($identifier);
+            $context = $this->findObjectWithContext(identifier: $identifier);
             $object  = $context['object'];
 
             // Check the locked property on the ObjectEntity.
@@ -323,7 +323,7 @@ class LockHandler
     public function getLockInfo(string $identifier): array|null
     {
         try {
-            $context = $this->findObjectWithContext($identifier);
+            $context = $this->findObjectWithContext(identifier: $identifier);
             $object  = $context['object'];
 
             $locked = $object->getLocked();

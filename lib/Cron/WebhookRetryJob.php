@@ -97,7 +97,7 @@ class WebhookRetryJob extends TimedJob
         WebhookService $webhookService,
         LoggerInterface $logger
     ) {
-        parent::__construct($time);
+        parent::__construct(time: $time);
 
         $this->webhookMapper    = $webhookMapper;
         $this->webhookLogMapper = $webhookLogMapper;
@@ -105,7 +105,7 @@ class WebhookRetryJob extends TimedJob
         $this->logger           = $logger;
 
         // Set interval to 5 minutes.
-        $this->setInterval(self::DEFAULT_INTERVAL);
+        $this->setInterval(seconds: self::DEFAULT_INTERVAL);
     }//end __construct()
 
     /**

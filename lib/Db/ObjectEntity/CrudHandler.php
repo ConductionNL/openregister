@@ -100,12 +100,12 @@ class CrudHandler
         unset($object['@self'], $object['id']);
         $entity->setObject($object);
 
-        $this->eventDispatcher->dispatchTyped(new ObjectCreatingEvent($entity));
+        $this->eventDispatcher->dispatchTyped(new ObjectCreatingEvent(object: $entity));
 
         // Delegate to parent mapper.
         $entity = $this->mapper->insertEntity($entity);
 
-        $this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent($entity));
+        $this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent(object: $entity));
 
         $this->logger->info(
             message: '[CrudHandler] Object inserted',
@@ -139,7 +139,7 @@ class CrudHandler
 
         $entity = $this->mapper->updateEntity($entity);
 
-        $this->eventDispatcher->dispatchTyped(new ObjectUpdatedEvent($entity, $oldObject));
+        $this->eventDispatcher->dispatchTyped(new ObjectUpdatedEvent(newObject: $entity, oldObject: $oldObject));
 
         $this->logger->info(
             message: '[CrudHandler] Object updated',
@@ -158,11 +158,11 @@ class CrudHandler
      */
     public function delete(Entity $entity): ObjectEntity
     {
-        $this->eventDispatcher->dispatchTyped(new ObjectDeletingEvent($entity));
+        $this->eventDispatcher->dispatchTyped(new ObjectDeletingEvent(object: $entity));
 
         $result = $this->mapper->deleteEntity($entity);
 
-        $this->eventDispatcher->dispatchTyped(new ObjectDeletedEvent($entity));
+        $this->eventDispatcher->dispatchTyped(new ObjectDeletedEvent(object: $entity));
 
         $this->logger->info(
             message: '[CrudHandler] Object deleted',

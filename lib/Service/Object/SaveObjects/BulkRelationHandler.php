@@ -301,7 +301,7 @@ class BulkRelationHandler
 
         // Execute writeBack operations with context.
         if (empty($writeBackOperations) === false) {
-            $this->performBulkWriteBackUpdatesWithContext($writeBackOperations);
+            $this->performBulkWriteBackUpdatesWithContext(writeBackOperations: $writeBackOperations);
         }
     }//end handlePostSaveInverseRelations()
 

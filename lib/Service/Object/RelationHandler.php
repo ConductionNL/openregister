@@ -55,6 +55,7 @@ class RelationHandler
      * @param ObjectEntityMapper $objectEntityMapper Mapper for object entities.
      * @param SchemaMapper       $schemaMapper       Mapper for schemas.
      * @param PerformanceHandler $performanceHandler Handler for performance operations.
+     * @param MagicRbacHandler   $rbacHandler        Handler for RBAC operations.
      * @param LoggerInterface    $logger             Logger for logging operations.
      */
     public function __construct(
@@ -383,7 +384,7 @@ class RelationHandler
             $batchStart = microtime(true);
 
             try {
-                $chunkObjects = $this->loadRelationshipChunkOptimized($batch);
+                $chunkObjects = $this->loadRelationshipChunkOptimized(relationshipIds: $batch);
 
                 foreach ($chunkObjects as $obj) {
                     // Index by both UUID and ID for flexible lookup.
@@ -570,7 +571,13 @@ class RelationHandler
                 } catch (\Exception $e) {
                     $this->logger->debug(
                         message: '[RelationHandler::getUses] Could not load register/schema for magic table lookup',
-                        context: ['file' => __FILE__, 'line' => __LINE__, 'registerId' => $_registerId, 'schemaId' => $_schemaId, 'error' => $e->getMessage()]
+                        context: [
+                            'file'       => __FILE__,
+                            'line'       => __LINE__,
+                            'registerId' => $_registerId,
+                            'schemaId'   => $_schemaId,
+                            'error'      => $e->getMessage(),
+                        ]
                     );
                 }
             }
@@ -698,7 +705,7 @@ class RelationHandler
             // end up in $missingUuids and get fetched via findMultiple without RBAC.
             // Filter all results to ensure RBAC is consistently enforced.
             if ($_rbac === true) {
-                $relatedObjects = $this->filterByRbac($relatedObjects);
+                $relatedObjects = $this->filterByRbac(objects: $relatedObjects);
             }
 
             $this->logger->debug(

@@ -179,7 +179,7 @@ class SchemaMapper extends QBMapper
         IAppConfig $appConfig
     ) {
         // Initialize parent mapper with table name and entity class.
-        parent::__construct($db, 'openregister_schemas', Schema::class);
+        parent::__construct(db: $db, tableName: 'openregister_schemas', entityClass: Schema::class);
 
         // Store dependencies for use in mapper methods.
         $this->eventDispatcher    = $eventDispatcher;
@@ -221,7 +221,19 @@ class SchemaMapper extends QBMapper
         bool $_multitenancy=true
     ): Schema {
         // Check request-scoped cache to avoid redundant DB queries for the same schema.
-        $cacheKey = strtolower((string) $id).':'.($_rbac ? '1' : '0').':'.($_multitenancy ? '1' : '0');
+        if ($_rbac === true) {
+            $rbacFlag = '1';
+        } else {
+            $rbacFlag = '0';
+        }
+
+        if ($_multitenancy === true) {
+            $mtFlag = '1';
+        } else {
+            $mtFlag = '0';
+        }
+
+        $cacheKey = strtolower((string) $id).':'.$rbacFlag.':'.$mtFlag;
         if (isset($this->findCache[$cacheKey]) === true) {
             return $this->findCache[$cacheKey];
         }
@@ -300,10 +312,22 @@ class SchemaMapper extends QBMapper
         $schema = Schema::fromRow($row);
 
         // Resolve schema composition if present (allOf, oneOf, anyOf).
-        $schema = $this->resolveSchemaExtension($schema);
+        $schema = $this->resolveSchemaExtension(schema: $schema);
 
         // Cache by all possible identifiers to handle lookups by id, uuid, or slug.
-        $rbacSuffix = ':'.($_rbac ? '1' : '0').':'.($_multitenancy ? '1' : '0');
+        if ($_rbac === true) {
+            $rbacChar = '1';
+        } else {
+            $rbacChar = '0';
+        }
+
+        if ($_multitenancy === true) {
+            $mtChar = '1';
+        } else {
+            $mtChar = '0';
+        }
+
+        $rbacSuffix = ':'.$rbacChar.':'.$mtChar;
         $this->findCache[$cacheKey] = $schema;
         $this->findCache[(string) $schema->getId().$rbacSuffix]      = $schema;
         $this->findCache[strtolower($schema->getUuid()).$rbacSuffix] = $schema;
@@ -562,15 +586,15 @@ class SchemaMapper extends QBMapper
         // Verify RBAC permission to create
         // $this->verifyRbacPermission('create', 'schema');
         // Auto-set organisation from active session.
-        $this->setOrganisationOnCreate($entity);
+        $this->setOrganisationOnCreate(entity: $entity);
 
         // Auto-set owner from current user session.
-        $this->setOwnerOnCreate($entity);
+        $this->setOwnerOnCreate(entity: $entity);
 
-        $entity = parent::insert($entity);
+        $entity = parent::insert(entity: $entity);
 
         // Dispatch creation event.
-        $this->eventDispatcher->dispatchTyped(new SchemaCreatedEvent($entity));
+        $this->eventDispatcher->dispatchTyped(new SchemaCreatedEvent(schema: $entity));
 
         return $entity;
     }//end insert()
@@ -586,11 +610,11 @@ class SchemaMapper extends QBMapper
      */
     private function cleanObject(Schema $schema): void
     {
-        $this->cleanRefProperties($schema);
-        $this->ensureSchemaIdentifiers($schema);
-        $this->validateConfigurationFields($schema);
-        $this->buildRequiredFieldsArray($schema);
-        $this->autoPopulateConfigurationFields($schema);
+        $this->cleanRefProperties(schema: $schema);
+        $this->ensureSchemaIdentifiers(schema: $schema);
+        $this->validateConfigurationFields(schema: $schema);
+        $this->buildRequiredFieldsArray(schema: $schema);
+        $this->autoPopulateConfigurationFields(schema: $schema);
     }//end cleanObject()
 
     /**
@@ -603,7 +627,7 @@ class SchemaMapper extends QBMapper
     private function cleanRefProperties(Schema $schema): void
     {
         $properties = $schema->getProperties() ?? [];
-        $this->enforceRefIsStringRecursive($properties);
+        $this->enforceRefIsStringRecursive(properties: $properties);
         $schema->setProperties($properties);
     }//end cleanRefProperties()
 
@@ -623,7 +647,7 @@ class SchemaMapper extends QBMapper
         }
 
         if (empty($schema->getSlug()) === true) {
-            $schema->setSlug($this->generateSlug($schema->getTitle() ?? 'schema'));
+            $schema->setSlug($this->generateSlug(title: $schema->getTitle() ?? 'schema'));
         }
 
         if ($schema->getVersion() === null) {
@@ -773,7 +797,7 @@ class SchemaMapper extends QBMapper
         $properties     = $schema->getProperties() ?? [];
 
         foreach ($properties as $propertyKey => $property) {
-            if ($this->isPropertyRequired($property) === true) {
+            if ($this->isPropertyRequired(property: $property) === true) {
                 $requiredFields[] = $propertyKey;
             }
         }
@@ -897,12 +921,12 @@ class SchemaMapper extends QBMapper
 
             // Check array items recursively.
             if (($property['items'] ?? null) !== null && is_array($property['items']) === true) {
-                $this->enforceRefIsStringRecursive($property['items']);
+                $this->enforceRefIsStringRecursive(properties: $property['items']);
             }
 
             // Check nested properties recursively.
             if (($property['properties'] ?? null) !== null && is_array($property['properties']) === true) {
-                $this->enforceRefIsStringRecursive($property['properties']);
+                $this->enforceRefIsStringRecursive(properties: $property['properties']);
             }
         }//end foreach
     }//end enforceRefIsStringRecursive()
@@ -933,17 +957,17 @@ class SchemaMapper extends QBMapper
         $schema->hydrate(object: $object, validator: $this->validator);
 
         // Clean the schema object to ensure UUID, slug, and version are set.
-        $this->cleanObject($schema);
+        $this->cleanObject(schema: $schema);
 
         // **SCHEMA COMPOSITION**: Extract delta if schema uses composition (allOf).
         // This ensures we only store the differences, not the full resolved schema.
         // NOTE: Circular reference validation is done during resolveSchemaExtension().
-        $schema = $this->extractSchemaDelta($schema);
+        $schema = $this->extractSchemaDelta(schema: $schema);
 
         // **PERFORMANCE OPTIMIZATION**: Generate facet configuration from schema properties.
-        $this->generateFacetConfiguration($schema);
+        $this->generateFacetConfiguration(schema: $schema);
 
-        $schema = $this->insert($schema);
+        $schema = $this->insert(entity: $schema);
 
         return $schema;
     }//end createFromArray()
@@ -970,7 +994,7 @@ class SchemaMapper extends QBMapper
         // Verify RBAC permission to update
         // $this->verifyRbacPermission('update', 'schema');
         // Verify user has access to this organisation.
-        $this->verifyOrganisationAccess($entity);
+        $this->verifyOrganisationAccess(entity: $entity);
 
         // Fetch old entity directly without organisation filter for event comparison.
         $qb = $this->db->getQueryBuilder();
@@ -980,20 +1004,20 @@ class SchemaMapper extends QBMapper
         $oldSchema = $this->findEntity(query: $qb);
 
         // Clean the schema object to ensure UUID, slug, and version are set.
-        $this->cleanObject($entity);
+        $this->cleanObject(schema: $entity);
 
         // **SCHEMA COMPOSITION**: Extract delta if schema uses composition (allOf).
         // This ensures we only store the differences, not the full resolved schema.
         // NOTE: Circular reference validation is done during resolveSchemaExtension().
-        $entity = $this->extractSchemaDelta($entity);
+        $entity = $this->extractSchemaDelta(schema: $entity);
 
         // **PERFORMANCE OPTIMIZATION**: Generate facet configuration from schema properties.
-        $this->generateFacetConfiguration($entity);
+        $this->generateFacetConfiguration(schema: $entity);
 
-        $entity = parent::update($entity);
+        $entity = parent::update(entity: $entity);
 
         // Dispatch update event.
-        $this->eventDispatcher->dispatchTyped(new SchemaUpdatedEvent($entity, $oldSchema));
+        $this->eventDispatcher->dispatchTyped(new SchemaUpdatedEvent(newSchema: $entity, oldSchema: $oldSchema));
 
         return $entity;
     }//end update()
@@ -1028,7 +1052,7 @@ class SchemaMapper extends QBMapper
         $schema->hydrate(object: $object, validator: $this->validator);
 
         // Update the schema in the database.
-        $schema = $this->update($schema);
+        $schema = $this->update(entity: $schema);
 
         return $schema;
     }//end updateFromArray()
@@ -1050,7 +1074,7 @@ class SchemaMapper extends QBMapper
         // Verify RBAC permission to delete
         // $this->verifyRbacPermission('delete', 'schema');
         // Verify user has access to this organisation.
-        $this->verifyOrganisationAccess($entity);
+        $this->verifyOrganisationAccess(entity: $entity);
 
         // Check for attached objects before deleting (using direct database query to avoid circular dependency).
         $schemaId = $entity->id;
@@ -1072,15 +1096,15 @@ class SchemaMapper extends QBMapper
         $result->closeCursor();
 
         if ($count > 0) {
-            throw new ValidationException('Cannot delete schema: objects are still attached.');
+            throw new ValidationException(message: 'Cannot delete schema: objects are still attached.');
         }
 
         // Proceed with deletion if no objects are attached.
-        $result = parent::delete($entity);
+        $result = parent::delete(entity: $entity);
 
         // Dispatch deletion event.
         $this->eventDispatcher->dispatchTyped(
-            new SchemaDeletedEvent($entity)
+            new SchemaDeletedEvent(schema: $entity)
         );
 
         return $result;
@@ -1314,14 +1338,14 @@ class SchemaMapper extends QBMapper
     /**
      * Generate facet configuration from schema properties
      *
+     * @param Schema $schema The schema to generate facets for.
+     *
+     * @return void
+     *
      * @deprecated This method is no longer needed since facets are now computed at runtime
      *             from property-level `facetable: true` settings. The system automatically
      *             reads facetable properties when processing facet requests.
      *             This method is kept for backward compatibility only.
-     *
-     * @param Schema $schema The schema to generate facets for
-     *
-     * @return void
      */
     private function generateFacetConfiguration(Schema $schema): void
     {
@@ -1397,7 +1421,7 @@ class SchemaMapper extends QBMapper
             && ($facetable === true || $facetable === 'true'
             || $isFacetableString === true) === true
         ) {
-            return $this->determineFacetTypeFromProperty($property);
+            return $this->determineFacetTypeFromProperty(property: $property);
         }
 
         // Auto-detect common facetable field names.
@@ -1423,7 +1447,7 @@ class SchemaMapper extends QBMapper
 
         $lowerFieldName = strtolower($fieldName);
         if (in_array($lowerFieldName, $commonFacetFields) === true) {
-            return $this->determineFacetTypeFromProperty($property);
+            return $this->determineFacetTypeFromProperty(property: $property);
         }
 
         // Auto-detect enum properties (good for faceting).
@@ -1576,7 +1600,7 @@ class SchemaMapper extends QBMapper
             }
 
             // Load and resolve the parent schema.
-            $parentSchema = $this->loadSchema($parentRef);
+            $parentSchema = $this->loadSchema(identifier: $parentRef);
             $parentSchema = $this->resolveSchemaExtension(
                 schema: $parentSchema,
                 visited: $visited
@@ -1700,8 +1724,8 @@ class SchemaMapper extends QBMapper
             }
 
             try {
-                $parentSchema = $this->loadSchema($parentRef);
-                $parentSchema = $this->resolveSchemaExtension($parentSchema);
+                $parentSchema = $this->loadSchema(identifier: $parentRef);
+                $parentSchema = $this->resolveSchemaExtension(schema: $parentSchema);
 
                 if (isset($parentSchema->getProperties()[$propertyName]) === true) {
                     return (string) $parentRef;
@@ -1744,7 +1768,7 @@ class SchemaMapper extends QBMapper
             }
 
             // Load and resolve referenced schema (validates it exists).
-            $referencedSchema = $this->loadSchema($ref);
+            $referencedSchema = $this->loadSchema(identifier: $ref);
                 $this->resolveSchemaExtension(
                     schema: $referencedSchema,
                     visited: $visited
@@ -1784,7 +1808,7 @@ class SchemaMapper extends QBMapper
             }
 
             // Load and resolve referenced schema (validates it exists).
-            $referencedSchema = $this->loadSchema($ref);
+            $referencedSchema = $this->loadSchema(identifier: $ref);
                 $this->resolveSchemaExtension(
                     schema: $referencedSchema,
                     visited: $visited
@@ -2203,7 +2227,7 @@ class SchemaMapper extends QBMapper
             return;
         }
 
-        if ($this->isMinimumConstraint($constraint) === true) {
+        if ($this->isMinimumConstraint(constraint: $constraint) === true) {
             $this->validateMinimumConstraint(
                 parentValue: $parentValue,
                 childValue: $childValue,
@@ -2214,7 +2238,7 @@ class SchemaMapper extends QBMapper
             return;
         }
 
-        if ($this->isMaximumConstraint($constraint) === true) {
+        if ($this->isMaximumConstraint(constraint: $constraint) === true) {
             $this->validateMaximumConstraint(
                 parentValue: $parentValue,
                 childValue: $childValue,
@@ -2583,11 +2607,11 @@ class SchemaMapper extends QBMapper
                     continue;
                 }
 
-                $parentSchema = $this->loadSchema($parentRef);
+                $parentSchema = $this->loadSchema(identifier: $parentRef);
 
                 // Recursively resolve parent to get its full properties.
                 if ($parentSchema->getAllOf() !== null) {
-                    $parentSchema = $this->resolveSchemaExtension($parentSchema);
+                    $parentSchema = $this->resolveSchemaExtension(schema: $parentSchema);
                 }
 
                 // Merge this parent's properties into the accumulated parent properties.
@@ -2741,7 +2765,9 @@ class SchemaMapper extends QBMapper
      * Returns an array of schema UUIDs for schemas that reference the given schema
      * in their allOf, oneOf, or anyOf composition patterns.
      *
-     * @param int|string $schemaIdentifier The ID, UUID, or slug of the schema
+     * @param int|string  $schemaIdentifier The ID, UUID, or slug of the schema.
+     * @param string|null $knownUuid        Pre-known UUID to avoid redundant lookups.
+     * @param string|null $knownSlug        Pre-known slug to avoid redundant lookups.
      *
      * @return array Array of schema UUIDs that compose with this schema
      *

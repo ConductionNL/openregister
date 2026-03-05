@@ -96,7 +96,7 @@ class SolrEventListener implements IEventListener
                     message: '[SolrEventListener] Handling ObjectCreatedEvent',
                     context: ['file' => __FILE__, 'line' => __LINE__, 'object_id' => $event->getObject()->getId()]
                 );
-                $this->handleObjectCreated($event);
+                $this->handleObjectCreated(event: $event);
                 return;
             }//end if
 
@@ -105,7 +105,7 @@ class SolrEventListener implements IEventListener
                     message: '[SolrEventListener] Handling ObjectUpdatedEvent',
                     context: ['file' => __FILE__, 'line' => __LINE__, 'object_id' => $event->getNewObject()->getId()]
                 );
-                $this->handleObjectUpdated($event);
+                $this->handleObjectUpdated(event: $event);
                 return;
             }
 
@@ -114,22 +114,22 @@ class SolrEventListener implements IEventListener
                     message: '[SolrEventListener] Handling ObjectDeletedEvent',
                     context: ['file' => __FILE__, 'line' => __LINE__, 'object_id' => $event->getObject()->getId()]
                 );
-                $this->handleObjectDeleted($event);
+                $this->handleObjectDeleted(event: $event);
                 return;
             }
 
             if ($event instanceof SchemaCreatedEvent) {
-                $this->handleSchemaCreated($event);
+                $this->handleSchemaCreated(event: $event);
                 return;
             }
 
             if ($event instanceof SchemaUpdatedEvent) {
-                $this->handleSchemaUpdated($event);
+                $this->handleSchemaUpdated(event: $event);
                 return;
             }
 
             if ($event instanceof SchemaDeletedEvent) {
-                $this->handleSchemaDeleted($event);
+                $this->handleSchemaDeleted(event: $event);
                 return;
             }
 

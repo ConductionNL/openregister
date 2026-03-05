@@ -107,7 +107,7 @@ class BulkValidationHandler
             // Check for inversedBy at property level (single object relations).
             $inversedBy   = $propertyConfig['inversedBy'] ?? null;
             $rawWriteBack = $propertyConfig['writeBack'] ?? false;
-            $writeBack    = $this->castToBoolean($rawWriteBack);
+            $writeBack    = $this->castToBoolean(value: $rawWriteBack);
 
             // Schema analysis: process writeBack boolean casting.
             // Check for inversedBy in array items (array of object relations).
@@ -117,7 +117,7 @@ class BulkValidationHandler
             if ($noInversedBy === true && $itemsHasInversedBy === true) {
                 $inversedBy        = $items['inversedBy'];
                 $rawItemsWriteBack = $items['writeBack'] ?? false;
-                $itemsWriteBack    = $this->castToBoolean($rawItemsWriteBack);
+                $itemsWriteBack    = $this->castToBoolean(value: $rawItemsWriteBack);
 
                 // Use the higher value: if property writeBack is true, keep it.
                 $finalWriteBack = $writeBack || $itemsWriteBack;

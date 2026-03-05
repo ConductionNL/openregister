@@ -69,11 +69,11 @@ class TablesController extends Controller
      * - Makes obsolete columns nullable
      * - Updates indexes for relations and facetable fields
      *
+     * @param int|string $registerId The register ID or slug.
+     * @param int|string $schemaId   The schema ID or slug.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
-     *
-     * @param int|string $registerId The register ID or slug
-     * @param int|string $schemaId   The schema ID or slug
      *
      * @return JSONResponse
      */
@@ -216,7 +216,11 @@ class TablesController extends Controller
 
                 foreach ($schemas as $schemaRef) {
                     // Schema reference can be ID or slug.
-                    $schemaId = is_array($schemaRef) ? ($schemaRef['id'] ?? $schemaRef) : $schemaRef;
+                    if (is_array($schemaRef) === true) {
+                        $schemaId = ($schemaRef['id'] ?? $schemaRef);
+                    } else {
+                        $schemaId = $schemaRef;
+                    }
 
                     try {
                         $schema = null;

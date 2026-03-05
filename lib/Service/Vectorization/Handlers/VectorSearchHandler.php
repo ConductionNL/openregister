@@ -105,7 +105,7 @@ class VectorSearchHandler
 
             // Use PHP/database similarity calculation.
             if ($backend !== 'solr') {
-                $vectors = $this->fetchVectors($filters);
+                $vectors = $this->fetchVectors(filters: $filters);
 
                 if ($vectors === []) {
                     $this->logger->warning(
@@ -247,7 +247,7 @@ class VectorSearchHandler
             $allResults  = [];
 
             // Determine which collections to search based on entity_type filter.
-            $collectionsToSearch = $this->getCollectionsToSearch($filters);
+            $collectionsToSearch = $this->getCollectionsToSearch(filters: $filters);
 
             if ($collectionsToSearch === []) {
                 throw new Exception('No Solr collections configured for vector search');

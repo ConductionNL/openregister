@@ -263,7 +263,7 @@ class FacetCacheHandler
             // If the cache table doesn't exist yet, just log a debug message and continue.
             // This allows the app to work even if the migration hasn't been run yet.
             $this->logger->debug(
-                message: '[FacetCacheHandler] Schema facet cache table does not exist yet, skipping database cache invalidation',
+                message: '[FacetCacheHandler] Schema facet cache table does not exist yet, skipping db cache invalidation',
                 context: [
                     'file'     => __FILE__,
                     'line'     => __LINE__,

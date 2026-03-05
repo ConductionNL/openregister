@@ -224,7 +224,7 @@ class MariaDbFacetHandler
                 // Handle both arrays and single values.
                 if (is_array($fieldValue) === false) {
                     // For single values, count normally.
-                    $stringValue = $this->normalizeValue($fieldValue);
+                    $stringValue = $this->normalizeValue(value: $fieldValue);
                     if ($stringValue !== null && $stringValue !== '') {
                         if (isset($valueCounts[$stringValue]) === false) {
                             $valueCounts[$stringValue] = 0;
@@ -238,7 +238,7 @@ class MariaDbFacetHandler
 
                 // For arrays, count each element separately.
                 foreach ($fieldValue as $value) {
-                    $stringValue = $this->normalizeValue($value);
+                    $stringValue = $this->normalizeValue(value: $value);
                     if ($stringValue !== null && $stringValue !== '') {
                         if (isset($valueCounts[$stringValue]) === false) {
                             $valueCounts[$stringValue] = 0;
@@ -332,7 +332,7 @@ class MariaDbFacetHandler
         $queryBuilder = $this->db->getQueryBuilder();
 
         $jsonPath   = '$.'.$field;
-        $dateFormat = $this->getDateFormatForInterval($interval);
+        $dateFormat = $this->getDateFormatForInterval(interval: $interval);
 
         $jsonPathParam = $queryBuilder->createNamedParameter($jsonPath);
         $dateFormatSql = "DATE_FORMAT(JSON_UNQUOTE(JSON_EXTRACT(object, ".$jsonPathParam.")), '$dateFormat')";
@@ -438,7 +438,7 @@ class MariaDbFacetHandler
             $count  = (int) $result->fetchOne();
 
             // Generate range key.
-            $key = $this->generateRangeKey($range);
+            $key = $this->generateRangeKey(range: $range);
 
             $bucket = [
                 'key'     => $key,
@@ -1263,7 +1263,7 @@ class MariaDbFacetHandler
      */
     private function recordValueType(array &$fieldAnalysis, mixed $value): void
     {
-        $type = $this->determineValueType($value);
+        $type = $this->determineValueType(value: $value);
 
         if (isset($fieldAnalysis['types'][$type]) === false) {
             $fieldAnalysis['types'][$type] = 0;
@@ -1289,7 +1289,7 @@ class MariaDbFacetHandler
     private function recordSampleValue(array &$fieldAnalysis, mixed $value): void
     {
         // Convert value to string for storage.
-        $stringValue = $this->valueToString($value);
+        $stringValue = $this->valueToString(value: $value);
 
         $isNotInSamples = in_array($stringValue, $fieldAnalysis['sample_values'], true) === false;
         $hasRoomForMore = count($fieldAnalysis['sample_values']) < 20;
@@ -1329,7 +1329,7 @@ class MariaDbFacetHandler
 
         if (is_string($value) === true) {
             // Check if it looks like a date.
-            if ($this->looksLikeDate($value) === true) {
+            if ($this->looksLikeDate(value: $value) === true) {
                 return 'date';
             }
 

@@ -498,7 +498,7 @@ class ObjectService
                         'trace'             => $e->getTraceAsString(),
                     ]
                 );
-                throw new ValidationException('Schema not found');
+                throw new ValidationException(message: 'Schema not found');
             }//end try
         }//end if
 
@@ -576,12 +576,12 @@ class ObjectService
     ): ?ObjectEntity {
         // Check if a register is provided and set the current register context.
         if ($register !== null) {
-            $this->setRegister($register);
+            $this->setRegister(register: $register);
         }
 
         // Check if a schema is provided and set the current schema context.
         if ($schema !== null) {
-            $this->setSchema($schema);
+            $this->setSchema(schema: $schema);
         }
 
         // Retrieve the object using the current register, schema, ID, extend properties, and file information.
@@ -602,7 +602,7 @@ class ObjectService
 
         // If no schema was provided but we have an object, derive the schema from the object.
         if ($this->currentSchema === null) {
-            $this->setSchema($object->getSchema());
+            $this->setSchema(schema: $object->getSchema());
         }
 
         // If the object is not published, check the permissions.
@@ -676,12 +676,12 @@ class ObjectService
     ): ObjectEntity {
         // Check if a register is provided and set the current register context.
         if ($register !== null) {
-            $this->setRegister($register);
+            $this->setRegister(register: $register);
         }
 
         // Check if a schema is provided and set the current schema context.
         if ($schema !== null) {
-            $this->setSchema($schema);
+            $this->setSchema(schema: $schema);
         }
 
         // Use the silent find method from the GetObject handler.
@@ -729,7 +729,7 @@ class ObjectService
     public function findAll(array $config=[], bool $_rbac=true, bool $_multitenancy=true): array
     {
         // Prepare configuration and set context.
-        $config = $this->prepareFindAllConfig($config);
+        $config = $this->prepareFindAllConfig(config: $config);
 
         // Delegate the findAll operation to the handler.
         $objects = $this->getHandler->findAll(
@@ -782,7 +782,7 @@ class ObjectService
             && is_array($config['filters']['register']) === false
             && empty($config['filters']['register']) === false
         ) {
-            $this->setRegister($config['filters']['register']);
+            $this->setRegister(register: $config['filters']['register']);
         }
 
         // Set the current schema context if a schema is provided, it's not an array, and it's not empty.
@@ -790,7 +790,7 @@ class ObjectService
             && is_array($config['filters']['schema']) === false
             && empty($config['filters']['schema']) === false
         ) {
-            $this->setSchema($config['filters']['schema']);
+            $this->setSchema(schema: $config['filters']['schema']);
         }
 
         return $config;
@@ -1093,8 +1093,8 @@ class ObjectService
         // If UUID was null and is now set, mark it as auto-generated in object data.
         // This allows SaveObject to distinguish between user-provided UUIDs (UPDATE)
         // and auto-generated UUIDs (CREATE).
-        if ($uuidWasNull && $uuid !== null && is_array($object) === true) {
-            // Store flag in @self to indicate this is a CREATE operation
+        if ($uuidWasNull === true && $uuid !== null && is_array($object) === true) {
+            // Store flag in @self to indicate this is a CREATE operation.
             if (isset($object['@self']) === false || is_array($object['@self']) === false) {
                 $object['@self'] = [];
             }
@@ -1123,13 +1123,13 @@ class ObjectService
         // Normalize date values BEFORE validation.
         // Accepts datetime input (e.g. "2024-01-15T10:30:00+02:00") for date fields
         // and casts it to date-only (e.g. "2024-01-15") so Opis validation passes.
-        $object = $this->normalizeDateValues($object);
+        $object = $this->normalizeDateValues(object: $object);
 
         // Validate if hard validation is enabled.
-        $this->validateObjectIfRequired($object);
+        $this->validateObjectIfRequired(object: $object);
 
         // Ensure folder exists for the object.
-        $folderId = $this->ensureObjectFolder($uuid);
+        $folderId = $this->ensureObjectFolder(uuid: $uuid);
 
         // Clear request-scoped caches before starting a new top-level save operation.
         // This ensures cascade operations benefit from caching while avoiding stale data.
@@ -1175,12 +1175,12 @@ class ObjectService
     ): void {
         // Set the current register context if provided.
         if ($register !== null) {
-            $this->setRegister($register);
+            $this->setRegister(register: $register);
         }
 
         // Set the current schema context if provided.
         if ($schema !== null) {
-            $this->setSchema($schema);
+            $this->setSchema(schema: $schema);
         }
     }//end setContextFromParameters()
 
@@ -1329,7 +1329,7 @@ class ObjectService
 
             if ($result->isValid() === false) {
                 $meaningfulMessage = $this->validateHandler->generateErrorMessage(result: $result);
-                throw new ValidationException($meaningfulMessage, errors: $result->error());
+                throw new ValidationException(message: $meaningfulMessage, errors: $result->error());
             }
         }
     }//end validateObjectIfRequired()
@@ -1442,7 +1442,7 @@ class ObjectService
 
             // If no schema was provided but we have an object, derive the schema from the object.
             if ($this->currentSchema === null) {
-                $this->setSchema($objectToDelete->getSchema());
+                $this->setSchema(schema: $objectToDelete->getSchema());
             }
 
             // Check user has permission to delete this specific object.
@@ -1936,7 +1936,7 @@ class ObjectService
                     $result['@self']['names'] = [];
                 } else {
                     try {
-                        $result['@self']['names'] = $this->collectNamesForResults($resultsToProcess);
+                        $result['@self']['names'] = $this->collectNamesForResults(results: $resultsToProcess);
                     } catch (\Throwable $e) {
                         $this->logger->error(
                             message: '[ObjectService] _names extension failed: '.$e->getMessage().' at '.$e->getFile().':'.$e->getLine(),
@@ -2002,7 +2002,7 @@ class ObjectService
                 $result['@self']['names'] = [];
             } else {
                 try {
-                    $result['@self']['names'] = $this->collectNamesForResults($resultsToProcess);
+                    $result['@self']['names'] = $this->collectNamesForResults(results: $resultsToProcess);
                 } catch (\Throwable $e) {
                     $this->logger->error(
                         message: '[ObjectService] _names extension failed: '.$e->getMessage().' at '.$e->getFile().':'.$e->getLine(),
@@ -2178,11 +2178,11 @@ class ObjectService
                 $relations = $result->getRelations();
                 if (is_array($relations) === true) {
                     foreach ($relations as $relation) {
-                        if (is_string($relation) === true && $this->isUuidFormat($relation) === true) {
+                        if (is_string($relation) === true && $this->isUuidFormat(value: $relation) === true) {
                             $uuids[] = $relation;
                         } else if (is_array($relation) === true) {
                             foreach ($relation as $uuid) {
-                                if (is_string($uuid) === true && $this->isUuidFormat($uuid) === true) {
+                                if (is_string($uuid) === true && $this->isUuidFormat(value: $uuid) === true) {
                                     $uuids[] = $uuid;
                                 }
                             }
@@ -2193,19 +2193,19 @@ class ObjectService
                 // Collect from metadata fields (organisation, owner).
                 // These are UUID references to related objects that the frontend needs names for.
                 $organisation = $result->getOrganisation();
-                if (is_string($organisation) === true && $this->isUuidFormat($organisation) === true) {
+                if (is_string($organisation) === true && $this->isUuidFormat(value: $organisation) === true) {
                     $uuids[] = $organisation;
                 }
 
                 $owner = $result->getOwner();
-                if (is_string($owner) === true && $this->isUuidFormat($owner) === true) {
+                if (is_string($owner) === true && $this->isUuidFormat(value: $owner) === true) {
                     $uuids[] = $owner;
                 }
 
                 // Get object data directly without triggering full serialization.
                 $objectData = $result->getObject();
                 if (is_array($objectData) === true) {
-                    $this->collectUuidsFromObjectData($objectData, $uuids);
+                    $this->collectUuidsFromObjectData(data: $objectData, uuids: $uuids);
                 }
 
                 continue;
@@ -2225,11 +2225,11 @@ class ObjectService
                 $relations = $resultData['@self']['relations'] ?? [];
                 if (is_array($relations) === true) {
                     foreach ($relations as $relation) {
-                        if (is_string($relation) === true && $this->isUuidFormat($relation) === true) {
+                        if (is_string($relation) === true && $this->isUuidFormat(value: $relation) === true) {
                             $uuids[] = $relation;
                         } else if (is_array($relation) === true) {
                             foreach ($relation as $uuid) {
-                                if (is_string($uuid) === true && $this->isUuidFormat($uuid) === true) {
+                                if (is_string($uuid) === true && $this->isUuidFormat(value: $uuid) === true) {
                                     $uuids[] = $uuid;
                                 }
                             }
@@ -2242,7 +2242,7 @@ class ObjectService
                 $metadataFields = ['organisation', 'owner'];
                 foreach ($metadataFields as $field) {
                     $value = $resultData['@self'][$field] ?? null;
-                    if (is_string($value) === true && $this->isUuidFormat($value) === true) {
+                    if (is_string($value) === true && $this->isUuidFormat(value: $value) === true) {
                         $uuids[] = $value;
                     }
                 }
@@ -2255,7 +2255,7 @@ class ObjectService
 
             // Collect UUIDs from object properties.
             if (is_array($objectData) === true) {
-                $this->collectUuidsFromObjectData($objectData, $uuids);
+                $this->collectUuidsFromObjectData(data: $objectData, uuids: $uuids);
             }
         }//end foreach
 
@@ -2274,8 +2274,9 @@ class ObjectService
     /**
      * Recursively collect UUIDs from object data.
      *
-     * @param array $data   The object data to scan.
-     * @param array &$uuids Reference to array collecting UUIDs.
+     * @param array $data  The object data to scan.
+     * @param array $uuids Reference to array collecting UUIDs.
+     * @param int   $depth Current recursion depth.
      *
      * @return void
      */
@@ -2293,12 +2294,12 @@ class ObjectService
             }
 
             // Only look at top-level string UUIDs.
-            if (is_string($value) === true && $this->isUuidFormat($value) === true) {
+            if (is_string($value) === true && $this->isUuidFormat(value: $value) === true) {
                 $uuids[] = $value;
             } else if (is_array($value) === true) {
                 // Only look at arrays of UUIDs (not nested objects).
                 foreach ($value as $item) {
-                    if (is_string($item) === true && $this->isUuidFormat($item) === true) {
+                    if (is_string($item) === true && $this->isUuidFormat(value: $item) === true) {
                         $uuids[] = $item;
                     }
 
@@ -2513,11 +2514,11 @@ class ObjectService
 
         // Set register and schema context if provided.
         if ($register !== null) {
-            $this->setRegister($register);
+            $this->setRegister(register: $register);
         }
 
         if ($schema !== null) {
-            $this->setSchema($schema);
+            $this->setSchema(schema: $schema);
         }
 
         // ARCHITECTURAL DELEGATION: Delegate to BulkOperationsHandler which includes cache invalidation.

@@ -134,7 +134,7 @@ abstract class AbstractTool implements ToolInterface
      */
     protected function hasUserContext(?string $explicitUserId=null): bool
     {
-        return $this->getUserId($explicitUserId) !== null;
+        return $this->getUserId(explicitUserId: $explicitUserId) !== null;
     }//end hasUserContext()
 
     /**

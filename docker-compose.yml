@@ -26,6 +26,7 @@ volumes:
   exapp-opentalk:
   exapp-valtimo:
   exapp-livekit:
+  exapp-minio:
   valtimo-data:
   openzaak-data:
   openklant-data:
@@ -1092,6 +1093,27 @@ services:
       retries: 3
       start_period: 15s
 
+  # MinIO - Object storage for OpenTalk file uploads and assets
+  exapp-minio:
+    profiles:
+      - commonground
+      - exapps
+    image: minio/minio:latest
+    container_name: openregister-exapp-minio
+    restart: always
+    command: server /data --console-address ":9001"
+    volumes:
+      - exapp-minio:/data
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
   # =============================================================================
   # ExApp Services - Common Ground / Identity
   # Start with: docker-compose --profile commonground up
@@ -1128,7 +1150,14 @@ services:
       - KC_HEALTH_ENABLED=true
       - KC_HTTP_ENABLED=true
       - KC_HOSTNAME_STRICT=false
+      - KC_HOSTNAME=http://localhost:8180
       - KC_PROXY_HEADERS=xforwarded
+      # Realm for user sync
+      - KEYCLOAK_REALM=commonground
+      # Shared secret for ExApp-to-ExApp API calls
+      - KEYCLOAK_API_SECRET=keycloak-exapp-internal-secret
+    ports:
+      - "8180:8080"
     depends_on:
       db:
         condition: service_healthy
@@ -1329,16 +1358,21 @@ services:
       - APP_PERSISTENT_STORAGE=/data
       - APP_SECRET=HGF41cZ42HnNoA4eWUqhMquI9RFnk206ZVtJyT/1xK+X3u1bvSiyRdlfJlxL7YLn8uTMpKh/Bqb9VGKkRYAaoQUj6xtIcCdx4hTBJDrspEPTBgVbAF6/sg/VL6oNdhmv
       - NEXTCLOUD_URL=http://nextcloud
-      # OpenTalk Controller Configuration
-      - OPENTALK_CTRL_DATABASE__URL=postgres://nextcloud:!ChangeMe!@openregister-postgres:5432/opentalk
-      - OPENTALK_CTRL_REDIS__URL=redis://openregister-exapp-redis:6379/2
-      # Keycloak OIDC
-      - OPENTALK_CTRL_OIDC__AUTHORITY=http://openregister-exapp-keycloak:8080/realms/commonground
-      - OPENTALK_CTRL_OIDC__CLIENT_ID=opentalk
-      # LiveKit WebRTC
-      - OPENTALK_CTRL_LIVEKIT__SERVICE_URL=http://openregister-exapp-livekit:7880
-      - OPENTALK_CTRL_LIVEKIT__API_KEY=devkey
-      - OPENTALK_CTRL_LIVEKIT__API_SECRET=secret
+      # OpenTalk Controller config is in controller.toml
+      # Env vars with OPENTALK_CTRL_ prefix override entire TOML sections, so avoid them
+      # Keycloak OIDC Configuration
+      - KEYCLOAK_URL=http://openregister-exapp-keycloak:8080
+      - KEYCLOAK_REALM=commonground
+      - KEYCLOAK_CLIENT_ID=opentalk-controller
+      - KEYCLOAK_CLIENT_SECRET=opentalk-secret
+      # Browser-accessible Keycloak URL for OIDC flows (not docker-internal)
+      - KEYCLOAK_BROWSER_URL=http://localhost:8180
+      # Keycloak ExApp URL for server-side token acquisition
+      - KEYCLOAK_EXAPP_URL=http://openregister-exapp-keycloak:23002
+      # Shared secret for ExApp-to-ExApp API calls
+      - KEYCLOAK_API_SECRET=keycloak-exapp-internal-secret
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       db:
         condition: service_healthy
@@ -1347,6 +1381,8 @@ services:
       exapp-keycloak:
         condition: service_healthy
       exapp-livekit:
+        condition: service_healthy
+      exapp-minio:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "python3", "-c", "import os,urllib.request,urllib.error\ntry: urllib.request.urlopen('http://127.0.0.1:'+os.environ.get('APP_PORT','23000')+'/heartbeat')\nexcept urllib.error.HTTPError: pass"]

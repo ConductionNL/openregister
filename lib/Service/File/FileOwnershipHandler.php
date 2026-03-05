@@ -112,7 +112,10 @@ class FileOwnershipHandler
                 }
             }
 
-            $this->logger->info(message: '[FileOwnershipHandler] OpenRegister user created successfully', context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->info(
+                message: '[FileOwnershipHandler] OpenRegister user created successfully',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
         }//end if
 
         return $openRegisterUser;
@@ -178,7 +181,9 @@ class FileOwnershipHandler
             // Get file owner.
             $fileOwner = $file->getOwner();
             if ($fileOwner === null) {
-                $this->logger->warning(message: "[FileOwnershipHandler] File {$file->getName()} has no owner, skipping ownership transfer");
+                $this->logger->warning(
+                    message: "[FileOwnershipHandler] File {$file->getName()} has no owner, skipping ownership transfer"
+                );
                 return;
             }
 
@@ -187,8 +192,9 @@ class FileOwnershipHandler
             // Check if current user is the owner and is not OpenRegister.
             if ($fileOwnerId === $currentUserId && $currentUserId !== $openRegisterUserId) {
                 $fileName = $file->getName();
+                $msg      = '[FileOwnershipHandler] Transferring file '.$fileName.' from '.$currentUserId;
                 $this->logger->info(
-                    message: "[FileOwnershipHandler] Transferring file {$fileName} from {$currentUserId} to {$openRegisterUserId}"
+                    message: $msg.' to '.$openRegisterUserId
                 );
 
                 // Change file ownership to OpenRegister user.
@@ -203,11 +209,14 @@ class FileOwnershipHandler
                 }
 
                 $this->logger->info(
-                    message: "[FileOwnershipHandler] Successfully transferred and shared file {$fileName} with {$currentUserId}"
+                    message: "[FileOwnershipHandler] Successfully transferred and shared file {$fileName}"
                 );
             }//end if
         } catch (Exception $e) {
-            $this->logger->error(message: "[FileOwnershipHandler] Failed to transfer file ownership for {$file->getName()}: ".$e->getMessage());
+            $errMsg = '[FileOwnershipHandler] Failed to transfer file ownership for '.$file->getName();
+            $this->logger->error(
+                message: $errMsg.': '.$e->getMessage()
+            );
             // Don't throw the exception to avoid breaking file operations.
             // The file operation should succeed even if ownership transfer fails.
         }//end try
@@ -257,7 +266,9 @@ class FileOwnershipHandler
             // Get folder owner.
             $folderOwner = $folder->getOwner();
             if ($folderOwner === null) {
-                $this->logger->warning(message: "[FileOwnershipHandler] Folder {$folder->getName()} has no owner, skipping ownership transfer");
+                $this->logger->warning(
+                    message: '[FileOwnershipHandler] Folder '.$folder->getName().' has no owner, skipping ownership transfer'
+                );
                 return;
             }
 
@@ -266,8 +277,9 @@ class FileOwnershipHandler
             // Check if current user is the owner and is not OpenRegister.
             if ($folderOwnerId === $currentUserId && $currentUserId !== $openRegisterUserId) {
                 $folderName = $folder->getName();
+                $msg        = '[FileOwnershipHandler] Transferring folder '.$folderName.' from '.$currentUserId;
                 $this->logger->info(
-                    message: "[FileOwnershipHandler] Transferring folder {$folderName} from {$currentUserId} to {$openRegisterUserId}"
+                    message: $msg.' to '.$openRegisterUserId
                 );
 
                 // Change folder ownership to OpenRegister user.
@@ -282,11 +294,14 @@ class FileOwnershipHandler
                 }
 
                 $this->logger->info(
-                    message: "[FileOwnershipHandler] Successfully transferred and shared folder {$folderName} with {$currentUserId}"
+                    message: "[FileOwnershipHandler] Successfully transferred and shared folder {$folderName}"
                 );
             }//end if
         } catch (Exception $e) {
-            $this->logger->error(message: "[FileOwnershipHandler] Failed to transfer folder ownership for {$folder->getName()}: ".$e->getMessage());
+            $errMsg = '[FileOwnershipHandler] Failed to transfer folder ownership for '.$folder->getName();
+            $this->logger->error(
+                message: $errMsg.': '.$e->getMessage()
+            );
             // Don't throw the exception to avoid breaking folder operations.
             // The folder operation should succeed even if ownership transfer fails.
         }//end try

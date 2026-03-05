@@ -213,7 +213,7 @@ class SchemaCacheHandler
         $cachedData = $this->getCachedData(schemaId: $schemaId, cacheKey: self::CACHE_KEY_SCHEMA);
         if ($cachedData !== null) {
             // Reconstruct schema object from cached data.
-            $schema = $this->reconstructSchemaFromCache($cachedData);
+            $schema = $this->reconstructSchemaFromCache(cachedData: $cachedData);
             if ($schema !== null) {
                 // Store in memory cache for future requests.
                 self::$memoryCache[$cacheKey] = $schema;
@@ -228,7 +228,7 @@ class SchemaCacheHandler
         // Load from database and cache.
         try {
             $schema = $this->schemaMapper->find($schemaId);
-            $this->cacheSchema($schema);
+            $this->cacheSchema(schema: $schema);
             $this->logger->debug(
                 message: '[SchemaCacheHandler] Schema loaded from database and cached',
                 context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $schemaId]
@@ -292,7 +292,7 @@ class SchemaCacheHandler
     public function cacheSchema(Schema $schema, int $ttl=self::DEFAULT_TTL): void
     {
         $schemaId   = $schema->getId();
-        $schemaData = $this->serializeSchemaForCache($schema);
+        $schemaData = $this->serializeSchemaForCache(schema: $schema);
 
         $this->setCachedData(schemaId: $schemaId, cacheKey: self::CACHE_KEY_SCHEMA, data: $schemaData, ttl: $ttl);
 

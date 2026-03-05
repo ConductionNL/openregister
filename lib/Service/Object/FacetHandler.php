@@ -111,7 +111,10 @@ class FacetHandler
             } catch (\Exception $e) {
                 // No caching available - will skip cache operations.
                 $this->facetCache = null;
-                $this->logger->warning(message: '[FacetHandler] Facet caching unavailable', context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]);
+                $this->logger->warning(
+                    message: '[FacetHandler] Facet caching unavailable',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+                );
             }
         }
     }//end __construct()
@@ -174,14 +177,14 @@ class FacetHandler
 
         // **RESPONSE CACHING**: Check cache first for identical requests.
         $cacheKey = $this->generateFacetCacheKey(facetQuery: $facetQuery, facetConfig: $facetConfig);
-        $cached   = $this->getCachedFacetResponse($cacheKey);
+        $cached   = $this->getCachedFacetResponse(cacheKey: $cacheKey);
         if ($cached !== null) {
             return $cached;
         }
 
         // Discover non-aggregated facet fields from schema configurations.
-        $schemas         = $this->getSchemasForQuery($facetQuery);
-        $facetableConfig = $this->getFacetableFieldsFromSchemas($schemas);
+        $schemas         = $this->getSchemasForQuery(baseQuery: $facetQuery);
+        $facetableConfig = $this->getFacetableFieldsFromSchemas(schemas: $schemas);
 
         // **INTELLIGENT FACETING**: Try current filters first, then smart fallback.
             $result = $this->calculateFacetsWithFallback(
@@ -237,10 +240,10 @@ class FacetHandler
         $startTime = microtime(true);
 
         // Get schemas relevant to this query (cached for performance).
-        $schemas = $this->getSchemasForQuery($baseQuery);
+        $schemas = $this->getSchemasForQuery(baseQuery: $baseQuery);
 
         // **PERFORMANCE OPTIMIZATION**: Use pre-computed schema facets.
-        $facetableFields = $this->getFacetableFieldsFromSchemas($schemas);
+        $facetableFields = $this->getFacetableFieldsFromSchemas(schemas: $schemas);
 
         $executionTime = round((microtime(true) - $startTime) * 1000, 2);
 
@@ -329,8 +332,8 @@ class FacetHandler
         $facets = $this->unifiedObjectMapper->getSimpleFacets($facetQuery);
 
         // **STAGE 2**: Check if we got meaningful facets.
-        $totalFacetResults = $this->countFacetResults($facets);
-        $hasRestrictFilter = $this->hasRestrictiveFilters($facetQuery);
+        $totalFacetResults = $this->countFacetResults(facets: $facets);
+        $hasRestrictFilter = $this->hasRestrictiveFilters(query: $facetQuery);
 
         $strategy     = 'filtered';
         $fallbackUsed = false;
@@ -357,7 +360,7 @@ class FacetHandler
 
             // Calculate collection-wide facets.
             $fallbackFacets  = $this->unifiedObjectMapper->getSimpleFacets($collectionQuery);
-            $fallbackResults = $this->countFacetResults($fallbackFacets);
+            $fallbackResults = $this->countFacetResults(facets: $fallbackFacets);
 
             if ($fallbackResults > 0) {
                 $facets       = $fallbackFacets;
@@ -450,7 +453,7 @@ class FacetHandler
         $performanceMetadata = [
             'strategy'                => $strategy,
             'fallback_used'           => $fallbackUsed,
-            'total_facet_results'     => $this->countFacetResults($facets),
+            'total_facet_results'     => $this->countFacetResults(facets: $facets),
             'has_restrictive_filters' => $hasRestrictFilter,
         ];
 
@@ -620,19 +623,24 @@ class FacetHandler
                 );
 
                 $configOrder = $naConfig['order'] ?? null;
-                $facetOrder  = $configOrder !== null ? (int) $configOrder : ++$order;
+                if ($configOrder !== null) {
+                    $facetOrder = (int) $configOrder;
+                } else {
+                    $facetOrder = ++$order;
+                }
+
                 if ($configOrder === null) {
                     $order = $facetOrder;
                 }
 
-                $title       = $naConfig['title'] ?? $facetData['title'] ?? $this->formatFieldTitle($naFieldName);
+                $title       = $naConfig['title'] ?? $facetData['title'] ?? $this->formatFieldTitle(field: $naFieldName);
                 $description = $naConfig['description'] ?? 'object field: '.$naFieldName;
 
                 $definition = [
                     'title'       => $title,
                     'description' => $description,
-                    'data_type'   => $this->inferDataType($facetData),
-                    'index_field' => $this->sanitizeFieldName($naFieldName),
+                    'data_type'   => $this->inferDataType(facetData: $facetData),
+                    'index_field' => $this->sanitizeFieldName(field: $naFieldName),
                     'index_type'  => 'string',
                     'enabled'     => true,
                 ];
@@ -652,22 +660,40 @@ class FacetHandler
                 // Aggregated facet: use config overrides if available.
                 $fieldConfig = $aggregatedConfigs[$field] ?? null;
 
-                $configOrder = ($fieldConfig !== null) ? ($fieldConfig['order'] ?? null) : null;
-                $facetOrder  = $configOrder !== null ? (int) $configOrder : ++$order;
+                if ($fieldConfig !== null) {
+                    $configOrder = $fieldConfig['order'] ?? null;
+                } else {
+                    $configOrder = null;
+                }
+
+                if ($configOrder !== null) {
+                    $facetOrder = (int) $configOrder;
+                } else {
+                    $facetOrder = ++$order;
+                }//end if
+
                 if ($configOrder === null) {
                     $order = $facetOrder;
                 }
 
                 // Use config title/description if available, then fall back to facet data or auto-generated.
-                $title = ($fieldConfig !== null && ($fieldConfig['title'] ?? null) !== null) ? $fieldConfig['title'] : ($facetData['title'] ?? $this->formatFieldTitle($field));
+                if ($fieldConfig !== null && ($fieldConfig['title'] ?? null) !== null) {
+                    $title = $fieldConfig['title'];
+                } else {
+                    $title = $facetData['title'] ?? $this->formatFieldTitle(field: $field);
+                }
 
-                $description = ($fieldConfig !== null && ($fieldConfig['description'] ?? null) !== null) ? $fieldConfig['description'] : 'object field: '.$field;
+                if ($fieldConfig !== null && ($fieldConfig['description'] ?? null) !== null) {
+                    $description = $fieldConfig['description'];
+                } else {
+                    $description = 'object field: '.$field;
+                }
 
                 $definition = [
                     'title'       => $title,
                     'description' => $description,
-                    'data_type'   => $this->inferDataType($facetData),
-                    'index_field' => $this->sanitizeFieldName($field),
+                    'data_type'   => $this->inferDataType(facetData: $facetData),
+                    'index_field' => $this->sanitizeFieldName(field: $field),
                     'index_type'  => 'string',
                     'enabled'     => true,
                 ];
@@ -866,7 +892,10 @@ class FacetHandler
         try {
             $cached = $this->facetCache->get($cacheKey);
             if ($cached !== null) {
-                $this->logger->debug(message: '[FacetHandler] Facet response cache hit', context: ['file' => __FILE__, 'line' => __LINE__, 'cacheKey' => $cacheKey]);
+                $this->logger->debug(
+                    message: '[FacetHandler] Facet response cache hit',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'cacheKey' => $cacheKey]
+                );
                 // Add cache metadata.
                 $cached['performance_metadata']['cache_hit'] = true;
                 return $cached;
@@ -1082,13 +1111,13 @@ class FacetHandler
                 $schemaId   = $schema->getId();
                 $properties = $schema->getProperties() ?? [];
                 foreach ($properties as $propertyKey => $property) {
-                    $facetConfig = $this->normalizeFacetConfig($property['facetable'] ?? false);
+                    $facetConfig = $this->normalizeFacetConfig(facetable: $property['facetable'] ?? false);
                     if ($facetConfig === null) {
                         continue;
                     }
 
                     // Determine facet type based on property type.
-                    $facetType = $this->determineFacetTypeFromProperty($property);
+                    $facetType = $this->determineFacetTypeFromProperty(property: $property);
 
                     if ($facetConfig['aggregated'] === false) {
                         // Track non-aggregated fields separately with schema context.

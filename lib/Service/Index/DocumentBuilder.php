@@ -383,7 +383,7 @@ class DocumentBuilder
                 $extractedValues[] = $item;
             } else if (is_array($item) === true) {
                 // Object/array - try to extract ID/UUID.
-                $idValue = $this->extractIdFromObject($item);
+                $idValue = $this->extractIdFromObject(object: $item);
                 if ($idValue !== null) {
                     $extractedValues[] = $idValue;
                 }

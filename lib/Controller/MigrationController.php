@@ -1,5 +1,18 @@
 <?php
 
+/**
+ * MigrationController
+ *
+ * Controller for storage migration between blob and magic tables.
+ *
+ * @category Controller
+ * @package  OCA\OpenRegister\Controller
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ */
+
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
@@ -14,6 +27,15 @@ use OCP\IRequest;
  */
 class MigrationController extends Controller
 {
+    /**
+     * Constructor for MigrationController.
+     *
+     * @param string           $appName          Application name.
+     * @param IRequest         $request          HTTP request object.
+     * @param MigrationService $migrationService Migration service.
+     *
+     * @return void
+     */
     public function __construct(
         string $appName,
         IRequest $request,
@@ -25,10 +47,10 @@ class MigrationController extends Controller
     /**
      * Get storage status for a register/schema combination.
      *
-     * @NoCSRFRequired
-     *
      * @param string $register Register ID or slug.
      * @param string $schema   Schema ID or slug.
+     *
+     * @NoCSRFRequired
      *
      * @return JSONResponse Storage status.
      */

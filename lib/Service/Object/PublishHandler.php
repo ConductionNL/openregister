@@ -356,7 +356,7 @@ class PublishHandler
         $depublicationDate = $object->getDepublicationDate();
 
         $status = [
-            'is_published'            => $this->isPublished($object),
+            'is_published'            => $this->isPublished(object: $object),
             'publication_date'        => $publicationDate?->format('Y-m-d H:i:s'),
             'depublication_date'      => $depublicationDate?->format('Y-m-d H:i:s'),
             'publication_scheduled'   => false,

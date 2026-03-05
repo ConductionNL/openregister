@@ -316,7 +316,7 @@ class ImportHandler
             return null;
         }
 
-        $phpArray = $this->ensureArrayStructure($phpArray);
+        $phpArray = $this->ensureArrayStructure(data: $phpArray);
         return $phpArray;
     }//end decode()
 
@@ -336,7 +336,7 @@ class ImportHandler
         if (is_array($data) === true) {
             foreach ($data as $key => $value) {
                 if (is_object($value) === true || is_array($value) === true) {
-                    $data[$key] = $this->ensureArrayStructure($value);
+                    $data[$key] = $this->ensureArrayStructure(data: $value);
                 }
             }
         }
@@ -432,7 +432,7 @@ class ImportHandler
             );
         }
 
-        $phpArray = $this->ensureArrayStructure($phpArray);
+        $phpArray = $this->ensureArrayStructure(data: $phpArray);
         return $phpArray;
     }//end getJSONfromBody()
 
@@ -462,7 +462,7 @@ class ImportHandler
     ): Register {
         try {
             // Ensure data is consistently an array by converting any stdClass objects.
-            $data = $this->ensureArrayStructure($data);
+            $data = $this->ensureArrayStructure(data: $data);
 
             // Remove id, uuid, and organisation from the data.
             // Organisation is instance-specific and should not be imported.
@@ -509,7 +509,10 @@ class ImportHandler
                 // Compare versions using version_compare for proper semver comparison.
                 $existingVersion = $existingRegister->getVersion() ?? '0.0.0';
                 if ($force === false && version_compare($data['version'], $existingVersion, '<=') === true) {
-                    $this->logger->info(message: '[ImportHandler] Skipping register import as existing version is newer or equal.', context: ['file' => __FILE__, 'line' => __LINE__]);
+                    $this->logger->info(
+                        message: '[ImportHandler] Skipping register import as existing version is newer or equal.',
+                        context: ['file' => __FILE__, 'line' => __LINE__]
+                    );
                     // Even though we're skipping the update, we still need to add it to the map.
                     return $existingRegister;
                 }
@@ -553,7 +556,10 @@ class ImportHandler
 
             return $register;
         } catch (Exception $e) {
-            $this->logger->error(message: '[ImportHandler] Failed to import register: '.$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->error(
+                message: '[ImportHandler] Failed to import register: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             throw new Exception('Failed to import register: '.$e->getMessage());
         }//end try
     }//end importRegister()
@@ -572,7 +578,7 @@ class ImportHandler
     private function handleDuplicateRegisterError(string $slug, string $appId, string $version)
     {
         // Get details about the duplicate registers.
-        $duplicateInfo = $this->getDuplicateRegisterInfo($slug);
+        $duplicateInfo = $this->getDuplicateRegisterInfo(slug: $slug);
 
         $formatStr  = "Duplicate register detected during import from app '%s' (version %s). ";
         $formatStr .= "Register with slug '%s' has multiple entries in the database: %s. ";
@@ -646,7 +652,7 @@ class ImportHandler
     private function handleDuplicateSchemaError(string $slug, string $appId, string $version)
     {
         // Get details about the duplicate schemas.
-        $duplicateInfo = $this->getDuplicateSchemaInfo($slug);
+        $duplicateInfo = $this->getDuplicateSchemaInfo(slug: $slug);
 
         $formatStr  = "Duplicate schema detected during import from app '%s' (version %s). ";
         $formatStr .= "Schema with slug '%s' has multiple entries in the database: %s. ";
@@ -999,7 +1005,10 @@ class ImportHandler
                 // Compare versions using version_compare for proper semver comparison.
                 $existingVersion = $existingSchema->getVersion() ?? '0.0.0';
                 if ($force === false && version_compare($data['version'], $existingVersion, '<=') === true) {
-                    $this->logger->info(message: '[ImportHandler] Skipping schema import as existing version is newer or equal.', context: ['file' => __FILE__, 'line' => __LINE__]);
+                    $this->logger->info(
+                        message: '[ImportHandler] Skipping schema import as existing version is newer or equal.',
+                        context: ['file' => __FILE__, 'line' => __LINE__]
+                    );
                     return $existingSchema;
                 }
 
@@ -1014,7 +1023,7 @@ class ImportHandler
                 }
 
                 return $this->schemaMapper->update($existingSchema);
-            }
+            }//end if
 
             // Create new schema.
             $schema = $this->schemaMapper->createFromArray($data);
@@ -1030,7 +1039,10 @@ class ImportHandler
 
             return $schema;
         } catch (Exception $e) {
-            $this->logger->error(message: '[ImportHandler] Failed to import schema: '.$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->error(
+                message: '[ImportHandler] Failed to import schema: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             throw new Exception('Failed to import schema: '.$e->getMessage(), $e->getCode(), $e);
         }//end try
     }//end importSchema()
@@ -1087,7 +1099,7 @@ class ImportHandler
         }
 
         // Ensure data is consistently an array by converting any stdClass objects.
-        $data = $this->ensureArrayStructure($data);
+        $data = $this->ensureArrayStructure(data: $data);
 
         // Extract appId and version from data if not provided as parameters.
         if ($appId === null && (($data['appId'] ?? null) !== null)) {
@@ -1411,7 +1423,10 @@ class ImportHandler
                     ],
                     '_limit' => 1,
                 ];
-                $this->logger->debug(message: '[ImportHandler] Import object search filter', context: ['file' => __FILE__, 'line' => __LINE__, 'filter' => $search]);
+                $this->logger->debug(
+                    message: '[ImportHandler] Import object search filter',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'filter' => $search]
+                );
 
                 // Search for existing object.
                 // Use _rbac: false and _multitenancy: false to ensure we find objects regardless of organisation context.
@@ -1542,7 +1557,10 @@ class ImportHandler
         // Store the version information if appId and version are available.
         if ($appId !== null && $version !== null) {
             $this->appConfig->setValueString('openregister', "imported_config_{$appId}_version", $version);
-            $this->logger->info(message: "[ImportHandler] Stored version {$version} for app {$appId} after successful import", context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->info(
+                message: "[ImportHandler] Stored version {$version} for app {$appId} after successful import",
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
         }
 
         // Import seed data objects if present (only if configuration was created/updated).
@@ -1602,7 +1620,7 @@ class ImportHandler
     {
         try {
             // Ensure data is consistently an array by converting any stdClass objects.
-            $data = $this->ensureArrayStructure($data);
+            $data = $this->ensureArrayStructure(data: $data);
 
             // Try to find existing configuration for this app.
             // First check by sourceUrl (unique identifier), then by appId.
@@ -1667,7 +1685,10 @@ class ImportHandler
                     }//end if
                 } catch (Exception $e) {
                     // No existing configuration found, we'll create a new one.
-                    $this->logger->info(message: "[ImportHandler] No existing configuration found for app {$appId}, will create new one", context: ['file' => __FILE__, 'line' => __LINE__]);
+                    $this->logger->info(
+                        message: "[ImportHandler] No existing configuration found for app {$appId}, will create new one",
+                        context: ['file' => __FILE__, 'line' => __LINE__]
+                    );
                 }//end try
             }//end if
 
@@ -1881,7 +1902,10 @@ class ImportHandler
 
             return $result;
         } catch (Exception $e) {
-            $this->logger->error(message: "[ImportHandler] Failed to import configuration for app {$appId}: ".$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->error(
+                message: "[ImportHandler] Failed to import configuration for app {$appId}: ".$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             throw new Exception("Failed to import configuration for app {$appId}: ".$e->getMessage());
         }//end try
     }//end importFromApp()
@@ -2009,7 +2033,7 @@ class ImportHandler
     ): Configuration {
         try {
             // Ensure data is consistently an array by converting any stdClass objects.
-            $data = $this->ensureArrayStructure($data);
+            $data = $this->ensureArrayStructure(data: $data);
 
             // Try to find existing configuration for this app.
             $existingConfig = null;
@@ -2074,7 +2098,10 @@ class ImportHandler
                 $existingConfig->setObjects(array_unique(array_merge($existingObjectIds, $objectIds)));
 
                 $configuration = $this->configurationMapper->update($existingConfig);
-                $this->logger->info(message: "[ImportHandler] Updated existing configuration for app {$appId} with version {$version}", context: ['file' => __FILE__, 'line' => __LINE__]);
+                $this->logger->info(
+                    message: "[ImportHandler] Updated existing configuration for app {$appId} with version {$version}",
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
             } else {
                 // Create new configuration.
                 $configuration = new Configuration();
@@ -2143,12 +2170,18 @@ class ImportHandler
                 }
 
                 $configuration = $this->configurationMapper->insert($configuration);
-                $this->logger->info(message: "[ImportHandler] Created new configuration for app {$appId} with version {$version}", context: ['file' => __FILE__, 'line' => __LINE__]);
+                $this->logger->info(
+                    message: "[ImportHandler] Created new configuration for app {$appId} with version {$version}",
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
             }//end if
 
             return $configuration;
         } catch (Exception $e) {
-            $this->logger->error(message: "[ImportHandler] Failed to create or update configuration for app {$appId}: ".$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->error(
+                message: "[ImportHandler] Failed to create or update configuration for app {$appId}: ".$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             throw new Exception("Failed to create or update configuration: ".$e->getMessage());
         }//end try
     }//end createOrUpdateConfiguration()
@@ -2235,7 +2268,7 @@ class ImportHandler
         // Ensure dependencies are met before importing seedData.
         // This is checked here (lazy) rather than at start of import to avoid circular dependency issues.
         // TEMPORARILY DISABLED: Causes hanging due to circular dependency when apps try to load configs at boot.
-        // See: $this->ensureDependenciesForSeedData($configData).
+        // See: $this->ensureDependenciesForSeedData(configData: $configData).
         foreach ($seedData['objects'] as $schemaSlug => $objects) {
             // Find schema by slug - first check schemasMap, then database.
             $schema = $this->schemasMap[$schemaSlug] ?? null;
@@ -2475,8 +2508,10 @@ class ImportHandler
                         $existingObject = null;
                     } catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
                         // Multiple objects found with same identifier - log warning and skip.
+                        $warnMsg  = "[ImportHandler] Multiple seed objects found with identifier";
+                        $warnMsg .= " '{$lookupIdentifier}' - skipping to avoid duplication";
                         $this->logger->warning(
-                            message: "[ImportHandler] Multiple seed objects found with identifier '{$lookupIdentifier}' - skipping to avoid duplication",
+                            message: $warnMsg,
                             context: ['file' => __FILE__, 'line' => __LINE__, 'schema' => $schemaSlug, 'identifier' => $lookupIdentifier]
                         );
                         continue;
@@ -2537,7 +2572,13 @@ class ImportHandler
                     $result['objects'][] = $createdObject->getId();
                     $this->logger->debug(
                         message: "[ImportHandler] Seed object imported",
-                        context: ['file' => __FILE__, 'line' => __LINE__, 'schema' => $schemaSlug, 'object_id' => $createdObject->getId(), 'slug' => $objectSlug]
+                        context: [
+                            'file'      => __FILE__,
+                            'line'      => __LINE__,
+                            'schema'    => $schemaSlug,
+                            'object_id' => $createdObject->getId(),
+                            'slug'      => $objectSlug,
+                        ]
                     );
                 } catch (Exception $e) {
                     $this->logger->error(
@@ -2717,6 +2758,6 @@ class ImportHandler
      */
     private function handleNextcloudAppDependencies(array $configData): void
     {
-        $this->ensureDependenciesForSeedData($configData);
+        $this->ensureDependenciesForSeedData(configData: $configData);
     }//end handleNextcloudAppDependencies()
 }//end class

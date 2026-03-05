@@ -149,7 +149,7 @@ class LockingHandler
         $object = $this->mapper->update($object);
 
         // Dispatch lock event.
-        $this->eventDispatcher->dispatchTyped(new ObjectLockedEvent($object));
+        $this->eventDispatcher->dispatchTyped(new ObjectLockedEvent(object: $object));
 
         $this->logger->info(
             message: '[LockingHandler] Object locked successfully',
@@ -202,7 +202,7 @@ class LockingHandler
         $object = $this->mapper->update($object);
 
         // Dispatch unlock event.
-        $this->eventDispatcher->dispatchTyped(new ObjectUnlockedEvent($object));
+        $this->eventDispatcher->dispatchTyped(new ObjectUnlockedEvent(object: $object));
 
         $this->logger->info(
             message: '[LockingHandler] Object unlocked successfully',

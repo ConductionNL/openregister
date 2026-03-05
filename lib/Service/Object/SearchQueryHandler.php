@@ -491,7 +491,7 @@ class SearchQueryHandler
             $nextPage = ($page + 1);
             $nextUrl  = preg_replace('/([?&])page=\d+/', '$1page='.$nextPage, $currentUrl);
             if (strpos($nextUrl, 'page=') === false) {
-                $nextUrl .= $this->getUrlSeparator($nextUrl).'page='.$nextPage;
+                $nextUrl .= $this->getUrlSeparator(url: $nextUrl).'page='.$nextPage;
             }
 
             $paginatedResults['next'] = $nextUrl;
@@ -502,7 +502,7 @@ class SearchQueryHandler
             $prevPage = ($page - 1);
             $prevUrl  = preg_replace('/([?&])page=\d+/', '$1page='.$prevPage, $currentUrl);
             if (strpos($prevUrl, 'page=') === false) {
-                $prevUrl .= $this->getUrlSeparator($prevUrl).'page='.$prevPage;
+                $prevUrl .= $this->getUrlSeparator(url: $prevUrl).'page='.$prevPage;
             }
 
             $paginatedResults['prev'] = $prevUrl;

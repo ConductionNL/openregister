@@ -432,8 +432,8 @@ class ObjectServiceFacetExample
                     'prev_url'       => $result['prev'] ?? null,
                 ],
             ],
-            'facets'          => $this->transformFacetsForFrontend($result['facets'] ?? []),
-            'applied_filters' => $this->extractAppliedFilters($query),
+            'facets'          => $this->transformFacetsForFrontend(facets: $result['facets'] ?? []),
+            'applied_filters' => $this->extractAppliedFilters(query: $query),
         ];
 
         return $frontendData;
@@ -462,7 +462,7 @@ class ObjectServiceFacetExample
                         'field'   => $metaField,
                         'type'    => $metaFacet['type'],
                         'label'   => ucfirst(str_replace('_', ' ', $metaField)),
-                        'options' => $this->transformBuckets($metaFacet['buckets'] ?? []),
+                        'options' => $this->transformBuckets(buckets: $metaFacet['buckets'] ?? []),
                     ];
                 }
 
@@ -474,7 +474,7 @@ class ObjectServiceFacetExample
                 'field'   => $field,
                 'type'    => $facet['type'],
                 'label'   => ucfirst(str_replace('_', ' ', $field)),
-                'options' => $this->transformBuckets($facet['buckets'] ?? []),
+                'options' => $this->transformBuckets(buckets: $facet['buckets'] ?? []),
             ];
         }//end foreach
 

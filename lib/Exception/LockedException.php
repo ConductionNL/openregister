@@ -63,6 +63,6 @@ class LockedException extends Exception
     ) {
         // Call parent constructor to initialize base exception properties.
         // HTTP 423 Locked indicates the resource is locked (RFC 4918).
-        parent::__construct($message, $code, $previous);
+        parent::__construct(message: $message, code: $code, previous: $previous);
     }//end __construct()
 }//end class

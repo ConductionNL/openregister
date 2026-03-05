@@ -180,7 +180,7 @@ class View extends Entity implements JsonSerializable
     public function setFavoredBy(array $favoredBy): void
     {
         $this->favoredBy = $favoredBy;
-        $this->markFieldUpdated('favoredBy');
+        $this->markFieldUpdated(attribute: 'favoredBy');
     }//end setFavoredBy()
 
     /**
@@ -318,44 +318,44 @@ class View extends Entity implements JsonSerializable
      */
     public function hydrate(array $object): static
     {
-        $this->setUuid(null);
+        $this->setUuid(uuid: null);
         if (($object['uuid'] ?? null) !== null) {
-            $this->setUuid($object['uuid']);
+            $this->setUuid(uuid: $object['uuid']);
         }
 
-        $this->setName(null);
+        $this->setName(name: null);
         if (($object['name'] ?? null) !== null) {
-            $this->setName($object['name']);
+            $this->setName(name: $object['name']);
         }
 
-        $this->setDescription(null);
+        $this->setDescription(description: null);
         if (($object['description'] ?? null) !== null) {
-            $this->setDescription($object['description']);
+            $this->setDescription(description: $object['description']);
         }
 
-        $this->setOwner(null);
+        $this->setOwner(owner: null);
         if (($object['owner'] ?? null) !== null) {
-            $this->setOwner($object['owner']);
+            $this->setOwner(owner: $object['owner']);
         }
 
-        $this->setIsPublic(false);
+        $this->setIsPublic(isPublic: false);
         if (($object['isPublic'] ?? null) !== null) {
-            $this->setIsPublic($object['isPublic']);
+            $this->setIsPublic(isPublic: $object['isPublic']);
         }
 
-        $this->setIsDefault(false);
+        $this->setIsDefault(isDefault: false);
         if (($object['isDefault'] ?? null) !== null) {
-            $this->setIsDefault($object['isDefault']);
+            $this->setIsDefault(isDefault: $object['isDefault']);
         }
 
-        $this->setQuery([]);
+        $this->setQuery(query: []);
         if (($object['query'] ?? null) !== null) {
-            $this->setQuery($object['query']);
+            $this->setQuery(query: $object['query']);
         }
 
-        $this->setFavoredBy([]);
+        $this->setFavoredBy(favoredBy: []);
         if (($object['favoredBy'] ?? null) !== null) {
-            $this->setFavoredBy($object['favoredBy']);
+            $this->setFavoredBy(favoredBy: $object['favoredBy']);
         }
 
         return $this;

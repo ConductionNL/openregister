@@ -157,7 +157,7 @@ class ConversationManagementHandler
 
             // Try to use configured LLM, fallback if not available.
             if (empty($chatProvider) === true) {
-                return $this->generateFallbackTitle($firstMessage);
+                return $this->generateFallbackTitle(message: $firstMessage);
             }
 
             // Configure LLM based on provider.
@@ -165,7 +165,7 @@ class ConversationManagementHandler
             if ($chatProvider === 'ollama') {
                 $ollamaConfig = $llmConfig['ollamaConfig'] ?? [];
                 if (empty($ollamaConfig['url']) === true) {
-                    return $this->generateFallbackTitle($firstMessage);
+                    return $this->generateFallbackTitle(message: $firstMessage);
                 }
 
                 // Use native Ollama configuration.
@@ -180,7 +180,7 @@ class ConversationManagementHandler
                 if ($chatProvider === 'openai') {
                     $openaiConfig = $llmConfig['openaiConfig'] ?? [];
                     if (empty($openaiConfig['apiKey']) === true) {
-                        return $this->generateFallbackTitle($firstMessage);
+                        return $this->generateFallbackTitle(message: $firstMessage);
                     }
 
                     $config->apiKey = $openaiConfig['apiKey'];
@@ -189,7 +189,7 @@ class ConversationManagementHandler
                 } else if ($chatProvider === 'fireworks') {
                     $fireworksConfig = $llmConfig['fireworksConfig'] ?? [];
                     if (empty($fireworksConfig['apiKey']) === true) {
-                        return $this->generateFallbackTitle($firstMessage);
+                        return $this->generateFallbackTitle(message: $firstMessage);
                     }
 
                     $config->apiKey = $fireworksConfig['apiKey'];
@@ -203,7 +203,7 @@ class ConversationManagementHandler
                 }//end if
 
                 if ($chatProvider !== 'openai' && $chatProvider !== 'fireworks') {
-                    return $this->generateFallbackTitle($firstMessage);
+                    return $this->generateFallbackTitle(message: $firstMessage);
                 }//end if
 
                 // @psalm-suppress UndefinedPropertyAssignment LLPhant dynamic properties.
@@ -264,7 +264,7 @@ class ConversationManagementHandler
                 ]
             );
 
-            return $this->generateFallbackTitle($firstMessage);
+            return $this->generateFallbackTitle(message: $firstMessage);
         }//end try
     }//end generateConversationTitle()
 
@@ -422,7 +422,7 @@ class ConversationManagementHandler
             }
 
             // Generate summary.
-            $summary = $this->generateSummary($messagesToSummarize);
+            $summary = $this->generateSummary(messages: $messagesToSummarize);
 
             // Update metadata.
             $metadata['summary']         = $summary;

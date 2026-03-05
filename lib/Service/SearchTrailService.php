@@ -212,7 +212,7 @@ class SearchTrailService
      */
     public function getSearchTrails(array $config=[]): array
     {
-        $processedConfig = $this->processConfig($config);
+        $processedConfig = $this->processConfig(config: $config);
 
         $trails = $this->searchTrailMapper->findAll(
             limit: $processedConfig['limit'],
@@ -225,7 +225,7 @@ class SearchTrailService
         );
 
         // Enrich trails with register and schema names.
-        $enrichedTrails = $this->enrichTrailsWithNames($trails);
+        $enrichedTrails = $this->enrichTrailsWithNames(trails: $trails);
 
         $total = $this->searchTrailMapper->count(
             filters: $processedConfig['filters'],
@@ -258,7 +258,7 @@ class SearchTrailService
         $trail = $this->searchTrailMapper->find($id);
 
         // Enrich single trail with register and schema names.
-        $enrichedTrails = $this->enrichTrailsWithNames([$trail]);
+        $enrichedTrails = $this->enrichTrailsWithNames(trails: [$trail]);
 
         return $enrichedTrails[0];
     }//end getSearchTrail()
@@ -434,7 +434,7 @@ class SearchTrailService
                     $stat['percentage'] = round(($stat['count'] / $totalSearches) * 100, 2);
                 }
 
-                $stat['performance_rating'] = $this->calculatePerformanceRating($stat);
+                $stat['performance_rating'] = $this->calculatePerformanceRating(stat: $stat);
 
                 return $stat;
             },
@@ -482,7 +482,7 @@ class SearchTrailService
         );
 
         // Aggregate by browser type.
-        $browserStats = $this->aggregateByBrowser($enhancedStats);
+        $browserStats = $this->aggregateByBrowser(userAgentStats: $enhancedStats);
 
         return [
             'user_agents'          => $enhancedStats,
@@ -691,7 +691,7 @@ class SearchTrailService
         $lowIndex  = array_search($minCount, $counts);
 
         // Calculate trend (simple linear regression).
-        $trend = $this->calculateTrend($counts);
+        $trend = $this->calculateTrend(counts: $counts);
 
         return [
             'peak_period'                 => $activity[$peakIndex]['period'] ?? null,

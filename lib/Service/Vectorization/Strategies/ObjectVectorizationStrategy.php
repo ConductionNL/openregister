@@ -220,7 +220,7 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
                 'line'            => __LINE__,
                 'object_id'       => $objectId,
                 'has_@self'       => isset($objectData['@self']) === true,
-                '@self_keys'      => $this->extractSelfKeys($objectData),
+                '@self_keys'      => $this->extractSelfKeys(objectData: $objectData),
                 'register_direct' => $objectData['_register'] ?? $objectData['register'] ?? 'none',
                 'register_@self'  => $objectData['@self']['register'] ?? 'none',
             ]
@@ -229,7 +229,7 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
         // Extract title/name - check multiple possible fields.
         $title = $objectData['title'] ?? $objectData['name'] ?? $objectData['_name'] ?? $objectData['summary'];
         if ($title === null) {
-            $title = $this->extractFirstStringField($objectData);
+            $title = $this->extractFirstStringField(objectData: $objectData);
         }
 
         if ($title === null) {
@@ -243,7 +243,7 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
         }
 
         // Extract @self keys for logging.
-        $this->extractSelfKeys($objectData);
+        $this->extractSelfKeys(objectData: $objectData);
 
         // Extract register and schema IDs from multiple possible locations.
         $selfData   = $objectData['@self'] ?? [];

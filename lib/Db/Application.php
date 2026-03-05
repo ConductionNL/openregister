@@ -281,7 +281,7 @@ class Application extends Entity implements JsonSerializable
     public function setOrganisation(?string $organisation): void
     {
         $this->organisation = $organisation;
-        $this->markFieldUpdated('organisation');
+        $this->markFieldUpdated(attribute: 'organisation');
     }//end setOrganisation()
 
     /**
@@ -304,7 +304,7 @@ class Application extends Entity implements JsonSerializable
     public function setConfigurations(?array $configurations): static
     {
         $this->configurations = $configurations ?? [];
-        $this->markFieldUpdated('configurations');
+        $this->markFieldUpdated(attribute: 'configurations');
         return $this;
     }//end setConfigurations()
 
@@ -328,7 +328,7 @@ class Application extends Entity implements JsonSerializable
     public function setRegisters(?array $registers): static
     {
         $this->registers = $registers ?? [];
-        $this->markFieldUpdated('registers');
+        $this->markFieldUpdated(attribute: 'registers');
         return $this;
     }//end setRegisters()
 
@@ -352,7 +352,7 @@ class Application extends Entity implements JsonSerializable
     public function setSchemas(?array $schemas): static
     {
         $this->schemas = $schemas ?? [];
-        $this->markFieldUpdated('schemas');
+        $this->markFieldUpdated(attribute: 'schemas');
         return $this;
     }//end setSchemas()
 
@@ -382,7 +382,7 @@ class Application extends Entity implements JsonSerializable
             $this->active = (bool) $active;
         }
 
-        $this->markFieldUpdated('active');
+        $this->markFieldUpdated(attribute: 'active');
         return $this;
     }//end setActive()
 
@@ -406,7 +406,7 @@ class Application extends Entity implements JsonSerializable
     public function setGroups(?array $groups): static
     {
         $this->groups = $groups ?? [];
-        $this->markFieldUpdated('groups');
+        $this->markFieldUpdated(attribute: 'groups');
         return $this;
     }//end setGroups()
 
@@ -501,24 +501,24 @@ class Application extends Entity implements JsonSerializable
      */
     public function setAuthorization(array|string|null $authorization): static
     {
-        // Handle JSON string from database (type safety)
+        // Handle JSON string from database (type safety).
         if (is_string($authorization) === true) {
             try {
                 $decoded = json_decode($authorization, true);
-                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded) === true) {
                     $authorization = $decoded;
                 } else {
-                    // Invalid JSON, use default
+                    // Invalid JSON, use default.
                     $authorization = null;
                 }
             } catch (\Exception $e) {
-                // If decoding fails, use default
+                // If decoding fails, use default.
                 $authorization = null;
             }
         }
 
         $this->authorization = $authorization ?? $this->getDefaultAuthorization();
-        $this->markFieldUpdated('authorization');
+        $this->markFieldUpdated(attribute: 'authorization');
         return $this;
     }//end setAuthorization()
 

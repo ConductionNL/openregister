@@ -1076,8 +1076,8 @@ class SettingsService
             'memory_used'     => $endMemory - $startMemory,
             'peak_percentage' => round((max($peakMemory, $finalPeakMemory) / (1024 * 1024 * 1024)) * 100, 1),
             'formatted'       => [
-                'actual_used'     => $this->formatBytes($endMemory - $startMemory),
-                'peak_usage'      => $this->formatBytes(max($peakMemory, $finalPeakMemory)),
+                'actual_used'     => $this->formatBytes(bytes: $endMemory - $startMemory),
+                'peak_usage'      => $this->formatBytes(bytes: max($peakMemory, $finalPeakMemory)),
                 'peak_percentage' => round(
                     (max($peakMemory, $finalPeakMemory) / (1024 * 1024 * 1024)) * 100,
                     1
@@ -1974,30 +1974,48 @@ class SettingsService
         }
 
         // Build query for sources count based on table existence.
-        $sourcesCountQuery = $sourcesTableExists ? "(SELECT COUNT(*) FROM {$qb->getTableName('openconnector_sources')})" : '0';
+        if ($sourcesTableExists === true) {
+            $sourcesCountQuery = "(SELECT COUNT(*) FROM {$qb->getTableName('openconnector_sources')})";
+        } else {
+            $sourcesCountQuery = '0';
+        }
 
         // Build a single query that gets all other counts at once using subqueries.
+        $objTable    = $qb->getTableName('openregister_objects');
+        $auditTable  = $qb->getTableName('openregister_audit_trails');
+        $searchTable = $qb->getTableName('openregister_search_trails');
+
         $query = "SELECT
             -- Total counts (blob objects only for backward compatibility)
-            (SELECT COUNT(*) FROM {$qb->getTableName('openregister_objects')} WHERE deleted IS NULL) as total_objects,
-            (SELECT COUNT(*) FROM {$qb->getTableName('openregister_objects')} WHERE deleted IS NOT NULL) as deleted_objects,
-            (SELECT COUNT(*) FROM {$qb->getTableName('openregister_audit_trails')}) as total_audit_trails,
-            (SELECT COUNT(*) FROM {$qb->getTableName('openregister_search_trails')}) as total_search_trails,
-            (SELECT COUNT(*) FROM {$qb->getTableName('openregister_configurations')}) as total_configurations,
-            (SELECT COUNT(*) FROM {$qb->getTableName('openregister_organisations')}) as total_organisations,
-            (SELECT COUNT(*) FROM {$qb->getTableName('openregister_registers')}) as total_registers,
-            (SELECT COUNT(*) FROM {$qb->getTableName('openregister_schemas')}) as total_schemas,
+            (SELECT COUNT(*) FROM {$objTable} WHERE deleted IS NULL) as total_objects,
+            (SELECT COUNT(*) FROM {$objTable} WHERE deleted IS NOT NULL) as deleted_objects,
+            (SELECT COUNT(*) FROM {$auditTable}) as total_audit_trails,
+            (SELECT COUNT(*) FROM {$searchTable}) as total_search_trails,
+            (SELECT COUNT(*) FROM {$qb->getTableName('openregister_configurations')})
+                as total_configurations,
+            (SELECT COUNT(*) FROM {$qb->getTableName('openregister_organisations')})
+                as total_organisations,
+            (SELECT COUNT(*) FROM {$qb->getTableName('openregister_registers')})
+                as total_registers,
+            (SELECT COUNT(*) FROM {$qb->getTableName('openregister_schemas')})
+                as total_schemas,
             {$sourcesCountQuery} as total_sources,
-            (SELECT COUNT(*) FROM {$qb->getTableName('openregister_webhook_logs')}) as total_webhook_logs,
+            (SELECT COUNT(*) FROM {$qb->getTableName('openregister_webhook_logs')})
+                as total_webhook_logs,
             
             -- Warning counts (only for blob objects, as magic mapper handles validation differently)
-            (SELECT COUNT(*) FROM {$qb->getTableName('openregister_objects')} WHERE deleted IS NULL AND (owner IS NULL OR owner = '')) as objects_without_owner,
-            (SELECT COUNT(*) FROM {$qb->getTableName('openregister_objects')} WHERE deleted IS NULL AND (organisation IS NULL OR organisation = '')) as objects_without_organisation,
-            (SELECT COUNT(*) FROM {$qb->getTableName('openregister_audit_trails')} WHERE expires IS NULL) as audit_trails_without_expiry,
-            (SELECT COUNT(*) FROM {$qb->getTableName('openregister_search_trails')} WHERE expires IS NULL) as search_trails_without_expiry,
-            (SELECT COUNT(*) FROM {$qb->getTableName('openregister_audit_trails')} WHERE expires IS NOT NULL AND expires < NOW()) as expired_audit_trails,
-            (SELECT COUNT(*) FROM {$qb->getTableName('openregister_search_trails')} WHERE expires IS NOT NULL AND expires < NOW()) as expired_search_trails,
-            (SELECT COUNT(*) FROM {$qb->getTableName('openregister_objects')} WHERE deleted IS NULL AND expires IS NOT NULL AND expires < NOW()) as expired_objects";
+            (SELECT COUNT(*) FROM {$objTable}
+                WHERE deleted IS NULL AND (owner IS NULL OR owner = '')) as objects_without_owner,
+            (SELECT COUNT(*) FROM {$objTable}
+                WHERE deleted IS NULL AND (organisation IS NULL OR organisation = '')) as objects_without_organisation,
+            (SELECT COUNT(*) FROM {$auditTable} WHERE expires IS NULL) as audit_trails_without_expiry,
+            (SELECT COUNT(*) FROM {$searchTable} WHERE expires IS NULL) as search_trails_without_expiry,
+            (SELECT COUNT(*) FROM {$auditTable}
+                WHERE expires IS NOT NULL AND expires < NOW()) as expired_audit_trails,
+            (SELECT COUNT(*) FROM {$searchTable}
+                WHERE expires IS NOT NULL AND expires < NOW()) as expired_search_trails,
+            (SELECT COUNT(*) FROM {$objTable}
+                WHERE deleted IS NULL AND expires IS NOT NULL AND expires < NOW()) as expired_objects";
 
         $result = $this->db->executeQuery($query);
         $row    = $result->fetch();

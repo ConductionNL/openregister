@@ -102,7 +102,7 @@ class EndpointMapper extends QBMapper
         IGroupManager $groupManager
     ) {
         // Call parent constructor to initialize base mapper with table name and entity class.
-        parent::__construct($db, 'openregister_endpoints', Endpoint::class);
+        parent::__construct(db: $db, tableName: 'openregister_endpoints', entityClass: Endpoint::class);
 
         // Store dependencies for use in mapper methods.
         // REMOVED: Services should not be in mappers.
@@ -135,7 +135,7 @@ class EndpointMapper extends QBMapper
 
         // Step 3: Apply organisation filter for multi-tenancy.
         // This ensures users only see endpoints from their organisation.
-        $this->applyOrganisationFilter($qb);
+        $this->applyOrganisationFilter(qb: $qb);
 
         // Step 4: Apply pagination if limit specified.
         if ($limit !== null) {
@@ -148,7 +148,7 @@ class EndpointMapper extends QBMapper
         }
 
         // Step 6: Execute query and return entities.
-        return $this->findEntities($qb);
+        return $this->findEntities(query: $qb);
     }//end findAll()
 
     /**
@@ -176,10 +176,10 @@ class EndpointMapper extends QBMapper
 
         // Step 3: Apply organisation filter for multi-tenancy.
         // This ensures users can only access endpoints from their organisation.
-        $this->applyOrganisationFilter($qb);
+        $this->applyOrganisationFilter(qb: $qb);
 
         // Step 4: Execute query and return single entity.
-        return $this->findEntity($qb);
+        return $this->findEntity(query: $qb);
     }//end find()
 
     /**
@@ -211,10 +211,10 @@ class EndpointMapper extends QBMapper
         $endpoint->hydrate($data);
 
         // Set organisation from session.
-        $this->setOrganisationOnCreate($endpoint);
+        $this->setOrganisationOnCreate(entity: $endpoint);
 
         // Persist to database.
-        return $this->insert($endpoint);
+        return $this->insert(entity: $endpoint);
     }//end createFromArray()
 
     /**
@@ -234,10 +234,10 @@ class EndpointMapper extends QBMapper
         $this->verifyRbacPermission(action: 'update', entityType: 'endpoint');
 
         // Find the existing endpoint.
-        $endpoint = $this->find($id);
+        $endpoint = $this->find(id: $id);
 
         // Verify organisation access.
-        $this->verifyOrganisationAccess($endpoint);
+        $this->verifyOrganisationAccess(entity: $endpoint);
 
         // Update timestamp.
         $data['updated'] = new DateTime();
@@ -249,7 +249,7 @@ class EndpointMapper extends QBMapper
         $endpoint->hydrate($data);
 
         // Persist to database.
-        return $this->update($endpoint);
+        return $this->update(entity: $endpoint);
     }//end updateFromArray()
 
     /**
@@ -268,8 +268,8 @@ class EndpointMapper extends QBMapper
         $this->verifyRbacPermission(action: 'delete', entityType: 'endpoint');
 
         // Verify organisation access.
-        $this->verifyOrganisationAccess($entity);
+        $this->verifyOrganisationAccess(entity: $entity);
 
-        return parent::delete($entity);
+        return parent::delete(entity: $entity);
     }//end delete()
 }//end class

@@ -192,8 +192,8 @@ class OasService
             }
 
             // Step 8b: Enrich schema definition with OpenAPI-specific properties.
-            $schemaDefinition    = $this->enrichSchema($schema);
-            $sanitizedSchemaName = $this->sanitizeSchemaName($schemaTitle);
+            $schemaDefinition    = $this->enrichSchema(schema: $schema);
+            $sanitizedSchemaName = $this->sanitizeSchemaName(title: $schemaTitle);
 
             // Step 8c: Validate schema definition before adding to components.
             if (empty($schemaDefinition) === false && is_array($schemaDefinition) === true) {
@@ -248,7 +248,7 @@ class OasService
             // Build operationId prefix from register title (PascalCase).
             $operationIdPrefix = '';
             if ($useRegisterPrefix === true) {
-                $operationIdPrefix = $this->pascalCase($register->getTitle());
+                $operationIdPrefix = $this->pascalCase(string: $register->getTitle());
             }
 
             // Loop through each schema slug to get the schema from the schemas array.
@@ -409,8 +409,8 @@ class OasService
      * Always includes `admin` since admin users have access to all endpoints.
      * Merges in any schema-specific groups for this CRUD action.
      *
-     * @param array    &$operation The operation array (passed by reference)
-     * @param string[] $groups     The schema-specific groups that have access to this operation
+     * @param array    $operation The operation array (passed by reference)
+     * @param string[] $groups    The schema-specific groups that have access to this operation
      *
      * @return void
      */
@@ -491,7 +491,7 @@ class OasService
 
         // Process schema-defined properties and ensure they're valid OAS.
         foreach ($schemaProperties ?? [] as $propertyName => $propertyDefinition) {
-            $cleanProperties[$propertyName] = $this->sanitizePropertyDefinition($propertyDefinition);
+            $cleanProperties[$propertyName] = $this->sanitizePropertyDefinition(propertyDefinition: $propertyDefinition);
         }
 
         return [
@@ -613,12 +613,12 @@ class OasService
 
         // Recursively sanitize nested structures (items, properties, composition keywords).
         if (isset($cleanDef['items']) === true && is_array($cleanDef['items']) === true) {
-            $cleanDef['items'] = $this->sanitizePropertyDefinition($cleanDef['items']);
+            $cleanDef['items'] = $this->sanitizePropertyDefinition(propertyDefinition: $cleanDef['items']);
         }
 
         if (isset($cleanDef['properties']) === true && is_array($cleanDef['properties']) === true) {
             foreach ($cleanDef['properties'] as $subPropName => $subPropDef) {
-                $cleanDef['properties'][$subPropName] = $this->sanitizePropertyDefinition($subPropDef);
+                $cleanDef['properties'][$subPropName] = $this->sanitizePropertyDefinition(propertyDefinition: $subPropDef);
             }
         }
 
@@ -626,7 +626,7 @@ class OasService
             if (isset($cleanDef[$compositionKey]) === true && is_array($cleanDef[$compositionKey]) === true) {
                 foreach ($cleanDef[$compositionKey] as $idx => $item) {
                     if (is_array($item) === true) {
-                        $cleanDef[$compositionKey][$idx] = $this->sanitizePropertyDefinition($item);
+                        $cleanDef[$compositionKey][$idx] = $this->sanitizePropertyDefinition(propertyDefinition: $item);
                     }
                 }
             }
@@ -686,7 +686,7 @@ class OasService
             && is_string($cleanDef['$ref']) === true
             && strpos($cleanDef['$ref'], '#/') !== 0
         ) {
-            $cleanDef['$ref'] = '#/components/schemas/'.$this->sanitizeSchemaName($cleanDef['$ref']);
+            $cleanDef['$ref'] = '#/components/schemas/'.$this->sanitizeSchemaName(title: $cleanDef['$ref']);
         }
 
         // Enum must have at least 1 item, remove if empty.
@@ -716,7 +716,11 @@ class OasService
         if (isset($cleanDef['items']) === true) {
             if (is_array($cleanDef['items']) === true && array_is_list($cleanDef['items']) === true) {
                 // Sequential array (list) — not valid. Use first element or default.
-                $cleanDef['items'] = empty($cleanDef['items']) === false ? $cleanDef['items'][0] : ['type' => 'string'];
+                if (empty($cleanDef['items']) === false) {
+                    $cleanDef['items'] = $cleanDef['items'][0];
+                } else {
+                    $cleanDef['items'] = ['type' => 'string'];
+                }
             }
 
             if (is_array($cleanDef['items']) === false || empty($cleanDef['items']) === true) {
@@ -754,13 +758,25 @@ class OasService
      */
     private function addCrudPaths(object $register, object $schema, array $rbac=[], string $operationIdPrefix=''): void
     {
-        $registerSlug = $register->getSlug() ?: $this->slugify($register->getTitle());
-        $schemaSlug   = $schema->getSlug() ?: $this->slugify($schema->getTitle());
-        $basePath     = '/objects/'.$registerSlug.'/'.$schemaSlug;
+        $registerSlugValue = $register->getSlug();
+        if ($registerSlugValue !== null && $registerSlugValue !== '') {
+            $registerSlug = $registerSlugValue;
+        } else {
+            $registerSlug = $this->slugify(string: $register->getTitle());
+        }
+
+        $schemaSlugValue = $schema->getSlug();
+        if ($schemaSlugValue !== null && $schemaSlugValue !== '') {
+            $schemaSlug = $schemaSlugValue;
+        } else {
+            $schemaSlug = $this->slugify(string: $schema->getTitle());
+        }
+
+        $basePath = '/objects/'.$registerSlug.'/'.$schemaSlug;
 
         // Collection endpoints (tags are inside individual operations).
-        $getCollection = $this->createGetCollectionOperation($schema);
-        $postOp        = $this->createPostOperation($schema);
+        $getCollection = $this->createGetCollectionOperation(schema: $schema);
+        $postOp        = $this->createPostOperation(schema: $schema);
 
         // Apply operationId prefix for uniqueness across registers.
         if ($operationIdPrefix !== '') {
@@ -778,9 +794,9 @@ class OasService
         ];
 
         // Individual resource endpoints (tags are inside individual operations).
-        $getOp    = $this->createGetOperation($schema);
-        $putOp    = $this->createPutOperation($schema);
-        $deleteOp = $this->createDeleteOperation($schema);
+        $getOp    = $this->createGetOperation(schema: $schema);
+        $putOp    = $this->createPutOperation(schema: $schema);
+        $deleteOp = $this->createDeleteOperation(schema: $schema);
 
         // Apply operationId prefix for uniqueness across registers.
         if ($operationIdPrefix !== '') {
@@ -814,35 +830,47 @@ class OasService
      */
     private function addExtendedPaths(object $register, object $schema): void
     {
-        $registerSlug = $register->getSlug() ?: $this->slugify($register->getTitle());
-        $schemaSlug   = $schema->getSlug() ?: $this->slugify($schema->getTitle());
-        $basePath     = '/objects/'.$registerSlug.'/'.$schemaSlug;
+        $registerSlugValue = $register->getSlug();
+        if ($registerSlugValue !== null && $registerSlugValue !== '') {
+            $registerSlug = $registerSlugValue;
+        } else {
+            $registerSlug = $this->slugify(string: $register->getTitle());
+        }
+
+        $schemaSlugValue = $schema->getSlug();
+        if ($schemaSlugValue !== null && $schemaSlugValue !== '') {
+            $schemaSlug = $schemaSlugValue;
+        } else {
+            $schemaSlug = $this->slugify(string: $schema->getTitle());
+        }
+
+        $basePath = '/objects/'.$registerSlug.'/'.$schemaSlug;
 
         // Only add whitelisted extended endpoints.
         foreach (self::INCLUDED_EXTENDED_ENDPOINTS ?? [] as $endpoint) {
             switch ($endpoint) {
                 case 'audit-trails':
                     $this->oas['paths'][$basePath.'/{id}/audit-trails'] = [
-                        'get' => $this->createLogsOperation($schema),
+                        'get' => $this->createLogsOperation(schema: $schema),
                     ];
                     break;
 
                 case 'files':
                     $this->oas['paths'][$basePath.'/{id}/files'] = [
-                        'get'  => $this->createGetFilesOperation($schema),
-                        'post' => $this->createPostFileOperation($schema),
+                        'get'  => $this->createGetFilesOperation(schema: $schema),
+                        'post' => $this->createPostFileOperation(schema: $schema),
                     ];
                     break;
 
                 case 'lock':
                     $this->oas['paths'][$basePath.'/{id}/lock'] = [
-                        'post' => $this->createLockOperation($schema),
+                        'post' => $this->createLockOperation(schema: $schema),
                     ];
                     break;
 
                 case 'unlock':
                     $this->oas['paths'][$basePath.'/{id}/unlock'] = [
-                        'post' => $this->createUnlockOperation($schema),
+                        'post' => $this->createUnlockOperation(schema: $schema),
                     ];
                     break;
             }//end switch
@@ -929,7 +957,7 @@ class OasService
                     }
 
                     // Get property type from definition.
-                    $propertyType = $this->getPropertyType($propertyDefinition);
+                    $propertyType = $this->getPropertyType(propertyDefinition: $propertyDefinition);
 
                     // Build schema for parameter.
                     $paramSchema = [
@@ -970,7 +998,11 @@ class OasService
         if (is_array($propertyDefinition) === true && (($propertyDefinition['type'] ?? null) !== null)) {
             $type = $propertyDefinition['type'];
             // Validate the type is a recognized OpenAPI type.
-            return in_array($type, $validTypes, true) === true ? $type : 'string';
+            if (in_array($type, $validTypes, true) === true) {
+                return $type;
+            }
+
+            return 'string';
         }
 
         // If the property definition is a string, assume it's the type.
@@ -1007,7 +1039,7 @@ class OasService
             $schemaTitle = 'UnknownSchema';
         }
 
-        $sanitizedSchemaName = $this->sanitizeSchemaName($schemaTitle);
+        $sanitizedSchemaName = $this->sanitizeSchemaName(title: $schemaTitle);
 
         // Validate that we have a proper schema reference.
         if (empty($sanitizedSchemaName) === true) {
@@ -1016,7 +1048,7 @@ class OasService
 
         return [
             'summary'     => 'Get all '.$schemaTitle.' objects',
-            'operationId' => 'getAll'.$this->pascalCase($schemaTitle),
+            'operationId' => 'getAll'.$this->pascalCase(string: $schemaTitle),
             'tags'        => [$schemaTitle],
             'description' => 'Retrieve a list of all '.$schemaTitle.' objects',
             'parameters'  => $this->createCommonQueryParameters(isCollection: true, schema: $schema),
@@ -1075,7 +1107,7 @@ class OasService
 
         return [
             'summary'     => 'Get a '.$schema->getTitle().' object by ID',
-            'operationId' => 'get'.$this->pascalCase($schema->getTitle()),
+            'operationId' => 'get'.$this->pascalCase(string: $schema->getTitle()),
             'tags'        => [$schema->getTitle()],
             'description' => 'Retrieve a specific '.$schema->getTitle().' object by its unique identifier',
             'parameters'  => array_merge(
@@ -1099,7 +1131,7 @@ class OasService
                     'content'     => [
                         'application/json' => [
                             'schema' => [
-                                '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName($schemaName),
+                                '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName(title: $schemaName),
                             ],
                         ],
                     ],
@@ -1135,7 +1167,7 @@ class OasService
 
         return [
             'summary'     => 'Update a '.$schema->getTitle().' object',
-            'operationId' => 'update'.$this->pascalCase($schema->getTitle()),
+            'operationId' => 'update'.$this->pascalCase(string: $schema->getTitle()),
             'tags'        => [$schema->getTitle()],
             'description' => 'Update an existing '.$schema->getTitle().' object with the provided data',
             'parameters'  => array_merge(
@@ -1158,7 +1190,7 @@ class OasService
                 'content'  => [
                     'application/json' => [
                         'schema' => [
-                            '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName($schemaName),
+                            '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName(title: $schemaName),
                         ],
                     ],
                 ],
@@ -1169,7 +1201,7 @@ class OasService
                     'content'     => [
                         'application/json' => [
                             'schema' => [
-                                '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName($schemaName),
+                                '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName(title: $schemaName),
                             ],
                         ],
                     ],
@@ -1205,7 +1237,7 @@ class OasService
 
         return [
             'summary'     => 'Create a new '.$schema->getTitle().' object',
-            'operationId' => 'create'.$this->pascalCase($schema->getTitle()),
+            'operationId' => 'create'.$this->pascalCase(string: $schema->getTitle()),
             'tags'        => [$schema->getTitle()],
             'description' => 'Create a new '.$schema->getTitle().' object with the provided data',
             'parameters'  => $this->createCommonQueryParameters(),
@@ -1214,7 +1246,7 @@ class OasService
                 'content'  => [
                     'application/json' => [
                         'schema' => [
-                            '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName($schemaName),
+                            '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName(title: $schemaName),
                         ],
                     ],
                 ],
@@ -1225,7 +1257,7 @@ class OasService
                     'content'     => [
                         'application/json' => [
                             'schema' => [
-                                '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName($schemaName),
+                                '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName(title: $schemaName),
                             ],
                         ],
                     ],
@@ -1253,7 +1285,7 @@ class OasService
     {
         return [
             'summary'     => 'Delete a '.$schema->getTitle().' object',
-            'operationId' => 'delete'.$this->pascalCase($schema->getTitle()),
+            'operationId' => 'delete'.$this->pascalCase(string: $schema->getTitle()),
             'tags'        => [$schema->getTitle()],
             'description' => 'Delete a specific '.$schema->getTitle().' object by its unique identifier',
             'parameters'  => [
@@ -1297,7 +1329,7 @@ class OasService
     {
         return [
             'summary'     => 'Get audit logs for a '.$schema->getTitle().' object',
-            'operationId' => 'getLogs'.$this->pascalCase($schema->getTitle()),
+            'operationId' => 'getLogs'.$this->pascalCase(string: $schema->getTitle()),
             'tags'        => [$schema->getTitle()],
             'description' => 'Retrieve the audit trail for a specific '.$schema->getTitle().' object',
             'parameters'  => [
@@ -1351,7 +1383,7 @@ class OasService
     {
         return [
             'summary'     => 'Get files for a '.$schema->getTitle().' object',
-            'operationId' => 'getFiles'.$this->pascalCase($schema->getTitle()),
+            'operationId' => 'getFiles'.$this->pascalCase(string: $schema->getTitle()),
             'tags'        => [$schema->getTitle()],
             'description' => 'Retrieve all files associated with a specific '.$schema->getTitle().' object',
             'parameters'  => [
@@ -1405,7 +1437,7 @@ class OasService
     {
         return [
             'summary'     => 'Upload a file for a '.$schema->getTitle().' object',
-            'operationId' => 'uploadFile'.$this->pascalCase($schema->getTitle()),
+            'operationId' => 'uploadFile'.$this->pascalCase(string: $schema->getTitle()),
             'tags'        => [$schema->getTitle()],
             'description' => 'Upload a new file and associate it with a specific '.$schema->getTitle().' object',
             'parameters'  => [
@@ -1473,7 +1505,7 @@ class OasService
     {
         return [
             'summary'     => 'Lock a '.$schema->getTitle().' object',
-            'operationId' => 'lock'.$this->pascalCase($schema->getTitle()),
+            'operationId' => 'lock'.$this->pascalCase(string: $schema->getTitle()),
             'tags'        => [$schema->getTitle()],
             'description' => 'Lock a specific '.$schema->getTitle().' object to prevent concurrent modifications',
             'parameters'  => [
@@ -1527,7 +1559,7 @@ class OasService
     {
         return [
             'summary'     => 'Unlock a '.$schema->getTitle().' object',
-            'operationId' => 'unlock'.$this->pascalCase($schema->getTitle()),
+            'operationId' => 'unlock'.$this->pascalCase(string: $schema->getTitle()),
             'tags'        => [$schema->getTitle()],
             'description' => 'Remove the lock from a specific '.$schema->getTitle().' object',
             'parameters'  => [
@@ -1584,7 +1616,7 @@ class OasService
      */
     private function pascalCase(string $string): string
     {
-        return str_replace(' ', '', ucwords(str_replace('-', ' ', $this->slugify($string))));
+        return str_replace(' ', '', ucwords(str_replace('-', ' ', $this->slugify(string: $string))));
     }//end pascalCase()
 
     /**

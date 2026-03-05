@@ -101,7 +101,7 @@ class QueryOptimizationHandler
         $normalObjects = [];
 
         foreach ($objects as $object) {
-            $objectSize = $this->estimateObjectSize($object);
+            $objectSize = $this->estimateObjectSize(object: $object);
 
             if ($objectSize > $maxSafeSize) {
                 $largeObjects[] = $object;
@@ -436,7 +436,7 @@ class QueryOptimizationHandler
         }
 
         // QUERY HINT 3: For JSON queries, suggest JSON-specific optimizations.
-        if (($filters['object'] ?? null) !== null || $this->hasJsonFilters($filters) === true) {
+        if (($filters['object'] ?? null) !== null || $this->hasJsonFilters(filters: $filters) === true) {
             $this->logger->debug(
                 message: '[QueryOptimizationHandler] 🚀 QUERY OPTIMIZATION: JSON queries detected - using JSON indexes',
                 context: ['file' => __FILE__, 'line' => __LINE__]

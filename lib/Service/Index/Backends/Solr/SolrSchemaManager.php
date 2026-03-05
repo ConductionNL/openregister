@@ -255,7 +255,7 @@ class SolrSchemaManager
             }
 
             // Check if field exists.
-            $existingFields = $this->getFields($collection);
+            $existingFields = $this->getFields(collection: $collection);
 
             if (isset($existingFields[$fieldName]) === true) {
                 if ($force === false) {
@@ -271,7 +271,7 @@ class SolrSchemaManager
                 }
 
                 // Delete and recreate.
-                $this->deleteField($collection, $fieldName);
+                $this->deleteField(collection: $collection, fieldName: $fieldName);
             }
 
             // Add field.

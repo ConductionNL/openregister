@@ -870,7 +870,7 @@ class ConfigurationSettingsHandler
         try {
             $settings = $this->getOrganisationSettingsOnly();
             $settings['organisation']['default_organisation'] = $uuid;
-            $this->updateOrganisationSettingsOnly($settings['organisation']);
+            $this->updateOrganisationSettingsOnly(organisationData: $settings['organisation']);
         } catch (Exception $e) {
             $this->logger->error(
                 message: '[ConfigurationSettingsHandler] Failed to set default organisation UUID: '.$e->getMessage(),

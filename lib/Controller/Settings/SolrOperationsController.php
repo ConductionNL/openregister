@@ -123,7 +123,10 @@ class SolrOperationsController extends Controller
             $setup = new SetupHandler(solrService: $guzzleSolrService, logger: $logger);
 
             // **IMPROVED LOGGING**: Log setup initialization.
-            $logger->info(message: '[SolrOperationsController] 🏗️ SolrSetup instance created, starting setup process', context: ['file' => __FILE__, 'line' => __LINE__]);
+            $logger->info(
+                message: '[SolrOperationsController] SolrSetup instance created, starting setup process',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
 
             // Run setup.
             $setupResult = $setup->setupSolr();
@@ -302,7 +305,13 @@ class SolrOperationsController extends Controller
                     ];
 
                     // **IMPROVED LOGGING**: Log setup progress and error details.
-                    $logger->error(message: '[SolrOperationsController] 📋 SOLR setup failure details', context: array_merge(['file' => __FILE__, 'line' => __LINE__], $detailedError));
+                    $logger->error(
+                        message: '[SolrOperationsController] SOLR setup failure details',
+                        context: array_merge(
+                            ['file' => __FILE__, 'line' => __LINE__],
+                            $detailedError
+                        )
+                    );
                 } catch (Exception $progressException) {
                     $logger->warning(
                         message: '[SolrOperationsController] Failed to get setup progress details',
@@ -427,7 +436,7 @@ class SolrOperationsController extends Controller
                     'batchSize'       => $batchSize,
                     'schemaIds'       => $schemaIds,
                     'schemaIds_type'  => gettype($schemaIds),
-                    'schemaIds_count' => $this->getSchemaIdsCount($schemaIds),
+                    'schemaIds_count' => $this->getSchemaIdsCount(schemaIds: $schemaIds),
                 ]
             );
 

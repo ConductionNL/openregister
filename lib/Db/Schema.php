@@ -422,7 +422,7 @@ class Schema extends Entity implements JsonSerializable
         // If it's a JSON string, decode it.
         if (is_string($this->required) === true) {
             $decoded = json_decode($this->required, true);
-            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded) === true) {
                 return $decoded;
             }
         }
@@ -450,7 +450,7 @@ class Schema extends Entity implements JsonSerializable
         if (is_string($required) === true) {
             try {
                 $decoded = json_decode($required, true);
-                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded) === true) {
                     $this->required = $decoded;
                 } else {
                     // Invalid JSON, set to empty array.
@@ -461,14 +461,14 @@ class Schema extends Entity implements JsonSerializable
                 $this->required = [];
             }
 
-            $this->markFieldUpdated('required');
+            $this->markFieldUpdated(attribute: 'required');
             return;
         }
 
         // Always ensure required is an array, never NULL.
         // This is critical for schema validation to work correctly.
         $this->required = ($required ?? []);
-        $this->markFieldUpdated('required');
+        $this->markFieldUpdated(attribute: 'required');
     }//end setRequired()
 
     /**
@@ -859,7 +859,13 @@ class Schema extends Entity implements JsonSerializable
                 }
 
                 // Evaluate all match conditions (all must pass).
-                if ($this->evaluateMatchConditions($entry['match'], $objectData, $objectOrganisation, $activeOrganisation) === true) {
+                if ($this->evaluateMatchConditions(
+                    conditions: $entry['match'],
+                    objectData: $objectData,
+                    objectOrganisation: $objectOrganisation,
+                    activeOrganisation: $activeOrganisation
+                ) === true
+                ) {
                     return true;
                 }
             }
@@ -1055,7 +1061,7 @@ class Schema extends Entity implements JsonSerializable
                     $value = [];
                 }
 
-                $this->setRequired($value);
+                $this->setRequired(required: $value);
                 continue;
             }
 
@@ -1068,7 +1074,7 @@ class Schema extends Entity implements JsonSerializable
             if ($key === 'hardValidation') {
                 // Explicitly set the value and mark as updated to ensure it persists to database.
                 $this->hardValidation = (bool) $value;
-                $this->markFieldUpdated('hardValidation');
+                $this->markFieldUpdated(attribute: 'hardValidation');
                 continue;
             }
 
@@ -1085,11 +1091,11 @@ class Schema extends Entity implements JsonSerializable
                         }
                     }
 
-                    $this->setConfiguration($value);
+                    $this->setConfiguration(configuration: $value);
                 } catch (\Exception $exception) {
                     // Silently ignore invalid configuration and set to null.
                     $this->configuration = null;
-                    $this->markFieldUpdated('configuration');
+                    $this->markFieldUpdated(attribute: 'configuration');
                 }
 
                 continue;
@@ -1120,7 +1126,7 @@ class Schema extends Entity implements JsonSerializable
 
         // Validate properties if validator is provided.
         if ($validator !== null && (($object['properties'] ?? null) !== null)) {
-            $this->validateProperties($validator);
+            $this->validateProperties(validator: $validator);
         }
 
         // Validate authorization structure.
@@ -1315,7 +1321,7 @@ class Schema extends Entity implements JsonSerializable
         // Preserve original case for slug to support camelCase schema names like 'moduleVersie'.
         // Schema slugs should match exactly as defined in the configuration.
         $this->slug = $slug;
-        $this->markFieldUpdated('slug');
+        $this->markFieldUpdated(attribute: 'slug');
     }//end setSlug()
 
     /**
@@ -1338,7 +1344,7 @@ class Schema extends Entity implements JsonSerializable
     public function setIcon(?string $icon): void
     {
         $this->icon = $icon;
-        $this->markFieldUpdated('icon');
+        $this->markFieldUpdated(attribute: 'icon');
     }//end setIcon()
 
     /**
@@ -1399,25 +1405,25 @@ class Schema extends Entity implements JsonSerializable
     {
         if ($configuration === null) {
             $this->configuration = null;
-            $this->markFieldUpdated('configuration');
+            $this->markFieldUpdated(attribute: 'configuration');
             return;
         }
 
-        $parsedConfig = $this->parseConfigurationInput($configuration);
+        $parsedConfig = $this->parseConfigurationInput(configuration: $configuration);
         if ($parsedConfig === null) {
             $this->configuration = null;
-            $this->markFieldUpdated('configuration');
+            $this->markFieldUpdated(attribute: 'configuration');
             return;
         }
 
-        $validatedConfig = $this->validateConfigurationArray($parsedConfig);
+        $validatedConfig = $this->validateConfigurationArray(configuration: $parsedConfig);
 
         $this->configuration = null;
         if (empty($validatedConfig) === false) {
             $this->configuration = $validatedConfig;
         }
 
-        $this->markFieldUpdated('configuration');
+        $this->markFieldUpdated(attribute: 'configuration');
     }//end setConfiguration()
 
     /**
@@ -1472,7 +1478,7 @@ class Schema extends Entity implements JsonSerializable
             }
 
             if ($key === 'allowedTags') {
-                $this->validateAllowedTagsValue($value);
+                $this->validateAllowedTagsValue(value: $value);
                 $validatedConfig[$key] = $value;
                 continue;
             }
@@ -1571,7 +1577,7 @@ class Schema extends Entity implements JsonSerializable
     public function setSearchable(bool $searchable): void
     {
         $this->searchable = $searchable;
-        $this->markFieldUpdated('searchable');
+        $this->markFieldUpdated(attribute: 'searchable');
     }//end setSearchable()
 
     /**
@@ -1635,16 +1641,16 @@ class Schema extends Entity implements JsonSerializable
     /**
      * Set the facet configuration
      *
+     * **TYPE SAFETY**: Handle both array and JSON string inputs for database hydration.
+     * The database stores facets as JSON strings, but we want to work with arrays in PHP.
+     *
+     * @param array|string|null $facets The facet configuration array or JSON string.
+     *
+     * @return void
+     *
      * @deprecated Since runtime facet computation was implemented, this method is no longer
      *             needed. Facets are now computed at runtime from property-level `facetable: true`
      *             settings. Set `facetable: true` on individual properties instead.
-     *
-     * **TYPE SAFETY**: Handle both array and JSON string inputs for database hydration
-     * The database stores facets as JSON strings, but we want to work with arrays in PHP.
-     *
-     * @param array|string|null $facets The facet configuration array or JSON string
-     *
-     * @return void
      */
     public function setFacets(array|string|null $facets): void
     {
@@ -1660,13 +1666,13 @@ class Schema extends Entity implements JsonSerializable
                 $this->facets = null;
             }
 
-            $this->markFieldUpdated('facets');
+            $this->markFieldUpdated(attribute: 'facets');
 
             return;
         }
 
         $this->facets = $facets;
-        $this->markFieldUpdated('facets');
+        $this->markFieldUpdated(attribute: 'facets');
     }//end setFacets()
 
     /**
@@ -1686,7 +1692,7 @@ class Schema extends Entity implements JsonSerializable
         $properties = $this->getProperties();
 
         if (empty($properties) === true) {
-            $this->setFacets(null);
+            $this->setFacets(facets: null);
             return;
         }
 
@@ -1704,7 +1710,7 @@ class Schema extends Entity implements JsonSerializable
             }
 
             // Determine appropriate facet type based on property configuration.
-            $facetType = $this->determineFacetType($property);
+            $facetType = $this->determineFacetType(property: $property);
 
             if ($facetType !== null) {
                 $facetConfig['object_fields'][$propertyKey] = [
@@ -1728,7 +1734,7 @@ class Schema extends Entity implements JsonSerializable
         }//end foreach
 
         // Set the generated facet configuration.
-        $this->setFacets($facetConfig);
+        $this->setFacets(facets: $facetConfig);
     }//end regenerateFacetsFromProperties()
 
     /**
@@ -1802,7 +1808,7 @@ class Schema extends Entity implements JsonSerializable
     public function setAllOf(?array $allOf): void
     {
         $this->allOf = $allOf;
-        $this->markFieldUpdated('allOf');
+        $this->markFieldUpdated(attribute: 'allOf');
     }//end setAllOf()
 
     /**
@@ -1831,7 +1837,7 @@ class Schema extends Entity implements JsonSerializable
     public function setOneOf(?array $oneOf): void
     {
         $this->oneOf = $oneOf;
-        $this->markFieldUpdated('oneOf');
+        $this->markFieldUpdated(attribute: 'oneOf');
     }//end setOneOf()
 
     /**
@@ -1860,7 +1866,7 @@ class Schema extends Entity implements JsonSerializable
     public function setAnyOf(?array $anyOf): void
     {
         $this->anyOf = $anyOf;
-        $this->markFieldUpdated('anyOf');
+        $this->markFieldUpdated(attribute: 'anyOf');
     }//end setAnyOf()
 
     /**
@@ -1887,7 +1893,7 @@ class Schema extends Entity implements JsonSerializable
         }
 
         $this->published = $published;
-        $this->markFieldUpdated('published');
+        $this->markFieldUpdated(attribute: 'published');
     }//end setPublished()
 
     /**
@@ -1914,7 +1920,7 @@ class Schema extends Entity implements JsonSerializable
         }
 
         $this->depublished = $depublished;
-        $this->markFieldUpdated('depublished');
+        $this->markFieldUpdated(attribute: 'depublished');
     }//end setDepublished()
 
     /**

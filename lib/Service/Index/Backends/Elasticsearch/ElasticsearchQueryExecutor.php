@@ -79,7 +79,7 @@ class ElasticsearchQueryExecutor
 
         try {
             // Build Elasticsearch query.
-            $esQuery = $this->buildElasticsearchQuery($query);
+            $esQuery = $this->buildElasticsearchQuery(params: $query);
 
             $url    = $this->httpClient->buildBaseUrl().'/'.$index.'/_search';
             $result = $this->httpClient->post($url, $esQuery);

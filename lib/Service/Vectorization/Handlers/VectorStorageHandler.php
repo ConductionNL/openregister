@@ -206,7 +206,7 @@ class VectorStorageHandler
 
             // Sanitize chunk_text to prevent encoding errors.
             if ($chunkText !== null) {
-                $sanitizedChunkText = $this->sanitizeText($chunkText);
+                $sanitizedChunkText = $this->sanitizeText(text: $chunkText);
             }
 
             if ($chunkText === null) {
@@ -312,7 +312,7 @@ class VectorStorageHandler
 
         try {
             // Get appropriate Solr collection based on entity type.
-            $collection  = $this->getSolrCollectionForEntityType($entityType);
+            $collection  = $this->getSolrCollectionForEntityType(entityType: $entityType);
             $vectorField = $this->getSolrVectorField();
 
             if ($collection === null || $collection === '') {

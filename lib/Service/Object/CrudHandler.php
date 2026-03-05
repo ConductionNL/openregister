@@ -332,7 +332,7 @@ class CrudHandler
 
         try {
             // Get existing object.
-            $object = $this->get($objectId, $rbac, $_multitenancy);
+            $object = $this->get(objectId: $objectId, rbac: $rbac, _multitenancy: $_multitenancy);
 
             if ($object === null) {
                 throw new Exception("Object not found: {$objectId}");

@@ -586,7 +586,7 @@ class OrganisationController extends Controller
      */
     public function patch(string $uuid): JSONResponse
     {
-        return $this->update($uuid);
+        return $this->update(uuid: $uuid);
     }//end patch()
 
     /**
@@ -797,7 +797,7 @@ class OrganisationController extends Controller
 
             // Auto-generate slug from name if slug is not provided or is empty.
             if (isset($data['slug']) === false || empty(trim($data['slug'])) === true) {
-                $slug = $this->generateSlug(trim($data['name']));
+                $slug = $this->generateSlug(name: trim($data['name']));
                 $organisation->setSlug($slug);
             }
         }

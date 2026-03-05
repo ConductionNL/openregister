@@ -97,7 +97,7 @@ class FileMapper extends QBMapper
         IDBConnection $db,
         IURLGenerator $urlGenerator
     ) {
-        parent::__construct($db, 'openregister_files', \OCP\AppFramework\Db\Entity::class);
+        parent::__construct(db: $db, tableName: 'openregister_files', entityClass: \OCP\AppFramework\Db\Entity::class);
         $this->urlGenerator = $urlGenerator;
     }//end __construct()
 
@@ -174,11 +174,11 @@ class FileMapper extends QBMapper
         while ($row !== false) {
             // Add share-related fields (public URLs if shared).
             // Add authenticated URLs for non-shared files (requires login).
-            $row['accessUrl']   = $this->generateAuthenticatedAccessUrl($row['fileid']);
-            $row['downloadUrl'] = $this->generateAuthenticatedDownloadUrl($row['fileid']);
+            $row['accessUrl']   = $this->generateAuthenticatedAccessUrl(fileId: $row['fileid']);
+            $row['downloadUrl'] = $this->generateAuthenticatedDownloadUrl(fileId: $row['fileid']);
             if (empty($row['share_token']) === false) {
-                $row['accessUrl']   = $this->generateShareUrl($row['share_token']);
-                $row['downloadUrl'] = $this->generateShareUrl($row['share_token']).'/download';
+                $row['accessUrl']   = $this->generateShareUrl(token: $row['share_token']);
+                $row['downloadUrl'] = $this->generateShareUrl(token: $row['share_token']).'/download';
             }
 
             $row['published'] = null;
@@ -272,11 +272,11 @@ class FileMapper extends QBMapper
 
         // Add share-related fields (public URLs if shared).
         // Add authenticated URLs for non-shared files (requires login).
-        $file['accessUrl']   = $this->generateAuthenticatedAccessUrl($file['fileid']);
-        $file['downloadUrl'] = $this->generateAuthenticatedDownloadUrl($file['fileid']);
+        $file['accessUrl']   = $this->generateAuthenticatedAccessUrl(fileId: $file['fileid']);
+        $file['downloadUrl'] = $this->generateAuthenticatedDownloadUrl(fileId: $file['fileid']);
         if (empty($file['share_token']) === false) {
-            $file['accessUrl']   = $this->generateShareUrl($file['share_token']);
-            $file['downloadUrl'] = $this->generateShareUrl($file['share_token']).'/download';
+            $file['accessUrl']   = $this->generateShareUrl(token: $file['share_token']);
+            $file['downloadUrl'] = $this->generateShareUrl(token: $file['share_token']).'/download';
         }
 
         $file['published'] = null;
@@ -320,7 +320,7 @@ class FileMapper extends QBMapper
         // If folder is set, use it as the node id.
         if ($folder !== null) {
             $nodeId = (int) $folder;
-            return $this->getFiles($nodeId);
+            return $this->getFiles(node: $nodeId);
         }
 
         // If folder is not set, search oc_filecache for a node with name equal to the object's uuid.
@@ -354,7 +354,7 @@ class FileMapper extends QBMapper
         if ($count === 1) {
             // Use the fileid as the node id.
             $nodeId = (int) $rows[0]['fileid'];
-            return $this->getFiles($nodeId);
+            return $this->getFiles(node: $nodeId);
         }
 
         if ($count > 1) {
@@ -367,7 +367,7 @@ class FileMapper extends QBMapper
                 }
             );
             $oldestNodeId = (int) $rows[0]['fileid'];
-            return $this->getFiles($oldestNodeId);
+            return $this->getFiles(node: $oldestNodeId);
         }
 
         // No results found, return empty array.
@@ -455,14 +455,14 @@ class FileMapper extends QBMapper
     public function publishFile(int $fileId, string $sharedBy, string $shareOwner, int $permissions=1): array
     {
         // Check if a public share already exists for this file.
-        $existingShare = $this->getPublicShare($fileId);
+        $existingShare = $this->getPublicShare(fileId: $fileId);
         if ($existingShare !== null) {
             // Return existing share information.
             return [
                 'id'          => $existingShare['id'],
                 'token'       => $existingShare['token'],
-                'accessUrl'   => $this->generateShareUrl($existingShare['token']),
-                'downloadUrl' => $this->generateShareUrl($existingShare['token']).'/download',
+                'accessUrl'   => $this->generateShareUrl(token: $existingShare['token']),
+                'downloadUrl' => $this->generateShareUrl(token: $existingShare['token']).'/download',
                 'published'   => (new DateTime())->setTimestamp($existingShare['stime'])->format('c'),
             ];
         }
@@ -510,8 +510,8 @@ class FileMapper extends QBMapper
         return [
             'id'          => $shareId,
             'token'       => $token,
-            'accessUrl'   => $this->generateShareUrl($token),
-            'downloadUrl' => $this->generateShareUrl($token).'/download',
+            'accessUrl'   => $this->generateShareUrl(token: $token),
+            'downloadUrl' => $this->generateShareUrl(token: $token).'/download',
             'published'   => (new DateTime())->setTimestamp($currentTime)->format('c'),
         ];
     }//end publishFile()

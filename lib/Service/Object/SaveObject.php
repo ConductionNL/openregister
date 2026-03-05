@@ -170,6 +170,7 @@ class SaveObject
      * Constructor for SaveObject handler.
      *
      * @param ObjectEntityMapper       $objectEntityMapper   Object entity mapper
+     * @param UnifiedObjectMapper      $unifiedObjectMapper  Unified object mapper for object operations
      * @param MetadataHydrationHandler $metaHydrationHandler Handler for metadata extraction
      * @param FilePropertyHandler      $filePropertyHandler  Handler for file property operations
      * @param IUserSession             $userSession          User session service
@@ -336,7 +337,7 @@ class SaveObject
         }
 
         // Remove query parameters if present (e.g., "schema?key=value" -> "schema").
-        $cleanReference = $this->removeQueryParameters($reference);
+        $cleanReference = $this->removeQueryParameters(reference: $reference);
 
         // Also check cache with cleaned reference.
         if ($cleanReference !== $reference && isset($this->schemaReferenceCache[$cleanReference]) === true) {
@@ -348,7 +349,7 @@ class SaveObject
         $uuidPattern = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
         if (is_numeric($cleanReference) === true || preg_match($uuidPattern, $cleanReference) === 1) {
             try {
-                $schema   = $this->getCachedSchema($cleanReference);
+                $schema   = $this->getCachedSchema(schemaId: $cleanReference);
                 $schemaId = (string) $schema->getId();
                 $this->schemaReferenceCache[$reference] = $schemaId;
                 return $schemaId;
@@ -574,7 +575,7 @@ class SaveObject
                                 $relations     = array_merge($relations, $itemRelations);
                             } else if (is_string($item) === true && empty($item) === false && trim($item) !== '') {
                                 // Check if the string looks like a reference.
-                                if ($this->isReference($item) === true) {
+                                if ($this->isReference(value: $item) === true) {
                                     $relations[$currentPath.'.'.$index] = $item;
                                 }
                             }
@@ -600,7 +601,7 @@ class SaveObject
 
                     // If not determined by schema, check for reference patterns.
                     if ($treatAsRelation === false) {
-                        $treatAsRelation = $this->isReference($value);
+                        $treatAsRelation = $this->isReference(value: $value);
                     }
 
                     if ($treatAsRelation === true) {
@@ -724,13 +725,19 @@ class SaveObject
         $relations = $savedEntity->getRelations();
         $savedUuid = $savedEntity->getUuid();
 
+        if ($relations !== null) {
+            $relationsCount = count($relations);
+        } else {
+            $relationsCount = 0;
+        }
+
         $this->logger->debug(
             message: '[SaveObject] updateInverseRelations called',
             context: [
                 'file'            => __FILE__,
                 'line'            => __LINE__,
                 'savedObjectUuid' => $savedUuid,
-                'relationsCount'  => $relations !== null ? count($relations) : 0,
+                'relationsCount'  => $relationsCount,
                 'schemaId'        => $schema->getId(),
             ]
         );
@@ -1448,7 +1455,7 @@ class SaveObject
             }
 
             // Convert to string and generate slug.
-            $slug = $this->createSlug($value);
+            $slug = $this->createSlug(text: $value);
 
             // Ensure uniqueness by appending timestamp if needed.
             $timestamp  = time();
@@ -1595,7 +1602,7 @@ class SaveObject
             }
 
             // Skip if the object is effectively empty (only contains empty values).
-            if ($this->isEffectivelyEmptyObject($objectData) === true) {
+            if ($this->isEffectivelyEmptyObject(object: $objectData) === true) {
                 continue;
             }
 
@@ -1658,16 +1665,30 @@ class SaveObject
                 if (($isRelatedObject === true || $isCascade === true) && empty($oldUuids) === false) {
                     // Resolve the sub-object's schema and register for magic-mapped lookups.
                     $subSchemaRef = $definition['items']['$ref'] ?? $definition['$ref'] ?? null;
-                    $subSchemaId  = $subSchemaRef !== null ? $this->resolveSchemaReference($subSchemaRef) : null;
-                    $subSchema    = $subSchemaId !== null ? $this->getCachedSchema($subSchemaId) : null;
-                    $subRegister  = $objectEntity->getRegister() !== null ? $this->getCachedRegister($objectEntity->getRegister()) : null;
+                    if ($subSchemaRef !== null) {
+                        $subSchemaId = $this->resolveSchemaReference(reference: $subSchemaRef);
+                    } else {
+                        $subSchemaId = null;
+                    }
 
-                    $this->deleteOrphanedRelatedObjects($oldUuids, $subRegister, $subSchema);
-                }
+                    if ($subSchemaId !== null) {
+                        $subSchema = $this->getCachedSchema(schemaId: $subSchemaId);
+                    } else {
+                        $subSchema = null;
+                    }
+
+                    if ($objectEntity->getRegister() !== null) {
+                        $subRegister = $this->getCachedRegister(registerId: $objectEntity->getRegister());
+                    } else {
+                        $subRegister = null;
+                    }
+
+                    $this->deleteOrphanedRelatedObjects(orphanedUuids: $oldUuids, register: $subRegister, schema: $subSchema);
+                }//end if
 
                 $data[$property] = [];
                 continue;
-            }
+            }//end if
 
             try {
                 $createdUuids = $this->cascadeMultipleObjects(
@@ -1723,17 +1744,31 @@ class SaveObject
                         if (empty($orphanedUuids) === false) {
                             // Resolve the sub-object's schema and register for magic-mapped lookups.
                             $subSchemaRef = $definition['items']['$ref'] ?? $definition['$ref'] ?? null;
-                            $subSchemaId  = $subSchemaRef !== null ? $this->resolveSchemaReference($subSchemaRef) : null;
-                            $subSchema    = $subSchemaId !== null ? $this->getCachedSchema($subSchemaId) : null;
-                            $subRegister  = $objectEntity->getRegister() !== null ? $this->getCachedRegister($objectEntity->getRegister()) : null;
+                            if ($subSchemaRef !== null) {
+                                $subSchemaId = $this->resolveSchemaReference(reference: $subSchemaRef);
+                            } else {
+                                $subSchemaId = null;
+                            }
+
+                            if ($subSchemaId !== null) {
+                                $subSchema = $this->getCachedSchema(schemaId: $subSchemaId);
+                            } else {
+                                $subSchema = null;
+                            }
+
+                            if ($objectEntity->getRegister() !== null) {
+                                $subRegister = $this->getCachedRegister(registerId: $objectEntity->getRegister());
+                            } else {
+                                $subRegister = null;
+                            }
 
                             $this->deleteOrphanedRelatedObjects(
-                                array_values($orphanedUuids),
-                                $subRegister,
-                                $subSchema
+                                orphanedUuids: array_values($orphanedUuids),
+                                register: $subRegister,
+                                schema: $subSchema
                             );
-                        }
-                    }
+                        }//end if
+                    }//end if
                 } else {
                     // Handle the result based on whether inversedBy is present.
                     $hasInversedBy      = ($definition['inversedBy'] ?? null) !== null;
@@ -1801,7 +1836,7 @@ class SaveObject
             $propData,
             function ($object) {
                 if (is_array($object) === true && empty($object) === false
-                    && !(count($object) === 1 && (($object['id'] ?? null) !== null) && empty($object['id']) === true)
+                    && (count($object) === 1 && (($object['id'] ?? null) !== null) && empty($object['id']) === true) === false
                 ) {
                     return true;
                 }
@@ -1878,7 +1913,7 @@ class SaveObject
         // Performance optimizations applied:
         // - Request-scoped schema/register caching (avoids repeated DB lookups)
         // - Silent mode (skips audit trails for sub-objects)
-        // - Skipped inverse relation updates (handled via inversedBy property)
+        // - Skipped inverse relation updates (handled via inversedBy property).
         $createdUuids = [];
         foreach ($objectsToCreate as $object) {
             try {
@@ -1972,7 +2007,7 @@ class SaveObject
         }
 
         // Resolve schema reference to actual schema ID.
-        $schemaId = $this->resolveSchemaReference($definition['$ref']);
+        $schemaId = $this->resolveSchemaReference(reference: $definition['$ref']);
         if ($schemaId === null) {
             throw new Exception("Invalid schema reference: {$definition['$ref']}");
         }
@@ -1981,7 +2016,7 @@ class SaveObject
         // This ensures the magic mapper explicitly sets removed properties to NULL
         // instead of leaving old values intact (magic mapper does partial updates).
         if ($uuid !== null) {
-            $object = $this->fillMissingSchemaPropertiesWithNull($object, $schemaId);
+            $object = $this->fillMissingSchemaPropertiesWithNull(data: $object, schemaId: $schemaId);
         }
 
         try {
@@ -2020,7 +2055,9 @@ class SaveObject
      * is updated and some sub-objects are removed, those orphaned sub-objects should
      * be deleted from the database since they are "owned" by the parent.
      *
-     * @param string[] $orphanedUuids Array of UUIDs of orphaned objects to delete.
+     * @param string[]      $orphanedUuids Array of UUIDs of orphaned objects to delete.
+     * @param Register|null $register      Optional register to scope the lookup.
+     * @param Schema|null   $schema        Optional schema to scope the lookup.
      *
      * @return void
      */
@@ -2041,8 +2078,12 @@ class SaveObject
                 );
 
                 // Soft delete: set deletion metadata and update (consistent with DeleteObject).
-                $user   = $this->userSession->getUser();
-                $userId = $user !== null ? $user->getUID() : 'system';
+                $user = $this->userSession->getUser();
+                if ($user !== null) {
+                    $userId = $user->getUID();
+                } else {
+                    $userId = 'system';
+                }
 
                 $deletionData = [
                     'deletedBy' => $userId,
@@ -2100,7 +2141,7 @@ class SaveObject
     private function fillMissingSchemaPropertiesWithNull(array $data, int|string $schemaId): array
     {
         try {
-            $schema       = $this->getCachedSchema($schemaId);
+            $schema       = $this->getCachedSchema(schemaId: $schemaId);
             $schemaObject = json_decode(json_encode($schema->getSchemaObject($this->urlGenerator)), associative: true);
             $properties   = $schemaObject['properties'] ?? [];
         } catch (Exception $e) {
@@ -2230,7 +2271,7 @@ class SaveObject
             }
 
             // Resolve schema reference to actual schema ID.
-            $resolvedSchemaId = $this->resolveSchemaReference($targetSchema);
+            $resolvedSchemaId = $this->resolveSchemaReference(reference: $targetSchema);
             if ($resolvedSchemaId === null) {
                 continue;
             }
@@ -2488,7 +2529,7 @@ class SaveObject
             $isCreate           = ($uuid === null);
             $existingObjectData = [];
 
-            // For updates, get existing object data for matching
+            // For updates, get existing object data for matching.
             if ($isCreate === false) {
                 try {
                     $tempExistingObject = $this->unifiedObjectMapper->find(
@@ -2502,7 +2543,7 @@ class SaveObject
                         $existingObjectData = $tempExistingObject->getObject();
                     }
                 } catch (DoesNotExistException $e) {
-                    // Object doesn't exist, treat as create
+                    // Object doesn't exist, treat as create.
                     $isCreate = true;
                 }
             }
@@ -2671,17 +2712,17 @@ class SaveObject
             $this->schemaCache[(string) $schemaId] = $schema;
         } else if (is_string($schema) === true) {
             // Resolve schema reference if it's a string (uses cached reference lookup).
-            $schemaId = $this->resolveSchemaReference($schema);
+            $schemaId = $this->resolveSchemaReference(reference: $schema);
             if ($schemaId === null) {
                 throw new Exception("Could not resolve schema reference: $schema");
             }
 
             // Use cached schema lookup instead of direct mapper call.
-            $schema = $this->getCachedSchema($schemaId);
+            $schema = $this->getCachedSchema(schemaId: $schemaId);
         } else if (is_int($schema) === true) {
             // It's an integer ID - use cached lookup.
             $schemaId = $schema;
-            $schema   = $this->getCachedSchema($schema);
+            $schema   = $this->getCachedSchema(schemaId: $schema);
         }
 
         // Resolve register using request-scoped cache for performance.
@@ -2691,17 +2732,17 @@ class SaveObject
             $this->registerCache[(string) $registerId] = $register;
         } else if (is_string($register) === true) {
             // Resolve register reference if it's a string.
-            $registerId = $this->resolveRegisterReference($register);
+            $registerId = $this->resolveRegisterReference(reference: $register);
             if ($registerId === null) {
                 throw new Exception("Could not resolve register reference: $register");
             }
 
             // Use cached register lookup instead of direct mapper call.
-            $register = $this->getCachedRegister($registerId);
+            $register = $this->getCachedRegister(registerId: $registerId);
         } else if (is_int($register) === true) {
             // It's an integer ID - use cached lookup.
             $registerId = $register;
-            $register   = $this->getCachedRegister($register);
+            $register   = $this->getCachedRegister(registerId: $register);
         } else if ($register === null) {
             // Register is NULL (e.g., for seedData objects) - leave as NULL.
             $registerId = null;
@@ -2711,21 +2752,13 @@ class SaveObject
     }//end resolveSchemaAndRegister()
 
     /**
-     * Find and validate existing object for update.
-     *
-     * @param string $uuid Object UUID
-     *
-     * @return ObjectEntity|null Existing object or null if not found
-     *
-     * @throws Exception If object is locked by another user
-     */
-
-    /**
      * Find and validate existing object by UUID.
      *
-     * @param string        $uuid     Object UUID.
-     * @param Register|null $register Optional register for magic mapper routing.
-     * @param Schema|null   $schema   Optional schema for magic mapper routing.
+     * @param string        $uuid          Object UUID.
+     * @param Register|null $register      Optional register for magic mapper routing.
+     * @param Schema|null   $schema        Optional schema for magic mapper routing.
+     * @param bool          $_rbac         Whether to apply RBAC checks.
+     * @param bool          $_multitenancy Whether to apply multitenancy checks.
      *
      * @return ObjectEntity|null Existing object or null if not found.
      *
@@ -2927,7 +2960,7 @@ class SaveObject
         // and the inversedBy property is already set in cascadeSingleObject before saving.
         // This optimization significantly improves performance when creating many sub-objects.
         if ($silent === false) {
-            $this->updateInverseRelations($savedEntity, $register, $schema);
+            $this->updateInverseRelations(savedEntity: $savedEntity, register: $register, schema: $schema);
         }
 
         return $savedEntity;
@@ -2953,7 +2986,13 @@ class SaveObject
     ): ObjectEntity {
         $this->logger->debug(
             message: '[SaveObject] processFilePropertiesWithRollback called',
-            context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister', 'uuid' => $savedEntity->getUuid(), 'dataKeys' => array_keys($data)]
+            context: [
+                'file'     => __FILE__,
+                'line'     => __LINE__,
+                'app'      => 'openregister',
+                'uuid'     => $savedEntity->getUuid(),
+                'dataKeys' => array_keys($data),
+            ]
         );
 
         $filePropsProcessed = false;
@@ -2992,7 +3031,7 @@ class SaveObject
 
                 $savedEntity->setObject($data);
 
-                // DEBUG: Verify setObject worked
+                // DEBUG: Verify setObject worked.
                 $this->logger->error(
                     message: '[SaveObject] DEBUG: After setObject - entity object is now',
                     context: [
@@ -3003,7 +3042,7 @@ class SaveObject
                     ]
                 );
 
-                // DEBUG: About to call update
+                // DEBUG: About to call update.
                 $this->logger->error(
                     message: '[SaveObject] DEBUG: About to call objectEntityMapper->update()',
                     context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister', 'uuid' => $savedEntity->getUuid()]
@@ -3017,10 +3056,15 @@ class SaveObject
 
                 $savedEntity = $this->objectEntityMapper->update(entity: $savedEntity, register: $register, schema: $schema);
 
-                // DEBUG: After update
+                // DEBUG: After update.
                 $this->logger->error(
                     message: '[SaveObject] DEBUG: After objectEntityMapper->update() - result object',
-                    context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister', 'resultObject' => json_encode($savedEntity->getObject())]
+                    context: [
+                        'file'         => __FILE__,
+                        'line'         => __LINE__,
+                        'app'          => 'openregister',
+                        'resultObject' => json_encode($savedEntity->getObject()),
+                    ]
                 );
             }//end if
 
@@ -3231,7 +3275,7 @@ class SaveObject
         // For magic-mapped objects, the MagicMapper generates SET clauses only for properties
         // present in the data. Without this, removed properties would retain their old values
         // because the mapper never issues a SET column=NULL for missing keys.
-        $preparedData = $this->fillMissingSchemaPropertiesWithNull($preparedData, $schema->getId());
+        $preparedData = $this->fillMissingSchemaPropertiesWithNull(data: $preparedData, schemaId: $schema->getId());
 
         // Set the prepared data.
         $existingObject->setObject($preparedData);
@@ -3484,6 +3528,7 @@ class SaveObject
      * @param ObjectEntity        $existingObject The existing object to update.
      * @param int|null            $folderId       The folder ID to set on the object (optional).
      * @param bool                $silent         Whether to skip audit trail creation and events (default: false).
+     * @param ObjectEntity|null   $oldObject      The original object before changes (optional).
      *
      * @return ObjectEntity The updated object entity.
      *
@@ -3627,7 +3672,7 @@ class SaveObject
         // This ensures that when object A references object B, object B's relations also include A.
         // Skip for silent mode (cascaded sub-objects) to improve performance.
         if ($silent === false) {
-            $this->updateInverseRelations($updatedEntity, $register, $schema);
+            $this->updateInverseRelations(savedEntity: $updatedEntity, register: $register, schema: $schema);
         }
 
         return $updatedEntity;
@@ -3659,7 +3704,7 @@ class SaveObject
             }
 
             // If we find any non-empty value, the object is not effectively empty.
-            if ($this->isValueNotEmpty($value) === true) {
+            if ($this->isValueNotEmpty(value: $value) === true) {
                 return false;
             }
         }
@@ -3698,12 +3743,12 @@ class SaveObject
         if (is_array($value) === true && empty($value) === false) {
             // If it's an associative array (object-like), check if it's effectively empty.
             if (array_keys($value) !== range(0, count($value) - 1)) {
-                return $this->isEffectivelyEmptyObject($value) === false;
+                return $this->isEffectivelyEmptyObject(object: $value) === false;
             }
 
             // For indexed arrays, check if any element is not empty.
             foreach ($value as $item) {
-                if ($this->isValueNotEmpty($item) === true) {
+                if ($this->isValueNotEmpty(value: $item) === true) {
                     return true;
                 }
             }

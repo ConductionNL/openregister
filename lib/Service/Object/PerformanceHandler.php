@@ -72,7 +72,7 @@ class PerformanceHandler
         $optimizeStart = microtime(true);
 
         // **OPTIMIZATION 1**: Fast path for simple requests.
-        $isSimpleRequest = $this->isSimpleRequest($query);
+        $isSimpleRequest = $this->isSimpleRequest(query: $query);
         if ($isSimpleRequest === true) {
             $query['_fast_path'] = true;
             $this->logger->debug(
@@ -94,7 +94,7 @@ class PerformanceHandler
                 $originalExtendCount = count($query['_extend']);
             }
 
-            $query['_extend'] = $this->optimizeExtendQueries($query['_extend']);
+            $query['_extend'] = $this->optimizeExtendQueries(extend: $query['_extend']);
 
             // OptimizeExtendQueries always returns an array, so no need to check.
             $newExtendCount = count($query['_extend']);
@@ -114,7 +114,7 @@ class PerformanceHandler
         }//end if
 
         // **OPTIMIZATION 3**: Preload critical entities for cache warmup.
-        $this->preloadCriticalEntities($query);
+        $this->preloadCriticalEntities(query: $query);
 
         $perfTimings['request_optimization'] = round((microtime(true) - $optimizeStart) * 1000, 2);
     }//end optimizeRequestForPerformance()
@@ -261,11 +261,11 @@ class PerformanceHandler
                 if (is_array($value) === true) {
                     // Handle array of IDs.
                     foreach ($value as $relatedId) {
-                        if (is_string($relatedId) === true && $this->isUuid($relatedId) === true) {
+                        if (is_string($relatedId) === true && $this->isUuid(value: $relatedId) === true) {
                             $allRelatedIds[] = $relatedId;
                         }
                     }
-                } else if (is_string($value) === true && $this->isUuid($value) === true) {
+                } else if (is_string($value) === true && $this->isUuid(value: $value) === true) {
                     // Handle single ID.
                     $allRelatedIds[] = $value;
                 }
@@ -326,7 +326,8 @@ class PerformanceHandler
         }
 
         // Prefixed UUID (e.g., "id-uuid" with or without dashes).
-        if (preg_match('/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/i', $value) === 1) {
+        $pattern = '/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/i';
+        if (preg_match($pattern, $value) === 1) {
             return true;
         }
 

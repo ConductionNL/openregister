@@ -145,7 +145,7 @@ class PropertyRbacHandler
         }
 
         // Get properties with authorization.
-        // Returns associative array: propertyName => authorizationConfig
+        // Returns associative array: propertyName => authorizationConfig.
         $propertiesWithAuth = $schema->getPropertiesWithAuthorization();
 
         // Filter out properties user cannot read.
@@ -200,7 +200,7 @@ class PropertyRbacHandler
         $unauthorizedProperties = [];
 
         // Get properties with authorization.
-        // Returns associative array: propertyName => authorizationConfig
+        // Returns associative array: propertyName => authorizationConfig.
         $propertiesWithAuth = $schema->getPropertiesWithAuthorization();
 
         // Check each incoming property that has authorization rules.
@@ -412,7 +412,7 @@ class PropertyRbacHandler
         // For creates, skip organisation matching since there's no existing object.
         // Other match conditions still apply.
         if ($isCreate === true) {
-            $match = $this->filterOrganisationMatchForCreate($match);
+            $match = $this->filterOrganisationMatchForCreate(match: $match);
             if (empty($match) === true) {
                 return true;
             }
@@ -467,7 +467,7 @@ class PropertyRbacHandler
             $objectValue = $this->getObjectValue(object: $object, property: $property);
 
             // Resolve dynamic variables in the match value.
-            $resolvedValue = $this->resolveDynamicValue($value);
+            $resolvedValue = $this->resolveDynamicValue(value: $value);
 
             // If dynamic variable resolved to null, condition cannot be met.
             if ($value !== $resolvedValue && $resolvedValue === null) {
@@ -475,7 +475,10 @@ class PropertyRbacHandler
             }
 
             // Simple value: equals comparison.
-            if (is_string($resolvedValue) === true || is_numeric($resolvedValue) === true || is_bool($resolvedValue) === true) {
+            if (is_string($resolvedValue) === true
+                || is_numeric($resolvedValue) === true
+                || is_bool($resolvedValue) === true
+            ) {
                 if ($objectValue !== $resolvedValue) {
                     return false;
                 }

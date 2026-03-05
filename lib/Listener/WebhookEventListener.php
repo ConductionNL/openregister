@@ -110,7 +110,7 @@ class WebhookEventListener implements IEventListener
     public function handle(Event $event): void
     {
         $eventClass = get_class($event);
-        $payload    = $this->extractPayload($event);
+        $payload    = $this->extractPayload(event: $event);
 
         if ($payload === null) {
             $this->logger->warning(

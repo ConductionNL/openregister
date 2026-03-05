@@ -1,5 +1,19 @@
 <?php
 
+/**
+ * OpenRegister Migrate Storage Command
+ *
+ * OCC command for migrating objects between blob storage and magic tables.
+ *
+ * @category  Command
+ * @package   OCA\OpenRegister\Command
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git-id>
+ * @link      https://OpenRegister.app
+ */
+
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Command;
@@ -21,15 +35,25 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class MigrateStorageCommand extends Command
 {
+    /**
+     * Constructor for MigrateStorageCommand.
+     *
+     * @param MigrationService $migrationService Migration service instance.
+     */
     public function __construct(
         private readonly MigrationService $migrationService,
     ) {
         parent::__construct();
     }//end __construct()
 
+    /**
+     * Configure the command.
+     *
+     * @return void
+     */
     protected function configure(): void
     {
-        $this->setName('openregister:migrate-storage')
+        $this->setName(name: 'openregister:migrate-storage')
             ->setDescription('Migrate objects between blob storage and magic tables')
             ->addArgument(
                 name: 'direction',
@@ -87,6 +111,14 @@ class MigrateStorageCommand extends Command
             );
     }//end configure()
 
+    /**
+     * Execute the migration command.
+     *
+     * @param InputInterface  $input  Input interface.
+     * @param OutputInterface $output Output interface.
+     *
+     * @return int Command exit code.
+     */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $direction   = $input->getArgument('direction');
@@ -132,9 +164,14 @@ class MigrateStorageCommand extends Command
 
         $output->writeln('<info>Storage Status:</info>');
         $output->writeln('  Blob storage:  <comment>'.$status['blobStorage']['count'].' objects</comment>');
-        $output->writeln(
-                '  Magic table:   <comment>'.($status['magicTable']['exists'] ? $status['magicTable']['count'].' objects' : 'does not exist').'</comment>'
-                );
+        $magicExists = $status['magicTable']['exists'];
+        if ($magicExists === true) {
+            $magicInfo = $status['magicTable']['count'].' objects';
+        } else {
+            $magicInfo = 'does not exist';
+        }
+
+        $output->writeln('  Magic table:   <comment>'.$magicInfo.'</comment>');
         $output->writeln('');
 
         if ($statusOnly === true) {
@@ -142,7 +179,12 @@ class MigrateStorageCommand extends Command
         }
 
         // Run migration.
-        $directionLabel = $direction === 'to-magic' ? 'blob -> magic table' : 'magic table -> blob';
+        if ($direction === 'to-magic') {
+            $directionLabel = 'blob -> magic table';
+        } else {
+            $directionLabel = 'magic table -> blob';
+        }
+
         $output->writeln('<info>Migrating: '.$directionLabel.'</info>');
 
         if ($dryRun === true) {

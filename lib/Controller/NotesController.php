@@ -93,7 +93,7 @@ class NotesController extends Controller
         string $id
     ): JSONResponse {
         try {
-            $object = $this->validateObject($register, $schema, $id);
+            $object = $this->validateObject(register: $register, schema: $schema, id: $id);
             if ($object === null) {
                 return new JSONResponse(
                     data: ['error' => 'Object not found'],
@@ -133,7 +133,7 @@ class NotesController extends Controller
         string $id
     ): JSONResponse {
         try {
-            $object = $this->validateObject($register, $schema, $id);
+            $object = $this->validateObject(register: $register, schema: $schema, id: $id);
             if ($object === null) {
                 return new JSONResponse(
                     data: ['error' => 'Object not found'],
@@ -181,7 +181,7 @@ class NotesController extends Controller
         string $noteId
     ): JSONResponse {
         try {
-            $object = $this->validateObject($register, $schema, $id);
+            $object = $this->validateObject(register: $register, schema: $schema, id: $id);
             if ($object === null) {
                 return new JSONResponse(
                     data: ['error' => 'Object not found'],

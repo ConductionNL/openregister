@@ -130,17 +130,35 @@ class MagicBulkHandler
             $preparedObject['_owner']        = $selfData['owner'] ?? $object['owner'] ?? null;
             $preparedObject['_organisation'] = $selfData['organisation'] ?? $object['organisation'] ?? null;
 
-            // Format datetime fields to MySQL-compatible format (Y-m-d H:i:s)
+            // Format datetime fields to MySQL-compatible format (Y-m-d H:i:s).
             $createdValue = $selfData['created'] ?? $object['created'] ?? $now->format('Y-m-d H:i:s');
-            $preparedObject['_created'] = $this->formatDateTimeForDatabase($createdValue, $now->format('Y-m-d H:i:s'));
+            $preparedObject['_created'] = $this->formatDateTimeForDatabase(
+                value: $createdValue,
+                default: $now->format('Y-m-d H:i:s')
+            );
 
             $preparedObject['_updated'] = $now->format('Y-m-d H:i:s');
 
             $publishedValue = $selfData['published'] ?? $object['published'] ?? null;
-            $preparedObject['_published'] = $publishedValue ? $this->formatDateTimeForDatabase($publishedValue, null) : null;
+            if ($publishedValue !== null) {
+                $preparedObject['_published'] = $this->formatDateTimeForDatabase(
+                    value: $publishedValue,
+                    default: null
+                );
+            } else {
+                $preparedObject['_published'] = null;
+            }
 
             $depublishedValue = $selfData['depublished'] ?? $object['depublished'] ?? null;
-            $preparedObject['_depublished'] = $depublishedValue ? $this->formatDateTimeForDatabase($depublishedValue, null) : null;
+            if ($depublishedValue !== null) {
+                $preparedObject['_depublished'] = $this->formatDateTimeForDatabase(
+                    value: $depublishedValue,
+                    default: null
+                );
+            } else {
+                $preparedObject['_depublished'] = null;
+            }
+
             $preparedObject['_name']        = $selfData['name'] ?? $object['name'] ?? null;
             $preparedObject['_description'] = $selfData['description'] ?? $object['description'] ?? null;
             $preparedObject['_summary']     = $selfData['summary'] ?? $object['summary'] ?? null;
@@ -173,13 +191,13 @@ class MagicBulkHandler
                     continue;
                 }
 
-                $columnName = $this->sanitizeColumnName($propertyName);
+                $columnName = $this->sanitizeColumnName(name: $propertyName);
 
                 // Convert empty strings to NULL for all schema properties.
                 // This is necessary because:
                 // 1. PostgreSQL rejects empty strings for JSON columns
                 // 2. Column types might differ from schema (e.g., table created with old schema)
-                // 3. Empty strings are semantically equivalent to NULL for most use cases
+                // 3. Empty strings are semantically equivalent to NULL for most use cases.
                 if ($value === '') {
                     $value = null;
                 }
@@ -351,7 +369,7 @@ class MagicBulkHandler
         }
 
         // Determine optimal chunk size.
-        $chunkSize = $this->calculateOptimalChunkSize($preparedObjects);
+        $chunkSize = $this->calculateOptimalChunkSize(objects: $preparedObjects);
         $chunks    = array_chunk($preparedObjects, $chunkSize);
 
         $allResults = [];
@@ -401,7 +419,7 @@ class MagicBulkHandler
         $operationStartTime = (new DateTime())->format('Y-m-d H:i:s');
 
         // Get table columns to filter out non-existent columns.
-        $tableColumns = $this->getTableColumns($tableName);
+        $tableColumns = $this->getTableColumns(tableName: $tableName);
 
         // Filter chunk data to only include columns that exist in the table.
         $filteredChunk = [];
@@ -624,7 +642,7 @@ class MagicBulkHandler
             // Apply accurate classification based on pre-upsert UUID check.
             // - 'created': UUID was NOT in existingUuids (new record inserted)
             // - 'updated': UUID WAS in existingUuids AND _updated changed (record modified)
-            // - 'unchanged': UUID WAS in existingUuids AND _updated didn't change (no modification)
+            // - 'unchanged': UUID WAS in existingUuids AND _updated didn't change (no modification).
             $createdCount   = 0;
             $updatedCount   = 0;
             $unchangedCount = 0;
