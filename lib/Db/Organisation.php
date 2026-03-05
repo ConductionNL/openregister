@@ -235,21 +235,21 @@ class Organisation extends Entity implements JsonSerializable
      */
     public function __construct()
     {
-        $this->addType('uuid', 'string');
-        $this->addType('slug', 'string');
-        $this->addType('name', 'string');
-        $this->addType('description', 'string');
-        $this->addType('users', 'json');
-        $this->addType('groups', 'json');
-        $this->addType('owner', 'string');
-        $this->addType('created', 'datetime');
-        $this->addType('updated', 'datetime');
-        $this->addType('active', 'boolean');
-        $this->addType('storage_quota', 'integer');
-        $this->addType('bandwidth_quota', 'integer');
-        $this->addType('request_quota', 'integer');
-        $this->addType('authorization', 'json');
-        $this->addType('parent', 'string');
+        $this->addType(fieldName: 'uuid', type: 'string');
+        $this->addType(fieldName: 'slug', type: 'string');
+        $this->addType(fieldName: 'name', type: 'string');
+        $this->addType(fieldName: 'description', type: 'string');
+        $this->addType(fieldName: 'users', type: 'json');
+        $this->addType(fieldName: 'groups', type: 'json');
+        $this->addType(fieldName: 'owner', type: 'string');
+        $this->addType(fieldName: 'created', type: 'datetime');
+        $this->addType(fieldName: 'updated', type: 'datetime');
+        $this->addType(fieldName: 'active', type: 'boolean');
+        $this->addType(fieldName: 'storage_quota', type: 'integer');
+        $this->addType(fieldName: 'bandwidth_quota', type: 'integer');
+        $this->addType(fieldName: 'request_quota', type: 'integer');
+        $this->addType(fieldName: 'authorization', type: 'json');
+        $this->addType(fieldName: 'parent', type: 'string');
     }//end __construct()
 
     /**

@@ -303,8 +303,8 @@ class DocumentProcessingHandler
             $this->logger->debug(
                 message: '[DocumentProcessingHandler] Words replaced in Word document',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'         => __FILE__,
+                    'line'         => __LINE__,
                     'originalFile' => $node->getPath(),
                     'outputFile'   => $newFile->getPath(),
                     'replacements' => count($replacements),
@@ -321,8 +321,8 @@ class DocumentProcessingHandler
             $this->logger->error(
                 message: '[DocumentProcessingHandler] Failed to replace words in Word document: '.$e->getMessage(),
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
                     'exception' => $e,
                 ]
             );
@@ -379,8 +379,8 @@ class DocumentProcessingHandler
         $this->logger->debug(
             message: '[DocumentProcessingHandler] Words replaced in text document',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'         => __FILE__,
+                'line'         => __LINE__,
                 'originalFile' => $node->getPath(),
                 'outputFile'   => $newFile->getPath(),
                 'replacements' => count($replacements),

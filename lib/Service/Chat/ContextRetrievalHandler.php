@@ -110,8 +110,8 @@ class ContextRetrievalHandler
         $this->logger->info(
             message: '[ContextRetrievalHandler] Retrieving context',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'        => __FILE__,
+                'line'        => __LINE__,
                 'query'       => substr($query, 0, 100),
                 'hasAgent'    => $agent !== null,
                 'ragSettings' => $ragSettings,
@@ -139,8 +139,8 @@ class ContextRetrievalHandler
                 $this->logger->info(
                     message: '[ContextRetrievalHandler] Using filtered views',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'          => __FILE__,
+                        'line'          => __LINE__,
                         'agentViews'    => count($agentViews),
                         'selectedViews' => count($selectedViews),
                         'filteredViews' => count($viewFilters),
@@ -154,8 +154,8 @@ class ContextRetrievalHandler
                 $this->logger->info(
                     message: '[ContextRetrievalHandler] Using all agent views',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'  => __FILE__,
+                        'line'  => __LINE__,
                         'views' => count($viewFilters),
                     ]
                 );
@@ -166,8 +166,8 @@ class ContextRetrievalHandler
             $this->logger->info(
                 message: '[ContextRetrievalHandler] Using user-selected views (agent has none)',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'views' => count($viewFilters),
                 ]
             );
@@ -228,8 +228,8 @@ class ContextRetrievalHandler
                 $this->logger->warning(
                     message: '[ContextRetrievalHandler] Search returned non-array result',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'        => __FILE__,
+                        'line'        => __LINE__,
                         'searchMode'  => $searchMode,
                         'resultType'  => gettype($results),
                         'resultValue' => $results,
@@ -254,8 +254,8 @@ class ContextRetrievalHandler
                     $this->logger->warning(
                         message: '[ContextRetrievalHandler] Skipping non-array result',
                         context: [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
+                            'file'        => __FILE__,
+                            'line'        => __LINE__,
                             'resultType'  => gettype($result),
                             'resultValue' => $result,
                         ]
@@ -338,8 +338,8 @@ class ContextRetrievalHandler
             $this->logger->info(
                 message: '[ContextRetrievalHandler] Context retrieved',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'              => __FILE__,
+                    'line'              => __LINE__,
                     'numSources'        => count($sources),
                     'fileSources'       => $fileSourceCount,
                     'objectSources'     => $objectSourceCount,
@@ -358,8 +358,8 @@ class ContextRetrievalHandler
                 $this->logger->info(
                     message: '[ContextRetrievalHandler] First source details',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'   => __FILE__,
+                        'line'   => __LINE__,
                         'source' => $sources[0],
                     ]
                 );
@@ -373,8 +373,8 @@ class ContextRetrievalHandler
             $this->logger->error(
                 message: '[ContextRetrievalHandler] Failed to retrieve context',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );

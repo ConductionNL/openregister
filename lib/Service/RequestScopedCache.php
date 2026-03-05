@@ -36,8 +36,8 @@ namespace OCA\OpenRegister\Service;
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
- * @author    Conduction Development Team <info@conduction.nl>
- * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @author  Conduction Development Team <info@conduction.nl>
+ * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @version 1.0.0
  *
@@ -53,7 +53,6 @@ class RequestScopedCache
      */
     private array $cache = [];
 
-
     /**
      * Retrieve a value from the cache
      *
@@ -66,7 +65,6 @@ class RequestScopedCache
     {
         return $this->cache[$namespace][$key] ?? null;
     }//end get()
-
 
     /**
      * Store a value in the cache
@@ -82,7 +80,6 @@ class RequestScopedCache
         $this->cache[$namespace][$key] = $value;
     }//end set()
 
-
     /**
      * Check whether a key exists in the cache
      *
@@ -96,7 +93,6 @@ class RequestScopedCache
         return array_key_exists(key: $namespace, array: $this->cache)
             && array_key_exists(key: $key, array: $this->cache[$namespace]);
     }//end has()
-
 
     /**
      * Retrieve multiple values from the cache at once
@@ -118,7 +114,6 @@ class RequestScopedCache
         return $results;
     }//end getMultiple()
 
-
     /**
      * Clear a specific namespace or the entire cache
      *
@@ -126,7 +121,7 @@ class RequestScopedCache
      *
      * @return void
      */
-    public function clear(?string $namespace = null): void
+    public function clear(?string $namespace=null): void
     {
         if ($namespace !== null) {
             unset($this->cache[$namespace]);
@@ -134,6 +129,4 @@ class RequestScopedCache
             $this->cache = [];
         }
     }//end clear()
-
-
 }//end class

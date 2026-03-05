@@ -225,8 +225,8 @@ class ViewsController extends Controller
             $this->logger->error(
                 message: '[ViewsController] Error fetching view',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
                     'id'        => $id,
                     'exception' => $e->getMessage(),
                 ]
@@ -449,8 +449,8 @@ class ViewsController extends Controller
             $this->logger->error(
                 message: '[ViewsController] Error updating view',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
                     'id'        => $id,
                     'exception' => $e->getMessage(),
                 ]
@@ -563,8 +563,8 @@ class ViewsController extends Controller
             $this->logger->error(
                 message: '[ViewsController] Error patching view',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
                     'id'        => $id,
                     'exception' => $e->getMessage(),
                 ]
@@ -638,8 +638,8 @@ class ViewsController extends Controller
             $this->logger->error(
                 message: '[ViewsController] Error deleting view',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
                     'id'        => $id,
                     'exception' => $e->getMessage(),
                 ]

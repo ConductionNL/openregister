@@ -106,8 +106,8 @@ class SolrQueryExecutor
             $this->logger->debug(
                 message: '[SolrQueryExecutor] Search executed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
                     'collection' => $collection,
                     'query'      => $params['q'] ?? '*:*',
                     'numFound'   => $result['response']['numFound'] ?? 0,
@@ -119,8 +119,8 @@ class SolrQueryExecutor
             $this->logger->error(
                 message: '[SolrQueryExecutor] Search failed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );

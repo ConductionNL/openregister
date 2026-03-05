@@ -20,7 +20,7 @@ class MigrationController extends Controller
         private readonly MigrationService $migrationService,
     ) {
         parent::__construct(appName: $appName, request: $request);
-    }
+    }//end __construct()
 
     /**
      * Get storage status for a register/schema combination.
@@ -52,7 +52,7 @@ class MigrationController extends Controller
                 statusCode: 500
             );
         }
-    }
+    }//end status()
 
     /**
      * Trigger a migration between blob storage and magic tables.
@@ -67,10 +67,10 @@ class MigrationController extends Controller
     {
         try {
             $registerParam = $this->request->getParam('register');
-            $schemaParam = $this->request->getParam('schema');
-            $direction = $this->request->getParam('direction');
-            $batchSize = (int) ($this->request->getParam('batchSize', 100));
-            $dryRun = filter_var(
+            $schemaParam   = $this->request->getParam('schema');
+            $direction     = $this->request->getParam('direction');
+            $batchSize     = (int) ($this->request->getParam('batchSize', 100));
+            $dryRun        = filter_var(
                 $this->request->getParam('dryRun', false),
                 FILTER_VALIDATE_BOOLEAN
             );
@@ -116,6 +116,6 @@ class MigrationController extends Controller
                 data: ['error' => $e->getMessage()],
                 statusCode: 500
             );
-        }
-    }
-}
+        }//end try
+    }//end migrate()
+}//end class

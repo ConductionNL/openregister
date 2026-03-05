@@ -88,8 +88,8 @@ class EmbeddingGeneratorHandler
             $this->logger->debug(
                 message: '[EmbeddingGeneratorHandler] Creating new embedding generator',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
                     'provider' => $config['provider'],
                     'model'    => $config['model'],
                 ]
@@ -108,8 +108,8 @@ class EmbeddingGeneratorHandler
             $this->logger->info(
                 message: '[EmbeddingGeneratorHandler] Embedding generator created',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
                     'provider'   => $config['provider'],
                     'model'      => $config['model'],
                     'dimensions' => $generator->getEmbeddingLength(),
@@ -242,8 +242,8 @@ class EmbeddingGeneratorHandler
                 $this->logger->debug(
                     message: '[EmbeddingGeneratorHandler] Calling Fireworks AI API',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'  => __FILE__,
+                        'line'  => __LINE__,
                         'url'   => $url,
                         'model' => $this->model,
                     ]

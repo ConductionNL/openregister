@@ -197,13 +197,13 @@ class MagicOrganizationHandler
         $this->logger->debug(
             message: '[MagicOrganizationHandler] Applied organization filter',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
-                    'activeOrgUuids'       => $activeOrgUuids,
-                    'allowPublishedAccess' => $allowPublishedAccess,
-                    'conditionsCount'      => count($conditions),
-                    'isAdmin'              => $isAdmin,
-                ]
+                'file'                 => __FILE__,
+                'line'                 => __LINE__,
+                'activeOrgUuids'       => $activeOrgUuids,
+                'allowPublishedAccess' => $allowPublishedAccess,
+                'conditionsCount'      => count($conditions),
+                'isAdmin'              => $isAdmin,
+            ]
                 );
     }//end applyOrganizationFilter()
 
@@ -227,11 +227,11 @@ class MagicOrganizationHandler
             $this->logger->debug(
                 message: '[MagicOrganizationHandler] getUserActiveOrganisations returned',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
-                        'orgUuids' => $orgUuids,
-                        'user'     => $this->userSession->getUser()?->getUID(),
-                    ]
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
+                    'orgUuids' => $orgUuids,
+                    'user'     => $this->userSession->getUser()?->getUID(),
+                ]
                     );
 
             if (empty($orgUuids) === false) {
@@ -246,8 +246,8 @@ class MagicOrganizationHandler
                     context: [
                         'file' => __FILE__,
                         'line' => __LINE__,
-                            'uuid' => $activeOrg->getUuid(),
-                        ]
+                        'uuid' => $activeOrg->getUuid(),
+                    ]
                         );
                 return [$activeOrg->getUuid()];
             }
@@ -261,10 +261,10 @@ class MagicOrganizationHandler
             $this->logger->warning(
                 message: '[MagicOrganizationHandler] Failed to get active organisation',
                 context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
-                        'error' => $e->getMessage(),
-                    ]
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
+                    'error' => $e->getMessage(),
+                ]
                     );
             return [];
         }//end try

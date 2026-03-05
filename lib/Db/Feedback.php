@@ -131,16 +131,16 @@ class Feedback extends Entity implements JsonSerializable
      */
     public function __construct()
     {
-        $this->addType('uuid', 'string');
-        $this->addType('messageId', 'integer');
-        $this->addType('conversationId', 'integer');
-        $this->addType('agentId', 'integer');
-        $this->addType('userId', 'string');
-        $this->addType('organisation', 'string');
-        $this->addType('type', 'string');
-        $this->addType('comment', 'string');
-        $this->addType('created', 'datetime');
-        $this->addType('updated', 'datetime');
+        $this->addType(fieldName: 'uuid', type: 'string');
+        $this->addType(fieldName: 'messageId', type: 'integer');
+        $this->addType(fieldName: 'conversationId', type: 'integer');
+        $this->addType(fieldName: 'agentId', type: 'integer');
+        $this->addType(fieldName: 'userId', type: 'string');
+        $this->addType(fieldName: 'organisation', type: 'string');
+        $this->addType(fieldName: 'type', type: 'string');
+        $this->addType(fieldName: 'comment', type: 'string');
+        $this->addType(fieldName: 'created', type: 'datetime');
+        $this->addType(fieldName: 'updated', type: 'datetime');
     }//end __construct()
 
     /**

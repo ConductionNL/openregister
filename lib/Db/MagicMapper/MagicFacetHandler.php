@@ -1692,8 +1692,8 @@ class MagicFacetHandler
                 $this->logger->debug(
                     message: '[MagicFacetHandler] batchResolveUuidLabels: All labels from in-memory field cache',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'    => __FILE__,
+                        'line'    => __LINE__,
                         'field'   => $field,
                         'count'   => count($result),
                         'time_ms' => round((microtime(true) - $startTime) * 1000, 2),
@@ -1729,8 +1729,8 @@ class MagicFacetHandler
                         $this->logger->debug(
                             message: '[MagicFacetHandler] batchResolveUuidLabels: All labels from distributed cache',
                             context: [
-                                'file' => __FILE__,
-                                'line' => __LINE__,
+                                'file'    => __FILE__,
+                                'line'    => __LINE__,
                                 'field'   => $field,
                                 'count'   => count($result),
                                 'time_ms' => round((microtime(true) - $startTime) * 1000, 2),
@@ -1792,8 +1792,8 @@ class MagicFacetHandler
             $this->logger->debug(
                 message: '[MagicFacetHandler] batchResolveUuidLabels: Resolved via CacheHandler and cached',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
                     'field'     => $field,
                     'requested' => count($uuids),
                     'resolved'  => count($batchedLabels),

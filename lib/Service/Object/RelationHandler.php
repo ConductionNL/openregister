@@ -244,8 +244,8 @@ class RelationHandler
                 $this->logger->info(
                     message: '[RelationHandler] 🛑 RELATIONSHIP EXTRACTION: Stopped early to prevent timeout',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'             => __FILE__,
+                        'line'             => __LINE__,
                         'extractedIds'     => $extractedCount,
                         'maxIds'           => $maxIds,
                         'processedObjects' => $objectIndex,
@@ -283,8 +283,8 @@ class RelationHandler
                             $this->logger->debug(
                                 message: '[RelationHandler] 🔪 PERFORMANCE: Limited relationship array',
                                 context: [
-                                    'file' => __FILE__,
-                                    'line' => __LINE__,
+                                    'file'          => __FILE__,
+                                    'line'          => __LINE__,
                                     'property'      => $extendProperty,
                                     'originalCount' => count($value),
                                     'limitedTo'     => count($limitedArray),
@@ -312,8 +312,8 @@ class RelationHandler
         $this->logger->info(
             message: '[RelationHandler] 🔍 RELATIONSHIP EXTRACTION: Completed with limits',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'           => __FILE__,
+                'line'           => __LINE__,
                 'totalExtracted' => count($allIds),
                 'uniqueIds'      => count($uniqueIds),
                 'maxAllowed'     => $maxIds,
@@ -351,8 +351,8 @@ class RelationHandler
             $this->logger->warning(
                 message: '[RelationHandler] ⚠️ RELATIONSHIP LOADING: Capping at 200 relationships',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
                     'requested' => count($relationshipIds),
                     'capped'    => 200,
                     'reason'    => 'prevent_timeout',
@@ -370,8 +370,8 @@ class RelationHandler
         $this->logger->info(
             message: '[RelationHandler] 🔄 BULK RELATIONSHIP LOADING: Starting batched load',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'               => __FILE__,
+                'line'               => __LINE__,
                 'totalRelationships' => count($relationshipIds),
                 'batchSize'          => $batchSize,
                 'totalBatches'       => count($batches),
@@ -396,8 +396,8 @@ class RelationHandler
                 $this->logger->debug(
                     message: '[RelationHandler] ✅ Batch loaded',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'          => __FILE__,
+                        'line'          => __LINE__,
                         'batch'         => ($batchIndex + 1),
                         'idsInBatch'    => count($batch),
                         'objectsLoaded' => count($chunkObjects),
@@ -408,8 +408,8 @@ class RelationHandler
                 $this->logger->error(
                     message: '[RelationHandler] ❌ BATCH LOADING FAILED',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'       => __FILE__,
+                        'line'       => __LINE__,
                         'batch'      => ($batchIndex + 1),
                         'error'      => $e->getMessage(),
                         'idsInBatch' => count($batch),
@@ -424,8 +424,8 @@ class RelationHandler
         $this->logger->info(
             message: '[RelationHandler] ✅ BULK RELATIONSHIP LOADING: Completed',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'           => __FILE__,
+                'line'           => __LINE__,
                 'totalRequested' => count($relationshipIds),
                 'totalLoaded'    => count($loadedObjects),
                 'totalTime'      => round($totalTime, 2).'ms',
@@ -463,8 +463,8 @@ class RelationHandler
             $this->logger->error(
                 message: '[RelationHandler] Failed to load relationship chunk',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
                     'error'    => $e->getMessage(),
                     'idsCount' => count($relationshipIds),
                 ]
@@ -515,8 +515,8 @@ class RelationHandler
             $this->logger->error(
                 message: '[RelationHandler] Failed to get contracts',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
                     'error'    => $e->getMessage(),
                     'objectId' => $objectId,
                 ]
@@ -704,8 +704,8 @@ class RelationHandler
             $this->logger->debug(
                 message: '[RelationHandler::getUses] Found related objects',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'        => __FILE__,
+                    'line'        => __LINE__,
                     'searchedIds' => $uniqueIds,
                     'foundCount'  => count($relatedObjects),
                 ]
@@ -728,8 +728,8 @@ class RelationHandler
             $this->logger->error(
                 message: '[RelationHandler] Failed to get uses',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
                     'error'    => $e->getMessage(),
                     'objectId' => $objectId,
                 ]
@@ -742,7 +742,6 @@ class RelationHandler
             ];
         }//end try
     }//end getUses()
-
 
     /**
      * Filter objects by RBAC (schema-level authorization).
@@ -792,7 +791,7 @@ class RelationHandler
             $schema = $schemaCache[$schemaId];
 
             // Build object data with metadata for condition evaluation.
-            $objectData                  = $object->getObject() ?? [];
+            $objectData = $object->getObject() ?? [];
             $objectData['_organisation'] = $object->getOrganisation();
             $objectData['_owner']        = $object->getOwner();
 
@@ -801,7 +800,8 @@ class RelationHandler
                 action: 'read',
                 objectOwner: $object->getOwner(),
                 objectData: $objectData
-            ) === true) {
+            ) === true
+            ) {
                 $filtered[] = $object;
             }
         }//end foreach
@@ -809,7 +809,6 @@ class RelationHandler
         return $filtered;
 
     }//end filterByRbac()
-
 
     /**
      * Get objects that use this object (incoming relations).
@@ -910,8 +909,8 @@ class RelationHandler
                     $this->logger->debug(
                         message: '[RelationHandler] Error searching magic table for usedBy',
                         context: [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
+                            'file'  => __FILE__,
+                            'line'  => __LINE__,
                             'table' => $tableInfo['tableName'] ?? 'unknown',
                             'error' => $e->getMessage(),
                         ]
@@ -930,8 +929,8 @@ class RelationHandler
             $this->logger->error(
                 message: '[RelationHandler] Failed to get used by',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
                     'error'    => $e->getMessage(),
                     'objectId' => $objectId,
                 ]

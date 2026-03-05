@@ -154,8 +154,8 @@ class RenderObject
         $this->logger->debug(
             message: '[RenderObject] Ultra preload cache set',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'              => __FILE__,
+                'line'              => __LINE__,
                 'cachedObjectCount' => count($ultraPreloadCache),
             ]
         );
@@ -335,7 +335,7 @@ class RenderObject
         }
 
         // Batch-load all file tags in 2 queries instead of 2*N queries.
-        $allFileIds = array_map(fn($f) => (string) $f['fileid'], $fileRecords);
+        $allFileIds       = array_map(fn($f) => (string) $f['fileid'], $fileRecords);
         $allTagIdsPerFile = $this->systemTagMapper->getTagIdsForObjects(
             objIds: $allFileIds,
             objectType: 'files'
@@ -1192,8 +1192,8 @@ class RenderObject
                             $this->logger->debug(
                                 message: '[RenderObject] Object not found in preloaded cache - preserving original UUID',
                                 context: [
-                                    'file' => __FILE__,
-                                    'line' => __LINE__,
+                                    'file'       => __FILE__,
+                                    'line'       => __LINE__,
                                     'identifier' => $identifier,
                                     'context'    => 'extend_array_processing',
                                 ]
@@ -1259,8 +1259,8 @@ class RenderObject
                 $this->logger->debug(
                     message: '[RenderObject] Single object not found in preloaded cache - skipping to prevent N+1 query',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'       => __FILE__,
+                        'line'       => __LINE__,
                         'identifier' => $value,
                         'context'    => 'extend_single_processing',
                     ]
@@ -1360,8 +1360,8 @@ class RenderObject
             $this->logger->debug(
                 message: '[RenderObject] Batch preloaded objects for extend',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'           => __FILE__,
+                    'line'           => __LINE__,
                     'requestedUuids' => count($uuidsToPreload),
                     'loadedObjects'  => count($preloadedObjects),
                 ]
@@ -1499,8 +1499,8 @@ class RenderObject
         $this->logger->debug(
                 message: '[RenderObject] [INVERSE_PRELOAD] Starting batch inverse preload',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'              => __FILE__,
+                    'line'              => __LINE__,
                     'entityCount'       => count($entityUuids),
                     'inverseProperties' => array_keys($inversePropertiesToExtend),
                 ]
@@ -1515,6 +1515,10 @@ class RenderObject
             if ($targetSchemaRef === null || $inversedByField === null) {
                 continue;
             }
+
+            // Normalize inversedBy to an array to support multi-field inverse relations.
+            // Example: "inversedBy": ["moduleA", "moduleB"] means the entity can appear in either field.
+            $inversedByFields = is_array(value: $inversedByField) ? $inversedByField : [$inversedByField];
 
             // Resolve schema reference to ID.
             $targetSchemaId = $this->resolveSchemaReference($targetSchemaRef);
@@ -1532,11 +1536,15 @@ class RenderObject
             // This uses the _relations column with GIN index for efficiency.
             try {
                 $magicMapper        = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
+                // Pass additional field names for multi-field inversedBy so the SQL also searches
+                // columns that may store references in {"value": "uuid"} format not in _relations.
+                $additionalFields = count($inversedByFields) > 1 ? array_slice($inversedByFields, 1) : [];
                 $referencingObjects = $magicMapper->findByRelationBatchInSchema(
                     uuids: $entityUuids,
                     schemaId: (int) $targetSchemaId,
                     registerId: (int) $firstEntity->getRegister(),
-                    fieldName: $inversedByField
+                    fieldName: $inversedByFields[0],
+                    additionalFieldNames: $additionalFields
                 );
 
                 // Pre-initialize cache entries for ALL entities with empty arrays.
@@ -1550,29 +1558,45 @@ class RenderObject
                 }
 
                 // Index the results by which entity UUID they reference.
+                // Check all inversedBy fields (supports array of field names).
                 foreach ($referencingObjects as $refObject) {
-                    $refData        = $refObject->getObject();
-                    $referencedUuid = $refData[$inversedByField] ?? null;
+                    $refData = $refObject->getObject();
 
-                    // Handle both single UUID and array of UUIDs.
-                    $referencedUuids = is_array($referencedUuid) ? $referencedUuid : [$referencedUuid];
+                    foreach ($inversedByFields as $field) {
+                        $referencedUuid = $refData[$field] ?? null;
 
-                    foreach ($referencedUuids as $uuid) {
-                        if ($uuid !== null && in_array($uuid, $entityUuids, true) === true) {
-                            $cacheKey = $uuid.'_'.$propName;
-                            $this->inverseRelationCache[$cacheKey][] = $refObject;
-
-                            // Also add to objects cache for extended rendering.
-                            $this->objectsCache[$refObject->getUuid()] = $refObject;
+                        // Handle object references with {"value": "uuid"} format.
+                        if (is_array($referencedUuid) === true && isset($referencedUuid['value']) === true) {
+                            $referencedUuid = $referencedUuid['value'];
                         }
-                    }
+
+                        // Handle both single UUID and array of UUIDs.
+                        $referencedUuids = is_array($referencedUuid) ? $referencedUuid : [$referencedUuid];
+
+                        foreach ($referencedUuids as $uuid) {
+                            if ($uuid !== null && in_array($uuid, $entityUuids, true) === true) {
+                                $cacheKey = $uuid.'_'.$propName;
+                                // Avoid duplicate entries when the same object matches multiple fields.
+                                $existingUuids = array_map(
+                                    fn(ObjectEntity $obj) => $obj->getUuid(),
+                                    $this->inverseRelationCache[$cacheKey] ?? []
+                                );
+                                if (in_array($refObject->getUuid(), $existingUuids, true) === false) {
+                                    $this->inverseRelationCache[$cacheKey][] = $refObject;
+                                }
+
+                                // Also add to objects cache for extended rendering.
+                                $this->objectsCache[$refObject->getUuid()] = $refObject;
+                            }
+                        }
+                    }//end foreach
                 }
 
                 $this->logger->debug(
                         message: '[RenderObject] [INVERSE_PRELOAD] Batch loaded inverse relationships',
                         context: [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
+                            'file'         => __FILE__,
+                            'line'         => __LINE__,
                             'property'     => $propName,
                             'targetSchema' => $targetSchemaId,
                             'foundObjects' => count($referencingObjects),
@@ -1582,8 +1606,8 @@ class RenderObject
                 $this->logger->warning(
                         message: '[RenderObject] [INVERSE_PRELOAD] Batch preload failed, falling back to per-entity lookup',
                         context: [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
+                            'file'     => __FILE__,
+                            'line'     => __LINE__,
                             'property' => $propName,
                             'error'    => $e->getMessage(),
                         ]
@@ -1688,6 +1712,42 @@ class RenderObject
         // This happens when preloading wasn't done (e.g., single entity render).
         $referencingObjects = $this->objectEntityMapper->findByRelation($entityUuid);
 
+        // For multi-field inversedBy, also search columns directly since _relations
+        // may not contain UUIDs stored in object-format fields (e.g., {"value": "uuid"}).
+        $magicMapper = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
+        foreach ($inversedProperties as $propName => $propConfig) {
+            $inversedByValue = $propConfig['items']['inversedBy'] ?? $propConfig['inversedBy'] ?? null;
+            if (is_array($inversedByValue) === true && count($inversedByValue) > 1) {
+                $targetSchemaRef = $propConfig['items']['$ref'] ?? $propConfig['$ref'] ?? null;
+                if ($targetSchemaRef === null) {
+                    continue;
+                }
+
+                $targetSchemaId = $this->resolveSchemaReference($targetSchemaRef);
+                if (empty($targetSchemaId) === true) {
+                    continue;
+                }
+
+                $additionalFields = array_slice($inversedByValue, 1);
+                $additionalResults = $magicMapper->findByRelationBatchInSchema(
+                    uuids: [$entityUuid],
+                    schemaId: (int) $targetSchemaId,
+                    registerId: (int) $entity->getRegister(),
+                    fieldName: $inversedByValue[0],
+                    additionalFieldNames: $additionalFields
+                );
+
+                // Merge results, deduplicating by UUID.
+                $existingUuids = array_map(fn(ObjectEntity $o) => $o->getUuid(), $referencingObjects);
+                foreach ($additionalResults as $obj) {
+                    if (in_array($obj->getUuid(), $existingUuids, true) === false) {
+                        $referencingObjects[] = $obj;
+                        $existingUuids[] = $obj->getUuid();
+                    }
+                }
+            }
+        }
+
         // Set all found objects to the objectsCache.
         $ids = array_map(
             function (ObjectEntity $object) {
@@ -1744,6 +1804,9 @@ class RenderObject
                 continue;
             }
 
+            // Normalize inversedBy to an array to support multi-field inverse relations.
+            $inversedByProperties = is_array(value: $inversedByProperty) ? $inversedByProperty : [$inversedByProperty];
+
             // Resolve schema reference to actual schema ID.
             $schemaId = $entity->getSchema();
             // Use current schema if no target specified.
@@ -1753,8 +1816,8 @@ class RenderObject
 
             // Always use $propertyName as the target property to populate.
             // This is the property being extended (e.g., 'standaardVersies').
-            // The $inversedByProperty (e.g., 'standaard') is the field on related objects
-            // that points back to this entity.
+            // The $inversedByProperty fields (e.g., ['moduleA', 'moduleB']) are the fields
+            // on related objects that point back to this entity.
             $targetProperty = $propertyName;
 
             // Initialize the target property if not already set to preserve any existing values.
@@ -1762,35 +1825,48 @@ class RenderObject
                 $objectData[$targetProperty] = $isArray ? [] : null;
             }
 
-            // Find objects that have our UUID in their inversedBy field.
-            // The $inversedByProperty (e.g., 'standaard') is the field on related objects
-            // that should contain our UUID.
+            // Find objects that have our UUID in ANY of their inversedBy fields.
+            // Supports multiple field names for cases like koppelingen where the entity
+            // can appear as either moduleA or moduleB.
             $inversedObjects = array_values(
                 array_filter(
                     $referencingObjects,
-                    function (ObjectEntity $object) use ($inversedByProperty, $schemaId, $entity) {
+                    function (ObjectEntity $object) use ($inversedByProperties, $schemaId, $entity) {
                         $data = $object->getObject();
 
-                        // Check the inversedBy field on the related object.
-                        // This field should contain the UUID of the current entity.
-                        $fieldToCheck = $inversedByProperty;
+                        // Check each inversedBy field — match if ANY field contains our UUID.
+                        foreach ($inversedByProperties as $fieldToCheck) {
+                            if (isset($data[$fieldToCheck]) === false) {
+                                continue;
+                            }
 
-                        if (isset($data[$fieldToCheck]) === false) {
-                            return false;
-                        }
+                            $referenceValue = $data[$fieldToCheck];
 
-                        $referenceValue = $data[$fieldToCheck];
+                            // Handle object references with {"value": "uuid"} format.
+                            if (is_array($referenceValue) === true && isset($referenceValue['value']) === true) {
+                                $referenceValue = $referenceValue['value'];
+                            }
 
-                        // Handle both array and single value references.
-                        if (is_array($referenceValue) === true) {
-                            // Check if the current entity's UUID is in the array.
-                            return in_array($entity->getUuid(), $referenceValue, true)
-                                && $object->getSchema() === $schemaId;
-                        }
+                            // Handle both array and single value references.
+                            if (is_array($referenceValue) === true) {
+                                if (in_array($entity->getUuid(), $referenceValue, true) === true
+                                    && $object->getSchema() === $schemaId
+                                ) {
+                                    return true;
+                                }
 
-                        // Check if the reference value matches the current entity's UUID.
-                        return str_ends_with(haystack: $referenceValue, needle: $entity->getUuid())
-                            && $object->getSchema() === $schemaId;
+                                continue;
+                            }
+
+                            // Check if the reference value matches the current entity's UUID.
+                            if (str_ends_with(haystack: $referenceValue, needle: $entity->getUuid()) === true
+                                && $object->getSchema() === $schemaId
+                            ) {
+                                return true;
+                            }
+                        }//end foreach
+
+                        return false;
                     }
                 )
             );
@@ -2037,8 +2113,8 @@ class RenderObject
         $this->logger->info(
                 message: '[RenderObject] [BATCH_PRELOAD] Starting batch preload check',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'        => __FILE__,
+                    'line'        => __LINE__,
                     'extendParam' => $_extend,
                     'entityCount' => count($entities),
                 ]
@@ -2069,8 +2145,8 @@ class RenderObject
             $this->logger->info(
                     message: '[RenderObject] [BATCH_PRELOAD] UUIDs collected',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'        => __FILE__,
+                        'line'        => __LINE__,
                         'uuidCount'   => count($allUuidsToPreload),
                         'sampleUuids' => array_slice($allUuidsToPreload, 0, 3),
                     ]
@@ -2088,8 +2164,8 @@ class RenderObject
                 $this->logger->debug(
                     message: '[RenderObject] Batch preloaded objects for renderEntities',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'           => __FILE__,
+                        'line'           => __LINE__,
                         'entityCount'    => count($entities),
                         'requestedUuids' => count($allUuidsToPreload),
                         'loadedObjects'  => count($preloadedObjects),

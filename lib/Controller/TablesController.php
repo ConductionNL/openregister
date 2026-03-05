@@ -114,8 +114,8 @@ class TablesController extends Controller
             $this->logger->info(
                 message: '[TablesController] Magic table sync completed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
                     'registerId' => $register->getId(),
                     'schemaId'   => $schema->getId(),
                     'result'     => $result,
@@ -175,8 +175,8 @@ class TablesController extends Controller
             $this->logger->error(
                 message: '[TablesController] Magic table sync failed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
                     'registerId' => $registerId,
                     'schemaId'   => $schemaId,
                     'error'      => $e->getMessage(),

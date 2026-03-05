@@ -93,8 +93,8 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
         $this->logger->debug(
             message: '[ObjectVectorizationStrategy] Fetching objects',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'  => __FILE__,
+                'line'  => __LINE__,
                 'views' => $views,
                 'limit' => $limit,
             ]
@@ -124,8 +124,8 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
         $this->logger->debug(
             message: '[ObjectVectorizationStrategy] Fetched objects',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'  => __FILE__,
+                'line'  => __LINE__,
                 'count' => $count,
             ]
         );
@@ -216,8 +216,8 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
         $this->logger->debug(
             message: '[ObjectVectorizationStrategy] Preparing metadata',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'            => __FILE__,
+                'line'            => __LINE__,
                 'object_id'       => $objectId,
                 'has_@self'       => isset($objectData['@self']) === true,
                 '@self_keys'      => $this->extractSelfKeys($objectData),
@@ -369,8 +369,8 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
         $this->logger->debug(
             message: '[ObjectVectorizationStrategy] Serializing object',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'             => __FILE__,
+                'line'             => __LINE__,
                 'objectId'         => $object['id'] ?? 'unknown',
                 'includeMetadata'  => $includeMetadata,
                 'includeRelations' => $includeRelations,

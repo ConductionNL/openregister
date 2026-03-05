@@ -236,8 +236,8 @@ class FileHandler implements TextExtractionHandlerInterface
             $this->logger->warning(
                 message: '[FileHandler] Complex extraction not yet implemented',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
                     'mime_type' => $mimeType,
                 ]
             );
@@ -247,8 +247,8 @@ class FileHandler implements TextExtractionHandlerInterface
             $this->logger->error(
                 message: '[FileHandler] Text extraction failed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );

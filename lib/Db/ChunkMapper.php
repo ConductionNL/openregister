@@ -278,7 +278,7 @@ class ChunkMapper extends QBMapper
             ->orderBy($sqlSort, $sqlOrder);
 
         if ($search !== null && $search !== '') {
-            $qb->andWhere($qb->expr()->iLike('fc.name', $qb->createNamedParameter('%' . $this->db->escapeLikeParameter($search) . '%', IQueryBuilder::PARAM_STR)));
+            $qb->andWhere($qb->expr()->iLike('fc.name', $qb->createNamedParameter('%'.$this->db->escapeLikeParameter($search).'%', IQueryBuilder::PARAM_STR)));
         }
 
         if ($limit !== null) {
@@ -303,7 +303,7 @@ class ChunkMapper extends QBMapper
                 'mimeType'       => $row['mime_type'],
                 'fileSize'       => (int) $row['file_size'],
             ];
-            $row = $result->fetch();
+            $row    = $result->fetch();
         }
 
         $result->closeCursor();
@@ -328,7 +328,7 @@ class ChunkMapper extends QBMapper
             ->where($qb->expr()->eq('ch.source_type', $qb->createNamedParameter('file', IQueryBuilder::PARAM_STR)));
 
         if ($search !== null && $search !== '') {
-            $qb->andWhere($qb->expr()->iLike('fc.name', $qb->createNamedParameter('%' . $this->db->escapeLikeParameter($search) . '%', IQueryBuilder::PARAM_STR)));
+            $qb->andWhere($qb->expr()->iLike('fc.name', $qb->createNamedParameter('%'.$this->db->escapeLikeParameter($search).'%', IQueryBuilder::PARAM_STR)));
         }
 
         $result = $qb->executeQuery();

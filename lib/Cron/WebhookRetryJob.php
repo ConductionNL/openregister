@@ -127,8 +127,8 @@ class WebhookRetryJob extends TimedJob
         $this->logger->debug(
             message: '[WebhookRetryJob] Checking for webhook retries',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'      => __FILE__,
+                'line'      => __LINE__,
                 'timestamp' => $now->format('c'),
             ]
         );
@@ -147,8 +147,8 @@ class WebhookRetryJob extends TimedJob
         $this->logger->info(
             message: '[WebhookRetryJob] Processing webhook retries',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'  => __FILE__,
+                'line'  => __LINE__,
                 'count' => count($failedLogs),
             ]
         );
@@ -163,8 +163,8 @@ class WebhookRetryJob extends TimedJob
                     $this->logger->debug(
                         message: '[WebhookRetryJob] Skipping retry for disabled webhook',
                         context: [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
+                            'file'       => __FILE__,
+                            'line'       => __LINE__,
                             'webhook_id' => $webhook->getId(),
                             'log_id'     => $log->getId(),
                         ]
@@ -177,8 +177,8 @@ class WebhookRetryJob extends TimedJob
                     $this->logger->warning(
                         message: '[WebhookRetryJob] Webhook retry limit exceeded',
                         context: [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
+                            'file'        => __FILE__,
+                            'line'        => __LINE__,
                             'webhook_id'  => $webhook->getId(),
                             'log_id'      => $log->getId(),
                             'attempt'     => $log->getAttempt(),
@@ -192,8 +192,8 @@ class WebhookRetryJob extends TimedJob
                 $this->logger->info(
                     message: '[WebhookRetryJob] Retrying webhook delivery',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'       => __FILE__,
+                        'line'       => __LINE__,
                         'webhook_id' => $webhook->getId(),
                         'log_id'     => $log->getId(),
                         'attempt'    => $log->getAttempt() + 1,
@@ -211,8 +211,8 @@ class WebhookRetryJob extends TimedJob
                     $this->logger->info(
                         message: '[WebhookRetryJob] Webhook retry succeeded',
                         context: [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
+                            'file'       => __FILE__,
+                            'line'       => __LINE__,
                             'webhook_id' => $webhook->getId(),
                             'log_id'     => $log->getId(),
                         ]
@@ -223,8 +223,8 @@ class WebhookRetryJob extends TimedJob
                 $this->logger->warning(
                     message: '[WebhookRetryJob] Webhook retry failed',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'       => __FILE__,
+                        'line'       => __LINE__,
                         'webhook_id' => $webhook->getId(),
                         'log_id'     => $log->getId(),
                         'attempt'    => $log->getAttempt() + 1,
@@ -234,8 +234,8 @@ class WebhookRetryJob extends TimedJob
                 $this->logger->error(
                     message: '[WebhookRetryJob] Error processing webhook retry',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'   => __FILE__,
+                        'line'   => __LINE__,
                         'log_id' => $log->getId(),
                         'error'  => $e->getMessage(),
                     ]

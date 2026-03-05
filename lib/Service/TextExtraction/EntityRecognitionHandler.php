@@ -67,12 +67,12 @@ class EntityRecognitionHandler
     /**
      * Detection method constants.
      */
-    public const METHOD_REGEX           = 'regex';
-    public const METHOD_PRESIDIO        = 'presidio';
-    public const METHOD_OPENANONYMISER  = 'openanonymiser';
-    public const METHOD_LLM             = 'llm';
-    public const METHOD_HYBRID          = 'hybrid';
-    public const METHOD_MANUAL          = 'manual';
+    public const METHOD_REGEX          = 'regex';
+    public const METHOD_PRESIDIO       = 'presidio';
+    public const METHOD_OPENANONYMISER = 'openanonymiser';
+    public const METHOD_LLM            = 'llm';
+    public const METHOD_HYBRID         = 'hybrid';
+    public const METHOD_MANUAL         = 'manual';
 
     /**
      * Category constants.
@@ -582,8 +582,8 @@ class EntityRecognitionHandler
     {
         try {
             // Get OpenAnonymiser settings.
-            $fileSettings              = $this->settingsService->getFileSettingsOnly();
-            $openAnonymiserEndpoint    = $fileSettings['openAnonymiserApiEndpoint'] ?? '';
+            $fileSettings           = $this->settingsService->getFileSettingsOnly();
+            $openAnonymiserEndpoint = $fileSettings['openAnonymiserApiEndpoint'] ?? '';
 
             if (empty($openAnonymiserEndpoint) === true) {
                 $this->logger->warning(

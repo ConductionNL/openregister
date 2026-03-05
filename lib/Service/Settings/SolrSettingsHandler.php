@@ -634,8 +634,8 @@ class SolrSettingsHandler
             $this->logger->info(
                 message: '[SolrSettingsHandler] Search backend changed to: '.$backend,
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'    => __FILE__,
+                    'line'    => __LINE__,
                     'app'     => 'openregister',
                     'backend' => $backend,
                 ]

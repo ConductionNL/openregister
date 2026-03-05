@@ -229,8 +229,8 @@ abstract class AbstractTool implements ToolInterface
         // Build context array with tool execution metadata.
         // Includes tool name, function name, parameters, agent ID, and user ID.
         $context = [
-            'file' => __FILE__,
-            'line' => __LINE__,
+            'file'       => __FILE__,
+            'line'       => __LINE__,
             'tool'       => $this->getName(),
             'function'   => $functionName,
             'parameters' => $parameters,

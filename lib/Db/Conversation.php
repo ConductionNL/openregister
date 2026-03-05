@@ -150,15 +150,15 @@ class Conversation extends Entity implements JsonSerializable
      */
     public function __construct()
     {
-        $this->addType('uuid', 'string');
-        $this->addType('title', 'string');
-        $this->addType('userId', 'string');
-        $this->addType('organisation', 'string');
-        $this->addType('agentId', 'integer');
-        $this->addType('metadata', 'json');
-        $this->addType('deletedAt', 'datetime');
-        $this->addType('created', 'datetime');
-        $this->addType('updated', 'datetime');
+        $this->addType(fieldName: 'uuid', type: 'string');
+        $this->addType(fieldName: 'title', type: 'string');
+        $this->addType(fieldName: 'userId', type: 'string');
+        $this->addType(fieldName: 'organisation', type: 'string');
+        $this->addType(fieldName: 'agentId', type: 'integer');
+        $this->addType(fieldName: 'metadata', type: 'json');
+        $this->addType(fieldName: 'deletedAt', type: 'datetime');
+        $this->addType(fieldName: 'created', type: 'datetime');
+        $this->addType(fieldName: 'updated', type: 'datetime');
     }//end __construct()
 
     /**

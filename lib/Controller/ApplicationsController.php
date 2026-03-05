@@ -192,8 +192,8 @@ class ApplicationsController extends Controller
             $this->logger->error(
                 message: '[ApplicationsController] Failed to get applications',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]
@@ -241,8 +241,8 @@ class ApplicationsController extends Controller
             $this->logger->error(
                 message: '[ApplicationsController] Failed to get application',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'id'    => $id,
                     'error' => $e->getMessage(),
                 ]
@@ -288,8 +288,8 @@ class ApplicationsController extends Controller
             $this->logger->error(
                 message: '[ApplicationsController] Failed to create application',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]
@@ -342,8 +342,8 @@ class ApplicationsController extends Controller
             $this->logger->error(
                 message: '[ApplicationsController] Failed to update application',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'id'    => $id,
                     'error' => $e->getMessage(),
                 ]
@@ -415,8 +415,8 @@ class ApplicationsController extends Controller
             $this->logger->error(
                 message: '[ApplicationsController] Failed to delete application',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'id'    => $id,
                     'error' => $e->getMessage(),
                 ]

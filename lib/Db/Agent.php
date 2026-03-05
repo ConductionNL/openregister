@@ -340,36 +340,36 @@ class Agent extends Entity implements JsonSerializable
      */
     public function __construct()
     {
-        $this->addType('uuid', 'string');
-        $this->addType('name', 'string');
-        $this->addType('description', 'string');
-        $this->addType('type', 'string');
-        $this->addType('provider', 'string');
-        $this->addType('model', 'string');
-        $this->addType('prompt', 'string');
-        $this->addType('temperature', 'float');
-        $this->addType('maxTokens', 'integer');
-        $this->addType('configuration', 'json');
-        $this->addType('organisation', 'string');
-        $this->addType('owner', 'string');
-        $this->addType('active', 'boolean');
-        $this->addType('enableRag', 'boolean');
-        $this->addType('ragSearchMode', 'string');
-        $this->addType('ragNumSources', 'integer');
-        $this->addType('ragIncludeFiles', 'boolean');
-        $this->addType('ragIncludeObjects', 'boolean');
-        $this->addType('requestQuota', 'integer');
-        $this->addType('tokenQuota', 'integer');
-        $this->addType('views', 'json');
-        $this->addType('searchFiles', 'boolean');
-        $this->addType('searchObjects', 'boolean');
-        $this->addType('isPrivate', 'boolean');
-        $this->addType('invitedUsers', 'json');
-        $this->addType('groups', 'json');
-        $this->addType('tools', 'json');
-        $this->addType('user', 'string');
-        $this->addType('created', 'datetime');
-        $this->addType('updated', 'datetime');
+        $this->addType(fieldName: 'uuid', type: 'string');
+        $this->addType(fieldName: 'name', type: 'string');
+        $this->addType(fieldName: 'description', type: 'string');
+        $this->addType(fieldName: 'type', type: 'string');
+        $this->addType(fieldName: 'provider', type: 'string');
+        $this->addType(fieldName: 'model', type: 'string');
+        $this->addType(fieldName: 'prompt', type: 'string');
+        $this->addType(fieldName: 'temperature', type: 'float');
+        $this->addType(fieldName: 'maxTokens', type: 'integer');
+        $this->addType(fieldName: 'configuration', type: 'json');
+        $this->addType(fieldName: 'organisation', type: 'string');
+        $this->addType(fieldName: 'owner', type: 'string');
+        $this->addType(fieldName: 'active', type: 'boolean');
+        $this->addType(fieldName: 'enableRag', type: 'boolean');
+        $this->addType(fieldName: 'ragSearchMode', type: 'string');
+        $this->addType(fieldName: 'ragNumSources', type: 'integer');
+        $this->addType(fieldName: 'ragIncludeFiles', type: 'boolean');
+        $this->addType(fieldName: 'ragIncludeObjects', type: 'boolean');
+        $this->addType(fieldName: 'requestQuota', type: 'integer');
+        $this->addType(fieldName: 'tokenQuota', type: 'integer');
+        $this->addType(fieldName: 'views', type: 'json');
+        $this->addType(fieldName: 'searchFiles', type: 'boolean');
+        $this->addType(fieldName: 'searchObjects', type: 'boolean');
+        $this->addType(fieldName: 'isPrivate', type: 'boolean');
+        $this->addType(fieldName: 'invitedUsers', type: 'json');
+        $this->addType(fieldName: 'groups', type: 'json');
+        $this->addType(fieldName: 'tools', type: 'json');
+        $this->addType(fieldName: 'user', type: 'string');
+        $this->addType(fieldName: 'created', type: 'datetime');
+        $this->addType(fieldName: 'updated', type: 'datetime');
     }//end __construct()
 
     /**

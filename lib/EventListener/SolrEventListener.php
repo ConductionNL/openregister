@@ -98,7 +98,7 @@ class SolrEventListener implements IEventListener
                 );
                 $this->handleObjectCreated($event);
                 return;
-            }
+            }//end if
 
             if ($event instanceof ObjectUpdatedEvent) {
                 $this->logger->debug(
@@ -137,8 +137,8 @@ class SolrEventListener implements IEventListener
             $this->logger->debug(
                 message: '[SolrEventListener] Received unhandled event',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
                     'eventClass' => get_class($event),
                     'app'        => 'openregister',
                 ]
@@ -148,8 +148,8 @@ class SolrEventListener implements IEventListener
             $this->logger->error(
                 message: '[SolrEventListener] Error handling event',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
                     'eventClass' => get_class($event),
                     'error'      => $e->getMessage(),
                     'trace'      => $e->getTraceAsString(),
@@ -173,8 +173,8 @@ class SolrEventListener implements IEventListener
         $this->logger->info(
             message: '[SolrEventListener] Indexing newly created object',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'       => __FILE__,
+                'line'       => __LINE__,
                 'objectId'   => $object->getId(),
                 'objectUuid' => $object->getUuid(),
                 'objectName' => $object->getName(),
@@ -209,8 +209,8 @@ class SolrEventListener implements IEventListener
         $this->logger->info(
             message: '[SolrEventListener] Reindexing updated object',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'          => __FILE__,
+                'line'          => __LINE__,
                 'objectId'      => $newObject->getId(),
                 'objectUuid'    => $newObject->getUuid(),
                 'objectName'    => $newObject->getName(),
@@ -245,8 +245,8 @@ class SolrEventListener implements IEventListener
         $this->logger->info(
             message: '[SolrEventListener] Removing deleted object from index',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'       => __FILE__,
+                'line'       => __LINE__,
                 'objectId'   => $object->getId(),
                 'objectUuid' => $object->getUuid(),
                 'objectName' => $object->getName(),
@@ -280,8 +280,8 @@ class SolrEventListener implements IEventListener
         $this->logger->info(
             message: '[SolrEventListener] Schema created, updating Solr field mappings',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'        => __FILE__,
+                'line'        => __LINE__,
                 'schemaId'    => $schema->getId(),
                 'schemaTitle' => $schema->getTitle(),
                 'app'         => 'openregister',
@@ -308,8 +308,8 @@ class SolrEventListener implements IEventListener
         $this->logger->info(
             message: '[SolrEventListener] Schema updated, checking for field mapping changes',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'        => __FILE__,
+                'line'        => __LINE__,
                 'schemaId'    => $newSchema->getId(),
                 'schemaTitle' => $newSchema->getTitle(),
                 'app'         => 'openregister',
@@ -321,8 +321,8 @@ class SolrEventListener implements IEventListener
             $this->logger->info(
                 message: '[SolrEventListener] Schema fields changed, triggering reindex',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
                     'schemaId' => $newSchema->getId(),
                     'app'      => 'openregister',
                 ]
@@ -348,8 +348,8 @@ class SolrEventListener implements IEventListener
         $this->logger->info(
             message: '[SolrEventListener] Schema deleted, cleaning up Solr entries',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'        => __FILE__,
+                'line'        => __LINE__,
                 'schemaId'    => $schema->getId(),
                 'schemaTitle' => $schema->getTitle(),
                 'app'         => 'openregister',
@@ -391,8 +391,8 @@ class SolrEventListener implements IEventListener
         $this->logger->info(
             message: '[SolrEventListener] Schema reindex requested',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'     => __FILE__,
+                'line'     => __LINE__,
                 'schemaId' => $schemaId,
                 'app'      => 'openregister',
                 'note'     => 'Background reindex should be implemented here',

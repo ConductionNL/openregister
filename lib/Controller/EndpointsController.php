@@ -162,8 +162,8 @@ class EndpointsController extends Controller
             $this->logger->error(
                 message: '[EndpointsController] Error listing endpoints: '.$e->getMessage(),
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'trace' => $e->getTraceAsString(),
                 ]
             );
@@ -220,8 +220,8 @@ class EndpointsController extends Controller
             $this->logger->error(
                 message: '[EndpointsController] Error retrieving endpoint: '.$e->getMessage(),
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'id'    => $id,
                     'trace' => $e->getTraceAsString(),
                 ]
@@ -294,8 +294,8 @@ class EndpointsController extends Controller
             $this->logger->error(
                 message: '[EndpointsController] Error creating endpoint: '.$e->getMessage(),
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'data'  => $this->request->getParams(),
                     'trace' => $e->getTraceAsString(),
                 ]
@@ -371,8 +371,8 @@ class EndpointsController extends Controller
             $this->logger->error(
                 message: '[EndpointsController] Error updating endpoint: '.$e->getMessage(),
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'id'    => $id,
                     'data'  => $this->request->getParams(),
                     'trace' => $e->getTraceAsString(),
@@ -445,8 +445,8 @@ class EndpointsController extends Controller
             $this->logger->error(
                 message: '[EndpointsController] Error deleting endpoint: '.$e->getMessage(),
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'id'    => $id,
                     'trace' => $e->getTraceAsString(),
                 ]
@@ -533,8 +533,8 @@ class EndpointsController extends Controller
             $this->logger->error(
                 message: '[EndpointsController] Error testing endpoint: '.$e->getMessage(),
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'id'    => $id,
                     'trace' => $e->getTraceAsString(),
                 ]
@@ -606,8 +606,8 @@ class EndpointsController extends Controller
             $this->logger->error(
                 message: '[EndpointsController] Error retrieving endpoint logs: '.$e->getMessage(),
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'id'    => $id,
                     'trace' => $e->getTraceAsString(),
                 ]
@@ -671,8 +671,8 @@ class EndpointsController extends Controller
             $this->logger->error(
                 message: '[EndpointsController] Error retrieving endpoint log statistics: '.$e->getMessage(),
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'id'    => $id,
                     'trace' => $e->getTraceAsString(),
                 ]
@@ -762,8 +762,8 @@ class EndpointsController extends Controller
             $this->logger->error(
                 message: '[EndpointsController] Error retrieving endpoint logs: '.$e->getMessage(),
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'trace' => $e->getTraceAsString(),
                 ]
             );

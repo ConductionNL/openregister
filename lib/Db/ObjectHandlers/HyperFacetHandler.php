@@ -241,8 +241,8 @@ class HyperFacetHandler
             $this->logger->debug(
                 message: '[HyperFacetHandler] Hyper cache hit - instant facet response',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'         => __FILE__,
+                    'line'         => __LINE__,
                     'cacheKey'     => substr($cacheKey, 0, 20).'...',
                     'responseTime' => '<10ms',
                     'source'       => 'cache_layer_1',
@@ -258,8 +258,8 @@ class HyperFacetHandler
             $this->logger->debug(
                 message: '[HyperFacetHandler] Dataset analysis completed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'          => __FILE__,
+                    'line'          => __LINE__,
                     'estimatedSize' => $datasetStats['estimated_size'],
                     'strategy'      => $optimizationStrategy,
                     'analysisTime'  => round((microtime(true) - $startTime) * 1000, 2).'ms',
@@ -322,8 +322,8 @@ class HyperFacetHandler
         $this->logger->debug(
             message: '[HyperFacetHandler] Hyper-optimized facets completed',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'          => __FILE__,
+                'line'          => __LINE__,
                 'strategy'      => $optimizationStrategy,
                 'executionTime' => $executionTime.'ms',
                 'facetCount'    => count($results),
@@ -538,8 +538,8 @@ class HyperFacetHandler
         $this->logger->debug(
             message: '[HyperFacetHandler] Using smart sampling strategy',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'                => __FILE__,
+                'line'                => __LINE__,
                 'totalSize'           => $totalSize,
                 'sampleRate'          => $sampleRate,
                 'sampleSize'          => $sampleSize,
@@ -608,8 +608,8 @@ class HyperFacetHandler
         $this->logger->debug(
             message: '[HyperFacetHandler] Using HyperLogLog estimation strategy',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'               => __FILE__,
+                'line'               => __LINE__,
                 'datasetSize'        => $datasetStats['estimated_size'],
                 'expectedAccuracy'   => '~95%',
                 'targetResponseTime' => '<50ms',
@@ -695,8 +695,8 @@ class HyperFacetHandler
                     $this->logger->debug(
                         message: '[HyperFacetHandler] Metadata facets completed',
                         context: [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
+                            'file'              => __FILE__,
+                            'line'              => __LINE__,
                             'executionTime'     => $executionTime.'ms',
                             'facetCount'        => count($results),
                             'batchOptimization' => 'enabled',

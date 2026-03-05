@@ -134,8 +134,8 @@ class LockingHandler
         $this->logger->debug(
             message: '[LockingHandler] Locking object',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'       => __FILE__,
+                'line'       => __LINE__,
                 'identifier' => $identifier,
                 'process'    => $process,
                 'duration'   => $duration,
@@ -189,8 +189,8 @@ class LockingHandler
         $this->logger->debug(
             message: '[LockingHandler] Unlocking object',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'       => __FILE__,
+                'line'       => __LINE__,
                 'identifier' => $identifier,
             ]
         );

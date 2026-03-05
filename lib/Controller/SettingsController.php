@@ -699,8 +699,8 @@ class SettingsController extends Controller
             $this->logger->error(
                 message: '[SettingsController] Failed to get database info',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]

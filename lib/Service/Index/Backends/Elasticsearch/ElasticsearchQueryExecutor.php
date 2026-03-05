@@ -87,8 +87,8 @@ class ElasticsearchQueryExecutor
             $this->logger->debug(
                 message: '[ElasticsearchQueryExecutor] Search executed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'index' => $index,
                     'hits'  => $result['hits']['total']['value'] ?? 0,
                 ]
@@ -99,8 +99,8 @@ class ElasticsearchQueryExecutor
             $this->logger->error(
                 message: '[ElasticsearchQueryExecutor] Search failed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -178,8 +178,8 @@ class ElasticsearchQueryExecutor
             $this->logger->error(
                 message: '[ElasticsearchQueryExecutor] Failed to get document count',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );

@@ -125,12 +125,12 @@ class Message extends Entity implements JsonSerializable
      */
     public function __construct()
     {
-        $this->addType('uuid', 'string');
-        $this->addType('conversationId', 'integer');
-        $this->addType('role', 'string');
-        $this->addType('content', 'string');
-        $this->addType('sources', 'json');
-        $this->addType('created', 'datetime');
+        $this->addType(fieldName: 'uuid', type: 'string');
+        $this->addType(fieldName: 'conversationId', type: 'integer');
+        $this->addType(fieldName: 'role', type: 'string');
+        $this->addType(fieldName: 'content', type: 'string');
+        $this->addType(fieldName: 'sources', type: 'json');
+        $this->addType(fieldName: 'created', type: 'datetime');
     }//end __construct()
 
     /**

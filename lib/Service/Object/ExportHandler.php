@@ -104,8 +104,8 @@ class ExportHandler
         $this->logger->info(
             message: '[ExportHandler] Starting export',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'     => __FILE__,
+                'line'     => __LINE__,
                 'register' => $register->getSlug(),
                 'schema'   => $schema->getSlug(),
                 'type'     => $type,
@@ -224,8 +224,8 @@ class ExportHandler
         $this->logger->info(
             message: '[ExportHandler] Starting import',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'         => __FILE__,
+                'line'         => __LINE__,
                 'register'     => $register->getSlug(),
                 'filename'     => $filename,
                 'schema'       => $schema?->getSlug(),
@@ -254,8 +254,8 @@ class ExportHandler
                 $this->logger->debug(
                     message: '[ExportHandler] Auto-selected schema for CSV import',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'   => __FILE__,
+                        'line'   => __LINE__,
                         'schema' => $schema->getSlug(),
                     ]
                 );

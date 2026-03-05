@@ -285,8 +285,8 @@ class UserService
             $this->logger->debug(
                     message: '[UserService] UserService: Dispatched UserProfileUpdatedEvent',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'    => __FILE__,
+                        'line'    => __LINE__,
                         'app'     => 'openregister',
                         'userId'  => $user->getUID(),
                         'changes' => $changes,
@@ -425,8 +425,8 @@ class UserService
                 $this->logger->debug(
                     message: '[UserService] User quota calculation failed for user: '.$userId,
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'      => __FILE__,
+                        'line'      => __LINE__,
                         'exception' => $quotaException->getMessage(),
                     ]
                 );
@@ -453,8 +453,8 @@ class UserService
             $this->logger->warning(
                 message: '[UserService] Failed to build quota information for user: '.$user->getUID(),
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
                     'exception' => $e->getMessage(),
                 ]
             );
@@ -484,8 +484,8 @@ class UserService
                 $this->logger->warning(
                     message: '[UserService] Memory usage too high for quota calculation',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'         => __FILE__,
+                        'line'         => __LINE__,
                         'user'         => $userId,
                         'memory_usage' => $currentMemoryUsage,
                     ]
@@ -519,8 +519,8 @@ class UserService
             $this->logger->warning(
                 message: '[UserService] Memory-safe quota calculation failed for user: '.$userId,
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
                     'exception' => $e->getMessage(),
                 ]
             );
@@ -578,8 +578,8 @@ class UserService
             $this->logger->warning(
                 message: '[UserService] AccountManager failed for user: '.$user->getUID(),
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
                     'exception' => $e->getMessage(),
                 ]
             );
@@ -662,14 +662,14 @@ class UserService
                 $this->logger->debug(
                     message: '[UserService] Failed to load account property: '.$propertyName,
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'      => __FILE__,
+                        'line'      => __LINE__,
                         'user'      => $user->getUID(),
                         'exception' => $e->getMessage(),
                     ]
                 );
             }
-        }
+        }//end foreach
 
         return $additionalInfo;
     }//end getAccountManagerPropertiesSelectively()
@@ -781,8 +781,8 @@ class UserService
             $this->logger->warning(
                 message: '[UserService] Failed to update AccountManager properties for user: '.$user->getUID(),
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
                     'exception' => $e->getMessage(),
                 ]
             );

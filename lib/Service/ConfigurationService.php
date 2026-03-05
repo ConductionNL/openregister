@@ -581,7 +581,7 @@ class ConfigurationService
             $this->logger->info(
                 message: '[ConfigurationService] Configuration is not from a remote source, skipping version check',
                 context: [
-                    'file' => __FILE__, 
+                    'file' => __FILE__,
                     'line' => __LINE__,
                 ]
             );
@@ -593,7 +593,7 @@ class ConfigurationService
             $this->logger->warning(
                 message: '[ConfigurationService] Configuration has no source URL, cannot check remote version',
                 context: [
-                    'file' => __FILE__, 
+                    'file' => __FILE__,
                     'line' => __LINE__,
                 ]
             );
@@ -608,8 +608,9 @@ class ConfigurationService
                 $this->logger->error(
                     message: '[ConfigurationService] Failed to fetch remote configuration',
                     context: [
-                        'file' => __FILE__, 'line' => __LINE__,
-                        'error' => $remoteData->getData()
+                        'file'  => __FILE__,
+                        'line'  => __LINE__,
+                        'error' => $remoteData->getData(),
                     ]
                 );
                 return null;
@@ -622,7 +623,7 @@ class ConfigurationService
                 $this->logger->warning(
                     message: '[ConfigurationService] Remote configuration does not contain a version field',
                     context: [
-                        'file' => __FILE__, 
+                        'file' => __FILE__,
                         'line' => __LINE__,
                     ]
                 );
@@ -823,7 +824,8 @@ class ConfigurationService
             $this->logger->error(
                 message: '[ConfigurationService] Failed to get configured app version',
                 context: [
-                    'file' => __FILE__, 'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'appId' => $appId,
                     'error' => $e->getMessage(),
                 ]
@@ -860,7 +862,8 @@ class ConfigurationService
             $this->logger->info(
                 message: '[ConfigurationService] Configured app version updated',
                 context: [
-                    'file' => __FILE__, 'line' => __LINE__,
+                    'file'    => __FILE__,
+                    'line'    => __LINE__,
                     'appId'   => $appId,
                     'version' => $version,
                 ]
@@ -870,7 +873,8 @@ class ConfigurationService
             $this->logger->error(
                 message: '[ConfigurationService] Failed to set configured app version',
                 context: [
-                    'file' => __FILE__, 'line' => __LINE__,
+                    'file'    => __FILE__,
+                    'line'    => __LINE__,
                     'appId'   => $appId,
                     'version' => $version,
                     'error'   => $e->getMessage(),

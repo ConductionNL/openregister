@@ -224,8 +224,8 @@ class FacetCacheHandler
         $this->logger->debug(
             message: '[FacetCacheHandler] Cached facetable fields configuration',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'       => __FILE__,
+                'line'       => __LINE__,
                 'schemaId'   => $schemaId,
                 'fieldCount' => count($facetableFields),
                 'ttl'        => $ttl,
@@ -265,8 +265,8 @@ class FacetCacheHandler
             $this->logger->debug(
                 message: '[FacetCacheHandler] Schema facet cache table does not exist yet, skipping database cache invalidation',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
                     'schemaId' => $schemaId,
                     'error'    => $e->getMessage(),
                 ]
@@ -293,8 +293,8 @@ class FacetCacheHandler
         $this->logger->info(
             message: '[FacetCacheHandler] Schema facet cache invalidated',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'                 => __FILE__,
+                'line'                 => __LINE__,
                 'schemaId'             => $schemaId,
                 'operation'            => $operation,
                 'deletedDbEntries'     => $deletedCount,
@@ -335,8 +335,8 @@ class FacetCacheHandler
         $this->logger->info(
             message: '[FacetCacheHandler] All facet caches cleared',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'                 => __FILE__,
+                'line'                 => __LINE__,
                 'deletedDbEntries'     => $deletedCount,
                 'clearedMemoryEntries' => $memoryCacheSize,
                 'executionTime'        => $executionTime.'ms',
@@ -368,8 +368,8 @@ class FacetCacheHandler
             $this->logger->info(
                 message: '[FacetCacheHandler] Cleaned expired facet cache entries',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'          => __FILE__,
+                    'line'          => __LINE__,
                     'count'         => $deletedCount,
                     'executionTime' => $executionTime.'ms',
                 ]
@@ -449,8 +449,8 @@ class FacetCacheHandler
         $this->logger->debug(
             message: '[FacetCacheHandler] Distributed facet result caches cleared',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'   => __FILE__,
+                'line'   => __LINE__,
                 'caches' => $cacheNames,
             ]
         );

@@ -153,8 +153,8 @@ class FileValidationHandler
             $this->logger->warning(
                 message: '[FileValidationHandler] Executable file upload blocked',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
                     'app'       => 'openregister',
                     'filename'  => $fileName,
                     'extension' => $extension,
@@ -207,8 +207,8 @@ class FileValidationHandler
                 $this->logger->warning(
                     message: '[FileValidationHandler] Executable magic bytes detected',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'     => __FILE__,
+                        'line'     => __LINE__,
                         'app'      => 'openregister',
                         'filename' => $fileName,
                         'type'     => $description,

@@ -183,8 +183,8 @@ class MagicRbacHandler
             $this->logger->debug(
                 message: '[MagicRbacHandler] No access conditions met, denying all',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'   => __FILE__,
+                    'line'   => __LINE__,
                     'userId' => $userId,
                     'action' => $action,
                 ]

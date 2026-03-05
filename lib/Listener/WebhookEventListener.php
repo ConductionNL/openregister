@@ -116,8 +116,8 @@ class WebhookEventListener implements IEventListener
             $this->logger->warning(
                 message: '[WebhookEventListener] Could not extract payload from event',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'event' => $eventClass,
                 ]
             );
@@ -127,8 +127,8 @@ class WebhookEventListener implements IEventListener
         $this->logger->debug(
             message: '[WebhookEventListener] Processing event for webhooks',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'  => __FILE__,
+                'line'  => __LINE__,
                 'event' => $eventClass,
             ]
         );

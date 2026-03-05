@@ -75,7 +75,7 @@ class SolrWarmupJob extends QueuedJob
      */
     public function __construct(ITimeFactory $time)
     {
-        parent::__construct($time);
+        parent::__construct(time: $time);
     }//end __construct()
 
     /**
@@ -115,8 +115,8 @@ class SolrWarmupJob extends QueuedJob
         $logger->info(
             message: '[SolrWarmupJob] 🔥 SOLR Warmup Job Started',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'           => __FILE__,
+                'line'           => __LINE__,
                 'job_id'         => $this->getId(),
                 'max_objects'    => $maxObjects,
                 'mode'           => $mode,
@@ -141,8 +141,8 @@ class SolrWarmupJob extends QueuedJob
                 $logger->warning(
                     message: '[SolrWarmupJob] SOLR Warmup Job skipped - SOLR not available',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'         => __FILE__,
+                        'line'         => __LINE__,
                         'job_id'       => $this->getId(),
                         'triggered_by' => $triggeredBy,
                     ]
@@ -156,8 +156,8 @@ class SolrWarmupJob extends QueuedJob
             $logger->info(
                 message: '[SolrWarmupJob] Starting SOLR index warmup',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'          => __FILE__,
+                    'line'          => __LINE__,
                     'schemas_found' => count($schemas),
                     'max_objects'   => $maxObjects,
                     'mode'          => $mode,
@@ -178,8 +178,8 @@ class SolrWarmupJob extends QueuedJob
                 $logger->info(
                     message: '[SolrWarmupJob] ✅ SOLR Warmup Job Completed Successfully',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'                   => __FILE__,
+                        'line'                   => __LINE__,
                         'job_id'                 => $this->getId(),
                         'execution_time_seconds' => round($executionTime, 2),
                         'objects_indexed'        => $result['operations']['objects_indexed'] ?? 0,
@@ -201,8 +201,8 @@ class SolrWarmupJob extends QueuedJob
                 $logger->error(
                     message: '[SolrWarmupJob] ❌ SOLR Warmup Job Failed',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'                   => __FILE__,
+                        'line'                   => __LINE__,
                         'job_id'                 => $this->getId(),
                         'execution_time_seconds' => round($executionTime, 2),
                         'error'                  => $result['error'] ?? 'Unknown error',
@@ -250,6 +250,7 @@ class SolrWarmupJob extends QueuedJob
         // Check if SOLR service is available and configured.
         // Returns false if SOLR is not configured or connection fails.
         if ($solrService->isAvailable() === false) {
+            // phpcs:ignore Generic.Files.LineLength.MaxExceeded
             $logger->debug(message: '[SolrWarmupJob] SOLR Warmup Job skipped - SOLR service not available', context: ['file' => __FILE__, 'line' => __LINE__]);
             return false;
         }

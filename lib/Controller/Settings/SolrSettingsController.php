@@ -148,8 +148,8 @@ class SolrSettingsController extends Controller
                         $this->logger->warning(
                             message: '[SettingsController] Failed to list Solr collections',
                             context: [
-                                'file' => __FILE__,
-                                'line' => __LINE__,
+                                'file'  => __FILE__,
+                                'line'  => __LINE__,
                                 'error' => $e->getMessage(),
                             ]
                         );
@@ -176,8 +176,8 @@ class SolrSettingsController extends Controller
             $this->logger->error(
                 message: '[SettingsController] Failed to get Solr info',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]

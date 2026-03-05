@@ -431,7 +431,7 @@ class SettingsService
                 'active'    => 'solr',
                 'available' => ['solr', 'elasticsearch'],
             ];
-        }
+        }//end try
     }//end getSearchBackendConfig()
 
     /**
@@ -986,8 +986,8 @@ class SettingsService
         $this->logger->info(
             message: '[SettingsService] 🚀 STARTING MASS VALIDATION',
             context: [
-                'file' => __FILE__,
-                    'line' => __LINE__,
+                'file'          => __FILE__,
+                'line'          => __LINE__,
                 'totalObjects'  => $totalObjects,
                 'batchSize'     => $batchSize,
                 'mode'          => $mode,
@@ -1026,8 +1026,8 @@ class SettingsService
         $this->logger->info(
             message: '[SettingsService] 📋 BATCH JOBS CREATED',
             context: [
-                'file' => __FILE__,
-                    'line' => __LINE__,
+                'file'              => __FILE__,
+                'line'              => __LINE__,
                 'totalBatches'      => count($batchJobs),
                 'estimatedDuration' => round((count($batchJobs) * 2)).'s',
             ]
@@ -1125,8 +1125,8 @@ class SettingsService
         $this->logger->info(
             message: '[SettingsService] ✅ MASS VALIDATION COMPLETED',
             context: [
-                'file' => __FILE__,
-                    'line' => __LINE__,
+                'file'             => __FILE__,
+                'line'             => __LINE__,
                 'successful'       => $results['stats']['successful_saves'],
                 'failed'           => $results['stats']['failed_saves'],
                 'total'            => $results['stats']['processed_objects'],
@@ -1272,8 +1272,8 @@ class SettingsService
             $this->logger->info(
                 message: '[SettingsService] 📈 MASS VALIDATION PROGRESS',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'             => __FILE__,
+                    'line'             => __LINE__,
                     'batchNumber'      => $job['batchNumber'],
                     'totalBatches'     => count($batchJobs),
                     'processed'        => $batchProcessed,
@@ -1293,8 +1293,8 @@ class SettingsService
                 $this->logger->debug(
                     message: '[SettingsService] 🧹 MEMORY CLEANUP',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'        => __FILE__,
+                        'line'        => __LINE__,
                         'memoryUsage' => round(memory_get_usage() / 1024 / 1024, 2).'MB',
                         'peakMemory'  => round(memory_get_peak_usage() / 1024 / 1024, 2).'MB',
                     ]
@@ -1334,8 +1334,8 @@ class SettingsService
             $this->logger->info(
                 message: '[SettingsService] 🔄 PROCESSING PARALLEL CHUNK',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'           => __FILE__,
+                    'line'           => __LINE__,
                     'chunkIndex'     => $chunkIndex + 1,
                     'totalChunks'    => count($batchChunks),
                     'batchesInChunk' => count($chunk),
@@ -1370,8 +1370,8 @@ class SettingsService
             $this->logger->info(
                 message: '[SettingsService] ✅ COMPLETED PARALLEL CHUNK',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'             => __FILE__,
+                    'line'             => __LINE__,
                     'chunkIndex'       => $chunkIndex + 1,
                     'chunkTime'        => $chunkTime.'ms',
                     'objectsProcessed' => $chunkProcessed,
@@ -1595,8 +1595,8 @@ class SettingsService
             $this->logger->warning(
                 message: '[SettingsService] Failed to get expected schema fields',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -1944,8 +1944,8 @@ class SettingsService
                     $this->logger->debug(
                             message: '[SettingsService] Failed to query magic mapper table',
                             context: [
-                                'file' => __FILE__,
-                                'line' => __LINE__,
+                                'file'  => __FILE__,
+                                'line'  => __LINE__,
                                 'table' => $fullTableName,
                                 'error' => $e->getMessage(),
                             ]

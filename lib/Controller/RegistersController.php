@@ -330,7 +330,7 @@ class RegistersController extends Controller
                                     context: ['file' => __FILE__, 'line' => __LINE__]
                                 );
                             }
-                        }
+                        }//end foreach
 
                         unset($schema);
                         // CRITICAL: Unset reference to prevent corruption of array in subsequent iterations.
@@ -767,8 +767,8 @@ class RegistersController extends Controller
             $this->logger->info(
                 message: '[RegistersController] Publishing register OAS to GitHub',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'          => __FILE__,
+                    'line'          => __LINE__,
                     'register_id'   => $id,
                     'register_slug' => $register->getSlug(),
                     'owner'         => $owner,
@@ -810,8 +810,8 @@ class RegistersController extends Controller
             $this->logger->info(
                 message: "[RegistersController] Successfully published register OAS {$register->getTitle()} to GitHub",
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
                     'owner'    => $owner,
                     'repo'     => $repo,
                     'branch'   => $branch,
@@ -829,8 +829,8 @@ class RegistersController extends Controller
                 $this->logger->warning(
                     message: '[RegistersController] Could not fetch repository default branch',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'  => __FILE__,
+                        'line'  => __LINE__,
                         'owner' => $owner,
                         'repo'  => $repo,
                         'error' => $e->getMessage(),
@@ -941,8 +941,8 @@ class RegistersController extends Controller
             $this->logger->debug(
                 message: '[RegistersController] Import parameters received',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'           => __FILE__,
+                    'line'           => __LINE__,
                     'includeObjects' => $includeObjects,
                     'validation'     => $validation,
                     'events'         => $events,
@@ -1288,8 +1288,8 @@ class RegistersController extends Controller
             $this->logger->info(
                 message: '[RegistersController] Register published',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'           => __FILE__,
+                    'line'           => __LINE__,
                     'register_id'    => $id,
                     'published_date' => $date->format('Y-m-d H:i:s'),
                 ]
@@ -1302,8 +1302,8 @@ class RegistersController extends Controller
             $this->logger->error(
                 message: '[RegistersController] Failed to publish register',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'        => __FILE__,
+                    'line'        => __LINE__,
                     'register_id' => $id,
                     'error'       => $e->getMessage(),
                 ]
@@ -1389,8 +1389,8 @@ class RegistersController extends Controller
             $this->logger->info(
                 message: '[RegistersController] Register depublished',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'             => __FILE__,
+                    'line'             => __LINE__,
                     'register_id'      => $id,
                     'depublished_date' => $date->format('Y-m-d H:i:s'),
                 ]
@@ -1403,8 +1403,8 @@ class RegistersController extends Controller
             $this->logger->error(
                 message: '[RegistersController] Failed to depublish register',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'        => __FILE__,
+                    'line'        => __LINE__,
                     'register_id' => $id,
                     'error'       => $e->getMessage(),
                 ]

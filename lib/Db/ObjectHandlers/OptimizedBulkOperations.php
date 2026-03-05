@@ -146,8 +146,8 @@ class OptimizedBulkOperations
             $this->logger->info(
                 message: "[OptimizedBulkOperations] Starting ultra-fast bulk operations",
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'          => __FILE__,
+                    'line'          => __LINE__,
                     'total_objects' => count($allObjects),
                     'chunks'        => $totalChunks,
                 ]
@@ -169,8 +169,8 @@ class OptimizedBulkOperations
             $this->logger->debug(
                 message: "[OptimizedBulkOperations] Processed chunk with optimized bulk operations",
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'               => __FILE__,
+                    'line'               => __LINE__,
                     'chunk'              => $chunkIndex + 1,
                     'objects'            => count($chunk),
                     'time_seconds'       => round($chunkTime, 3),
@@ -194,8 +194,8 @@ class OptimizedBulkOperations
         $this->logger->info(
             message: "[OptimizedBulkOperations] Completed optimized bulk operations",
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'                    => __FILE__,
+                'line'                    => __LINE__,
                 'total_objects'           => count($allObjects),
                 'total_time_seconds'      => round($totalTime, 3),
                 'objects_per_second'      => round($objectsPerSecond, 0),
@@ -315,8 +315,8 @@ class OptimizedBulkOperations
         $this->logger->info(
             message: "[OptimizedBulkOperations] BULK SAVE: Executed unified bulk operation with statistics",
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'              => __FILE__,
+                'line'              => __LINE__,
                 'chunk'             => $chunkNumber,
                 'objects_processed' => $totalObjects,
                 'affected_rows'     => $affectedRows,
@@ -358,8 +358,8 @@ class OptimizedBulkOperations
             $this->logger->info(
                 message: "[OptimizedBulkOperations] BULK SAVE: Retrieved complete objects for classification",
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'               => __FILE__,
+                    'line'               => __LINE__,
                     'chunk'              => $chunkNumber,
                     'uuids_requested'    => count($uuids),
                     'objects_returned'   => count($completeObjects),
@@ -854,8 +854,8 @@ class OptimizedBulkOperations
                 $this->logger->warning(
                     message: '[OptimizedBulkOperations] Failed to dispatch created event',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'  => __FILE__,
+                        'line'  => __LINE__,
                         'uuid'  => $objectData['uuid'] ?? 'unknown',
                         'error' => $e->getMessage(),
                     ]
@@ -880,8 +880,8 @@ class OptimizedBulkOperations
                 $this->logger->warning(
                     message: '[OptimizedBulkOperations] Failed to dispatch updated event',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'  => __FILE__,
+                        'line'  => __LINE__,
                         'uuid'  => $entity->getUuid() ?? 'unknown',
                         'error' => $e->getMessage(),
                     ]
@@ -892,8 +892,8 @@ class OptimizedBulkOperations
         $this->logger->info(
             message: '[OptimizedBulkOperations] Dispatched bulk events',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'    => __FILE__,
+                'line'    => __LINE__,
                 'created' => $createdCount,
                 'updated' => $updatedCount,
                 'total'   => $createdCount + $updatedCount,

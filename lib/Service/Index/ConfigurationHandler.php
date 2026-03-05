@@ -127,8 +127,8 @@ class ConfigurationHandler
             $this->logger->info(
                 message: '[ConfigurationHandler] HTTP Basic Authentication configured',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
                     'username'  => $this->solrConfig['username'],
                     'auth_type' => 'basic',
                 ]

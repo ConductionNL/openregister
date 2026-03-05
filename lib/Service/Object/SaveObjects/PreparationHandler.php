@@ -202,8 +202,8 @@ class PreparationHandler
                     $this->logger->debug(
                         message: '[PreparationHandler] Auto-publishing NEW object in bulk creation',
                         context: [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
+                            'file'             => __FILE__,
+                            'line'             => __LINE__,
                             'schema'           => $schema->getTitle(),
                             'autoPublish'      => true,
                             'isNewObject'      => true,
@@ -215,8 +215,8 @@ class PreparationHandler
                     $this->logger->debug(
                         message: '[PreparationHandler] Skipping auto-publish - published date provided from CSV',
                         context: [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
+                            'file'             => __FILE__,
+                            'line'             => __LINE__,
                             'schema'           => $schema->getTitle(),
                             'publishedFromCsv' => true,
                             'csvPublishedDate' => $selfData['published'],

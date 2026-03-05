@@ -270,8 +270,8 @@ class SchemaCacheHandler
             $this->logger->error(
                 message: '[SchemaCacheHandler] Failed to clear schema cache',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
                     'schemaId' => $schemaId,
                     'error'    => $e->getMessage(),
                 ]
@@ -374,8 +374,8 @@ class SchemaCacheHandler
             $this->logger->debug(
                 message: '[SchemaCacheHandler] Schema cache table does not exist yet, skipping database cache invalidation',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
                     'schemaId' => $schemaId,
                     'error'    => $e->getMessage(),
                 ]
@@ -399,8 +399,8 @@ class SchemaCacheHandler
         $this->logger->info(
             message: '[SchemaCacheHandler] Schema cache invalidated',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'           => __FILE__,
+                'line'           => __LINE__,
                 'schemaId'       => $schemaId,
                 'operation'      => $operation,
                 'deletedEntries' => $deletedEntries,
@@ -437,8 +437,8 @@ class SchemaCacheHandler
         $this->logger->info(
             message: '[SchemaCacheHandler] All schema caches cleared',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'                 => __FILE__,
+                'line'                 => __LINE__,
                 'deletedDbEntries'     => $deletedEntries,
                 'clearedMemoryEntries' => $memoryCacheSize,
                 'executionTime'        => $executionTime.'ms',
@@ -475,8 +475,8 @@ class SchemaCacheHandler
             $this->logger->info(
                 message: '[SchemaCacheHandler] Cleaned expired schema cache entries',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'          => __FILE__,
+                    'line'          => __LINE__,
                     'count'         => $deletedCount,
                     'executionTime' => $executionTime.'ms',
                 ]
@@ -737,8 +737,8 @@ class SchemaCacheHandler
             $this->logger->error(
                 message: '[SchemaCacheHandler] Failed to reconstruct schema from cache',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
                     'schemaId' => $cachedData['id'] ?? 'unknown',
                     'error'    => $e->getMessage(),
                 ]

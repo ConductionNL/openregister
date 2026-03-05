@@ -112,8 +112,8 @@ class WebhookMapper extends QBMapper
      * @param IDBConnection      $db                 Database connection
      * @param OrganisationMapper $organisationMapper Organisation mapper for multi-tenancy
      * @param IUserSession       $userSession        User session
-     * @param IGroupManager       $groupManager       Group manager
-     * @param IAppConfig          $appConfig          App configuration for multitenancy settings
+     * @param IGroupManager      $groupManager       Group manager
+     * @param IAppConfig         $appConfig          App configuration for multitenancy settings
      *
      * @return void
      */
@@ -130,7 +130,7 @@ class WebhookMapper extends QBMapper
         // Store dependencies for use in mapper methods.
         $this->organisationMapper = $organisationMapper;
         $this->userSession        = $userSession;
-        $this->groupManager        = $groupManager;
+        $this->groupManager       = $groupManager;
         $this->appConfig          = $appConfig;
     }//end __construct()
 
@@ -141,8 +141,8 @@ class WebhookMapper extends QBMapper
      * Returns only webhooks belonging to the current organisation.
      * Supports pagination and filtering.
      *
-     * @param int|null $limit  Maximum number of results to return
-     * @param int|null $offset Number of results to skip
+     * @param int|null $limit   Maximum number of results to return
+     * @param int|null $offset  Number of results to skip
      * @param array    $filters Optional filters to apply
      *
      * @return Webhook[]

@@ -501,8 +501,8 @@ class FileSettingsController extends Controller
             $this->logger->info(
                 message: '[SettingsController] Starting file warmup',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'         => __FILE__,
+                    'line'         => __LINE__,
                     'max_files'    => $maxFiles,
                     'batch_size'   => $batchSize,
                     'skip_indexed' => $skipIndexed,
@@ -571,8 +571,8 @@ class FileSettingsController extends Controller
             $this->logger->error(
                 message: '[SettingsController] File warmup failed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -628,8 +628,8 @@ class FileSettingsController extends Controller
             $this->logger->error(
                 message: '[SettingsController] Failed to index file',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'    => __FILE__,
+                    'line'    => __LINE__,
                     'file_id' => $fileId,
                     'error'   => $e->getMessage(),
                 ]
@@ -702,8 +702,8 @@ class FileSettingsController extends Controller
             $this->logger->error(
                 message: '[SettingsController] Reindex files failed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -740,8 +740,8 @@ class FileSettingsController extends Controller
             $this->logger->error(
                 message: '[SettingsController] Failed to get file index stats',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );

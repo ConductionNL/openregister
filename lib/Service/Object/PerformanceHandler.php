@@ -103,8 +103,8 @@ class PerformanceHandler
                 $this->logger->info(
                     message: '[PerformanceHandler] ⚡ EXTEND OPTIMIZATION: Reduced extend complexity',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'            => __FILE__,
+                        'line'            => __LINE__,
                         'original'        => $originalExtendCount,
                         'optimized'       => $newExtendCount,
                         'estimatedSaving' => ($originalExtendCount - $newExtendCount) * (100).'ms',
@@ -290,12 +290,12 @@ class PerformanceHandler
         $this->logger->debug(
             message: '[PerformanceHandler] 🔗 RELATED DATA EXTRACTED',
             context: [
-                'file'                   => __FILE__,
-                'line'                   => __LINE__,
-                'related_ids_found'      => count($allRelatedIds),
-                'include_related'        => $includeRelated,
-                'include_related_names'  => $includeRelatedNames,
-                'execution_time'         => $executionTime.'ms',
+                'file'                  => __FILE__,
+                'line'                  => __LINE__,
+                'related_ids_found'     => count($allRelatedIds),
+                'include_related'       => $includeRelated,
+                'include_related_names' => $includeRelatedNames,
+                'execution_time'        => $executionTime.'ms',
             ]
         );
 

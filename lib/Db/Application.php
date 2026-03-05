@@ -223,23 +223,23 @@ class Application extends Entity implements JsonSerializable
      */
     public function __construct()
     {
-        $this->addType('uuid', 'string');
-        $this->addType('name', 'string');
-        $this->addType('description', 'string');
-        $this->addType('version', 'string');
-        $this->addType('organisation', 'string');
-        $this->addType('configurations', 'json');
-        $this->addType('registers', 'json');
-        $this->addType('schemas', 'json');
-        $this->addType('owner', 'string');
-        $this->addType('active', 'boolean');
-        $this->addType('storage_quota', 'integer');
-        $this->addType('bandwidth_quota', 'integer');
-        $this->addType('request_quota', 'integer');
-        $this->addType('groups', 'json');
-        $this->addType('authorization', 'json');
-        $this->addType('created', 'datetime');
-        $this->addType('updated', 'datetime');
+        $this->addType(fieldName: 'uuid', type: 'string');
+        $this->addType(fieldName: 'name', type: 'string');
+        $this->addType(fieldName: 'description', type: 'string');
+        $this->addType(fieldName: 'version', type: 'string');
+        $this->addType(fieldName: 'organisation', type: 'string');
+        $this->addType(fieldName: 'configurations', type: 'json');
+        $this->addType(fieldName: 'registers', type: 'json');
+        $this->addType(fieldName: 'schemas', type: 'json');
+        $this->addType(fieldName: 'owner', type: 'string');
+        $this->addType(fieldName: 'active', type: 'boolean');
+        $this->addType(fieldName: 'storage_quota', type: 'integer');
+        $this->addType(fieldName: 'bandwidth_quota', type: 'integer');
+        $this->addType(fieldName: 'request_quota', type: 'integer');
+        $this->addType(fieldName: 'groups', type: 'json');
+        $this->addType(fieldName: 'authorization', type: 'json');
+        $this->addType(fieldName: 'created', type: 'datetime');
+        $this->addType(fieldName: 'updated', type: 'datetime');
     }//end __construct()
 
     /**

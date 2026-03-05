@@ -145,7 +145,7 @@ class ApplicationService
             context: [
                 'file' => __FILE__,
                 'line' => __LINE__,
-                'data' => $data
+                'data' => $data,
             ]
         );
 
@@ -158,7 +158,7 @@ class ApplicationService
             context: [
                 'file' => __FILE__,
                 'line' => __LINE__,
-                'id' => $application->getId()
+                'id'   => $application->getId(),
             ]
         );
 
@@ -189,8 +189,8 @@ class ApplicationService
             context: [
                 'file' => __FILE__,
                 'line' => __LINE__,
-                'id' => $id,
-                'data' => $data
+                'id'   => $id,
+                'data' => $data,
             ]
         );
 
@@ -203,7 +203,7 @@ class ApplicationService
             context: [
                 'file' => __FILE__,
                 'line' => __LINE__,
-                'id' => $id
+                'id'   => $id,
             ]
         );
 
@@ -232,7 +232,7 @@ class ApplicationService
             context: [
                 'file' => __FILE__,
                 'line' => __LINE__,
-                'id' => $id
+                'id'   => $id,
             ]
         );
 
@@ -248,7 +248,7 @@ class ApplicationService
             context: [
                 'file' => __FILE__,
                 'line' => __LINE__,
-                'id' => $id
+                'id'   => $id,
             ]
         );
     }//end delete()

@@ -128,8 +128,8 @@ class ResponseGenerationHandler
         $this->logger->info(
             message: '[ResponseGenerationHandler] Generating response',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'          => __FILE__,
+                'line'          => __LINE__,
                 'messageLength' => strlen($userMessage),
                 'contextLength' => strlen($context['text']),
                 'historyCount'  => count($messageHistory),
@@ -145,8 +145,8 @@ class ResponseGenerationHandler
             $this->logger->info(
                 message: '[ResponseGenerationHandler] Agent has tools enabled',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
                     'toolCount' => count($tools),
                     'tools'     => array_map(fn($tool) => $tool->getName(), $tools),
                 ]
@@ -169,8 +169,8 @@ class ResponseGenerationHandler
         $this->logger->info(
             message: '[ResponseGenerationHandler] Using chat provider',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'      => __FILE__,
+                'line'      => __LINE__,
                 'provider'  => $chatProvider,
                 'llmConfig' => $llmConfig,
                 'hasTools'  => empty($tools) === false,
@@ -348,8 +348,8 @@ class ResponseGenerationHandler
             $this->logger->info(
                 message: '[ResponseGenerationHandler] Response generated - PERFORMANCE',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'           => __FILE__,
+                    'line'           => __LINE__,
                     'provider'       => $chatProvider,
                     'model'          => $config->model,
                     'responseLength' => strlen($response),
@@ -367,8 +367,8 @@ class ResponseGenerationHandler
             $this->logger->error(
                 message: '[ResponseGenerationHandler] Failed to generate response',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
                     'provider' => $chatProvider ?? 'unknown',
                     'error'    => $e->getMessage(),
                 ]
@@ -412,8 +412,8 @@ class ResponseGenerationHandler
             $this->logger->warning(
                 message: '[ResponseGenerationHandler] Function calling not yet supported for Fireworks AI. Tools will be ignored.',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'          => __FILE__,
+                    'line'          => __LINE__,
                     'functionCount' => count($functions),
                 ]
             );
@@ -422,8 +422,8 @@ class ResponseGenerationHandler
         $this->logger->debug(
             message: '[ResponseGenerationHandler] Calling Fireworks chat API with history',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'         => __FILE__,
+                'line'         => __LINE__,
                 'url'          => $url,
                 'model'        => $model,
                 'historyCount' => count($messageHistory),
@@ -448,8 +448,8 @@ class ResponseGenerationHandler
         $this->logger->debug(
             message: '[ResponseGenerationHandler] Prepared messages for API',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'         => __FILE__,
+                'line'         => __LINE__,
                 'messageCount' => count($messages),
             ]
         );

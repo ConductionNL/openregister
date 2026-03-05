@@ -205,8 +205,8 @@ class ValidationHandler
                 $this->logger->error(
                     message: '[ValidationHandler] Unexpected error during validation',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'     => __FILE__,
+                        'line'     => __LINE__,
                         'app'      => 'openregister',
                         'objectId' => $object->getId(),
                         'error'    => $e->getMessage(),
@@ -280,8 +280,8 @@ class ValidationHandler
             $this->logger->error(
                 message: '[ValidationHandler] Failed to load schema or register',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'        => __FILE__,
+                    'line'        => __LINE__,
                     'register_id' => $registerId,
                     'schema_id'   => $schemaId,
                     'error'       => $e->getMessage(),
@@ -293,7 +293,7 @@ class ValidationHandler
                 'failed'    => 0,
                 'errors'    => [['error' => 'Failed to load schema or register: '.$e->getMessage()]],
             ];
-        }
+        }//end try
 
         // Check if schema uses magic tables
         $usesMagic  = false;
@@ -309,8 +309,8 @@ class ValidationHandler
         $this->logger->info(
             message: '[ValidationHandler] Loading objects for validation',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'         => __FILE__,
+                'line'         => __LINE__,
                 'schema_id'    => $schemaId,
                 'storage_type' => $usesMagic ? 'magic_table' : 'blob_storage',
                 'limit'        => $limit,
@@ -327,8 +327,8 @@ class ValidationHandler
                 $this->logger->error(
                     message: '[ValidationHandler] Failed to get objects from magic table',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'      => __FILE__,
+                        'line'      => __LINE__,
                         'schema_id' => $schemaId,
                         'error'     => $e->getMessage(),
                     ]
@@ -349,8 +349,8 @@ class ValidationHandler
                 $this->logger->error(
                     message: '[ValidationHandler] Failed to get objects from blob storage',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'      => __FILE__,
+                        'line'      => __LINE__,
                         'schema_id' => $schemaId,
                         'error'     => $e->getMessage(),
                     ]
@@ -373,8 +373,8 @@ class ValidationHandler
             $this->logger->info(
                 message: '[ValidationHandler] Applied limit/offset for chunked validation',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'               => __FILE__,
+                    'line'               => __LINE__,
                     'schema_id'          => $schemaId,
                     'total_objects'      => $totalObjects,
                     'offset'             => $offset,
@@ -408,8 +408,8 @@ class ValidationHandler
         $this->logger->info(
             message: '[ValidationHandler] Starting chunked validation',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'               => __FILE__,
+                'line'               => __LINE__,
                 'schema_id'          => $schemaId,
                 'total_objects'      => $totalObjects,
                 'objects_to_process' => $objectsToProcess,
@@ -449,8 +449,8 @@ class ValidationHandler
             $this->logger->info(
                 message: '[ValidationHandler] Processing validation chunk',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'         => __FILE__,
+                    'line'         => __LINE__,
                     'schema_id'    => $schemaId,
                     'chunk'        => $currentChunk.'/'.$estimatedChunks,
                     'chunk_size'   => count($objectsChunk),
@@ -496,8 +496,8 @@ class ValidationHandler
                 $this->logger->info(
                     message: '[ValidationHandler] Chunk validation completed',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'            => __FILE__,
+                        'line'            => __LINE__,
                         'schema_id'       => $schemaId,
                         'chunk'           => $currentChunk.'/'.$estimatedChunks,
                         'chunk_processed' => $chunkProcessed,
@@ -511,8 +511,8 @@ class ValidationHandler
                 $this->logger->error(
                     message: '[ValidationHandler] Chunk validation failed',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'        => __FILE__,
+                        'line'        => __LINE__,
                         'schema_id'   => $schemaId,
                         'chunk'       => $currentChunk.'/'.$estimatedChunks,
                         'chunkOffset' => $chunkOffset,
@@ -535,8 +535,8 @@ class ValidationHandler
         $this->logger->info(
             message: '[ValidationHandler] Validation and save completed',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'              => __FILE__,
+                'line'              => __LINE__,
                 'schema_id'         => $schemaId,
                 'total_in_schema'   => $totalObjects,
                 'objects_processed' => $totalProcessed,

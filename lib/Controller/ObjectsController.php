@@ -652,7 +652,8 @@ class ObjectsController extends Controller
                     if ($registerEntity->isMagicMappingEnabledForSchema(
                         schemaId: $schemaEntity->getId(),
                         schemaSlug: $schemaEntity->getSlug()
-                    ) === true) {
+                    ) === true
+                    ) {
                         $pairs[] = [
                             'register' => $registerEntity,
                             'schema'   => $schemaEntity,
@@ -663,8 +664,8 @@ class ObjectsController extends Controller
                     $this->logger->warning(
                         message: '[ObjectsController] Invalid register/schema in cross-table search',
                         context: [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
+                            'file'     => __FILE__,
+                            'line'     => __LINE__,
                             'register' => $registerId,
                             'schema'   => $schemaId,
                             'error'    => $e->getMessage(),
@@ -1031,7 +1032,7 @@ class ObjectsController extends Controller
 
                 // Build response data.
                 $ignoredFilters = $magicMapper->getIgnoredFilters();
-                $responseData = [
+                $responseData   = [
                     'results' => $serializedResults,
                     'total'   => $total,
                     'pages'   => $pages,
@@ -1054,15 +1055,11 @@ class ObjectsController extends Controller
                 if (empty($ignoredFilters) === false) {
                     $responseData['@self']['ignoredFilters'] = $ignoredFilters;
 
-                    $controlParams = ['limit', 'offset', 'page', 'order', 'sort', 'search', 'extend', 'fields', 'filter', 'unset'];
+                    $controlParams  = ['limit', 'offset', 'page', 'order', 'sort', 'search', 'extend', 'fields', 'filter', 'unset'];
                     $mistakenParams = array_intersect($ignoredFilters, $controlParams);
                     if (empty($mistakenParams) === false) {
                         $suggestions = array_map(fn($p) => "_{$p}", $mistakenParams);
-                        $responseData['@self']['hint'] = 'Query returned 0 results because '
-                            . implode(', ', $mistakenParams)
-                            . ' was treated as an object property filter. Did you mean '
-                            . implode(', ', $suggestions)
-                            . '? Control parameters require an underscore prefix (e.g. _limit, _offset, _page).';
+                        $responseData['@self']['hint'] = 'Query returned 0 results because '.implode(', ', $mistakenParams).' was treated as an object property filter. Did you mean '.implode(', ', $suggestions).'? Control parameters require an underscore prefix (e.g. _limit, _offset, _page).';
                     }
                 }
 
@@ -1590,15 +1587,15 @@ class ObjectsController extends Controller
                     $this->logger->error(
                         message: '[ObjectsController] Webhook interception failed',
                         context: [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
+                            'file'     => __FILE__,
+                            'line'     => __LINE__,
                             'error'    => $e->getMessage(),
                             'register' => $register,
                             'schema'   => $schema,
                         ]
                     );
                 }
-            }
+            }//end try
         }//end if
 
         // Filter out special parameters and reserved fields.
@@ -1776,8 +1773,8 @@ class ObjectsController extends Controller
             $this->logger->error(
                     message: '[ObjectsController] Unexpected exception in update findSilent',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'      => __FILE__,
+                        'line'      => __LINE__,
                         'exception' => $exception->getMessage(),
                         'trace'     => $exception->getTraceAsString(),
                     ]
@@ -1883,8 +1880,8 @@ class ObjectsController extends Controller
         $this->logger->info(
                 message: '[ObjectsController] PATCH: RBAC/Multitenancy settings',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'    => __FILE__,
+                    'line'    => __LINE__,
                     'id'      => $id,
                     'isAdmin' => $isAdmin,
                     'rbac'    => $rbac,
@@ -1921,8 +1918,8 @@ class ObjectsController extends Controller
                 $this->logger->warning(
                         message: '[ObjectsController] Could not find object for PATCH',
                         context: [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
+                            'file'      => __FILE__,
+                            'line'      => __LINE__,
                             'id'        => $id,
                             'exception' => $e->getMessage(),
                         ]
@@ -1946,8 +1943,8 @@ class ObjectsController extends Controller
             $this->logger->info(
                     message: '[ObjectsController] PATCH: saveObject succeeded',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'   => __FILE__,
+                        'line'   => __LINE__,
                         'uuid'   => $objectEntity->getUuid(),
                         'status' => $objectEntity->getObject()['status'] ?? 'unknown',
                     ]
@@ -1961,8 +1958,8 @@ class ObjectsController extends Controller
                 $this->logger->debug(
                         message: '[ObjectsController] Failed to unlock after patch',
                         context: [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
+                            'file'      => __FILE__,
+                            'line'      => __LINE__,
                             'exception' => $e->getMessage(),
                         ]
                         );
@@ -1981,8 +1978,8 @@ class ObjectsController extends Controller
             $this->logger->warning(
                     message: '[ObjectsController] Validation exception in patch',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'      => __FILE__,
+                        'line'      => __LINE__,
                         'exception' => $exception->getMessage(),
                     ]
                     );
@@ -1992,8 +1989,8 @@ class ObjectsController extends Controller
             $this->logger->error(
                     message: '[ObjectsController] Unexpected exception in patch',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'      => __FILE__,
+                        'line'      => __LINE__,
                         'exception' => $exception->getMessage(),
                         'trace'     => $exception->getTraceAsString(),
                     ]
@@ -2048,7 +2045,7 @@ class ObjectsController extends Controller
         $patchData = $this->normalizeFormDataValues($patchData);
 
         // Extract uploaded files — works because this is a POST request.
-        $uploadedFiles = $this->extractAllUploadedFiles();
+        $uploadedFiles      = $this->extractAllUploadedFiles();
         $uploadedFilesValue = empty($uploadedFiles) === false ? $uploadedFiles : null;
 
         // Determine RBAC and multitenancy settings based on admin status.
@@ -2100,7 +2097,7 @@ class ObjectsController extends Controller
             return $objectService->handleValidationException(exception: $exception);
         } catch (\Exception $exception) {
             return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 500);
-        }
+        }//end try
     }//end postPatch()
 
     /**
@@ -2537,8 +2534,7 @@ class ObjectsController extends Controller
         // Get filters and type from request.
         $filters = $this->request->getParams();
         unset($filters['_route']);
-        $type = $this->request->getParam(key: 'format')
-            ?? $this->request->getParam(key: 'type', default: 'excel');
+        $type = $this->request->getParam(key: 'format') ?? $this->request->getParam(key: 'type', default: 'excel');
 
         // Get register and schema entities.
         // Bypass multi-tenancy since the user already has access via setRegister/setSchema above,
@@ -3139,8 +3135,8 @@ class ObjectsController extends Controller
             $this->logger->info(
                 message: '[ObjectsController] Starting bulk validation for schema',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
                     'register' => $register,
                     'schema'   => $schemaId,
                     'limit'    => $limitInt,
@@ -3159,8 +3155,8 @@ class ObjectsController extends Controller
             $this->logger->info(
                 message: '[ObjectsController] Bulk validation and save completed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
                     'register'  => $register,
                     'schema'    => $schemaId,
                     'processed' => $result['processed'] ?? 0,
@@ -3190,8 +3186,8 @@ class ObjectsController extends Controller
             $this->logger->error(
                 message: '[ObjectsController] Bulk validation failed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]
@@ -3347,8 +3343,8 @@ class ObjectsController extends Controller
             $this->logger->error(
                 message: '[ObjectsController] Failed to clear blob storage objects',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]

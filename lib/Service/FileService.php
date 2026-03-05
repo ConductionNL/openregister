@@ -619,10 +619,10 @@ class FileService
             $this->logger->error(
                 message: '[FileService] Failed to create folder for entity: {message}',
                 context: [
-                    'file' => __FILE__, 
-                    'line' => __LINE__,
-                    'message' => $e->getMessage(),
-                    'exception' => $e
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
+                    'message'   => $e->getMessage(),
+                    'exception' => $e,
                 ]
             );
             return null;
@@ -1032,7 +1032,7 @@ class FileService
             $file = $this->rootFolder->get($path);
         } catch (NotFoundException $e) {
             $this->logger->error(
-                message: "[FileService] Can't create share link for $path because file doesn't exist.", 
+                message: "[FileService] Can't create share link for $path because file doesn't exist.",
                 context: [
                     'file' => __FILE__,
                     'line' => __LINE__,

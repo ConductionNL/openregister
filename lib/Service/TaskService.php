@@ -92,7 +92,7 @@ class TaskService
      */
     public function getTasksForObject(string $objectUuid): array
     {
-        $calendar = $this->findUserCalendar();
+        $calendar   = $this->findUserCalendar();
         $calendarId = $calendar['id'];
 
         // Get all calendar objects from this calendar.
@@ -162,14 +162,14 @@ class TaskService
         $calendar   = $this->findUserCalendar();
         $calendarId = $calendar['id'];
 
-        $uid       = strtoupper(bin2hex(random_bytes(16)));
-        $dtstamp   = gmdate('Ymd\THis\Z');
-        $summary   = $this->escapeIcalText($data['summary'] ?? 'Untitled task');
-        $status    = strtoupper($data['status'] ?? 'NEEDS-ACTION');
-        $priority  = (int) ($data['priority'] ?? 0);
+        $uid      = strtoupper(bin2hex(random_bytes(16)));
+        $dtstamp  = gmdate('Ymd\THis\Z');
+        $summary  = $this->escapeIcalText($data['summary'] ?? 'Untitled task');
+        $status   = strtoupper($data['status'] ?? 'NEEDS-ACTION');
+        $priority = (int) ($data['priority'] ?? 0);
 
         // Build the VTODO lines.
-        $lines = [];
+        $lines   = [];
         $lines[] = 'BEGIN:VCALENDAR';
         $lines[] = 'VERSION:2.0';
         $lines[] = 'PRODID:-//OpenRegister//Tasks//EN';
@@ -336,7 +336,7 @@ class TaskService
                             break;
                         }
                     }
-                } elseif (is_string($components) === true) {
+                } else if (is_string($components) === true) {
                     $supportsVtodo = stripos($components, 'VTODO') !== false;
                 } else {
                     // If components is an array or other iterable.

@@ -151,13 +151,13 @@ class View extends Entity implements JsonSerializable
     public function __construct()
     {
         // Add types for automatic JSON (de)serialization.
-        $this->addType('organisation', 'string');
-        $this->addType('isPublic', 'boolean');
-        $this->addType('isDefault', 'boolean');
-        $this->addType('query', 'json');
-        $this->addType('favoredBy', 'json');
-        $this->addType('created', 'datetime');
-        $this->addType('updated', 'datetime');
+        $this->addType(fieldName: 'organisation', type: 'string');
+        $this->addType(fieldName: 'isPublic', type: 'boolean');
+        $this->addType(fieldName: 'isDefault', type: 'boolean');
+        $this->addType(fieldName: 'query', type: 'json');
+        $this->addType(fieldName: 'favoredBy', type: 'json');
+        $this->addType(fieldName: 'created', type: 'datetime');
+        $this->addType(fieldName: 'updated', type: 'datetime');
     }//end __construct()
 
     /**

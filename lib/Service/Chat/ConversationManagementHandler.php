@@ -258,8 +258,8 @@ class ConversationManagementHandler
             $this->logger->warning(
                 message: '[ConversationManagementHandler] Failed to generate title, using fallback',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -312,8 +312,8 @@ class ConversationManagementHandler
         $this->logger->info(
             message: '[ConversationManagementHandler] Ensuring unique title',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'      => __FILE__,
+                'line'      => __LINE__,
                 'baseTitle' => $baseTitle,
                 'userId'    => $userId,
                 'agentId'   => $agentId,
@@ -359,8 +359,8 @@ class ConversationManagementHandler
         $this->logger->info(
             message: '[ConversationManagementHandler] Generated unique title',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'        => __FILE__,
+                'line'        => __LINE__,
                 'baseTitle'   => $baseTitle,
                 'uniqueTitle' => $uniqueTitle,
                 'foundTitles' => count($existingTitles),
@@ -405,8 +405,8 @@ class ConversationManagementHandler
         $this->logger->info(
             message: '[ConversationManagementHandler] Triggering conversation summarization',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'           => __FILE__,
+                'line'           => __LINE__,
                 'conversationId' => $conversation->getId(),
                 'tokenCount'     => $tokenCount,
             ]
@@ -436,8 +436,8 @@ class ConversationManagementHandler
             $this->logger->info(
                 message: '[ConversationManagementHandler] Conversation summarized',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'           => __FILE__,
+                    'line'           => __LINE__,
                     'conversationId' => $conversation->getId(),
                     'summaryLength'  => strlen($summary),
                 ]
@@ -446,8 +446,8 @@ class ConversationManagementHandler
             $this->logger->error(
                 message: '[ConversationManagementHandler] Failed to summarize conversation',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );

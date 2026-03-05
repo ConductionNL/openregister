@@ -97,7 +97,7 @@ class WebhookDeliveryJob extends QueuedJob
         LoggerInterface $logger
     ) {
         // Call parent constructor to initialize base job with time factory.
-        parent::__construct($time);
+        parent::__construct(time: $time);
 
         // Store dependencies for use in job execution.
         $this->webhookMapper  = $webhookMapper;
@@ -131,8 +131,8 @@ class WebhookDeliveryJob extends QueuedJob
             $this->logger->error(
                 message: '[WebhookDeliveryJob] WebhookDeliveryJob called with invalid arguments',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
                     'argument' => $argument,
                 ]
             );
@@ -145,8 +145,8 @@ class WebhookDeliveryJob extends QueuedJob
             $this->logger->info(
                 message: '[WebhookDeliveryJob] Executing webhook delivery job',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'         => __FILE__,
+                    'line'         => __LINE__,
                     'webhook_id'   => $webhookId,
                     'webhook_name' => $webhook->getName(),
                     'event'        => $eventName,
@@ -166,8 +166,8 @@ class WebhookDeliveryJob extends QueuedJob
                 $this->logger->info(
                     message: '[WebhookDeliveryJob] Webhook delivery job completed successfully',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'         => __FILE__,
+                        'line'         => __LINE__,
                         'webhook_id'   => $webhookId,
                         'webhook_name' => $webhook->getName(),
                         'event'        => $eventName,
@@ -180,8 +180,8 @@ class WebhookDeliveryJob extends QueuedJob
                 $this->logger->warning(
                     message: '[WebhookDeliveryJob] Webhook delivery job failed',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'         => __FILE__,
+                        'line'         => __LINE__,
                         'webhook_id'   => $webhookId,
                         'webhook_name' => $webhook->getName(),
                         'event'        => $eventName,
@@ -193,8 +193,8 @@ class WebhookDeliveryJob extends QueuedJob
             $this->logger->error(
                 message: '[WebhookDeliveryJob] Webhook delivery job encountered an exception',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
                     'webhook_id' => $webhookId,
                     'event'      => $eventName,
                     'attempt'    => $attempt,

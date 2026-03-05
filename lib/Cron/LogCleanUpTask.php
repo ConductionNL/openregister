@@ -104,7 +104,7 @@ class LogCleanUpTask extends TimedJob
                     context: [
                         'file' => __FILE__,
                         'line' => __LINE__,
-                        'app' => 'openregister',
+                        'app'  => 'openregister',
                     ]
                 );
                 return;
@@ -115,7 +115,7 @@ class LogCleanUpTask extends TimedJob
                 context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
-                    'app' => 'openregister',
+                    'app'  => 'openregister',
                 ]
             );
         } catch (\Exception $e) {
@@ -123,8 +123,8 @@ class LogCleanUpTask extends TimedJob
             $this->logger->error(
                 message: '[LogCleanUpTask] Failed to clear expired audit trail logs: '.$e->getMessage(),
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
                     'app'       => 'openregister',
                     'exception' => $e,
                 ]

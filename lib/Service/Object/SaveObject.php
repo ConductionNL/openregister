@@ -727,8 +727,8 @@ class SaveObject
         $this->logger->debug(
             message: '[SaveObject] updateInverseRelations called',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'            => __FILE__,
+                'line'            => __LINE__,
                 'savedObjectUuid' => $savedUuid,
                 'relationsCount'  => $relations !== null ? count($relations) : 0,
                 'schemaId'        => $schema->getId(),
@@ -801,8 +801,8 @@ class SaveObject
                     $this->logger->warning(
                         message: '[SaveObject] Could not resolve target schema',
                         context: [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
+                            'file'             => __FILE__,
+                            'line'             => __LINE__,
                             'targetSchemaSlug' => $targetSchemaSlug,
                             'error'            => $e->getMessage(),
                         ]
@@ -828,8 +828,8 @@ class SaveObject
                     $this->logger->debug(
                         message: '[SaveObject] Object already in related object\'s relations',
                         context: [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
+                            'file'        => __FILE__,
+                            'line'        => __LINE__,
                             'savedUuid'   => $savedUuid,
                             'relatedUuid' => $relatedUuid,
                         ]
@@ -848,8 +848,8 @@ class SaveObject
                 $this->logger->debug(
                     message: '[SaveObject] Updated inverse relation',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'              => __FILE__,
+                        'line'              => __LINE__,
                         'savedUuid'         => $savedUuid,
                         'relatedUuid'       => $relatedUuid,
                         'newRelationsCount' => count($relatedObjectRelations),
@@ -859,8 +859,8 @@ class SaveObject
                 $this->logger->warning(
                     message: '[SaveObject] Failed to update inverse relation',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'        => __FILE__,
+                        'line'        => __LINE__,
                         'savedUuid'   => $savedUuid,
                         'relatedUuid' => $relatedUuid,
                         'error'       => $e->getMessage(),
@@ -975,8 +975,8 @@ class SaveObject
                         $this->logger->error(
                             message: '[SaveObject] Failed to load file for objectImageField',
                             context: [
-                                'file' => __FILE__,
-                                'line' => __LINE__,
+                                'file'   => __FILE__,
+                                'line'   => __LINE__,
                                 'app'    => 'openregister',
                                 'fileId' => $firstElement,
                                 'error'  => $e->getMessage(),
@@ -995,8 +995,8 @@ class SaveObject
                 $this->logger->debug(
                     message: '[SaveObject] File ID detected for objectImageField - file loading not yet implemented',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'   => __FILE__,
+                        'line'   => __LINE__,
                         'app'    => 'openregister',
                         'fileId' => $imageValue,
                     ]
@@ -1023,8 +1023,8 @@ class SaveObject
                     $this->logger->warning(
                         message: '[SaveObject] Invalid published date format',
                         context: [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
+                            'file'  => __FILE__,
+                            'line'  => __LINE__,
                             'value' => $published,
                             'error' => $e->getMessage(),
                         ]
@@ -1049,8 +1049,8 @@ class SaveObject
                     $this->logger->warning(
                         message: '[SaveObject] Invalid depublished date format',
                         context: [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
+                            'file'  => __FILE__,
+                            'line'  => __LINE__,
                             'value' => $depublished,
                             'error' => $e->getMessage(),
                         ]
@@ -1221,7 +1221,7 @@ class SaveObject
                         );
                         $renderedDefaults[$key] = $rendered;
                     }
-                }
+                }//end if
 
                 if (is_string($defaultValue) === false
                     || str_contains(haystack: $defaultValue, needle: '{{') === false
@@ -1413,7 +1413,7 @@ class SaveObject
                     }
                 } else {
                     $data[$key] = $defaultValue;
-                }
+                }//end if
             } catch (Exception $e) {
                 // Template failed, skip this default.
                 continue;
@@ -1658,12 +1658,9 @@ class SaveObject
                 if (($isRelatedObject === true || $isCascade === true) && empty($oldUuids) === false) {
                     // Resolve the sub-object's schema and register for magic-mapped lookups.
                     $subSchemaRef = $definition['items']['$ref'] ?? $definition['$ref'] ?? null;
-                    $subSchemaId  = $subSchemaRef !== null
-                        ? $this->resolveSchemaReference($subSchemaRef) : null;
-                    $subSchema    = $subSchemaId !== null
-                        ? $this->getCachedSchema($subSchemaId) : null;
-                    $subRegister  = $objectEntity->getRegister() !== null
-                        ? $this->getCachedRegister($objectEntity->getRegister()) : null;
+                    $subSchemaId  = $subSchemaRef !== null ? $this->resolveSchemaReference($subSchemaRef) : null;
+                    $subSchema    = $subSchemaId !== null ? $this->getCachedSchema($subSchemaId) : null;
+                    $subRegister  = $objectEntity->getRegister() !== null ? $this->getCachedRegister($objectEntity->getRegister()) : null;
 
                     $this->deleteOrphanedRelatedObjects($oldUuids, $subRegister, $subSchema);
                 }
@@ -1726,12 +1723,9 @@ class SaveObject
                         if (empty($orphanedUuids) === false) {
                             // Resolve the sub-object's schema and register for magic-mapped lookups.
                             $subSchemaRef = $definition['items']['$ref'] ?? $definition['$ref'] ?? null;
-                            $subSchemaId  = $subSchemaRef !== null
-                                ? $this->resolveSchemaReference($subSchemaRef) : null;
-                            $subSchema    = $subSchemaId !== null
-                                ? $this->getCachedSchema($subSchemaId) : null;
-                            $subRegister  = $objectEntity->getRegister() !== null
-                                ? $this->getCachedRegister($objectEntity->getRegister()) : null;
+                            $subSchemaId  = $subSchemaRef !== null ? $this->resolveSchemaReference($subSchemaRef) : null;
+                            $subSchema    = $subSchemaId !== null ? $this->getCachedSchema($subSchemaId) : null;
+                            $subRegister  = $objectEntity->getRegister() !== null ? $this->getCachedRegister($objectEntity->getRegister()) : null;
 
                             $this->deleteOrphanedRelatedObjects(
                                 array_values($orphanedUuids),
@@ -2079,8 +2073,8 @@ class SaveObject
                 $this->logger->warning(
                     message: '[SaveObject] Failed to delete orphaned related object',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'  => __FILE__,
+                        'line'  => __LINE__,
                         'uuid'  => $uuid,
                         'error' => $e->getMessage(),
                     ]
@@ -2529,21 +2523,21 @@ class SaveObject
 
         // Check if UUID was auto-generated (indicates CREATE operation, not UPDATE).
         $isAutoGeneratedUuid = ($selfData['_autoGeneratedUuid'] ?? false) === true;
-        
+
         // Try to update existing object if UUID provided AND it's not auto-generated.
         // Auto-generated UUIDs are for new objects, so skip the lookup.
         if ($uuid !== null && $isAutoGeneratedUuid === false) {
             $this->logger->debug(
                 message: '[SaveObject] UUID provided and not auto-generated, checking for existing object (UPDATE operation)',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
-                    'uuid' => $uuid,
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
+                    'uuid'     => $uuid,
                     'register' => $register?->getId(),
-                    'schema' => $schema?->getId(),
+                    'schema'   => $schema?->getId(),
                 ]
             );
-            
+
             // Always disable RBAC and multitenancy for internal object lookup
             // to avoid permission errors when validating existing objects.
             $existingObject = $this->findAndValidateExistingObject(
@@ -2558,9 +2552,9 @@ class SaveObject
                 $this->logger->debug(
                     message: '[SaveObject] Existing object found, proceeding with UPDATE',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
-                        'uuid' => $uuid,
+                        'file'     => __FILE__,
+                        'line'     => __LINE__,
+                        'uuid'     => $uuid,
                         'objectId' => $existingObject->getId(),
                     ]
                 );
@@ -2574,16 +2568,16 @@ class SaveObject
                     persist: $persist,
                     silent: $silent
                 );
-            }
+            }//end if
         } else if ($isAutoGeneratedUuid === true) {
             $this->logger->debug(
                 message: '[SaveObject] UUID is auto-generated, skipping existing object lookup (CREATE operation)',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
-                    'uuid' => $uuid,
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
+                    'uuid'     => $uuid,
                     'register' => $register?->getId(),
-                    'schema' => $schema?->getId(),
+                    'schema'   => $schema?->getId(),
                 ]
             );
         }//end if
@@ -3002,8 +2996,8 @@ class SaveObject
                 $this->logger->error(
                     message: '[SaveObject] DEBUG: After setObject - entity object is now',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'         => __FILE__,
+                        'line'         => __LINE__,
                         'app'          => 'openregister',
                         'entityObject' => json_encode($savedEntity->getObject()),
                     ]
@@ -3036,8 +3030,8 @@ class SaveObject
             $this->logger->warning(
                 message: '[SaveObject] File processing failed, rolling back object creation',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'uuid'  => $savedEntity->getUuid(),
                     'error' => $e->getMessage(),
                 ]
@@ -3147,8 +3141,8 @@ class SaveObject
                 $this->logger->debug(
                     message: '[SaveObject] Object already has published date, skipping auto-publish',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'          => __FILE__,
+                        'line'          => __LINE__,
                         'uuid'          => $objectEntity->getUuid(),
                         'publishedDate' => $objectEntity->getPublished()->format('Y-m-d H:i:s'),
                     ]
@@ -3159,8 +3153,8 @@ class SaveObject
                 $this->logger->debug(
                     message: '[SaveObject] Auto-publishing object on creation',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'        => __FILE__,
+                        'line'        => __LINE__,
                         'uuid'        => $objectEntity->getUuid(),
                         'schema'      => $schema->getTitle(),
                         'autoPublish' => true,
@@ -3288,8 +3282,8 @@ class SaveObject
         $this->logger->debug(
             message: '[SaveObject] Processing published field in SaveObject',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'         => __FILE__,
+                'line'         => __LINE__,
                 'selfDataKeys' => array_keys($selfData),
             ]
         );
@@ -3301,8 +3295,8 @@ class SaveObject
             $this->logger->debug(
                 message: '[SaveObject] Published field found in object data',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'           => __FILE__,
+                    'line'           => __LINE__,
                     'publishedValue' => $publishedValue,
                     'isEmpty'        => $isEmpty,
                 ]
@@ -3315,8 +3309,8 @@ class SaveObject
                         $this->logger->debug(
                             message: '[SaveObject] Setting published date on object entity',
                             context: [
-                                'file' => __FILE__,
-                                'line' => __LINE__,
+                                'file'           => __FILE__,
+                                'line'           => __LINE__,
                                 'publishedValue' => $publishedValue,
                             ]
                         );
@@ -3326,8 +3320,8 @@ class SaveObject
                     $this->logger->warning(
                         message: '[SaveObject] Failed to convert published date',
                         context: [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
+                            'file'           => __FILE__,
+                            'line'           => __LINE__,
                             'publishedValue' => $publishedValue,
                             'error'          => $exception->getMessage(),
                         ]
@@ -3561,7 +3555,7 @@ class SaveObject
                 'file' => __FILE__,
                 'line' => __LINE__,
                 'uuid' => $preparedObject->getUuid(),
-                ]
+            ]
                 );
 
         // Save the object to database using UnifiedObjectMapper.
@@ -3576,7 +3570,7 @@ class SaveObject
                 'line' => __LINE__,
                 'app'  => 'openregister',
                 'uuid' => $updatedEntity->getUuid(),
-                ]
+            ]
                 );
 
         // Create audit trail for update if audit trails are enabled and not in silent mode.

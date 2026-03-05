@@ -272,7 +272,7 @@ class MetadataHydrationHandler
      *
      * @return string|null The first non-empty value found, or null if none found.
      */
-    public function processFieldWithFallbacks(array $data, string $fieldChain, array $schemaProperties = []): ?string
+    public function processFieldWithFallbacks(array $data, string $fieldChain, array $schemaProperties=[]): ?string
     {
         // Split by pipe and trim each field name.
         $fields = array_map('trim', explode('|', $fieldChain));
@@ -298,7 +298,7 @@ class MetadataHydrationHandler
 
                 return trim((string) $value);
             }
-        }
+        }//end foreach
 
         return null;
     }//end processFieldWithFallbacks()
@@ -343,10 +343,10 @@ class MetadataHydrationHandler
             // Check if this expression uses the ifFilled filter: "field | ifFilled: valIfFilled, valIfEmpty".
             if (preg_match('/^(.+?)\|\s*ifFilled\s*:\s*(.+)$/s', $fieldExpression, $ifFilledMatch) === 1) {
                 $value = $this->processIfFilledFilter(data: $data, fieldName: trim($ifFilledMatch[1]), definition: trim($ifFilledMatch[2]));
-            } elseif (preg_match('/^(.+?)\|\s*map\s*:\s*(.+)$/s', $fieldExpression, $mapMatch) === 1) {
+            } else if (preg_match('/^(.+?)\|\s*map\s*:\s*(.+)$/s', $fieldExpression, $mapMatch) === 1) {
                 // Check if this expression uses the map filter syntax: "field | map: key1=val1, key2=val2".
                 $value = $this->processMapFilter(data: $data, fieldName: trim($mapMatch[1]), mapDefinition: trim($mapMatch[2]));
-            } elseif (str_contains($fieldExpression, '|') === true) {
+            } else if (str_contains($fieldExpression, '|') === true) {
                 // Pipe without "map:" means fallback syntax.
                 $value = $this->processFieldWithFallbacks(data: $data, fieldChain: $fieldExpression, schemaProperties: $schemaProperties);
             } else {
@@ -373,7 +373,7 @@ class MetadataHydrationHandler
 
             // Replace with empty string for missing/empty values.
             $result = str_replace($fullMatch, '', $result);
-        }
+        }//end foreach
 
         if ($hasValues === false) {
             return null;

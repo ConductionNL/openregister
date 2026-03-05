@@ -180,8 +180,8 @@ class CacheHandler
                 $this->logger->warning(
                     message: '[CacheHandler] Failed to initialize distributed caches',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'  => __FILE__,
+                        'line'  => __LINE__,
                         'error' => $e->getMessage(),
                     ]
                 );
@@ -224,8 +224,8 @@ class CacheHandler
             $this->logger->debug(
                 message: '[CacheHandler] IndexService not available',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -308,8 +308,8 @@ class CacheHandler
             $this->logger->error(
                 message: '[CacheHandler] Object indexing failed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
                     'object_id' => $object->getId(),
                     'uuid'      => $object->getUuid(),
                     'schema'    => $object->getSchema(),
@@ -322,8 +322,8 @@ class CacheHandler
         $this->logger->debug(
             message: '[CacheHandler] 🔍 OBJECT INDEXED',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'      => __FILE__,
+                'line'      => __LINE__,
                 'object_id' => $object->getId(),
                 'uuid'      => $object->getUuid(),
                 'schema'    => $object->getSchema(),
@@ -362,8 +362,8 @@ class CacheHandler
                 $this->logger->debug(
                     message: '[CacheHandler] 🗑️  OBJECT REMOVED FROM INDEX',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'      => __FILE__,
+                        'line'      => __LINE__,
                         'object_id' => $object->getId(),
                         'uuid'      => $object->getUuid(),
                     ]
@@ -375,8 +375,8 @@ class CacheHandler
             $this->logger->warning(
                 message: '[CacheHandler] Failed to remove object from search index',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
                     'object_id' => $object->getId(),
                     'error'     => $e->getMessage(),
                 ]
@@ -536,8 +536,8 @@ class CacheHandler
             $this->logger->error(
                 message: '[CacheHandler] Bulk preload failed in CacheHandler',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'              => __FILE__,
+                    'line'              => __LINE__,
                     'exception'         => $e->getMessage(),
                     'identifiersToLoad' => count($identifiersToLoad),
                 ]
@@ -668,8 +668,8 @@ class CacheHandler
                 $this->logger->warning(
                     message: '[CacheHandler] Failed to clear search cache',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'    => __FILE__,
+                        'line'    => __LINE__,
                         'error'   => $e->getMessage(),
                         'pattern' => $pattern,
                     ]
@@ -711,8 +711,8 @@ class CacheHandler
                 $this->logger->debug(
                     message: '[CacheHandler] Schema-related distributed caches cleared',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'       => __FILE__,
+                        'line'       => __LINE__,
                         'schemaId'   => $schemaId,
                         'registerId' => $registerId,
                         'operation'  => $operation,
@@ -723,8 +723,8 @@ class CacheHandler
                 $this->logger->warning(
                     message: '[CacheHandler] Failed to clear schema-related distributed caches',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'     => __FILE__,
+                        'line'     => __LINE__,
                         'schemaId' => $schemaId,
                         'error'    => $e->getMessage(),
                     ]
@@ -748,8 +748,8 @@ class CacheHandler
         $this->logger->info(
             message: '[CacheHandler] Schema-related caches cleared for CUD operation',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'          => __FILE__,
+                'line'          => __LINE__,
                 'schemaId'      => $schemaId,
                 'registerId'    => $registerId,
                 'operation'     => $operation,
@@ -850,8 +850,8 @@ class CacheHandler
         $this->logger->info(
             message: '[CacheHandler] Schema-wide cache invalidated for CRUD operation',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'          => __FILE__,
+                'line'          => __LINE__,
                 'operation'     => $operation,
                 'registerId'    => $registerId,
                 'schemaId'      => $schemaId,
@@ -885,8 +885,8 @@ class CacheHandler
         $this->logger->debug(
             message: '[CacheHandler] Individual object cleared from cache',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'       => __FILE__,
+                'line'       => __LINE__,
                 'objectId'   => $object->getId(),
                 'objectUuid' => $object->getUuid(),
             ]
@@ -927,8 +927,8 @@ class CacheHandler
                 $this->logger->warning(
                     message: '[CacheHandler] Failed to clear distributed query cache',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'  => __FILE__,
+                        'line'  => __LINE__,
                         'error' => $e->getMessage(),
                     ]
                 );
@@ -943,8 +943,8 @@ class CacheHandler
                 $this->logger->warning(
                     message: '[CacheHandler] Failed to clear distributed name cache',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'  => __FILE__,
+                        'line'  => __LINE__,
                         'error' => $e->getMessage(),
                     ]
                 );
@@ -956,8 +956,8 @@ class CacheHandler
         $this->logger->info(
             message: '[CacheHandler] All object caches cleared (including name cache)',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'          => __FILE__,
+                'line'          => __LINE__,
                 'executionTime' => $executionTime.'ms',
             ]
         );
@@ -1008,8 +1008,8 @@ class CacheHandler
                 $this->logger->warning(
                     message: '[CacheHandler] Failed to cache object name in distributed cache',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'       => __FILE__,
+                        'line'       => __LINE__,
                         'identifier' => $key,
                         'error'      => $e->getMessage(),
                     ]
@@ -1020,8 +1020,8 @@ class CacheHandler
         $this->logger->debug(
             message: '[CacheHandler] 💾 OBJECT NAME CACHED',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'       => __FILE__,
+                'line'       => __LINE__,
                 'identifier' => $key,
                 'name'       => $name,
                 'ttl'        => $ttl.'s',
@@ -1068,14 +1068,14 @@ class CacheHandler
                     $this->logger->warning(
                         message: '[CacheHandler] Failed to get object name from distributed cache',
                         context: [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
+                            'file'       => __FILE__,
+                            'line'       => __LINE__,
                             'identifier' => $key,
                             'error'      => $e->getMessage(),
                         ]
                     );
             }
-        }
+        }//end if
 
         // Cache miss - load from database.
         $this->stats['name_misses']++;
@@ -1111,8 +1111,8 @@ class CacheHandler
             $this->logger->debug(
                 message: '[CacheHandler] Failed to load entity for name lookup',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
                     'identifier' => $key,
                     'error'      => $e->getMessage(),
                 ]
@@ -1250,8 +1250,8 @@ class CacheHandler
                 $this->logger->error(
                     message: '[CacheHandler] Failed to bulk load names from database',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'        => __FILE__,
+                        'line'        => __LINE__,
                         'identifiers' => count($missingIdentifiers),
                         'error'       => $e->getMessage(),
                     ]
@@ -1272,8 +1272,8 @@ class CacheHandler
         $this->logger->debug(
             message: '[CacheHandler] 📦 BULK NAME LOOKUP COMPLETED',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'                  => __FILE__,
+                'line'                  => __LINE__,
                 'requested'             => count($identifiers),
                 'total_found'           => count($results),
                 'uuid_results_returned' => count($uuidResults),
@@ -1326,8 +1326,8 @@ class CacheHandler
         $this->logger->info(
             message: '[CacheHandler] 📋 ALL OBJECT NAMES RETRIEVED',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'                => __FILE__,
+                'line'                => __LINE__,
                 'total_cached'        => count($this->nameCache),
                 'uuid_names_returned' => count($uuidNames),
                 'warmup_triggered'    => $shouldWarmup,
@@ -1396,8 +1396,8 @@ class CacheHandler
             $this->logger->info(
                 message: '[CacheHandler] 🔥 NAME CACHE WARMED UP',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'                     => __FILE__,
+                    'line'                     => __LINE__,
                     'organisations_processed'  => count($organisations),
                     'objects_processed'        => count($objects),
                     'magic_names_loaded'       => $magicNamesLoaded,
@@ -1420,8 +1420,8 @@ class CacheHandler
             $this->logger->error(
                 message: '[CacheHandler] Name cache warmup failed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -1495,8 +1495,8 @@ class CacheHandler
                         $this->logger->debug(
                             message: '[CacheHandler] Could not query magic table for names',
                             context: [
-                                'file' => __FILE__,
-                                'line' => __LINE__,
+                                'file'  => __FILE__,
+                                'line'  => __LINE__,
                                 'table' => $tableName,
                                 'error' => $e->getMessage(),
                             ]
@@ -1508,8 +1508,8 @@ class CacheHandler
             $this->logger->warning(
                 message: '[CacheHandler] Failed to load names from magic tables',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -1712,8 +1712,8 @@ class CacheHandler
                     $this->logger->warning(
                         message: '[CacheHandler] Failed to persist name cache entry to distributed cache',
                         context: [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
+                            'file'       => __FILE__,
+                            'line'       => __LINE__,
                             'identifier' => $identifier,
                             'error'      => $e->getMessage(),
                         ]
@@ -1775,8 +1775,8 @@ class CacheHandler
                 $this->logger->warning(
                     message: '[CacheHandler] Failed to clear distributed name cache',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'  => __FILE__,
+                        'line'  => __LINE__,
                         'error' => $e->getMessage(),
                     ]
                 );

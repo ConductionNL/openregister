@@ -128,8 +128,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         $this->logger->debug(
             message: '[UnifiedObjectMapper] Using MagicMapper for register+schema combination',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'       => __FILE__,
+                'line'       => __LINE__,
                 'registerId' => $register->getId(),
                 'schemaId'   => $schema->getId(),
                 'schemaSlug' => $schema->getSlug(),
@@ -284,10 +284,10 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         $this->logger->debug(
             message: '[UnifiedObjectMapper] findAcrossAllSources called',
             context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
-                    'identifier' => $identifier,
-                ]
+                'file'       => __FILE__,
+                'line'       => __LINE__,
+                'identifier' => $identifier,
+            ]
                 );
 
         return $this->objectEntityMapper->findAcrossAllSources(
@@ -359,7 +359,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             }
 
             return $entities;
-        }
+        }//end if
 
         $this->logger->debug(
             message: '[UnifiedObjectMapper] Routing findAll() to ObjectEntityMapper (blob storage direct)',
@@ -474,8 +474,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         $this->logger->debug(
             message: '[UnifiedObjectMapper] Dispatching ObjectCreatedEvent',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'       => __FILE__,
+                'line'       => __LINE__,
                 'entityUuid' => $insertedEntity->getUuid(),
             ]
         );
@@ -530,8 +530,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                 $this->logger->warning(
                     message: '[UnifiedObjectMapper] Could not fetch old entity for update event',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'       => __FILE__,
+                        'line'       => __LINE__,
                         'entityId'   => $entity->getId(),
                         'entityUuid' => $entity->getUuid(),
                         'error'      => $e->getMessage(),
@@ -559,8 +559,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         $this->logger->debug(
             message: '[UnifiedObjectMapper] Dispatching ObjectUpdatedEvent',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'       => __FILE__,
+                'line'       => __LINE__,
                 'entityUuid' => $updatedEntity->getUuid(),
             ]
         );
@@ -604,8 +604,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             $this->logger->debug(
                 message: '[UnifiedObjectMapper] Dispatching ObjectDeletedEvent',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
                     'entityUuid' => $deletedEntity->getUuid(),
                 ]
             );
@@ -677,8 +677,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         $this->logger->info(
             message: '[UnifiedObjectMapper] ultraFastBulkSave called',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'        => __FILE__,
+                'line'        => __LINE__,
                 'insertCount' => count($insertObjects),
                 'updateCount' => count($updateObjects),
                 'hasRegister' => $register !== null,
@@ -824,8 +824,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             $this->logger->debug(
                 message: '[UnifiedObjectMapper] Resolved',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
                     'register' => $register?->getId(),
                     'schema'   => $schema?->getId(),
                 ]
@@ -837,8 +837,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             $this->logger->info(
                 message: '[UnifiedObjectMapper] Routing bulk save to MagicMapper',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'         => __FILE__,
+                    'line'         => __LINE__,
                     'register'     => $register?->getId(),
                     'schema'       => $schema?->getId(),
                     'object_count' => count($insertObjects),
@@ -878,8 +878,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         $this->logger->debug(
             message: '[UnifiedObjectMapper] Routing bulk save to ObjectEntityMapper (blob storage)',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'         => __FILE__,
+                'line'         => __LINE__,
                 'register'     => $register?->getId(),
                 'schema'       => $schema?->getId(),
                 'object_count' => count($insertObjects),
@@ -1021,9 +1021,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         if ($schemaIds !== null && is_array($schemaIds) === true
             && ($registerId !== null || ($registerIds !== null && is_array($registerIds) && count($registerIds) > 0))
         ) {
-            $allRegisterIds = ($registerIds !== null && is_array($registerIds) && count($registerIds) > 0)
-                ? array_map('intval', $registerIds)
-                : [(int) $registerId];
+            $allRegisterIds = ($registerIds !== null && is_array($registerIds) && count($registerIds) > 0) ? array_map('intval', $registerIds) : [(int) $registerId];
             return $this->getSimpleFacetsMultiSchema(
                 query: $query,
                 registerIds: $allRegisterIds,
@@ -1078,8 +1076,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                 $this->logger->warning(
                     message: '[UnifiedObjectMapper] Failed to find register for multi-schema facets',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'       => __FILE__,
+                        'line'       => __LINE__,
                         'registerId' => $registerId,
                         'error'      => $e->getMessage(),
                     ]
@@ -1104,12 +1102,13 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                     if (is_string($registerSchemas) === true) {
                         $registerSchemas = json_decode($registerSchemas, true) ?? [];
                     }
+
                     // Handle both formats: sequential array [2, 3, 4] or keyed object {"2": {...}}.
                     if (is_array($registerSchemas) === true) {
                         $schemaIdStr = (string) $schemaId;
                         $schemaIdInt = (int) $schemaId;
-                        $inValues = in_array($schemaIdInt, $registerSchemas, false) || in_array($schemaIdStr, $registerSchemas, false);
-                        $inKeys = array_key_exists($schemaIdInt, $registerSchemas) || array_key_exists($schemaIdStr, $registerSchemas);
+                        $inValues    = in_array($schemaIdInt, $registerSchemas, false) || in_array($schemaIdStr, $registerSchemas, false);
+                        $inKeys      = array_key_exists($schemaIdInt, $registerSchemas) || array_key_exists($schemaIdStr, $registerSchemas);
                         if ($inValues === true || $inKeys === true) {
                             $matchedRegister = $register;
                             break;
@@ -1128,14 +1127,14 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                 $this->logger->warning(
                     message: '[UnifiedObjectMapper] Failed to find schema for multi-schema facets',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'     => __FILE__,
+                        'line'     => __LINE__,
                         'schemaId' => $schemaId,
                         'error'    => $e->getMessage(),
                     ]
                 );
-            }
-        }
+            }//end try
+        }//end foreach
 
         if (empty($registerSchemaPairs) === true) {
             return [];
@@ -1191,14 +1190,14 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         foreach ($registerIds as $registerId) {
             try {
                 $register = $this->registerMapper->find($registerId, _multitenancy: false, _rbac: false);
-                $registers[$register->getId()] = $register;
+                $registers[$register->getId()]      = $register;
                 $registersCache[$register->getId()] = $register->jsonSerialize();
             } catch (\Exception $e) {
                 $this->logger->warning(
                     message: '[UnifiedObjectMapper] Failed to find register for multi-schema search',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'       => __FILE__,
+                        'line'       => __LINE__,
                         'registerId' => $registerId,
                         'error'      => $e->getMessage(),
                     ]
@@ -1233,13 +1232,14 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                     if (is_string($registerSchemas) === true) {
                         $registerSchemas = json_decode($registerSchemas, true) ?? [];
                     }
+
                     // Handle both formats: sequential array [2, 3, 4] or keyed object {"2": {...}}.
                     if (is_array($registerSchemas) === true) {
                         // Check if schema ID is in the values (sequential) or keys (associative).
                         $schemaIdStr = (string) $schemaId;
                         $schemaIdInt = (int) $schemaId;
-                        $inValues = in_array($schemaIdInt, $registerSchemas, false) || in_array($schemaIdStr, $registerSchemas, false);
-                        $inKeys = array_key_exists($schemaIdInt, $registerSchemas) || array_key_exists($schemaIdStr, $registerSchemas);
+                        $inValues    = in_array($schemaIdInt, $registerSchemas, false) || in_array($schemaIdStr, $registerSchemas, false);
+                        $inKeys      = array_key_exists($schemaIdInt, $registerSchemas) || array_key_exists($schemaIdStr, $registerSchemas);
                         if ($inValues === true || $inKeys === true) {
                             $matchedRegister = $register;
                             break;
@@ -1456,7 +1456,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                     context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
                 );
                 // Fall through to blob storage.
-            }
+            }//end try
         }//end if
 
         $this->logger->debug(
@@ -1535,9 +1535,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             && ($registerId !== null || ($registerIds !== null && is_array($registerIds) && count($registerIds) > 0));
         if ($isMultiSchemaSearch === true) {
             // Build array of register IDs: use _registers if available, otherwise wrap single _register.
-            $allRegisterIds = ($registerIds !== null && is_array($registerIds) && count($registerIds) > 0)
-                ? array_map('intval', $registerIds)
-                : [(int) $registerId];
+            $allRegisterIds = ($registerIds !== null && is_array($registerIds) && count($registerIds) > 0) ? array_map('intval', $registerIds) : [(int) $registerId];
             return $this->searchObjectsPaginatedMultiSchema(
                 searchQuery: $searchQuery,
                 countQuery: $countQuery,
@@ -1653,8 +1651,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
 
         // Check if this is a global text search (no register/schema but _search is provided).
         // In this case, search across ALL magic tables using UNION for multi-magic-table search.
-        $searchTerm          = $searchQuery['_search'] ?? null;
-        $isGlobalTextSearch  = $registerId === null
+        $searchTerm         = $searchQuery['_search'] ?? null;
+        $isGlobalTextSearch = $registerId === null
             && $schemaId === null
             && $searchTerm !== null
             && is_string($searchTerm) === true
@@ -1676,8 +1674,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         $this->logger->warning(
             message: '[UnifiedObjectMapper] Using blob storage fallback - magic mapper unavailable',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'       => __FILE__,
+                'line'       => __LINE__,
                 'registerId' => $registerId,
                 'schemaId'   => $schemaId,
             ]
@@ -1856,7 +1854,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             // Build object data with metadata for conditional RBAC evaluation.
             // Conditional rules like {"group": "x", "match": {"_organisation": "$organisation"}}
             // need metadata fields (_organisation, _owner) in the object data for matching.
-            $objectData                  = $object->getObject() ?? [];
+            $objectData = $object->getObject() ?? [];
             $objectData['_organisation'] = $object->getOrganisation();
             $objectData['_owner']        = $object->getOwner();
 
@@ -1875,8 +1873,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                 $this->logger->debug(
                     message: '[UnifiedObjectMapper] filterBySchemaRbac: Filtered out object',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'     => __FILE__,
+                        'line'     => __LINE__,
                         'uuid'     => $object->getUuid(),
                         'schemaId' => $schemaId,
                     ]
@@ -1887,8 +1885,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         $this->logger->debug(
             message: '[UnifiedObjectMapper] filterBySchemaRbac complete',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'        => __FILE__,
+                'line'        => __LINE__,
                 'inputCount'  => count($objects),
                 'outputCount' => count($filtered),
             ]
@@ -1921,8 +1919,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         $this->logger->debug(
                 message: '[UnifiedObjectMapper] searchObjectsGloballyByIds starting',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
                     'idsCount' => count($ids),
                 ]
                 );
@@ -2002,8 +2000,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         $this->logger->debug(
                 message: '[UnifiedObjectMapper] searchObjectsGloballyByIds complete',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'           => __FILE__,
+                    'line'           => __LINE__,
                     'requestedCount' => count($ids),
                     'foundCount'     => $total,
                 ]
@@ -2116,8 +2114,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         $this->logger->debug(
             message: '[UnifiedObjectMapper] searchObjectsGloballyByRelations complete',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'       => __FILE__,
+                'line'       => __LINE__,
                 'uuid'       => $uuid,
                 'foundCount' => $total,
             ]
@@ -2194,7 +2192,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             } catch (\Exception $e) {
                 // Skip if register or schema can't be loaded.
                 continue;
-            }
+            }//end try
         }//end foreach
 
         if (empty($registerSchemaPairs) === true) {
@@ -2212,9 +2210,9 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         }
 
         // Build UNION query with RBAC and multitenancy flags.
-        $unionQuery                   = $searchQuery;
-        $unionQuery['_rbac']          = $rbac;
-        $unionQuery['_multitenancy']  = $multitenancy;
+        $unionQuery          = $searchQuery;
+        $unionQuery['_rbac'] = $rbac;
+        $unionQuery['_multitenancy'] = $multitenancy;
 
         $results = $this->magicMapper->searchAcrossMultipleTables(
             query: $unionQuery,

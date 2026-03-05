@@ -180,7 +180,7 @@ class FacetHandler
         }
 
         // Discover non-aggregated facet fields from schema configurations.
-        $schemas        = $this->getSchemasForQuery($facetQuery);
+        $schemas         = $this->getSchemasForQuery($facetQuery);
         $facetableConfig = $this->getFacetableFieldsFromSchemas($schemas);
 
         // **INTELLIGENT FACETING**: Try current filters first, then smart fallback.
@@ -200,8 +200,8 @@ class FacetHandler
         $this->logger->debug(
             message: '[FacetHandler] FacetHandler completed facet calculation',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'              => __FILE__,
+                'line'              => __LINE__,
                 'executionTime'     => $executionTime.'ms',
                 'strategy'          => $result['performance_metadata']['strategy'] ?? 'unknown',
                 'cacheUsed'         => false,
@@ -249,8 +249,8 @@ class FacetHandler
         $this->logger->debug(
             message: '[FacetHandler] Facetable fields discovery completed',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'                => __FILE__,
+                'line'                => __LINE__,
                 'executionTime'       => $executionTime.'ms',
                 'schemaCount'         => count($schemas),
                 'facetableFieldCount' => $selfCount + $objectCount,
@@ -340,8 +340,8 @@ class FacetHandler
             $this->logger->debug(
                 message: '[FacetHandler] Facets empty with restrictive filters, trying collection-wide fallback',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'          => __FILE__,
+                    'line'          => __LINE__,
                     'originalQuery' => array_keys($facetQuery),
                     'totalResults'  => $totalFacetResults,
                 ]
@@ -367,8 +367,8 @@ class FacetHandler
                 $this->logger->info(
                     message: '[FacetHandler] Smart faceting fallback successful',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'            => __FILE__,
+                        'line'            => __LINE__,
                         'fallbackResults' => $fallbackResults,
                         'originalResults' => $totalFacetResults,
                         'collectionQuery' => array_keys($collectionQuery),
@@ -420,15 +420,15 @@ class FacetHandler
                     $facets[$uniqueKey] = $scopedFacets[$fieldName];
                     $facets[$uniqueKey]['_nonAggregated'] = true;
                     $facets[$uniqueKey]['_schemaId']      = $schemaId;
-                    $facets[$uniqueKey]['_facetConfig']    = $config;
-                    $facets[$uniqueKey]['_fieldName']      = $fieldName;
+                    $facets[$uniqueKey]['_facetConfig']   = $config;
+                    $facets[$uniqueKey]['_fieldName']     = $fieldName;
                 }
             } catch (\Exception $e) {
                 $this->logger->warning(
                     message: '[FacetHandler] Failed to get non-aggregated facet',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'     => __FILE__,
+                        'line'     => __LINE__,
                         'field'    => $fieldName,
                         'schemaId' => $schemaId,
                         'error'    => $e->getMessage(),
@@ -501,7 +501,7 @@ class FacetHandler
      *                  "data": { "type": "terms", "total_count": N, "buckets": [{value, count, label}] } } }
      * ```
      *
-     * @param array $facets         Raw facets from mapper.
+     * @param array $facets          Raw facets from mapper.
      * @param array $facetableConfig Facetable field config from schema discovery.
      *
      * @return array Transformed facets in standardized format.
@@ -659,13 +659,9 @@ class FacetHandler
                 }
 
                 // Use config title/description if available, then fall back to facet data or auto-generated.
-                $title = ($fieldConfig !== null && ($fieldConfig['title'] ?? null) !== null)
-                    ? $fieldConfig['title']
-                    : ($facetData['title'] ?? $this->formatFieldTitle($field));
+                $title = ($fieldConfig !== null && ($fieldConfig['title'] ?? null) !== null) ? $fieldConfig['title'] : ($facetData['title'] ?? $this->formatFieldTitle($field));
 
-                $description = ($fieldConfig !== null && ($fieldConfig['description'] ?? null) !== null)
-                    ? $fieldConfig['description']
-                    : 'object field: '.$field;
+                $description = ($fieldConfig !== null && ($fieldConfig['description'] ?? null) !== null) ? $fieldConfig['description'] : 'object field: '.$field;
 
                 $definition = [
                     'title'       => $title,
@@ -909,8 +905,8 @@ class FacetHandler
             $this->logger->debug(
                 message: '[FacetHandler] Facet response cached',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
                     'cacheKey' => $cacheKey,
                     'ttl'      => $ttl,
                     'strategy' => $result['performance_metadata']['strategy'] ?? 'unknown',
@@ -1121,8 +1117,8 @@ class FacetHandler
                 $this->logger->error(
                     message: '[FacetHandler] Failed to get facetable fields from schema properties',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'     => __FILE__,
+                        'line'     => __LINE__,
                         'error'    => $e->getMessage(),
                         'schemaId' => $schemaId,
                     ]

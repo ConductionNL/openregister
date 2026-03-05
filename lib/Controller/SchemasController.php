@@ -127,7 +127,6 @@ class SchemasController extends Controller
      *
      * @PublicPage
      *
-     *
      * @return JSONResponse JSON response with array of schemas
      *
      * @psalm-return JSONResponse<200,
@@ -252,7 +251,6 @@ class SchemasController extends Controller
      * @NoCSRFRequired
      *
      * @PublicPage
-     *
      */
     public function show($id): JSONResponse
     {
@@ -299,8 +297,8 @@ class SchemasController extends Controller
             $this->logger->error(
                 message: '[SchemasController] Failed to retrieve schema',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'          => __FILE__,
+                    'line'          => __LINE__,
                     'schema_id'     => $id,
                     'error_message' => $e->getMessage(),
                 ]
@@ -336,8 +334,8 @@ class SchemasController extends Controller
         $this->logger->info(
             message: '[SchemasController::create] Starting schema creation',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'             => __FILE__,
+                'line'             => __LINE__,
                 'title'            => $data['title'] ?? 'no title',
                 'has_organisation' => isset($data['organisation']),
                 'organisation'     => $data['organisation'] ?? 'not set',
@@ -391,8 +389,8 @@ class SchemasController extends Controller
             $this->logger->error(
                 message: '[SchemasController] Schema creation failed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'          => __FILE__,
+                    'line'          => __LINE__,
                     'error_message' => $e->getMessage(),
                     'error_code'    => $e->getCode(),
                     'trace'         => $e->getTraceAsString(),
@@ -495,8 +493,8 @@ class SchemasController extends Controller
             $this->logger->error(
                 message: '[SchemasController] Schema update failed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'          => __FILE__,
+                    'line'          => __LINE__,
                     'schema_id'     => $id,
                     'error_message' => $e->getMessage(),
                     'error_code'    => $e->getCode(),
@@ -715,8 +713,8 @@ class SchemasController extends Controller
             $this->logger->error(
                 message: '[SchemasController] Schema upload failed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'          => __FILE__,
+                    'line'          => __LINE__,
                     'schema_id'     => $id,
                     'error_message' => $e->getMessage(),
                     'error_code'    => $e->getCode(),
@@ -935,7 +933,7 @@ class SchemasController extends Controller
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
-        }
+        }//end try
     }//end explore()
 
     /**
@@ -1057,8 +1055,8 @@ class SchemasController extends Controller
             $this->logger->info(
                 message: '[SchemasController] Schema published',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'           => __FILE__,
+                    'line'           => __LINE__,
                     'schema_id'      => $id,
                     'published_date' => $date->format('Y-m-d H:i:s'),
                 ]
@@ -1071,8 +1069,8 @@ class SchemasController extends Controller
             $this->logger->error(
                 message: '[SchemasController] Failed to publish schema',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
                     'schema_id' => $id,
                     'error'     => $e->getMessage(),
                 ]
@@ -1140,8 +1138,8 @@ class SchemasController extends Controller
             $this->logger->info(
                 message: '[SchemasController] Schema depublished',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'             => __FILE__,
+                    'line'             => __LINE__,
                     'schema_id'        => $id,
                     'depublished_date' => $date->format('Y-m-d H:i:s'),
                 ]
@@ -1154,8 +1152,8 @@ class SchemasController extends Controller
             $this->logger->error(
                 message: '[SchemasController] Failed to depublish schema',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
                     'schema_id' => $id,
                     'error'     => $e->getMessage(),
                 ]

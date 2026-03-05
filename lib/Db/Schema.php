@@ -796,14 +796,14 @@ class Schema extends Entity implements JsonSerializable
      * When $propertyName is provided, check the property's authorization array first,
      * then fall back to schema-level authorization if no property-level authorization exists.
      *
-     * @param string $groupId             The group ID to check
-     * @param string $action              The CRUD action (create, read, update, delete)
-     * @param string $userId              Optional user ID for owner check
-     * @param string $userGroup           Optional user group for admin check
-     * @param string $objectOwner         Optional object owner for ownership check
-     * @param array  $objectData          Optional object data for conditional match evaluation
-     * @param string $objectOrganisation  Optional object organisation UUID (@self.organisation)
-     * @param string $activeOrganisation  Optional user's active organisation UUID for $organisation variable
+     * @param string $groupId            The group ID to check
+     * @param string $action             The CRUD action (create, read, update, delete)
+     * @param string $userId             Optional user ID for owner check
+     * @param string $userGroup          Optional user group for admin check
+     * @param string $objectOwner        Optional object owner for ownership check
+     * @param array  $objectData         Optional object data for conditional match evaluation
+     * @param string $objectOrganisation Optional object organisation UUID (@self.organisation)
+     * @param string $activeOrganisation Optional user's active organisation UUID for $organisation variable
      *
      * @return bool True if the group has permission for the action
      *
@@ -847,6 +847,7 @@ class Schema extends Entity implements JsonSerializable
                 if ($entry === $groupId) {
                     return true;
                 }
+
                 continue;
             }
 
@@ -862,7 +863,7 @@ class Schema extends Entity implements JsonSerializable
                     return true;
                 }
             }
-        }
+        }//end foreach
 
         return false;
     }//end hasPermission()
@@ -877,10 +878,10 @@ class Schema extends Entity implements JsonSerializable
      * - _organisation → matches against the object's @self.organisation
      * - Other fields → matched against the object data
      *
-     * @param array  $conditions          Key-value pairs of field => expected value
-     * @param array  $objectData          The object's data fields
-     * @param string $objectOrganisation  The object's @self.organisation
-     * @param string $activeOrganisation  The user's active organisation UUID
+     * @param array  $conditions         Key-value pairs of field => expected value
+     * @param array  $objectData         The object's data fields
+     * @param string $objectOrganisation The object's @self.organisation
+     * @param string $activeOrganisation The user's active organisation UUID
      *
      * @return bool True if all conditions are satisfied
      */
@@ -896,6 +897,7 @@ class Schema extends Entity implements JsonSerializable
                 if ($activeOrganisation === null) {
                     return false;
                 }
+
                 $expectedValue = $activeOrganisation;
             }
 
@@ -917,7 +919,7 @@ class Schema extends Entity implements JsonSerializable
             if ($actualValue !== $expectedValue) {
                 return false;
             }
-        }
+        }//end foreach
 
         return true;
     }//end evaluateMatchConditions()
@@ -967,12 +969,20 @@ class Schema extends Entity implements JsonSerializable
             if (($property['inversedBy'] ?? null) !== null) {
                 $inversedById = ($property['inversedBy']['id'] ?? null);
                 if (is_array($property['inversedBy']) === true && $inversedById !== null) {
+                    // Legacy object format: {"id": "fieldName"} → normalize to string.
                     $this->properties[$propertyName]['inversedBy'] = $property['inversedBy']['id'];
                     continue;
                 }
 
+                // Allow arrays of strings (multi-field inversedBy, e.g., ["moduleA", "moduleB"]).
+                if (is_array($property['inversedBy']) === true
+                    && array_is_list($property['inversedBy']) === true
+                ) {
+                    continue;
+                }
+
                 if (is_string($property['inversedBy']) === false) {
-                    // Remove invalid inversedBy if it's not a string or object with id.
+                    // Remove invalid inversedBy if it's not a string, array of strings, or object with id.
                     unset($this->properties[$propertyName]['inversedBy']);
                 }
             }
@@ -983,12 +993,20 @@ class Schema extends Entity implements JsonSerializable
             if (($property['items']['inversedBy'] ?? null) !== null) {
                 $itemsInversedById = ($property['items']['inversedBy']['id'] ?? null);
                 if (is_array($property['items']['inversedBy']) === true && $itemsInversedById !== null) {
+                    // Legacy object format: {"id": "fieldName"} → normalize to string.
                     $this->properties[$propertyName]['items']['inversedBy'] = $property['items']['inversedBy']['id'];
                     continue;
                 }
 
+                // Allow arrays of strings (multi-field inversedBy, e.g., ["moduleA", "moduleB"]).
+                if (is_array($property['items']['inversedBy']) === true
+                    && array_is_list($property['items']['inversedBy']) === true
+                ) {
+                    continue;
+                }
+
                 if (is_string($property['items']['inversedBy']) === false) {
-                    // Remove invalid inversedBy if it's not a string or object with id.
+                    // Remove invalid inversedBy if it's not a string, array of strings, or object with id.
                     unset($this->properties[$propertyName]['items']['inversedBy']);
                 }
             }

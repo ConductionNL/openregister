@@ -31,7 +31,7 @@ class MigrationService
         private readonly IDBConnection $db,
         private readonly LoggerInterface $logger,
     ) {
-    }
+    }//end __construct()
 
     /**
      * Resolve register and schema from IDs or slugs.
@@ -46,10 +46,10 @@ class MigrationService
     public function resolveRegisterAndSchema(string|int $registerId, string|int $schemaId): array
     {
         $register = $this->registerMapper->find(id: $registerId, _rbac: false, _multitenancy: false);
-        $schema = $this->schemaMapper->find(id: $schemaId, _rbac: false, _multitenancy: false);
+        $schema   = $this->schemaMapper->find(id: $schemaId, _rbac: false, _multitenancy: false);
 
         return ['register' => $register, 'schema' => $schema];
-    }
+    }//end resolveRegisterAndSchema()
 
     /**
      * Get storage status for a register/schema combination.
@@ -82,12 +82,12 @@ class MigrationService
         }
 
         return [
-            'register' => [
+            'register'    => [
                 'id'   => $register->getId(),
                 'name' => $register->getName(),
                 'slug' => $register->getSlug(),
             ],
-            'schema' => [
+            'schema'      => [
                 'id'   => $schema->getId(),
                 'name' => $schema->getName(),
                 'slug' => $schema->getSlug(),
@@ -95,12 +95,12 @@ class MigrationService
             'blobStorage' => [
                 'count' => $blobCount,
             ],
-            'magicTable' => [
+            'magicTable'  => [
                 'exists' => $magicTableExists,
                 'count'  => $magicCount,
             ],
         ];
-    }
+    }//end getStorageStatus()
 
     /**
      * Migrate objects from blob storage to a magic table.
@@ -204,8 +204,8 @@ class MigrationService
                             'error' => $e->getMessage(),
                         ]
                     );
-                }
-            }
+                }//end try
+            }//end foreach
 
             // When not dry run, successfully migrated objects are deleted from source,
             // so we don't advance offset for those. Only advance by skipped+failed count,
@@ -213,11 +213,12 @@ class MigrationService
             if ($dryRun === true) {
                 $offset += $batchSize;
             }
+
             // When not dry run, keep offset at 0 since source rows are being deleted.
-        }
+        }//end while
 
         return $report;
-    }
+    }//end migrateToMagicTable()
 
     /**
      * Migrate objects from a magic table to blob storage.
@@ -338,18 +339,18 @@ class MigrationService
                             'error' => $e->getMessage(),
                         ]
                     );
-                }
-            }
+                }//end try
+            }//end foreach
 
             // When not dry run, successfully migrated objects are deleted from source,
             // so keep offset at 0 since source rows are being deleted.
             if ($dryRun === true) {
                 $offset += $batchSize;
             }
-        }
+        }//end while
 
         return $report;
-    }
+    }//end migrateToBlobStorage()
 
     /**
      * Check if an object with the given UUID exists in a magic table.
@@ -370,7 +371,7 @@ class MigrationService
         } catch (\Exception $e) {
             return false;
         }
-    }
+    }//end existsInMagicTable()
 
     /**
      * Check if an object with the given UUID exists in blob storage.
@@ -391,5 +392,5 @@ class MigrationService
         } catch (\Exception $e) {
             return false;
         }
-    }
-}
+    }//end existsInBlobStorage()
+}//end class

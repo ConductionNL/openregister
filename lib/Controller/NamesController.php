@@ -152,8 +152,8 @@ class NamesController extends Controller
                 $this->logger->debug(
                     message: '[NamesController] 📦 BULK NAME LOOKUP REQUEST',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'            => __FILE__,
+                        'line'            => __LINE__,
                         'requested_count' => count($requestedIds),
                         'found_count'     => count($names),
                         'execution_time'  => round((microtime(true) - $startTime) * 1000, 2).'ms',
@@ -168,8 +168,8 @@ class NamesController extends Controller
                 $this->logger->debug(
                     message: '[NamesController] 📋 ALL NAMES REQUEST',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'           => __FILE__,
+                        'line'           => __LINE__,
                         'total_names'    => count($names),
                         'execution_time' => round((microtime(true) - $startTime) * 1000, 2).'ms',
                     ]
@@ -191,8 +191,8 @@ class NamesController extends Controller
             $this->logger->error(
                 message: '[NamesController] Names endpoint failed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]
@@ -286,8 +286,8 @@ class NamesController extends Controller
             $this->logger->debug(
                 message: '[NamesController] 📦 BULK NAME POST REQUEST',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'            => __FILE__,
+                    'line'            => __LINE__,
                     'requested_count' => count($requestedIds),
                     'found_count'     => count($names),
                     'execution_time'  => $executionTime.'ms',
@@ -308,8 +308,8 @@ class NamesController extends Controller
             $this->logger->error(
                 message: '[NamesController] POST names endpoint failed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]
@@ -363,8 +363,8 @@ class NamesController extends Controller
                 $this->logger->debug(
                     message: '[NamesController] ❌ SINGLE NAME NOT FOUND',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'           => __FILE__,
+                        'line'           => __LINE__,
                         'id'             => $id,
                         'execution_time' => $executionTime.'ms',
                     ]
@@ -379,13 +379,13 @@ class NamesController extends Controller
                     ],
                     statusCode: 404
                 );
-            }
+            }//end if
 
             $this->logger->debug(
                 message: '[NamesController] 🚀 SINGLE NAME LOOKUP',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'           => __FILE__,
+                    'line'           => __LINE__,
                     'id'             => $id,
                     'name'           => $name,
                     'execution_time' => $executionTime.'ms',
@@ -405,8 +405,8 @@ class NamesController extends Controller
             $this->logger->error(
                 message: '[NamesController] Single name lookup failed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'id'    => $id,
                     'error' => $e->getMessage(),
                 ]
@@ -464,8 +464,8 @@ class NamesController extends Controller
             $this->logger->error(
                 message: '[NamesController] Failed to get cache statistics',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -510,8 +510,8 @@ class NamesController extends Controller
             $this->logger->info(
                 message: '[NamesController] Manual name cache warmup completed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'           => __FILE__,
+                    'line'           => __LINE__,
                     'old_cache_size' => $oldStats['name_cache_size'] ?? 0,
                     'new_cache_size' => $newStats['name_cache_size'] ?? 0,
                     'loaded_names'   => $loadedCount,
@@ -532,8 +532,8 @@ class NamesController extends Controller
             $this->logger->error(
                 message: '[NamesController] Manual cache warmup failed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );

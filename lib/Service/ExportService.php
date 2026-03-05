@@ -92,13 +92,13 @@ class ExportService
     /**
      * Constructor for the ExportService
      *
-     * @param ObjectEntityMapper  $_objectEntityMapper  The object entity mapper (unused but kept for future use)
-     * @param RegisterMapper      $registerMapper       The register mapper
-     * @param IUserManager        $_userManager         The user manager (unused but kept for future use)
-     * @param IGroupManager       $groupManager         The group manager
-     * @param ObjectService       $objectService        The object service
-     * @param CacheHandler        $cacheHandler         The cache handler for name resolution
-     * @param PropertyRbacHandler $propertyRbacHandler   The property RBAC handler
+     * @param ObjectEntityMapper  $_objectEntityMapper The object entity mapper (unused but kept for future use)
+     * @param RegisterMapper      $registerMapper      The register mapper
+     * @param IUserManager        $_userManager        The user manager (unused but kept for future use)
+     * @param IGroupManager       $groupManager        The group manager
+     * @param ObjectService       $objectService       The object service
+     * @param CacheHandler        $cacheHandler        The cache handler for name resolution
+     * @param PropertyRbacHandler $propertyRbacHandler The property RBAC handler
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
@@ -111,11 +111,11 @@ class ExportService
         CacheHandler $cacheHandler,
         PropertyRbacHandler $propertyRbacHandler
     ) {
-        $this->registerMapper       = $registerMapper;
-        $this->groupManager         = $groupManager;
-        $this->objectService        = $objectService;
-        $this->cacheHandler         = $cacheHandler;
-        $this->propertyRbacHandler  = $propertyRbacHandler;
+        $this->registerMapper      = $registerMapper;
+        $this->groupManager        = $groupManager;
+        $this->objectService       = $objectService;
+        $this->cacheHandler        = $cacheHandler;
+        $this->propertyRbacHandler = $propertyRbacHandler;
     }//end __construct()
 
     /**
@@ -373,7 +373,7 @@ class ExportService
                 $externalNames = $this->cacheHandler->getMultipleObjectNames(array_values($externalUuids));
                 $uuidToNameMap = array_merge($uuidToNameMap, $externalNames);
             }
-        }
+        }//end if
 
         // Second pass: populate the sheet with data and resolved names.
         foreach ($objects as $object) {
@@ -469,8 +469,8 @@ class ExportService
                     $headers[$col] = '_'.$fieldName;
                     $col++;
                 }
-            }
-        }
+            }//end foreach
+        }//end if
 
         // REQUIREMENT: Add @self metadata fields only if user is admin.
         if ($this->isUserAdmin($currentUser) === true) {
@@ -701,7 +701,7 @@ class ExportService
      *
      * Handles both single UUID strings and arrays/JSON arrays of UUIDs.
      *
-     * @param mixed $value    The property value (string, array, or JSON string)
+     * @param mixed $value     The property value (string, array, or JSON string)
      * @param array &$allUuids The array to collect UUIDs into (passed by reference)
      *
      * @return void
@@ -748,7 +748,7 @@ class ExportService
      *
      * Falls back to the UUID itself if no name is found in the map.
      *
-     * @param mixed $value        The original value containing UUID(s)
+     * @param mixed $value         The original value containing UUID(s)
      * @param array $uuidToNameMap Map of UUID → name from bulk resolution
      *
      * @return string|null The resolved name(s) in the same format as input
@@ -800,5 +800,4 @@ class ExportService
     {
         return $this->registerMapper->getSchemasByRegisterId($register->getId());
     }//end getSchemasForRegister()
-
 }//end class

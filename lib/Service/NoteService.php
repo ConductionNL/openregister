@@ -105,7 +105,7 @@ class NoteService
      *
      * @return array Array of note arrays in JSON-friendly format
      */
-    public function getNotesForObject(string $objectUuid, int $limit = 50, int $offset = 0): array
+    public function getNotesForObject(string $objectUuid, int $limit=50, int $offset=0): array
     {
         $comments = $this->commentsManager->getForObject(
             self::OBJECT_TYPE,

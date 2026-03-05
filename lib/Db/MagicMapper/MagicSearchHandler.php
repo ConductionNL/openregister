@@ -974,16 +974,32 @@ class MagicSearchHandler
                 // Metadata field sorting (e.g., @self.created → t._created).
                 $metadataField = '_'.str_replace('@self.', '', $field);
                 $qb->addOrderBy("t.{$metadataField}", $direction);
-            } else if (in_array($field, ['_created', '_updated', '_name', '_description', '_summary',
-                '_uuid', '_register', '_schema', '_owner', '_organisation', '_published', '_depublished',
-            ], true) === true) {
+            } else if (in_array(
+                    $field,
+                    [
+                        '_created',
+                        '_updated',
+                        '_name',
+                        '_description',
+                        '_summary',
+                        '_uuid',
+                        '_register',
+                        '_schema',
+                        '_owner',
+                        '_organisation',
+                        '_published',
+                        '_depublished',
+                    ],
+                    true
+                    ) === true
+            ) {
                 // Direct metadata column reference (e.g., _created → t._created).
                 $qb->addOrderBy("t.{$field}", $direction);
             } else if (($properties[$field] ?? null) !== null) {
                 // Schema property field sorting.
                 $columnName = $this->sanitizeColumnName($field);
                 $qb->addOrderBy("t.{$columnName}", $direction);
-            }
+            }//end if
         }//end foreach
     }//end applySorting()
 
@@ -1149,58 +1165,42 @@ class MagicSearchHandler
 
             // Set JSON metadata fields (stored as JSONB in magic tables).
             if (($metadataData['relations'] ?? null) !== null) {
-                $relations = is_string($metadataData['relations'])
-                    ? json_decode($metadataData['relations'], true)
-                    : $metadataData['relations'];
+                $relations = is_string($metadataData['relations']) ? json_decode($metadataData['relations'], true) : $metadataData['relations'];
                 $objectEntity->setRelations(is_array($relations) ? $relations : []);
             }
 
             if (($metadataData['files'] ?? null) !== null) {
-                $files = is_string($metadataData['files'])
-                    ? json_decode($metadataData['files'], true)
-                    : $metadataData['files'];
+                $files = is_string($metadataData['files']) ? json_decode($metadataData['files'], true) : $metadataData['files'];
                 $objectEntity->setFiles(is_array($files) ? $files : []);
             }
 
             if (($metadataData['locked'] ?? null) !== null) {
-                $locked = is_string($metadataData['locked'])
-                    ? json_decode($metadataData['locked'], true)
-                    : $metadataData['locked'];
+                $locked = is_string($metadataData['locked']) ? json_decode($metadataData['locked'], true) : $metadataData['locked'];
                 $objectEntity->setLocked(is_array($locked) ? $locked : null);
             }
 
             if (($metadataData['groups'] ?? null) !== null) {
-                $groups = is_string($metadataData['groups'])
-                    ? json_decode($metadataData['groups'], true)
-                    : $metadataData['groups'];
+                $groups = is_string($metadataData['groups']) ? json_decode($metadataData['groups'], true) : $metadataData['groups'];
                 $objectEntity->setGroups(is_array($groups) ? $groups : []);
             }
 
             if (($metadataData['authorization'] ?? null) !== null) {
-                $auth = is_string($metadataData['authorization'])
-                    ? json_decode($metadataData['authorization'], true)
-                    : $metadataData['authorization'];
+                $auth = is_string($metadataData['authorization']) ? json_decode($metadataData['authorization'], true) : $metadataData['authorization'];
                 $objectEntity->setAuthorization(is_array($auth) ? $auth : []);
             }
 
             if (($metadataData['validation'] ?? null) !== null) {
-                $validation = is_string($metadataData['validation'])
-                    ? json_decode($metadataData['validation'], true)
-                    : $metadataData['validation'];
+                $validation = is_string($metadataData['validation']) ? json_decode($metadataData['validation'], true) : $metadataData['validation'];
                 $objectEntity->setValidation(is_array($validation) ? $validation : []);
             }
 
             if (($metadataData['geo'] ?? null) !== null) {
-                $geo = is_string($metadataData['geo'])
-                    ? json_decode($metadataData['geo'], true)
-                    : $metadataData['geo'];
+                $geo = is_string($metadataData['geo']) ? json_decode($metadataData['geo'], true) : $metadataData['geo'];
                 $objectEntity->setGeo(is_array($geo) ? $geo : []);
             }
 
             if (($metadataData['retention'] ?? null) !== null) {
-                $retention = is_string($metadataData['retention'])
-                    ? json_decode($metadataData['retention'], true)
-                    : $metadataData['retention'];
+                $retention = is_string($metadataData['retention']) ? json_decode($metadataData['retention'], true) : $metadataData['retention'];
                 $objectEntity->setRetention(is_array($retention) ? $retention : []);
             }
 
@@ -1233,8 +1233,8 @@ class MagicSearchHandler
             $this->logger->error(
                 message: '[MagicSearchHandler] Failed to convert row to ObjectEntity',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
                     'error'     => $e->getMessage(),
                     'tableName' => $tableName,
                     'row'       => $row,

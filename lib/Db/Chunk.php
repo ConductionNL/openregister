@@ -230,27 +230,27 @@ class Chunk extends Entity implements JsonSerializable
      */
     public function __construct()
     {
-        $this->addType('uuid', 'string');
-        $this->addType('sourceType', 'string');
-        $this->addType('sourceId', 'integer');
-        $this->addType('textContent', 'string');
-        $this->addType('startOffset', 'integer');
-        $this->addType('endOffset', 'integer');
-        $this->addType('chunkIndex', 'integer');
-        $this->addType('positionReference', 'json');
-        $this->addType('language', 'string');
-        $this->addType('languageLevel', 'string');
-        $this->addType('languageConfidence', 'float');
-        $this->addType('detectionMethod', 'string');
-        $this->addType('indexed', 'boolean');
-        $this->addType('vectorized', 'boolean');
-        $this->addType('embeddingProvider', 'string');
-        $this->addType('overlapSize', 'integer');
-        $this->addType('owner', 'string');
-        $this->addType('organisation', 'string');
-        $this->addType('checksum', 'string');
-        $this->addType('createdAt', 'datetime');
-        $this->addType('updatedAt', 'datetime');
+        $this->addType(fieldName: 'uuid', type: 'string');
+        $this->addType(fieldName: 'sourceType', type: 'string');
+        $this->addType(fieldName: 'sourceId', type: 'integer');
+        $this->addType(fieldName: 'textContent', type: 'string');
+        $this->addType(fieldName: 'startOffset', type: 'integer');
+        $this->addType(fieldName: 'endOffset', type: 'integer');
+        $this->addType(fieldName: 'chunkIndex', type: 'integer');
+        $this->addType(fieldName: 'positionReference', type: 'json');
+        $this->addType(fieldName: 'language', type: 'string');
+        $this->addType(fieldName: 'languageLevel', type: 'string');
+        $this->addType(fieldName: 'languageConfidence', type: 'float');
+        $this->addType(fieldName: 'detectionMethod', type: 'string');
+        $this->addType(fieldName: 'indexed', type: 'boolean');
+        $this->addType(fieldName: 'vectorized', type: 'boolean');
+        $this->addType(fieldName: 'embeddingProvider', type: 'string');
+        $this->addType(fieldName: 'overlapSize', type: 'integer');
+        $this->addType(fieldName: 'owner', type: 'string');
+        $this->addType(fieldName: 'organisation', type: 'string');
+        $this->addType(fieldName: 'checksum', type: 'string');
+        $this->addType(fieldName: 'createdAt', type: 'datetime');
+        $this->addType(fieldName: 'updatedAt', type: 'datetime');
     }//end __construct()
 
     /**

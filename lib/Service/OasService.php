@@ -270,7 +270,7 @@ class OasService
                     $this->addExtendedPaths(register: $register, schema: $schema);
                 }
             }
-        }
+        }//end foreach
 
         // Validate the final OpenAPI specification before returning.
         $this->validateOasIntegrity();
@@ -410,7 +410,7 @@ class OasService
      * Merges in any schema-specific groups for this CRUD action.
      *
      * @param array    &$operation The operation array (passed by reference)
-     * @param string[]  $groups    The schema-specific groups that have access to this operation
+     * @param string[] $groups     The schema-specific groups that have access to this operation
      *
      * @return void
      */
@@ -422,12 +422,15 @@ class OasService
         }
 
         // Build scope list as inline code fragments.
-        $scopeList = implode(', ', array_map(
+        $scopeList = implode(
+                ', ',
+                array_map(
             static function (string $group): string {
                 return '`'.$group.'`';
             },
-            $groups
-        ));
+                $groups
+        )
+                );
 
         $operation['description'] .= "\n\n**Required scopes:** ".$scopeList;
 
@@ -713,9 +716,7 @@ class OasService
         if (isset($cleanDef['items']) === true) {
             if (is_array($cleanDef['items']) === true && array_is_list($cleanDef['items']) === true) {
                 // Sequential array (list) — not valid. Use first element or default.
-                $cleanDef['items'] = empty($cleanDef['items']) === false
-                    ? $cleanDef['items'][0]
-                    : ['type' => 'string'];
+                $cleanDef['items'] = empty($cleanDef['items']) === false ? $cleanDef['items'][0] : ['type' => 'string'];
             }
 
             if (is_array($cleanDef['items']) === false || empty($cleanDef['items']) === true) {
@@ -751,7 +752,7 @@ class OasService
      *
      * @return void
      */
-    private function addCrudPaths(object $register, object $schema, array $rbac = [], string $operationIdPrefix = ''): void
+    private function addCrudPaths(object $register, object $schema, array $rbac=[], string $operationIdPrefix=''): void
     {
         $registerSlug = $register->getSlug() ?: $this->slugify($register->getTitle());
         $schemaSlug   = $schema->getSlug() ?: $this->slugify($schema->getTitle());
@@ -1673,7 +1674,7 @@ class OasService
                     unset($operation);
                 }
             }
-        }
+        }//end if
     }//end validateOasIntegrity()
 
     /**
@@ -1758,8 +1759,8 @@ class OasService
                         }
                     }
                 }
-            }
-        }
+            }//end if
+        }//end if
 
         // Recursively check nested schemas (by reference so fixes are applied).
         if (($schema['properties'] ?? null) !== null) {

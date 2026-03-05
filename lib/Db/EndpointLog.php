@@ -130,17 +130,17 @@ class EndpointLog extends Entity implements JsonSerializable
      */
     public function __construct()
     {
-        $this->addType('uuid', 'string');
-        $this->addType('statusCode', 'integer');
-        $this->addType('statusMessage', 'string');
-        $this->addType('request', 'json');
-        $this->addType('response', 'json');
-        $this->addType('endpointId', 'integer');
-        $this->addType('userId', 'string');
-        $this->addType('sessionId', 'string');
-        $this->addType('expires', 'datetime');
-        $this->addType('created', 'datetime');
-        $this->addType('size', 'integer');
+        $this->addType(fieldName: 'uuid', type: 'string');
+        $this->addType(fieldName: 'statusCode', type: 'integer');
+        $this->addType(fieldName: 'statusMessage', type: 'string');
+        $this->addType(fieldName: 'request', type: 'json');
+        $this->addType(fieldName: 'response', type: 'json');
+        $this->addType(fieldName: 'endpointId', type: 'integer');
+        $this->addType(fieldName: 'userId', type: 'string');
+        $this->addType(fieldName: 'sessionId', type: 'string');
+        $this->addType(fieldName: 'expires', type: 'datetime');
+        $this->addType(fieldName: 'created', type: 'datetime');
+        $this->addType(fieldName: 'size', type: 'integer');
 
         // Set default expires to next week.
         if ($this->expires === null) {

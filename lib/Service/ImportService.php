@@ -814,8 +814,8 @@ class ImportService
             $this->logger->debug(
                 message: '[ImportService] CSV import processing objects',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'        => __FILE__,
+                    'line'        => __LINE__,
                     'objectCount' => count($allObjects),
                     'publish'     => $publish,
                 ]
@@ -838,8 +838,8 @@ class ImportService
                 $this->logger->debug(
                     message: '[ImportService] Adding publish date to CSV import objects',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'        => __FILE__,
+                        'line'        => __LINE__,
                         'publishDate' => $publishDate,
                         'objectCount' => count($allObjects),
                     ]
@@ -851,8 +851,8 @@ class ImportService
                     $this->logger->debug(
                         message: '[ImportService] First object @self structure after adding publish date',
                         context: [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
+                            'file'     => __FILE__,
+                            'line'     => __LINE__,
                             'selfData' => $allObjects[0]['@self'],
                         ]
                     );
@@ -979,8 +979,8 @@ class ImportService
         $this->logger->debug(
                 message: '[ImportService] Processing CSV row',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
                     'isAdmin'  => $isAdmin,
                     'username' => $currentUser ? $currentUser->getUID() : 'null',
                 ]
@@ -1621,8 +1621,8 @@ class ImportService
             $this->logger->info(
                 message: '[ImportService] 🔥 SOLR Warmup Job Scheduled',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'           => __FILE__,
+                    'line'           => __LINE__,
                     'total_imported' => $totalImported,
                     'warmup_mode'    => $mode,
                     'max_objects'    => $maxObjects,
@@ -1637,8 +1637,8 @@ class ImportService
             $this->logger->error(
                 message: '[ImportService] Failed to schedule SOLR warmup job',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'           => __FILE__,
+                    'line'           => __LINE__,
                     'error'          => $e->getMessage(),
                     'import_summary' => $importSummary,
                 ]
@@ -1733,8 +1733,8 @@ class ImportService
         $this->logger->info(
             message: '[ImportService] Scheduling smart SOLR warmup',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'             => __FILE__,
+                'line'             => __LINE__,
                 'total_imported'   => $totalImported,
                 'recommended_mode' => $mode,
                 'max_objects'      => $maxObjects,

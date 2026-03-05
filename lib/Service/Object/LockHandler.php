@@ -121,8 +121,8 @@ class LockHandler
         $this->logger->debug(
             message: '[LockHandler] Locking object',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'       => __FILE__,
+                'line'       => __LINE__,
                 'identifier' => $identifier,
                 'process'    => $process,
                 'duration'   => $duration,
@@ -162,8 +162,8 @@ class LockHandler
             $this->logger->info(
                 message: '[LockHandler] Object locked successfully',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
                     'identifier' => $identifier,
                     'process'    => $process,
                     'isMagic'    => $context['isMagic'],
@@ -175,8 +175,8 @@ class LockHandler
             $this->logger->warning(
                 message: '[LockHandler] Object is already locked',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
                     'identifier' => $identifier,
                     'error'      => $e->getMessage(),
                 ]
@@ -186,8 +186,8 @@ class LockHandler
             $this->logger->error(
                 message: '[LockHandler] Failed to lock object',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
                     'identifier' => $identifier,
                     'error'      => $e->getMessage(),
                 ]
@@ -242,8 +242,8 @@ class LockHandler
             $this->logger->info(
                 message: '[LockHandler] Object unlocked successfully',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
                     'identifier' => $identifier,
                     'isMagic'    => $context['isMagic'],
                 ]
@@ -254,8 +254,8 @@ class LockHandler
             $this->logger->error(
                 message: '[LockHandler] Failed to unlock object',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
                     'identifier' => $identifier,
                     'error'      => $e->getMessage(),
                 ]
@@ -300,8 +300,8 @@ class LockHandler
             $this->logger->warning(
                 message: '[LockHandler] Failed to check lock status',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
                     'identifier' => $identifier,
                     'error'      => $e->getMessage(),
                 ]
@@ -343,8 +343,8 @@ class LockHandler
             $this->logger->warning(
                 message: '[LockHandler] Failed to get lock info',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
                     'identifier' => $identifier,
                     'error'      => $e->getMessage(),
                 ]

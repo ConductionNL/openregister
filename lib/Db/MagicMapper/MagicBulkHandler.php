@@ -497,8 +497,8 @@ class MagicBulkHandler
                 $this->logger->debug(
                     message: '[MagicBulkHandler] Pre-upsert UUID check',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'           => __FILE__,
+                        'line'           => __LINE__,
                         'chunk'          => $chunkNumber,
                         'total_uuids'    => count($uuids),
                         'existing_uuids' => count($existingUuids),
@@ -582,8 +582,8 @@ class MagicBulkHandler
             $this->logger->info(
                 message: '[MagicBulkHandler] Executed UPSERT chunk',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'        => __FILE__,
+                    'line'        => __LINE__,
                     'chunk'       => $chunkNumber,
                     'objects'     => count($chunk),
                     'table'       => $tableName,
@@ -595,8 +595,8 @@ class MagicBulkHandler
             $this->logger->error(
                 message: '[MagicBulkHandler] UPSERT chunk failed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'chunk' => $chunkNumber,
                     'table' => $tableName,
                     'error' => $e->getMessage(),
@@ -656,8 +656,8 @@ class MagicBulkHandler
             $this->logger->info(
                 message: '[MagicBulkHandler] Classification complete (using pre-upsert UUID check)',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'             => __FILE__,
+                    'line'             => __LINE__,
                     'chunk'            => $chunkNumber,
                     'uuids_requested'  => count($uuids),
                     'objects_returned' => count($completeObjects),
@@ -732,8 +732,8 @@ class MagicBulkHandler
             $this->logger->error(
                 message: '[MagicBulkHandler] Failed to get table columns',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'table' => $tableName,
                     'error' => $e->getMessage(),
                 ]
@@ -769,8 +769,8 @@ class MagicBulkHandler
                 $this->logger->debug(
                     message: '[MagicBulkHandler] Failed to parse datetime value',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'  => __FILE__,
+                        'line'  => __LINE__,
                         'value' => $value,
                         'error' => $e->getMessage(),
                     ]

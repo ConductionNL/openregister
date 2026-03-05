@@ -544,15 +544,11 @@ class QueryHandler
             $paginatedResults['@self']['ignoredFilters'] = $ignoredFilters;
 
             // Check if any ignored filters look like control parameters missing the _ prefix.
-            $controlParams = ['limit', 'offset', 'page', 'order', 'sort', 'search', 'extend', 'fields', 'filter', 'unset'];
+            $controlParams  = ['limit', 'offset', 'page', 'order', 'sort', 'search', 'extend', 'fields', 'filter', 'unset'];
             $mistakenParams = array_intersect($ignoredFilters, $controlParams);
             if (empty($mistakenParams) === false) {
                 $suggestions = array_map(fn($p) => "_{$p}", $mistakenParams);
-                $paginatedResults['@self']['hint'] = 'Query returned 0 results because '
-                    . implode(', ', $mistakenParams)
-                    . ' was treated as an object property filter. Did you mean '
-                    . implode(', ', $suggestions)
-                    . '? Control parameters require an underscore prefix (e.g. _limit, _offset, _page).';
+                $paginatedResults['@self']['hint'] = 'Query returned 0 results because '.implode(', ', $mistakenParams).' was treated as an object property filter. Did you mean '.implode(', ', $suggestions).'? Control parameters require an underscore prefix (e.g. _limit, _offset, _page).';
             }
         }
 

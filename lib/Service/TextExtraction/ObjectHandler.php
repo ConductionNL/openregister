@@ -119,8 +119,8 @@ class ObjectHandler implements TextExtractionHandlerInterface
             $this->logger->debug(
                 message: '[ObjectHandler] Could not load schema',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
                     'object_id' => $sourceId,
                     'schema_id' => $object->getSchema(),
                 ]
@@ -140,8 +140,8 @@ class ObjectHandler implements TextExtractionHandlerInterface
             $this->logger->debug(
                 message: '[ObjectHandler] Could not load register',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'        => __FILE__,
+                    'line'        => __LINE__,
                     'object_id'   => $sourceId,
                     'register_id' => $object->getRegister(),
                 ]

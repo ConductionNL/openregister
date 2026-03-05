@@ -127,8 +127,8 @@ class SolrDocumentIndexer
             $this->logger->debug(
                 message: '[SolrDocumentIndexer] Object indexed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
                     'objectId' => $object->getId(),
                     'commit'   => $commit,
                 ]
@@ -139,8 +139,8 @@ class SolrDocumentIndexer
             $this->logger->error(
                 message: '[SolrDocumentIndexer] Failed to index object',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
                     'objectId' => $object->getId(),
                     'error'    => $e->getMessage(),
                 ]
@@ -187,8 +187,8 @@ class SolrDocumentIndexer
                 $this->logger->warning(
                     message: '[SolrDocumentIndexer] Failed to create document for object',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'     => __FILE__,
+                        'line'     => __LINE__,
                         'objectId' => $object->getId(),
                         'error'    => $e->getMessage(),
                     ]
@@ -210,8 +210,8 @@ class SolrDocumentIndexer
                 $this->logger->info(
                     message: '[SolrDocumentIndexer] Bulk index completed',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'    => __FILE__,
+                        'line'    => __LINE__,
                         'indexed' => $successCount,
                         'failed'  => $failureCount,
                     ]
@@ -220,8 +220,8 @@ class SolrDocumentIndexer
                 $this->logger->error(
                     message: '[SolrDocumentIndexer] Bulk index failed',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'  => __FILE__,
+                        'line'  => __LINE__,
                         'error' => $e->getMessage(),
                     ]
                 );
@@ -278,8 +278,8 @@ class SolrDocumentIndexer
             $this->logger->info(
                 message: '[SolrDocumentIndexer] Documents indexed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'   => __FILE__,
+                    'line'   => __LINE__,
                     'count'  => count($documents),
                     'commit' => $commit,
                 ]
@@ -290,8 +290,8 @@ class SolrDocumentIndexer
             $this->logger->error(
                 message: '[SolrDocumentIndexer] Failed to index documents',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -341,8 +341,8 @@ class SolrDocumentIndexer
             $this->logger->debug(
                 message: '[SolrDocumentIndexer] Object deleted',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
                     'objectId' => $objectId,
                     'commit'   => $commit,
                 ]
@@ -353,8 +353,8 @@ class SolrDocumentIndexer
             $this->logger->error(
                 message: '[SolrDocumentIndexer] Failed to delete object',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
                     'objectId' => $objectId,
                     'error'    => $e->getMessage(),
                 ]
@@ -408,8 +408,8 @@ class SolrDocumentIndexer
             $this->logger->info(
                 message: '[SolrDocumentIndexer] Deleted by query',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'   => __FILE__,
+                    'line'   => __LINE__,
                     'query'  => $query,
                     'commit' => $commit,
                 ]
@@ -428,8 +428,8 @@ class SolrDocumentIndexer
             $this->logger->error(
                 message: '[SolrDocumentIndexer] Delete by query failed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'query' => $query,
                     'error' => $e->getMessage(),
                 ]
@@ -477,8 +477,8 @@ class SolrDocumentIndexer
             $this->logger->error(
                 message: '[SolrDocumentIndexer] Commit failed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -531,8 +531,8 @@ class SolrDocumentIndexer
             $this->logger->error(
                 message: '[SolrDocumentIndexer] Failed to clear index',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -580,8 +580,8 @@ class SolrDocumentIndexer
             $this->logger->error(
                 message: '[SolrDocumentIndexer] Optimization failed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -611,8 +611,8 @@ class SolrDocumentIndexer
             $this->logger->error(
                 message: '[SolrDocumentIndexer] Failed to get document count',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );

@@ -56,6 +56,7 @@ use Psr\Log\LoggerInterface;
  */
 class PropertyRbacHandler
 {
+
     /**
      * Cached active organisation UUID
      *
@@ -112,7 +113,7 @@ class PropertyRbacHandler
         Schema $schema,
         string $property,
         array $object,
-        bool $isCreate = false
+        bool $isCreate=false
     ): bool {
         return $this->checkPropertyAccess(
             schema: $schema,
@@ -184,7 +185,7 @@ class PropertyRbacHandler
         Schema $schema,
         array $object,
         array $incomingData,
-        bool $isCreate = false
+        bool $isCreate=false
     ): array {
         // If user is admin, no restrictions.
         if ($this->isAdmin() === true) {
@@ -229,7 +230,7 @@ class PropertyRbacHandler
             ) {
                 $unauthorizedProperties[] = $propertyName;
             }
-        }
+        }//end foreach
 
         return $unauthorizedProperties;
     }//end getUnauthorizedProperties()
@@ -250,7 +251,7 @@ class PropertyRbacHandler
         string $property,
         array $object,
         string $action,
-        bool $isCreate = false
+        bool $isCreate=false
     ): bool {
         // Get property authorization.
         $authorization = $schema->getPropertyAuthorization($property);
@@ -433,7 +434,7 @@ class PropertyRbacHandler
      */
     private function filterOrganisationMatchForCreate(array $match): array
     {
-        $organisationKeys = ['_organisation', 'organisation'];
+        $organisationKeys   = ['_organisation', 'organisation'];
         $organisationValues = ['$organisation', '$activeOrganisation'];
 
         $filtered = [];
@@ -570,7 +571,7 @@ class PropertyRbacHandler
 
         try {
             $organisationService = $this->container->get('OCA\OpenRegister\Service\OrganisationService');
-            $activeOrg = $organisationService->getActiveOrganisation();
+            $activeOrg           = $organisationService->getActiveOrganisation();
 
             if ($activeOrg !== null) {
                 $this->cachedActiveOrg = $activeOrg->getUuid();

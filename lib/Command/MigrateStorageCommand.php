@@ -25,7 +25,7 @@ class MigrateStorageCommand extends Command
         private readonly MigrationService $migrationService,
     ) {
         parent::__construct();
-    }
+    }//end __construct()
 
     protected function configure(): void
     {
@@ -85,20 +85,20 @@ class MigrateStorageCommand extends Command
     Migrate in batches of 50
 '
             );
-    }
+    }//end configure()
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $direction = $input->getArgument('direction');
+        $direction   = $input->getArgument('direction');
         $registerArg = $input->getArgument('register');
-        $schemaArg = $input->getArgument('schema');
-        $batchSize = (int) $input->getOption('batch-size');
-        $dryRun = $input->getOption('dry-run');
-        $statusOnly = $input->getOption('status');
+        $schemaArg   = $input->getArgument('schema');
+        $batchSize   = (int) $input->getOption('batch-size');
+        $dryRun      = $input->getOption('dry-run');
+        $statusOnly  = $input->getOption('status');
 
         // Validate direction.
         if (in_array($direction, ['to-magic', 'to-blob'], true) === false) {
-            $output->writeln('<error>Invalid direction: ' . $direction . '. Use "to-magic" or "to-blob".</error>');
+            $output->writeln('<error>Invalid direction: '.$direction.'. Use "to-magic" or "to-blob".</error>');
             return self::FAILURE;
         }
 
@@ -109,32 +109,32 @@ class MigrateStorageCommand extends Command
                 schemaId: $schemaArg
             );
             $register = $resolved['register'];
-            $schema = $resolved['schema'];
+            $schema   = $resolved['schema'];
         } catch (\Exception $e) {
-            $output->writeln('<error>Failed to resolve register/schema: ' . $e->getMessage() . '</error>');
+            $output->writeln('<error>Failed to resolve register/schema: '.$e->getMessage().'</error>');
             return self::FAILURE;
         }
 
         $output->writeln('');
         $output->writeln('<info>OpenRegister Storage Migration</info>');
         $output->writeln('================================');
-        $output->writeln('  Register: <comment>' . $register->getName() . '</comment> (ID: ' . $register->getId() . ')');
-        $output->writeln('  Schema:   <comment>' . $schema->getName() . '</comment> (ID: ' . $schema->getId() . ')');
+        $output->writeln('  Register: <comment>'.$register->getName().'</comment> (ID: '.$register->getId().')');
+        $output->writeln('  Schema:   <comment>'.$schema->getName().'</comment> (ID: '.$schema->getId().')');
         $output->writeln('');
 
         // Show status.
         try {
             $status = $this->migrationService->getStorageStatus(register: $register, schema: $schema);
         } catch (\Exception $e) {
-            $output->writeln('<error>Failed to get storage status: ' . $e->getMessage() . '</error>');
+            $output->writeln('<error>Failed to get storage status: '.$e->getMessage().'</error>');
             return self::FAILURE;
         }
 
         $output->writeln('<info>Storage Status:</info>');
-        $output->writeln('  Blob storage:  <comment>' . $status['blobStorage']['count'] . ' objects</comment>');
-        $output->writeln('  Magic table:   <comment>'
-            . ($status['magicTable']['exists'] ? $status['magicTable']['count'] . ' objects' : 'does not exist')
-            . '</comment>');
+        $output->writeln('  Blob storage:  <comment>'.$status['blobStorage']['count'].' objects</comment>');
+        $output->writeln(
+                '  Magic table:   <comment>'.($status['magicTable']['exists'] ? $status['magicTable']['count'].' objects' : 'does not exist').'</comment>'
+                );
         $output->writeln('');
 
         if ($statusOnly === true) {
@@ -143,13 +143,13 @@ class MigrateStorageCommand extends Command
 
         // Run migration.
         $directionLabel = $direction === 'to-magic' ? 'blob -> magic table' : 'magic table -> blob';
-        $output->writeln('<info>Migrating: ' . $directionLabel . '</info>');
+        $output->writeln('<info>Migrating: '.$directionLabel.'</info>');
 
         if ($dryRun === true) {
             $output->writeln('<comment>DRY RUN - no changes will be made</comment>');
         }
 
-        $output->writeln('  Batch size: <comment>' . $batchSize . '</comment>');
+        $output->writeln('  Batch size: <comment>'.$batchSize.'</comment>');
         $output->writeln('');
 
         try {
@@ -169,22 +169,22 @@ class MigrateStorageCommand extends Command
                 );
             }
         } catch (\Exception $e) {
-            $output->writeln('<error>Migration failed: ' . $e->getMessage() . '</error>');
+            $output->writeln('<error>Migration failed: '.$e->getMessage().'</error>');
             return self::FAILURE;
         }
 
         // Display report.
         $output->writeln('<info>Migration Report:</info>');
-        $output->writeln('  Total source objects: <comment>' . $report['total'] . '</comment>');
-        $output->writeln('  Migrated:            <comment>' . $report['migrated'] . '</comment>');
-        $output->writeln('  Skipped (duplicate): <comment>' . $report['skipped'] . '</comment>');
-        $output->writeln('  Failed:              <comment>' . $report['failed'] . '</comment>');
+        $output->writeln('  Total source objects: <comment>'.$report['total'].'</comment>');
+        $output->writeln('  Migrated:            <comment>'.$report['migrated'].'</comment>');
+        $output->writeln('  Skipped (duplicate): <comment>'.$report['skipped'].'</comment>');
+        $output->writeln('  Failed:              <comment>'.$report['failed'].'</comment>');
 
         if (count($report['errors']) > 0) {
             $output->writeln('');
             $output->writeln('<error>Errors:</error>');
             foreach ($report['errors'] as $error) {
-                $output->writeln('  - UUID ' . $error['uuid'] . ': ' . $error['message']);
+                $output->writeln('  - UUID '.$error['uuid'].': '.$error['message']);
             }
         }
 
@@ -197,5 +197,5 @@ class MigrateStorageCommand extends Command
 
         $output->writeln('<info>Migration completed successfully.</info>');
         return self::SUCCESS;
-    }
-}
+    }//end execute()
+}//end class

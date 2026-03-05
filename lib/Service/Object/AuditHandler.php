@@ -74,8 +74,8 @@ class AuditHandler
         $this->logger->debug(
             message: '[AuditHandler] Getting logs for object',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'    => __FILE__,
+                'line'    => __LINE__,
                 'uuid'    => $uuid,
                 'filters' => $filters,
             ]
@@ -91,8 +91,8 @@ class AuditHandler
             $this->logger->info(
                 message: '[AuditHandler] Logs retrieved successfully',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
                     'uuid'      => $uuid,
                     'log_count' => count($logs),
                 ]
@@ -103,8 +103,8 @@ class AuditHandler
             $this->logger->error(
                 message: '[AuditHandler] Failed to get logs',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'uuid'  => $uuid,
                     'error' => $e->getMessage(),
                 ]

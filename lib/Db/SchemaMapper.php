@@ -305,8 +305,8 @@ class SchemaMapper extends QBMapper
         // Cache by all possible identifiers to handle lookups by id, uuid, or slug.
         $rbacSuffix = ':'.($_rbac ? '1' : '0').':'.($_multitenancy ? '1' : '0');
         $this->findCache[$cacheKey] = $schema;
-        $this->findCache[(string) $schema->getId().$rbacSuffix]           = $schema;
-        $this->findCache[strtolower($schema->getUuid()).$rbacSuffix]      = $schema;
+        $this->findCache[(string) $schema->getId().$rbacSuffix]      = $schema;
+        $this->findCache[strtolower($schema->getUuid()).$rbacSuffix] = $schema;
         if ($schema->getSlug() !== null) {
             $this->findCache[strtolower($schema->getSlug()).$rbacSuffix] = $schema;
         }
@@ -2750,7 +2750,7 @@ class SchemaMapper extends QBMapper
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)      Schema composition search requires many conditional checks
      */
-    public function findExtendedBy(int|string $schemaIdentifier, ?string $knownUuid = null, ?string $knownSlug = null): array
+    public function findExtendedBy(int|string $schemaIdentifier, ?string $knownUuid=null, ?string $knownSlug=null): array
     {
         // Use pre-known values when available to avoid a redundant find() query per schema.
         if ($knownUuid !== null || $knownSlug !== null) {
@@ -2838,7 +2838,6 @@ class SchemaMapper extends QBMapper
         return $uuids;
     }//end findExtendedBy()
 
-
     /**
      * Find all schema extension relationships in a single query
      *
@@ -2872,7 +2871,7 @@ class SchemaMapper extends QBMapper
 
         $schemaLookup = [];
         while (($row = $allSchemasResult->fetch()) !== false) {
-            $schemaLookup[(string) $row['id']]  = (int) $row['id'];
+            $schemaLookup[(string) $row['id']] = (int) $row['id'];
             if (($row['uuid'] ?? null) !== null) {
                 $schemaLookup[$row['uuid']] = (int) $row['id'];
             }
@@ -2915,7 +2914,7 @@ class SchemaMapper extends QBMapper
                     $extendedByMap[$targetId][] = $extendingUuid;
                 }
             }
-        }
+        }//end while
 
         $result->closeCursor();
 
@@ -2926,6 +2925,4 @@ class SchemaMapper extends QBMapper
 
         return $extendedByMap;
     }//end findAllExtendedBy()
-
-
 }//end class

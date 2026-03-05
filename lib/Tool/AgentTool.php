@@ -227,8 +227,8 @@ class AgentTool extends AbstractTool implements ToolInterface
             $this->logger->info(
                 message: '[AgentTool] Listing agents',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'   => __FILE__,
+                    'line'   => __LINE__,
                     'limit'  => $limit,
                     'offset' => $offset,
                 ]
@@ -254,8 +254,8 @@ class AgentTool extends AbstractTool implements ToolInterface
             $this->logger->error(
                 message: '[AgentTool] Failed to list agents',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -293,8 +293,8 @@ class AgentTool extends AbstractTool implements ToolInterface
             $this->logger->error(
                 message: '[AgentTool] Failed to get agent',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'uuid'  => $uuid,
                     'error' => $e->getMessage(),
                 ]
@@ -361,8 +361,8 @@ class AgentTool extends AbstractTool implements ToolInterface
             $this->logger->error(
                 message: '[AgentTool] Failed to create agent',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'name'  => $name,
                     'error' => $e->getMessage(),
                 ]
@@ -426,8 +426,8 @@ class AgentTool extends AbstractTool implements ToolInterface
             $this->logger->error(
                 message: '[AgentTool] Failed to update agent',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'uuid'  => $uuid,
                     'error' => $e->getMessage(),
                 ]
@@ -470,8 +470,8 @@ class AgentTool extends AbstractTool implements ToolInterface
             $this->logger->error(
                 message: '[AgentTool] Failed to delete agent',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'uuid'  => $uuid,
                     'error' => $e->getMessage(),
                 ]

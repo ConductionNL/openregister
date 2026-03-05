@@ -230,28 +230,28 @@ class Webhook extends Entity implements JsonSerializable
      */
     public function __construct()
     {
-        $this->addType('uuid', 'string');
-        $this->addType('name', 'string');
-        $this->addType('url', 'string');
-        $this->addType('method', 'string');
-        $this->addType('events', 'string');
-        $this->addType('headers', 'string');
-        $this->addType('secret', 'string');
-        $this->addType('enabled', 'boolean');
-        $this->addType('organisation', 'string');
-        $this->addType('filters', 'string');
-        $this->addType('retryPolicy', 'string');
-        $this->addType('maxRetries', 'integer');
-        $this->addType('timeout', 'integer');
-        $this->addType('lastTriggeredAt', 'datetime');
-        $this->addType('lastSuccessAt', 'datetime');
-        $this->addType('lastFailureAt', 'datetime');
-        $this->addType('totalDeliveries', 'integer');
-        $this->addType('successfulDeliveries', 'integer');
-        $this->addType('failedDeliveries', 'integer');
-        $this->addType('created', 'datetime');
-        $this->addType('updated', 'datetime');
-        $this->addType('configuration', 'string');
+        $this->addType(fieldName: 'uuid', type: 'string');
+        $this->addType(fieldName: 'name', type: 'string');
+        $this->addType(fieldName: 'url', type: 'string');
+        $this->addType(fieldName: 'method', type: 'string');
+        $this->addType(fieldName: 'events', type: 'string');
+        $this->addType(fieldName: 'headers', type: 'string');
+        $this->addType(fieldName: 'secret', type: 'string');
+        $this->addType(fieldName: 'enabled', type: 'boolean');
+        $this->addType(fieldName: 'organisation', type: 'string');
+        $this->addType(fieldName: 'filters', type: 'string');
+        $this->addType(fieldName: 'retryPolicy', type: 'string');
+        $this->addType(fieldName: 'maxRetries', type: 'integer');
+        $this->addType(fieldName: 'timeout', type: 'integer');
+        $this->addType(fieldName: 'lastTriggeredAt', type: 'datetime');
+        $this->addType(fieldName: 'lastSuccessAt', type: 'datetime');
+        $this->addType(fieldName: 'lastFailureAt', type: 'datetime');
+        $this->addType(fieldName: 'totalDeliveries', type: 'integer');
+        $this->addType(fieldName: 'successfulDeliveries', type: 'integer');
+        $this->addType(fieldName: 'failedDeliveries', type: 'integer');
+        $this->addType(fieldName: 'created', type: 'datetime');
+        $this->addType(fieldName: 'updated', type: 'datetime');
+        $this->addType(fieldName: 'configuration', type: 'string');
     }//end __construct()
 
     /**

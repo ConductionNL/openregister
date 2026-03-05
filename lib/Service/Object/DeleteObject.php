@@ -296,8 +296,8 @@ class DeleteObject
             $this->logger->warning(
                     message: '[DeleteObject] Delete failed',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'  => __FILE__,
+                        'line'  => __LINE__,
                         'uuid'  => $uuid,
                         'error' => $e->getMessage(),
                     ]

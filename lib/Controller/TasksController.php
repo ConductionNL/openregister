@@ -160,7 +160,7 @@ class TasksController extends Controller
             return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
-        }
+        }//end try
     }//end create()
 
     /**
@@ -220,7 +220,7 @@ class TasksController extends Controller
             return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
-        }
+        }//end try
     }//end update()
 
     /**
@@ -275,7 +275,7 @@ class TasksController extends Controller
             return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
-        }
+        }//end try
     }//end destroy()
 
     /**

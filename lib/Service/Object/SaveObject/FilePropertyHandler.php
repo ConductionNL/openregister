@@ -92,8 +92,8 @@ class FilePropertyHandler
                 $this->logger->warning(
                     message: '[FilePropertyHandler] File upload error for field {field}: {error}',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'  => __FILE__,
+                        'line'  => __LINE__,
                         'app'   => 'openregister',
                         'field' => $fieldName,
                         'error' => $fileInfo['error'],
@@ -181,8 +181,8 @@ class FilePropertyHandler
             $this->logger->debug(
                 message: '[FilePropertyHandler] isFileProperty: Checking property type',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
                     'app'      => 'openregister',
                     'property' => $propertyName,
                     'type'     => $propertyType,
@@ -486,8 +486,8 @@ class FilePropertyHandler
             $this->logger->info(
                 message: '[FilePropertyHandler] File property deletion requested',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'         => __FILE__,
+                    'line'         => __LINE__,
                     'app'          => 'openregister',
                     'propertyName' => $propertyName,
                     'uuid'         => $objectEntity->getUuid(),
@@ -508,8 +508,8 @@ class FilePropertyHandler
             $this->logger->info(
                 message: '[FilePropertyHandler] Existing file IDs for deletion',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'            => __FILE__,
+                    'line'            => __LINE__,
                     'app'             => 'openregister',
                     'propertyName'    => $propertyName,
                     'existingFileIds' => $existingFileIds,
@@ -570,8 +570,8 @@ class FilePropertyHandler
             $this->logger->info(
                 message: '[FilePropertyHandler] File property set to null/empty',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'         => __FILE__,
+                    'line'         => __LINE__,
                     'app'          => 'openregister',
                     'propertyName' => $propertyName,
                     'newValue'     => $object[$propertyName],
@@ -828,8 +828,8 @@ class FilePropertyHandler
                     $this->logger->debug(
                         message: '[FilePropertyHandler] Using existing file ID {fileId} for property {property}',
                         context: [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
+                            'file'     => __FILE__,
+                            'line'     => __LINE__,
                             'app'      => 'openregister',
                             'fileId'   => $fileId,
                             'property' => $propertyName,
@@ -842,8 +842,8 @@ class FilePropertyHandler
                 $this->logger->debug(
                     message: '[FilePropertyHandler] Could not retrieve existing file {fileId}: {error}',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'   => __FILE__,
+                        'line'   => __LINE__,
                         'app'    => 'openregister',
                         'fileId' => $fileId,
                         'error'  => $e->getMessage(),
@@ -1118,8 +1118,8 @@ class FilePropertyHandler
                 $this->logger->warning(
                     message: '[FilePropertyHandler] Executable file upload blocked',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'      => __FILE__,
+                        'line'      => __LINE__,
                         'app'       => 'openregister',
                         'filename'  => $fileData['filename'],
                         'extension' => $extension,
@@ -1132,7 +1132,7 @@ class FilePropertyHandler
                 $errorMsg .= "Allowed formats: documents, images, archives, data files.";
                 throw new Exception($errorMsg);
             }
-        }
+        }//end if
 
         // Check magic bytes (file signatures) in content.
         if (($fileData['content'] ?? null) !== null && empty($fileData['content']) === false) {
@@ -1147,8 +1147,8 @@ class FilePropertyHandler
             $this->logger->warning(
                 message: '[FilePropertyHandler] Executable MIME type blocked',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
                     'app'      => 'openregister',
                     'mimeType' => $mimeType,
                 ]
