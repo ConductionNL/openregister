@@ -1,0 +1,59 @@
+name: Sync Development to Development-Release
+
+permissions:
+  contents: write
+
+on:
+  push:
+    branches:
+      - development
+
+jobs:
+  sync-to-development-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          ref: ${{ github.sha }}
+          ssh-key: ${{ secrets.DEPLOY_KEY }}
+
+      - name: Configure Git SSH
+        run: |
+          git config --global user.email "action@github.com"
+          git config --global user.name "GitHub Action"
+          git remote set-url origin git@github.com:${{ github.repository }}.git
+
+      - name: Update development-release branch
+        run: |
+          git fetch origin
+
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+
+          # Preserve existing version on development-release
+          DEV_RELEASE_VERSION=""
+          if git show-ref --quiet refs/remotes/origin/development-release; then
+            git checkout origin/development-release
+            DEV_RELEASE_VERSION=$(grep -oP '(?<=<version>)[^<]+' appinfo/info.xml || echo "")
+            echo "Found existing development-release version: $DEV_RELEASE_VERSION"
+          fi
+
+          # Reset or create development-release from development
+          if git show-ref --quiet refs/remotes/origin/development-release; then
+            git checkout development-release
+            git reset --hard origin/development
+          else
+            git checkout -b development-release origin/development
+          fi
+
+          # Restore preserved version
+          if [ ! -z "$DEV_RELEASE_VERSION" ]; then
+            sed -i "s|<version>.*</version>|<version>${DEV_RELEASE_VERSION}</version>|" appinfo/info.xml
+            git add appinfo/info.xml
+            git commit -m "${COMMIT_MSG}
+
+            Restored development-release version to ${DEV_RELEASE_VERSION} [skip ci]"
+          fi
+
+          git push -f origin development-release

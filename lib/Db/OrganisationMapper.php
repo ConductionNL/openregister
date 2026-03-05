@@ -80,6 +80,28 @@ class OrganisationMapper extends QBMapper
     }//end findByUuid()
 
     /**
+     * Find organisation by slug
+     *
+     * @param string $slug The organisation slug
+     *
+     * @return Organisation The organisation entity
+     *
+     * @throws DoesNotExistException If organisation not found
+     * @throws MultipleObjectsReturnedException If multiple organisations found
+     */
+    public function findBySlug(string $slug): Organisation
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select('*')
+            ->from($this->getTableName())
+            ->where($qb->expr()->eq('slug', $qb->createNamedParameter($slug)));
+
+        return $this->findEntity($qb);
+
+    }//end findBySlug()
+
+    /**
      * Find multiple organisations by UUIDs using a single optimized query
      *
      * This method performs a single database query to fetch multiple organisations,
