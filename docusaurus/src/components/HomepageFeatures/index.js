@@ -4,26 +4,26 @@ import styles from './styles.module.css';
 
 const FeatureList = [
   {
-    title: 'Easy to Use',
+    title: 'Schema-Driven Registers',
     description: (
       <>
-        Open Register is designed to be easily installed and used to get your register up and running quickly.
+        Define object types with JSON Schema and store them in configurable registers. Full CRUD with validation, relations, audit trails, and time travel.
       </>
     ),
   },
   {
-    title: 'Focus on What Matters',
+    title: 'AI-Powered Search',
     description: (
       <>
-        Open Register lets you focus on your data, while we handle the complexity of object management.
+        Built-in semantic search using PostgreSQL pgvector. Automatic vectorization, content classification, summarization, and translation — all local.
       </>
     ),
   },
   {
-    title: 'Common Ground Ready',
+    title: 'Multi-Tenancy & RBAC',
     description: (
       <>
-        Built with Dutch Common Ground principles in mind, ensuring standardized and compliant data management.
+        Complete organisation-based data isolation with role-based access control. Designed for Dutch Common Ground and government compliance.
       </>
     ),
   },

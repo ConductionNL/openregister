@@ -1,18 +1,9 @@
 name: Quality Assurance Checks
 
+# Disabled: superseded by code-quality.yml
 on:
   pull_request:
-    branches:
-      - main
-      - master
-      - development
-      - dev
-  push:
-    branches:
-      - main
-      - master
-      - development
-      - dev
+    branches: [never]
 
 jobs:
   quality-check:

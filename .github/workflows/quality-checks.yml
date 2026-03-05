@@ -1,10 +1,9 @@
 name: Code Quality Checks
 
+# Disabled: superseded by code-quality.yml
 on:
-  push:
-    branches: [ main, development ]
   pull_request:
-    branches: [ main, development ]
+    branches: [never]
 
 jobs:
   quality-checks:
