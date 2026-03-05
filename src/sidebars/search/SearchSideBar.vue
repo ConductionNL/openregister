@@ -1,5 +1,5 @@
 <template>
-	<div>
+	<Fragment>
 		<CnIndexSidebar
 			ref="sidebar"
 			:schema="objectStore.searchSchema"
@@ -428,7 +428,7 @@
 			v-if="showDeleteDialog"
 			:view="viewToDelete"
 			@close="handleDeleteClose" />
-	</div>
+	</Fragment>
 </template>
 
 <script>

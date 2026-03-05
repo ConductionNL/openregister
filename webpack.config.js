@@ -40,7 +40,7 @@ webpackConfig.resolve.alias = {
 	...(webpackConfig.resolve.alias || {}),
 	'@': path.resolve(__dirname, 'src'),
 	// Local development: resolve package to sibling nextcloud-vue source (UNCOMMENT THIS FOR LOCAL DEVELOPMENT)
-	// '@conduction/nextcloud-vue': path.resolve(__dirname, '../nextcloud-vue/src'),
+	'@conduction/nextcloud-vue': path.resolve(__dirname, '../nextcloud-vue/src'),
 	// Deduplication — prevent dual Vue/Pinia/NcVue instances when using local @conduction/nextcloud-vue
 	vue: path.resolve(__dirname, 'node_modules/vue'),
 	pinia: path.resolve(__dirname, 'node_modules/pinia'),

@@ -74,7 +74,10 @@ export default {
 			navigationStore.setModal('viewObject')
 			objectStore.setObjectItem(row)
 		},
-		handleCreate() {
+		handleCreate(res) {
+			console.log('handleCreate', res)
+			return
+			
 			const registerId = objectStore.searchParams.registerId
 			const schemaId = objectStore.searchParams.schemaId
 			if (!registerId || !schemaId) return
@@ -136,6 +139,7 @@ export default {
 			:show-title="false"
 			:show-mass-import="false"
 			:show-mass-export="false"
+			use-advanced-form-dialog
 			show-mass-copy
 			show-mass-delete
 			mass-action-name-field="title"
