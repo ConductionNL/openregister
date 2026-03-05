@@ -1,0 +1,1129 @@
+{
+    "components": {
+        "mappings": {
+            "xllnc-openwoo-app": {
+                "name": "Xllnc -> OpenWoo.app ",
+                "description": "",
+                "version": "0.0.51",
+                "reference": "https://zuiddrecht-drie.accept.commonground.nu/apps/openconnector/api/mappings/1",
+                "mapping": {
+                    "titel": "{{ instance.subject_external }}",
+                    "samenvatting": "{{ instance.attributes.woo_samenvatting[0] }}",
+                    "beschrijving": "{{ instance.attributes.woo_beschrijving[0] }}",
+                    "kenmerk": "{% if instance.number|default%}{{ instance.number }}{% endif %}",
+                    "ontvangstdatum": "{{ instance.attributes. woo_datum_ontvangs[0] }}",
+                    "besluitdatum": "{% if instance.attributes.woo_datum_besluit|default%}{{ instance.attributes.woo_datum_besluit[0] }}{% endif %}",
+                    "organisatieonderdeel": "{% if instance.attributes.woo_organisatieonderdeel|default%}{{ instance.attributes.woo_organisatieonderdeel[0] }}{% endif %}",
+                    "functiebenaming": "{{ instance.attributes.woo_functiebenaming[0] }}",
+                    "gedraging": "{% if instance.attributes.woo_gedraging|default%}{{ instance.attributes.woo_gedraging[0] }}{% endif %}",
+                    "bevindingen": "{% if instance.attributes.woo_bevindingen|default%}{{ instance.attributes.woo_bevindingen[0] }}{% endif %}",
+                    "oordeel": "{% if instance.attributes.woo_oordeel|default%}{{ instance.attributes.woo_oordeel[0] }}{% endif %}",
+                    "conclusies": "{% if instance.attributes.woo_conclusies|default%}{{ instance.attributes.woo_conclusies[0] }}{% endif %}",
+                    "opdrachtgever": "{% if instance.attributes.woo_opdrachtgever|default%}{{ instance.attributes.woo_opdrachtgever[0] }}{% endif %}",
+                    "onderdeelTaak": "{% if instance.attributes.woo_onderdeel_taak|default%}{{ instance.attributes.woo_onderdeel_taak[0] }}{% endif %}",
+                    "attachments": "[{% set fileCount = 0 %}{% for file in instance.attributes.woo_publicatie %}{% if fileCount > 0 %}, {% endif %}{{'{\\\"endpoint\\\": \\\"/api/v1/case/' ~ reference ~ '/document/' ~ file ~ '/download\\\", \\\"label\\\": \\\"bijlage\\\", \\\"published\\\": \\\"true\\\" }'}}{% set fileCount = fileCount + 1 %}{% endfor %}{% for file in instance.attributes.woo_inventarisatielijst %}{% if fileCount > 0 %}, {% endif %}{{'{\\\"endpoint\\\": \\\"/api/v1/case/' ~ reference ~ '/document/' ~ file ~ '/download\\\", \\\"label\\\": \\\"inventarisatielijst\\\", \\\"published\\\": \\\"true\\\" }'}}{% set fileCount = fileCount + 1 %}{% endfor %}{% for file in instance.attributes.woo_informatieverzoek %}{% if fileCount > 0 %}, {% endif %}{{'{\\\"endpoint\\\": \\\"/api/v1/case/' ~ reference ~ '/document/' ~ file ~ '/download\\\", \\\"label\\\": \\\"informatieverzoek\\\", \\\"published\\\": \\\"true\\\" }'}}{% set fileCount = fileCount + 1 %}{% endfor %}{% for file in instance.attributes.woo_besluit %}{% if fileCount > 0 %}, {% endif %}{{'{\\\"endpoint\\\": \\\"/api/v1/case/' ~ reference ~ '/document/' ~ file ~ '/download\\\", \\\"label\\\": \\\"besluit\\\", \\\"published\\\": \\\"true\\\" }'}}{% set fileCount = fileCount + 1 %}{% endfor %}{% for file in instance.attributes.woo_convenant %}{% if fileCount > 0 %}, {% endif %}{{'{\\\"endpoint\\\": \\\"/api/v1/case/' ~ reference ~ '/document/' ~ file ~ '/download\\\", \\\"label\\\": \\\"convenant\\\", \\\"published\\\": \\\"true\\\" }'}}{% set fileCount = fileCount + 1 %}{% endfor %}]",
+                    "@self.published": "{{ instance.attributes.woo_publicatiedatum[0] }}",
+                    "thema": "{{ instance.attributes.woo_thema[0] }}"
+                },
+                "unset": [],
+                "cast": {
+                    "attachments": "jsonToArray",
+                    "categorie": "htmlDecode"
+                },
+                "passThrough": false,
+                "configurations": [],
+                "dateCreated": "2025-05-26T19:21:18+00:00",
+                "dateModified": "2025-05-26T19:21:18+00:00",
+                "slug": "xllnc-openwoo-app"
+            },
+            "openwoo-app-elastic": {
+                "name": "OpenWoo.app -> Elastic",
+                "description": "",
+                "version": "0.0.72",
+                "reference": "",
+                "mapping": {
+                    "doctype": "{% if categorie is defined and categorie == 'Convenanten' %}{{ categorie }}{% else %}OpenWOO{% endif %}",
+                    "title": "{{ titel | default('') }}",
+                    "excerpt": "{{ samenvatting | default('') }}",
+                    "date": "{{ (_context['@self'].published is not empty) ? (_context['@self'].published|replace({'T': ' ', 'Z': '', '+00:00': ''})) : 'null' }}",
+                    "link": "/openwoo/{{ kenmerk|slugify }}",
+                    "content_filtered": "{{ beschrijving | default('') }}",
+                    "content": "{{ beschrijving | default('') }}",
+                    "date_terms": "{ {% if _context['@self'].published|default %} \"year\":\"{{ (_context['@self'].published|date('Y'))|default('') }}\",\"month\":\"{{ (_context['@self'].published|date('m'))|default('') }}\",\"day\":\"{{ (_context['@self'].published|date('d'))|default('') }}\" {% endif %} }",
+                    "slug": "{{ kenmerk|slugify }}",
+                    "ontvangstdatum": "{{ (ontvangstdatum is not empty) ? (ontvangstdatum|replace({'T': ' ', 'Z': '', '+00:00': ''})) : 'null' }}",
+                    "besluitdatum": "{{ (besluitdatum is not empty) ? (besluitdatum|replace({'T': ' ', 'Z': '', '+00:00': ''})) : 'null' }}",
+                    "modified": "{{ (_context['@self'].published is not empty) ? (_context['@self'].published|replace({'T': ' ', 'Z': '', '+00:00': ''})) : 'null' }}",
+                    "organisatieonderdeel": "{{ organisatieonderdeel|default('') }}",
+                    "functiebenaming": "{{ functiebenaming|default('') }}",
+                    "gedraging": "{{ gedraging|default('') }}",
+                    "bevindingen": "{{ bevindingen|default('') }}",
+                    "oordeel": "{{ oordeel|default('') }}",
+                    "conclusies": "{{ conclusies|default('') }}",
+                    "opdrachtgever": "{{ opdrachtgever|default('') }}",
+                    "onderdeelTaak": "{{ onderdeelTaak|default('') }}",
+                    "thema": "{{ thema|default('') }}",
+                    "attachments": "{% set files = getFiles(_context['@self'].id) %}{% set index = 0 %} [{% for file in files %}{% if index > 0 %}, {% endif %}{\"label\": \"{{ file.title }}\", \"endpoint\": \"{{ file.accessUrl }}\", \"published\": true}{% set index = index + 1 %}{% endfor %}]"
+                },
+                "unset": [
+                    "beschrijving",
+                    "samenvatting",
+                    "@self",
+                    "titel"
+                ],
+                "cast": {
+                    "date_terms": "jsonToArray",
+                    "ontvangstdatum": "nullStringToNull",
+                    "date": "nullStringToNull",
+                    "modified": "nullStringToNull",
+                    "besluitdatum": "nullStringToNull",
+                    "attachments": "jsonToArray"
+                },
+                "passThrough": true,
+                "configurations": [],
+                "dateCreated": "2025-10-03T08:57:49+00:00",
+                "dateModified": "2025-10-03T08:57:49+00:00",
+                "slug": "openwoo-app-elastic"
+            }
+        },
+        "sources": {
+            "elasticsearch-api": {
+                "name": "ElasticSearch API",
+                "description": "",
+                "version": "0.0.2",
+                "reference": "",
+                "location": "!ChangeMe!",
+                "isEnabled": true,
+                "type": "api",
+                "locale": "",
+                "accept": "",
+                "documentation": "",
+                "loggingConfig": [],
+                "oas": "Array",
+                "paths": [],
+                "headers": [],
+                "translationConfig": [],
+                "configuration": [],
+                "endpointsConfig": [],
+                "status": "",
+                "logRetention": 86400,
+                "errorRetention": 0,
+                "objectCount": 0,
+                "test": false,
+                "rateLimitLimit": null,
+                "rateLimitRemaining": null,
+                "rateLimitReset": null,
+                "rateLimitWindow": null,
+                "lastCall": "2026-01-23T09:51:10+00:00",
+                "lastSync": "2025-10-03T08:31:42+00:00",
+                "dateCreated": "2025-10-03T08:31:42+00:00",
+                "dateModified": "2025-10-03T08:31:42+00:00",
+                "configurations": [],
+                "slug": "elasticsearch-api"
+            }
+        },
+        "rules": [],
+        "endpoints": [],
+        "synchronizations": {
+            "openwoo-app-convenanten-elastic": {
+                "name": "OpenWoo.app Convenanten -> Elastic",
+                "description": "",
+                "reference": "https://alkmaar.accept.commonground.nu/apps/openconnector/api/synchronizations/18",
+                "version": "0.0.8",
+                "sourceId": "woo/convenanten",
+                "sourceType": "register/schema",
+                "sourceHash": "",
+                "sourceHashMapping": "",
+                "sourceTargetMapping": "openwoo-app-elastic",
+                "sourceConfig": {
+                    "idPosition": "",
+                    "resultsPosition": "",
+                    "endpoint": "",
+                    "headers": [],
+                    "query": []
+                },
+                "sourceLastChanged": "2025-10-03T08:53:56+00:00",
+                "sourceLastChecked": "2025-10-03T08:53:56+00:00",
+                "sourceLastSynced": "2025-10-03T08:53:56+00:00",
+                "currentPage": 1,
+                "targetId": "elasticsearch-api",
+                "targetType": "api",
+                "targetHash": "",
+                "targetSourceMapping": "",
+                "targetConfig": {
+                    "idPosition": "_id",
+                    "endpoint": "/_doc"
+                },
+                "targetLastChanged": "2025-10-03T08:53:56+00:00",
+                "targetLastChecked": "2025-10-03T08:53:56+00:00",
+                "targetLastSynced": "2025-10-22T11:33:16+00:00",
+                "created": "2025-10-03T08:53:56+00:00",
+                "updated": "2026-01-21T10:22:43+00:00",
+                "conditions": {"and":[{"!=":[{"var":["@self.published",null]},null]},{"!=":[{"var":["@self.published",""]},""]}]},
+                "followUps": [],
+                "actions": [],
+                "configurations": [],
+                "status": null,
+                "slug": "openwoo-app-convenanten-elastic"
+            },
+            "openwoo-app-woo-verzoeken-en-besluiten-elastic": {
+                "name": "OpenWoo.app Woo-verzoeken en -besluiten -> Elastic",
+                "description": "",
+                "reference": null,
+                "version": "0.0.9",
+                "sourceId": "woo/woo_verzoeken_en_besluiten",
+                "sourceType": "register/schema",
+                "sourceHash": "",
+                "sourceHashMapping": "",
+                "sourceTargetMapping": "openwoo-app-elastic",
+                "sourceConfig": {
+                    "idPosition": "",
+                    "resultsPosition": "",
+                    "endpoint": "",
+                    "headers": [],
+                    "query": []
+                },
+                "sourceLastChanged": "2025-10-03T09:06:13+00:00",
+                "sourceLastChecked": "2025-10-03T09:06:13+00:00",
+                "sourceLastSynced": "2025-10-03T09:06:13+00:00",
+                "currentPage": 1,
+                "targetId": "elasticsearch-api",
+                "targetType": "api",
+                "targetHash": "",
+                "targetSourceMapping": "",
+                "targetConfig": {
+                    "idPosition": "_id",
+                    "endpoint": "/_doc"
+                },
+                "targetLastChanged": "2025-10-03T09:06:13+00:00",
+                "targetLastChecked": "2025-10-03T09:06:13+00:00",
+                "targetLastSynced": "2025-12-09T16:36:12+00:00",
+                "created": "2025-10-03T09:06:13+00:00",
+                "updated": "2025-12-09T17:15:41+00:00",
+                "conditions": {
+                    "and": [
+                        {
+                            "!=": [
+                                {
+                                    "var": [
+                                        "@self.published",
+                                        null
+                                    ]
+                                },
+                                null
+                            ]
+                        },
+                        {
+                            "!=": [
+                                {
+                                    "var": [
+                                        "@self.published",
+                                        ""
+                                    ]
+                                },
+                                ""
+                            ]
+                        }
+                    ]
+                },
+                "followUps": [],
+                "actions": [],
+                "configurations": [],
+                "status": null,
+                "slug": "openwoo-app-woo-verzoeken-en-besluiten-elastic"
+            },
+            "openwoo-app-agenda-s-en-besluitenlijsten-elastic": {
+                "name": "OpenWoo.app Agenda's en besluitenlijsten -> Elastic",
+                "description": "",
+                "reference": null,
+                "version": "0.0.6",
+                "sourceId": "woo/agendas_en_besluitenlijsten_bestuurscolleges",
+                "sourceType": "register/schema",
+                "sourceHash": "",
+                "sourceHashMapping": "",
+                "sourceTargetMapping": "openwoo-app-elastic",
+                "sourceConfig": {
+                    "idPosition": "",
+                    "resultsPosition": "",
+                    "endpoint": "",
+                    "headers": [],
+                    "query": []
+                },
+                "sourceLastChanged": "2025-10-03T13:55:41+00:00",
+                "sourceLastChecked": "2025-10-03T13:55:41+00:00",
+                "sourceLastSynced": "2025-10-03T13:55:41+00:00",
+                "currentPage": 1,
+                "targetId": "elasticsearch-api",
+                "targetType": "api",
+                "targetHash": "",
+                "targetSourceMapping": "",
+                "targetConfig": {
+                    "idPosition": "_id",
+                    "endpoint": "/_doc"
+                },
+                "targetLastChanged": "2025-10-03T13:55:41+00:00",
+                "targetLastChecked": "2025-10-03T13:55:41+00:00",
+                "targetLastSynced": "2025-10-03T13:55:41+00:00",
+                "created": "2025-10-03T13:55:41+00:00",
+                "updated": "2025-12-09T16:51:04+00:00",
+                "conditions": {
+                    "and": [
+                        {
+                            "!=": [
+                                {
+                                    "var": [
+                                        "@self.published",
+                                        null
+                                    ]
+                                },
+                                null
+                            ]
+                        },
+                        {
+                            "!=": [
+                                {
+                                    "var": [
+                                        "@self.published",
+                                        ""
+                                    ]
+                                },
+                                ""
+                            ]
+                        }
+                    ]
+                },
+                "followUps": [],
+                "actions": [],
+                "configurations": [],
+                "status": null,
+                "slug": "openwoo-app-agenda-s-en-besluitenlijsten-elastic"
+            },
+            "openwoo-app-wetten-en-algemeen-verbindende-voorschriften-elastic": {
+                "name": "OpenWoo.app Wetten en algemeen verbindende voorschriften -> Elastic",
+                "description": "",
+                "reference": null,
+                "version": "0.0.5",
+                "sourceId": "woo/wetten_en_algemeen_verbindende_voorschriften",
+                "sourceType": "register/schema",
+                "sourceHash": "",
+                "sourceHashMapping": "",
+                "sourceTargetMapping": "openwoo-app-elastic",
+                "sourceConfig": {
+                    "idPosition": "",
+                    "resultsPosition": "",
+                    "endpoint": "",
+                    "headers": [],
+                    "query": []
+                },
+                "sourceLastChanged": "2025-10-03T13:58:13+00:00",
+                "sourceLastChecked": "2025-10-03T13:58:13+00:00",
+                "sourceLastSynced": "2025-10-03T13:58:13+00:00",
+                "currentPage": 1,
+                "targetId": "elasticsearch-api",
+                "targetType": "api",
+                "targetHash": "",
+                "targetSourceMapping": "",
+                "targetConfig": {
+                    "endpoint": "/_doc",
+                    "idPosition": "_id"
+                },
+                "targetLastChanged": "2025-10-03T13:58:13+00:00",
+                "targetLastChecked": "2025-10-03T13:58:13+00:00",
+                "targetLastSynced": "2025-10-03T13:58:13+00:00",
+                "created": "2025-10-03T13:58:13+00:00",
+                "updated": "2025-12-09T16:51:18+00:00",
+                "conditions": [],
+                "followUps": [],
+                "actions": [],
+                "configurations": [],
+                "status": null,
+                "slug": "openwoo-app-wetten-en-algemeen-verbindende-voorschriften-elastic"
+            },
+            "openwoo-app-overige-besluiten-van-algemene-strekking-elastic": {
+                "name": "OpenWoo.app Overige besluiten van algemene strekking -> Elastic",
+                "description": "",
+                "reference": null,
+                "version": "0.0.4",
+                "sourceId": "woo/overige_besluiten_van_algemene_strekking",
+                "sourceType": "register/schema",
+                "sourceHash": "",
+                "sourceHashMapping": "",
+                "sourceTargetMapping": "openwoo-app-elastic",
+                "sourceConfig": {
+                    "idPosition": "",
+                    "resultsPosition": "",
+                    "endpoint": "",
+                    "headers": [],
+                    "query": []
+                },
+                "sourceLastChanged": "2025-10-03T14:01:03+00:00",
+                "sourceLastChecked": "2025-10-03T14:01:03+00:00",
+                "sourceLastSynced": "2025-10-03T14:01:03+00:00",
+                "currentPage": 1,
+                "targetId": "elasticsearch-api",
+                "targetType": "api",
+                "targetHash": "",
+                "targetSourceMapping": "",
+                "targetConfig": {
+                    "endpoint": "/_doc",
+                    "idPosition": "_id"
+                },
+                "targetLastChanged": "2025-10-03T14:01:03+00:00",
+                "targetLastChecked": "2025-10-03T14:01:03+00:00",
+                "targetLastSynced": "2025-10-03T14:01:03+00:00",
+                "created": "2025-10-03T14:01:03+00:00",
+                "updated": "2025-12-09T16:40:15+00:00",
+                "conditions": {
+                    "!=": [
+                        {
+                            "var": "@self.published"
+                        },
+                        null
+                    ]
+                },
+                "followUps": [],
+                "actions": [],
+                "configurations": [],
+                "status": null,
+                "slug": "openwoo-app-overige-besluiten-van-algemene-strekking-elastic"
+            },
+            "openwoo-app-ontwerpen-van-wet-en-regelgeving-met-adviesaanvraag-elastic": {
+                "name": "OpenWoo.app Ontwerpen van wet- en regelgeving met adviesaanvraag -> Elastic",
+                "description": "",
+                "reference": null,
+                "version": "0.0.6",
+                "sourceId": "woo/ontwerpen_van_wet_en_regelgeving_met_adviesaanvraag",
+                "sourceType": "register/schema",
+                "sourceHash": "",
+                "sourceHashMapping": "",
+                "sourceTargetMapping": "openwoo-app-elastic",
+                "sourceConfig": {
+                    "idPosition": "",
+                    "resultsPosition": "",
+                    "endpoint": "",
+                    "headers": [],
+                    "query": []
+                },
+                "sourceLastChanged": "2025-10-03T14:09:15+00:00",
+                "sourceLastChecked": "2025-10-03T14:09:15+00:00",
+                "sourceLastSynced": "2025-10-03T14:09:15+00:00",
+                "currentPage": 1,
+                "targetId": "elasticsearch-api",
+                "targetType": "api",
+                "targetHash": "",
+                "targetSourceMapping": "",
+                "targetConfig": {
+                    "endpoint": "/_doc",
+                    "idPosition": "_id"
+                },
+                "targetLastChanged": "2025-10-03T14:09:15+00:00",
+                "targetLastChecked": "2025-10-03T14:09:15+00:00",
+                "targetLastSynced": "2025-12-12T13:04:22+00:00",
+                "created": "2025-10-03T14:09:15+00:00",
+                "updated": "2025-12-09T16:51:27+00:00",
+                "conditions": {
+                    "and": [
+                        {
+                            "!=": [
+                                {
+                                    "var": [
+                                        "@self.published",
+                                        null
+                                    ]
+                                },
+                                null
+                            ]
+                        },
+                        {
+                            "!=": [
+                                {
+                                    "var": [
+                                        "@self.published",
+                                        ""
+                                    ]
+                                },
+                                ""
+                            ]
+                        }
+                    ]
+                },
+                "followUps": [],
+                "actions": [],
+                "configurations": [],
+                "status": null,
+                "slug": "openwoo-app-ontwerpen-van-wet-en-regelgeving-met-adviesaanvraag-elastic"
+            },
+            "openwoo-app-organisatie-en-werkwijze-elastic": {
+                "name": "OpenWoo.app Organisatie en werkwijze -> Elastic",
+                "description": "",
+                "reference": null,
+                "version": "0.0.6",
+                "sourceId": "woo/organisatie_en_werkwijze",
+                "sourceType": "register/schema",
+                "sourceHash": "",
+                "sourceHashMapping": "",
+                "sourceTargetMapping": "openwoo-app-elastic",
+                "sourceConfig": {
+                    "idPosition": "",
+                    "resultsPosition": "",
+                    "endpoint": "",
+                    "headers": [],
+                    "query": []
+                },
+                "sourceLastChanged": "2025-10-03T14:10:05+00:00",
+                "sourceLastChecked": "2025-10-03T14:10:05+00:00",
+                "sourceLastSynced": "2025-10-03T14:10:05+00:00",
+                "currentPage": 1,
+                "targetId": "elasticsearch-api",
+                "targetType": "api",
+                "targetHash": "",
+                "targetSourceMapping": "",
+                "targetConfig": {
+                    "endpoint": "/_doc",
+                    "idPosition": "_id"
+                },
+                "targetLastChanged": "2025-10-03T14:10:05+00:00",
+                "targetLastChecked": "2025-10-03T14:10:05+00:00",
+                "targetLastSynced": "2025-10-03T14:10:05+00:00",
+                "created": "2025-10-03T14:10:05+00:00",
+                "updated": "2025-12-09T16:51:34+00:00",
+                "conditions": {
+                    "and": [
+                        {
+                            "!=": [
+                                {
+                                    "var": [
+                                        "@self.published",
+                                        null
+                                    ]
+                                },
+                                null
+                            ]
+                        },
+                        {
+                            "!=": [
+                                {
+                                    "var": [
+                                        "@self.published",
+                                        ""
+                                    ]
+                                },
+                                ""
+                            ]
+                        }
+                    ]
+                },
+                "followUps": [],
+                "actions": [],
+                "configurations": [],
+                "status": null,
+                "slug": "openwoo-app-organisatie-en-werkwijze-elastic"
+            },
+            "openwoo-app-bij-vertegenwoordigende-organen-ingekomen-stukken-elastic": {
+                "name": "OpenWoo.app Bij vertegenwoordigende organen ingekomen stukken -> Elastic",
+                "description": "",
+                "reference": null,
+                "version": "0.0.6",
+                "sourceId": "woo/bij-vertegenwoordigende-organen-ingekomen-stukken",
+                "sourceType": "register/schema",
+                "sourceHash": "",
+                "sourceHashMapping": "",
+                "sourceTargetMapping": "openwoo-app-elastic",
+                "sourceConfig": {
+                    "idPosition": "",
+                    "resultsPosition": "",
+                    "endpoint": "",
+                    "headers": [],
+                    "query": []
+                },
+                "sourceLastChanged": "2025-10-03T14:11:39+00:00",
+                "sourceLastChecked": "2025-10-03T14:11:39+00:00",
+                "sourceLastSynced": "2025-10-03T14:11:39+00:00",
+                "currentPage": 1,
+                "targetId": "elasticsearch-api",
+                "targetType": "api",
+                "targetHash": "",
+                "targetSourceMapping": "",
+                "targetConfig": {
+                    "endpoint": "/_doc",
+                    "idPosition": "_id"
+                },
+                "targetLastChanged": "2025-10-03T14:11:39+00:00",
+                "targetLastChecked": "2025-10-03T14:11:39+00:00",
+                "targetLastSynced": "2025-10-03T14:11:39+00:00",
+                "created": "2025-10-03T14:11:39+00:00",
+                "updated": "2025-12-09T16:51:43+00:00",
+                "conditions": {
+                    "and": [
+                        {
+                            "!=": [
+                                {
+                                    "var": [
+                                        "@self.published",
+                                        null
+                                    ]
+                                },
+                                null
+                            ]
+                        },
+                        {
+                            "!=": [
+                                {
+                                    "var": [
+                                        "@self.published",
+                                        ""
+                                    ]
+                                },
+                                ""
+                            ]
+                        }
+                    ]
+                },
+                "followUps": [],
+                "actions": [],
+                "configurations": [],
+                "status": null,
+                "slug": "openwoo-app-bij-vertegenwoordigende-organen-ingekomen-stukken-elastic"
+            },
+            "openwoo-app-vergaderstukken-staten-generaal-elastic": {
+                "name": "OpenWoo.app Vergaderstukken Staten-Generaal -> Elastic",
+                "description": "",
+                "reference": null,
+                "version": "0.0.7",
+                "sourceId": "woo/vergaderstukken_staten_generaal",
+                "sourceType": "register/schema",
+                "sourceHash": "",
+                "sourceHashMapping": "",
+                "sourceTargetMapping": "openwoo-app-elastic",
+                "sourceConfig": {
+                    "idPosition": "",
+                    "resultsPosition": "",
+                    "endpoint": "",
+                    "headers": [],
+                    "query": []
+                },
+                "sourceLastChanged": "2025-10-03T14:12:12+00:00",
+                "sourceLastChecked": "2025-10-03T14:12:12+00:00",
+                "sourceLastSynced": "2025-10-03T14:12:12+00:00",
+                "currentPage": 1,
+                "targetId": "elasticsearch-api",
+                "targetType": "api",
+                "targetHash": "",
+                "targetSourceMapping": "",
+                "targetConfig": {
+                    "endpoint": "/_doc",
+                    "idPosition": "_id"
+                },
+                "targetLastChanged": "2025-10-03T14:12:12+00:00",
+                "targetLastChecked": "2025-10-03T14:12:12+00:00",
+                "targetLastSynced": "2025-10-03T14:12:12+00:00",
+                "created": "2025-10-03T14:12:12+00:00",
+                "updated": "2025-12-09T16:51:50+00:00",
+                "conditions": {
+                    "and": [
+                        {
+                            "!=": [
+                                {
+                                    "var": [
+                                        "@self.published",
+                                        null
+                                    ]
+                                },
+                                null
+                            ]
+                        },
+                        {
+                            "!=": [
+                                {
+                                    "var": [
+                                        "@self.published",
+                                        ""
+                                    ]
+                                },
+                                ""
+                            ]
+                        }
+                    ]
+                },
+                "followUps": [],
+                "actions": [],
+                "configurations": [],
+                "status": null,
+                "slug": "openwoo-app-vergaderstukken-staten-generaal-elastic"
+            },
+            "openwoo-app-vergaderstukken-decentrale-overheden-openwoo-app": {
+                "name": "OpenWoo.app Vergaderstukken decentrale overheden -> Elastic",
+                "description": "",
+                "reference": null,
+                "version": "0.0.6",
+                "sourceId": "woo/vergaderstukken_decentrale_overheden",
+                "sourceType": "register/schema",
+                "sourceHash": "",
+                "sourceHashMapping": "",
+                "sourceTargetMapping": "openwoo-app-elastic",
+                "sourceConfig": {
+                    "idPosition": "",
+                    "resultsPosition": "",
+                    "endpoint": "",
+                    "headers": [],
+                    "query": []
+                },
+                "sourceLastChanged": "2025-10-03T14:13:13+00:00",
+                "sourceLastChecked": "2025-10-03T14:13:13+00:00",
+                "sourceLastSynced": "2025-10-03T14:13:13+00:00",
+                "currentPage": 1,
+                "targetId": "elasticsearch-api",
+                "targetType": "api",
+                "targetHash": "",
+                "targetSourceMapping": "",
+                "targetConfig": {
+                    "endpoint": "/_doc",
+                    "idPosition": "_id"
+                },
+                "targetLastChanged": "2025-10-03T14:13:13+00:00",
+                "targetLastChecked": "2025-10-03T14:13:13+00:00",
+                "targetLastSynced": "2025-10-03T14:13:13+00:00",
+                "created": "2025-10-03T14:13:13+00:00",
+                "updated": "2025-12-09T16:51:57+00:00",
+                "conditions": {
+                    "and": [
+                        {
+                            "!=": [
+                                {
+                                    "var": [
+                                        "@self.published",
+                                        null
+                                    ]
+                                },
+                                null
+                            ]
+                        },
+                        {
+                            "!=": [
+                                {
+                                    "var": [
+                                        "@self.published",
+                                        ""
+                                    ]
+                                },
+                                ""
+                            ]
+                        }
+                    ]
+                },
+                "followUps": [],
+                "actions": [],
+                "configurations": [],
+                "status": null,
+                "slug": "openwoo-app-vergaderstukken-decentrale-overheden-openwoo-app"
+            },
+            "openwoo-app-adviezen-elastic": {
+                "name": "OpenWoo.app Adviezen -> Elastic",
+                "description": "",
+                "reference": null,
+                "version": "0.0.6",
+                "sourceId": "woo/adviezen",
+                "sourceType": "register/schema",
+                "sourceHash": "",
+                "sourceHashMapping": "",
+                "sourceTargetMapping": "openwoo-app-elastic",
+                "sourceConfig": {
+                    "idPosition": "",
+                    "resultsPosition": "",
+                    "endpoint": "",
+                    "headers": [],
+                    "query": []
+                },
+                "sourceLastChanged": "2025-10-03T14:13:55+00:00",
+                "sourceLastChecked": "2025-10-03T14:13:55+00:00",
+                "sourceLastSynced": "2025-10-03T14:13:55+00:00",
+                "currentPage": 1,
+                "targetId": "elasticsearch-api",
+                "targetType": "api",
+                "targetHash": "",
+                "targetSourceMapping": "",
+                "targetConfig": {
+                    "endpoint": "/_doc",
+                    "idPosition": "_id"
+                },
+                "targetLastChanged": "2025-10-03T14:13:55+00:00",
+                "targetLastChecked": "2025-10-03T14:13:55+00:00",
+                "targetLastSynced": "2025-10-03T14:13:55+00:00",
+                "created": "2025-10-03T14:13:55+00:00",
+                "updated": "2025-12-09T16:52:04+00:00",
+                "conditions": {
+                    "and": [
+                        {
+                            "!=": [
+                                {
+                                    "var": [
+                                        "@self.published",
+                                        null
+                                    ]
+                                },
+                                null
+                            ]
+                        },
+                        {
+                            "!=": [
+                                {
+                                    "var": [
+                                        "@self.published",
+                                        ""
+                                    ]
+                                },
+                                ""
+                            ]
+                        }
+                    ]
+                },
+                "followUps": [],
+                "actions": [],
+                "configurations": [],
+                "status": null,
+                "slug": "openwoo-app-adviezen-elastic"
+            },
+            "openwoo-app-jaarplannen-en-jaarverslagen-elastic": {
+                "name": "OpenWoo.app Jaarplannen en jaarverslagen -> Elastic",
+                "description": "",
+                "reference": null,
+                "version": "0.0.7",
+                "sourceId": "woo/jaarplan-of-jaarverslag",
+                "sourceType": "register/schema",
+                "sourceHash": "",
+                "sourceHashMapping": "",
+                "sourceTargetMapping": "openwoo-app-elastic",
+                "sourceConfig": {
+                    "idPosition": "",
+                    "resultsPosition": "",
+                    "endpoint": "",
+                    "headers": [],
+                    "query": []
+                },
+                "sourceLastChanged": "2025-10-03T14:14:31+00:00",
+                "sourceLastChecked": "2025-10-03T14:14:31+00:00",
+                "sourceLastSynced": "2025-10-03T14:14:31+00:00",
+                "currentPage": 1,
+                "targetId": "elasticsearch-api",
+                "targetType": "api",
+                "targetHash": "",
+                "targetSourceMapping": "",
+                "targetConfig": {
+                    "endpoint": "/_doc",
+                    "idPosition": "_id"
+                },
+                "targetLastChanged": "2025-10-03T14:14:31+00:00",
+                "targetLastChecked": "2025-10-03T14:14:31+00:00",
+                "targetLastSynced": "2025-10-03T14:14:31+00:00",
+                "created": "2025-10-03T14:14:31+00:00",
+                "updated": "2025-12-09T16:52:16+00:00",
+                "conditions": {
+                    "and": [
+                        {
+                            "!=": [
+                                {
+                                    "var": [
+                                        "@self.published",
+                                        null
+                                    ]
+                                },
+                                null
+                            ]
+                        },
+                        {
+                            "!=": [
+                                {
+                                    "var": [
+                                        "@self.published",
+                                        ""
+                                    ]
+                                },
+                                ""
+                            ]
+                        }
+                    ]
+                },
+                "followUps": [],
+                "actions": [],
+                "configurations": [],
+                "status": null,
+                "slug": "openwoo-app-jaarplannen-en-jaarverslagen-elastic"
+            },
+            "openwoo-app-subsidieverplichtingen-anders-dan-met-beschikking-elastic": {
+                "name": "OpenWoo.app Subsidieverplichtingen anders dan met beschikking -> Elastic",
+                "description": "",
+                "reference": null,
+                "version": "0.0.6",
+                "sourceId": "woo/subsidieverplichtingen_anders_dan_met_beschikking",
+                "sourceType": "register/schema",
+                "sourceHash": "",
+                "sourceHashMapping": "",
+                "sourceTargetMapping": "openwoo-app-elastic",
+                "sourceConfig": {
+                    "idPosition": "",
+                    "resultsPosition": "",
+                    "endpoint": "",
+                    "headers": [],
+                    "query": []
+                },
+                "sourceLastChanged": "2025-10-03T14:16:26+00:00",
+                "sourceLastChecked": "2025-10-03T14:16:26+00:00",
+                "sourceLastSynced": "2025-10-03T14:16:26+00:00",
+                "currentPage": 1,
+                "targetId": "elasticsearch-api",
+                "targetType": "api",
+                "targetHash": "",
+                "targetSourceMapping": "",
+                "targetConfig": {
+                    "endpoint": "/_doc",
+                    "idPosition": "_id"
+                },
+                "targetLastChanged": "2025-10-03T14:16:26+00:00",
+                "targetLastChecked": "2025-10-03T14:16:26+00:00",
+                "targetLastSynced": "2025-10-03T14:16:26+00:00",
+                "created": "2025-10-03T14:16:26+00:00",
+                "updated": "2025-12-09T16:52:25+00:00",
+                "conditions": {
+                    "and": [
+                        {
+                            "!=": [
+                                {
+                                    "var": [
+                                        "@self.published",
+                                        null
+                                    ]
+                                },
+                                null
+                            ]
+                        },
+                        {
+                            "!=": [
+                                {
+                                    "var": [
+                                        "@self.published",
+                                        ""
+                                    ]
+                                },
+                                ""
+                            ]
+                        }
+                    ]
+                },
+                "followUps": [],
+                "actions": [],
+                "configurations": [],
+                "status": null,
+                "slug": "openwoo-app-subsidieverplichtingen-anders-dan-met-beschikking-elastic"
+            },
+            "openwoo-app-onderzoeksrapporten-elastic": {
+                "name": "OpenWoo.app Onderzoeksrapporten -> Elastic",
+                "description": "",
+                "reference": null,
+                "version": "0.0.6",
+                "sourceId": "woo/onderzoeksrapporten",
+                "sourceType": "register/schema",
+                "sourceHash": "",
+                "sourceHashMapping": "",
+                "sourceTargetMapping": "openwoo-app-elastic",
+                "sourceConfig": {
+                    "idPosition": "",
+                    "resultsPosition": "",
+                    "endpoint": "",
+                    "headers": [],
+                    "query": []
+                },
+                "sourceLastChanged": "2025-10-03T14:17:44+00:00",
+                "sourceLastChecked": "2025-10-03T14:17:44+00:00",
+                "sourceLastSynced": "2025-10-03T14:17:44+00:00",
+                "currentPage": 1,
+                "targetId": "elasticsearch-api",
+                "targetType": "api",
+                "targetHash": "",
+                "targetSourceMapping": "",
+                "targetConfig": {
+                    "endpoint": "/_doc",
+                    "idPosition": "_id"
+                },
+                "targetLastChanged": "2025-10-03T14:17:44+00:00",
+                "targetLastChecked": "2025-10-03T14:17:44+00:00",
+                "targetLastSynced": "2025-10-03T14:17:44+00:00",
+                "created": "2025-10-03T14:17:44+00:00",
+                "updated": "2025-12-09T16:52:32+00:00",
+                "conditions": {
+                    "and": [
+                        {
+                            "!=": [
+                                {
+                                    "var": [
+                                        "@self.published",
+                                        null
+                                    ]
+                                },
+                                null
+                            ]
+                        },
+                        {
+                            "!=": [
+                                {
+                                    "var": [
+                                        "@self.published",
+                                        ""
+                                    ]
+                                },
+                                ""
+                            ]
+                        }
+                    ]
+                },
+                "followUps": [],
+                "actions": [],
+                "configurations": [],
+                "status": null,
+                "slug": "openwoo-app-onderzoeksrapporten-elastic"
+            },
+            "openwoo-app-beschikkingen-elastic": {
+                "name": "OpenWoo.app Beschikkingen -> Elastic",
+                "description": "",
+                "reference": null,
+                "version": "0.0.6",
+                "sourceId": "woo/beschikkingen",
+                "sourceType": "register/schema",
+                "sourceHash": "",
+                "sourceHashMapping": "",
+                "sourceTargetMapping": "openwoo-app-elastic",
+                "sourceConfig": {
+                    "idPosition": "",
+                    "resultsPosition": "",
+                    "endpoint": "",
+                    "headers": [],
+                    "query": []
+                },
+                "sourceLastChanged": "2025-10-03T14:18:28+00:00",
+                "sourceLastChecked": "2025-10-03T14:18:28+00:00",
+                "sourceLastSynced": "2025-10-03T14:18:28+00:00",
+                "currentPage": 1,
+                "targetId": "elasticsearch-api",
+                "targetType": "api",
+                "targetHash": "",
+                "targetSourceMapping": "",
+                "targetConfig": {
+                    "endpoint": "/_doc",
+                    "idPosition": "_id"
+                },
+                "targetLastChanged": "2025-10-03T14:18:28+00:00",
+                "targetLastChecked": "2025-10-03T14:18:28+00:00",
+                "targetLastSynced": "2025-10-03T14:18:28+00:00",
+                "created": "2025-10-03T14:18:28+00:00",
+                "updated": "2025-12-09T16:52:44+00:00",
+                "conditions": {
+                    "and": [
+                        {
+                            "!=": [
+                                {
+                                    "var": [
+                                        "@self.published",
+                                        null
+                                    ]
+                                },
+                                null
+                            ]
+                        },
+                        {
+                            "!=": [
+                                {
+                                    "var": [
+                                        "@self.published",
+                                        ""
+                                    ]
+                                },
+                                ""
+                            ]
+                        }
+                    ]
+                },
+                "followUps": [],
+                "actions": [],
+                "configurations": [],
+                "status": null,
+                "slug": "openwoo-app-beschikkingen-elastic"
+            },
+            "openwoo-app-klachtoordelen-elastic": {
+                "name": "OpenWoo.app Klachtoordelen -> Elastic",
+                "description": "",
+                "reference": null,
+                "version": "0.0.6",
+                "sourceId": "woo/klachtoordelen",
+                "sourceType": "register/schema",
+                "sourceHash": "",
+                "sourceHashMapping": "",
+                "sourceTargetMapping": "openwoo-app-elastic",
+                "sourceConfig": {
+                    "idPosition": "",
+                    "resultsPosition": "",
+                    "endpoint": "",
+                    "headers": [],
+                    "query": []
+                },
+                "sourceLastChanged": "2025-10-03T14:19:14+00:00",
+                "sourceLastChecked": "2025-10-03T14:19:14+00:00",
+                "sourceLastSynced": "2025-10-03T14:19:14+00:00",
+                "currentPage": 1,
+                "targetId": "elasticsearch-api",
+                "targetType": "api",
+                "targetHash": "",
+                "targetSourceMapping": "",
+                "targetConfig": {
+                    "endpoint": "/_doc",
+                    "idPosition": "_id"
+                },
+                "targetLastChanged": "2025-10-03T14:19:14+00:00",
+                "targetLastChecked": "2025-10-03T14:19:14+00:00",
+                "targetLastSynced": "2025-10-03T14:19:14+00:00",
+                "created": "2025-10-03T14:19:14+00:00",
+                "updated": "2025-12-09T16:52:53+00:00",
+                "conditions": {
+                    "and": [
+                        {
+                            "!=": [
+                                {
+                                    "var": [
+                                        "@self.published",
+                                        null
+                                    ]
+                                },
+                                null
+                            ]
+                        },
+                        {
+                            "!=": [
+                                {
+                                    "var": [
+                                        "@self.published",
+                                        ""
+                                    ]
+                                },
+                                ""
+                            ]
+                        }
+                    ]
+                },
+                "followUps": [],
+                "actions": [],
+                "configurations": [],
+                "status": null,
+                "slug": "openwoo-app-klachtoordelen-elastic"
+            }
+        },
+        "jobs": [],
+        "registers": [],
+        "schemas": [],
+        "objects": []
+    },
+    "openapi": "3.0.0",
+    "info": {
+        "id": 2,
+        "title": "Woo Elastic",
+        "description": "Woo-register met TOOI-informatiecategorie\u00ebn",
+        "version": "1.0.6"
+    }
+}
