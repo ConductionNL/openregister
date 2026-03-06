@@ -1959,10 +1959,8 @@ class RenderObject
                 && ($propertyConfig['type'] === 'array') === true
                 && (($propertyConfig['items']['inversedBy'] ?? null) !== null) === true
             ) {
-                $targetSchema = $propertyConfig['items']['$ref'] ?? null;
                 $isArray      = true;
             } else if (($propertyConfig['inversedBy'] ?? null) !== null) {
-                $targetSchema = $propertyConfig['$ref'] ?? null;
                 if ($propertyConfig['type'] === 'array') {
                     $isArray = true;
                 }

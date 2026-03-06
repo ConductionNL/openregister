@@ -2148,7 +2148,7 @@ class SaveObject
             return $data;
         }
 
-        foreach ($properties as $propertyName => $_propertyDef) {
+        foreach (array_keys($properties) as $propertyName) {
             if (array_key_exists($propertyName, $data) === false) {
                 $data[$propertyName] = null;
             }
