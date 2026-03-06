@@ -2,7 +2,7 @@ name: Quality
 
 on:
   push:
-    branches: [main, development]
+    branches: [main, development, feature/**, bugfix/**, hotfix/**]
   pull_request:
     branches: [main, development]
 
