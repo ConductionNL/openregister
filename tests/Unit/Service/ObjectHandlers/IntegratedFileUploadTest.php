@@ -29,12 +29,13 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\ObjectHandlers\SaveObject;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
+use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\OrganisationService;
-use OCA\OpenRegister\Service\ObjectCacheService;
-use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
-use OCA\OpenRegister\Service\SchemaFacetCacheService;
+use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\BackgroundJob\FileTextExtractionJob;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -45,7 +46,6 @@ use OCP\IUser;
 use OCP\Files\File;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
-use Twig\Loader\ArrayLoader;
 use Symfony\Component\Uid\Uuid;
 use Psr\Log\LoggerInterface;
 
@@ -68,8 +68,14 @@ class IntegratedFileUploadTest extends TestCase
     /** @var MockObject|ObjectEntityMapper */
     private $objectEntityMapper;
 
-    /** @var MockObject|FileService */
-    private $fileService;
+    /** @var MockObject|UnifiedObjectMapper */
+    private $unifiedObjectMapper;
+
+    /** @var MockObject|MetadataHydrationHandler */
+    private $metaHydrationHandler;
+
+    /** @var MockObject|FilePropertyHandler */
+    private $filePropertyHandler;
 
     /** @var MockObject|IUserSession */
     private $userSession;
@@ -89,25 +95,19 @@ class IntegratedFileUploadTest extends TestCase
     /** @var MockObject|OrganisationService */
     private $organisationService;
 
-    /** @var MockObject|ObjectCacheService */
-    private $objectCacheService;
-
-    /** @var MockObject|SchemaCacheHandler */
-    private $schemaCacheService;
-
-    /** @var MockObject|SchemaFacetCacheService */
-    private $schemaFacetCacheService;
+    /** @var MockObject|CacheHandler */
+    private $cacheHandler;
 
     /** @var MockObject|SettingsService */
     private $settingsService;
 
+    /** @var MockObject|PropertyRbacHandler */
+    private $propertyRbacHandler;
+
     /** @var MockObject|LoggerInterface */
     private $logger;
 
-    /** @var MockObject|ArrayLoader */
-    private $arrayLoader;
-
-    /** @var MockObject|Register */
+    /** @var Register */
     private $mockRegister;
 
     /** @var MockObject|Schema */
@@ -127,51 +127,55 @@ class IntegratedFileUploadTest extends TestCase
 
         // Create mocks for all dependencies.
         $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
-        $this->fileService = $this->createMock(FileService::class);
+        $this->unifiedObjectMapper = $this->createMock(UnifiedObjectMapper::class);
+        $this->metaHydrationHandler = $this->createMock(MetadataHydrationHandler::class);
+        $this->filePropertyHandler = $this->createMock(FilePropertyHandler::class);
         $this->userSession = $this->createMock(IUserSession::class);
         $this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
         $this->schemaMapper = $this->createMock(SchemaMapper::class);
         $this->registerMapper = $this->createMock(RegisterMapper::class);
         $this->urlGenerator = $this->createMock(IURLGenerator::class);
         $this->organisationService = $this->createMock(OrganisationService::class);
-        $this->objectCacheService = $this->createMock(ObjectCacheService::class);
-        $this->schemaCacheService = $this->createMock(SchemaCacheHandler::class);
-        $this->schemaFacetCacheService = $this->createMock(SchemaFacetCacheService::class);
+        $this->cacheHandler = $this->createMock(CacheHandler::class);
         $this->settingsService = $this->createMock(SettingsService::class);
+        $this->propertyRbacHandler = $this->createMock(PropertyRbacHandler::class);
         $this->logger = $this->createMock(LoggerInterface::class);
-        $this->arrayLoader = $this->createMock(ArrayLoader::class);
 
-        // Create mock entities.
-        $this->mockRegister = $this->createMock(Register::class);
-        $this->mockSchema = $this->createMock(Schema::class);
+        // Create real register entity (getId is a magic method, cannot be mocked).
+        $this->mockRegister = new Register();
+        $this->mockRegister->setId(1);
+
+        // Schema needs getMockBuilder: getId/getProperties/getConfiguration are magic methods (addMethods),
+        // getSchemaObject is a real method (onlyMethods).
+        $this->mockSchema = $this->getMockBuilder(Schema::class)
+            ->onlyMethods(['getSchemaObject'])
+            ->addMethods(['getId', 'getProperties', 'getConfiguration'])
+            ->getMock();
+
         $this->mockUser = $this->createMock(IUser::class);
 
         // Set up basic mock returns.
-        $this->mockRegister->method('getId')->willReturn(1);
-        $this->mockRegister->method('getSlug')->willReturn('documents');
-        
         $this->mockUser->method('getUID')->willReturn('testuser');
         $this->userSession->method('getUser')->willReturn($this->mockUser);
-        
+
         $this->organisationService->method('getOrganisationForNewEntity')->willReturn('org-123');
-        $this->settingsService->method('getSetting')->willReturn(false);
 
         // Create SaveObject instance.
         $this->saveObject = new SaveObject(
-            $this->objectEntityMapper,
-            $this->fileService,
-            $this->userSession,
-            $this->auditTrailMapper,
-            $this->schemaMapper,
-            $this->registerMapper,
-            $this->urlGenerator,
-            $this->organisationService,
-            $this->objectCacheService,
-            $this->schemaCacheService,
-            $this->schemaFacetCacheService,
-            $this->settingsService,
-            $this->logger,
-            $this->arrayLoader
+            objectEntityMapper: $this->objectEntityMapper,
+            unifiedObjectMapper: $this->unifiedObjectMapper,
+            metaHydrationHandler: $this->metaHydrationHandler,
+            filePropertyHandler: $this->filePropertyHandler,
+            userSession: $this->userSession,
+            auditTrailMapper: $this->auditTrailMapper,
+            schemaMapper: $this->schemaMapper,
+            registerMapper: $this->registerMapper,
+            urlGenerator: $this->urlGenerator,
+            organisationService: $this->organisationService,
+            cacheHandler: $this->cacheHandler,
+            settingsService: $this->settingsService,
+            propertyRbacHandler: $this->propertyRbacHandler,
+            logger: $this->logger,
         );
     }
 

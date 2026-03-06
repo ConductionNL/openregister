@@ -26,6 +26,10 @@ use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\Organisation;
 use OCP\IUserSession;
 use OCP\ISession;
+use OCP\IConfig;
+use OCP\IAppConfig;
+use OCP\IGroupManager;
+use OCP\IUserManager;
 use OCP\IUser;
 use OCP\IRequest;
 use OCP\AppFramework\Http\JSONResponse;
@@ -38,6 +42,10 @@ class EdgeCasesErrorHandlingTest extends TestCase
     private OrganisationMapper|MockObject $organisationMapper;
     private IUserSession|MockObject $userSession;
     private ISession|MockObject $session;
+    private IConfig|MockObject $config;
+    private IAppConfig|MockObject $appConfig;
+    private IGroupManager|MockObject $groupManager;
+    private IUserManager|MockObject $userManager;
     private IRequest|MockObject $request;
     private LoggerInterface|MockObject $logger;
 
@@ -48,14 +56,22 @@ class EdgeCasesErrorHandlingTest extends TestCase
         $this->organisationMapper = $this->createMock(OrganisationMapper::class);
         $this->userSession = $this->createMock(IUserSession::class);
         $this->session = $this->createMock(ISession::class);
+        $this->config = $this->createMock(IConfig::class);
+        $this->appConfig = $this->createMock(IAppConfig::class);
+        $this->groupManager = $this->createMock(IGroupManager::class);
+        $this->userManager = $this->createMock(IUserManager::class);
         $this->request = $this->createMock(IRequest::class);
         $this->logger = $this->createMock(LoggerInterface::class);
-        
+
         $this->organisationService = new OrganisationService(
-            $this->organisationMapper,
-            $this->userSession,
-            $this->session,
-            $this->logger
+            organisationMapper: $this->organisationMapper,
+            userSession: $this->userSession,
+            session: $this->session,
+            config: $this->config,
+            appConfig: $this->appConfig,
+            groupManager: $this->groupManager,
+            userManager: $this->userManager,
+            logger: $this->logger
         );
         
         $this->organisationController = new OrganisationController(

@@ -48,6 +48,10 @@ use OCA\OpenRegister\Controller\OrganisationController;
 use OCP\IUserSession;
 use OCP\IUser;
 use OCP\ISession;
+use OCP\IConfig;
+use OCP\IAppConfig;
+use OCP\IGroupManager;
+use OCP\IUserManager;
 use OCP\IRequest;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -84,15 +88,35 @@ class OrganisationCrudTest extends TestCase
     private $session;
     
     /**
+     * @var IConfig|MockObject
+     */
+    private $config;
+
+    /**
+     * @var IAppConfig|MockObject
+     */
+    private $appConfig;
+
+    /**
+     * @var IGroupManager|MockObject
+     */
+    private $groupManager;
+
+    /**
+     * @var IUserManager|MockObject
+     */
+    private $userManager;
+
+    /**
      * @var IRequest|MockObject
      */
     private $request;
-    
+
     /**
      * @var LoggerInterface|MockObject
      */
     private $logger;
-    
+
     /**
      * @var IUser|MockObject
      */
@@ -111,16 +135,24 @@ class OrganisationCrudTest extends TestCase
         $this->organisationMapper = $this->createMock(OrganisationMapper::class);
         $this->userSession = $this->createMock(IUserSession::class);
         $this->session = $this->createMock(ISession::class);
+        $this->config = $this->createMock(IConfig::class);
+        $this->appConfig = $this->createMock(IAppConfig::class);
+        $this->groupManager = $this->createMock(IGroupManager::class);
+        $this->userManager = $this->createMock(IUserManager::class);
         $this->request = $this->createMock(IRequest::class);
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->mockUser = $this->createMock(IUser::class);
-        
+
         // Create service instance with mocked dependencies.
         $this->organisationService = new OrganisationService(
-            $this->organisationMapper,
-            $this->userSession,
-            $this->session,
-            $this->logger
+            organisationMapper: $this->organisationMapper,
+            userSession: $this->userSession,
+            session: $this->session,
+            config: $this->config,
+            appConfig: $this->appConfig,
+            groupManager: $this->groupManager,
+            userManager: $this->userManager,
+            logger: $this->logger
         );
         
         // Create controller instance with mocked dependencies.
@@ -147,6 +179,10 @@ class OrganisationCrudTest extends TestCase
             $this->organisationMapper,
             $this->userSession,
             $this->session,
+            $this->config,
+            $this->appConfig,
+            $this->groupManager,
+            $this->userManager,
             $this->request,
             $this->logger,
             $this->mockUser
@@ -180,7 +216,6 @@ class OrganisationCrudTest extends TestCase
         $createdOrg->setDescription('Test organisation for ACME Inc.');
         $createdOrg->setUuid('acme-uuid-123');
         $createdOrg->setOwner('alice');
-        $createdOrg->setIsDefault(false);
         $createdOrg->addUser('alice');
         $createdOrg->setCreated(new \DateTime());
         $createdOrg->setUpdated(new \DateTime());
@@ -193,7 +228,6 @@ class OrganisationCrudTest extends TestCase
                        $org->getName() === 'Acme Corporation' &&
                        $org->getDescription() === 'Test organisation for ACME Inc.' &&
                        $org->getOwner() === 'alice' &&
-                       !$org->getIsDefault() &&
                        $org->hasUser('alice');
             }))
             ->willReturn($createdOrg);
@@ -209,7 +243,6 @@ class OrganisationCrudTest extends TestCase
         $this->assertEquals('Acme Corporation', $responseData['name']);
         $this->assertEquals('Test organisation for ACME Inc.', $responseData['description']);
         $this->assertEquals('alice', $responseData['owner']);
-        $this->assertFalse($responseData['isDefault']);
         $this->assertContains('alice', $responseData['users']);
         $this->assertEquals(1, $responseData['userCount']);
     }
@@ -485,7 +518,6 @@ class OrganisationCrudTest extends TestCase
         $createdOrg->setDescription('Diana\'s organisation');
         $createdOrg->setUuid('diana-uuid-456');
         $createdOrg->setOwner('diana');
-        $createdOrg->setIsDefault(false);
         $createdOrg->addUser('diana');
         $createdDate = new \DateTime();
         $createdOrg->setCreated($createdDate);
@@ -509,7 +541,6 @@ class OrganisationCrudTest extends TestCase
         $this->assertEquals('diana', $responseData['owner']);
         $this->assertContains('diana', $responseData['users']);
         $this->assertEquals(1, $responseData['userCount']);
-        $this->assertFalse($responseData['isDefault']);
     }
 
     /**

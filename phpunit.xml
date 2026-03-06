@@ -46,6 +46,5 @@
 
     <php>
         <env name="PHPUNIT_RUN" value="1"/>
-        <env name="NEXTCLOUD_CONFIG_DIR" value="tests/config"/>
     </php>
 </phpunit>

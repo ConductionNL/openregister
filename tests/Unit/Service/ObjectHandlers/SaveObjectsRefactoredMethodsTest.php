@@ -22,9 +22,16 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ObjectHandlers;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\SaveObjects;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SaveObjects\BulkValidationHandler;
+use OCA\OpenRegister\Service\Object\SaveObjects\PreparationHandler;
+use OCA\OpenRegister\Service\Object\SaveObjects\ChunkProcessingHandler;
+use OCA\OpenRegister\Service\OrganisationService;
+use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -48,16 +55,37 @@ class SaveObjectsRefactoredMethodsTest extends TestCase
 	private SaveObjects $saveObjects;
 	private ReflectionClass $reflection;
 
+	/** @var MockObject|SchemaMapper */
+	private $schemaMapper;
+
+	/** @var MockObject|RegisterMapper */
+	private $registerMapper;
+
 	/** @var MockObject|SaveObject */
 	private $saveObject;
+
+	/** @var MockObject|BulkValidationHandler */
+	private $bulkValidHandler;
+
+	/** @var MockObject|PreparationHandler */
+	private $preparationHandler;
+
+	/** @var MockObject|ChunkProcessingHandler */
+	private $chunkProcHandler;
+
+	/** @var MockObject|OrganisationService */
+	private $organisationService;
+
+	/** @var MockObject|IUserSession */
+	private $userSession;
 
 	/** @var MockObject|LoggerInterface */
 	private $logger;
 
-	/** @var MockObject|Register */
+	/** @var Register */
 	private $mockRegister;
 
-	/** @var MockObject|Schema */
+	/** @var Schema */
 	private $mockSchema;
 
 	/**
@@ -70,23 +98,34 @@ class SaveObjectsRefactoredMethodsTest extends TestCase
 		parent::setUp();
 
 		// Create mocks for all dependencies.
+		$this->schemaMapper = $this->createMock(SchemaMapper::class);
+		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->saveObject = $this->createMock(SaveObject::class);
+		$this->bulkValidHandler = $this->createMock(BulkValidationHandler::class);
+		$this->preparationHandler = $this->createMock(PreparationHandler::class);
+		$this->chunkProcHandler = $this->createMock(ChunkProcessingHandler::class);
+		$this->organisationService = $this->createMock(OrganisationService::class);
+		$this->userSession = $this->createMock(IUserSession::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
-		// Create mock entities.
-		$this->mockRegister = $this->createMock(Register::class);
-		$this->mockSchema = $this->createMock(Schema::class);
+		// Create real entities (getId is a magic method, cannot be mocked).
+		$this->mockRegister = new Register();
+		$this->mockRegister->setId(1);
 
-		// Set up basic mock returns.
-		$this->mockRegister->method('getId')->willReturn(1);
-		$this->mockRegister->method('getSlug')->willReturn('test-register');
-		$this->mockSchema->method('getId')->willReturn(1);
-		$this->mockSchema->method('getSlug')->willReturn('test-schema');
+		$this->mockSchema = new Schema();
+		$this->mockSchema->setId(1);
 
 		// Create SaveObjects instance.
 		$this->saveObjects = new SaveObjects(
-			saveObject: $this->saveObject,
-			logger: $this->logger
+			schemaMapper: $this->schemaMapper,
+			registerMapper: $this->registerMapper,
+			saveHandler: $this->saveObject,
+			bulkValidHandler: $this->bulkValidHandler,
+			preparationHandler: $this->preparationHandler,
+			chunkProcHandler: $this->chunkProcHandler,
+			organisationService: $this->organisationService,
+			userSession: $this->userSession,
+			logger: $this->logger,
 		);
 
 		// Set up reflection for accessing private methods.

@@ -28,9 +28,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
-use OCA\OpenRegister\Service\ObjectHandlers\SaveObjects;
-use OCA\OpenRegister\Service\ObjectHandlers\SaveObject;
-use OCA\OpenRegister\Service\ObjectHandlers\ValidateObject;
+use OCA\OpenRegister\Service\Object\SaveObjects;
+use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SaveObjects\BulkRelationHandler;
+use OCA\OpenRegister\Service\Object\SaveObjects\BulkValidationHandler;
+use OCA\OpenRegister\Service\Object\SaveObjects\ChunkProcessingHandler;
+use OCA\OpenRegister\Service\Object\SaveObjects\PreparationHandler;
+use OCA\OpenRegister\Service\Object\SaveObjects\TransformationHandler;
+use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
@@ -42,6 +47,7 @@ use OCP\IUserSession;
 use OCP\IUser;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
+use Psr\Log\LoggerInterface;
 
 /**
  * Test class for bulk metadata handling optimization
@@ -85,13 +91,6 @@ class BulkMetadataHandlingTest extends TestCase
     private MockObject $mockSaveHandler;
 
     /**
-     * Mock validate object handler
-     *
-     * @var MockObject|ValidateObject
-     */
-    private MockObject $mockValidateHandler;
-
-    /**
      * Mock user session
      *
      * @var MockObject|IUserSession
@@ -106,6 +105,13 @@ class BulkMetadataHandlingTest extends TestCase
     private MockObject $mockOrganisationService;
 
     /**
+     * Mock logger
+     *
+     * @var MockObject|LoggerInterface
+     */
+    private MockObject $mockLogger;
+
+    /**
      * Mock user object
      *
      * @var MockObject|IUser
@@ -115,16 +121,16 @@ class BulkMetadataHandlingTest extends TestCase
     /**
      * Mock register entity
      *
-     * @var MockObject|Register
+     * @var Register
      */
-    private MockObject $mockRegister;
+    private Register $mockRegister;
 
     /**
      * Mock schema entity
      *
-     * @var MockObject|Schema
+     * @var Schema
      */
-    private MockObject $mockSchema;
+    private Schema $mockSchema;
 
 
     /**
@@ -141,31 +147,36 @@ class BulkMetadataHandlingTest extends TestCase
         $this->mockSchemaMapper = $this->createMock(SchemaMapper::class);
         $this->mockRegisterMapper = $this->createMock(RegisterMapper::class);
         $this->mockSaveHandler = $this->createMock(SaveObject::class);
-        $this->mockValidateHandler = $this->createMock(ValidateObject::class);
         $this->mockUserSession = $this->createMock(IUserSession::class);
         $this->mockOrganisationService = $this->createMock(OrganisationService::class);
+        $this->mockLogger = $this->createMock(LoggerInterface::class);
 
         // Create mock entities.
         $this->mockUser = $this->createMock(IUser::class);
-        $this->mockRegister = $this->createMock(Register::class);
-        $this->mockSchema = $this->createMock(Schema::class);
 
-        // Configure basic mock entity behavior.
-        $this->mockRegister->method('getId')->willReturn(1);
-        $this->mockSchema->method('getId')->willReturn(1);
-        $this->mockSchema->method('getProperties')->willReturn([]);
-        $this->mockSchema->method('getConfiguration')->willReturn([]);
-        $this->mockSchema->method('getHardValidation')->willReturn(false);
+        // Create real register entity (getId is a magic method, cannot be mocked).
+        $this->mockRegister = new Register();
+        $this->mockRegister->setId(1);
+
+        // Create real schema entity (getId/getHardValidation are magic methods, cannot be mocked).
+        $this->mockSchema = new Schema();
+        $this->mockSchema->setId(1);
+        $this->mockSchema->setHardValidation(false);
 
         // Create the SaveObjects handler with mocked dependencies.
         $this->saveObjectsHandler = new SaveObjects(
-            $this->mockObjectEntityMapper,
-            $this->mockSchemaMapper,
-            $this->mockRegisterMapper,
-            $this->mockSaveHandler,
-            $this->mockValidateHandler,
-            $this->mockUserSession,
-            $this->mockOrganisationService
+            objectEntityMapper: $this->mockObjectEntityMapper,
+            schemaMapper: $this->mockSchemaMapper,
+            registerMapper: $this->mockRegisterMapper,
+            saveHandler: $this->mockSaveHandler,
+            bulkValidHandler: $this->createMock(BulkValidationHandler::class),
+            bulkRelationHandler: $this->createMock(BulkRelationHandler::class),
+            transformHandler: $this->createMock(TransformationHandler::class),
+            preparationHandler: $this->createMock(PreparationHandler::class),
+            chunkProcHandler: $this->createMock(ChunkProcessingHandler::class),
+            organisationService: $this->mockOrganisationService,
+            userSession: $this->mockUserSession,
+            logger: $this->mockLogger
         );
 
     }//end setUp()

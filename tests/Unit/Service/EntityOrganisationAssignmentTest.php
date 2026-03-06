@@ -57,10 +57,13 @@ use OCA\OpenRegister\Controller\ObjectsController;
 use OCP\IUserSession;
 use OCP\IUser;
 use OCP\ISession;
+use OCP\IConfig;
+use OCP\IAppConfig;
+use OCP\IGroupManager;
+use OCP\IUserManager;
 use OCP\IRequest;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\IAppConfig;
 use OCA\OpenRegister\Service\FileService;
 use Psr\Log\LoggerInterface;
 
@@ -135,20 +138,35 @@ class EntityOrganisationAssignmentTest extends TestCase
     private $request;
     
     /**
+     * @var IConfig|MockObject
+     */
+    private $ncConfig;
+
+    /**
      * @var IAppConfig|MockObject
      */
-    private $config;
-    
+    private $appConfig;
+
+    /**
+     * @var IGroupManager|MockObject
+     */
+    private $groupManager;
+
+    /**
+     * @var IUserManager|MockObject
+     */
+    private $userManager;
+
     /**
      * @var FileService|MockObject
      */
     private $fileService;
-    
+
     /**
      * @var LoggerInterface|MockObject
      */
     private $logger;
-    
+
     /**
      * @var IUser|MockObject
      */
@@ -171,17 +189,24 @@ class EntityOrganisationAssignmentTest extends TestCase
         $this->userSession = $this->createMock(IUserSession::class);
         $this->session = $this->createMock(ISession::class);
         $this->request = $this->createMock(IRequest::class);
-        $this->config = $this->createMock(IAppConfig::class);
+        $this->ncConfig = $this->createMock(IConfig::class);
+        $this->appConfig = $this->createMock(IAppConfig::class);
+        $this->groupManager = $this->createMock(IGroupManager::class);
+        $this->userManager = $this->createMock(IUserManager::class);
         $this->fileService = $this->createMock(FileService::class);
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->mockUser = $this->createMock(IUser::class);
-        
+
         // Create service instances.
         $this->organisationService = new OrganisationService(
-            $this->organisationMapper,
-            $this->userSession,
-            $this->session,
-            $this->logger
+            organisationMapper: $this->organisationMapper,
+            userSession: $this->userSession,
+            session: $this->session,
+            config: $this->ncConfig,
+            appConfig: $this->appConfig,
+            groupManager: $this->groupManager,
+            userManager: $this->userManager,
+            logger: $this->logger
         );
         
         $this->registerService = new RegisterService(
@@ -200,13 +225,13 @@ class EntityOrganisationAssignmentTest extends TestCase
             $this->request,
             $this->registerService,
             $this->objectEntityMapper,
-            $this->config
+            $this->appConfig
         );
-        
+
         $this->schemasController = new SchemasController(
             'openregister',
             $this->request,
-            $this->config,
+            $this->appConfig,
             $this->schemaMapper,
             $this->objectEntityMapper,
             null, // downloadService
@@ -219,7 +244,7 @@ class EntityOrganisationAssignmentTest extends TestCase
             'openregister',
             $this->request,
             $this->objectEntityMapper,
-            $this->config
+            $this->appConfig
         );
     }
 
@@ -245,7 +270,10 @@ class EntityOrganisationAssignmentTest extends TestCase
             $this->userSession,
             $this->session,
             $this->request,
-            $this->config,
+            $this->ncConfig,
+            $this->appConfig,
+            $this->groupManager,
+            $this->userManager,
             $this->fileService,
             $this->logger,
             $this->mockUser

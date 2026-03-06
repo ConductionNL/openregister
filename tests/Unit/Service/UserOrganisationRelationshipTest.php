@@ -47,6 +47,10 @@ use OCA\OpenRegister\Controller\OrganisationController;
 use OCP\IUserSession;
 use OCP\IUser;
 use OCP\ISession;
+use OCP\IConfig;
+use OCP\IAppConfig;
+use OCP\IGroupManager;
+use OCP\IUserManager;
 use OCP\IRequest;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -83,15 +87,35 @@ class UserOrganisationRelationshipTest extends TestCase
     private $session;
     
     /**
+     * @var IConfig|MockObject
+     */
+    private $config;
+
+    /**
+     * @var IAppConfig|MockObject
+     */
+    private $appConfig;
+
+    /**
+     * @var IGroupManager|MockObject
+     */
+    private $groupManager;
+
+    /**
+     * @var IUserManager|MockObject
+     */
+    private $userManager;
+
+    /**
      * @var IRequest|MockObject
      */
     private $request;
-    
+
     /**
      * @var LoggerInterface|MockObject
      */
     private $logger;
-    
+
     /**
      * @var IUser|MockObject
      */
@@ -110,16 +134,24 @@ class UserOrganisationRelationshipTest extends TestCase
         $this->organisationMapper = $this->createMock(OrganisationMapper::class);
         $this->userSession = $this->createMock(IUserSession::class);
         $this->session = $this->createMock(ISession::class);
+        $this->config = $this->createMock(IConfig::class);
+        $this->appConfig = $this->createMock(IAppConfig::class);
+        $this->groupManager = $this->createMock(IGroupManager::class);
+        $this->userManager = $this->createMock(IUserManager::class);
         $this->request = $this->createMock(IRequest::class);
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->mockUser = $this->createMock(IUser::class);
-        
+
         // Create service instance with mocked dependencies.
         $this->organisationService = new OrganisationService(
-            $this->organisationMapper,
-            $this->userSession,
-            $this->session,
-            $this->logger
+            organisationMapper: $this->organisationMapper,
+            userSession: $this->userSession,
+            session: $this->session,
+            config: $this->config,
+            appConfig: $this->appConfig,
+            groupManager: $this->groupManager,
+            userManager: $this->userManager,
+            logger: $this->logger
         );
         
         // Create controller instance with mocked dependencies.
@@ -146,6 +178,10 @@ class UserOrganisationRelationshipTest extends TestCase
             $this->organisationMapper,
             $this->userSession,
             $this->session,
+            $this->config,
+            $this->appConfig,
+            $this->groupManager,
+            $this->userManager,
             $this->request,
             $this->logger,
             $this->mockUser
@@ -390,7 +426,6 @@ class UserOrganisationRelationshipTest extends TestCase
         $defaultOrg = new Organisation();
         $defaultOrg->setName('Default Organisation');
         $defaultOrg->setUuid($defaultUuid);
-        $defaultOrg->setIsDefault(true);
         $defaultOrg->setUsers(['charlie']);
         
         $this->organisationMapper
@@ -510,19 +545,16 @@ class UserOrganisationRelationshipTest extends TestCase
         $org1->setName('Organisation 1');
         $org1->setUuid('org1-uuid');
         $org1->setUsers(['diana']);
-        $org1->setIsDefault(false);
         
         $org2 = new Organisation();
         $org2->setName('Organisation 2');
         $org2->setUuid('org2-uuid');
         $org2->setUsers(['diana']);
-        $org2->setIsDefault(false);
         
         $defaultOrg = new Organisation();
         $defaultOrg->setName('Default Organisation');
         $defaultOrg->setUuid('default-uuid');
         $defaultOrg->setUsers(['diana']);
-        $defaultOrg->setIsDefault(true);
         
         $this->organisationMapper
             ->expects($this->once())

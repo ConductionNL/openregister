@@ -29,7 +29,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\Migration\IOutput;
 use OCP\IDBConnection;
-use Doctrine\DBAL\Schema\Schema as DoctrineSchema;
+use OCP\DB\ISchemaWrapper;
 
 class DataMigrationTest extends TestCase
 {
@@ -46,7 +46,7 @@ class DataMigrationTest extends TestCase
         $this->organisationMapper = $this->createMock(OrganisationMapper::class);
         $this->output = $this->createMock(IOutput::class);
         
-        $this->migration = new Version1Date20250801000000();
+        $this->migration = new Version1Date20250801000000($this->connection);
     }
 
     /**
@@ -62,14 +62,15 @@ class DataMigrationTest extends TestCase
         
         $defaultOrg = new Organisation();
         $defaultOrg->setUuid('default-uuid-123');
-        $defaultOrg->setIsDefault(true);
         
         // Mock database queries.
         $queryBuilder = $this->createMock(\Doctrine\DBAL\Query\QueryBuilder::class);
         $this->connection->method('getQueryBuilder')->willReturn($queryBuilder);
         
         // Act: Run migration.
-        $schema = $this->createMock(DoctrineSchema::class);
+        $schema = $this->createMock(ISchemaWrapper::class);
+        $schema->method('hasTable')->willReturn(true);
+        $schema->method('getTable')->willReturn($this->createMock(\Doctrine\DBAL\Schema\Table::class));
         $this->migration->changeSchema($this->output, \Closure::fromCallable(function() use ($schema) {
             return $schema;
         }), []);

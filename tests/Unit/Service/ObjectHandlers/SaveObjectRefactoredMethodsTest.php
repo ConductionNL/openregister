@@ -28,15 +28,21 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
+use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\SettingsService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
 use OCP\IUser;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
-use Twig\Loader\ArrayLoader;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 use ReflectionClass;
 use ReflectionMethod;
@@ -61,8 +67,14 @@ class SaveObjectRefactoredMethodsTest extends TestCase
 	/** @var MockObject|ObjectEntityMapper */
 	private $objectEntityMapper;
 
-	/** @var MockObject|FileService */
-	private $fileService;
+	/** @var MockObject|UnifiedObjectMapper */
+	private $unifiedObjectMapper;
+
+	/** @var MockObject|MetadataHydrationHandler */
+	private $metaHydrationHandler;
+
+	/** @var MockObject|FilePropertyHandler */
+	private $filePropertyHandler;
 
 	/** @var MockObject|IUserSession */
 	private $userSession;
@@ -79,13 +91,25 @@ class SaveObjectRefactoredMethodsTest extends TestCase
 	/** @var MockObject|IURLGenerator */
 	private $urlGenerator;
 
-	/** @var MockObject|ArrayLoader */
-	private $arrayLoader;
+	/** @var MockObject|OrganisationService */
+	private $organisationService;
 
-	/** @var MockObject|Register */
+	/** @var MockObject|CacheHandler */
+	private $cacheHandler;
+
+	/** @var MockObject|SettingsService */
+	private $settingsService;
+
+	/** @var MockObject|PropertyRbacHandler */
+	private $propertyRbacHandler;
+
+	/** @var MockObject|LoggerInterface */
+	private $logger;
+
+	/** @var Register */
 	private $mockRegister;
 
-	/** @var MockObject|Schema */
+	/** @var Schema */
 	private $mockSchema;
 
 	/** @var MockObject|IUser */
@@ -102,43 +126,49 @@ class SaveObjectRefactoredMethodsTest extends TestCase
 
 		// Create mocks for all dependencies.
 		$this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
-		$this->fileService = $this->createMock(FileService::class);
+		$this->unifiedObjectMapper = $this->createMock(UnifiedObjectMapper::class);
+		$this->metaHydrationHandler = $this->createMock(MetadataHydrationHandler::class);
+		$this->filePropertyHandler = $this->createMock(FilePropertyHandler::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->urlGenerator = $this->createMock(IURLGenerator::class);
-		// ArrayLoader is final, so we create a real instance instead of mocking.
-		$this->arrayLoader = new ArrayLoader([]);
+		$this->organisationService = $this->createMock(OrganisationService::class);
+		$this->cacheHandler = $this->createMock(CacheHandler::class);
+		$this->settingsService = $this->createMock(SettingsService::class);
+		$this->propertyRbacHandler = $this->createMock(PropertyRbacHandler::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
 
-		// Create mock entities.
-		$this->mockRegister = $this->createMock(Register::class);
-		$this->mockSchema = $this->createMock(Schema::class);
+		// Create real entities (getId is a magic method, cannot be mocked).
+		$this->mockRegister = new Register();
+		$this->mockRegister->setId(1);
+
+		$this->mockSchema = new Schema();
+		$this->mockSchema->setId(1);
+
 		$this->mockUser = $this->createMock(IUser::class);
 
 		// Set up basic mock returns.
-		$this->mockRegister->method('getId')->willReturn(1);
-		$this->mockRegister->method('getSlug')->willReturn('test-register');
-
-		$this->mockSchema->method('getId')->willReturn(1);
-		$this->mockSchema->method('getSlug')->willReturn('test-schema');
-		$this->mockSchema->method('getSchemaObject')->willReturn((object)[
-			'properties' => []
-		]);
-
 		$this->mockUser->method('getUID')->willReturn('testuser');
 		$this->userSession->method('getUser')->willReturn($this->mockUser);
 
 		// Create SaveObject instance.
 		$this->saveObject = new SaveObject(
 			objectEntityMapper: $this->objectEntityMapper,
-			fileService: $this->fileService,
+			unifiedObjectMapper: $this->unifiedObjectMapper,
+			metaHydrationHandler: $this->metaHydrationHandler,
+			filePropertyHandler: $this->filePropertyHandler,
 			userSession: $this->userSession,
 			auditTrailMapper: $this->auditTrailMapper,
 			schemaMapper: $this->schemaMapper,
 			registerMapper: $this->registerMapper,
 			urlGenerator: $this->urlGenerator,
-			arrayLoader: $this->arrayLoader
+			organisationService: $this->organisationService,
+			cacheHandler: $this->cacheHandler,
+			settingsService: $this->settingsService,
+			propertyRbacHandler: $this->propertyRbacHandler,
+			logger: $this->logger,
 		);
 
 		// Set up reflection for accessing private methods.
