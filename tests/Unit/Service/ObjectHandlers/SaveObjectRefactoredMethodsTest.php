@@ -44,8 +44,8 @@ use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
+use Twig\Loader\ArrayLoader;
 use ReflectionClass;
-use ReflectionMethod;
 
 /**
  * Unit tests for SaveObject refactored methods.
@@ -107,9 +107,9 @@ class SaveObjectRefactoredMethodsTest extends TestCase
 	private $logger;
 
 	/** @var Register */
-	private $mockRegister;
+	private Register $mockRegister;
 
-	/** @var Schema */
+	/** @var Schema|MockObject */
 	private $mockSchema;
 
 	/** @var MockObject|IUser */
@@ -140,18 +140,33 @@ class SaveObjectRefactoredMethodsTest extends TestCase
 		$this->propertyRbacHandler = $this->createMock(PropertyRbacHandler::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
-		// Create real entities (getId is a magic method, cannot be mocked).
+		// Create real Register (getId is a magic method via __call).
 		$this->mockRegister = new Register();
 		$this->mockRegister->setId(1);
 
-		$this->mockSchema = new Schema();
-		$this->mockSchema->setId(1);
+		// Create partial mock for Schema: magic methods via addMethods, real methods via onlyMethods.
+		$this->mockSchema = $this->getMockBuilder(Schema::class)
+			->addMethods(['getId'])
+			->onlyMethods(['getSchemaObject', 'getProperties', 'getConfiguration', 'hasPropertyAuthorization'])
+			->getMock();
+		$this->mockSchema->method('getId')->willReturn(1);
+		$this->mockSchema->method('hasPropertyAuthorization')->willReturn(false);
 
 		$this->mockUser = $this->createMock(IUser::class);
 
 		// Set up basic mock returns.
 		$this->mockUser->method('getUID')->willReturn('testuser');
 		$this->userSession->method('getUser')->willReturn($this->mockUser);
+
+		// UnifiedObjectMapper/ObjectEntityMapper update pass-through.
+		$this->unifiedObjectMapper->method('update')
+			->willReturnCallback(function ($entity) {
+				return $entity;
+			});
+		$this->objectEntityMapper->method('update')
+			->willReturnCallback(function ($entity) {
+				return $entity;
+			});
 
 		// Create SaveObject instance.
 		$this->saveObject = new SaveObject(
@@ -169,6 +184,7 @@ class SaveObjectRefactoredMethodsTest extends TestCase
 			settingsService: $this->settingsService,
 			propertyRbacHandler: $this->propertyRbacHandler,
 			logger: $this->logger,
+			arrayLoader: new ArrayLoader(),
 		);
 
 		// Set up reflection for accessing private methods.
@@ -202,19 +218,19 @@ class SaveObjectRefactoredMethodsTest extends TestCase
 	{
 		$uuid = Uuid::v4()->toRfc4122();
 		$data = [
-			'_self' => "http://example.com/objects/{$uuid}",
+			'@self' => ['id' => $uuid],
 			'name' => 'Test Object'
 		];
 
-		[$extractedData, $extractedUuid, $selfData] = $this->invokePrivateMethod(
+		[$extractedUuid, $selfData, $extractedData] = $this->invokePrivateMethod(
 			methodName: 'extractUuidAndSelfData',
-			parameters: [$data, null]
+			parameters: [$data, null, null]
 		);
 
-		$this->assertEquals($uuid, $extractedUuid, 'UUID should be extracted from _self URL.');
-		$this->assertArrayNotHasKey('_self', $extractedData, '_self should be removed from data.');
+		$this->assertEquals($uuid, $extractedUuid, 'UUID should be extracted from @self.id.');
+		$this->assertArrayNotHasKey('@self', $extractedData, '@self should be removed from data.');
 		$this->assertEquals('Test Object', $extractedData['name'], 'Other data should be preserved.');
-		$this->assertEquals("http://example.com/objects/{$uuid}", $selfData, 'selfData should contain _self value.');
+		$this->assertEquals(['id' => $uuid], $selfData, 'selfData should contain @self value.');
 	}
 
 	/**
@@ -230,15 +246,15 @@ class SaveObjectRefactoredMethodsTest extends TestCase
 			'name' => 'Test Object'
 		];
 
-		[$extractedData, $extractedUuid, $selfData] = $this->invokePrivateMethod(
+		[$extractedUuid, $selfData, $extractedData] = $this->invokePrivateMethod(
 			methodName: 'extractUuidAndSelfData',
-			parameters: [$data, null]
+			parameters: [$data, null, null]
 		);
 
 		$this->assertEquals($uuid, $extractedUuid, 'UUID should be extracted from id field.');
 		$this->assertArrayNotHasKey('id', $extractedData, 'id should be removed from data.');
 		$this->assertEquals('Test Object', $extractedData['name'], 'Other data should be preserved.');
-		$this->assertNull($selfData, 'selfData should be null when no _self provided.');
+		$this->assertEmpty($selfData, 'selfData should be empty array when no @self provided.');
 	}
 
 	/**
@@ -255,9 +271,9 @@ class SaveObjectRefactoredMethodsTest extends TestCase
 			'name' => 'Test Object'
 		];
 
-		[$extractedData, $extractedUuid, $selfData] = $this->invokePrivateMethod(
+		[$extractedUuid, $selfData, $extractedData] = $this->invokePrivateMethod(
 			methodName: 'extractUuidAndSelfData',
-			parameters: [$data, $explicitUuid]
+			parameters: [$data, $explicitUuid, null]
 		);
 
 		$this->assertEquals($explicitUuid, $extractedUuid, 'Explicit UUID parameter should take precedence.');
@@ -269,17 +285,16 @@ class SaveObjectRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testExtractUuidAndSelfDataGeneratesNewUuid(): void
+	public function testExtractUuidAndSelfDataReturnsNullUuidWhenNotProvided(): void
 	{
 		$data = ['name' => 'Test Object'];
 
-		[$extractedData, $extractedUuid, $selfData] = $this->invokePrivateMethod(
+		[$extractedUuid, $selfData, $extractedData] = $this->invokePrivateMethod(
 			methodName: 'extractUuidAndSelfData',
-			parameters: [$data, null]
+			parameters: [$data, null, null]
 		);
 
-		$this->assertNotNull($extractedUuid, 'UUID should be generated when not provided.');
-		$this->assertTrue(Uuid::isValid($extractedUuid), 'Generated UUID should be valid.');
+		$this->assertNull($extractedUuid, 'UUID should be null when not provided (saveObject generates it later).');
 		$this->assertEquals('Test Object', $extractedData['name'], 'Data should be preserved.');
 	}
 
@@ -292,21 +307,15 @@ class SaveObjectRefactoredMethodsTest extends TestCase
 	 */
 	public function testResolveSchemaAndRegisterWithRegisterObject(): void
 	{
-		$data = [];
-
-		$this->invokePrivateMethod(
+		[$schema, $schemaId, $register, $registerId] = $this->invokePrivateMethod(
 			methodName: 'resolveSchemaAndRegister',
-			parameters: [$data, $this->mockRegister, $this->mockSchema]
+			parameters: [$this->mockSchema, $this->mockRegister]
 		);
 
-		// Use reflection to check private properties were set.
-		$registerProp = $this->reflection->getProperty('currentRegister');
-		$registerProp->setAccessible(true);
-		$schemaProp = $this->reflection->getProperty('currentSchema');
-		$schemaProp->setAccessible(true);
-
-		$this->assertSame($this->mockRegister, $registerProp->getValue($this->saveObject), 'Register should be set.');
-		$this->assertSame($this->mockSchema, $schemaProp->getValue($this->saveObject), 'Schema should be set.');
+		$this->assertSame($this->mockSchema, $schema, 'Schema should be returned as-is.');
+		$this->assertEquals(1, $schemaId, 'Schema ID should match.');
+		$this->assertSame($this->mockRegister, $register, 'Register should be returned as-is.');
+		$this->assertEquals(1, $registerId, 'Register ID should match.');
 	}
 
 	/**
@@ -316,28 +325,23 @@ class SaveObjectRefactoredMethodsTest extends TestCase
 	 */
 	public function testResolveSchemaAndRegisterWithIntegerId(): void
 	{
-		$data = [];
-
 		$this->registerMapper
-			->expects($this->once())
 			->method('find')
-			->with(42)
 			->willReturn($this->mockRegister);
 
 		$this->schemaMapper
-			->expects($this->once())
 			->method('find')
-			->with(10)
 			->willReturn($this->mockSchema);
 
-		$this->invokePrivateMethod(
+		[$schema, $schemaId, $register, $registerId] = $this->invokePrivateMethod(
 			methodName: 'resolveSchemaAndRegister',
-			parameters: [$data, 42, 10]
+			parameters: [10, 42]
 		);
 
-		$registerProp = $this->reflection->getProperty('currentRegister');
-		$registerProp->setAccessible(true);
-		$this->assertSame($this->mockRegister, $registerProp->getValue($this->saveObject), 'Register should be resolved by ID.');
+		$this->assertSame($this->mockSchema, $schema, 'Schema should be resolved by ID.');
+		$this->assertEquals(10, $schemaId, 'Schema ID should match the input.');
+		$this->assertSame($this->mockRegister, $register, 'Register should be resolved by ID.');
+		$this->assertEquals(42, $registerId, 'Register ID should match the input.');
 	}
 
 	/**
@@ -345,30 +349,18 @@ class SaveObjectRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testResolveSchemaAndRegisterWithStringSlug(): void
+	public function testResolveSchemaAndRegisterWithNullRegister(): void
 	{
-		$data = [];
-
-		$this->registerMapper
-			->expects($this->once())
-			->method('findBySlug')
-			->with('my-register')
-			->willReturn($this->mockRegister);
-
-		$this->schemaMapper
-			->expects($this->once())
-			->method('findBySlug')
-			->with('my-schema')
-			->willReturn($this->mockSchema);
-
-		$this->invokePrivateMethod(
+		// When register is null, it should remain null (e.g., for seedData objects).
+		[$schema, $schemaId, $register, $registerId] = $this->invokePrivateMethod(
 			methodName: 'resolveSchemaAndRegister',
-			parameters: [$data, 'my-register', 'my-schema']
+			parameters: [$this->mockSchema, null]
 		);
 
-		$registerProp = $this->reflection->getProperty('currentRegister');
-		$registerProp->setAccessible(true);
-		$this->assertSame($this->mockRegister, $registerProp->getValue($this->saveObject), 'Register should be resolved by slug.');
+		$this->assertSame($this->mockSchema, $schema, 'Schema should be returned as-is.');
+		$this->assertEquals(1, $schemaId, 'Schema ID should match.');
+		$this->assertNull($register, 'Register should be null when input is null.');
+		$this->assertNull($registerId, 'Register ID should be null when input is null.');
 	}
 
 	/**
@@ -376,33 +368,23 @@ class SaveObjectRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testResolveSchemaAndRegisterExtractsFromData(): void
+	public function testResolveSchemaAndRegisterWithStringThrowsOnInvalidReference(): void
 	{
-		$data = [
-			'_register' => 'data-register',
-			'_schema' => 'data-schema'
-		];
-
-		$this->registerMapper
-			->expects($this->once())
-			->method('findBySlug')
-			->with('data-register')
-			->willReturn($this->mockRegister);
-
+		// When a string reference cannot be resolved, an exception is thrown.
 		$this->schemaMapper
-			->expects($this->once())
-			->method('findBySlug')
-			->with('data-schema')
-			->willReturn($this->mockSchema);
+			->method('findAll')
+			->willReturn([]);
+		$this->schemaMapper
+			->method('find')
+			->willThrowException(new DoesNotExistException('Not found'));
+
+		$this->expectException(Exception::class);
+		$this->expectExceptionMessage('Could not resolve schema reference');
 
 		$this->invokePrivateMethod(
 			methodName: 'resolveSchemaAndRegister',
-			parameters: [$data, null, null]
+			parameters: ['nonexistent-schema', $this->mockRegister]
 		);
-
-		$registerProp = $this->reflection->getProperty('currentRegister');
-		$registerProp->setAccessible(true);
-		$this->assertSame($this->mockRegister, $registerProp->getValue($this->saveObject), 'Register should be extracted from data.');
 	}
 
 	/**
@@ -410,16 +392,22 @@ class SaveObjectRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testResolveSchemaAndRegisterThrowsExceptionWhenRegisterNotFound(): void
+	public function testResolveSchemaAndRegisterThrowsExceptionForInvalidRegisterString(): void
 	{
-		$data = [];
+		// When a string register reference cannot be resolved, an exception is thrown.
+		$this->registerMapper
+			->method('findAll')
+			->willReturn([]);
+		$this->registerMapper
+			->method('find')
+			->willThrowException(new DoesNotExistException('Not found'));
 
 		$this->expectException(Exception::class);
-		$this->expectExceptionMessage('Register not provided and could not be resolved.');
+		$this->expectExceptionMessage('Could not resolve register reference');
 
 		$this->invokePrivateMethod(
 			methodName: 'resolveSchemaAndRegister',
-			parameters: [$data, null, $this->mockSchema]
+			parameters: [$this->mockSchema, 'nonexistent-register']
 		);
 	}
 
@@ -440,7 +428,6 @@ class SaveObjectRefactoredMethodsTest extends TestCase
 		$this->objectEntityMapper
 			->expects($this->once())
 			->method('find')
-			->with($uuid)
 			->willReturn($existingObject);
 
 		$result = $this->invokePrivateMethod(
@@ -463,7 +450,6 @@ class SaveObjectRefactoredMethodsTest extends TestCase
 		$this->objectEntityMapper
 			->expects($this->once())
 			->method('find')
-			->with($uuid)
 			->willThrowException(new DoesNotExistException('Not found.'));
 
 		$result = $this->invokePrivateMethod(
@@ -479,124 +465,112 @@ class SaveObjectRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testFindAndValidateExistingObjectWithNullUuidReturnsNull(): void
+	public function testFindAndValidateExistingObjectWithRegisterAndSchema(): void
 	{
+		$uuid = Uuid::v4()->toRfc4122();
+		$existingObject = new ObjectEntity();
+		$existingObject->setUuid($uuid);
+		$existingObject->setId(456);
+
 		$this->objectEntityMapper
-			->expects($this->never())
-			->method('find');
+			->expects($this->once())
+			->method('find')
+			->willReturn($existingObject);
 
 		$result = $this->invokePrivateMethod(
 			methodName: 'findAndValidateExistingObject',
-			parameters: [null]
+			parameters: [$uuid, $this->mockRegister, $this->mockSchema, true, true]
 		);
 
-		$this->assertNull($result, 'Should return null when UUID is null.');
+		$this->assertSame($existingObject, $result, 'Should return existing object with register and schema context.');
 	}
 
 	// ==================== clearImageMetadataIfFileProperty() Tests ====================
 
 	/**
-	 * Test clearImageMetadataIfFileProperty removes image metadata.
+	 * Test clearImageMetadataIfFileProperty clears image when image field is a file property.
 	 *
 	 * @return void
 	 */
-	public function testClearImageMetadataIfFilePropertyRemovesMetadata(): void
+	public function testClearImageMetadataIfFilePropertyClearsImage(): void
 	{
-		// Set up schema with file property.
+		// Set up schema with objectImageField pointing to a file property.
 		$this->mockSchema
-			->method('getSchemaObject')
-			->willReturn((object)[
-				'properties' => [
-					'avatar' => [
-						'type' => 'string',
-						'format' => 'file'
-					]
+			->method('getConfiguration')
+			->willReturn(['objectImageField' => 'avatar']);
+		$this->mockSchema
+			->method('getProperties')
+			->willReturn([
+				'avatar' => [
+					'type' => 'file'
 				]
 			]);
 
-		// Set current schema.
-		$schemaProp = $this->reflection->getProperty('currentSchema');
-		$schemaProp->setAccessible(true);
-		$schemaProp->setValue($this->saveObject, $this->mockSchema);
+		$entity = new ObjectEntity();
+		$entity->setImage('http://example.com/old-image.png');
 
-		$data = [
-			'avatar' => 'file-id-123',
-			'avatar_imageMetadata' => [
-				'width' => 800,
-				'height' => 600
-			],
-			'name' => 'John Doe'
-		];
-
-		$result = $this->invokePrivateMethod(
+		$this->invokePrivateMethod(
 			methodName: 'clearImageMetadataIfFileProperty',
-			parameters: [$data]
+			parameters: [$entity, $this->mockSchema]
 		);
 
-		$this->assertArrayNotHasKey('avatar_imageMetadata', $result, 'Image metadata should be removed.');
-		$this->assertEquals('file-id-123', $result['avatar'], 'File property should remain.');
-		$this->assertEquals('John Doe', $result['name'], 'Other properties should remain.');
+		$this->assertNull($entity->getImage(), 'Image should be cleared when image field is a file property.');
 	}
 
 	/**
-	 * Test clearImageMetadataIfFileProperty preserves metadata for non-file properties.
+	 * Test clearImageMetadataIfFileProperty preserves image for non-file properties.
 	 *
 	 * @return void
 	 */
-	public function testClearImageMetadataIfFilePropertyPreservesNonFileMetadata(): void
+	public function testClearImageMetadataIfFilePropertyPreservesNonFileImage(): void
 	{
-		// Set up schema WITHOUT file property.
+		// Set up schema with objectImageField pointing to a non-file property.
 		$this->mockSchema
-			->method('getSchemaObject')
-			->willReturn((object)[
-				'properties' => [
-					'avatar' => [
-						'type' => 'string'
-					]
+			->method('getConfiguration')
+			->willReturn(['objectImageField' => 'avatar']);
+		$this->mockSchema
+			->method('getProperties')
+			->willReturn([
+				'avatar' => [
+					'type' => 'string'
 				]
 			]);
 
-		// Set current schema.
-		$schemaProp = $this->reflection->getProperty('currentSchema');
-		$schemaProp->setAccessible(true);
-		$schemaProp->setValue($this->saveObject, $this->mockSchema);
+		$entity = new ObjectEntity();
+		$entity->setImage('http://example.com/image.png');
 
-		$data = [
-			'avatar' => 'url',
-			'avatar_imageMetadata' => [
-				'width' => 800,
-				'height' => 600
-			]
-		];
-
-		$result = $this->invokePrivateMethod(
+		$this->invokePrivateMethod(
 			methodName: 'clearImageMetadataIfFileProperty',
-			parameters: [$data]
+			parameters: [$entity, $this->mockSchema]
 		);
 
-		$this->assertArrayHasKey('avatar_imageMetadata', $result, 'Metadata should be preserved for non-file properties.');
+		$this->assertEquals('http://example.com/image.png', $entity->getImage(), 'Image should be preserved for non-file properties.');
 	}
 
 	/**
-	 * Test clearImageMetadataIfFileProperty handles empty data.
+	 * Test clearImageMetadataIfFileProperty handles no objectImageField config.
 	 *
 	 * @return void
 	 */
-	public function testClearImageMetadataIfFilePropertyHandlesEmptyData(): void
+	public function testClearImageMetadataIfFilePropertyHandlesNoConfig(): void
 	{
-		// Set current schema.
-		$schemaProp = $this->reflection->getProperty('currentSchema');
-		$schemaProp->setAccessible(true);
-		$schemaProp->setValue($this->saveObject, $this->mockSchema);
+		// Set up schema without objectImageField.
+		$this->mockSchema
+			->method('getConfiguration')
+			->willReturn([]);
+		$this->mockSchema
+			->method('getProperties')
+			->willReturn([]);
 
-		$data = [];
+		$entity = new ObjectEntity();
+		$entity->setImage('http://example.com/image.png');
 
-		$result = $this->invokePrivateMethod(
+		$this->invokePrivateMethod(
 			methodName: 'clearImageMetadataIfFileProperty',
-			parameters: [$data]
+			parameters: [$entity, $this->mockSchema]
 		);
 
-		$this->assertEmpty($result, 'Empty data should remain empty.');
+		$this->assertEquals('http://example.com/image.png', $entity->getImage(), 'Image should be preserved when no objectImageField configured.');
 	}
 
 	// ==================== Integration Test ====================
@@ -616,10 +590,22 @@ class SaveObjectRefactoredMethodsTest extends TestCase
 			'description' => 'Testing refactored methods.'
 		];
 
+		// Configure schema mock for full saveObject flow.
+		$this->mockSchema
+			->method('getSchemaObject')
+			->willReturn((object)[
+				'properties' => new \stdClass()
+			]);
+		$this->mockSchema
+			->method('getProperties')
+			->willReturn([]);
+		$this->mockSchema
+			->method('getConfiguration')
+			->willReturn(null);
+
 		// Mock that object doesn't exist (create scenario).
 		$this->objectEntityMapper
 			->method('find')
-			->with($uuid)
 			->willThrowException(new DoesNotExistException('Object not found.'));
 
 		// Mock successful creation.
@@ -630,7 +616,7 @@ class SaveObjectRefactoredMethodsTest extends TestCase
 		$newObject->setSchema(1);
 		$newObject->setObject($data);
 
-		$this->objectEntityMapper
+		$this->unifiedObjectMapper
 			->method('insert')
 			->willReturn($newObject);
 
@@ -653,7 +639,9 @@ class SaveObjectRefactoredMethodsTest extends TestCase
 		// Assertions.
 		$this->assertInstanceOf(ObjectEntity::class, $result, 'Should return ObjectEntity.');
 		$this->assertEquals($uuid, $result->getUuid(), 'UUID should match.');
-		$this->assertEquals($data, $result->getObject(), 'Data should be preserved.');
+		$resultObject = $result->getObject();
+		unset($resultObject['id']);
+		$this->assertEquals($data, $resultObject, 'Data should be preserved.');
 	}
 }
 

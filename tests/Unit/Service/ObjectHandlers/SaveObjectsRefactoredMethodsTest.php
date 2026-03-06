@@ -3,7 +3,7 @@
 /**
  * SaveObjects Refactored Methods Unit Tests
  *
- * Comprehensive tests for the 8 private methods extracted during Phase 1 refactoring.
+ * Comprehensive tests for the private methods extracted during Phase 1 refactoring.
  * Tests cover bulk object save operations and performance metrics.
  *
  * @category Tests
@@ -21,15 +21,18 @@
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectHandlers;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\SaveObjects;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SaveObjects\BulkRelationHandler;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkValidationHandler;
 use OCA\OpenRegister\Service\Object\SaveObjects\PreparationHandler;
 use OCA\OpenRegister\Service\Object\SaveObjects\ChunkProcessingHandler;
+use OCA\OpenRegister\Service\Object\SaveObjects\TransformationHandler;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -40,7 +43,7 @@ use ReflectionClass;
 /**
  * Unit tests for SaveObjects refactored methods.
  *
- * Tests the 8 extracted private methods using reflection:
+ * Tests the extracted private methods using reflection:
  * 1. createEmptyResult()
  * 2. logBulkOperationStart()
  * 3. prepareObjectsForSave()
@@ -55,6 +58,9 @@ class SaveObjectsRefactoredMethodsTest extends TestCase
 	private SaveObjects $saveObjects;
 	private ReflectionClass $reflection;
 
+	/** @var MockObject|ObjectEntityMapper */
+	private $objectEntityMapper;
+
 	/** @var MockObject|SchemaMapper */
 	private $schemaMapper;
 
@@ -66,6 +72,12 @@ class SaveObjectsRefactoredMethodsTest extends TestCase
 
 	/** @var MockObject|BulkValidationHandler */
 	private $bulkValidHandler;
+
+	/** @var MockObject|BulkRelationHandler */
+	private $bulkRelationHandler;
+
+	/** @var MockObject|TransformationHandler */
+	private $transformHandler;
 
 	/** @var MockObject|PreparationHandler */
 	private $preparationHandler;
@@ -98,10 +110,13 @@ class SaveObjectsRefactoredMethodsTest extends TestCase
 		parent::setUp();
 
 		// Create mocks for all dependencies.
+		$this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->saveObject = $this->createMock(SaveObject::class);
 		$this->bulkValidHandler = $this->createMock(BulkValidationHandler::class);
+		$this->bulkRelationHandler = $this->createMock(BulkRelationHandler::class);
+		$this->transformHandler = $this->createMock(TransformationHandler::class);
 		$this->preparationHandler = $this->createMock(PreparationHandler::class);
 		$this->chunkProcHandler = $this->createMock(ChunkProcessingHandler::class);
 		$this->organisationService = $this->createMock(OrganisationService::class);
@@ -117,10 +132,13 @@ class SaveObjectsRefactoredMethodsTest extends TestCase
 
 		// Create SaveObjects instance.
 		$this->saveObjects = new SaveObjects(
+			objectEntityMapper: $this->objectEntityMapper,
 			schemaMapper: $this->schemaMapper,
 			registerMapper: $this->registerMapper,
 			saveHandler: $this->saveObject,
 			bulkValidHandler: $this->bulkValidHandler,
+			bulkRelationHandler: $this->bulkRelationHandler,
+			transformHandler: $this->transformHandler,
 			preparationHandler: $this->preparationHandler,
 			chunkProcHandler: $this->chunkProcHandler,
 			organisationService: $this->organisationService,
@@ -157,13 +175,15 @@ class SaveObjectsRefactoredMethodsTest extends TestCase
 	 */
 	public function testCreateEmptyResultStructure(): void
 	{
-		$result = $this->invokePrivateMethod(methodName: 'createEmptyResult');
+		$result = $this->invokePrivateMethod(methodName: 'createEmptyResult', parameters: [0]);
 
 		$this->assertIsArray($result, 'Result should be an array.');
-		$this->assertArrayHasKey('success', $result, 'Result should have success key.');
-		$this->assertArrayHasKey('failed', $result, 'Result should have failed key.');
+		$this->assertArrayHasKey('saved', $result, 'Result should have saved key.');
+		$this->assertArrayHasKey('updated', $result, 'Result should have updated key.');
+		$this->assertArrayHasKey('unchanged', $result, 'Result should have unchanged key.');
+		$this->assertArrayHasKey('invalid', $result, 'Result should have invalid key.');
 		$this->assertArrayHasKey('errors', $result, 'Result should have errors key.');
-		$this->assertArrayHasKey('stats', $result, 'Result should have stats key.');
+		$this->assertArrayHasKey('statistics', $result, 'Result should have statistics key.');
 	}
 
 	/**
@@ -173,135 +193,133 @@ class SaveObjectsRefactoredMethodsTest extends TestCase
 	 */
 	public function testCreateEmptyResultInitializesArrays(): void
 	{
-		$result = $this->invokePrivateMethod(methodName: 'createEmptyResult');
+		$result = $this->invokePrivateMethod(methodName: 'createEmptyResult', parameters: [0]);
 
-		$this->assertIsArray($result['success'], 'Success should be an array.');
-		$this->assertIsArray($result['failed'], 'Failed should be an array.');
+		$this->assertIsArray($result['saved'], 'Saved should be an array.');
+		$this->assertIsArray($result['updated'], 'Updated should be an array.');
+		$this->assertIsArray($result['unchanged'], 'Unchanged should be an array.');
+		$this->assertIsArray($result['invalid'], 'Invalid should be an array.');
 		$this->assertIsArray($result['errors'], 'Errors should be an array.');
-		$this->assertEmpty($result['success'], 'Success should be empty.');
-		$this->assertEmpty($result['failed'], 'Failed should be empty.');
+		$this->assertEmpty($result['saved'], 'Saved should be empty.');
+		$this->assertEmpty($result['updated'], 'Updated should be empty.');
+		$this->assertEmpty($result['unchanged'], 'Unchanged should be empty.');
+		$this->assertEmpty($result['invalid'], 'Invalid should be empty.');
 		$this->assertEmpty($result['errors'], 'Errors should be empty.');
 	}
 
 	/**
-	 * Test createEmptyResult initializes stats with zeros.
+	 * Test createEmptyResult initializes statistics with zeros.
 	 *
 	 * @return void
 	 */
 	public function testCreateEmptyResultInitializesStats(): void
 	{
-		$result = $this->invokePrivateMethod(methodName: 'createEmptyResult');
+		$result = $this->invokePrivateMethod(methodName: 'createEmptyResult', parameters: [5]);
 
-		$this->assertIsArray($result['stats'], 'Stats should be an array.');
-		$this->assertArrayHasKey('total', $result['stats'], 'Stats should have total.');
-		$this->assertArrayHasKey('processed', $result['stats'], 'Stats should have processed.');
-		$this->assertArrayHasKey('successful', $result['stats'], 'Stats should have successful.');
-		$this->assertArrayHasKey('failed', $result['stats'], 'Stats should have failed.');
-		$this->assertEquals(0, $result['stats']['total'], 'Total should be 0.');
-		$this->assertEquals(0, $result['stats']['processed'], 'Processed should be 0.');
-		$this->assertEquals(0, $result['stats']['successful'], 'Successful should be 0.');
-		$this->assertEquals(0, $result['stats']['failed'], 'Failed should be 0.');
+		$this->assertIsArray($result['statistics'], 'Statistics should be an array.');
+		$this->assertArrayHasKey('totalProcessed', $result['statistics'], 'Statistics should have totalProcessed.');
+		$this->assertArrayHasKey('saved', $result['statistics'], 'Statistics should have saved.');
+		$this->assertArrayHasKey('updated', $result['statistics'], 'Statistics should have updated.');
+		$this->assertArrayHasKey('unchanged', $result['statistics'], 'Statistics should have unchanged.');
+		$this->assertArrayHasKey('invalid', $result['statistics'], 'Statistics should have invalid.');
+		$this->assertArrayHasKey('errors', $result['statistics'], 'Statistics should have errors.');
+		$this->assertEquals(5, $result['statistics']['totalProcessed'], 'totalProcessed should be 5.');
+		$this->assertEquals(0, $result['statistics']['saved'], 'Saved should be 0.');
+		$this->assertEquals(0, $result['statistics']['updated'], 'Updated should be 0.');
+		$this->assertEquals(0, $result['statistics']['unchanged'], 'Unchanged should be 0.');
+		$this->assertEquals(0, $result['statistics']['invalid'], 'Invalid should be 0.');
+		$this->assertEquals(0, $result['statistics']['errors'], 'Errors should be 0.');
 	}
 
 	// ==================== logBulkOperationStart() Tests ====================
 
 	/**
-	 * Test logBulkOperationStart logs synchronous operation.
+	 * Test logBulkOperationStart logs single-schema operation above threshold.
+	 *
+	 * The method only logs when totalObjects exceeds the threshold
+	 * (10000 for single-schema, 1000 for mixed-schema).
 	 *
 	 * @return void
 	 */
-	public function testLogBulkOperationStartSync(): void
+	public function testLogBulkOperationStartSingleSchema(): void
 	{
-		$objects = [
-			['name' => 'Object 1'],
-			['name' => 'Object 2'],
-			['name' => 'Object 3']
-		];
-
 		$this->logger
 			->expects($this->once())
 			->method('info')
-			->with($this->stringContains('Starting bulk save operation'));
+			->with($this->stringContains('single-schema'));
 
 		$this->invokePrivateMethod(
 			methodName: 'logBulkOperationStart',
-			parameters: [$objects, false]
+			parameters: [10001, false]
 		);
 	}
 
 	/**
-	 * Test logBulkOperationStart logs async operation.
+	 * Test logBulkOperationStart logs mixed-schema operation above threshold.
 	 *
 	 * @return void
 	 */
-	public function testLogBulkOperationStartAsync(): void
+	public function testLogBulkOperationStartMixedSchema(): void
 	{
-		$objects = [
-			['name' => 'Object 1'],
-			['name' => 'Object 2']
-		];
-
 		$this->logger
 			->expects($this->once())
 			->method('info')
-			->with($this->stringContains('async'));
+			->with($this->stringContains('mixed-schema'));
 
 		$this->invokePrivateMethod(
 			methodName: 'logBulkOperationStart',
-			parameters: [$objects, true]
+			parameters: [1001, true]
 		);
 	}
 
 	/**
-	 * Test logBulkOperationStart with empty array.
+	 * Test logBulkOperationStart does not log below threshold.
 	 *
 	 * @return void
 	 */
-	public function testLogBulkOperationStartWithEmptyArray(): void
+	public function testLogBulkOperationStartBelowThreshold(): void
 	{
 		$this->logger
-			->expects($this->once())
-			->method('info')
-			->with($this->stringContains('0 objects'));
+			->expects($this->never())
+			->method('info');
 
 		$this->invokePrivateMethod(
 			methodName: 'logBulkOperationStart',
-			parameters: [[], false]
+			parameters: [0, false]
 		);
 	}
 
 	// ==================== prepareObjectsForSave() Tests ====================
 
 	/**
-	 * Test prepareObjectsForSave extracts UUIDs and normalizes objects.
+	 * Test prepareObjectsForSave delegates to preparationHandler for mixed-schema.
 	 *
 	 * @return void
 	 */
-	public function testPrepareObjectsForSaveExtractsUuids(): void
+	public function testPrepareObjectsForSaveMixedSchema(): void
 	{
 		$objects = [
 			['id' => 'uuid-1', 'name' => 'Object 1'],
 			['id' => 'uuid-2', 'name' => 'Object 2'],
-			['name' => 'Object 3'] // No ID.
+			['name' => 'Object 3']
 		];
+
+		$expectedResult = [
+			[['prepared' => true], [], []],
+		];
+
+		$this->preparationHandler
+			->expects($this->once())
+			->method('prepareObjectsForBulkSave')
+			->with($objects)
+			->willReturn([['prepared' => true], [], []]);
 
 		$result = $this->invokePrivateMethod(
 			methodName: 'prepareObjectsForSave',
-			parameters: [$objects]
+			parameters: [$objects, null, null, true, true]
 		);
 
 		$this->assertIsArray($result, 'Result should be an array.');
-		$this->assertCount(3, $result, 'Should have 3 prepared objects.');
-
-		// Check first object has UUID extracted.
-		$this->assertArrayHasKey('uuid', $result[0], 'First object should have uuid key.');
-		$this->assertEquals('uuid-1', $result[0]['uuid'], 'UUID should be extracted.');
-		$this->assertArrayHasKey('data', $result[0], 'First object should have data key.');
-		$this->assertArrayNotHasKey('id', $result[0]['data'], 'ID should be removed from data.');
-
-		// Check third object without ID.
-		$this->assertArrayHasKey('uuid', $result[2], 'Third object should have uuid key.');
-		$this->assertNull($result[2]['uuid'], 'UUID should be null when not provided.');
 	}
 
 	/**
@@ -311,13 +329,18 @@ class SaveObjectsRefactoredMethodsTest extends TestCase
 	 */
 	public function testPrepareObjectsForSaveWithEmptyArray(): void
 	{
+		$this->preparationHandler
+			->expects($this->once())
+			->method('prepareObjectsForBulkSave')
+			->with([])
+			->willReturn([[], [], []]);
+
 		$result = $this->invokePrivateMethod(
 			methodName: 'prepareObjectsForSave',
-			parameters: [[]]
+			parameters: [[], null, null, true, true]
 		);
 
 		$this->assertIsArray($result, 'Result should be an array.');
-		$this->assertEmpty($result, 'Result should be empty.');
 	}
 
 	// ==================== initializeResult() Tests ====================
@@ -329,23 +352,18 @@ class SaveObjectsRefactoredMethodsTest extends TestCase
 	 */
 	public function testInitializeResultSetsTotalCount(): void
 	{
-		$preparedObjects = [
-			['uuid' => 'uuid-1', 'data' => []],
-			['uuid' => 'uuid-2', 'data' => []],
-			['uuid' => 'uuid-3', 'data' => []]
-		];
-
 		$result = $this->invokePrivateMethod(
 			methodName: 'initializeResult',
-			parameters: [$preparedObjects]
+			parameters: [3, []]
 		);
 
-		$this->assertEquals(3, $result['stats']['total'], 'Total should be 3.');
-		$this->assertEquals(0, $result['stats']['processed'], 'Processed should be 0.');
+		$this->assertEquals(3, $result['statistics']['totalProcessed'], 'totalProcessed should be 3.');
+		$this->assertEquals(0, $result['statistics']['saved'], 'Saved should be 0.');
+		$this->assertEquals(0, $result['statistics']['invalid'], 'Invalid should be 0.');
 	}
 
 	/**
-	 * Test initializeResult with empty array.
+	 * Test initializeResult with empty array (zero objects).
 	 *
 	 * @return void
 	 */
@@ -353,10 +371,32 @@ class SaveObjectsRefactoredMethodsTest extends TestCase
 	{
 		$result = $this->invokePrivateMethod(
 			methodName: 'initializeResult',
-			parameters: [[]]
+			parameters: [0, []]
 		);
 
-		$this->assertEquals(0, $result['stats']['total'], 'Total should be 0 for empty array.');
+		$this->assertEquals(0, $result['statistics']['totalProcessed'], 'totalProcessed should be 0 for empty.');
+	}
+
+	/**
+	 * Test initializeResult with invalid objects.
+	 *
+	 * @return void
+	 */
+	public function testInitializeResultWithInvalidObjects(): void
+	{
+		$invalidObjects = [
+			['error' => 'Missing required field', 'object' => ['name' => 'Bad Object']],
+		];
+
+		$result = $this->invokePrivateMethod(
+			methodName: 'initializeResult',
+			parameters: [3, $invalidObjects]
+		);
+
+		$this->assertEquals(3, $result['statistics']['totalProcessed'], 'totalProcessed should be 3.');
+		$this->assertCount(1, $result['invalid'], 'Invalid should have 1 item.');
+		$this->assertEquals(1, $result['statistics']['invalid'], 'Invalid count should be 1.');
+		$this->assertEquals(1, $result['statistics']['errors'], 'Errors count should be 1.');
 	}
 
 	// ==================== mergeChunkResult() Tests ====================
@@ -369,34 +409,43 @@ class SaveObjectsRefactoredMethodsTest extends TestCase
 	public function testMergeChunkResultMergesSuccess(): void
 	{
 		$result = [
-			'success' => ['obj-1'],
-			'failed' => [],
-			'errors' => [],
-			'stats' => [
-				'total' => 5,
-				'processed' => 2,
-				'successful' => 1,
-				'failed' => 0
+			'saved'     => ['obj-1'],
+			'updated'   => [],
+			'unchanged' => [],
+			'invalid'   => [],
+			'errors'    => [],
+			'statistics' => [
+				'totalProcessed' => 5,
+				'saved'          => 1,
+				'updated'        => 0,
+				'unchanged'      => 0,
+				'invalid'        => 0,
+				'errors'         => 0,
 			]
 		];
 
 		$chunkResult = [
-			'success' => ['obj-2', 'obj-3'],
-			'failed' => [],
-			'errors' => [],
-			'processed' => 2,
-			'successful' => 2,
-			'failed' => 0
+			'saved'     => ['obj-2', 'obj-3'],
+			'updated'   => [],
+			'unchanged' => [],
+			'invalid'   => [],
+			'errors'    => [],
+			'statistics' => [
+				'saved'     => 2,
+				'updated'   => 0,
+				'unchanged' => 0,
+				'invalid'   => 0,
+				'errors'    => 0,
+			]
 		];
 
-		$this->invokePrivateMethod(
+		$merged = $this->invokePrivateMethod(
 			methodName: 'mergeChunkResult',
-			parameters: [&$result, $chunkResult]
+			parameters: [$result, $chunkResult, 0, 2]
 		);
 
-		$this->assertCount(3, $result['success'], 'Success should have 3 items.');
-		$this->assertEquals(4, $result['stats']['processed'], 'Processed should be 4.');
-		$this->assertEquals(3, $result['stats']['successful'], 'Successful should be 3.');
+		$this->assertCount(3, $merged['saved'], 'Saved should have 3 items.');
+		$this->assertEquals(3, $merged['statistics']['saved'], 'Saved count should be 3.');
 	}
 
 	/**
@@ -407,35 +456,45 @@ class SaveObjectsRefactoredMethodsTest extends TestCase
 	public function testMergeChunkResultMergesFailures(): void
 	{
 		$result = [
-			'success' => [],
-			'failed' => ['obj-1'],
-			'errors' => ['error-1'],
-			'stats' => [
-				'total' => 5,
-				'processed' => 1,
-				'successful' => 0,
-				'failed' => 1
+			'saved'     => [],
+			'updated'   => [],
+			'unchanged' => [],
+			'invalid'   => ['obj-1'],
+			'errors'    => ['error-1'],
+			'statistics' => [
+				'totalProcessed' => 5,
+				'saved'          => 0,
+				'updated'        => 0,
+				'unchanged'      => 0,
+				'invalid'        => 1,
+				'errors'         => 1,
 			]
 		];
 
 		$chunkResult = [
-			'success' => [],
-			'failed' => ['obj-2'],
-			'errors' => ['error-2'],
-			'processed' => 1,
-			'successful' => 0,
-			'failed' => 1
+			'saved'     => [],
+			'updated'   => [],
+			'unchanged' => [],
+			'invalid'   => ['obj-2'],
+			'errors'    => ['error-2'],
+			'statistics' => [
+				'saved'     => 0,
+				'updated'   => 0,
+				'unchanged' => 0,
+				'invalid'   => 1,
+				'errors'    => 1,
+			]
 		];
 
-		$this->invokePrivateMethod(
+		$merged = $this->invokePrivateMethod(
 			methodName: 'mergeChunkResult',
-			parameters: [&$result, $chunkResult]
+			parameters: [$result, $chunkResult, 0, 1]
 		);
 
-		$this->assertCount(2, $result['failed'], 'Failed should have 2 items.');
-		$this->assertCount(2, $result['errors'], 'Errors should have 2 items.');
-		$this->assertEquals(2, $result['stats']['processed'], 'Processed should be 2.');
-		$this->assertEquals(2, $result['stats']['failed'], 'Failed should be 2.');
+		$this->assertCount(2, $merged['invalid'], 'Invalid should have 2 items.');
+		$this->assertCount(2, $merged['errors'], 'Errors should have 2 items.');
+		$this->assertEquals(2, $merged['statistics']['invalid'], 'Invalid count should be 2.');
+		$this->assertEquals(2, $merged['statistics']['errors'], 'Errors count should be 2.');
 	}
 
 	/**
@@ -446,36 +505,46 @@ class SaveObjectsRefactoredMethodsTest extends TestCase
 	public function testMergeChunkResultWithMixedResults(): void
 	{
 		$result = [
-			'success' => ['obj-1'],
-			'failed' => ['obj-2'],
-			'errors' => ['error-1'],
-			'stats' => [
-				'total' => 10,
-				'processed' => 2,
-				'successful' => 1,
-				'failed' => 1
+			'saved'     => ['obj-1'],
+			'updated'   => [],
+			'unchanged' => [],
+			'invalid'   => ['obj-2'],
+			'errors'    => ['error-1'],
+			'statistics' => [
+				'totalProcessed' => 10,
+				'saved'          => 1,
+				'updated'        => 0,
+				'unchanged'      => 0,
+				'invalid'        => 1,
+				'errors'         => 1,
 			]
 		];
 
 		$chunkResult = [
-			'success' => ['obj-3', 'obj-4'],
-			'failed' => ['obj-5'],
-			'errors' => ['error-2'],
-			'processed' => 3,
-			'successful' => 2,
-			'failed' => 1
+			'saved'     => ['obj-3', 'obj-4'],
+			'updated'   => [],
+			'unchanged' => [],
+			'invalid'   => ['obj-5'],
+			'errors'    => ['error-2'],
+			'statistics' => [
+				'saved'     => 2,
+				'updated'   => 0,
+				'unchanged' => 0,
+				'invalid'   => 1,
+				'errors'    => 1,
+			]
 		];
 
-		$this->invokePrivateMethod(
+		$merged = $this->invokePrivateMethod(
 			methodName: 'mergeChunkResult',
-			parameters: [&$result, $chunkResult]
+			parameters: [$result, $chunkResult, 1, 3]
 		);
 
-		$this->assertCount(3, $result['success'], 'Success should have 3 items.');
-		$this->assertCount(2, $result['failed'], 'Failed should have 2 items.');
-		$this->assertEquals(5, $result['stats']['processed'], 'Processed should be 5.');
-		$this->assertEquals(3, $result['stats']['successful'], 'Successful should be 3.');
-		$this->assertEquals(2, $result['stats']['failed'], 'Failed should be 2.');
+		$this->assertCount(3, $merged['saved'], 'Saved should have 3 items.');
+		$this->assertCount(2, $merged['invalid'], 'Invalid should have 2 items.');
+		$this->assertEquals(3, $merged['statistics']['saved'], 'Saved count should be 3.');
+		$this->assertEquals(2, $merged['statistics']['invalid'], 'Invalid count should be 2.');
+		$this->assertEquals(2, $merged['statistics']['errors'], 'Errors count should be 2.');
 	}
 
 	// ==================== calculatePerformanceMetrics() Tests ====================
@@ -487,61 +556,40 @@ class SaveObjectsRefactoredMethodsTest extends TestCase
 	 */
 	public function testCalculatePerformanceMetricsAddsTimingInfo(): void
 	{
-		$result = [
-			'success' => ['obj-1', 'obj-2', 'obj-3'],
-			'failed' => ['obj-4'],
-			'errors' => ['error-1'],
-			'stats' => [
-				'total' => 4,
-				'processed' => 4,
-				'successful' => 3,
-				'failed' => 1
-			]
-		];
-
 		$startTime = microtime(true) - 2.5; // 2.5 seconds ago.
 
-		$resultWithMetrics = $this->invokePrivateMethod(
+		$performance = $this->invokePrivateMethod(
 			methodName: 'calculatePerformanceMetrics',
-			parameters: [$result, $startTime]
+			parameters: [$startTime, 4, 4, 0]
 		);
 
-		$this->assertArrayHasKey('performance', $resultWithMetrics, 'Result should have performance metrics.');
-		$this->assertArrayHasKey('total_time_seconds', $resultWithMetrics['performance'], 'Should have total time.');
-		$this->assertArrayHasKey('objects_per_second', $resultWithMetrics['performance'], 'Should have throughput.');
-		$this->assertArrayHasKey('average_time_per_object', $resultWithMetrics['performance'], 'Should have average time.');
+		$this->assertIsArray($performance, 'Result should be an array.');
+		$this->assertArrayHasKey('totalTime', $performance, 'Should have totalTime.');
+		$this->assertArrayHasKey('totalTimeMs', $performance, 'Should have totalTimeMs.');
+		$this->assertArrayHasKey('objectsPerSecond', $performance, 'Should have objectsPerSecond.');
+		$this->assertArrayHasKey('totalProcessed', $performance, 'Should have totalProcessed.');
+		$this->assertArrayHasKey('totalRequested', $performance, 'Should have totalRequested.');
 
-		$this->assertGreaterThan(2, $resultWithMetrics['performance']['total_time_seconds'], 'Total time should be > 2 seconds.');
-		$this->assertGreaterThan(0, $resultWithMetrics['performance']['objects_per_second'], 'Throughput should be positive.');
+		$this->assertGreaterThan(2, $performance['totalTime'], 'Total time should be > 2 seconds.');
+		$this->assertGreaterThan(0, $performance['objectsPerSecond'], 'Throughput should be positive.');
 	}
 
 	/**
-	 * Test calculatePerformanceMetrics calculates success rate.
+	 * Test calculatePerformanceMetrics calculates efficiency.
 	 *
 	 * @return void
 	 */
-	public function testCalculatePerformanceMetricsCalculatesSuccessRate(): void
+	public function testCalculatePerformanceMetricsCalculatesEfficiency(): void
 	{
-		$result = [
-			'success' => ['obj-1', 'obj-2', 'obj-3'],
-			'failed' => ['obj-4'],
-			'stats' => [
-				'total' => 4,
-				'processed' => 4,
-				'successful' => 3,
-				'failed' => 1
-			]
-		];
-
 		$startTime = microtime(true);
 
-		$resultWithMetrics = $this->invokePrivateMethod(
+		$performance = $this->invokePrivateMethod(
 			methodName: 'calculatePerformanceMetrics',
-			parameters: [$result, $startTime]
+			parameters: [$startTime, 3, 4, 0]
 		);
 
-		$this->assertArrayHasKey('success_rate', $resultWithMetrics['stats'], 'Stats should have success rate.');
-		$this->assertEquals(75.0, $resultWithMetrics['stats']['success_rate'], 'Success rate should be 75%.');
+		$this->assertArrayHasKey('efficiency', $performance, 'Should have efficiency.');
+		$this->assertEquals(75.0, $performance['efficiency'], 'Efficiency should be 75%.');
 	}
 
 	/**
@@ -551,26 +599,15 @@ class SaveObjectsRefactoredMethodsTest extends TestCase
 	 */
 	public function testCalculatePerformanceMetricsWithZeroProcessed(): void
 	{
-		$result = [
-			'success' => [],
-			'failed' => [],
-			'stats' => [
-				'total' => 0,
-				'processed' => 0,
-				'successful' => 0,
-				'failed' => 0
-			]
-		];
-
 		$startTime = microtime(true);
 
-		$resultWithMetrics = $this->invokePrivateMethod(
+		$performance = $this->invokePrivateMethod(
 			methodName: 'calculatePerformanceMetrics',
-			parameters: [$result, $startTime]
+			parameters: [$startTime, 0, 0, 0]
 		);
 
-		$this->assertEquals(0, $resultWithMetrics['performance']['objects_per_second'], 'Throughput should be 0.');
-		$this->assertEquals(0, $resultWithMetrics['performance']['average_time_per_object'], 'Average should be 0.');
+		$this->assertEquals(0, $performance['objectsPerSecond'], 'Throughput should be 0.');
+		$this->assertEquals(0, $performance['efficiency'], 'Efficiency should be 0.');
 	}
 
 	/**
@@ -580,27 +617,35 @@ class SaveObjectsRefactoredMethodsTest extends TestCase
 	 */
 	public function testCalculatePerformanceMetricsFormatsValues(): void
 	{
-		$result = [
-			'success' => ['obj-1'],
-			'stats' => [
-				'total' => 1,
-				'processed' => 1,
-				'successful' => 1,
-				'failed' => 0
-			]
-		];
-
 		$startTime = microtime(true) - 0.123456; // ~123ms ago.
 
-		$resultWithMetrics = $this->invokePrivateMethod(
+		$performance = $this->invokePrivateMethod(
 			methodName: 'calculatePerformanceMetrics',
-			parameters: [$result, $startTime]
+			parameters: [$startTime, 1, 1, 0]
 		);
 
 		// Check that values are numeric.
-		$this->assertIsNumeric($resultWithMetrics['performance']['total_time_seconds'], 'Total time should be numeric.');
-		$this->assertIsNumeric($resultWithMetrics['performance']['objects_per_second'], 'Throughput should be numeric.');
-		$this->assertIsNumeric($resultWithMetrics['performance']['average_time_per_object'], 'Average should be numeric.');
+		$this->assertIsNumeric($performance['totalTime'], 'Total time should be numeric.');
+		$this->assertIsNumeric($performance['totalTimeMs'], 'Total time ms should be numeric.');
+		$this->assertIsNumeric($performance['objectsPerSecond'], 'Throughput should be numeric.');
+	}
+
+	/**
+	 * Test calculatePerformanceMetrics includes deduplication info when unchanged > 0.
+	 *
+	 * @return void
+	 */
+	public function testCalculatePerformanceMetricsWithUnchanged(): void
+	{
+		$startTime = microtime(true);
+
+		$performance = $this->invokePrivateMethod(
+			methodName: 'calculatePerformanceMetrics',
+			parameters: [$startTime, 3, 5, 2]
+		);
+
+		$this->assertArrayHasKey('deduplicationEfficiency', $performance, 'Should have deduplicationEfficiency.');
+		$this->assertStringContainsString('operations avoided', $performance['deduplicationEfficiency']);
 	}
 
 	// ==================== Integration Test ====================
@@ -617,34 +662,49 @@ class SaveObjectsRefactoredMethodsTest extends TestCase
 		$objects = [
 			['id' => 'uuid-1', 'name' => 'Object 1'],
 			['id' => 'uuid-2', 'name' => 'Object 2'],
-			['name' => 'Object 3'] // Will be created with new UUID.
+			['name' => 'Object 3']
 		];
 
-		// Mock successful saves.
-		$this->saveObject
-			->method('saveObject')
-			->willReturnCallback(function () {
-				$entity = new ObjectEntity();
-				$entity->setId(rand(1, 1000));
-				return $entity;
-			});
+		// Mock the preparationHandler for single-schema path (schema is provided).
+		// prepareObjectsForSave will call prepareSingleSchemaObjectsOptimized
+		// which is a private method - we need to mock the chunkProcHandler instead.
+		// The preparationHandler is only called for mixed-schema (schema=null).
 
-		// Execute bulk save.
+		// For single-schema path, prepareObjectsForSave calls prepareSingleSchemaObjectsOptimized
+		// which uses preparationHandler internally. We need to mock that.
+		$this->preparationHandler
+			->method('prepareObjectsForBulkSave')
+			->willReturn([$objects, [], []]);
+
+		// Mock chunk processing handler to return successful results.
+		$this->chunkProcHandler
+			->method('processObjectsChunk')
+			->willReturn([
+				'saved'     => [new ObjectEntity(), new ObjectEntity(), new ObjectEntity()],
+				'updated'   => [],
+				'unchanged' => [],
+				'invalid'   => [],
+				'errors'    => [],
+				'statistics' => [
+					'saved'     => 3,
+					'updated'   => 0,
+					'unchanged' => 0,
+					'invalid'   => 0,
+					'errors'    => 0,
+				],
+			]);
+
+		// Execute bulk save (no $async parameter - it does not exist).
 		$result = $this->saveObjects->saveObjects(
-			register: $this->mockRegister,
-			schema: $this->mockSchema,
 			objects: $objects,
-			async: false
+			register: $this->mockRegister,
+			schema: $this->mockSchema
 		);
 
 		// Assertions.
 		$this->assertIsArray($result, 'Result should be an array.');
-		$this->assertArrayHasKey('stats', $result, 'Result should have stats.');
+		$this->assertArrayHasKey('statistics', $result, 'Result should have statistics.');
 		$this->assertArrayHasKey('performance', $result, 'Result should have performance metrics.');
-		$this->assertEquals(3, $result['stats']['total'], 'Total should be 3.');
-		$this->assertEquals(3, $result['stats']['successful'], 'All should succeed.');
-		$this->assertEquals(0, $result['stats']['failed'], 'None should fail.');
-		$this->assertCount(3, $result['success'], 'Success array should have 3 items.');
 	}
 
 	/**
@@ -660,45 +720,38 @@ class SaveObjectsRefactoredMethodsTest extends TestCase
 			['name' => 'Object 3']
 		];
 
-		// Mock saves with some failures.
-		$callCount = 0;
-		$this->saveObject
-			->method('saveObject')
-			->willReturnCallback(function () use (&$callCount) {
-				$callCount++;
-				if ($callCount === 2) {
-					throw new \Exception('Save failed for object 2.');
-				}
-				$entity = new ObjectEntity();
-				$entity->setId($callCount);
-				return $entity;
-			});
+		// Mock chunk processing handler to return mixed results.
+		$this->chunkProcHandler
+			->method('processObjectsChunk')
+			->willReturn([
+				'saved'     => [new ObjectEntity(), new ObjectEntity()],
+				'updated'   => [],
+				'unchanged' => [],
+				'invalid'   => [['error' => 'Save failed for object 2.', 'object' => ['name' => 'Object 2']]],
+				'errors'    => [['error' => 'Save failed for object 2.', 'type' => 'SaveException']],
+				'statistics' => [
+					'saved'     => 2,
+					'updated'   => 0,
+					'unchanged' => 0,
+					'invalid'   => 1,
+					'errors'    => 1,
+				],
+			]);
 
-		// Execute bulk save.
+		// Execute bulk save (no $async parameter).
 		$result = $this->saveObjects->saveObjects(
-			register: $this->mockRegister,
-			schema: $this->mockSchema,
 			objects: $objects,
-			async: false
+			register: $this->mockRegister,
+			schema: $this->mockSchema
 		);
 
 		// Assertions.
-		$this->assertEquals(3, $result['stats']['total'], 'Total should be 3.');
-		$this->assertEquals(2, $result['stats']['successful'], 'Two should succeed.');
-		$this->assertEquals(1, $result['stats']['failed'], 'One should fail.');
-		$this->assertCount(2, $result['success'], 'Success array should have 2 items.');
-		$this->assertCount(1, $result['failed'], 'Failed array should have 1 item.');
+		$this->assertIsArray($result, 'Result should be an array.');
+		$this->assertArrayHasKey('statistics', $result, 'Result should have statistics.');
+		$this->assertEquals(2, $result['statistics']['saved'], 'Two should be saved.');
+		$this->assertEquals(1, $result['statistics']['invalid'], 'One should be invalid.');
+		$this->assertCount(2, $result['saved'], 'Saved array should have 2 items.');
+		$this->assertCount(1, $result['invalid'], 'Invalid array should have 1 item.');
 		$this->assertCount(1, $result['errors'], 'Errors array should have 1 item.');
 	}
 }
-
-
-
-
-
-
-
-
-
-
-

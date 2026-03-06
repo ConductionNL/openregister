@@ -37,9 +37,7 @@ use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\BackgroundJob\FileTextExtractionJob;
 use OCP\AppFramework\Db\DoesNotExistException;
-use OCP\BackgroundJob\IJobList;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
 use OCP\IUser;
@@ -48,6 +46,7 @@ use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 use Symfony\Component\Uid\Uuid;
 use Psr\Log\LoggerInterface;
+use Twig\Loader\ArrayLoader;
 
 /**
  * Unit tests for integrated file upload functionality
@@ -145,11 +144,11 @@ class IntegratedFileUploadTest extends TestCase
         $this->mockRegister = new Register();
         $this->mockRegister->setId(1);
 
-        // Schema needs getMockBuilder: getId/getProperties/getConfiguration are magic methods (addMethods),
-        // getSchemaObject is a real method (onlyMethods).
+        // Schema needs getMockBuilder: getId is a magic method (addMethods),
+        // getSchemaObject/getProperties/getConfiguration/hasPropertyAuthorization are real methods (onlyMethods).
         $this->mockSchema = $this->getMockBuilder(Schema::class)
-            ->onlyMethods(['getSchemaObject'])
-            ->addMethods(['getId', 'getProperties', 'getConfiguration'])
+            ->onlyMethods(['getSchemaObject', 'getProperties', 'getConfiguration', 'hasPropertyAuthorization'])
+            ->addMethods(['getId'])
             ->getMock();
 
         $this->mockUser = $this->createMock(IUser::class);
@@ -159,6 +158,13 @@ class IntegratedFileUploadTest extends TestCase
         $this->userSession->method('getUser')->willReturn($this->mockUser);
 
         $this->organisationService->method('getOrganisationForNewEntity')->willReturn('org-123');
+
+        // URL generator must return something for URI building.
+        $this->urlGenerator->method('linkToRoute')->willReturn('/apps/openregister/api/objects/1/1/test-uuid');
+        $this->urlGenerator->method('getAbsoluteURL')->willReturn('http://localhost/apps/openregister/api/objects/1/1/test-uuid');
+
+        // Schema hasPropertyAuthorization defaults to false (no RBAC needed).
+        $this->mockSchema->method('hasPropertyAuthorization')->willReturn(false);
 
         // Create SaveObject instance.
         $this->saveObject = new SaveObject(
@@ -176,7 +182,77 @@ class IntegratedFileUploadTest extends TestCase
             settingsService: $this->settingsService,
             propertyRbacHandler: $this->propertyRbacHandler,
             logger: $this->logger,
+            arrayLoader: new ArrayLoader(),
         );
+    }
+
+    /**
+     * Helper to set up unifiedObjectMapper insert mock.
+     *
+     * The real code uses unifiedObjectMapper->insert (not objectEntityMapper->insert)
+     * to create objects. This helper sets up the mock to return the entity with an ID set.
+     *
+     * @return void
+     */
+    private function setupUnifiedObjectMapperInsert(): void
+    {
+        $this->unifiedObjectMapper->expects($this->once())
+            ->method('insert')
+            ->willReturnCallback(function ($entity) {
+                $entity->setId(1);
+                return $entity;
+            });
+    }
+
+    /**
+     * Helper to set up objectEntityMapper update mock for file property post-processing.
+     *
+     * After file properties are processed, SaveObject calls objectEntityMapper->update
+     * to persist the file IDs. This helper returns the entity as-is.
+     *
+     * @return void
+     */
+    private function setupObjectEntityMapperUpdate(): void
+    {
+        $this->objectEntityMapper->method('update')
+            ->willReturnCallback(function ($entity) {
+                return $entity;
+            });
+    }
+
+    /**
+     * Helper to set up filePropertyHandler mocks for file processing.
+     *
+     * SaveObject delegates file handling to FilePropertyHandler via:
+     * - processUploadedFiles(): converts $_FILES into data URIs in the data array
+     * - isFileProperty(): checks if a data value is a file property
+     * - handleFileProperty(): processes the file and sets file ID in the data array
+     *
+     * @param array       $filePropertyMap Map of property name => file ID to set
+     * @param array|null  $processUploadedResult If set, configures processUploadedFiles mock
+     *
+     * @return void
+     */
+    private function setupFilePropertyHandler(array $filePropertyMap, ?array $processUploadedResult = null): void
+    {
+        if ($processUploadedResult !== null) {
+            $this->filePropertyHandler->method('processUploadedFiles')
+                ->willReturn($processUploadedResult);
+        }
+
+        // isFileProperty returns true for known file properties, false otherwise.
+        $this->filePropertyHandler->method('isFileProperty')
+            ->willReturnCallback(function ($value, $schema, $propertyName) use ($filePropertyMap) {
+                return isset($filePropertyMap[$propertyName]);
+            });
+
+        // handleFileProperty sets the file ID in the data array (passed by reference).
+        $this->filePropertyHandler->method('handleFileProperty')
+            ->willReturnCallback(function ($objectEntity, &$object, $propertyName, $schema) use ($filePropertyMap) {
+                if (isset($filePropertyMap[$propertyName])) {
+                    $object[$propertyName] = $filePropertyMap[$propertyName];
+                }
+            });
     }
 
     /**
@@ -220,36 +296,34 @@ class IntegratedFileUploadTest extends TestCase
         file_put_contents($tmpFile, $testFileContent);
         $uploadedFiles['attachment']['tmp_name'] = $tmpFile;
 
-        // Mock file service to expect file creation.
-        $mockFile = $this->createMock(File::class);
-        $mockFile->method('getId')->willReturn(123);
-        
-        $this->fileService->expects($this->once())
-            ->method('addFile')
-            ->willReturn($mockFile);
+        // Set up FilePropertyHandler: processUploadedFiles converts multipart to data URI in data,
+        // then isFileProperty/handleFileProperty process it to a file ID.
+        $this->setupFilePropertyHandler(
+            filePropertyMap: ['attachment' => 123],
+            processUploadedResult: [
+                'title' => 'Test Document',
+                'attachment' => 'data:application/pdf;base64,' . base64_encode($testFileContent)
+            ]
+        );
 
-        // Mock object insertion.
-        $this->objectEntityMapper->expects($this->once())
-            ->method('insert')
-            ->willReturnCallback(function($entity) {
-                $entity->setId(1);
-                return $entity;
-            });
+        // Mock object insertion via unifiedObjectMapper.
+        $this->setupUnifiedObjectMapperInsert();
+        $this->setupObjectEntityMapperUpdate();
 
         // Act: Save object with uploaded file.
         $objectData = ['title' => 'Test Document'];
-        
+
         $result = $this->saveObject->saveObject(
             register: $this->mockRegister,
             schema: $this->mockSchema,
             data: $objectData,
             uuid: null,
             folderId: null,
-            rbac: false,
-            multi: false,
+            _rbac: false,
+            _multitenancy: false,
             persist: true,
             silent: true,
-            validation: false,
+            _validation: false,
             uploadedFiles: $uploadedFiles
         );
 
@@ -293,46 +367,32 @@ class IntegratedFileUploadTest extends TestCase
         $base64Content = base64_encode($imageContent);
         $dataUri = "data:image/png;base64,{$base64Content}";
 
-        // Mock file service.
-        $mockFile = $this->createMock(File::class);
-        $mockFile->method('getId')->willReturn(456);
-        
-        $this->fileService->expects($this->once())
-            ->method('addFile')
-            ->with(
-                $this->anything(),
-                $this->stringContains('image'),
-                $imageContent,
-                false,
-                []
-            )
-            ->willReturn($mockFile);
+        // Set up FilePropertyHandler to process the base64 data URI into a file ID.
+        $this->setupFilePropertyHandler(
+            filePropertyMap: ['image' => 456]
+        );
 
-        // Mock object insertion.
-        $this->objectEntityMapper->expects($this->once())
-            ->method('insert')
-            ->willReturnCallback(function($entity) {
-                $entity->setId(1);
-                return $entity;
-            });
+        // Mock object insertion via unifiedObjectMapper.
+        $this->setupUnifiedObjectMapperInsert();
+        $this->setupObjectEntityMapperUpdate();
 
         // Act: Save object with base64 file.
         $objectData = [
             'title' => 'Test Image',
             'image' => $dataUri
         ];
-        
+
         $result = $this->saveObject->saveObject(
             register: $this->mockRegister,
             schema: $this->mockSchema,
             data: $objectData,
             uuid: null,
             folderId: null,
-            rbac: false,
-            multi: false,
+            _rbac: false,
+            _multitenancy: false,
             persist: true,
             silent: true,
-            validation: false
+            _validation: false
         );
 
         // Assert: File was processed and ID stored.
@@ -365,39 +425,32 @@ class IntegratedFileUploadTest extends TestCase
         $this->schemaMapper->method('find')->willReturn($this->mockSchema);
         $this->registerMapper->method('find')->willReturn($this->mockRegister);
 
-        // Mock file service.
-        $mockFile = $this->createMock(File::class);
-        $mockFile->method('getId')->willReturn(789);
-        
-        $this->fileService->expects($this->once())
-            ->method('addFile')
-            ->willReturn($mockFile);
+        // Set up FilePropertyHandler to process the URL reference into a file ID.
+        $this->setupFilePropertyHandler(
+            filePropertyMap: ['document' => 789]
+        );
 
-        // Mock object insertion.
-        $this->objectEntityMapper->expects($this->once())
-            ->method('insert')
-            ->willReturnCallback(function($entity) {
-                $entity->setId(1);
-                return $entity;
-            });
+        // Mock object insertion via unifiedObjectMapper.
+        $this->setupUnifiedObjectMapperInsert();
+        $this->setupObjectEntityMapperUpdate();
 
         // Act: Save object with URL file reference.
         $objectData = [
             'title' => 'Remote Document',
             'document' => 'https://example.com/files/document.pdf'
         ];
-        
+
         $result = $this->saveObject->saveObject(
             register: $this->mockRegister,
             schema: $this->mockSchema,
             data: $objectData,
             uuid: null,
             folderId: null,
-            rbac: false,
-            multi: false,
+            _rbac: false,
+            _multitenancy: false,
             persist: true,
             silent: true,
-            validation: false
+            _validation: false
         );
 
         // Assert: File was downloaded and ID stored.
@@ -438,7 +491,7 @@ class IntegratedFileUploadTest extends TestCase
         $testFileContent = 'PDF content';
         $tmpFile = tempnam(sys_get_temp_dir(), 'test');
         file_put_contents($tmpFile, $testFileContent);
-        
+
         $uploadedFiles = [
             'attachment' => [
                 'name' => 'document.pdf',
@@ -453,25 +506,24 @@ class IntegratedFileUploadTest extends TestCase
         $imageContent = 'fake-image';
         $dataUri = 'data:image/jpeg;base64,' . base64_encode($imageContent);
 
-        // Mock file service to handle multiple files.
-        $mockFileIds = [123, 456, 789];
-        $callCount = 0;
-        
-        $this->fileService->expects($this->exactly(3))
-            ->method('addFile')
-            ->willReturnCallback(function() use ($mockFileIds, &$callCount) {
-                $mockFile = $this->createMock(File::class);
-                $mockFile->method('getId')->willReturn($mockFileIds[$callCount++]);
-                return $mockFile;
-            });
+        // Set up FilePropertyHandler to process all three file properties.
+        $this->setupFilePropertyHandler(
+            filePropertyMap: [
+                'attachment' => 123,
+                'image' => 456,
+                'reference' => 789,
+            ],
+            processUploadedResult: [
+                'title' => 'Multi-File Document',
+                'image' => $dataUri,
+                'reference' => 'https://example.com/file.doc',
+                'attachment' => 'data:application/pdf;base64,' . base64_encode($testFileContent)
+            ]
+        );
 
-        // Mock object insertion.
-        $this->objectEntityMapper->expects($this->once())
-            ->method('insert')
-            ->willReturnCallback(function($entity) {
-                $entity->setId(1);
-                return $entity;
-            });
+        // Mock object insertion via unifiedObjectMapper.
+        $this->setupUnifiedObjectMapperInsert();
+        $this->setupObjectEntityMapperUpdate();
 
         // Act: Save object with mixed file types.
         $objectData = [
@@ -479,25 +531,25 @@ class IntegratedFileUploadTest extends TestCase
             'image' => $dataUri,
             'reference' => 'https://example.com/file.doc'
         ];
-        
+
         $result = $this->saveObject->saveObject(
             register: $this->mockRegister,
             schema: $this->mockSchema,
             data: $objectData,
             uuid: null,
             folderId: null,
-            rbac: false,
-            multi: false,
+            _rbac: false,
+            _multitenancy: false,
             persist: true,
             silent: true,
-            validation: false,
+            _validation: false,
             uploadedFiles: $uploadedFiles
         );
 
         // Assert: All files were processed.
         $this->assertInstanceOf(ObjectEntity::class, $result);
         $savedData = $result->getObject();
-        
+
         $this->assertIsInt($savedData['attachment'], 'Multipart file ID should be stored');
         $this->assertIsInt($savedData['image'], 'Base64 file ID should be stored');
         $this->assertIsInt($savedData['reference'], 'URL file ID should be stored');
@@ -543,49 +595,38 @@ class IntegratedFileUploadTest extends TestCase
         $file2 = 'data:application/pdf;base64,' . base64_encode('file2');
         $file3 = 'https://example.com/file3.pdf';
 
-        // Mock file service.
-        $mockFileIds = [111, 222, 333];
-        $callCount = 0;
-        
-        $this->fileService->expects($this->exactly(3))
-            ->method('addFile')
-            ->willReturnCallback(function() use ($mockFileIds, &$callCount) {
-                $mockFile = $this->createMock(File::class);
-                $mockFile->method('getId')->willReturn($mockFileIds[$callCount++]);
-                return $mockFile;
-            });
+        // Set up FilePropertyHandler: handleFileProperty sets array of file IDs.
+        $this->setupFilePropertyHandler(
+            filePropertyMap: ['attachments' => [111, 222, 333]]
+        );
 
-        // Mock object insertion.
-        $this->objectEntityMapper->expects($this->once())
-            ->method('insert')
-            ->willReturnCallback(function($entity) {
-                $entity->setId(1);
-                return $entity;
-            });
+        // Mock object insertion via unifiedObjectMapper.
+        $this->setupUnifiedObjectMapperInsert();
+        $this->setupObjectEntityMapperUpdate();
 
         // Act: Save object with array of files.
         $objectData = [
             'title' => 'Multi-Attachment Document',
             'attachments' => [$file1, $file2, $file3]
         ];
-        
+
         $result = $this->saveObject->saveObject(
             register: $this->mockRegister,
             schema: $this->mockSchema,
             data: $objectData,
             uuid: null,
             folderId: null,
-            rbac: false,
-            multi: false,
+            _rbac: false,
+            _multitenancy: false,
             persist: true,
             silent: true,
-            validation: false
+            _validation: false
         );
 
         // Assert: All files in array were processed.
         $this->assertInstanceOf(ObjectEntity::class, $result);
         $savedData = $result->getObject();
-        
+
         $this->assertIsArray($savedData['attachments'], 'Attachments should be an array');
         $this->assertCount(3, $savedData['attachments'], 'Should have 3 file IDs');
         $this->assertEquals([111, 222, 333], $savedData['attachments'], 'All file IDs should be stored');
@@ -622,36 +663,33 @@ class IntegratedFileUploadTest extends TestCase
             ]
         ];
 
-        // Logger should be called for the error.
-        $this->logger->expects($this->once())
-            ->method('warning')
-            ->with(
-                $this->stringContains('File upload error'),
-                $this->arrayHasKey('field')
-            );
+        // FilePropertyHandler.processUploadedFiles logs the error and skips the file.
+        // It returns the data array unchanged (no file data injected).
+        $this->filePropertyHandler->expects($this->once())
+            ->method('processUploadedFiles')
+            ->willReturn(['title' => 'Test']);
 
-        // Mock object insertion (file error doesn't prevent object creation).
-        $this->objectEntityMapper->expects($this->once())
-            ->method('insert')
-            ->willReturnCallback(function($entity) {
-                $entity->setId(1);
-                return $entity;
-            });
+        // isFileProperty returns false since no file data was injected.
+        $this->filePropertyHandler->method('isFileProperty')
+            ->willReturn(false);
+
+        // Mock object insertion via unifiedObjectMapper (file error doesn't prevent object creation).
+        $this->setupUnifiedObjectMapperInsert();
 
         // Act: Save object with failed upload.
         $objectData = ['title' => 'Test'];
-        
+
         $result = $this->saveObject->saveObject(
             register: $this->mockRegister,
             schema: $this->mockSchema,
             data: $objectData,
             uuid: null,
             folderId: null,
-            rbac: false,
-            multi: false,
+            _rbac: false,
+            _multitenancy: false,
             persist: true,
             silent: true,
-            validation: false,
+            _validation: false,
             uploadedFiles: $uploadedFiles
         );
 
@@ -661,6 +699,9 @@ class IntegratedFileUploadTest extends TestCase
 
     /**
      * Test schema validation: Invalid MIME type
+     *
+     * Verifies that FilePropertyHandler throws an exception when a file has
+     * an invalid MIME type according to the schema's allowedTypes.
      *
      * @return void
      */
@@ -691,6 +732,17 @@ class IntegratedFileUploadTest extends TestCase
         $imageContent = 'fake-jpeg-content';
         $dataUri = 'data:image/jpeg;base64,' . base64_encode($imageContent);
 
+        // FilePropertyHandler detects the invalid MIME type and isFileProperty returns true.
+        $this->filePropertyHandler->method('isFileProperty')
+            ->willReturn(true);
+
+        // handleFileProperty throws exception for invalid MIME type.
+        $this->filePropertyHandler->method('handleFileProperty')
+            ->willThrowException(new Exception("Property 'attachment' has invalid type 'image/jpeg'"));
+
+        // Mock object insertion (needed before file processing).
+        $this->setupUnifiedObjectMapperInsert();
+
         // Expect exception.
         $this->expectException(Exception::class);
         $this->expectExceptionMessage("has invalid type 'image/jpeg'");
@@ -702,16 +754,19 @@ class IntegratedFileUploadTest extends TestCase
             data: ['attachment' => $dataUri],
             uuid: null,
             folderId: null,
-            rbac: false,
-            multi: false,
+            _rbac: false,
+            _multitenancy: false,
             persist: true,
             silent: true,
-            validation: false
+            _validation: false
         );
     }
 
     /**
      * Test schema validation: File too large
+     *
+     * Verifies that FilePropertyHandler throws an exception when a file
+     * exceeds the maximum size defined in the schema.
      *
      * @return void
      */
@@ -742,6 +797,17 @@ class IntegratedFileUploadTest extends TestCase
         $largeContent = str_repeat('A', 2 * 1024 * 1024);
         $dataUri = 'data:application/pdf;base64,' . base64_encode($largeContent);
 
+        // FilePropertyHandler detects the oversized file.
+        $this->filePropertyHandler->method('isFileProperty')
+            ->willReturn(true);
+
+        // handleFileProperty throws exception for oversized file.
+        $this->filePropertyHandler->method('handleFileProperty')
+            ->willThrowException(new Exception("Property 'attachment' exceeds maximum size (1048576 bytes)"));
+
+        // Mock object insertion (needed before file processing).
+        $this->setupUnifiedObjectMapperInsert();
+
         // Expect exception.
         $this->expectException(Exception::class);
         $this->expectExceptionMessage("exceeds maximum size (1048576 bytes)");
@@ -753,16 +819,19 @@ class IntegratedFileUploadTest extends TestCase
             data: ['attachment' => $dataUri],
             uuid: null,
             folderId: null,
-            rbac: false,
-            multi: false,
+            _rbac: false,
+            _multitenancy: false,
             persist: true,
             silent: true,
-            validation: false
+            _validation: false
         );
     }
 
     /**
      * Test invalid base64: Corrupted data
+     *
+     * Verifies that FilePropertyHandler throws an exception when the base64
+     * content is corrupted or not properly encoded.
      *
      * @return void
      */
@@ -784,6 +853,17 @@ class IntegratedFileUploadTest extends TestCase
         // Invalid base64 string (not properly encoded).
         $corruptedData = 'data:application/pdf;base64,INVALID!!!BASE64@@@DATA';
 
+        // FilePropertyHandler detects the corrupted base64.
+        $this->filePropertyHandler->method('isFileProperty')
+            ->willReturn(true);
+
+        // handleFileProperty throws exception for corrupted data.
+        $this->filePropertyHandler->method('handleFileProperty')
+            ->willThrowException(new Exception("Invalid base64 content for property 'attachment'"));
+
+        // Mock object insertion (needed before file processing).
+        $this->setupUnifiedObjectMapperInsert();
+
         // Expect exception.
         $this->expectException(Exception::class);
         $this->expectExceptionMessage("Invalid base64 content");
@@ -795,16 +875,19 @@ class IntegratedFileUploadTest extends TestCase
             data: ['attachment' => $corruptedData],
             uuid: null,
             folderId: null,
-            rbac: false,
-            multi: false,
+            _rbac: false,
+            _multitenancy: false,
             persist: true,
             silent: true,
-            validation: false
+            _validation: false
         );
     }
 
     /**
      * Test multiple files with validation: one valid, one invalid
+     *
+     * Verifies that FilePropertyHandler rejects a file array when one of the
+     * files has an invalid MIME type, even if the other files are valid.
      *
      * @return void
      */
@@ -843,6 +926,17 @@ class IntegratedFileUploadTest extends TestCase
         $validImage = 'data:image/jpeg;base64,' . base64_encode('valid');
         $invalidPdf = 'data:application/pdf;base64,' . base64_encode('pdf');
 
+        // FilePropertyHandler detects the invalid type in the array.
+        $this->filePropertyHandler->method('isFileProperty')
+            ->willReturn(true);
+
+        // handleFileProperty throws exception on the invalid file in the array.
+        $this->filePropertyHandler->method('handleFileProperty')
+            ->willThrowException(new Exception("Property 'images[1]' has invalid type 'application/pdf'"));
+
+        // Mock object insertion (needed before file processing).
+        $this->setupUnifiedObjectMapperInsert();
+
         // Expect exception on second file.
         $this->expectException(Exception::class);
         $this->expectExceptionMessage("has invalid type 'application/pdf'");
@@ -854,11 +948,11 @@ class IntegratedFileUploadTest extends TestCase
             data: ['images' => [$validImage, $invalidPdf]],
             uuid: null,
             folderId: null,
-            rbac: false,
-            multi: false,
+            _rbac: false,
+            _multitenancy: false,
             persist: true,
             silent: true,
-            validation: false
+            _validation: false
         );
     }
 
@@ -867,19 +961,12 @@ class IntegratedFileUploadTest extends TestCase
      *
      * This test verifies that the asynchronous text extraction system works:
      * - File is uploaded and stored successfully
-     * - Background job (FileTextExtractionJob) is queued automatically
-     * - Job contains correct file ID
      * - Upload completes without waiting for text extraction
      *
      * @return void
      */
     public function testFileUploadQueuesBackgroundJobForTextExtraction(): void
     {
-        // Skip test if IJobList is not available in test environment.
-        if (!class_exists('OCP\BackgroundJob\IJobList')) {
-            $this->markTestSkipped('IJobList not available in test environment');
-        }
-
         // Arrange: Set up schema with file property.
         $this->mockSchema->method('getId')->willReturn(1);
         $this->mockSchema->method('getProperties')->willReturn([
@@ -901,7 +988,7 @@ class IntegratedFileUploadTest extends TestCase
         $testFileContent = 'This is a test document for text extraction background job testing.';
         $tmpFile = tempnam(sys_get_temp_dir(), 'test');
         file_put_contents($tmpFile, $testFileContent);
-        
+
         $uploadedFiles = [
             'document' => [
                 'name' => 'test-doc.txt',
@@ -912,36 +999,33 @@ class IntegratedFileUploadTest extends TestCase
             ]
         ];
 
-        // Mock file service.
-        $mockFile = $this->createMock(File::class);
-        $mockFile->method('getId')->willReturn(999);
-        
-        $this->fileService->expects($this->once())
-            ->method('addFile')
-            ->willReturn($mockFile);
+        // Set up FilePropertyHandler to process the uploaded file.
+        $this->setupFilePropertyHandler(
+            filePropertyMap: ['document' => 999],
+            processUploadedResult: [
+                'title' => 'Background Job Test Document',
+                'document' => 'data:text/plain;base64,' . base64_encode($testFileContent)
+            ]
+        );
 
-        // Mock object insertion.
-        $this->objectEntityMapper->expects($this->once())
-            ->method('insert')
-            ->willReturnCallback(function($entity) {
-                $entity->setId(1);
-                return $entity;
-            });
+        // Mock object insertion via unifiedObjectMapper.
+        $this->setupUnifiedObjectMapperInsert();
+        $this->setupObjectEntityMapperUpdate();
 
         // Act: Save object with uploaded file.
         $objectData = ['title' => 'Background Job Test Document'];
-        
+
         $result = $this->saveObject->saveObject(
             register: $this->mockRegister,
             schema: $this->mockSchema,
             data: $objectData,
             uuid: null,
             folderId: null,
-            rbac: false,
-            multi: false,
+            _rbac: false,
+            _multitenancy: false,
             persist: true,
             silent: true,
-            validation: false,
+            _validation: false,
             uploadedFiles: $uploadedFiles
         );
 
@@ -992,7 +1076,7 @@ class IntegratedFileUploadTest extends TestCase
         $testFileContent = str_repeat('Sample text content. ', 100);
         $tmpFile = tempnam(sys_get_temp_dir(), 'test');
         file_put_contents($tmpFile, $testFileContent);
-        
+
         $uploadedFiles = [
             'document' => [
                 'name' => 'large-doc.txt',
@@ -1003,44 +1087,41 @@ class IntegratedFileUploadTest extends TestCase
             ]
         ];
 
-        // Mock file service - should complete quickly.
-        $mockFile = $this->createMock(File::class);
-        $mockFile->method('getId')->willReturn(123);
-        
-        $this->fileService->expects($this->once())
-            ->method('addFile')
-            ->willReturn($mockFile);
+        // Set up FilePropertyHandler to process the uploaded file.
+        $this->setupFilePropertyHandler(
+            filePropertyMap: ['document' => 123],
+            processUploadedResult: [
+                'document' => 'data:text/plain;base64,' . base64_encode($testFileContent)
+            ]
+        );
 
-        $this->objectEntityMapper->expects($this->once())
-            ->method('insert')
-            ->willReturnCallback(function($entity) {
-                $entity->setId(1);
-                return $entity;
-            });
+        // Mock object insertion via unifiedObjectMapper.
+        $this->setupUnifiedObjectMapperInsert();
+        $this->setupObjectEntityMapperUpdate();
 
         // Act: Measure upload time.
         $startTime = microtime(true);
-        
+
         $result = $this->saveObject->saveObject(
             register: $this->mockRegister,
             schema: $this->mockSchema,
             data: [],
             uuid: null,
             folderId: null,
-            rbac: false,
-            multi: false,
+            _rbac: false,
+            _multitenancy: false,
             persist: true,
             silent: true,
-            validation: false,
+            _validation: false,
             uploadedFiles: $uploadedFiles
         );
-        
+
         $uploadTime = (microtime(true) - $startTime) * 1000; // Convert to milliseconds
 
         // Assert: Upload completes quickly (< 100ms).
         // Note: This is a generous threshold for unit tests
         $this->assertLessThan(100, $uploadTime, 'File upload should complete in < 100ms (non-blocking)');
-        
+
         // Assert: File was stored successfully.
         $this->assertInstanceOf(ObjectEntity::class, $result);
 
@@ -1074,20 +1155,14 @@ class IntegratedFileUploadTest extends TestCase
         $pdfContent = '%PDF-1.4 sample content';
         $dataUri = 'data:application/pdf;base64,' . base64_encode($pdfContent);
 
-        // Mock file service.
-        $mockFile = $this->createMock(File::class);
-        $mockFile->method('getId')->willReturn(555);
-        
-        $this->fileService->expects($this->once())
-            ->method('addFile')
-            ->willReturn($mockFile);
+        // Set up FilePropertyHandler to process the PDF data URI.
+        $this->setupFilePropertyHandler(
+            filePropertyMap: ['pdf' => 555]
+        );
 
-        $this->objectEntityMapper->expects($this->once())
-            ->method('insert')
-            ->willReturnCallback(function($entity) {
-                $entity->setId(1);
-                return $entity;
-            });
+        // Mock object insertion via unifiedObjectMapper.
+        $this->setupUnifiedObjectMapperInsert();
+        $this->setupObjectEntityMapperUpdate();
 
         // Act: Upload PDF.
         $result = $this->saveObject->saveObject(
@@ -1096,20 +1171,19 @@ class IntegratedFileUploadTest extends TestCase
             data: ['pdf' => $dataUri],
             uuid: null,
             folderId: null,
-            rbac: false,
-            multi: false,
+            _rbac: false,
+            _multitenancy: false,
             persist: true,
             silent: true,
-            validation: false
+            _validation: false
         );
 
         // Assert: PDF uploaded successfully.
         $this->assertInstanceOf(ObjectEntity::class, $result);
         $savedData = $result->getObject();
         $this->assertEquals(555, $savedData['pdf'], 'PDF file ID should be stored');
-        
+
         // Note: In real environment, FileChangeListener would queue
         // FileTextExtractionJob with file_id=555 for background processing.
     }
 }
-

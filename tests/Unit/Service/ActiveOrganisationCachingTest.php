@@ -169,8 +169,8 @@ class ActiveOrganisationCachingTest extends TestCase
         $this->session
             ->method('get')
             ->willReturnMap([
-                ['openregister_active_organisation_alice', null, $cachedOrgData],
-                ['openregister_active_organisation_timestamp_alice', null, $currentTime - 300] // 5 minutes ago
+                ['openregister_active_organisation_alice', $cachedOrgData],
+                ['openregister_active_organisation_timestamp_alice', $currentTime - 300] // 5 minutes ago
             ]);
         
         // Assert: No database calls should be made for cache hit.
