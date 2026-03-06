@@ -12,11 +12,28 @@ concurrency:
 
 jobs:
   # ──────────────────────────────────────────────
-  # Stage 1: Static analysis (no NC server needed)
+  # Stage 1: Linting — each tool as a separate box
   # ──────────────────────────────────────────────
-  php-quality:
+  linting:
     runs-on: ubuntu-latest
-    name: PHP Quality
+    name: "${{ matrix.tool }}"
+
+    strategy:
+      matrix:
+        include:
+          - tool: PHP Lint
+            command: composer lint
+          - tool: PHPCS
+            command: composer phpcs
+          - tool: PHPMD
+            command: composer phpmd
+          - tool: Psalm
+            command: composer psalm
+          - tool: PHPStan
+            command: composer phpstan
+          - tool: phpmetrics
+            command: composer phpmetrics
+      fail-fast: false
 
     steps:
       - name: Checkout
@@ -39,23 +56,8 @@ jobs:
       - name: Install dependencies
         run: composer install --no-progress --prefer-dist --optimize-autoloader
 
-      - name: PHP Lint
-        run: composer lint
-
-      - name: PHP CodeSniffer
-        run: composer phpcs
-        continue-on-error: true
-
-      - name: PHPMD
-        run: composer phpmd
-        continue-on-error: true
-
-      - name: Psalm
-        run: composer psalm
-        continue-on-error: true
-
-      - name: PHPStan
-        run: composer phpstan
+      - name: "Run ${{ matrix.tool }}"
+        run: ${{ matrix.command }}
         continue-on-error: true
 
   # ──────────────────────────────────────────────
@@ -92,7 +94,7 @@ jobs:
   php-tests:
     runs-on: ubuntu-latest
     name: PHPUnit (PHP ${{ matrix.php-version }})
-    needs: php-quality
+    needs: linting
 
     strategy:
       matrix:
@@ -133,7 +135,6 @@ jobs:
             --admin-user admin \
             --admin-pass admin
           php occ app:enable openregister
-          # Make config readable for PHPUnit bootstrap
           chmod -R a+w config
 
       - name: Install app dependencies
@@ -177,7 +178,7 @@ jobs:
   integration-tests:
     runs-on: ubuntu-latest
     name: Integration Tests (Newman)
-    needs: php-quality
+    needs: linting
     if: github.event_name == 'pull_request'
 
     services:
@@ -268,7 +269,7 @@ jobs:
   summary:
     runs-on: ubuntu-latest
     name: Quality Summary
-    needs: [php-quality, frontend-quality, php-tests, integration-tests]
+    needs: [linting, frontend-quality, php-tests, integration-tests]
     if: always() && github.event_name == 'pull_request'
 
     steps:
@@ -277,7 +278,7 @@ jobs:
         with:
           script: |
             const jobs = {
-              'PHP Quality': '${{ needs.php-quality.result }}',
+              'Linting': '${{ needs.linting.result }}',
               'Frontend Quality': '${{ needs.frontend-quality.result }}',
               'PHPUnit Tests': '${{ needs.php-tests.result }}',
               'Integration Tests': '${{ needs.integration-tests.result }}'
