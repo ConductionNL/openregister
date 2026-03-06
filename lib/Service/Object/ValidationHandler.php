@@ -160,6 +160,7 @@ class ValidationHandler
         $invalidObjects = [];
 
         foreach ($objects as $object) {
+            $objectData = [];
             try {
                 // Get the object data for validation.
                 $objectData = $object->getObject();
@@ -474,6 +475,7 @@ class ValidationHandler
             );
 
             // Use bulk save operation for this chunk.
+            $result = null;
             try {
                 // Get the ObjectService instance from the saveCallback.
                 $objectService = $saveCallback[0] ?? null;
@@ -606,6 +608,7 @@ class ValidationHandler
         $invalidObjects = [];
 
         foreach ($objects as $object) {
+            $objectData = [];
             try {
                 // Get the object data for validation.
                 $objectData = $object->getObject();

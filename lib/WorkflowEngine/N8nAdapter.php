@@ -64,7 +64,10 @@ class N8nAdapter implements WorkflowEngineInterface
     /**
      * Configure the adapter with engine settings.
      *
-     * @param string               $baseUrl    Engine base URL
+     * When n8n runs as a Nextcloud ExApp, set baseUrl to the ExApp proxy path
+     * (e.g. `/index.php/apps/app_api/proxy/n8n`) to route through Nextcloud's proxy.
+     *
+     * @param string               $baseUrl    Engine base URL (or ExApp proxy path)
      * @param array<string, mixed> $authConfig Authentication configuration
      *
      * @return void

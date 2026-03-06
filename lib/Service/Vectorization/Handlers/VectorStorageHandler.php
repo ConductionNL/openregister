@@ -196,21 +196,15 @@ class VectorStorageHandler
             $embeddingBlob = serialize($embedding);
 
             // Serialize metadata to JSON.
+            $metadataJson = null;
             if (empty($metadata) === false) {
                 $metadataJson = json_encode($metadata);
             }
 
-            if (empty($metadata) === true) {
-                $metadataJson = null;
-            }
-
             // Sanitize chunk_text to prevent encoding errors.
+            $sanitizedChunkText = null;
             if ($chunkText !== null) {
                 $sanitizedChunkText = $this->sanitizeText(text: $chunkText);
-            }
-
-            if ($chunkText === null) {
-                $sanitizedChunkText = null;
             }
 
             $qb = $this->db->getQueryBuilder();
@@ -327,12 +321,9 @@ class VectorStorageHandler
 
             // Determine document ID based on entity type.
             $entityTypeLower = strtolower($entityType);
+            $documentId      = $entityId;
             if ($entityTypeLower === 'file' || $entityTypeLower === 'files') {
                 $documentId = "{$entityId}_chunk_{$chunkIndex}";
-            }
-
-            if ($entityTypeLower !== 'file' && $entityTypeLower !== 'files') {
-                $documentId = $entityId;
             }
 
             // Prepare atomic update document.
@@ -428,6 +419,7 @@ class VectorStorageHandler
             $entityType = strtolower($entityType);
 
             // Determine which collection to use based on entity type.
+            $collection = null;
             if ($entityType === 'file' || $entityType === 'files') {
                 $collection = $settings['solr']['fileCollection'] ?? null;
             }

@@ -872,6 +872,7 @@ class SaveObjects
                 );
 
                 // TEMPORARY FIX: Extract business data properly based on actual structure.
+            $businessData = [];
             if (($object['object'] ?? null) !== null && is_array($object['object']) === true) {
                 // NEW STRUCTURE: object property contains business data.
                 $businessData = $object['object'];

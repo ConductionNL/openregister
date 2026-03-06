@@ -286,6 +286,7 @@ class UpdateFileHandler
             }
 
             // If object wasn't provided or file wasn't found in object folder, try user folder.
+            $userFolder = null;
             if ($file === null) {
                 $this->logger->info(
                     message: "[UpdateFileHandler] updateFile: Trying user folder approach with path: '$filePath'",

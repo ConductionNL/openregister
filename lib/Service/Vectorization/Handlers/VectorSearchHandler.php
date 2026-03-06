@@ -93,6 +93,7 @@ class VectorSearchHandler
             ]
         );
 
+        $results = [];
         try {
             // Route to appropriate backend for vector search.
             if ($backend === 'solr') {
@@ -701,6 +702,7 @@ class VectorSearchHandler
         $settings            = $this->settingsService->getSettings();
 
         if (($filters['entity_type'] ?? null) !== null) {
+            $entityTypes = [];
             if (is_array($filters['entity_type']) === true) {
                 $entityTypes = $filters['entity_type'];
             }
