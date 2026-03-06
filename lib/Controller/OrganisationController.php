@@ -534,6 +534,8 @@ class OrganisationController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with updated organisation or error
+     *
+     * @SuppressWarnings(PHPMD.NPathComplexity) Already decomposed into helper methods
      */
     public function update(string $uuid): JSONResponse
     {

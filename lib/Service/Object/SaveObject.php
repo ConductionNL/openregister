@@ -719,6 +719,8 @@ class SaveObject
      * @param Schema       $schema      The schema the saved entity belongs to
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Inverse relation handling requires per-type branching
      */
     private function updateInverseRelations(ObjectEntity $savedEntity, Register $register, Schema $schema): void
     {
@@ -1272,6 +1274,8 @@ class SaveObject
      * @param array  $data   The object data to transform.
      *
      * @return array The transformed data with "always" defaults applied.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Default value resolution requires template + type branching
      */
     public function applyAlwaysDefaults(Schema $schema, array $data): array
     {
@@ -1301,47 +1305,17 @@ class SaveObject
             return $data;
         }
 
-        // Use the data itself as Twig context (no existing object at this point).
-        $twigContext = $data;
-
         // Render twig templated default values.
+        // Use the data itself as Twig context (no existing object at this point).
         foreach ($alwaysDefaults as $key => $defaultValue) {
-            try {
-                if (is_string($defaultValue) === true
-                    && str_contains(haystack: $defaultValue, needle: '{{') === true
-                    && str_contains(haystack: $defaultValue, needle: '}}') === true
-                ) {
-                    // Check if this is a simple property reference like "{{ propertyName }}"
-                    // to preserve array values instead of converting to string.
-                    $simpleRefPattern = '/^\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}$/';
-                    if (preg_match($simpleRefPattern, $defaultValue, $matches) === 1) {
-                        $sourceProperty = $matches[1];
-                        if (isset($twigContext[$sourceProperty]) === true) {
-                            // Direct copy preserves arrays and other types.
-                            $data[$key] = $twigContext[$sourceProperty];
-                        }
-
-                        // If source property not found, skip (don't overwrite with null).
-                    } else {
-                        // Complex template, use MetadataHydrationHandler which supports
-                        // pipe-based filters (| map:) and fallback syntax (| field2).
-                        $rendered = $this->metaHydrationHandler->processTwigLikeTemplate(
-                            data: $twigContext,
-                            template: $defaultValue,
-                            schemaProperties: $schemaObject['properties'] ?? []
-                        );
-                        if ($rendered !== null) {
-                            $data[$key] = $rendered;
-                        }
-                    }
-                } else {
-                    // Non-template value, use directly.
-                    $data[$key] = $defaultValue;
-                }//end if
-            } catch (Exception $e) {
-                // Template failed, skip this default.
-                continue;
-            }//end try
+            $resolved = $this->resolveDefaultTemplateValue(
+                defaultValue: $defaultValue,
+                context: $data,
+                schemaProperties: $schemaObject['properties'] ?? []
+            );
+            if ($resolved !== null) {
+                $data[$key] = $resolved;
+            }
         }//end foreach
 
         return $data;
@@ -1379,56 +1353,109 @@ class SaveObject
 
             $defaultBehavior = $property['defaultBehavior'] ?? 'false';
 
-            // Determine if default should be applied.
-            $shouldApply = isset($data[$key]) === false || $data[$key] === null;
-            if ($defaultBehavior === 'falsy') {
-                $shouldApply = isset($data[$key]) === false
-                    || $data[$key] === null
-                    || $data[$key] === ''
-                    || (is_array($data[$key]) === true && empty($data[$key]));
-            } else if ($defaultBehavior === 'always') {
-                $shouldApply = true;
-            }
-
-            if ($shouldApply === false) {
+            // Determine if default should be applied based on behavior setting.
+            if ($this->shouldApplyDefault(behavior: $defaultBehavior, data: $data, key: $key) === false) {
                 continue;
             }
 
             // Render templates using MetadataHydrationHandler (supports | map: syntax).
-            try {
-                if (is_string($defaultValue) === true
-                    && str_contains(haystack: $defaultValue, needle: '{{') === true
-                    && str_contains(haystack: $defaultValue, needle: '}}') === true
-                ) {
-                    // Simple property reference: preserve arrays.
-                    $simpleRefPattern = '/^\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}$/';
-                    if (preg_match($simpleRefPattern, $defaultValue, $matches) === 1) {
-                        $sourceProperty = $matches[1];
-                        if (isset($data[$sourceProperty]) === true) {
-                            $data[$key] = $data[$sourceProperty];
-                        }
-                    } else {
-                        // Complex template with map/fallback support.
-                        $rendered = $this->metaHydrationHandler->processTwigLikeTemplate(
-                            data: $data,
-                            template: $defaultValue,
-                            schemaProperties: $schemaObject['properties'] ?? []
-                        );
-                        if ($rendered !== null) {
-                            $data[$key] = $rendered;
-                        }
-                    }
-                } else {
-                    $data[$key] = $defaultValue;
-                }//end if
-            } catch (Exception $e) {
-                // Template failed, skip this default.
-                continue;
-            }//end try
+            $resolved = $this->resolveDefaultTemplateValue(
+                defaultValue: $defaultValue,
+                context: $data,
+                schemaProperties: $schemaObject['properties'] ?? []
+            );
+            if ($resolved !== null) {
+                $data[$key] = $resolved;
+            }
         }//end foreach
 
         return $data;
     }//end applyPropertyDefaults()
+
+    /**
+     * Determines whether a default value should be applied based on the behavior setting.
+     *
+     * Evaluates the defaultBehavior setting against the current data to decide
+     * if the default should override or fill in the value:
+     * - "always": always apply the default
+     * - "falsy": apply when the value is missing, null, empty string, or empty array
+     * - default: apply only when the value is missing or null
+     *
+     * @param string $behavior The defaultBehavior setting from the schema property.
+     * @param array  $data     The current object data.
+     * @param string $key      The property key to check.
+     *
+     * @return bool True if the default should be applied.
+     */
+    private function shouldApplyDefault(string $behavior, array $data, string $key): bool
+    {
+        if ($behavior === 'always') {
+            return true;
+        }
+
+        if ($behavior === 'falsy') {
+            return isset($data[$key]) === false
+                || $data[$key] === null
+                || $data[$key] === ''
+                || (is_array($data[$key]) === true && empty($data[$key]));
+        }
+
+        // Default behavior: apply only when missing or null.
+        return isset($data[$key]) === false || $data[$key] === null;
+    }//end shouldApplyDefault()
+
+    /**
+     * Resolves a default value, rendering templates if the value contains Twig-like syntax.
+     *
+     * Handles three cases:
+     * - Simple property reference (e.g., "{{ propertyName }}"): copies the value directly,
+     *   preserving arrays and other non-string types.
+     * - Complex template (e.g., "{{ items | map:name }}"): renders via MetadataHydrationHandler.
+     * - Non-template value: returns the value as-is.
+     *
+     * @param mixed $defaultValue      The default value to resolve (may contain templates).
+     * @param array $context           The data context for template rendering.
+     * @param array $schemaProperties  The schema properties for template rendering.
+     *
+     * @return mixed The resolved value, or null if resolution failed.
+     */
+    private function resolveDefaultTemplateValue($defaultValue, array $context, array $schemaProperties)
+    {
+        try {
+            if (is_string($defaultValue) === true
+                && str_contains(haystack: $defaultValue, needle: '{{') === true
+                && str_contains(haystack: $defaultValue, needle: '}}') === true
+            ) {
+                // Check if this is a simple property reference like "{{ propertyName }}"
+                // to preserve array values instead of converting to string.
+                $simpleRefPattern = '/^\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}$/';
+                if (preg_match($simpleRefPattern, $defaultValue, $matches) === 1) {
+                    $sourceProperty = $matches[1];
+                    if (isset($context[$sourceProperty]) === true) {
+                        // Direct copy preserves arrays and other types.
+                        return $context[$sourceProperty];
+                    }
+
+                    // If source property not found, skip (don't overwrite with null).
+                    return null;
+                }
+
+                // Complex template, use MetadataHydrationHandler which supports
+                // pipe-based filters (| map:) and fallback syntax (| field2).
+                return $this->metaHydrationHandler->processTwigLikeTemplate(
+                    data: $context,
+                    template: $defaultValue,
+                    schemaProperties: $schemaProperties
+                );
+            }
+
+            // Non-template value, use directly.
+            return $defaultValue;
+        } catch (Exception $e) {
+            // Template failed, return null to skip this default.
+            return null;
+        }//end try
+    }//end resolveDefaultTemplateValue()
 
     /**
      * Generates a slug for an object based on its data and schema configuration.

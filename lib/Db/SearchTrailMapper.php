@@ -54,6 +54,7 @@ use Symfony\Component\Uid\Uuid;
  * @template-extends QBMapper<SearchTrail>
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Search trail tracking requires integration with many components
  */
 class SearchTrailMapper extends QBMapper
 {

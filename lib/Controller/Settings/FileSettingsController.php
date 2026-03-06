@@ -37,6 +37,8 @@ use Psr\Log\LoggerInterface;
  *
  * @category Controller
  * @package  OCA\OpenRegister\Controller\Settings
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Service health check methods contribute inherent complexity
  */
 class FileSettingsController extends Controller
 {
@@ -145,50 +147,18 @@ class FileSettingsController extends Controller
                 );
             }
 
-            // Test the connection by making a simple request.
-            $ch = curl_init($apiEndpoint.'/health');
-            curl_setopt_array(
-                $ch,
-                [
-                    CURLOPT_RETURNTRANSFER => true,
-                    CURLOPT_HTTPHEADER     => [
-                        'Authorization: Bearer '.$apiKey,
-                        'Content-Type: application/json',
-                    ],
-                    CURLOPT_TIMEOUT        => 10,
-                    CURLOPT_SSL_VERIFYPEER => true,
-                ]
+            $headers = [
+                'Authorization: Bearer '.$apiKey,
+                'Content-Type: application/json',
+            ];
+
+            $result = $this->performHealthCheck(
+                url: $apiEndpoint.'/health',
+                serviceName: 'Dolphin',
+                headers: $headers
             );
 
-            curl_exec($ch);
-            $httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            $curlError = curl_error($ch);
-            curl_close($ch);
-
-            if ($curlError !== '') {
-                return new JSONResponse(
-                    data: [
-                        'success' => false,
-                        'error'   => 'Connection failed: '.$curlError,
-                    ]
-                );
-            }
-
-            if ($httpCode === 200 || $httpCode === 201) {
-                return new JSONResponse(
-                    data: [
-                        'success' => true,
-                        'message' => 'Dolphin connection successful',
-                    ]
-                );
-            }
-
-            return new JSONResponse(
-                data: [
-                    'success' => false,
-                    'error'   => 'Dolphin API returned HTTP '.$httpCode,
-                ]
-            );
+            return new JSONResponse(data: $result);
         } catch (Exception $e) {
             return new JSONResponse(
                 data: [
@@ -226,73 +196,18 @@ class FileSettingsController extends Controller
                 );
             }
 
-            // Test the connection by making a health check request.
-            $ch = curl_init($apiEndpoint.'/health');
-            curl_setopt_array(
-                $ch,
-                [
-                    CURLOPT_RETURNTRANSFER => true,
-                    CURLOPT_HTTPHEADER     => [
-                        'Content-Type: application/json',
-                    ],
-                    CURLOPT_TIMEOUT        => 10,
-                    CURLOPT_SSL_VERIFYPEER => true,
-                ]
+            $result = $this->performHealthCheck(
+                url: $apiEndpoint.'/health',
+                serviceName: 'Presidio'
             );
 
-            curl_exec($ch);
-            $httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            $curlError = curl_error($ch);
-            curl_close($ch);
-
-            if ($curlError !== '') {
-                return new JSONResponse(
-                    data: [
-                        'success' => false,
-                        'error'   => 'Connection failed: '.$curlError,
-                    ]
-                );
+            if ($result['success'] === true) {
+                // Try to get supported entities.
+                $capabilities = $this->fetchPresidioCapabilities(apiEndpoint: $apiEndpoint);
+                $result['capabilities'] = $capabilities;
             }
 
-            if ($httpCode === 200 || $httpCode === 201) {
-                // Try to get supported entities.
-                $capabilities = [];
-                $ch           = curl_init($apiEndpoint.'/supportedentities');
-                curl_setopt_array(
-                    $ch,
-                    [
-                        CURLOPT_RETURNTRANSFER => true,
-                        CURLOPT_HTTPHEADER     => [
-                            'Content-Type: application/json',
-                        ],
-                        CURLOPT_TIMEOUT        => 10,
-                    ]
-                );
-                $entitiesResponse = curl_exec($ch);
-                curl_close($ch);
-
-                if ($entitiesResponse !== false) {
-                    $entities = json_decode($entitiesResponse, true);
-                    if (is_array($entities) === true) {
-                        $capabilities['supported_entities'] = $entities;
-                    }
-                }
-
-                return new JSONResponse(
-                    data: [
-                        'success'      => true,
-                        'message'      => 'Presidio connection successful',
-                        'capabilities' => $capabilities,
-                    ]
-                );
-            }//end if
-
-            return new JSONResponse(
-                data: [
-                    'success' => false,
-                    'error'   => 'Presidio API returned HTTP '.$httpCode,
-                ]
-            );
+            return new JSONResponse(data: $result);
         } catch (Exception $e) {
             return new JSONResponse(
                 data: [
@@ -330,49 +245,12 @@ class FileSettingsController extends Controller
                 );
             }
 
-            // Test the connection by making a health check request.
-            $ch = curl_init($apiEndpoint.'/api/v1/health');
-            curl_setopt_array(
-                $ch,
-                [
-                    CURLOPT_RETURNTRANSFER => true,
-                    CURLOPT_HTTPHEADER     => [
-                        'Content-Type: application/json',
-                    ],
-                    CURLOPT_TIMEOUT        => 10,
-                    CURLOPT_SSL_VERIFYPEER => true,
-                ]
+            $result = $this->performHealthCheck(
+                url: $apiEndpoint.'/api/v1/health',
+                serviceName: 'OpenAnonymiser'
             );
 
-            curl_exec($ch);
-            $httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            $curlError = curl_error($ch);
-            curl_close($ch);
-
-            if ($curlError !== '') {
-                return new JSONResponse(
-                    data: [
-                        'success' => false,
-                        'error'   => 'Connection failed: '.$curlError,
-                    ]
-                );
-            }
-
-            if ($httpCode === 200 || $httpCode === 201) {
-                return new JSONResponse(
-                    data: [
-                        'success' => true,
-                        'message' => 'OpenAnonymiser connection successful',
-                    ]
-                );
-            }
-
-            return new JSONResponse(
-                data: [
-                    'success' => false,
-                    'error'   => 'OpenAnonymiser API returned HTTP '.$httpCode,
-                ]
-            );
+            return new JSONResponse(data: $result);
         } catch (Exception $e) {
             return new JSONResponse(
                 data: [
@@ -853,4 +731,96 @@ class FileSettingsController extends Controller
             );
         }//end try
     }//end getFileExtractionStats()
+
+    /**
+     * Perform a health check HTTP request against a service endpoint.
+     *
+     * Executes a GET request to the given URL with optional headers and returns
+     * a standardized result array indicating success or failure.
+     *
+     * @param string   $url         The full URL to check (e.g. endpoint + '/health').
+     * @param string   $serviceName Human-readable service name for error messages.
+     * @param string[] $headers     Optional HTTP headers (default: Content-Type: application/json).
+     *
+     * @return array{success: bool, message?: string, error?: string} Health check result.
+     */
+    private function performHealthCheck(string $url, string $serviceName, array $headers=[]): array
+    {
+        if (empty($headers) === true) {
+            $headers = ['Content-Type: application/json'];
+        }
+
+        $ch = curl_init($url);
+        curl_setopt_array(
+            $ch,
+            [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_HTTPHEADER     => $headers,
+                CURLOPT_TIMEOUT        => 10,
+                CURLOPT_SSL_VERIFYPEER => true,
+            ]
+        );
+
+        curl_exec($ch);
+        $httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
+        curl_close($ch);
+
+        if ($curlError !== '') {
+            return [
+                'success' => false,
+                'error'   => 'Connection failed: '.$curlError,
+            ];
+        }
+
+        if ($httpCode === 200 || $httpCode === 201) {
+            return [
+                'success' => true,
+                'message' => $serviceName.' connection successful',
+            ];
+        }
+
+        return [
+            'success' => false,
+            'error'   => $serviceName.' API returned HTTP '.$httpCode,
+        ];
+    }//end performHealthCheck()
+
+    /**
+     * Fetch Presidio supported entity capabilities.
+     *
+     * Makes a separate request to the Presidio /supportedentities endpoint
+     * and returns the capabilities array.
+     *
+     * @param string $apiEndpoint The Presidio API base endpoint URL.
+     *
+     * @return array Capabilities array, potentially containing 'supported_entities'.
+     */
+    private function fetchPresidioCapabilities(string $apiEndpoint): array
+    {
+        $capabilities = [];
+
+        $ch = curl_init($apiEndpoint.'/supportedentities');
+        curl_setopt_array(
+            $ch,
+            [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_HTTPHEADER     => [
+                    'Content-Type: application/json',
+                ],
+                CURLOPT_TIMEOUT        => 10,
+            ]
+        );
+        $entitiesResponse = curl_exec($ch);
+        curl_close($ch);
+
+        if ($entitiesResponse !== false) {
+            $entities = json_decode($entitiesResponse, true);
+            if (is_array($entities) === true) {
+                $capabilities['supported_entities'] = $entities;
+            }
+        }
+
+        return $capabilities;
+    }//end fetchPresidioCapabilities()
 }//end class

@@ -103,6 +103,8 @@ class MagicBulkHandler
      * @return (false|int|mixed|null|string)[][] Array of prepared object data
      *
      * @psalm-return list<non-empty-array<string, false|int|mixed|null|string>>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Bulk preparation requires handling multiple data type scenarios
      */
     private function prepareObjectsForDynamicTable(array $objects, Register $register, Schema $schema): array
     {

@@ -45,6 +45,8 @@ use Psr\Container\ContainerInterface;
  *
  * @category Handler
  * @package  OCA\OpenRegister\Service\Objects
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Permission evaluation requires per-action and per-role branching
  */
 class PermissionHandler
 {
@@ -131,12 +133,15 @@ class PermissionHandler
             // OrganisationService not available, conditional matching will be limited.
         }
 
+        $authorization = $schema->getAuthorization();
+
         // Get current user if not provided.
         if ($userId === null) {
             $user = $this->userSession->getUser();
             if ($user === null) {
                 // For unauthenticated requests, check if 'public' group has permission.
-                return $schema->hasPermission(
+                return $this->hasGroupPermission(
+                    authorization: $authorization,
                     groupId: 'public',
                     action: $action,
                     userId: null,
@@ -155,7 +160,8 @@ class PermissionHandler
         $userObj = $this->userManager->get($userId);
         if ($userObj === null) {
             // User doesn't exist, treat as public.
-            return $schema->hasPermission(
+            return $this->hasGroupPermission(
+                authorization: $authorization,
                 groupId: 'public',
                 action: $action,
                 userId: null,
@@ -174,20 +180,13 @@ class PermissionHandler
             return true;
         }
 
-        // Object owner permission check is now handled in schema->hasPermission() call below.
         // Check schema permissions for each user group.
         foreach ($userGroups as $groupId) {
-            $isAdmin    = in_array('admin', $userGroups) === true;
-            $adminGroup = null;
-            if ($isAdmin === true) {
-                $adminGroup = 'admin';
-            }
-
-            if ($schema->hasPermission(
+            if ($this->hasGroupPermission(
+                    authorization: $authorization,
                     groupId: $groupId,
                     action: $action,
                     userId: $userId,
-                    userGroup: $adminGroup,
                     objectOwner: $objectOwner,
                     objectData: $objectData,
                     objectOrganisation: $objectOrganisation,
@@ -199,12 +198,11 @@ class PermissionHandler
         }//end foreach
 
         // Logged-in users should also have at least the same rights as 'public' users.
-        // If 'public' is in the authorization, logged-in users should have access too.
-        if ($schema->hasPermission(
+        if ($this->hasGroupPermission(
+                authorization: $authorization,
                 groupId: 'public',
                 action: $action,
                 userId: $userId,
-                userGroup: null,
                 objectOwner: $objectOwner,
                 objectData: $objectData,
                 objectOrganisation: $objectOrganisation,
@@ -455,4 +453,172 @@ class PermissionHandler
             return null;
         }//end try
     }//end getActiveOrganisationForContext()
+
+    /**
+     * Check if a specific group has permission for a CRUD action on a schema
+     *
+     * Rules:
+     * - Admin group always has all permissions
+     * - Object owner always has all permissions for their specific objects
+     * - If no authorization is set, everyone has permission
+     * - If authorization is set but action is not specified, everyone has permission
+     *
+     * @param array|null  $authorization      The schema's authorization array
+     * @param string      $groupId            The group ID to check
+     * @param string      $action             The CRUD action (create, read, update, delete)
+     * @param string|null $userId             Optional user ID for owner check
+     * @param string|null $userGroup          Optional user group for admin check
+     * @param string|null $objectOwner        Optional object owner for ownership check
+     * @param array|null  $objectData         Optional object data for conditional matching
+     * @param string|null $objectOrganisation Optional object organisation
+     * @param string|null $activeOrganisation Optional active organisation UUID
+     *
+     * @return bool True if the group has permission
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     */
+    public function hasGroupPermission(
+        ?array $authorization,
+        string $groupId,
+        string $action,
+        ?string $userId=null,
+        ?string $userGroup=null,
+        ?string $objectOwner=null,
+        ?array $objectData=null,
+        ?string $objectOrganisation=null,
+        ?string $activeOrganisation=null
+    ): bool {
+        // Admin group always has all permissions.
+        if ($groupId === 'admin' || $userGroup === 'admin') {
+            return true;
+        }
+
+        // Object owner always has all permissions for their specific objects.
+        if ($userId !== null && $objectOwner !== null && $objectOwner === $userId) {
+            return true;
+        }
+
+        // If no authorization is set, everyone has all permissions.
+        if (empty($authorization) === true) {
+            return true;
+        }
+
+        // If action is not specified in authorization, everyone has permission.
+        if (isset($authorization[$action]) === false) {
+            return true;
+        }
+
+        // Check each authorization entry for this action.
+        foreach ($authorization[$action] as $entry) {
+            // Simple string entry: direct group match.
+            if (is_string($entry) === true) {
+                if ($entry === $groupId) {
+                    return true;
+                }
+
+                continue;
+            }
+
+            // Complex entry with match conditions.
+            if (is_array($entry) === true && isset($entry['group']) === true && $entry['group'] === $groupId) {
+                // If no match conditions, the group match alone is sufficient.
+                if (isset($entry['match']) === false || empty($entry['match']) === true) {
+                    return true;
+                }
+
+                // Evaluate all match conditions (all must pass).
+                if ($this->evaluateMatchConditions(
+                    conditions: $entry['match'],
+                    objectData: $objectData,
+                    objectOrganisation: $objectOrganisation,
+                    activeOrganisation: $activeOrganisation
+                ) === true
+                ) {
+                    return true;
+                }
+            }
+        }//end foreach
+
+        return false;
+    }//end hasGroupPermission()
+
+    /**
+     * Evaluate match conditions from a conditional authorization entry
+     *
+     * Supports variable substitution:
+     * - $organisation -> replaced with the user's active organisation UUID
+     *
+     * Supports special field prefixes:
+     * - _organisation -> matches against the object's @self.organisation
+     * - Other fields -> matched against the object data
+     *
+     * @param array       $conditions         Key-value pairs of field => expected value
+     * @param array|null  $objectData         The object's data fields
+     * @param string|null $objectOrganisation The object's @self.organisation
+     * @param string|null $activeOrganisation The user's active organisation UUID
+     *
+     * @return bool True if all conditions are satisfied
+     */
+    public function evaluateMatchConditions(
+        array $conditions,
+        ?array $objectData,
+        ?string $objectOrganisation,
+        ?string $activeOrganisation
+    ): bool {
+        foreach ($conditions as $field => $expectedValue) {
+            // Resolve $organisation variable in the expected value.
+            if ($expectedValue === '$organisation') {
+                if ($activeOrganisation === null) {
+                    return false;
+                }
+
+                $expectedValue = $activeOrganisation;
+            }
+
+            // Get the actual value to compare against.
+            if ($field === '_organisation') {
+                // Special field: match against @self.organisation.
+                $actualValue = $objectOrganisation;
+            } else {
+                // Regular field: match against object data.
+                $actualValue = $objectData[$field] ?? null;
+            }
+
+            // If the actual value is an array with an 'id' key (resolved relation), use the id.
+            if (is_array($actualValue) === true && isset($actualValue['id']) === true) {
+                $actualValue = $actualValue['id'];
+            }
+
+            // Compare values.
+            if ($actualValue !== $expectedValue) {
+                return false;
+            }
+        }//end foreach
+
+        return true;
+    }//end evaluateMatchConditions()
+
+    /**
+     * Get all groups that have permission for a specific action
+     *
+     * @param array|null $authorization The schema's authorization array
+     * @param string     $action        The CRUD action to check
+     *
+     * @return array Array of group IDs that have permission, or empty array if all groups have permission
+     */
+    public function getAuthorizedGroups(?array $authorization, string $action): array
+    {
+        // If no authorization is set, return empty array (meaning all groups).
+        if (empty($authorization) === true) {
+            return [];
+        }
+
+        // If action is not specified, return empty array (meaning all groups).
+        if (isset($authorization[$action]) === false) {
+            return [];
+        }
+
+        // Return the specific groups that have permission.
+        return $authorization[$action] ?? [];
+    }//end getAuthorizedGroups()
 }//end class

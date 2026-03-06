@@ -1541,6 +1541,8 @@ class CacheHandler
      * @param array $uuids Array of UUIDs to look up.
      *
      * @return array<string, string> Map of UUID to name.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Batch loading across multiple table types requires branching
      */
     private function batchLoadNamesFromMagicTables(array $uuids): array
     {

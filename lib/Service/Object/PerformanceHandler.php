@@ -39,6 +39,8 @@ use Psr\Log\LoggerInterface;
  *
  * @category Handler
  * @package  OCA\OpenRegister\Service\Objects
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Performance monitoring methods require per-metric branching
  */
 class PerformanceHandler
 {
@@ -88,29 +90,7 @@ class PerformanceHandler
 
         // **OPTIMIZATION 2**: Limit destructive extend operations.
         if (empty($query['_extend']) === false) {
-            // **BUGFIX**: Handle _extend as both string and array for count.
-            $originalExtendCount = count(array_filter(array_map('trim', explode(',', $query['_extend']))));
-            if (is_array($query['_extend']) === true) {
-                $originalExtendCount = count($query['_extend']);
-            }
-
-            $query['_extend'] = $this->optimizeExtendQueries(extend: $query['_extend']);
-
-            // OptimizeExtendQueries always returns an array, so no need to check.
-            $newExtendCount = count($query['_extend']);
-
-            if ($newExtendCount < $originalExtendCount) {
-                $this->logger->info(
-                    message: '[PerformanceHandler] ⚡ EXTEND OPTIMIZATION: Reduced extend complexity',
-                    context: [
-                        'file'            => __FILE__,
-                        'line'            => __LINE__,
-                        'original'        => $originalExtendCount,
-                        'optimized'       => $newExtendCount,
-                        'estimatedSaving' => ($originalExtendCount - $newExtendCount) * (100).'ms',
-                    ]
-                );
-            }
+            $this->optimizeExtendInQuery(query: $query);
         }//end if
 
         // **OPTIMIZATION 3**: Preload critical entities for cache warmup.
@@ -196,6 +176,42 @@ class PerformanceHandler
         // - Remove duplicate extends.
         return $extend;
     }//end optimizeExtendQueries()
+
+    /**
+     * Optimize extend operations within a query.
+     *
+     * Counts the original extend fields, applies optimization, and logs any reduction.
+     *
+     * @param array<string, mixed> $query The search query (passed by reference).
+     *
+     * @return void
+     */
+    private function optimizeExtendInQuery(array &$query): void
+    {
+        // **BUGFIX**: Handle _extend as both string and array for count.
+        $originalExtendCount = count(array_filter(array_map('trim', explode(',', $query['_extend']))));
+        if (is_array($query['_extend']) === true) {
+            $originalExtendCount = count($query['_extend']);
+        }
+
+        $query['_extend'] = $this->optimizeExtendQueries(extend: $query['_extend']);
+
+        // OptimizeExtendQueries always returns an array, so no need to check.
+        $newExtendCount = count($query['_extend']);
+
+        if ($newExtendCount < $originalExtendCount) {
+            $this->logger->info(
+                message: '[PerformanceHandler] ⚡ EXTEND OPTIMIZATION: Reduced extend complexity',
+                context: [
+                    'file'            => __FILE__,
+                    'line'            => __LINE__,
+                    'original'        => $originalExtendCount,
+                    'optimized'       => $newExtendCount,
+                    'estimatedSaving' => ($originalExtendCount - $newExtendCount) * (100).'ms',
+                ]
+            );
+        }
+    }//end optimizeExtendInQuery()
 
     /**
      * Preload critical entities for cache warmup
