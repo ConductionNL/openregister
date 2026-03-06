@@ -58,14 +58,22 @@ jobs:
 
       - name: "Run ${{ matrix.tool }}"
         run: ${{ matrix.command }}
-        continue-on-error: true
 
   # ──────────────────────────────────────────────
-  # Stage 1: Frontend quality (parallel with PHP)
+  # Stage 1: Frontend — each tool as a separate box
   # ──────────────────────────────────────────────
   frontend-quality:
     runs-on: ubuntu-latest
-    name: Frontend Quality
+    name: "${{ matrix.tool }}"
+
+    strategy:
+      matrix:
+        include:
+          - tool: ESLint
+            command: npm run lint
+          - tool: Stylelint
+            command: npm run stylelint
+      fail-fast: false
 
     steps:
       - name: Checkout
@@ -80,13 +88,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: ESLint
-        run: npm run lint
-        continue-on-error: true
-
-      - name: Stylelint
-        run: npm run stylelint
-        continue-on-error: true
+      - name: "Run ${{ matrix.tool }}"
+        run: ${{ matrix.command }}
 
   # ──────────────────────────────────────────────
   # Stage 2: PHPUnit tests (needs NC server)
@@ -150,10 +153,9 @@ jobs:
             --testsuite "Unit Tests" \
             --colors=always \
             --coverage-clover=coverage/clover.xml
-        continue-on-error: true
 
       - name: Check coverage threshold
-        if: matrix.php-version == '8.2'
+        if: always() && matrix.php-version == '8.2'
         run: |
           cd server/apps/openregister
           if [ -f coverage/clover.xml ]; then
@@ -258,32 +260,51 @@ jobs:
             --env-var "base_url=http://localhost:8080" \
             --env-var "admin_user=admin" \
             --env-var "admin_password=admin" \
-            --reporters cli \
-            || echo "Some integration tests failed"
-        continue-on-error: true
+            --reporters cli
 
   # ──────────────────────────────────────────────
-  # Summary: Report results on PR
+  # Summary: Report results
   # ──────────────────────────────────────────────
   summary:
     runs-on: ubuntu-latest
     name: Quality Summary
     needs: [linting, frontend-quality, php-tests, integration-tests]
-    if: always() && github.event_name == 'pull_request'
+    if: always()
 
     steps:
+      - name: Write job summary
+        run: |
+          echo "## Quality Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Result |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          for check in "Linting:${{ needs.linting.result }}" \
+                       "Frontend:${{ needs.frontend-quality.result }}" \
+                       "PHPUnit:${{ needs.php-tests.result }}" \
+                       "Newman:${{ needs.integration-tests.result }}"; do
+            name="${check%%:*}"
+            result="${check##*:}"
+            case "$result" in
+              success) icon="✅" ;;
+              skipped) icon="⏭️" ;;
+              *) icon="❌" ;;
+            esac
+            echo "| $name | $icon $result |" >> $GITHUB_STEP_SUMMARY
+          done
+
       - name: Comment PR with results
+        if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
         with:
           script: |
             const jobs = {
               'Linting': '${{ needs.linting.result }}',
-              'Frontend Quality': '${{ needs.frontend-quality.result }}',
+              'Frontend': '${{ needs.frontend-quality.result }}',
               'PHPUnit Tests': '${{ needs.php-tests.result }}',
               'Integration Tests': '${{ needs.integration-tests.result }}'
             };
 
-            const icon = (s) => s === 'success' ? '✅' : s === 'skipped' ? '⏭️' : '⚠️';
+            const icon = (s) => s === 'success' ? '✅' : s === 'skipped' ? '⏭️' : '❌';
 
             let body = '## Quality Report\n\n';
             body += '| Check | Result |\n|-------|--------|\n';
