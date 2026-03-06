@@ -57,9 +57,9 @@ use DateTime;
  * but optimized for schema-specific table structures.
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
- * @SuppressWarnings(PHPMD.ExcessiveClassLength) Search handler requires many specialized query building methods
- * @SuppressWarnings(PHPMD.TooManyMethods) Search requires per-operator and per-type conversion methods
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Search handler bridges schema, register, and query builder layers
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Search handler requires many specialized query building methods
+ * @SuppressWarnings(PHPMD.TooManyMethods)           Search requires per-operator and per-type conversion methods
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Search handler bridges schema, register, and query builder layers
  */
 class MagicSearchHandler
 {
@@ -220,7 +220,9 @@ class MagicSearchHandler
             if ($fuzzyEnabled === true && $searchTerm !== null) {
                 $searchTermParam = $queryBuilder->createNamedParameter($searchTerm);
                 $queryBuilder->addSelect(
-                    $queryBuilder->createFunction("ROUND(similarity(t._name::text, {$searchTermParam}) * 100)::integer AS _relevance")
+                    $queryBuilder->createFunction(
+                        'ROUND(similarity(t._name::text, '."{$searchTermParam}) * 100)::integer AS _relevance"
+                    )
                 );
             }
 

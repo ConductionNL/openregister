@@ -71,7 +71,8 @@ class WorkflowResult implements JsonSerializable
     /**
      * Constructor for WorkflowResult.
      *
-     * @param string                                                      $status   One of: approved, rejected, modified, error
+     * @param string                                                      $status   One of: approved, rejected,
+     *                                                                              modified, error
      * @param array<string,mixed>|null                                    $data     Modified object data
      * @param array<int,array{field?:string,message:string,code?:string}> $errors   Validation errors
      * @param array<string,mixed>                                         $metadata Engine-specific metadata
@@ -86,7 +87,7 @@ class WorkflowResult implements JsonSerializable
     ) {
         if (in_array(needle: $status, haystack: self::VALID_STATUSES, strict: true) === false) {
             throw new InvalidArgumentException(
-                message: "Invalid workflow result status '$status'. Must be one of: ".implode(separator: ', ', array: self::VALID_STATUSES)
+                message: "Invalid workflow result status '$status'. ".'Must be one of: '.implode(separator: ', ', array: self::VALID_STATUSES)
             );
         }
 

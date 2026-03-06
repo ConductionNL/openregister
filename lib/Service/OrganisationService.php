@@ -699,9 +699,9 @@ class OrganisationService
      *
      * @throws Exception If user not logged in or organisation creation fails
      *
-     * @SuppressWarnings(PHPMD.StaticAccess)          Uuid::isValid is standard Symfony UID pattern
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Boolean flag controls whether to add current user to organisation
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Organisation creation requires multiple validation steps
+     * @SuppressWarnings(PHPMD.StaticAccess)         Uuid::isValid is standard Symfony UID pattern
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  Boolean flag controls whether to add current user to organisation
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Organisation creation requires multiple validation steps
      */
     public function createOrganisation(
         string $name,

@@ -60,7 +60,7 @@ use Psr\Log\LoggerInterface;
  * @package OCA\OpenRegister\Db
  *
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
- * @SuppressWarnings(PHPMD.TooManyMethods) Unified mapper bridges multiple query strategies
+ * @SuppressWarnings(PHPMD.TooManyMethods)           Unified mapper bridges multiple query strategies
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
@@ -169,7 +169,12 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             } catch (Exception $e) {
                 $this->logger->warning(
                     message: '[UnifiedObjectMapper] Failed to resolve register from entity',
-                    context: ['file' => __FILE__, 'line' => __LINE__, 'registerId' => $entity->getRegister(), 'error' => $e->getMessage()]
+                    context: [
+                        'file'       => __FILE__,
+                        'line'       => __LINE__,
+                        'registerId' => $entity->getRegister(),
+                        'error'      => $e->getMessage(),
+                    ]
                 );
             }
         }
@@ -182,7 +187,12 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             } catch (Exception $e) {
                 $this->logger->warning(
                     message: '[UnifiedObjectMapper] Failed to resolve schema from entity',
-                    context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $entity->getSchema(), 'error' => $e->getMessage()]
+                    context: [
+                        'file'     => __FILE__,
+                        'line'     => __LINE__,
+                        'schemaId' => $entity->getSchema(),
+                        'error'    => $e->getMessage(),
+                    ]
                 );
             }
         }
@@ -499,8 +509,12 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      *
      * @throws Exception If update fails.
      */
-    public function update(Entity $entity, ?Register $register=null, ?Schema $schema=null, ?ObjectEntity $oldEntity=null): Entity
-    {
+    public function update(
+        Entity $entity,
+        ?Register $register=null,
+        ?Schema $schema=null,
+        ?ObjectEntity $oldEntity=null
+    ): Entity {
         if ($entity instanceof ObjectEntity === false) {
             throw new Exception('Entity must be an instance of ObjectEntity');
         }
@@ -548,7 +562,12 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                 message: '[UnifiedObjectMapper] Routing update() to MagicMapper',
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
-            $updatedEntity = $this->magicMapper->updateObjectEntity(entity: $entity, register: $register, schema: $schema, oldEntity: $oldEntity);
+            $updatedEntity = $this->magicMapper->updateObjectEntity(
+                entity: $entity,
+                register: $register,
+                schema: $schema,
+                oldEntity: $oldEntity
+            );
         } else {
             $this->logger->debug(
                 message: '[UnifiedObjectMapper] Using blob storage (via ObjectEntityMapper parent::update)',
@@ -709,14 +728,24 @@ class UnifiedObjectMapper extends AbstractObjectMapper
 
             $this->logger->info(
                 message: '[UnifiedObjectMapper] Schema grouping result',
-                context: ['file' => __FILE__, 'line' => __LINE__, 'groupCount' => count($schemaGroups), 'groups' => array_keys($schemaGroups)]
+                context: [
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
+                    'groupCount' => count($schemaGroups),
+                    'groups'     => array_keys($schemaGroups),
+                ]
             );
 
             // If we have multiple schema groups, process each separately.
             if (count($schemaGroups) > 1) {
                 $this->logger->info(
                     message: '[UnifiedObjectMapper] Mixed schema batch detected, processing by schema groups',
-                    context: ['file' => __FILE__, 'line' => __LINE__, 'groupCount' => count($schemaGroups), 'groups' => array_keys($schemaGroups)]
+                    context: [
+                        'file'       => __FILE__,
+                        'line'       => __LINE__,
+                        'groupCount' => count($schemaGroups),
+                        'groups'     => array_keys($schemaGroups),
+                    ]
                 );
 
                 $allResults = [];
@@ -1021,7 +1050,10 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         // If _schemas is provided (array of schema IDs), use multi-schema faceting.
         // Supports both single-register and multi-register.
         if ($schemaIds !== null && is_array($schemaIds) === true
-            && ($registerId !== null || ($registerIds !== null && is_array($registerIds) === true && count($registerIds) > 0))
+            && ($registerId !== null
+            || ($registerIds !== null
+            && is_array($registerIds) === true
+            && count($registerIds) > 0))
         ) {
             if ($registerIds !== null && is_array($registerIds) === true && count($registerIds) > 0) {
                 $allRegisterIds = array_map('intval', $registerIds);
@@ -1114,8 +1146,10 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                     if (is_array($registerSchemas) === true) {
                         $schemaIdStr = (string) $schemaId;
                         $schemaIdInt = (int) $schemaId;
-                        $inValues    = in_array($schemaIdInt, $registerSchemas, false) || in_array($schemaIdStr, $registerSchemas, false);
-                        $inKeys      = array_key_exists($schemaIdInt, $registerSchemas) || array_key_exists($schemaIdStr, $registerSchemas);
+                        $inValues    = in_array($schemaIdInt, $registerSchemas, false)
+                            || in_array($schemaIdStr, $registerSchemas, false);
+                        $inKeys      = array_key_exists($schemaIdInt, $registerSchemas)
+                            || array_key_exists($schemaIdStr, $registerSchemas);
                         if ($inValues === true || $inKeys === true) {
                             $matchedRegister = $register;
                             break;
@@ -1244,14 +1278,16 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                         // Check if schema ID is in the values (sequential) or keys (associative).
                         $schemaIdStr = (string) $schemaId;
                         $schemaIdInt = (int) $schemaId;
-                        $inValues    = in_array($schemaIdInt, $registerSchemas, false) || in_array($schemaIdStr, $registerSchemas, false);
-                        $inKeys      = array_key_exists($schemaIdInt, $registerSchemas) || array_key_exists($schemaIdStr, $registerSchemas);
+                        $inValues    = in_array($schemaIdInt, $registerSchemas, false)
+                            || in_array($schemaIdStr, $registerSchemas, false);
+                        $inKeys      = array_key_exists($schemaIdInt, $registerSchemas)
+                            || array_key_exists($schemaIdStr, $registerSchemas);
                         if ($inValues === true || $inKeys === true) {
                             $matchedRegister = $register;
                             break;
                         }
                     }
-                }
+                }//end foreach
 
                 // Fallback: use first register if no match found (for backward compatibility).
                 if ($matchedRegister === null) {
@@ -1538,7 +1574,10 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             && $schemaIds !== null
             && is_array($schemaIds) === true
             && count($schemaIds) > 0
-            && ($registerId !== null || ($registerIds !== null && is_array($registerIds) === true && count($registerIds) > 0));
+            && ($registerId !== null
+                || ($registerIds !== null
+                    && is_array($registerIds) === true
+                    && count($registerIds) > 0));
         if ($isMultiSchemaSearch === true) {
             // Build array of register IDs: use _registers if available, otherwise wrap single _register.
             if ($registerIds !== null && is_array($registerIds) === true && count($registerIds) > 0) {
@@ -1931,6 +1970,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      *
      * @psalm-suppress UnusedParam $multitenancy reserved for future multitenancy filtering implementation
      */
+
     /**
      * Build a global search result with register/schema caches, RBAC filtering, and pagination.
      *

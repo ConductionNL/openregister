@@ -49,7 +49,7 @@ class ObjectUpdatingEvent extends Event implements StoppableEventInterface
     /**
      * Whether event propagation has been stopped
      *
-     * @var bool
+     * @var boolean
      */
     private bool $propagationStopped = false;
 

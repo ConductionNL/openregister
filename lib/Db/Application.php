@@ -73,8 +73,8 @@ use Symfony\Component\Uid\Uuid;
  * @psalm-suppress PossiblyUnusedMethod
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  *
- * @SuppressWarnings(PHPMD.TooManyFields) Domain entity requires many fields for complete application configuration
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Nextcloud app bootstrap requires service registration complexity
+ * @SuppressWarnings(PHPMD.TooManyFields)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class Application extends Entity implements JsonSerializable
 {

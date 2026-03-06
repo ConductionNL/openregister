@@ -216,7 +216,8 @@ class ObjectService
      * @param SchemaMapper                   $schemaMapper        Mapper for schema operations.
      * @param ViewMapper                     $viewMapper          Mapper for view operations.
      * @param ObjectEntityMapper             $objectEntityMapper  Mapper for object entity operations.
-     * @param UnifiedObjectMapper            $unifiedObjectMapper Unified mapper for object operations (routes to magic tables).
+     * @param UnifiedObjectMapper            $unifiedObjectMapper Unified mapper for object
+     *                                                            operations (routes to magic tables).
      * @param FileService                    $fileService         Service for file operations.
      * @param IUserSession                   $userSession         User session for getting current user.
      * @param SearchTrailService             $searchTrailService  Service for search trail operations.
@@ -1868,7 +1869,10 @@ class ObjectService
 
         // Don't auto-set _schema when _schemas is provided (multi-schema search).
         // Use array_key_exists to allow explicit null values to disable auto-setting.
-        if ($this->currentSchema !== null && array_key_exists('_schema', $query) === false && array_key_exists('_schemas', $query) === false) {
+        if ($this->currentSchema !== null
+            && array_key_exists('_schema', $query) === false
+            && array_key_exists('_schemas', $query) === false
+        ) {
             $query['_schema'] = $this->currentSchema->getId();
         }
 
@@ -1946,7 +1950,7 @@ class ObjectService
                         $result['@self']['names_error'] = $e->getMessage();
                     }
                 }
-            }
+            }//end if
 
             return $result;
         }//end if
@@ -2012,7 +2016,7 @@ class ObjectService
                     $result['@self']['names_error'] = $e->getMessage();
                 }
             }
-        }
+        }//end if
 
         return $result;
     }//end searchObjectsPaginated()
@@ -2205,7 +2209,7 @@ class ObjectService
      * and object data without triggering full serialization.
      *
      * @param \OCA\OpenRegister\Db\ObjectEntity $entity The object entity to extract UUIDs from.
-     * @param array                              $uuids  Reference to array collecting UUIDs.
+     * @param array                             $uuids  Reference to array collecting UUIDs.
      *
      * @return void
      */
@@ -2243,7 +2247,7 @@ class ObjectService
      * metadata fields, and object data properties.
      *
      * @param array $resultData The serialized result array.
-     * @param array $uuids     Reference to array collecting UUIDs.
+     * @param array $uuids      Reference to array collecting UUIDs.
      *
      * @return void
      */
@@ -2287,7 +2291,7 @@ class ObjectService
      * This method handles both formats and appends found UUIDs to the collection.
      *
      * @param array $relations The relations array to scan for UUIDs.
-     * @param array $uuids    Reference to array collecting UUIDs.
+     * @param array $uuids     Reference to array collecting UUIDs.
      *
      * @return void
      */

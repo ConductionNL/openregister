@@ -372,13 +372,13 @@ class ObjectEntityMapper extends QBMapper
     public function insert(Entity $entity, ?Register $register=null, ?Schema $schema=null): Entity
     {
         // Dispatch creating event.
-        $creatingEvent = new ObjectCreatingEvent($entity);
+        $creatingEvent = new ObjectCreatingEvent(object: $entity);
         $this->eventDispatcher->dispatchTyped($creatingEvent);
 
         // Check if a hook stopped propagation (reject mode).
         if ($creatingEvent->isPropagationStopped() === true) {
             throw new HookStoppedException(
-                $creatingEvent->getErrors()['message'] ?? 'Object creation rejected by hook'
+                message: $creatingEvent->getErrors()['message'] ?? 'Object creation rejected by hook'
             );
         }
 
@@ -446,13 +446,13 @@ class ObjectEntityMapper extends QBMapper
     public function insertDirectBlobStorage(\OCP\AppFramework\Db\Entity $entity): ObjectEntity
     {
         // Dispatch creating event (pre-save hook).
-        $creatingEvent = new ObjectCreatingEvent($entity);
+        $creatingEvent = new ObjectCreatingEvent(object: $entity);
         $this->eventDispatcher->dispatchTyped($creatingEvent);
 
         // Check if a hook stopped propagation (reject mode).
         if ($creatingEvent->isPropagationStopped() === true) {
             throw new HookStoppedException(
-                $creatingEvent->getErrors()['message'] ?? 'Object creation rejected by hook'
+                message: $creatingEvent->getErrors()['message'] ?? 'Object creation rejected by hook'
             );
         }
 
@@ -602,13 +602,13 @@ class ObjectEntityMapper extends QBMapper
             );
         }
 
-        $updatingEvent = new ObjectUpdatingEvent($entity, $oldObject);
+        $updatingEvent = new ObjectUpdatingEvent(newObject: $entity, oldObject: $oldObject);
         $this->eventDispatcher->dispatchTyped($updatingEvent);
 
         // Check if a hook stopped propagation (reject mode).
         if ($updatingEvent->isPropagationStopped() === true) {
             throw new HookStoppedException(
-                $updatingEvent->getErrors()['message'] ?? 'Object update rejected by hook'
+                message: $updatingEvent->getErrors()['message'] ?? 'Object update rejected by hook'
             );
         }
 
@@ -682,21 +682,23 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return ObjectEntity Updated entity.
      */
-    public function updateDirectBlobStorage(\OCP\AppFramework\Db\Entity $entity, \OCP\AppFramework\Db\Entity $oldEntity=null): ObjectEntity
-    {
+    public function updateDirectBlobStorage(
+        \OCP\AppFramework\Db\Entity $entity,
+        \OCP\AppFramework\Db\Entity $oldEntity=null
+    ): ObjectEntity {
         // Use provided oldEntity or fallback to current entity.
         if ($oldEntity === null) {
             $oldEntity = $entity;
         }
 
         // Dispatch updating event (pre-save hook).
-        $updatingEvent = new ObjectUpdatingEvent($entity, $oldEntity);
+        $updatingEvent = new ObjectUpdatingEvent(newObject: $entity, oldObject: $oldEntity);
         $this->eventDispatcher->dispatchTyped($updatingEvent);
 
         // Check if a hook stopped propagation (reject mode).
         if ($updatingEvent->isPropagationStopped() === true) {
             throw new HookStoppedException(
-                $updatingEvent->getErrors()['message'] ?? 'Object update rejected by hook'
+                message: $updatingEvent->getErrors()['message'] ?? 'Object update rejected by hook'
             );
         }
 
@@ -747,13 +749,13 @@ class ObjectEntityMapper extends QBMapper
     public function delete(\OCP\AppFramework\Db\Entity $entity): \OCP\AppFramework\Db\Entity
     {
         // Dispatch deleting event.
-        $deletingEvent = new ObjectDeletingEvent($entity);
+        $deletingEvent = new ObjectDeletingEvent(object: $entity);
         $this->eventDispatcher->dispatchTyped($deletingEvent);
 
         // Check if a hook stopped propagation (reject mode).
         if ($deletingEvent->isPropagationStopped() === true) {
             throw new HookStoppedException(
-                $deletingEvent->getErrors()['message'] ?? 'Object deletion rejected by hook'
+                message: $deletingEvent->getErrors()['message'] ?? 'Object deletion rejected by hook'
             );
         }
 
@@ -2726,7 +2728,12 @@ class ObjectEntityMapper extends QBMapper
 
         if ($partialMatch === false) {
             $qb->andWhere(
-                $qb->expr()->like($objectColumn, $qb->createNamedParameter('%"'.$this->db->escapeLikeParameter($search).'"%'))
+                $qb->expr()->like(
+                    $objectColumn,
+                    $qb->createNamedParameter(
+                        '%"'.$this->db->escapeLikeParameter($search).'"%'
+                    )
+                )
             );
         }
 

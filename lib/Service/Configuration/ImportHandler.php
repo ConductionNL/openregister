@@ -75,7 +75,7 @@ class ImportHandler
      *
      * @var boolean
      *
-     * @SuppressWarnings(PHPMD.UnusedPrivateField) Reserved for future dependency check feature
+     * @SuppressWarnings(PHPMD.UnusedPrivateField)
      */
     private static bool $depCheckActive = false;
 
@@ -189,7 +189,7 @@ class ImportHandler
      *
      * @var mixed The OpenConnector configuration service or null.
      *
-     * @SuppressWarnings(PHPMD.UnusedPrivateField) Reserved for future OpenConnector integration
+     * @SuppressWarnings(PHPMD.UnusedPrivateField)
      */
     private mixed $connectorConfigSvc = null;
 
@@ -1165,7 +1165,7 @@ class ImportHandler
             // If we have a stored version, compare it with the current version.
             if ($storedVersion !== '' && version_compare($version, $storedVersion, '<=') === true) {
                 $this->logger->info(
-                    message: "[ImportHandler] Skipping import for app {$appId} - version {$version} is not newer than {$storedVersion}",
+                    message: "[ImportHandler] Skipping {$appId}: v{$version} <= {$storedVersion}",
                     context: ['file' => __FILE__, 'line' => __LINE__]
                 );
 
@@ -1182,7 +1182,7 @@ class ImportHandler
                     'rules'            => [],
                     'objects'          => [],
                 ];
-            }
+            }//end if
         }//end if
 
         // Log force import if enabled.
@@ -1348,7 +1348,12 @@ class ImportHandler
 
                     $this->logger->debug(
                         message: '[ImportHandler] Cross-references resolved for schema (Pass 2)',
-                        context: ['file' => __FILE__, 'line' => __LINE__, 'schemaSlug' => $schemaSlug, 'schemaId' => $schema->getId()]
+                        context: [
+                            'file'       => __FILE__,
+                            'line'       => __LINE__,
+                            'schemaSlug' => $schemaSlug,
+                            'schemaId'   => $schema->getId(),
+                        ]
                     );
                 } catch (Exception $e) {
                     $this->logger->error(
@@ -2552,15 +2557,25 @@ class ImportHandler
                     );
                     $this->logger->info(
                         message: "[ImportHandler] Found schema '{$schemaSlug}' in database for seedData",
-                        context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $schema->getId(), 'schemaApp' => $schema->getApplication()]
+                        context: [
+                            'file'      => __FILE__,
+                            'line'      => __LINE__,
+                            'schemaId'  => $schema->getId(),
+                            'schemaApp' => $schema->getApplication(),
+                        ]
                     );
                 } catch (\OCP\AppFramework\Db\DoesNotExistException | ValidationException $e) {
                     $this->logger->warning(
                         message: "[ImportHandler] Skipping seed data for schema '{$schemaSlug}' - schema not found",
-                        context: ['file' => __FILE__, 'line' => __LINE__, 'appId' => $appId, 'availableSchemasInMap' => array_keys($this->schemasMap)]
+                        context: [
+                            'file'                  => __FILE__,
+                            'line'                  => __LINE__,
+                            'appId'                 => $appId,
+                            'availableSchemasInMap' => array_keys($this->schemasMap),
+                        ]
                     );
                     continue;
-                }
+                }//end try
             }//end if
 
             $this->logger->info(
@@ -2734,8 +2749,12 @@ class ImportHandler
                 $objectSlug = $objectData['slug'] ?? $objectData['title'] ?? null;
                 if ($objectSlug === null) {
                     $this->logger->error(
-                        message: "[ImportHandler] Seed object for schema '{$schemaSlug}' is missing both 'slug' and 'title' properties - skipping",
-                        context: ['file' => __FILE__, 'line' => __LINE__, 'objectData' => $objectData]
+                        message: "[ImportHandler] Seed for '{$schemaSlug}' missing slug and title",
+                        context: [
+                            'file'       => __FILE__,
+                            'line'       => __LINE__,
+                            'objectData' => $objectData,
+                        ]
                     );
                     continue;
                 }
@@ -2778,7 +2797,12 @@ class ImportHandler
                         $warnMsg .= " '{$lookupIdentifier}' - skipping to avoid duplication";
                         $this->logger->warning(
                             message: $warnMsg,
-                            context: ['file' => __FILE__, 'line' => __LINE__, 'schema' => $schemaSlug, 'identifier' => $lookupIdentifier]
+                            context: [
+                                'file'       => __FILE__,
+                                'line'       => __LINE__,
+                                'schema'     => $schemaSlug,
+                                'identifier' => $lookupIdentifier,
+                            ]
                         );
                         continue;
                     }//end try
@@ -2848,8 +2872,13 @@ class ImportHandler
                     );
                 } catch (Exception $e) {
                     $this->logger->error(
-                        message: "[ImportHandler] Failed to import seed object for schema '{$schemaSlug}': ".$e->getMessage(),
-                        context: ['file' => __FILE__, 'line' => __LINE__, 'objectData' => $objectData, 'error' => $e->getMessage()]
+                        message: "[ImportHandler] Failed to import seed for '{$schemaSlug}': ".$e->getMessage(),
+                        context: [
+                            'file'       => __FILE__,
+                            'line'       => __LINE__,
+                            'objectData' => $objectData,
+                            'error'      => $e->getMessage(),
+                        ]
                     );
                 }//end try
             }//end foreach

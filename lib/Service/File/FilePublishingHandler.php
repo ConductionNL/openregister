@@ -159,7 +159,7 @@ class FilePublishingHandler
 
             if ($objectFolder === null) {
                 $this->logger->error(
-                    message: "[FilePublishingHandler] publishFile: Could not get object folder for object: ".$object->getId(),
+                    message: '[FilePublishingHandler] publishFile: Could not get object folder for object: '.$object->getId(),
                     context: ['file' => __FILE__, 'line' => __LINE__]
                 );
                 throw new Exception('Object folder not found.');
@@ -204,13 +204,15 @@ class FilePublishingHandler
                 try {
                     $attemptMsg = "[FilePublishingHandler] publishFile: Attempting to get file '$filePath' (full path) from object folder";
                     $this->logger->info(message: $attemptMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
-                    $fileNode    = $objectFolder->get($filePath);
-                    $successMsg  = "[FilePublishingHandler] publishFile: Successfully found file using full path: ";
-                    $successMsg .= $fileNode->getName()." at ".$fileNode->getPath();
+                    $fileNode   = $objectFolder->get($filePath);
+                    $nodeName   = $fileNode->getName();
+                    $nodePath   = $fileNode->getPath();
+                    $successMsg = "[FilePublishingHandler] publishFile: Successfully found file using full path: $nodeName at $nodePath";
                     $this->logger->info(message: $successMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
                 } catch (NotFoundException $e2) {
-                    $errMsg  = "[FilePublishingHandler] publishFile: File '$fileName' and '$filePath' not found in object folder.";
-                    $errMsg .= " NotFoundException: ".$e2->getMessage();
+                    $errDetail = $e2->getMessage();
+                    $prefix    = '[FilePublishingHandler] publishFile:';
+                    $errMsg    = "$prefix File '$fileName' and '$filePath' not found in object folder. NotFoundException: $errDetail";
                     $this->logger->error(message: $errMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
                     throw new Exception('File not found.');
                 }
@@ -349,7 +351,7 @@ class FilePublishingHandler
 
             if ($objectFolder === null) {
                 $this->logger->error(
-                    message: "[FilePublishingHandler] unpublishFile: Could not get object folder for object: ".$object->getId(),
+                    message: '[FilePublishingHandler] unpublishFile: Could not get object folder for object: '.$object->getId(),
                     context: ['file' => __FILE__, 'line' => __LINE__]
                 );
                 throw new Exception('Object folder not found.');
@@ -375,7 +377,7 @@ class FilePublishingHandler
                 );
             } catch (Exception $e) {
                 $this->logger->error(
-                    message: "[FilePublishingHandler] unpublishFile: Error listing object folder contents: ".$e->getMessage(),
+                    message: '[FilePublishingHandler] unpublishFile: Error listing object folder contents: '.$e->getMessage(),
                     context: ['file' => __FILE__, 'line' => __LINE__]
                 );
             }
@@ -399,8 +401,9 @@ class FilePublishingHandler
                     $successMsg .= $file->getName()." at ".$file->getPath();
                     $this->logger->info(message: $successMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
                 } catch (NotFoundException $e2) {
-                    $errMsg  = "[FilePublishingHandler] unpublishFile: File '$fileName' and '$filePath' not found in object folder.";
-                    $errMsg .= " NotFoundException: ".$e2->getMessage();
+                    $errDetail = $e2->getMessage();
+                    $prefix    = '[FilePublishingHandler] unpublishFile:';
+                    $errMsg    = "$prefix File '$fileName' and '$filePath' not found in object folder. NotFoundException: $errDetail";
                     $this->logger->error(message: $errMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
                     throw new Exception('File not found.');
                 }

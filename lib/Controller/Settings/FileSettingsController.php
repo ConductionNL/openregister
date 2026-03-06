@@ -203,7 +203,7 @@ class FileSettingsController extends Controller
 
             if ($result['success'] === true) {
                 // Try to get supported entities.
-                $capabilities = $this->fetchPresidioCapabilities(apiEndpoint: $apiEndpoint);
+                $capabilities           = $this->fetchPresidioCapabilities(apiEndpoint: $apiEndpoint);
                 $result['capabilities'] = $capabilities;
             }
 

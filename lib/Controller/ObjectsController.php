@@ -212,8 +212,8 @@ class ObjectsController extends Controller
      * @return array<string, array{name: string, type: string, tmp_name: string, error: int, size: int}>
      *     Array of uploaded files keyed by field name
      *
-     * @SuppressWarnings(PHPMD.Superglobals)          $_FILES access necessary — IRequest does not expose all file keys
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)   File extraction must handle multiple upload field formats
+     * @SuppressWarnings(PHPMD.Superglobals)         $_FILES access necessary — IRequest does not expose all file keys
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) File extraction must handle multiple upload field formats
      */
     private function extractAllUploadedFiles(): array
     {
@@ -874,7 +874,7 @@ class ObjectsController extends Controller
      *
      * @suppressWarnings(PHPMD.NPathComplexity)       Complex request parameter handling for flexible API
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)   Multi-schema search + pagination + filtering requires branching
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multi-schema search + pagination + filtering requires branching
      */
     public function index(string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -1258,7 +1258,7 @@ class ObjectsController extends Controller
      *
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      * @suppressWarnings(PHPMD.NPathComplexity)
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)   Cross-table search + multi-schema routing requires branching
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Cross-table search + multi-schema routing requires branching
      */
     public function objects(ObjectService $objectService): JSONResponse
     {
@@ -1442,7 +1442,7 @@ class ObjectsController extends Controller
      * @return JSONResponse JSON response with the object or error
      *
      * @suppressWarnings(PHPMD.NPathComplexity)
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)   Object retrieval with slug resolution + access checks requires branching
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Object retrieval with slug resolution + access checks requires branching
      */
     public function show(
         string $id,
@@ -1741,7 +1741,7 @@ class ObjectsController extends Controller
      *
      * @suppressWarnings(PHPMD.NPathComplexity)       Object update requires many validation and processing steps
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)   Object update requires many validation and processing steps
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Object update requires many validation and processing steps
      */
     public function update(
         string $register,
@@ -2405,7 +2405,7 @@ class ObjectsController extends Controller
      *     array<never, never>>
      *
      * @suppressWarnings(PHPMD.NPathComplexity)
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)   Audit log retrieval with pagination + access checks requires branching
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Audit log retrieval with pagination + access checks requires branching
      */
     public function logs(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {

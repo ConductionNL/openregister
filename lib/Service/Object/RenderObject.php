@@ -300,7 +300,8 @@ class RenderObject
         $result = [];
         foreach ($this->objectsCache as $key => $object) {
             // Only include entries keyed by UUID (skip numeric IDs).
-            if (is_string($key) === true && preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $key) === 1) {
+            $uuidPattern = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
+            if (is_string($key) === true && preg_match($uuidPattern, $key) === 1) {
                 if ($object instanceof ObjectEntity) {
                     $result[$key] = $object->jsonSerialize();
                 } else if (is_array($object) === true) {
@@ -1682,9 +1683,9 @@ class RenderObject
      *
      * Uses the MagicMapper's findByRelationBatchInSchema with GIN index for efficiency.
      *
-     * @param array  $entityUuids     Array of entity UUIDs to search for references to
-     * @param string $targetSchemaId  The target schema ID to search within
-     * @param int    $registerId      The register ID to search within
+     * @param array  $entityUuids      Array of entity UUIDs to search for references to
+     * @param string $targetSchemaId   The target schema ID to search within
+     * @param int    $registerId       The register ID to search within
      * @param array  $inversedByFields Array of field names that may hold the inverse reference
      *
      * @return array Array of ObjectEntity instances that reference the given UUIDs
@@ -1899,7 +1900,11 @@ class RenderObject
 
         // If we have preloaded cache, use it directly instead of querying.
         if ($hasCache === true) {
-            return $this->handleInversedPropertiesFromCache(entity: $entity, objectData: $objectData, inversedProperties: $inversedProperties);
+            return $this->handleInversedPropertiesFromCache(
+                entity: $entity,
+                objectData: $objectData,
+                inversedProperties: $inversedProperties
+            );
         }
 
         // Fallback: Query for referencing objects (original slower path).

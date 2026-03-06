@@ -44,7 +44,7 @@ use Exception;
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Validation requires multiple exception and entity dependencies
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Validation requires multiple exception and entity dependencies
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Validation orchestration requires multiple validation strategy methods
  */
 class ValidationHandler

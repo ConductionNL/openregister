@@ -1413,9 +1413,9 @@ class SaveObject
      * - Complex template (e.g., "{{ items | map:name }}"): renders via MetadataHydrationHandler.
      * - Non-template value: returns the value as-is.
      *
-     * @param mixed $defaultValue      The default value to resolve (may contain templates).
-     * @param array $context           The data context for template rendering.
-     * @param array $schemaProperties  The schema properties for template rendering.
+     * @param mixed $defaultValue     The default value to resolve (may contain templates).
+     * @param array $context          The data context for template rendering.
+     * @param array $schemaProperties The schema properties for template rendering.
      *
      * @return mixed The resolved value, or null if resolution failed.
      */
@@ -1447,7 +1447,7 @@ class SaveObject
                     template: $defaultValue,
                     schemaProperties: $schemaProperties
                 );
-            }
+            }//end if
 
             // Non-template value, use directly.
             return $defaultValue;
@@ -1710,7 +1710,11 @@ class SaveObject
                         $subRegister = null;
                     }
 
-                    $this->deleteOrphanedRelatedObjects(orphanedUuids: $oldUuids, register: $subRegister, schema: $subSchema);
+                    $this->deleteOrphanedRelatedObjects(
+                        orphanedUuids: $oldUuids,
+                        register: $subRegister,
+                        schema: $subSchema
+                    );
                 }//end if
 
                 $data[$property] = [];
@@ -1739,7 +1743,8 @@ class SaveObject
                             }
 
                             // Standard UUID with dashes.
-                            if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $item) === 1) {
+                            $uuidPattern = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
+                            if (preg_match($uuidPattern, $item) === 1) {
                                 return true;
                             }
 
@@ -1749,7 +1754,8 @@ class SaveObject
                             }
 
                             // Prefixed UUID (e.g., "id-uuid" with or without dashes).
-                            if (preg_match('/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/i', $item) === 1) {
+                            $prefixedPattern = '/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/i';
+                            if (preg_match($prefixedPattern, $item) === 1) {
                                 return true;
                             }
 
@@ -1862,15 +1868,19 @@ class SaveObject
         $validObjects = array_filter(
             $propData,
             function ($object) {
-                if (is_array($object) === true && empty($object) === false
-                    && (count($object) === 1 && (($object['id'] ?? null) !== null) && empty($object['id']) === true) === false
+                if (is_array($object) === true
+                    && empty($object) === false
+                    && (count($object) === 1
+                    && (($object['id'] ?? null) !== null)
+                    && empty($object['id']) === true) === false
                 ) {
                     return true;
                 }
 
                 if (is_string($object) === true) {
                     // Standard UUID with dashes.
-                    if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $object) === 1) {
+                    $uuidPattern = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
+                    if (preg_match($uuidPattern, $object) === 1) {
                         return true;
                     }
 
@@ -1880,7 +1890,8 @@ class SaveObject
                     }
 
                     // Prefixed UUID (e.g., "id-uuid" with or without dashes).
-                    if (preg_match('/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/i', $object) === 1) {
+                    $prefixedPattern = '/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/i';
+                    if (preg_match($prefixedPattern, $object) === 1) {
                         return true;
                     }
 
@@ -2328,7 +2339,8 @@ class SaveObject
                     }
 
                     // Prefixed UUID (e.g., "id-uuid" with or without dashes).
-                    if (preg_match('/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/i', $uuid) === 1) {
+                    $prefixedPattern = '/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/i';
+                    if (preg_match($prefixedPattern, $uuid) === 1) {
                         return true;
                     }
 
@@ -3072,7 +3084,12 @@ class SaveObject
                 // DEBUG: About to call update.
                 $this->logger->error(
                     message: '[SaveObject] DEBUG: About to call objectEntityMapper->update()',
-                    context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister', 'uuid' => $savedEntity->getUuid()]
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
+                        'app'  => 'openregister',
+                        'uuid' => $savedEntity->getUuid(),
+                    ]
                 );
 
                 // Clear image metadata if objectImageField is a file property.
@@ -3633,7 +3650,12 @@ class SaveObject
         // Save the object to database using UnifiedObjectMapper.
         // This ensures proper event dispatching for both magic-mapped and blob storage objects.
         // Pass the oldObject to ensure accurate status change detection in events.
-        $updatedEntity = $this->unifiedObjectMapper->update(entity: $preparedObject, register: $register, schema: $schema, oldEntity: $oldObject);
+        $updatedEntity = $this->unifiedObjectMapper->update(
+            entity: $preparedObject,
+            register: $register,
+            schema: $schema,
+            oldEntity: $oldObject
+        );
 
         $this->logger->info(
             message: '[SaveObject] Object updated successfully',

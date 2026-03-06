@@ -58,7 +58,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Facet computation requires schema, register, and query dependencies
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Facet computation requires schema, register, and query dependencies
  */
 class MagicFacetHandler
 {
@@ -624,7 +624,13 @@ class MagicFacetHandler
         } catch (\Exception $e) {
             $this->logger->warning(
                 message: '[MagicFacetHandler] UNION facet query failed',
-                context: ['file' => __FILE__, 'line' => __LINE__, 'field' => $field, 'error' => $e->getMessage(), 'sql' => $sql]
+                context: [
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
+                    'field' => $field,
+                    'error' => $e->getMessage(),
+                    'sql'   => $sql,
+                ]
             );
             return ['type' => 'terms', 'buckets' => []];
         }//end try
@@ -1318,7 +1324,13 @@ class MagicFacetHandler
         } catch (\Exception $e) {
             $this->logger->warning(
                 message: '[MagicFacetHandler] Failed to check column existence',
-                context: ['file' => __FILE__, 'line' => __LINE__, 'tableName' => $tableName, 'column' => $columnName, 'error' => $e->getMessage()]
+                context: [
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
+                    'tableName' => $tableName,
+                    'column'    => $columnName,
+                    'error'     => $e->getMessage(),
+                ]
             );
             return false;
         }//end try

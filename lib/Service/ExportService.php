@@ -244,7 +244,6 @@ class ExportService
      * @param IUser|null    $currentUser Current user for permission checks
      *
      * @return void
-     *
      */
     private function populateSheet(
         Spreadsheet $spreadsheet,
@@ -441,11 +440,11 @@ class ExportService
      * Write object data rows to the spreadsheet.
      *
      * @param \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet         The worksheet to populate.
-     * @param ObjectEntity[]                                 $objects       The objects to write.
-     * @param array                                          $headers       Header map keyed by column letter.
-     * @param array                                          $nameColumns   Map of companion name columns.
-     * @param array                                          $uuidToNameMap Map of UUID to human-readable name.
-     * @param int                                            $startRow      The first data row number.
+     * @param ObjectEntity[]                                $objects       The objects to write.
+     * @param array                                         $headers       Header map keyed by column letter.
+     * @param array                                         $nameColumns   Map of companion name columns.
+     * @param array                                         $uuidToNameMap Map of UUID to human-readable name.
+     * @param int                                           $startRow      The first data row number.
      *
      * @return void
      */

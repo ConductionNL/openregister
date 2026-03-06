@@ -564,7 +564,8 @@ class FacetHandler
     /**
      * Get the metadata facet definitions for @self fields.
      *
-     * @return array Keyed by field name, each value contains title, description, data_type, index_field, index_type, enabled.
+     * @return array Keyed by field name, each value contains title,
+     *               description, data_type, index_field, index_type, enabled.
      */
     private function getMetadataDefinitions(): array
     {
@@ -624,14 +625,14 @@ class FacetHandler
      * Transform @self metadata facets into the standard format.
      *
      * @param array $metadataFacets The @self facet data keyed by field name.
-     * @param array &$transformed   Reference to the transformed output array.
+     * @param array $transformed    Reference to the transformed output array.
      * @param int   $startOrder     The current order counter.
      *
      * @return int The updated order counter after processing metadata facets.
      */
     private function transformMetadataFacets(array $metadataFacets, array &$transformed, int $startOrder): int
     {
-        $order               = $startOrder;
+        $order = $startOrder;
         $metadataDefinitions = $this->getMetadataDefinitions();
 
         foreach ($metadataFacets as $field => $facetData) {
@@ -666,13 +667,17 @@ class FacetHandler
      *
      * @param string $field        The facet field key.
      * @param array  $facetData    The raw facet data (may contain internal metadata keys).
-     * @param array  &$transformed Reference to the transformed output array.
+     * @param array  $transformed  Reference to the transformed output array.
      * @param int    $currentOrder The current order counter.
      *
      * @return int The updated order counter.
      */
-    private function transformNonAggregatedFacet(string $field, array $facetData, array &$transformed, int $currentOrder): int
-    {
+    private function transformNonAggregatedFacet(
+        string $field,
+        array $facetData,
+        array &$transformed,
+        int $currentOrder
+    ): int {
         $order = $currentOrder;
 
         $naConfig    = $facetData['_facetConfig'] ?? [];
@@ -731,7 +736,7 @@ class FacetHandler
      * @param string $field             The facet field key.
      * @param array  $facetData         The raw facet data.
      * @param array  $aggregatedConfigs Lookup of aggregated field configs keyed by field name.
-     * @param array  &$transformed      Reference to the transformed output array.
+     * @param array  $transformed       Reference to the transformed output array.
      * @param int    $currentOrder      The current order counter.
      *
      * @return int The updated order counter.

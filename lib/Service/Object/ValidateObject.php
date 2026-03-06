@@ -63,7 +63,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Validation requires comprehensive rule handling
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex JSON Schema validation logic
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Validation requires multiple format and schema dependencies
- * @SuppressWarnings(PHPMD.TooManyMethods) Validation requires per-type and per-format validator methods
+ * @SuppressWarnings(PHPMD.TooManyMethods)           Validation requires per-type and per-format validator methods
  */
 
 class ValidateObject
@@ -279,6 +279,9 @@ class ValidateObject
             return $schemaObject;
         }
 
+        // UUID pattern for related object references.
+        $uuidPat = '^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$';
+
         foreach ($schemaObject->properties as $propertyName => $propertySchema) {
             // Suppress unused variable warning for $propertyName - only processing schemas.
             unset($propertyName);
@@ -315,7 +318,7 @@ class ValidateObject
                     'oneOf' => [
                         (object) [
                             'type'        => 'string',
-                            'pattern'     => '^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$',
+                            'pattern'     => $uuidPat,
                             'description' => 'UUID reference to a related object',
                         ],
                         (object) [
@@ -336,7 +339,7 @@ class ValidateObject
                     ],
                     (object) [
                         'type'        => 'string',
-                        'pattern'     => '^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$',
+                        'pattern'     => $uuidPat,
                         'description' => 'UUID reference to a related object',
                     ],
                     (object) [
@@ -366,7 +369,7 @@ class ValidateObject
             if (($itemsSchema->inversedBy ?? null) !== null) {
                 // For inversedBy array items, transform to UUID string validation.
                 $itemsSchema->type        = 'string';
-                $itemsSchema->pattern     = '^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$';
+                $itemsSchema->pattern     = $uuidPat;
                 $itemsSchema->description = 'UUID reference to a related object (inversedBy - should be empty)';
                 unset($itemsSchema->properties, $itemsSchema->required, $itemsSchema->{'$ref'});
             } else if (isset($itemsSchema->type) === true && $itemsSchema->type === 'object') {
@@ -432,6 +435,9 @@ class ValidateObject
      */
     private function transformToUuidProperty(object $objectSchema): void
     {
+        // UUID pattern for related object references.
+        $uuidPat = '^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$';
+
         // If this property has inversedBy, it should support both objects and UUID strings.
         if (($objectSchema->inversedBy ?? null) === null) {
             // Original behavior for non-inversedBy properties.
@@ -440,7 +446,7 @@ class ValidateObject
 
             // Set to string type with UUID pattern.
             $objectSchema->type        = 'string';
-            $objectSchema->pattern     = '^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$';
+            $objectSchema->pattern     = $uuidPat;
             $objectSchema->description = 'UUID reference to a related object';
 
             // Remove $ref to prevent circular references.
@@ -473,7 +479,7 @@ class ValidateObject
         // Create the UUID string schema.
         $uuidTypeSchema = (object) [
             'type'        => 'string',
-            'pattern'     => '^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$',
+            'pattern'     => $uuidPat,
             'description' => 'UUID reference to a related object',
         ];
 
@@ -575,7 +581,7 @@ class ValidateObject
             }
 
             // Check inside items.oneOf (for polymorphic references).
-            $oneOf = $this->getMixedValue(data: $items, key: 'oneOf');
+            $oneOf    = $this->getMixedValue(data: $items, key: 'oneOf');
             $handling = $this->extractHandlingFromOneOfItems(oneOf: $oneOf);
             if ($handling !== null) {
                 return $handling;
@@ -687,6 +693,9 @@ class ValidateObject
                     $handling = $config->handling;
                 }
 
+                // UUID pattern for related object references.
+                $uuidPat = '^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$';
+
                 if ($config !== null && $handling === 'related-object') {
                     // Handle inversedBy relationships for single objects.
                     if (($propertySchema->inversedBy ?? null) !== null) {
@@ -699,7 +708,7 @@ class ValidateObject
                             ],
                             (object) [
                                 'type'        => 'string',
-                                'pattern'     => '^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$',
+                                'pattern'     => $uuidPat,
                                 'description' => 'UUID reference to a related object',
                             ],
                             (object) [
@@ -708,14 +717,13 @@ class ValidateObject
                             ],
                         ];
                         unset($propertySchema->type, $propertySchema->pattern);
-                    }
+                    }//end if
 
                     if (($propertySchema->inversedBy ?? null) === null) {
                         // For non-inversedBy properties, expect string UUID.
-                        $uuidPattern  = '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-';
-                        $uuidPattern .= '[0-9a-f]{4}-[0-9a-f]{12}$';
-                        // Note: For related-object patterns, we support prefixed UUIDs, UUIDs without dashes, and numeric IDs.
-                        $uuidPattern          = '^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$';
+                        // Support prefixed UUIDs, UUIDs without dashes,
+                        // and numeric IDs.
+                        $uuidPattern          = $uuidPat;
                         $propertySchema->type = 'string';
                         $propertySchema->pattern = $uuidPattern;
                         $desc = 'UUID reference to a related object (self-reference)';
@@ -744,7 +752,7 @@ class ValidateObject
                             'oneOf' => [
                                 (object) [
                                     'type'        => 'string',
-                                    'pattern'     => '^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$',
+                                    'pattern'     => $uuidPat,
                                     'description' => 'UUID reference to a related object',
                                 ],
                                 (object) [
@@ -753,13 +761,13 @@ class ValidateObject
                                 ],
                             ],
                         ];
-                    }
+                    }//end if
 
                     if (($propertySchema->items->inversedBy ?? null) === null) {
                         // For non-inversedBy properties, expect array of UUIDs.
                         $propertySchema->items = (object) [
                             'type'        => 'string',
-                            'pattern'     => '^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$',
+                            'pattern'     => $uuidPat,
                             'description' => 'UUID reference to a related object (self-reference)',
                         ];
                     }//end if

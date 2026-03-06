@@ -48,8 +48,8 @@ use Symfony\Component\Uid\Uuid;
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Entity recognition integrates multiple extraction strategies
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Multiple detection strategies (regex, Presidio, OpenAnonymiser, LLM, hybrid) require per-strategy methods
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Entity recognition integrates multiple extraction strategies
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Multiple detection strategies require per-strategy methods
  */
 class EntityRecognitionHandler
 {
@@ -493,7 +493,11 @@ class EntityRecognitionHandler
                     message: '[EntityRecognitionHandler] Presidio endpoint not configured, falling back to regex',
                     context: ['file' => __FILE__, 'line' => __LINE__]
                 );
-                return $this->detectWithRegex(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold);
+                return $this->detectWithRegex(
+                    text: $text,
+                    entityTypes: $entityTypes,
+                    confidenceThreshold: $confidenceThreshold
+                );
             }
 
             // Build request body.
@@ -507,7 +511,11 @@ class EntityRecognitionHandler
             );
 
             if ($apiResults === null) {
-                return $this->detectWithRegex(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold);
+                return $this->detectWithRegex(
+                    text: $text,
+                    entityTypes: $entityTypes,
+                    confidenceThreshold: $confidenceThreshold
+                );
             }
 
             $this->logger->debug(
@@ -558,7 +566,11 @@ class EntityRecognitionHandler
                     message: '[EntityRecognitionHandler] OpenAnonymiser endpoint not configured, falling back to regex',
                     context: ['file' => __FILE__, 'line' => __LINE__]
                 );
-                return $this->detectWithRegex(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold);
+                return $this->detectWithRegex(
+                    text: $text,
+                    entityTypes: $entityTypes,
+                    confidenceThreshold: $confidenceThreshold
+                );
             }
 
             // Build request body.
@@ -572,7 +584,11 @@ class EntityRecognitionHandler
             );
 
             if ($responseData === null) {
-                return $this->detectWithRegex(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold);
+                return $this->detectWithRegex(
+                    text: $text,
+                    entityTypes: $entityTypes,
+                    confidenceThreshold: $confidenceThreshold
+                );
             }
 
             // OpenAnonymiser wraps results in {"pii_entities": [...]}.

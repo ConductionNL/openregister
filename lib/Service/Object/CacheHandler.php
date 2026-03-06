@@ -833,7 +833,12 @@ class CacheHandler
                     } catch (\Exception $e) {
                         $this->logger->warning(
                             message: '[CacheHandler] Failed to remove object name from distributed cache',
-                            context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $object->getUuid(), 'error' => $e->getMessage()]
+                            context: [
+                                'file'  => __FILE__,
+                                'line'  => __LINE__,
+                                'uuid'  => $object->getUuid(),
+                                'error' => $e->getMessage(),
+                            ]
                         );
                     }
                 }
@@ -1088,7 +1093,14 @@ class CacheHandler
 
         // Cache miss - load from database.
         $this->stats['name_misses']++;
-        $this->logger->debug(message: '[CacheHandler] ❌ NAME CACHE MISS', context: ['file' => __FILE__, 'line' => __LINE__, 'identifier' => $key]);
+        $this->logger->debug(
+            message: '[CacheHandler] NAME CACHE MISS',
+            context: [
+                'file'       => __FILE__,
+                'line'       => __LINE__,
+                'identifier' => $key,
+            ]
+        );
 
         try {
             // STEP 1: Try to find as organisation first (they take priority).
@@ -1470,7 +1482,11 @@ class CacheHandler
                     }
 
                     // Check if this schema has magic mapping enabled.
-                    if ($register->isMagicMappingEnabledForSchema(schemaId: (int) $schemaId, schemaSlug: $schemaSlug) === false) {
+                    $magicEnabled = $register->isMagicMappingEnabledForSchema(
+                        schemaId: (int) $schemaId,
+                        schemaSlug: $schemaSlug
+                    );
+                    if ($magicEnabled === false) {
                         continue;
                     }
 
@@ -1803,7 +1819,10 @@ class CacheHandler
             }
         }
 
-        $this->logger->debug(message: '[CacheHandler] 🧹 OBJECT NAME CACHE CLEARED', context: ['file' => __FILE__, 'line' => __LINE__]);
+        $this->logger->debug(
+            message: '[CacheHandler] OBJECT NAME CACHE CLEARED',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
     }//end clearNameCache()
 
     // ========================================.

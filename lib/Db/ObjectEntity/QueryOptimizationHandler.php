@@ -180,7 +180,12 @@ class QueryOptimizationHandler
             } catch (Exception $e) {
                 $this->logger->error(
                     message: '[QueryOptimizationHandler] Error processing large object',
-                    context: ['file' => __FILE__, 'line' => __LINE__, 'index' => (int) $index + 1, 'exception' => $e->getMessage()]
+                    context: [
+                        'file'      => __FILE__,
+                        'line'      => __LINE__,
+                        'index'     => (int) $index + 1,
+                        'exception' => $e->getMessage(),
+                    ]
                 );
 
                 // If it's not a packet size error, re-throw.
@@ -368,7 +373,7 @@ class QueryOptimizationHandler
         if ($hasSchema === true && $hasRegister === true && $hasPublished === true) {
             // This will use the idx_schema_register_published composite index.
             $this->logger->debug(
-                message: '[QueryOptimizationHandler] 🚀 QUERY OPTIMIZATION: Using composite index for schema+register+published',
+                message: '[QueryOptimizationHandler] QUERY OPTIMIZATION: Using composite index for schema+register+published',
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
         }

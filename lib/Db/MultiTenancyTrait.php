@@ -283,7 +283,8 @@ trait MultiTenancyTrait
      * @return void
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control multitenancy filtering behavior
-     * @SuppressWarnings(PHPMD.NPathComplexity)    Already decomposed into helper methods — NPath from parameter combinations
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * NPath from parameter combinations
      */
     protected function applyOrganisationFilter(
         IQueryBuilder $qb,
