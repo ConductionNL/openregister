@@ -260,7 +260,7 @@ import PaginationComponent from '../../components/PaginationComponent.vue'
 /**
  * Main view for managing entities
  *
- * @package OpenRegister
+ * @package
  * @category View
  * @author Ruben Linde <ruben@conduction.nl>
  * @copyright 2024 Conduction B.V.

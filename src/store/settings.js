@@ -1099,7 +1099,7 @@ export const useSettingsStore = defineStore('settings', {
 					const executionTime = response.data.execution_time || '0ms'
 					const oldCacheSize = response.data.old_cache?.distributed_name_cache_size || 0
 					const newCacheSize = response.data.new_cache?.distributed_name_cache_size || 0
-					
+
 					let cacheMessage = ''
 					if (newCacheSize > oldCacheSize) {
 						cacheMessage = `Cache grew from ${oldCacheSize} to ${newCacheSize} entries.`
@@ -1108,7 +1108,7 @@ export const useSettingsStore = defineStore('settings', {
 					} else {
 						cacheMessage = `Cache stayed the same at ${newCacheSize} entries.`
 					}
-					
+
 					showSuccess(`Names cache warmed up successfully: ${loadedCount} names loaded in ${executionTime}. ${cacheMessage}`)
 				} else {
 					showError('Failed to warmup names cache: ' + (response.data.error || 'Unknown error'))

@@ -1476,6 +1476,7 @@ export const useObjectStore = defineStore('object', {
 		 * @param {object} params.object - Merged object data (without id)
 		 * @param {string} params.fileAction - File action: 'transfer' or 'delete'
 		 * @param {string} params.relationAction - Relation action: 'transfer' or 'drop'
+		 * @param params.referenceAction
 		 * @return {Promise} API response with merge result
 		 */
 		async mergeObjects({ register, schema, sourceObjectId, target, object, fileAction = 'transfer', relationAction = 'transfer', referenceAction = 'transfer' }) {

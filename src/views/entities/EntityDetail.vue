@@ -208,7 +208,7 @@ import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
 /**
  * Entity detail view showing entity information and relations
  *
- * @package OpenRegister
+ * @package
  * @category View
  * @author Ruben Linde <ruben@conduction.nl>
  * @copyright 2024 Conduction B.V.

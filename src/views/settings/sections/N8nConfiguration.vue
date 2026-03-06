@@ -283,7 +283,7 @@ import { showSuccess, showError } from '@nextcloud/dialogs'
  * Manages n8n workflow automation integration for OpenRegister.
  *
  * @category Component
- * @package  OCA\OpenRegister\View\Settings
+ * @package
  *
  * @author   Conduction Development Team <info@conduction.nl>
  * @copyright 2025 Conduction B.V.
@@ -369,12 +369,12 @@ export default {
 			try {
 				const response = await axios.get(generateUrl('/apps/openregister/api/settings/n8n'))
 				const config = response.data
-				
+
 				this.n8nEnabled = config.enabled || false
 				this.n8nUrl = config.url || ''
 				this.n8nApiKey = config.apiKey || ''
 				this.n8nProject = config.project || 'openregister'
-				
+
 				// Store original config for change detection.
 				this.originalConfig = {
 					enabled: this.n8nEnabled,
@@ -449,7 +449,7 @@ export default {
 			this.testResult = null
 			this.initResult = null
 			try {
-				const response = await axios.post(generateUrl('/apps/openregister/api/settings/n8n'), {
+				await axios.post(generateUrl('/apps/openregister/api/settings/n8n'), {
 					enabled: this.n8nEnabled,
 					url: this.n8nUrl,
 					apiKey: this.n8nApiKey,
@@ -535,7 +535,7 @@ export default {
 				}
 
 				showSuccess(this.t('openregister', 'n8n project initialized successfully'))
-				
+
 				// Load workflows after initialization.
 				await this.loadWorkflows()
 			} catch (error) {
@@ -836,8 +836,3 @@ export default {
 	}
 }
 </style>
-
-
-
-
-

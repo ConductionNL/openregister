@@ -62,7 +62,7 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 						<b>Version:</b>
 						<p>{{ endpointStore.endpointItem.version }}</p>
 					</div>
-					<div class="gridContent gridFullWidth" v-if="endpointStore.endpointItem.groups && endpointStore.endpointItem.groups.length > 0">
+					<div v-if="endpointStore.endpointItem.groups && endpointStore.endpointItem.groups.length > 0" class="gridContent gridFullWidth">
 						<b>Allowed Groups:</b>
 						<p>{{ endpointStore.endpointItem.groups.join(', ') }}</p>
 					</div>
@@ -111,4 +111,3 @@ export default {
 <style>
 /* Styles remain the same */
 </style>
-
