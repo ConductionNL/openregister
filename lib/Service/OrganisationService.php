@@ -699,8 +699,9 @@ class OrganisationService
      *
      * @throws Exception If user not logged in or organisation creation fails
      *
-     * @SuppressWarnings(PHPMD.StaticAccess)        Uuid::isValid is standard Symfony UID pattern
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag controls whether to add current user to organisation
+     * @SuppressWarnings(PHPMD.StaticAccess)          Uuid::isValid is standard Symfony UID pattern
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Boolean flag controls whether to add current user to organisation
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Organisation creation requires multiple validation steps
      */
     public function createOrganisation(
         string $name,
@@ -935,7 +936,10 @@ class OrganisationService
     {
         $adminGroup = $this->groupManager->get('admin');
         if ($adminGroup === null) {
-            $this->logger->warning(message: '[OrganisationService] Admin group not found', context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->warning(
+                message: '[OrganisationService] Admin group not found',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return [];
         }
 

@@ -119,6 +119,8 @@ class RenderObject
      * @param PropertyRbacHandler    $propertyRbacHandler Property-level RBAC handler.
      * @param LoggerInterface        $logger              Logger for performance monitoring.
      * @param FileService            $fileService         File service for file operations.
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) All parameters are DI-injected dependencies
      */
     public function __construct(
         private readonly FileMapper $fileMapper,
@@ -1483,6 +1485,51 @@ class RenderObject
         }
 
         // Filter to only inverse properties that are being extended.
+        $inversePropsExtend = $this->filterExtendedInverseProperties(
+            inversedProperties: $inversedProperties,
+            extend: $extend
+        );
+        if (empty($inversePropsExtend) === true) {
+            return;
+        }
+
+        // Collect all entity UUIDs.
+        $entityUuids = $this->collectEntityUuids(entities: $entities);
+        if (empty($entityUuids) === true) {
+            return;
+        }
+
+        $this->logger->debug(
+            message: '[RenderObject] [INVERSE_PRELOAD] Starting batch inverse preload',
+            context: [
+                'file'              => __FILE__,
+                'line'              => __LINE__,
+                'entityCount'       => count($entityUuids),
+                'inverseProperties' => array_keys($inversePropsExtend),
+            ]
+        );
+
+        // For each inverse property, determine target schema and batch-load referencing objects.
+        foreach ($inversePropsExtend as $propName => $propConfig) {
+            $this->preloadSingleInverseProperty(
+                propName: $propName,
+                propConfig: $propConfig,
+                entityUuids: $entityUuids,
+                firstEntity: $firstEntity
+            );
+        }//end foreach
+    }//end preloadInverseRelationships()
+
+    /**
+     * Filter inversed properties to only those being extended.
+     *
+     * @param array $inversedProperties All inversed properties from the schema
+     * @param array $extend             The _extend parameter specifying which properties to extend
+     *
+     * @return array Filtered array of inverse properties that are being extended
+     */
+    private function filterExtendedInverseProperties(array $inversedProperties, array $extend): array
+    {
         $inversePropsExtend = [];
         foreach ($inversedProperties as $propName => $propConfig) {
             if (in_array($propName, $extend, true) === true || in_array('all', $extend, true) === true) {
@@ -1490,11 +1537,18 @@ class RenderObject
             }
         }
 
-        if (empty($inversePropsExtend) === true) {
-            return;
-        }
+        return $inversePropsExtend;
+    }//end filterExtendedInverseProperties()
 
-        // Collect all entity UUIDs.
+    /**
+     * Collect UUIDs from an array of entities.
+     *
+     * @param array $entities Array of ObjectEntity instances
+     *
+     * @return array Array of UUID strings
+     */
+    private function collectEntityUuids(array $entities): array
+    {
         $entityUuids = [];
         foreach ($entities as $entity) {
             if ($entity instanceof \OCA\OpenRegister\Db\ObjectEntity === true && $entity->getUuid() !== null) {
@@ -1502,142 +1556,259 @@ class RenderObject
             }
         }
 
-        if (empty($entityUuids) === true) {
+        return $entityUuids;
+    }//end collectEntityUuids()
+
+    /**
+     * Extract inverse configuration (target schema ref and inversedBy fields) from a property config.
+     *
+     * Returns null if the configuration is incomplete (missing $ref or inversedBy).
+     *
+     * @param array $propConfig The property configuration array
+     *
+     * @return array|null Array with keys 'targetSchemaRef' and 'inversedByFields', or null if invalid
+     */
+    private function extractInverseConfig(array $propConfig): ?array
+    {
+        // Extract target schema reference.
+        $targetSchemaRef = $propConfig['items']['$ref'] ?? $propConfig['$ref'] ?? null;
+        $inversedByField = $propConfig['items']['inversedBy'] ?? $propConfig['inversedBy'] ?? null;
+
+        if ($targetSchemaRef === null || $inversedByField === null) {
+            return null;
+        }
+
+        // Normalize inversedBy to an array to support multi-field inverse relations.
+        // Example: "inversedBy": ["moduleA", "moduleB"] means the entity can appear in either field.
+        if (is_array(value: $inversedByField) === true) {
+            $inversedByFields = $inversedByField;
+        } else {
+            $inversedByFields = [$inversedByField];
+        }
+
+        return [
+            'targetSchemaRef'  => $targetSchemaRef,
+            'inversedByFields' => $inversedByFields,
+        ];
+    }//end extractInverseConfig()
+
+    /**
+     * Preload inverse objects for a single inverse property.
+     *
+     * Resolves the target schema, batch-loads all referencing objects, and populates
+     * the inverse relation cache for all given entity UUIDs.
+     *
+     * @param string       $propName    The inverse property name
+     * @param array        $propConfig  The property configuration array
+     * @param array        $entityUuids Array of entity UUIDs to preload for
+     * @param ObjectEntity $firstEntity The first entity (used to determine register)
+     *
+     * @return void
+     */
+    private function preloadSingleInverseProperty(
+        string $propName,
+        array $propConfig,
+        array $entityUuids,
+        ObjectEntity $firstEntity
+    ): void {
+        // Extract and validate inverse configuration.
+        $inverseConfig = $this->extractInverseConfig(propConfig: $propConfig);
+        if ($inverseConfig === null) {
             return;
         }
 
-        $this->logger->debug(
-                message: '[RenderObject] [INVERSE_PRELOAD] Starting batch inverse preload',
+        $inversedByFields = $inverseConfig['inversedByFields'];
+
+        // Resolve schema reference to ID.
+        $targetSchemaId = $this->resolveSchemaReference(schemaRef: $inverseConfig['targetSchemaRef']);
+        if (empty($targetSchemaId) === true) {
+            return;
+        }
+
+        // Get the target schema to find its register.
+        $targetSchema = $this->getSchema(id: $targetSchemaId);
+        if ($targetSchema === null) {
+            return;
+        }
+
+        // Batch find all objects of the target schema that reference ANY of our entity UUIDs.
+        // This uses the _relations column with GIN index for efficiency.
+        try {
+            $referencingObjects = $this->batchLoadReferencingObjects(
+                entityUuids: $entityUuids,
+                targetSchemaId: $targetSchemaId,
+                registerId: (int) $firstEntity->getRegister(),
+                inversedByFields: $inversedByFields
+            );
+
+            // Pre-initialize cache entries for ALL entities with empty arrays.
+            // This prevents fallback to the slow per-entity findByRelation() path,
+            // which does expensive LIKE scans on the blob table and iterates all magic tables.
+            $this->initializeInverseCacheEntries(entityUuids: $entityUuids, propName: $propName);
+
+            // Index the results by which entity UUID they reference.
+            $this->indexReferencingObjects(
+                referencingObjects: $referencingObjects,
+                inversedByFields: $inversedByFields,
+                entityUuids: $entityUuids,
+                propName: $propName
+            );
+
+            $this->logger->debug(
+                message: '[RenderObject] [INVERSE_PRELOAD] Batch loaded inverse relationships',
                 context: [
-                    'file'              => __FILE__,
-                    'line'              => __LINE__,
-                    'entityCount'       => count($entityUuids),
-                    'inverseProperties' => array_keys($inversePropsExtend),
+                    'file'         => __FILE__,
+                    'line'         => __LINE__,
+                    'property'     => $propName,
+                    'targetSchema' => $targetSchemaId,
+                    'foundObjects' => count($referencingObjects),
                 ]
-                );
+            );
+        } catch (\Exception $e) {
+            $this->logger->warning(
+                message: '[RenderObject] [INVERSE_PRELOAD] Batch preload failed, falling back to per-entity lookup',
+                context: [
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
+                    'property' => $propName,
+                    'error'    => $e->getMessage(),
+                ]
+            );
+        }//end try
+    }//end preloadSingleInverseProperty()
 
-        // For each inverse property, determine target schema and batch-load referencing objects.
-        foreach ($inversePropsExtend as $propName => $propConfig) {
-            // Extract target schema reference.
-            $targetSchemaRef = $propConfig['items']['$ref'] ?? $propConfig['$ref'] ?? null;
-            $inversedByField = $propConfig['items']['inversedBy'] ?? $propConfig['inversedBy'] ?? null;
+    /**
+     * Batch load objects from the target schema that reference any of the given UUIDs.
+     *
+     * Uses the MagicMapper's findByRelationBatchInSchema with GIN index for efficiency.
+     *
+     * @param array  $entityUuids     Array of entity UUIDs to search for references to
+     * @param string $targetSchemaId  The target schema ID to search within
+     * @param int    $registerId      The register ID to search within
+     * @param array  $inversedByFields Array of field names that may hold the inverse reference
+     *
+     * @return array Array of ObjectEntity instances that reference the given UUIDs
+     */
+    private function batchLoadReferencingObjects(
+        array $entityUuids,
+        string $targetSchemaId,
+        int $registerId,
+        array $inversedByFields
+    ): array {
+        $magicMapper = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
 
-            if ($targetSchemaRef === null || $inversedByField === null) {
-                continue;
+        // Pass additional field names for multi-field inversedBy so the SQL also searches
+        // columns that may store references in {"value": "uuid"} format not in _relations.
+        if (count($inversedByFields) > 1) {
+            $additionalFields = array_slice($inversedByFields, 1);
+        } else {
+            $additionalFields = [];
+        }
+
+        return $magicMapper->findByRelationBatchInSchema(
+            uuids: $entityUuids,
+            schemaId: (int) $targetSchemaId,
+            registerId: $registerId,
+            fieldName: $inversedByFields[0],
+            additionalFieldNames: $additionalFields
+        );
+    }//end batchLoadReferencingObjects()
+
+    /**
+     * Pre-initialize inverse relation cache entries for all entities with empty arrays.
+     *
+     * This prevents fallback to the slow per-entity findByRelation() path,
+     * which does expensive LIKE scans on the blob table and iterates all magic tables.
+     *
+     * @param array  $entityUuids Array of entity UUIDs
+     * @param string $propName    The inverse property name
+     *
+     * @return void
+     */
+    private function initializeInverseCacheEntries(array $entityUuids, string $propName): void
+    {
+        foreach ($entityUuids as $entityUuid) {
+            $cacheKey = $entityUuid.'_'.$propName;
+            if (isset($this->inverseRelationCache[$cacheKey]) === false) {
+                $this->inverseRelationCache[$cacheKey] = [];
             }
+        }
+    }//end initializeInverseCacheEntries()
 
-            // Normalize inversedBy to an array to support multi-field inverse relations.
-            // Example: "inversedBy": ["moduleA", "moduleB"] means the entity can appear in either field.
-            if (is_array(value: $inversedByField) === true) {
-                $inversedByFields = $inversedByField;
-            } else {
-                $inversedByFields = [$inversedByField];
-            }
+    /**
+     * Index referencing objects into the inverse relation cache by entity UUID.
+     *
+     * Checks all inversedBy fields (supports array of field names) and handles
+     * object references with {"value": "uuid"} format as well as arrays of UUIDs.
+     *
+     * @param array  $referencingObjects Array of ObjectEntity instances to index
+     * @param array  $inversedByFields   Array of field names that may hold the inverse reference
+     * @param array  $entityUuids        Array of entity UUIDs to match against
+     * @param string $propName           The inverse property name for cache key generation
+     *
+     * @return void
+     */
+    private function indexReferencingObjects(
+        array $referencingObjects,
+        array $inversedByFields,
+        array $entityUuids,
+        string $propName
+    ): void {
+        foreach ($referencingObjects as $refObject) {
+            $refData = $refObject->getObject();
 
-            // Resolve schema reference to ID.
-            $targetSchemaId = $this->resolveSchemaReference(schemaRef: $targetSchemaRef);
-            if (empty($targetSchemaId) === true) {
-                continue;
-            }
+            foreach ($inversedByFields as $field) {
+                $referencedUuids = $this->resolveReferencedUuids(refData: $refData, field: $field);
 
-            // Get the target schema to find its register.
-            $targetSchema = $this->getSchema(id: $targetSchemaId);
-            if ($targetSchema === null) {
-                continue;
-            }
+                foreach ($referencedUuids as $uuid) {
+                    if ($uuid !== null && in_array($uuid, $entityUuids, true) === true) {
+                        $cacheKey = $uuid.'_'.$propName;
+                        // Avoid duplicate entries when the same object matches multiple fields.
+                        $existingUuids = array_map(
+                            fn(ObjectEntity $obj) => $obj->getUuid(),
+                            $this->inverseRelationCache[$cacheKey] ?? []
+                        );
+                        if (in_array($refObject->getUuid(), $existingUuids, true) === false) {
+                            $this->inverseRelationCache[$cacheKey][] = $refObject;
+                        }
 
-            // Batch find all objects of the target schema that reference ANY of our entity UUIDs.
-            // This uses the _relations column with GIN index for efficiency.
-            try {
-                $magicMapper = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
-                // Pass additional field names for multi-field inversedBy so the SQL also searches
-                // columns that may store references in {"value": "uuid"} format not in _relations.
-                if (count($inversedByFields) > 1) {
-                    $additionalFields = array_slice($inversedByFields, 1);
-                } else {
-                    $additionalFields = [];
-                }
-
-                $referencingObjects = $magicMapper->findByRelationBatchInSchema(
-                    uuids: $entityUuids,
-                    schemaId: (int) $targetSchemaId,
-                    registerId: (int) $firstEntity->getRegister(),
-                    fieldName: $inversedByFields[0],
-                    additionalFieldNames: $additionalFields
-                );
-
-                // Pre-initialize cache entries for ALL entities with empty arrays.
-                // This prevents fallback to the slow per-entity findByRelation() path,
-                // which does expensive LIKE scans on the blob table and iterates all magic tables.
-                foreach ($entityUuids as $entityUuid) {
-                    $cacheKey = $entityUuid.'_'.$propName;
-                    if (isset($this->inverseRelationCache[$cacheKey]) === false) {
-                        $this->inverseRelationCache[$cacheKey] = [];
+                        // Also add to objects cache for extended rendering.
+                        $this->objectsCache[$refObject->getUuid()] = $refObject;
                     }
                 }
-
-                // Index the results by which entity UUID they reference.
-                // Check all inversedBy fields (supports array of field names).
-                foreach ($referencingObjects as $refObject) {
-                    $refData = $refObject->getObject();
-
-                    foreach ($inversedByFields as $field) {
-                        $referencedUuid = $refData[$field] ?? null;
-
-                        // Handle object references with {"value": "uuid"} format.
-                        if (is_array($referencedUuid) === true && isset($referencedUuid['value']) === true) {
-                            $referencedUuid = $referencedUuid['value'];
-                        }
-
-                        // Handle both single UUID and array of UUIDs.
-                        if (is_array($referencedUuid) === true) {
-                            $referencedUuids = $referencedUuid;
-                        } else {
-                            $referencedUuids = [$referencedUuid];
-                        }
-
-                        foreach ($referencedUuids as $uuid) {
-                            if ($uuid !== null && in_array($uuid, $entityUuids, true) === true) {
-                                $cacheKey = $uuid.'_'.$propName;
-                                // Avoid duplicate entries when the same object matches multiple fields.
-                                $existingUuids = array_map(
-                                    fn(ObjectEntity $obj) => $obj->getUuid(),
-                                    $this->inverseRelationCache[$cacheKey] ?? []
-                                );
-                                if (in_array($refObject->getUuid(), $existingUuids, true) === false) {
-                                    $this->inverseRelationCache[$cacheKey][] = $refObject;
-                                }
-
-                                // Also add to objects cache for extended rendering.
-                                $this->objectsCache[$refObject->getUuid()] = $refObject;
-                            }
-                        }
-                    }//end foreach
-                }//end foreach
-
-                $this->logger->debug(
-                        message: '[RenderObject] [INVERSE_PRELOAD] Batch loaded inverse relationships',
-                        context: [
-                            'file'         => __FILE__,
-                            'line'         => __LINE__,
-                            'property'     => $propName,
-                            'targetSchema' => $targetSchemaId,
-                            'foundObjects' => count($referencingObjects),
-                        ]
-                        );
-            } catch (\Exception $e) {
-                $this->logger->warning(
-                        message: '[RenderObject] [INVERSE_PRELOAD] Batch preload failed, falling back to per-entity lookup',
-                        context: [
-                            'file'     => __FILE__,
-                            'line'     => __LINE__,
-                            'property' => $propName,
-                            'error'    => $e->getMessage(),
-                        ]
-                        );
-            }//end try
+            }//end foreach
         }//end foreach
-    }//end preloadInverseRelationships()
+    }//end indexReferencingObjects()
+
+    /**
+     * Resolve referenced UUIDs from a referencing object's data field.
+     *
+     * Handles multiple reference formats:
+     * - Simple string UUID: "uuid-value"
+     * - Object reference: {"value": "uuid-value"}
+     * - Array of UUIDs: ["uuid1", "uuid2"]
+     *
+     * @param array  $refData The referencing object's data array
+     * @param string $field   The field name to extract referenced UUIDs from
+     *
+     * @return array Array of UUID strings (may contain nulls which should be filtered by caller)
+     */
+    private function resolveReferencedUuids(array $refData, string $field): array
+    {
+        $referencedUuid = $refData[$field] ?? null;
+
+        // Handle object references with {"value": "uuid"} format.
+        if (is_array($referencedUuid) === true && isset($referencedUuid['value']) === true) {
+            $referencedUuid = $referencedUuid['value'];
+        }
+
+        // Handle both single UUID and array of UUIDs.
+        if (is_array($referencedUuid) === true) {
+            return $referencedUuid;
+        }
+
+        return [$referencedUuid];
+    }//end resolveReferencedUuids()
 
     /**
      * Gets the inversed properties from a schema
@@ -1959,7 +2130,7 @@ class RenderObject
                 && ($propertyConfig['type'] === 'array') === true
                 && (($propertyConfig['items']['inversedBy'] ?? null) !== null) === true
             ) {
-                $isArray      = true;
+                $isArray = true;
             } else if (($propertyConfig['inversedBy'] ?? null) !== null) {
                 if ($propertyConfig['type'] === 'array') {
                     $isArray = true;

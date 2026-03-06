@@ -16,7 +16,7 @@
             <directory>tests/Unit</directory>
         </testsuite>
         <testsuite name="Integration Tests">
-            <directory>tests/Integration</directory>
+            <directory>tests/integration</directory>
         </testsuite>
         <testsuite name="Database Tests">
             <directory>tests/Db</directory>

@@ -45,6 +45,7 @@ use Exception;
  * @version  1.0.0
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Validation requires multiple exception and entity dependencies
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Validation orchestration requires multiple validation strategy methods
  */
 class ValidationHandler
 {
@@ -642,16 +643,7 @@ class ValidationHandler
         array $saveCallback
     ): array {
         // Convert objects to arrays for bulk processing.
-        $objectsData = [];
-        foreach ($objectsChunk as $object) {
-            if (is_array($object) === true) {
-                // Already an array from magic table.
-                $objectsData[] = $object;
-            } else {
-                // ObjectEntity - get the object data.
-                $objectsData[] = $object->getObject();
-            }
-        }
+        $objectsData = $this->convertChunkToArrays(objectsChunk: $objectsChunk);
 
         $progressPct = 100;
         if ($objectsToProcess > 0) {
@@ -747,6 +739,31 @@ class ValidationHandler
             ];
         }//end try
     }//end processValidationChunk()
+
+    /**
+     * Convert a chunk of objects to plain arrays for bulk processing.
+     *
+     * Handles both magic table arrays (already arrays) and ObjectEntity instances.
+     *
+     * @param array $objectsChunk The chunk of objects to convert.
+     *
+     * @return array Array of object data arrays.
+     */
+    private function convertChunkToArrays(array $objectsChunk): array
+    {
+        $objectsData = [];
+        foreach ($objectsChunk as $object) {
+            if (is_array($object) === true) {
+                // Already an array from magic table.
+                $objectsData[] = $object;
+            } else {
+                // ObjectEntity - get the object data.
+                $objectsData[] = $object->getObject();
+            }
+        }
+
+        return $objectsData;
+    }//end convertChunkToArrays()
 
     /**
      * Validate all objects belonging to a specific schema (comprehensive version).

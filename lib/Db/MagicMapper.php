@@ -3615,6 +3615,7 @@ class MagicMapper
 
         return $version;
     }//end calculateRegisterSchemaVersion()
+
     /**
      * Find object in register+schema table by UUID
      *
@@ -3792,15 +3793,119 @@ class MagicMapper
             $tableNameQuoted = '"'.$fullTableName.'"';
         }
 
-        $columnsAdded      = [];
-        $columnsDeRequired = [];
-        $columnsReRequired = [];
-        $columnsDropped    = [];
-
         // 1. Add missing columns.
-        // NOTE: $requiredColumns is keyed by property name (camelCase), but the actual.
-        // column name to use is in $columnDef['name'] (snake_case). We must use.
-        // $columnDef['name'] to check for existing columns and create new ones.
+        $columnsAdded = $this->addMissingColumns(
+            tableName: $tableName,
+            tableNameQuoted: $tableNameQuoted,
+            currentColumns: $currentColumns,
+            requiredColumns: $requiredColumns,
+            isPostgres: $isPostgres
+        );
+
+        // 2. De-require columns that are now nullable in schema but NOT NULL in table.
+        $columnsDeRequired = $this->deRequireColumns(
+            tableName: $tableName,
+            tableNameQuoted: $tableNameQuoted,
+            currentColumns: $currentColumns,
+            requiredColumns: $requiredColumns,
+            isPostgres: $isPostgres
+        );
+
+        // 3. Re-require columns that are NOT NULL in schema but nullable in table.
+        $columnsReRequired = $this->reRequireColumns(
+            tableName: $tableName,
+            tableNameQuoted: $tableNameQuoted,
+            currentColumns: $currentColumns,
+            requiredColumns: $requiredColumns,
+            isPostgres: $isPostgres
+        );
+
+        // 5. Handle duplicate columns (camelCase versions when snake_case exists).
+        // Build map of snake_case column names from required columns.
+        $snakeCaseColumns = $this->buildSnakeCaseColumnMap(requiredColumns: $requiredColumns);
+
+        $columnsDropped = $this->dropDuplicateCamelCaseColumns(
+            tableName: $tableName,
+            tableNameQuoted: $tableNameQuoted,
+            currentColumns: $currentColumns,
+            snakeCaseColumns: $snakeCaseColumns,
+            isPostgres: $isPostgres
+        );
+
+        // 6. Make obsolete columns nullable (columns in table but not in schema).
+        $obsoleteDeRequired = $this->makeObsoleteColumnsNullable(
+            tableName: $tableName,
+            tableNameQuoted: $tableNameQuoted,
+            currentColumns: $currentColumns,
+            snakeCaseColumns: $snakeCaseColumns,
+            isPostgres: $isPostgres
+        );
+
+        $columnsDeRequired = array_merge($columnsDeRequired, $obsoleteDeRequired);
+
+        $this->logger->info(
+            message: '[MagicMapper] Successfully updated table structure',
+            context: [
+                'file'              => __FILE__,
+                'line'              => __LINE__,
+                'tableName'         => $tableName,
+                'columnsAdded'      => $columnsAdded,
+                'columnsDeRequired' => $columnsDeRequired,
+                'columnsReRequired' => $columnsReRequired,
+                'columnsDropped'    => $columnsDropped,
+            ]
+        );
+
+        // Return statistics about what was changed.
+        return [
+            'columnsAdded'      => $columnsAdded,
+            'columnsDeRequired' => $columnsDeRequired,
+            'columnsReRequired' => $columnsReRequired,
+            'columnsDropped'    => $columnsDropped,
+        ];
+    }//end updateTableStructure()
+
+    /**
+     * Quote a column or identifier name for the current database platform.
+     *
+     * @param string $name       The unquoted identifier name.
+     * @param bool   $isPostgres Whether the platform is PostgreSQL.
+     *
+     * @return string The quoted identifier.
+     */
+    private function quoteIdentifier(string $name, bool $isPostgres): string
+    {
+        if ($isPostgres === true) {
+            return '"'.$name.'"';
+        }
+
+        return '`'.$name.'`';
+    }//end quoteIdentifier()
+
+    /**
+     * Add columns that exist in the schema but not yet in the table.
+     *
+     * NOTE: $requiredColumns is keyed by property name (camelCase), but the actual
+     * column name to use is in $columnDef['name'] (snake_case). We must use
+     * $columnDef['name'] to check for existing columns and create new ones.
+     *
+     * @param string $tableName       The logical table name.
+     * @param string $tableNameQuoted The quoted full table name for SQL.
+     * @param array  $currentColumns  Current column definitions from the database.
+     * @param array  $requiredColumns Required column definitions from the schema.
+     * @param bool   $isPostgres      Whether the platform is PostgreSQL.
+     *
+     * @return array List of column names that were added.
+     */
+    private function addMissingColumns(
+        string $tableName,
+        string $tableNameQuoted,
+        array $currentColumns,
+        array $requiredColumns,
+        bool $isPostgres
+    ): array {
+        $columnsAdded = [];
+
         foreach ($requiredColumns as $propertyName => $columnDef) {
             // Get the actual column name (snake_case) from the column definition.
             $columnName = $columnDef['name'] ?? $this->sanitizeColumnName(name: $propertyName);
@@ -3818,14 +3923,9 @@ class MagicMapper
                     ]
                 );
 
-                if ($isPostgres === true) {
-                    $colNameQuoted = '"'.$columnName.'"';
-                } else {
-                    $colNameQuoted = '`'.$columnName.'`';
-                }
-
-                $colType = $this->mapColumnTypeToSQL(type: $columnDef['type'], column: $columnDef);
-                $sql     = 'ALTER TABLE '.$tableNameQuoted.' ADD COLUMN '.$colNameQuoted.' '.$colType;
+                $colNameQuoted = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
+                $colType       = $this->mapColumnTypeToSQL(type: $columnDef['type'], column: $columnDef);
+                $sql           = 'ALTER TABLE '.$tableNameQuoted.' ADD COLUMN '.$colNameQuoted.' '.$colType;
 
                 // Add NOT NULL if specified.
                 if (($columnDef['nullable'] ?? true) === false) {
@@ -3843,7 +3943,29 @@ class MagicMapper
             }//end if
         }//end foreach
 
-        // 2. De-require columns that are now nullable in schema but NOT NULL in table.
+        return $columnsAdded;
+    }//end addMissingColumns()
+
+    /**
+     * De-require columns that are now nullable in the schema but NOT NULL in the table.
+     *
+     * @param string $tableName       The logical table name.
+     * @param string $tableNameQuoted The quoted full table name for SQL.
+     * @param array  $currentColumns  Current column definitions from the database.
+     * @param array  $requiredColumns Required column definitions from the schema.
+     * @param bool   $isPostgres      Whether the platform is PostgreSQL.
+     *
+     * @return array List of column names that were made nullable.
+     */
+    private function deRequireColumns(
+        string $tableName,
+        string $tableNameQuoted,
+        array $currentColumns,
+        array $requiredColumns,
+        bool $isPostgres
+    ): array {
+        $columnsDeRequired = [];
+
         foreach ($requiredColumns as $propertyName => $columnDef) {
             // Get the actual column name (snake_case) from the column definition.
             $columnName = $columnDef['name'] ?? $this->sanitizeColumnName(name: $propertyName);
@@ -3868,11 +3990,7 @@ class MagicMapper
                     ]
                 );
 
-                if ($isPostgres === true) {
-                    $colNameQuoted = '"'.$columnName.'"';
-                } else {
-                    $colNameQuoted = '`'.$columnName.'`';
-                }
+                $colNameQuoted = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
 
                 if ($isPostgres === true) {
                     $sql = 'ALTER TABLE '.$tableNameQuoted.' ALTER COLUMN '.$colNameQuoted.' DROP NOT NULL';
@@ -3894,7 +4012,29 @@ class MagicMapper
             }//end if
         }//end foreach
 
-        // 3. Re-require columns that are NOT NULL in schema but nullable in table.
+        return $columnsDeRequired;
+    }//end deRequireColumns()
+
+    /**
+     * Re-require columns that are NOT NULL in the schema but nullable in the table.
+     *
+     * @param string $tableName       The logical table name.
+     * @param string $tableNameQuoted The quoted full table name for SQL.
+     * @param array  $currentColumns  Current column definitions from the database.
+     * @param array  $requiredColumns Required column definitions from the schema.
+     * @param bool   $isPostgres      Whether the platform is PostgreSQL.
+     *
+     * @return array List of column names that were made NOT NULL.
+     */
+    private function reRequireColumns(
+        string $tableName,
+        string $tableNameQuoted,
+        array $currentColumns,
+        array $requiredColumns,
+        bool $isPostgres
+    ): array {
+        $columnsReRequired = [];
+
         foreach ($requiredColumns as $propertyName => $columnDef) {
             // Get the actual column name (snake_case) from the column definition.
             $columnName = $columnDef['name'] ?? $this->sanitizeColumnName(name: $propertyName);
@@ -3919,11 +4059,7 @@ class MagicMapper
                     ]
                 );
 
-                if ($isPostgres === true) {
-                    $colNameQuoted = '"'.$columnName.'"';
-                } else {
-                    $colNameQuoted = '`'.$columnName.'`';
-                }
+                $colNameQuoted = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
 
                 if ($isPostgres === true) {
                     $sql = 'ALTER TABLE '.$tableNameQuoted.' ALTER COLUMN '.$colNameQuoted.' SET NOT NULL';
@@ -3945,16 +4081,49 @@ class MagicMapper
             }//end if
         }//end foreach
 
-        // 5. Handle duplicate columns (camelCase versions when snake_case exists).
-        // Build map of snake_case column names from required columns.
+        return $columnsReRequired;
+    }//end reRequireColumns()
+
+    /**
+     * Build a lookup map of snake_case column names from the required columns.
+     *
+     * @param array $requiredColumns Required column definitions from the schema.
+     *
+     * @return array Associative array with snake_case column names as keys and true as values.
+     */
+    private function buildSnakeCaseColumnMap(array $requiredColumns): array
+    {
         $snakeCaseColumns = [];
         foreach ($requiredColumns as $propertyName => $colDef) {
             $actualColName = $colDef['name'] ?? $this->sanitizeColumnName(name: $propertyName);
             $snakeCaseColumns[$actualColName] = true;
         }
 
+        return $snakeCaseColumns;
+    }//end buildSnakeCaseColumnMap()
+
+    /**
+     * Drop duplicate camelCase columns when a snake_case equivalent exists.
+     *
+     * @param string $tableName       The logical table name.
+     * @param string $tableNameQuoted The quoted full table name for SQL.
+     * @param array  $currentColumns  Current column definitions from the database.
+     * @param array  $snakeCaseColumns Map of snake_case column names from the schema.
+     * @param bool   $isPostgres      Whether the platform is PostgreSQL.
+     *
+     * @return array List of column names that were dropped.
+     */
+    private function dropDuplicateCamelCaseColumns(
+        string $tableName,
+        string $tableNameQuoted,
+        array $currentColumns,
+        array $snakeCaseColumns,
+        bool $isPostgres
+    ): array {
+        $columnsDropped = [];
+
         // Find camelCase duplicates in current columns.
-        foreach ($currentColumns as $colName => $colDef) {
+        foreach (array_keys($currentColumns) as $colName) {
             // Skip metadata columns (start with _).
             if (str_starts_with($colName, '_') === true) {
                 continue;
@@ -3975,13 +4144,8 @@ class MagicMapper
                     ]
                 );
 
-                if ($isPostgres === true) {
-                    $colNameQuoted = '"'.$colName.'"';
-                } else {
-                    $colNameQuoted = '`'.$colName.'`';
-                }
-
-                $sql = 'ALTER TABLE '.$tableNameQuoted.' DROP COLUMN IF EXISTS '.$colNameQuoted;
+                $colNameQuoted = $this->quoteIdentifier(name: $colName, isPostgres: $isPostgres);
+                $sql           = 'ALTER TABLE '.$tableNameQuoted.' DROP COLUMN IF EXISTS '.$colNameQuoted;
 
                 try {
                     $this->db->executeStatement($sql);
@@ -3995,8 +4159,31 @@ class MagicMapper
             }//end if
         }//end foreach
 
-        // 6. Make obsolete columns nullable (columns in table but not in schema).
-        // This is safer than dropping them - data is preserved.
+        return $columnsDropped;
+    }//end dropDuplicateCamelCaseColumns()
+
+    /**
+     * Make obsolete columns nullable (columns in the table but not in the schema).
+     *
+     * This is safer than dropping them — data is preserved.
+     *
+     * @param string $tableName       The logical table name.
+     * @param string $tableNameQuoted The quoted full table name for SQL.
+     * @param array  $currentColumns  Current column definitions from the database.
+     * @param array  $snakeCaseColumns Map of snake_case column names from the schema.
+     * @param bool   $isPostgres      Whether the platform is PostgreSQL.
+     *
+     * @return array List of column names (suffixed with " (obsolete)") that were made nullable.
+     */
+    private function makeObsoleteColumnsNullable(
+        string $tableName,
+        string $tableNameQuoted,
+        array $currentColumns,
+        array $snakeCaseColumns,
+        bool $isPostgres
+    ): array {
+        $columnsDeRequired = [];
+
         foreach ($currentColumns as $colName => $colDef) {
             // Skip metadata columns.
             if (str_starts_with($colName, '_') === true) {
@@ -4024,11 +4211,7 @@ class MagicMapper
                 ]
             );
 
-            if ($isPostgres === true) {
-                $colNameQuoted = '"'.$colName.'"';
-            } else {
-                $colNameQuoted = '`'.$colName.'`';
-            }
+            $colNameQuoted = $this->quoteIdentifier(name: $colName, isPostgres: $isPostgres);
 
             if ($isPostgres === true) {
                 $sql = 'ALTER TABLE '.$tableNameQuoted.' ALTER COLUMN '.$colNameQuoted.' DROP NOT NULL';
@@ -4048,27 +4231,8 @@ class MagicMapper
             }
         }//end foreach
 
-        $this->logger->info(
-            message: '[MagicMapper] Successfully updated table structure',
-            context: [
-                'file'              => __FILE__,
-                'line'              => __LINE__,
-                'tableName'         => $tableName,
-                'columnsAdded'      => $columnsAdded,
-                'columnsDeRequired' => $columnsDeRequired,
-                'columnsReRequired' => $columnsReRequired,
-                'columnsDropped'    => $columnsDropped,
-            ]
-        );
-
-        // Return statistics about what was changed.
-        return [
-            'columnsAdded'      => $columnsAdded,
-            'columnsDeRequired' => $columnsDeRequired,
-            'columnsReRequired' => $columnsReRequired,
-            'columnsDropped'    => $columnsDropped,
-        ];
-    }//end updateTableStructure()
+        return $columnsDeRequired;
+    }//end makeObsoleteColumnsNullable()
 
     /**
      * Format a default value for SQL statement.

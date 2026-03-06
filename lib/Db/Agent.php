@@ -421,7 +421,8 @@ class Agent extends Entity implements JsonSerializable
         $this->setRagSearchMode(ragSearchMode: $object['ragSearchMode'] ?? $object['rag_search_mode'] ?? null);
         $this->setRagNumSources(ragNumSources: $object['ragNumSources'] ?? $object['rag_num_sources'] ?? null);
         $this->setRagIncludeFiles(ragIncludeFiles: $object['ragIncludeFiles'] ?? $object['rag_include_files'] ?? false);
-        $this->setRagIncludeObjects(ragIncludeObjects: $object['ragIncludeObjects'] ?? $object['rag_include_objects'] ?? false);
+        $ragIncludeObjects = ($object['ragIncludeObjects'] ?? $object['rag_include_objects'] ?? false);
+        $this->setRagIncludeObjects(ragIncludeObjects: $ragIncludeObjects);
         $this->setRequestQuota(requestQuota: $object['requestQuota'] ?? $object['request_quota'] ?? null);
         $this->setTokenQuota(tokenQuota: $object['tokenQuota'] ?? $object['token_quota'] ?? null);
         $this->setViews(views: $object['views'] ?? null);

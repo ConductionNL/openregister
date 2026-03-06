@@ -164,7 +164,12 @@ class ConversationMapper extends QBMapper
 
         // Step 4: Dispatch update event with old and new entity states.
         // Listeners can react to conversation updates (e.g., cache invalidation, notifications).
-        $this->eventDispatcher->dispatchTyped(new ConversationUpdatedEvent(newConversation: $entity, oldConversation: $oldEntity));
+        $this->eventDispatcher->dispatchTyped(
+            new ConversationUpdatedEvent(
+                newConversation: $entity,
+                oldConversation: $oldEntity
+            )
+        );
 
         return $entity;
     }//end update()

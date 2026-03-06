@@ -825,7 +825,12 @@ class BulkOperationsHandler
                     $batchRetryCount++;
                     $this->logger->error(
                         message: '[BulkOperationsHandler] Error executing batch',
-                        context: ['file' => __FILE__, 'line' => __LINE__, 'attempt' => $batchRetryCount, 'error' => $e->getMessage()]
+                        context: [
+                            'file'    => __FILE__,
+                            'line'    => __LINE__,
+                            'attempt' => $batchRetryCount,
+                            'error'   => $e->getMessage(),
+                        ]
                     );
 
                     if ($batchRetryCount > $maxBatchRetries) {

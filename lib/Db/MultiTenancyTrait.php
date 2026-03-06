@@ -89,7 +89,7 @@ trait MultiTenancyTrait
             $organisationMapper = $this->organisationMapper;
             if (isset($this->logger) === true) {
                 $this->logger->info(
-                    message: '[MultiTenancyTrait] MultiTenancyTrait: Calling getActiveOrganisationWithFallback for user: '.$user->getUID(),
+                    message: '[MultiTenancyTrait] Calling getActiveOrganisationWithFallback for user: '.$user->getUID(),
                     context: ['file' => __FILE__, 'line' => __LINE__]
                 );
             }
@@ -283,6 +283,7 @@ trait MultiTenancyTrait
      * @return void
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control multitenancy filtering behavior
+     * @SuppressWarnings(PHPMD.NPathComplexity)    Already decomposed into helper methods — NPath from parameter combinations
      */
     protected function applyOrganisationFilter(
         IQueryBuilder $qb,

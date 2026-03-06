@@ -57,6 +57,9 @@ use DateTime;
  * but optimized for schema-specific table structures.
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength) Search handler requires many specialized query building methods
+ * @SuppressWarnings(PHPMD.TooManyMethods) Search requires per-operator and per-type conversion methods
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Search handler bridges schema, register, and query builder layers
  */
 class MagicSearchHandler
 {

@@ -8,10 +8,13 @@ use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\Entity\Register;
-use OCA\OpenRegister\Db\Entity\Schema;
-use OCA\OpenRegister\Db\Entity\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCP\BackgroundJob\IJobList;
+use OCP\IGroupManager;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 use React\Promise\PromiseInterface;
 
 /**
@@ -44,7 +47,10 @@ class ImportServiceTest extends TestCase
         $this->importService = new ImportService(
             $this->objectEntityMapper,
             $this->schemaMapper,
-            $this->objectService
+            $this->objectService,
+            $this->createMock(LoggerInterface::class),
+            $this->createMock(IGroupManager::class),
+            $this->createMock(IJobList::class)
         );
     }
 

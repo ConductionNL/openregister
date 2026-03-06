@@ -387,107 +387,16 @@ class RegisterService
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
 
-            // Build a UNION query that counts objects for each schema.
-            $unionQueries = [];
-            $blobSchemas  = [];
+            // Classify schemas into magic table and blob storage groups.
+            $classified = $this->classifySchemasForCounting(registerId: $registerId, schemas: $schemas);
 
-            foreach ($schemas as $schema) {
-                $schemaId = $schema['id'] ?? null;
-                if ($schemaId === null) {
-                    $this->logger->warning(
-                        message: '[RegisterService] Schema without ID found, skipping',
-                        context: ['file' => __FILE__, 'line' => __LINE__]
-                    );
-                    continue;
-                }
-
-                $this->logger->debug(
-                    message: "[RegisterService] Processing schema ID: {$schemaId}",
-                    context: ['file' => __FILE__, 'line' => __LINE__]
-                );
-
-                // Check if this schema uses magic table (has 'table' configuration in properties).
-                $isMagicTable = false;
-                if (isset($schema['properties']) === true && is_array($schema['properties']) === true) {
-                    foreach ($schema['properties'] as $property) {
-                        if (isset($property['table']) === true && is_array($property['table']) === true) {
-                            $isMagicTable = true;
-                            break;
-                        }
-                    }
-                }
-
-                $magicTableLabel = 'no';
-                if ($isMagicTable === true) {
-                    $magicTableLabel = 'yes';
-                }
-
-                $this->logger->debug(
-                    message: "[RegisterService] Schema {$schemaId} is magic table: ".($magicTableLabel),
-                    context: ['file' => __FILE__, 'line' => __LINE__]
-                );
-
-                if ($isMagicTable === true) {
-                    // Magic table: check if table exists, then query it.
-                    // Note: Nextcloud's IDBConnection doesn't have getPrefix(), we use the table name directly.
-                    $tableName = 'openregister_table_'.$registerId.'_'.$schemaId;
-
-                    // Check if table exists.
-                    $tableExists = $this->db->tableExists($tableName);
-
-                    if ($tableExists === true) {
-                        $quotedTableName = $this->db->getQueryBuilder()->getTableName($tableName);
-                        // Magic tables store data in flat columns (not in an 'object' column).
-                        // The _deleted column is JSONB and should be NULL for non-deleted objects.
-                        // Cast schema_id to VARCHAR to match blob storage query type.
-                        $unionQueries[] = "
-                            SELECT
-                                CAST({$schemaId} AS VARCHAR) as schema_id,
-                                COUNT(*) as total,
-                                COUNT(CASE WHEN _deleted IS NOT NULL THEN 1 END) as deleted,
-                                0 as invalid,
-                                0 as locked,
-                                0 as published,
-                                0 as size
-                            FROM {$quotedTableName}
-                        ";
-                    } else {
-                        // Table doesn't exist yet, return 0 for all stats.
-                        $result[$schemaId] = [
-                            'total'     => 0,
-                            'deleted'   => 0,
-                            'invalid'   => 0,
-                            'locked'    => 0,
-                            'published' => 0,
-                            'size'      => 0,
-                        ];
-                    }//end if
-                } else {
-                    // Blob storage: add to blob schemas list.
-                    $blobSchemas[] = (int) $schemaId;
-                }//end if
-            }//end foreach
+            $unionQueries = $classified['unionQueries'];
+            $blobSchemas  = $classified['blobSchemas'];
+            $result       = $classified['zeroResults'];
 
             // Add blob storage query if there are any blob schemas.
             if (empty($blobSchemas) === false) {
-                $schemaIdsList = implode("','", $blobSchemas);
-                $qb            = $this->db->getQueryBuilder();
-                $tableName     = $qb->getTableName('openregister_objects');
-                $unionQueries[] = "
-                    SELECT
-                        schema as schema_id,
-                        COUNT(*) as total,
-                        COUNT(CASE WHEN deleted IS NOT NULL THEN 1 END) as deleted,
-                        COUNT(CASE WHEN validation IS NOT NULL THEN 1 END) as invalid,
-                        COUNT(CASE WHEN locked IS NOT NULL THEN 1 END) as locked,
-                        COUNT(CASE WHEN published IS NOT NULL AND published <= NOW()
-                              AND (depublished IS NULL OR depublished > NOW()) THEN 1 END) as published,
-                        COALESCE(SUM(size), 0) as size
-                    FROM {$tableName}
-                    WHERE register = '{$registerId}'
-                      AND schema IN ('{$schemaIdsList}')
-                    GROUP BY schema
-                ";
+                $unionQueries[] = $this->buildBlobCountQuery(registerId: $registerId, blobSchemas: $blobSchemas);
             }
 
             if (empty($unionQueries) === true) {
@@ -509,14 +418,7 @@ class RegisterService
 
             // Process results.
             while (($row = $stmt->fetch(\PDO::FETCH_ASSOC)) !== false) {
-                $result[(int) $row['schema_id']] = [
-                    'total'     => (int) $row['total'],
-                    'deleted'   => (int) $row['deleted'],
-                    'invalid'   => (int) $row['invalid'],
-                    'locked'    => (int) $row['locked'],
-                    'published' => (int) $row['published'],
-                    'size'      => (int) $row['size'],
-                ];
+                $result[(int) $row['schema_id']] = $this->getZeroCountStats(row: $row);
             }
 
             $stmt->closeCursor();
@@ -524,14 +426,7 @@ class RegisterService
             // Ensure all blob schemas have an entry (even if 0).
             foreach ($blobSchemas as $schemaId) {
                 if (isset($result[$schemaId]) === false) {
-                    $result[$schemaId] = [
-                        'total'     => 0,
-                        'deleted'   => 0,
-                        'invalid'   => 0,
-                        'locked'    => 0,
-                        'published' => 0,
-                        'size'      => 0,
-                    ];
+                    $result[$schemaId] = $this->getZeroCountStats();
                 }
             }
         } catch (\Exception $e) {
@@ -548,4 +443,153 @@ class RegisterService
 
         return $result;
     }//end getSchemaObjectCounts()
+
+    /**
+     * Classify schemas into magic table and blob storage groups for counting.
+     *
+     * Iterates over schemas, determines which use magic tables vs blob storage,
+     * and builds UNION query fragments for magic table schemas.
+     *
+     * @param int   $registerId The register ID.
+     * @param array $schemas    Array of schema data arrays.
+     *
+     * @return array{unionQueries: string[], blobSchemas: int[], zeroResults: array} Classification result.
+     */
+    private function classifySchemasForCounting(int $registerId, array $schemas): array
+    {
+        $unionQueries = [];
+        $blobSchemas  = [];
+        $zeroResults  = [];
+
+        foreach ($schemas as $schema) {
+            $schemaId = $schema['id'] ?? null;
+            if ($schemaId === null) {
+                $this->logger->warning(
+                    message: '[RegisterService] Schema without ID found, skipping',
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
+                continue;
+            }
+
+            // Check if this schema uses magic table (has 'table' configuration in properties).
+            $isMagicTable = $this->schemaHasMagicTable(schema: $schema);
+
+            if ($isMagicTable === true) {
+                $tableName   = 'openregister_table_'.$registerId.'_'.$schemaId;
+                $tableExists = $this->db->tableExists($tableName);
+
+                if ($tableExists === true) {
+                    $quotedTableName = $this->db->getQueryBuilder()->getTableName($tableName);
+                    $unionQueries[]  = "
+                        SELECT
+                            CAST({$schemaId} AS VARCHAR) as schema_id,
+                            COUNT(*) as total,
+                            COUNT(CASE WHEN _deleted IS NOT NULL THEN 1 END) as deleted,
+                            0 as invalid,
+                            0 as locked,
+                            0 as published,
+                            0 as size
+                        FROM {$quotedTableName}
+                    ";
+                } else {
+                    // Table doesn't exist yet, return 0 for all stats.
+                    $zeroResults[$schemaId] = $this->getZeroCountStats();
+                }//end if
+            } else {
+                // Blob storage: add to blob schemas list.
+                $blobSchemas[] = (int) $schemaId;
+            }//end if
+        }//end foreach
+
+        return [
+            'unionQueries' => $unionQueries,
+            'blobSchemas'  => $blobSchemas,
+            'zeroResults'  => $zeroResults,
+        ];
+    }//end classifySchemasForCounting()
+
+    /**
+     * Check if a schema uses magic table storage.
+     *
+     * A schema uses magic tables if any of its properties has a 'table' array configuration.
+     *
+     * @param array $schema The schema data array.
+     *
+     * @return bool True if the schema uses magic tables.
+     */
+    private function schemaHasMagicTable(array $schema): bool
+    {
+        if (isset($schema['properties']) === false || is_array($schema['properties']) === false) {
+            return false;
+        }
+
+        foreach ($schema['properties'] as $property) {
+            if (isset($property['table']) === true && is_array($property['table']) === true) {
+                return true;
+            }
+        }
+
+        return false;
+    }//end schemaHasMagicTable()
+
+    /**
+     * Build the blob storage count query for the given schemas.
+     *
+     * @param int   $registerId  The register ID.
+     * @param int[] $blobSchemas Array of schema IDs using blob storage.
+     *
+     * @return string The SQL query string.
+     */
+    private function buildBlobCountQuery(int $registerId, array $blobSchemas): string
+    {
+        $schemaIdsList = implode("','", $blobSchemas);
+        $qb            = $this->db->getQueryBuilder();
+        $tableName     = $qb->getTableName('openregister_objects');
+
+        return "
+            SELECT
+                schema as schema_id,
+                COUNT(*) as total,
+                COUNT(CASE WHEN deleted IS NOT NULL THEN 1 END) as deleted,
+                COUNT(CASE WHEN validation IS NOT NULL THEN 1 END) as invalid,
+                COUNT(CASE WHEN locked IS NOT NULL THEN 1 END) as locked,
+                COUNT(CASE WHEN published IS NOT NULL AND published <= NOW()
+                      AND (depublished IS NULL OR depublished > NOW()) THEN 1 END) as published,
+                COALESCE(SUM(size), 0) as size
+            FROM {$tableName}
+            WHERE register = '{$registerId}'
+              AND schema IN ('{$schemaIdsList}')
+            GROUP BY schema
+        ";
+    }//end buildBlobCountQuery()
+
+    /**
+     * Get a zero-initialized count stats array, optionally populated from a database row.
+     *
+     * @param array|null $row Optional database result row to extract counts from.
+     *
+     * @return array{total: int, deleted: int, invalid: int, locked: int, published: int, size: int}
+     */
+    private function getZeroCountStats(?array $row=null): array
+    {
+        if ($row !== null) {
+            return [
+                'total'     => (int) $row['total'],
+                'deleted'   => (int) $row['deleted'],
+                'invalid'   => (int) $row['invalid'],
+                'locked'    => (int) $row['locked'],
+                'published' => (int) $row['published'],
+                'size'      => (int) $row['size'],
+            ];
+        }
+
+        return [
+            'total'     => 0,
+            'deleted'   => 0,
+            'invalid'   => 0,
+            'locked'    => 0,
+            'published' => 0,
+            'size'      => 0,
+        ];
+    }//end getZeroCountStats()
 }//end class
