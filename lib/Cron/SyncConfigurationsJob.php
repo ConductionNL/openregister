@@ -107,7 +107,7 @@ class SyncConfigurationsJob extends TimedJob
         Client $httpClient,
         LoggerInterface $logger
     ) {
-        parent::__construct($time);
+        parent::__construct(time: $time);
 
         $this->configurationMapper  = $configurationMapper;
         $this->configurationService = $configurationService;
@@ -117,7 +117,7 @@ class SyncConfigurationsJob extends TimedJob
         $this->logger = $logger;
 
         // Run every hour (3600 seconds).
-        $this->setInterval(3600);
+        $this->setInterval(seconds: 3600);
     }//end __construct()
 
     /**
@@ -153,7 +153,7 @@ class SyncConfigurationsJob extends TimedJob
             foreach ($configurations as $configuration) {
                 try {
                     // Check if this configuration is due for sync.
-                    if ($this->isDueForSync($configuration) === false) {
+                    if ($this->isDueForSync(configuration: $configuration) === false) {
                         $skipped++;
                         continue;
                     }
@@ -166,7 +166,7 @@ class SyncConfigurationsJob extends TimedJob
                     );
 
                     // Sync the configuration based on source type.
-                    $this->syncConfiguration($configuration);
+                    $this->syncConfiguration(configuration: $configuration);
 
                     $synced++;
                     $this->logger->info(
@@ -176,7 +176,7 @@ class SyncConfigurationsJob extends TimedJob
                 } catch (Exception $e) {
                     $failed++;
                     $this->logger->error(
-                        message: "[SyncConfigurationsJob] Error syncing configuration {$configuration->getId()}: ".$e->getMessage(),
+                        message: "[SyncConfigurationsJob] Sync error: ".$e->getMessage(),
                         context: ['file' => __FILE__, 'line' => __LINE__]
                     );
 
@@ -200,7 +200,7 @@ class SyncConfigurationsJob extends TimedJob
             }//end foreach
 
             $this->logger->info(
-                message: "[SyncConfigurationsJob] Configuration sync job completed: {$synced} synced, {$skipped} skipped, {$failed} failed",
+                message: "[SyncConfigurationsJob] Completed: {$synced} synced, {$skipped} skipped, {$failed} failed",
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
         } catch (Exception $e) {
@@ -250,19 +250,19 @@ class SyncConfigurationsJob extends TimedJob
 
         switch ($sourceType) {
             case 'github':
-                $this->syncFromGitHub($configuration);
+                $this->syncFromGitHub(configuration: $configuration);
                 break;
 
             case 'gitlab':
-                $this->syncFromGitLab($configuration);
+                $this->syncFromGitLab(configuration: $configuration);
                 break;
 
             case 'url':
-                $this->syncFromUrl($configuration);
+                $this->syncFromUrl(configuration: $configuration);
                 break;
 
             case 'local':
-                $this->syncFromLocal($configuration);
+                $this->syncFromLocal(configuration: $configuration);
                 break;
 
             default:

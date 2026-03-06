@@ -78,8 +78,8 @@ class SchemaHandler
             $this->logger->info(
                 message: '[SchemaHandler] Ensuring vector field type',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
                     'collection' => $collection,
                     'dimensions' => $dimensions,
                     'similarity' => $similarity,
@@ -119,8 +119,8 @@ class SchemaHandler
             $this->logger->error(
                 message: '[SchemaHandler] Failed to ensure vector field type',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
                     'error'      => $e->getMessage(),
                     'collection' => $collection,
                 ]
@@ -165,13 +165,13 @@ class SchemaHandler
             $schemas = $this->schemaMapper->findAll();
 
             // Analyze schemas for field conflicts.
-            $conflictAnalysis = $this->analyzeAndResolveFieldConflicts($schemas);
+            $conflictAnalysis = $this->analyzeAndResolveFieldConflicts(schemas: $schemas);
 
             $this->logger->info(
                 message: '[SchemaHandler] Field conflict analysis complete',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'               => __FILE__,
+                    'line'               => __LINE__,
                     'total_fields'       => count($conflictAnalysis['fields']),
                     'conflicting_fields' => count($conflictAnalysis['conflicts']),
                     'resolved_conflicts' => count($conflictAnalysis['resolved']),
@@ -179,7 +179,7 @@ class SchemaHandler
             );
 
             // Ensure core metadata fields exist.
-            $coreFieldsResult = $this->ensureCoreMetadataFields($force);
+            $coreFieldsResult = $this->ensureCoreMetadataFields(force: $force);
             if ($coreFieldsResult === true) {
                 $stats['core_fields_created'] = 52;
                 // Assuming 52 core fields.
@@ -207,8 +207,8 @@ class SchemaHandler
                     $this->logger->error(
                         message: '[SchemaHandler] Failed to process schema',
                         context: [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
+                            'file'      => __FILE__,
+                            'line'      => __LINE__,
                             'schema_id' => $schema->getId(),
                             'error'     => $e->getMessage(),
                         ]
@@ -221,8 +221,8 @@ class SchemaHandler
             $this->logger->info(
                 message: '[SchemaHandler] Schema mirroring complete',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'              => __FILE__,
+                    'line'              => __LINE__,
                     'stats'             => $stats,
                     'execution_time_ms' => $executionTime,
                 ]
@@ -238,8 +238,8 @@ class SchemaHandler
             $this->logger->error(
                 message: '[SchemaHandler] Schema mirroring failed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -278,7 +278,7 @@ class SchemaHandler
                     $fieldTypes[$propName] = [];
                 }
 
-                $solrType = $this->determineSolrFieldType($propDef);
+                $solrType = $this->determineSolrFieldType(fieldDefinition: $propDef);
                 $fieldTypes[$propName][] = [
                     'type'      => $solrType,
                     'schema_id' => $schema->getId(),
@@ -298,14 +298,14 @@ class SchemaHandler
                 $conflicts[$fieldName] = $uniqueTypes;
 
                 // Resolve to most permissive type.
-                $resolvedType         = $this->getMostPermissiveType($uniqueTypes);
+                $resolvedType         = $this->getMostPermissiveType(types: $uniqueTypes);
                 $resolved[$fieldName] = $resolvedType;
 
                 $this->logger->warning(
                     message: '[SchemaHandler] Field type conflict resolved',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'              => __FILE__,
+                        'line'              => __LINE__,
                         'field'             => $fieldName,
                         'conflicting_types' => $uniqueTypes,
                         'resolved_type'     => $resolvedType,
@@ -313,7 +313,7 @@ class SchemaHandler
                 );
 
                 continue;
-            }
+            }//end if
 
             $resolved[$fieldName] = $uniqueTypes[0];
         }//end foreach
@@ -375,17 +375,17 @@ class SchemaHandler
         $properties = $schema->getProperties() ?? [];
 
         foreach ($properties as $propName => $propDef) {
-            $fieldName = $this->generateSolrFieldName($propName);
+            $fieldName = $this->generateSolrFieldName(fieldName: $propName);
 
             // Use resolved type if available, otherwise determine from property.
-            $fieldType = $resolvedTypes[$propName] ?? $this->determineSolrFieldType($propDef);
+            $fieldType = $resolvedTypes[$propName] ?? $this->determineSolrFieldType(fieldDefinition: $propDef);
 
             $solrFields[$fieldName] = [
                 'name'        => $fieldName,
                 'type'        => $fieldType,
                 'indexed'     => true,
                 'stored'      => true,
-                'multiValued' => $this->isMultiValued($propDef),
+                'multiValued' => $this->isMultiValued(fieldDefinition: $propDef),
             ];
         }
 
@@ -476,8 +476,8 @@ class SchemaHandler
             $this->logger->info(
                 message: '[SchemaHandler] Core metadata fields ensured',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'    => __FILE__,
+                    'line'    => __LINE__,
                     'created' => $result['created'],
                     'updated' => $result['updated'],
                 ]
@@ -488,8 +488,8 @@ class SchemaHandler
             $this->logger->error(
                 message: '[SchemaHandler] Failed to ensure core metadata fields',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -582,14 +582,14 @@ class SchemaHandler
                 $this->logger->error(
                     message: '[SchemaHandler] Failed to apply field',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'  => __FILE__,
+                        'line'  => __LINE__,
                         'field' => $fieldConfig['name'] ?? 'unknown',
                         'error' => $e->getMessage(),
                     ]
                 );
             }
-        }
+        }//end foreach
 
         return [
             'created' => $created,
@@ -637,8 +637,8 @@ class SchemaHandler
             $this->logger->error(
                 message: '[SchemaHandler] Failed to get collection field status',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
                     'collection' => $collection,
                     'error'      => $e->getMessage(),
                 ]
@@ -668,8 +668,8 @@ class SchemaHandler
         $this->logger->info(
             message: '[SchemaHandler] Creating missing fields',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'        => __FILE__,
+                'line'        => __LINE__,
                 'collection'  => $collection,
                 'field_count' => count($missingFields),
                 'dry_run'     => $dryRun,
@@ -711,8 +711,8 @@ class SchemaHandler
         $this->logger->info(
             message: '[SchemaHandler] Fixing mismatched fields',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'   => __FILE__,
+                'line'   => __LINE__,
                 'count'  => count($mismatchedFields),
                 'dryRun' => $dryRun,
             ]
@@ -730,8 +730,8 @@ class SchemaHandler
             $this->logger->error(
                 message: '[SchemaHandler] Failed to fix mismatched fields',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );

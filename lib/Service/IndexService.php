@@ -350,8 +350,8 @@ class IndexService
             $this->logger->error(
                 message: '[IndexService] Failed to check availability',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -376,8 +376,8 @@ class IndexService
             $this->logger->error(
                 message: '[IndexService] Connection test failed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -402,8 +402,8 @@ class IndexService
             $this->logger->error(
                 message: '[IndexService] Failed to get stats',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -445,8 +445,8 @@ class IndexService
             $this->logger->error(
                 message: '[IndexService] Failed to get dashboard stats',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -471,8 +471,8 @@ class IndexService
             $this->logger->error(
                 message: '[IndexService] Optimization failed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -495,8 +495,8 @@ class IndexService
             $this->logger->error(
                 message: '[IndexService] Failed to clear index',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
                     'collection' => $collectionName,
                     'error'      => $e->getMessage(),
                 ]
@@ -522,8 +522,8 @@ class IndexService
             $this->logger->error(
                 message: '[IndexService] Failed to get config',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -720,7 +720,7 @@ class IndexService
      */
     public function collectionExists(string $collectionName): bool
     {
-        return $this->searchBackend->collectionExists($collectionName);
+        return $this->searchBackend->collectionExists(collectionName: $collectionName);
     }//end collectionExists()
 
     /**
@@ -768,10 +768,10 @@ class IndexService
      */
     public function ensureTenantCollection(?string $tenant=null): array
     {
-        $collectionName = $this->getTenantSpecificCollectionName($tenant);
+        $collectionName = $this->getTenantSpecificCollectionName(tenant: $tenant);
 
-        if ($this->collectionExists($collectionName) === false) {
-            $this->createCollection($collectionName);
+        if ($this->collectionExists(collectionName: $collectionName) === false) {
+            $this->createCollection(name: $collectionName);
         }
 
         return [

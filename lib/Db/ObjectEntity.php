@@ -503,7 +503,7 @@ class ObjectEntity extends Entity implements JsonSerializable
         }
 
         // Otherwise, delegate to parent's standard getter behavior.
-        return parent::getter($name);
+        return parent::getter(name: $name);
     }//end getter()
 
     /**
@@ -592,8 +592,8 @@ class ObjectEntity extends Entity implements JsonSerializable
         unset($object['@self']);
 
         // Hydrate the entity with the metadata fields.
-        $this->hydrate($metaDataFields);
-        $this->setObject($object);
+        $this->hydrate(object: $metaDataFields);
+        $this->setObject(object: $object);
 
         // Return the hydrated entity.
         return $this;
@@ -630,7 +630,7 @@ class ObjectEntity extends Entity implements JsonSerializable
         }
 
         // Default to an empty array if $this->object is null.
-        $object['@self'] = $this->getObjectArray($object ?? []);
+        $object['@self'] = $this->getObjectArray(object: $object ?? []);
 
         // Check if name is empty and set uuid as fallback.
         if (empty($object['@self']['name']) === true) {
@@ -705,10 +705,10 @@ class ObjectEntity extends Entity implements JsonSerializable
             'geo'           => $this->getGeo(),
             'retention'     => $this->getRetention(),
             'size'          => $this->size,
-            'updated'       => $this->getFormattedDate($this->updated),
-            'created'       => $this->getFormattedDate($this->created),
-            'published'     => $this->getFormattedDate($this->published),
-            'depublished'   => $this->getFormattedDate($this->depublished),
+            'updated'       => $this->getFormattedDate(date: $this->updated),
+            'created'       => $this->getFormattedDate(date: $this->created),
+            'published'     => $this->getFormattedDate(date: $this->published),
+            'depublished'   => $this->getFormattedDate(date: $this->depublished),
             'deleted'       => $this->getDeleted(),
             'source'        => $this->source,
         ];

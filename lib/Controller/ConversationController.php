@@ -233,8 +233,8 @@ class ConversationController extends Controller
             $this->logger->error(
                 message: '[ConversationController] Failed to list conversations',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]
@@ -315,8 +315,8 @@ class ConversationController extends Controller
             $this->logger->error(
                 message: '[ConversationController] Failed to get conversation',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'uuid'  => $uuid,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
@@ -416,8 +416,8 @@ class ConversationController extends Controller
             $this->logger->error(
                 message: '[ConversationController] Failed to get messages',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'uuid'  => $uuid,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
@@ -485,8 +485,8 @@ class ConversationController extends Controller
                     $this->logger->warning(
                         message: '[ConversationController] Agent UUID not found',
                         context: [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
+                            'file'      => __FILE__,
+                            'line'      => __LINE__,
                             'agentUuid' => $data['agentUuid'],
                         ]
                     );
@@ -520,8 +520,8 @@ class ConversationController extends Controller
             $this->logger->info(
                 message: '[ConversationController] Conversation created',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'         => __FILE__,
+                    'line'         => __LINE__,
                     'uuid'         => $conversation->getUuid(),
                     'userId'       => $this->userId,
                     'organisation' => $organisation?->getUuid(),
@@ -533,8 +533,8 @@ class ConversationController extends Controller
             $this->logger->error(
                 message: '[ConversationController] Failed to create conversation',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]
@@ -632,8 +632,8 @@ class ConversationController extends Controller
             $this->logger->error(
                 message: '[ConversationController] Failed to update conversation',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'uuid'  => $uuid,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
@@ -762,8 +762,8 @@ class ConversationController extends Controller
             $this->logger->error(
                 message: '[ConversationController] Failed to delete conversation',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'uuid'  => $uuid,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
@@ -847,8 +847,8 @@ class ConversationController extends Controller
             $this->logger->error(
                 message: '[ConversationController] Failed to restore conversation',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'uuid'  => $uuid,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
@@ -938,8 +938,8 @@ class ConversationController extends Controller
             $this->logger->error(
                 message: '[ConversationController] Failed to permanently delete conversation',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'uuid'  => $uuid,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),

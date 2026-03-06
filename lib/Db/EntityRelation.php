@@ -163,20 +163,20 @@ class EntityRelation extends Entity implements JsonSerializable
      */
     public function __construct()
     {
-        $this->addType('entityId', 'integer');
-        $this->addType('chunkId', 'integer');
-        $this->addType('role', 'string');
-        $this->addType('fileId', 'integer');
-        $this->addType('objectId', 'integer');
-        $this->addType('emailId', 'integer');
-        $this->addType('positionStart', 'integer');
-        $this->addType('positionEnd', 'integer');
-        $this->addType('confidence', 'float');
-        $this->addType('detectionMethod', 'string');
-        $this->addType('context', 'string');
-        $this->addType('anonymized', 'boolean');
-        $this->addType('anonymizedValue', 'string');
-        $this->addType('createdAt', 'datetime');
+        $this->addType(fieldName: 'entityId', type: 'integer');
+        $this->addType(fieldName: 'chunkId', type: 'integer');
+        $this->addType(fieldName: 'role', type: 'string');
+        $this->addType(fieldName: 'fileId', type: 'integer');
+        $this->addType(fieldName: 'objectId', type: 'integer');
+        $this->addType(fieldName: 'emailId', type: 'integer');
+        $this->addType(fieldName: 'positionStart', type: 'integer');
+        $this->addType(fieldName: 'positionEnd', type: 'integer');
+        $this->addType(fieldName: 'confidence', type: 'float');
+        $this->addType(fieldName: 'detectionMethod', type: 'string');
+        $this->addType(fieldName: 'context', type: 'string');
+        $this->addType(fieldName: 'anonymized', type: 'boolean');
+        $this->addType(fieldName: 'anonymizedValue', type: 'string');
+        $this->addType(fieldName: 'createdAt', type: 'datetime');
     }//end __construct()
 
     /**

@@ -162,14 +162,14 @@ class ElasticsearchHttpClient
             $this->logger->error(
                 message: '[ElasticsearchHttpClient] GET failed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'url'   => $url,
                     'error' => $e->getMessage(),
                 ]
             );
             throw $e;
-        }
+        }//end try
     }//end get()
 
     /**
@@ -200,8 +200,8 @@ class ElasticsearchHttpClient
             $this->logger->error(
                 message: '[ElasticsearchHttpClient] POST failed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'url'   => $url,
                     'error' => $e->getMessage(),
                 ]
@@ -241,8 +241,8 @@ class ElasticsearchHttpClient
             $this->logger->error(
                 message: '[ElasticsearchHttpClient] POST (raw) failed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'url'   => $url,
                     'error' => $e->getMessage(),
                 ]
@@ -279,8 +279,8 @@ class ElasticsearchHttpClient
             $this->logger->error(
                 message: '[ElasticsearchHttpClient] PUT failed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'url'   => $url,
                     'error' => $e->getMessage(),
                 ]
@@ -311,14 +311,14 @@ class ElasticsearchHttpClient
             $this->logger->error(
                 message: '[ElasticsearchHttpClient] DELETE failed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'url'   => $url,
                     'error' => $e->getMessage(),
                 ]
             );
             throw $e;
-        }
+        }//end try
     }//end delete()
 
     /**

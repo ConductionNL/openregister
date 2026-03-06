@@ -109,8 +109,8 @@ class ElasticsearchDocumentIndexer
                 $this->logger->info(
                     message: '[ElasticsearchDocumentIndexer] Object indexed',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'      => __FILE__,
+                        'line'      => __LINE__,
                         'object_id' => $object->getId(),
                         'result'    => $response['result'] ?? 'unknown',
                     ]
@@ -127,8 +127,8 @@ class ElasticsearchDocumentIndexer
             $this->logger->error(
                 message: '[ElasticsearchDocumentIndexer] Failed to index object',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
                     'object_id' => $object->getId(),
                     'error'     => $e->getMessage(),
                 ]
@@ -188,8 +188,8 @@ class ElasticsearchDocumentIndexer
                 $this->logger->error(
                     message: '[ElasticsearchDocumentIndexer] Failed to build document',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'      => __FILE__,
+                        'line'      => __LINE__,
                         'object_id' => $object->getId(),
                         'error'     => $e->getMessage(),
                     ]
@@ -228,8 +228,8 @@ class ElasticsearchDocumentIndexer
             $this->logger->info(
                 message: '[ElasticsearchDocumentIndexer] Bulk indexing completed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'    => __FILE__,
+                    'line'    => __LINE__,
                     'success' => $successCount,
                     'failed'  => $failureCount,
                 ]
@@ -249,8 +249,8 @@ class ElasticsearchDocumentIndexer
             $this->logger->error(
                 message: '[ElasticsearchDocumentIndexer] Bulk indexing failed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -288,8 +288,8 @@ class ElasticsearchDocumentIndexer
                 $this->logger->info(
                     message: '[ElasticsearchDocumentIndexer] Object deleted',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'      => __FILE__,
+                        'line'      => __LINE__,
                         'object_id' => $objectId,
                     ]
                 );
@@ -305,8 +305,8 @@ class ElasticsearchDocumentIndexer
             $this->logger->error(
                 message: '[ElasticsearchDocumentIndexer] Failed to delete object',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
                     'object_id' => $objectId,
                     'error'     => $e->getMessage(),
                 ]
@@ -332,8 +332,8 @@ class ElasticsearchDocumentIndexer
             $this->logger->info(
                 message: '[ElasticsearchDocumentIndexer] Index cleared',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'index' => $index,
                 ]
             );
@@ -343,8 +343,8 @@ class ElasticsearchDocumentIndexer
             $this->logger->error(
                 message: '[ElasticsearchDocumentIndexer] Failed to clear index',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );

@@ -183,7 +183,7 @@ class ValidateObject
             // Check if this is a schema reference we should resolve.
             if (is_string($reference) === true && str_contains($reference, '#/components/schemas/') === true) {
                 // Remove query parameters if present.
-                $cleanReference = $this->removeQueryParameters($reference);
+                $cleanReference = $this->removeQueryParameters(reference: $reference);
                 $schemaSlug     = substr($cleanReference, strrpos($cleanReference, '/') + 1);
 
                 // Prevent infinite loops.
@@ -192,7 +192,7 @@ class ValidateObject
                 }
 
                 // Try to resolve the schema.
-                $referencedSchema = $this->findSchemaBySlug($schemaSlug);
+                $referencedSchema = $this->findSchemaBySlug(slug: $schemaSlug);
                 if ($referencedSchema !== null) {
                     // Get the referenced schema object and recursively process it.
                     $refSchemaObj = $referencedSchema->getSchemaObject($this->urlGenerator);
@@ -281,7 +281,7 @@ class ValidateObject
         foreach ($schemaObject->properties as $propertyName => $propertySchema) {
             // Suppress unused variable warning for $propertyName - only processing schemas.
             unset($propertyName);
-            $this->transformPropertyForOpenRegister($propertySchema);
+            $this->transformPropertyForOpenRegister(propertySchema: $propertySchema);
         }
 
         return $schemaObject;
@@ -358,12 +358,12 @@ class ValidateObject
             && $propertySchema->type === 'array';
         $hasItems    = ($propertySchema->items ?? null) !== null;
         if ($isArrayType === true && $hasItems === true) {
-            $this->transformArrayItemsForOpenRegister($propertySchema->items);
+            $this->transformArrayItemsForOpenRegister(itemsSchema: $propertySchema->items);
         }
 
         // Handle direct object properties.
         if (($propertySchema->type ?? null) !== null && $propertySchema->type === 'object') {
-            $this->transformObjectPropertyForOpenRegister($propertySchema);
+            $this->transformObjectPropertyForOpenRegister(objectSchema: $propertySchema);
         }
 
         // Recursively transform nested properties.
@@ -371,7 +371,7 @@ class ValidateObject
             foreach ($propertySchema->properties ?? [] as $nestedPropertyName => $nestedPropertySchema) {
                 // Suppress unused variable warning for $nestedPropertyName - only processing schemas.
                 unset($nestedPropertyName);
-                $this->transformPropertyForOpenRegister($nestedPropertySchema);
+                $this->transformPropertyForOpenRegister(propertySchema: $nestedPropertySchema);
             }
         }
     }//end transformPropertyForOpenRegister()
@@ -407,7 +407,7 @@ class ValidateObject
             return;
         }
 
-        $this->transformObjectPropertyForOpenRegister($itemsSchema);
+        $this->transformObjectPropertyForOpenRegister(objectSchema: $itemsSchema);
     }//end transformArrayItemsForOpenRegister()
 
     /**
@@ -421,7 +421,7 @@ class ValidateObject
     {
         // Check if this has objectConfiguration (can be array or object).
         // Also check inside items.oneOf for polymorphic references.
-        $handling = $this->extractObjectConfigurationHandling($objectSchema);
+        $handling = $this->extractObjectConfigurationHandling(propertySchema: $objectSchema);
 
         if ($handling === null) {
             return;
@@ -430,12 +430,12 @@ class ValidateObject
         switch ($handling) {
             case 'related-object':
                 // For related objects, expect UUID strings instead of full objects.
-                $this->transformToUuidProperty($objectSchema);
+                $this->transformToUuidProperty(objectSchema: $objectSchema);
                 break;
 
             case 'nested-object':
                 // For nested objects, keep the full object structure but remove circular refs.
-                $this->transformToNestedObjectProperty($objectSchema);
+                $this->transformToNestedObjectProperty(objectSchema: $objectSchema);
                 break;
 
             default:
@@ -536,7 +536,7 @@ class ValidateObject
             // If this is a self-reference (circular), convert to a simple object type.
             if (is_string($reference) === true && str_contains($reference, '/components/schemas/') === true) {
                 // Remove query parameters if present.
-                $cleanReference = $this->removeQueryParameters($reference);
+                $cleanReference = $this->removeQueryParameters(reference: $reference);
                 $schemaSlug     = substr($cleanReference, strrpos($cleanReference, '/') + 1);
 
                 // For self-references, create a generic object structure to prevent circular validation.
@@ -574,8 +574,8 @@ class ValidateObject
     private function extractObjectConfigurationHandling(object $propertySchema): ?string
     {
         // Check directly on the property schema.
-        if (isset($propertySchema->objectConfiguration)) {
-            $handling = $this->getHandlingFromConfig($propertySchema->objectConfiguration);
+        if (isset($propertySchema->objectConfiguration) === true) {
+            $handling = $this->getHandlingFromConfig(config: $propertySchema->objectConfiguration);
             if ($handling !== null) {
                 return $handling;
             }
@@ -583,25 +583,25 @@ class ValidateObject
 
         // Check inside items (for properties with items structure).
         // Items can be either an object (stdClass) or an array depending on how the schema was processed.
-        if (isset($propertySchema->items)) {
+        if (isset($propertySchema->items) === true) {
             $items = $propertySchema->items;
 
             // Check if items has objectConfiguration directly.
-            $itemsConfig = $this->getNestedValue($items, 'objectConfiguration');
+            $itemsConfig = $this->getNestedValue(data: $items, key: 'objectConfiguration');
             if ($itemsConfig !== null) {
-                $handling = $this->getHandlingFromConfig($itemsConfig);
+                $handling = $this->getHandlingFromConfig(config: $itemsConfig);
                 if ($handling !== null) {
                     return $handling;
                 }
             }
 
             // Check inside items.oneOf (for polymorphic references).
-            $oneOf = $this->getNestedValue($items, 'oneOf');
-            if ($oneOf !== null && (is_array($oneOf) || is_object($oneOf))) {
+            $oneOf = $this->getNestedValue(data: $items, key: 'oneOf');
+            if ($oneOf !== null && (is_array($oneOf) === true || is_object($oneOf) === true)) {
                 foreach ($oneOf as $oneOfItem) {
-                    $oneOfConfig = $this->getNestedValue($oneOfItem, 'objectConfiguration');
+                    $oneOfConfig = $this->getNestedValue(data: $oneOfItem, key: 'objectConfiguration');
                     if ($oneOfConfig !== null) {
-                        $handling = $this->getHandlingFromConfig($oneOfConfig);
+                        $handling = $this->getHandlingFromConfig(config: $oneOfConfig);
                         if ($handling !== null) {
                             return $handling;
                         }
@@ -611,11 +611,11 @@ class ValidateObject
         }//end if
 
         // Check inside oneOf directly on the property (alternative structure).
-        if (isset($propertySchema->oneOf) && (is_array($propertySchema->oneOf) || is_object($propertySchema->oneOf))) {
+        if (isset($propertySchema->oneOf) === true && (is_array($propertySchema->oneOf) === true || is_object($propertySchema->oneOf) === true)) {
             foreach ($propertySchema->oneOf as $oneOfItem) {
-                $oneOfConfig = $this->getNestedValue($oneOfItem, 'objectConfiguration');
+                $oneOfConfig = $this->getNestedValue(data: $oneOfItem, key: 'objectConfiguration');
                 if ($oneOfConfig !== null) {
-                    $handling = $this->getHandlingFromConfig($oneOfConfig);
+                    $handling = $this->getHandlingFromConfig(config: $oneOfConfig);
                     if ($handling !== null) {
                         return $handling;
                     }
@@ -635,11 +635,11 @@ class ValidateObject
      */
     private function getHandlingFromConfig($config): ?string
     {
-        if (is_array($config) && isset($config['handling'])) {
+        if (is_array($config) === true && isset($config['handling']) === true) {
             return $config['handling'];
         }
 
-        if (is_object($config) && isset($config->handling)) {
+        if (is_object($config) === true && isset($config->handling) === true) {
             return $config->handling;
         }
 
@@ -656,11 +656,11 @@ class ValidateObject
      */
     private function getNestedValue($data, string $key)
     {
-        if (is_array($data) && isset($data[$key])) {
+        if (is_array($data) === true && isset($data[$key]) === true) {
             return $data[$key];
         }
 
-        if (is_object($data) && isset($data->$key)) {
+        if (is_object($data) === true && isset($data->$key) === true) {
             return $data->$key;
         }
 
@@ -701,12 +701,12 @@ class ValidateObject
             // Check if this property has a $ref that references the current schema.
             if ($this->isSelfReference(propertySchema: $propertySchema, schemaSlug: $currentSchemaSlug) === true) {
                 // Check if this is a related-object with objectConfiguration.
-                // Handle both array and object formats for objectConfiguration
+                // Handle both array and object formats for objectConfiguration.
                 $config   = $propertySchema->objectConfiguration ?? null;
                 $handling = null;
-                if (is_array($config) && isset($config['handling'])) {
+                if (is_array($config) === true && isset($config['handling']) === true) {
                     $handling = $config['handling'];
-                } else if (is_object($config) && isset($config->handling)) {
+                } else if (is_object($config) === true && isset($config->handling) === true) {
                     $handling = $config->handling;
                 }
 
@@ -737,7 +737,7 @@ class ValidateObject
                         // For non-inversedBy properties, expect string UUID.
                         $uuidPattern  = '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-';
                         $uuidPattern .= '[0-9a-f]{4}-[0-9a-f]{12}$';
-                        // Note: For related-object patterns, we support prefixed UUIDs, UUIDs without dashes, and numeric IDs
+                        // Note: For related-object patterns, we support prefixed UUIDs, UUIDs without dashes, and numeric IDs.
                         $uuidPattern          = '^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$';
                         $propertySchema->type = 'string';
                         $propertySchema->pattern = $uuidPattern;
@@ -801,7 +801,7 @@ class ValidateObject
         }//end foreach
 
         // Step 2: Transform OpenRegister-specific object configurations.
-        $schemaObject = $this->transformOpenRegisterObjectConfigurations($schemaObject);
+        $schemaObject = $this->transformOpenRegisterObjectConfigurations(schemaObject: $schemaObject);
 
         // Step 3: Remove $id property to prevent duplicate schema ID errors.
         if (($schemaObject->{'$id'} ?? null) !== null) {
@@ -922,11 +922,11 @@ class ValidateObject
 
         // Transform custom OpenRegister types to valid JSON Schema types.
         // JSON Schema only allows: string, number, integer, boolean, array, object, null.
-        $cleanedProperty = $this->transformCustomTypeToJsonSchemaType($cleanedProperty);
+        $cleanedProperty = $this->transformCustomTypeToJsonSchemaType(propertySchema: $cleanedProperty);
 
         // Special handling for array items - more aggressive transformation.
         if ($isArrayItems === true) {
-            return $this->transformArrayItemsForValidation($cleanedProperty);
+            return $this->transformArrayItemsForValidation(itemsSchema: $cleanedProperty);
         }
 
         // Handle nested properties recursively.
@@ -976,7 +976,11 @@ class ValidateObject
             && ($cleanedProperty->oneOf ?? null) !== null
             && (is_array($cleanedProperty->oneOf) === true || is_object($cleanedProperty->oneOf) === true)
         ) {
-            $oneOfArray = is_object($cleanedProperty->oneOf) ? get_object_vars($cleanedProperty->oneOf) : $cleanedProperty->oneOf;
+            if (is_object($cleanedProperty->oneOf) === true) {
+                $oneOfArray = get_object_vars($cleanedProperty->oneOf);
+            } else {
+                $oneOfArray = $cleanedProperty->oneOf;
+            }
 
             if (empty($oneOfArray) === false) {
                 // Ensure items object exists.
@@ -992,7 +996,7 @@ class ValidateObject
                 // Remove oneOf from array level.
                 unset($cleanedProperty->oneOf);
             }
-        }
+        }//end if
 
         return $cleanedProperty;
     }//end cleanPropertyForValidation()
@@ -1012,21 +1016,21 @@ class ValidateObject
         // Map of custom OpenRegister types to their JSON Schema equivalents.
         $customTypeMap = [
             'file'     => ['integer', 'string', 'null'],
-        // File references are stored as integer file IDs, string data URIs, or null
+        // File references are stored as integer file IDs, string data URIs, or null.
             'datetime' => 'string',
-        // Datetime values are stored as ISO 8601 strings
+        // Datetime values are stored as ISO 8601 strings.
             'date'     => 'string',
-        // Date values are stored as strings
+        // Date values are stored as strings.
             'time'     => 'string',
-        // Time values are stored as strings
+        // Time values are stored as strings.
             'uuid'     => 'string',
-        // UUIDs are strings
+        // UUIDs are strings.
             'url'      => 'string',
-        // URLs are strings
+        // URLs are strings.
             'email'    => 'string',
-        // Emails are strings
+        // Emails are strings.
             'phone'    => 'string',
-        // Phone numbers are strings
+        // Phone numbers are strings.
         ];
 
         // Check if type is set and needs transformation.
@@ -1070,12 +1074,12 @@ class ValidateObject
         }
 
         // Check if this has objectConfiguration to determine handling.
-        // Handle both array and object formats for objectConfiguration
+        // Handle both array and object formats for objectConfiguration.
         $config   = $itemsSchema->objectConfiguration ?? null;
         $handling = null;
-        if (is_array($config) && isset($config['handling'])) {
+        if (is_array($config) === true && isset($config['handling']) === true) {
             $handling = $config['handling'];
-        } else if (is_object($config) && isset($config->handling)) {
+        } else if (is_object($config) === true && isset($config->handling) === true) {
             $handling = $config->handling;
         }
 
@@ -1083,26 +1087,26 @@ class ValidateObject
             switch ($handling) {
                 case 'related-object':
                     // For related objects, convert to UUID strings.
-                    return $this->transformItemsToUuidStrings($itemsSchema);
+                    return $this->transformItemsToUuidStrings(itemsSchema: $itemsSchema);
 
                 case 'nested-object':
                     // For nested objects, create a simple object structure.
-                    return $this->transformItemsToSimpleObject($itemsSchema);
+                    return $this->transformItemsToSimpleObject(itemsSchema: $itemsSchema);
 
                 default:
                     // For other handling types, convert to UUID strings as default.
-                    return $this->transformItemsToUuidStrings($itemsSchema);
+                    return $this->transformItemsToUuidStrings(itemsSchema: $itemsSchema);
             }
         }
 
         // If no objectConfiguration, check if there's a $ref.
         if (($itemsSchema->{'$ref'} ?? null) !== null) {
             // Convert to UUID strings for any referenced objects.
-            return $this->transformItemsToUuidStrings($itemsSchema);
+            return $this->transformItemsToUuidStrings(itemsSchema: $itemsSchema);
         }
 
         // Default: convert to simple object structure.
-        return $this->transformItemsToSimpleObject($itemsSchema);
+        return $this->transformItemsToSimpleObject(itemsSchema: $itemsSchema);
     }//end transformArrayItemsForValidation()
 
     /**
@@ -1205,7 +1209,7 @@ class ValidateObject
             // Extract schema slug from reference path.
             if (is_string($refId) === true && str_contains($refId, '#/components/schemas/') === true) {
                 // Remove query parameters if present.
-                $cleanRefId     = $this->removeQueryParameters($refId);
+                $cleanRefId     = $this->removeQueryParameters(reference: $refId);
                 $referencedSlug = substr($cleanRefId, strrpos($cleanRefId, '/') + 1);
                 return $referencedSlug === $schemaSlug;
             }
@@ -1300,7 +1304,7 @@ class ValidateObject
         );
 
         // Clean the schema by removing all Nextcloud-specific metadata properties.
-        $schemaObject = $this->cleanSchemaForValidation($schemaObject);
+        $schemaObject = $this->cleanSchemaForValidation(schemaObject: $schemaObject);
 
         // Log the final schema object before validation.
         // If schemaObject reuired is empty unset it.
@@ -1386,7 +1390,7 @@ class ValidateObject
              * @psalm-suppress TypeDoesNotContainType
              */
 
-            // Handle both array and object (stdClass) types for properties
+            // Handle both array and object (stdClass) types for properties.
             if (isset($properties) === true && (is_array($properties) === true || is_object($properties) === true)) {
                 foreach ($properties as $propertyName => $propertySchema) {
                     // Skip required fields - they should not allow null unless explicitly defined.
@@ -1539,7 +1543,7 @@ class ValidateObject
         // Get the primary validation error.
         $error = $result->error();
 
-        return $this->formatValidationError($error);
+        return $this->formatValidationError(error: $error);
     }//end generateErrorMessage()
 
     /**
@@ -1583,10 +1587,10 @@ class ValidateObject
 
             case 'type':
                 $expectedType = $args['expected'] ?? 'unknown';
-                $actualType   = $this->getValueType($value);
+                $actualType   = $this->getValueType(value: $value);
 
-                // Handle array type definitions (e.g., ["array"] or ["string", "null"])
-                if (is_array($expectedType)) {
+                // Handle array type definitions (e.g., ["array"] or ["string", "null"]).
+                if (is_array($expectedType) === true) {
                     $expectedType = implode(' or ', $expectedType);
                 }
 
@@ -1699,7 +1703,7 @@ class ValidateObject
                 // Check for sub-errors to provide more specific messages.
                 $subErrors = $error->subErrors();
                 if (empty($subErrors) === false) {
-                    return $this->formatValidationError($subErrors[0]);
+                    return $this->formatValidationError(error: $subErrors[0]);
                 }
 
                 $msg = "Property '{$propertyPath}' failed validation for rule '{$keyword}'. ";

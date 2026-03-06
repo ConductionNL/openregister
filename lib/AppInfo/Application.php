@@ -221,7 +221,7 @@ class Application extends App implements IBootstrap
      */
     public function __construct()
     {
-        parent::__construct(self::APP_ID);
+        parent::__construct(appName: self::APP_ID);
     }//end __construct()
 
     /**
@@ -236,14 +236,14 @@ class Application extends App implements IBootstrap
         include_once __DIR__.'/../../vendor/autoload.php';
 
         // Register all services in phases to resolve circular dependencies.
-        $this->registerMappersWithCircularDependencies($context);
-        $this->registerCacheAndFileHandlers($context);
-        $this->registerConfigurationServices($context);
-        $this->registerSettingsServices($context);
-        $this->registerSearchBackend($context);
-        $this->registerVectorizationService($context);
-        $this->registerObjectInteractionServices($context);
-        $this->registerEventListeners($context);
+        $this->registerMappersWithCircularDependencies(context: $context);
+        $this->registerCacheAndFileHandlers(context: $context);
+        $this->registerConfigurationServices(context: $context);
+        $this->registerSettingsServices(context: $context);
+        $this->registerSearchBackend(context: $context);
+        $this->registerVectorizationService(context: $context);
+        $this->registerObjectInteractionServices(context: $context);
+        $this->registerEventListeners(context: $context);
     }//end register()
 
     /**

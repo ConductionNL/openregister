@@ -148,7 +148,7 @@ class SaveObjects
         }
 
         // Generate analysis and cache.
-        $analysis = $this->performComprehensiveSchemaAnalysis($schema);
+        $analysis = $this->performComprehensiveSchemaAnalysis(schema: $schema);
         self::$schemaAnalysisCache[$schemaId] = $analysis;
 
         return $analysis;
@@ -235,7 +235,7 @@ class SaveObjects
         // This prevents PostgreSQL "ON CONFLICT DO UPDATE cannot affect row a second time" errors.
         $dedupeResult = ['objects' => $objects, 'duplicateCount' => 0, 'duplicateIds' => []];
         if ($deduplicateIds === true) {
-            $dedupeResult = $this->deduplicateBatchObjects($objects);
+            $dedupeResult = $this->deduplicateBatchObjects(objects: $objects);
             $objects      = $dedupeResult['objects'];
 
             // Log if duplicates were found and removed.
@@ -243,8 +243,8 @@ class SaveObjects
                 $this->logger->info(
                     message: '[SaveObjects] Deduplicated objects before bulk save',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'            => __FILE__,
+                        'line'            => __LINE__,
                         'originalCount'   => $totalObjects,
                         'uniqueCount'     => count($objects),
                         'duplicateCount'  => $dedupeResult['duplicateCount'],
@@ -373,8 +373,8 @@ class SaveObjects
         $this->logger->info(
             $logMessage,
             [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'         => __FILE__,
+                'line'         => __LINE__,
                 'totalObjects' => $totalObjects,
                 'operation'    => $operationType,
             ]
@@ -461,7 +461,7 @@ class SaveObjects
         Register|string|int|null $register=null,
         Schema|string|int|null $schema=null
     ): array {
-        $chunkSize = $this->calculateOptimalChunkSize(count($processedObjects));
+        $chunkSize = $this->calculateOptimalChunkSize(totalObjects: count($processedObjects));
         $chunks    = array_chunk($processedObjects, $chunkSize);
 
         foreach ($chunks as $chunkIndex => $objectsChunk) {
@@ -658,7 +658,7 @@ class SaveObjects
         } else {
             $registerId = $register;
             // PERFORMANCE: Use cached register loading.
-            $this->loadRegisterWithCache($registerId);
+            $this->loadRegisterWithCache(registerId: $registerId);
         }
 
         // Initialize schema variables before conditional assignment.
@@ -673,12 +673,12 @@ class SaveObjects
         } else {
             $schemaId = $schema;
             // PERFORMANCE: Use cached schema loading.
-            $schemaObj = $this->loadSchemaWithCache($schemaId);
+            $schemaObj = $this->loadSchemaWithCache(schemaId: $schemaId);
         }
 
         // PERFORMANCE OPTIMIZATION: Single cached schema analysis for all objects.
         $schemaCache    = [$schemaId => $schemaObj];
-        $schemaAnalysis = [$schemaId => $this->getSchemaAnalysisWithCache($schemaObj)];
+        $schemaAnalysis = [$schemaId => $this->getSchemaAnalysisWithCache(schema: $schemaObj)];
 
         // PERFORMANCE OPTIMIZATION: Pre-calculate metadata once.
         $currentUser  = $this->userSession->getUser();
@@ -752,8 +752,8 @@ class SaveObjects
                         $this->logger->warning(
                             message: '[SaveObjects] Failed to convert published date to DateTime',
                             context: [
-                                'file' => __FILE__,
-                                'line' => __LINE__,
+                                'file'  => __FILE__,
+                                'line'  => __LINE__,
                                 'value' => $selfDataForHydration['published'],
                                 'error' => $e->getMessage(),
                             ]
@@ -791,8 +791,8 @@ class SaveObjects
                     $this->logger->debug(
                         message: '[SaveObjects] Auto-publishing NEW object in bulk creation (single schema)',
                         context: [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
+                            'file'             => __FILE__,
+                            'line'             => __LINE__,
                             'schema'           => $schemaObj->getTitle(),
                             'autoPublish'      => true,
                             'isNewObject'      => true,
@@ -804,8 +804,8 @@ class SaveObjects
                     $this->logger->debug(
                         message: '[SaveObjects] Skipping auto-publish - published date provided from CSV',
                         context: [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
+                            'file'             => __FILE__,
+                            'line'             => __LINE__,
                             'schema'           => $schemaObj->getTitle(),
                             'publishedFromCsv' => true,
                             'csvPublishedDate' => $selfData['published'],
@@ -861,8 +861,8 @@ class SaveObjects
                 $this->logger->info(
                     message: "[SaveObjects] DEBUG - Single schema object structure",
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'                => __FILE__,
+                        'line'                => __LINE__,
                         'available_keys'      => array_keys($object),
                         'has_@self'           => (($object['@self'] ?? null) !== null) === true,
                         '@self_keys'          => $selfKeys,
@@ -911,8 +911,8 @@ class SaveObjects
                 $this->logger->info(
                     message: "[SaveObjects] Metadata removal applied",
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'                 => __FILE__,
+                        'line'                 => __LINE__,
                         'removed_fields'       => array_intersect($metadataFields, array_keys($object)),
                         'remaining_keys'       => array_keys($businessData),
                         'business_data_sample' => array_slice($businessData, 0, 3, true),
@@ -932,8 +932,8 @@ class SaveObjects
                 $this->logger->info(
                     message: "[SaveObjects] Relations scanned in preparation (single schema)",
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'             => __FILE__,
+                        'line'             => __LINE__,
                         'uuid'             => $selfData['uuid'] ?? 'unknown',
                         'relationCount'    => count($relations),
                         'businessDataKeys' => array_keys($businessData),
@@ -961,8 +961,8 @@ class SaveObjects
             $this->logger->debug(
                 message: '[SaveObjects] Single-schema preparation completed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'             => __FILE__,
+                    'line'             => __LINE__,
                     'objectsProcessed' => count($preparedObjects),
                     'timeMs'           => $duration,
                     'speed'            => round(count($preparedObjects) / max(($endTime - $startTime), 0.001), 2),
@@ -1181,7 +1181,7 @@ class SaveObjects
                             $relations     = array_merge($relations, $itemRelations);
                         } else if (is_string($item) === true && empty($item) === false && trim($item) !== '') {
                             // Check if the string looks like a reference.
-                            if ($this->isReference($item) === true) {
+                            if ($this->isReference(value: $item) === true) {
                                 $relations[$currentPath.'.'.$index] = $item;
                             }
                         }
@@ -1207,7 +1207,7 @@ class SaveObjects
 
                 // If not determined by schema, check for reference patterns.
                 if ($treatAsRelation === false) {
-                    $treatAsRelation = $this->isReference($value);
+                    $treatAsRelation = $this->isReference(value: $value);
                 }
 
                 if ($treatAsRelation === true) {
@@ -1265,7 +1265,7 @@ class SaveObjects
             // AND must not contain spaces or common text words.
             if ((strpos($value, '-') !== false || strpos($value, '_') !== false)
                 && preg_match('/\s/', $value) === false
-                && $this->isCommonTextWord($value) === false
+                && $this->isCommonTextWord(value: $value) === false
             ) {
                 return true;
             }
@@ -1371,8 +1371,8 @@ class SaveObjects
             $this->logger->warning(
                 message: '[SaveObjects] Found and merged duplicate IDs within batch',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'             => __FILE__,
+                    'line'             => __LINE__,
                     'originalCount'    => count($objects),
                     'uniqueCount'      => count($uniqueObjects),
                     'totalDuplicates'  => $totalDuplicates,

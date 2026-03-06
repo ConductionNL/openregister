@@ -136,7 +136,7 @@ class DeleteObject
             $schemaEntity   = $context['schema'];
         } else {
             // Handle array input - find object with context (searches both blob and magic tables).
-            // @psalm-suppress UndefinedInterfaceMethod
+            // @psalm-suppress UndefinedInterfaceMethod.
             $context        = $this->objectEntityMapper->findAcrossAllSources(
                 identifier: $object['id'],
                 includeDeleted: false,
@@ -291,13 +291,13 @@ class DeleteObject
                 }
             }
 
-            return $this->delete($object);
+            return $this->delete(object: $object);
         } catch (Exception $e) {
             $this->logger->warning(
                     message: '[DeleteObject] Delete failed',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'  => __FILE__,
+                        'line'  => __LINE__,
                         'uuid'  => $uuid,
                         'error' => $e->getMessage(),
                     ]

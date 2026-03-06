@@ -101,7 +101,7 @@ class MappingMapper extends QBMapper
         IGroupManager $groupManager
     ) {
         // Call parent constructor to initialize base mapper with table name and entity class.
-        parent::__construct($db, 'openregister_mappings', Mapping::class);
+        parent::__construct(db: $db, tableName: 'openregister_mappings', entityClass: Mapping::class);
 
         // Store dependencies for use in mapper methods.
         $this->userSession  = $userSession;
@@ -132,7 +132,7 @@ class MappingMapper extends QBMapper
 
         // Step 3: Apply organisation filter for multi-tenancy.
         // This ensures users only see mappings from their organisation.
-        $this->applyOrganisationFilter($qb);
+        $this->applyOrganisationFilter(qb: $qb);
 
         // Step 4: Apply pagination if limit specified.
         if ($limit !== null) {
@@ -145,7 +145,7 @@ class MappingMapper extends QBMapper
         }
 
         // Step 6: Execute query and return entities.
-        return $this->findEntities($qb);
+        return $this->findEntities(query: $qb);
     }//end findAll()
 
     /**
@@ -189,10 +189,10 @@ class MappingMapper extends QBMapper
 
         // Step 4: Apply organisation filter for multi-tenancy.
         // This ensures users can only access mappings from their organisation.
-        $this->applyOrganisationFilter($qb);
+        $this->applyOrganisationFilter(qb: $qb);
 
         // Step 5: Execute query and return single entity.
-        return $this->findEntity($qb);
+        return $this->findEntity(query: $qb);
     }//end find()
 
     /**
@@ -212,9 +212,9 @@ class MappingMapper extends QBMapper
                 $qb->expr()->eq('reference', $qb->createNamedParameter($reference))
             );
 
-        $this->applyOrganisationFilter($qb);
+        $this->applyOrganisationFilter(qb: $qb);
 
-        return $this->findEntities($qb);
+        return $this->findEntities(query: $qb);
     }//end findByRef()
 
     /**
@@ -251,10 +251,10 @@ class MappingMapper extends QBMapper
         $mapping->hydrate($data);
 
         // Set organisation from session.
-        $this->setOrganisationOnCreate($mapping);
+        $this->setOrganisationOnCreate(entity: $mapping);
 
         // Persist to database.
-        return $this->insert($mapping);
+        return $this->insert(entity: $mapping);
     }//end createFromArray()
 
     /**
@@ -274,10 +274,10 @@ class MappingMapper extends QBMapper
         $this->verifyRbacPermission(action: 'update', entityType: 'mapping');
 
         // Find the existing mapping.
-        $mapping = $this->find($id);
+        $mapping = $this->find(id: $id);
 
         // Verify organisation access.
-        $this->verifyOrganisationAccess($mapping);
+        $this->verifyOrganisationAccess(entity: $mapping);
 
         // Set version if not provided (auto-increment patch version).
         if (isset($data['version']) === false || empty($data['version']) === true) {
@@ -303,7 +303,7 @@ class MappingMapper extends QBMapper
         $mapping->hydrate($data);
 
         // Persist to database.
-        return $this->update($mapping);
+        return $this->update(entity: $mapping);
     }//end updateFromArray()
 
     /**
@@ -322,9 +322,9 @@ class MappingMapper extends QBMapper
         $this->verifyRbacPermission(action: 'delete', entityType: 'mapping');
 
         // Verify organisation access.
-        $this->verifyOrganisationAccess($entity);
+        $this->verifyOrganisationAccess(entity: $entity);
 
-        return parent::delete($entity);
+        return parent::delete(entity: $entity);
     }//end delete()
 
     /**
@@ -340,7 +340,7 @@ class MappingMapper extends QBMapper
         $qb->select($qb->createFunction('COUNT(*) as count'))
             ->from($this->getTableName());
 
-        $this->applyOrganisationFilter($qb);
+        $this->applyOrganisationFilter(qb: $qb);
 
         $result = $qb->executeQuery();
         $row    = $result->fetch();
@@ -366,9 +366,9 @@ class MappingMapper extends QBMapper
 
         $qb->setParameter('configId', '"'.$configurationId.'"');
 
-        $this->applyOrganisationFilter($qb);
+        $this->applyOrganisationFilter(qb: $qb);
 
-        return $this->findEntities($qb);
+        return $this->findEntities(query: $qb);
     }//end findByConfiguration()
 
     /**
@@ -382,7 +382,7 @@ class MappingMapper extends QBMapper
         $qb->select('id', 'slug')
             ->from($this->getTableName());
 
-        $this->applyOrganisationFilter($qb);
+        $this->applyOrganisationFilter(qb: $qb);
 
         $result   = $qb->executeQuery();
         $mappings = [];
@@ -404,7 +404,7 @@ class MappingMapper extends QBMapper
         $qb->select('id', 'slug')
             ->from($this->getTableName());
 
-        $this->applyOrganisationFilter($qb);
+        $this->applyOrganisationFilter(qb: $qb);
 
         $result   = $qb->executeQuery();
         $mappings = [];

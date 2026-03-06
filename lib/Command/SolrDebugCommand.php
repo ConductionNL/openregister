@@ -75,7 +75,7 @@ class SolrDebugCommand extends Command
     protected function configure(): void
     {
         $this
-            ->setName('openregister:solr:debug')
+            ->setName(name: 'openregister:solr:debug')
             ->setDescription('Debug SOLR configuration and functionality step by step')
             ->addOption(
                 'setup',
@@ -128,19 +128,19 @@ class SolrDebugCommand extends Command
         $runAll = $input->getOption('all');
 
         if ($runAll === true || $input->getOption('tenant-info') === true) {
-            $this->showTenantInfo($output);
+            $this->showTenantInfo(output: $output);
         }
 
         if ($runAll === true || $input->getOption('setup') === true) {
-            $this->testSetup($output);
+            $this->testSetup(output: $output);
         }
 
         if ($runAll === true || $input->getOption('test-connection') === true) {
-            $this->testConnection($output);
+            $this->testConnection(output: $output);
         }
 
         if ($runAll === true || $input->getOption('check-cores') === true) {
-            $this->checkCores($output);
+            $this->checkCores(output: $output);
         }
 
         $hasSetup          = $input->getOption('setup') === true;

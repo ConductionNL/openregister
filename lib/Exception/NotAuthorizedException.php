@@ -60,6 +60,6 @@ class NotAuthorizedException extends Exception
         ?Throwable $previous=null
     ) {
         // Call parent constructor to initialize base exception properties.
-        parent::__construct($message, $code, $previous);
+        parent::__construct(message: $message, code: $code, previous: $previous);
     }//end __construct()
 }//end class

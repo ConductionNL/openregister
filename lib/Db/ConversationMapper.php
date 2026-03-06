@@ -89,7 +89,7 @@ class ConversationMapper extends QBMapper
         IEventDispatcher $eventDispatcher
     ) {
         // Call parent constructor to initialize base mapper with table name and entity class.
-        parent::__construct($db, 'openregister_conversations', Conversation::class);
+        parent::__construct(db: $db, tableName: 'openregister_conversations', entityClass: Conversation::class);
 
         // Store event dispatcher for use in CRUD operations.
         $this->eventDispatcher = $eventDispatcher;
@@ -127,11 +127,11 @@ class ConversationMapper extends QBMapper
         }
 
         // Step 4: Insert entity into database using parent method.
-        $entity = parent::insert($entity);
+        $entity = parent::insert(entity: $entity);
 
         // Step 5: Dispatch creation event for event-driven architecture.
         // Listeners can react to conversation creation (e.g., notifications, logging).
-        $this->eventDispatcher->dispatchTyped(new ConversationCreatedEvent($entity));
+        $this->eventDispatcher->dispatchTyped(new ConversationCreatedEvent(conversation: $entity));
 
         return $entity;
     }//end insert()
@@ -160,11 +160,11 @@ class ConversationMapper extends QBMapper
         }
 
         // Step 3: Update entity in database using parent method.
-        $entity = parent::update($entity);
+        $entity = parent::update(entity: $entity);
 
         // Step 4: Dispatch update event with old and new entity states.
         // Listeners can react to conversation updates (e.g., cache invalidation, notifications).
-        $this->eventDispatcher->dispatchTyped(new ConversationUpdatedEvent($entity, $oldEntity));
+        $this->eventDispatcher->dispatchTyped(new ConversationUpdatedEvent(newConversation: $entity, oldConversation: $oldEntity));
 
         return $entity;
     }//end update()
@@ -180,10 +180,10 @@ class ConversationMapper extends QBMapper
      */
     public function delete(Entity $entity): Conversation
     {
-        $entity = parent::delete($entity);
+        $entity = parent::delete(entity: $entity);
 
         // Dispatch deletion event.
-        $this->eventDispatcher->dispatchTyped(new ConversationDeletedEvent($entity));
+        $this->eventDispatcher->dispatchTyped(new ConversationDeletedEvent(conversation: $entity));
 
         return $entity;
     }//end delete()
@@ -206,7 +206,7 @@ class ConversationMapper extends QBMapper
             ->from($this->tableName)
             ->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
 
-        return $this->findEntity($qb);
+        return $this->findEntity(query: $qb);
     }//end find()
 
     /**
@@ -227,7 +227,7 @@ class ConversationMapper extends QBMapper
             ->from($this->tableName)
             ->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid, IQueryBuilder::PARAM_STR)));
 
-        return $this->findEntity($qb);
+        return $this->findEntity(query: $qb);
     }//end findByUuid()
 
     /**
@@ -274,7 +274,7 @@ class ConversationMapper extends QBMapper
             ->setMaxResults($limit)
             ->setFirstResult($offset);
 
-        return $this->findEntities($qb);
+        return $this->findEntities(query: $qb);
     }//end findByUser()
 
     /**
@@ -313,7 +313,7 @@ class ConversationMapper extends QBMapper
             ->setMaxResults($limit)
             ->setFirstResult($offset);
 
-        return $this->findEntities($qb);
+        return $this->findEntities(query: $qb);
     }//end findDeletedByUser()
 
     /**
@@ -449,7 +449,7 @@ class ConversationMapper extends QBMapper
         $conversation->softDelete();
         $conversation->setUpdated(new DateTime());
 
-        return $this->update($conversation);
+        return $this->update(entity: $conversation);
     }//end softDelete()
 
     /**
@@ -464,11 +464,11 @@ class ConversationMapper extends QBMapper
      */
     public function restore(int $id): Conversation
     {
-        $conversation = $this->find($id);
+        $conversation = $this->find(id: $id);
         $conversation->restore();
         $conversation->setUpdated(new DateTime());
 
-        return $this->update($conversation);
+        return $this->update(entity: $conversation);
     }//end restore()
 
     /**

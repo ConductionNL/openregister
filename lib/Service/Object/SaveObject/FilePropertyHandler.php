@@ -181,8 +181,8 @@ class FilePropertyHandler
             $this->logger->debug(
                 message: '[FilePropertyHandler] isFileProperty: Checking property type',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
                     'app'      => 'openregister',
                     'property' => $propertyName,
                     'type'     => $propertyType,
@@ -246,7 +246,7 @@ class FilePropertyHandler
         }//end if
 
         // Check for file object (array with required file object properties).
-        if (is_array($value) === true && $this->isFileObject($value) === true) {
+        if (is_array($value) === true && $this->isFileObject(value: $value) === true) {
             return true;
         }
 
@@ -277,7 +277,7 @@ class FilePropertyHandler
                     if (base64_encode(base64_decode($item, true)) === $item && strlen($item) > 100) {
                         return true;
                     }
-                } else if (is_array($item) === true && $this->isFileObject($item) === true) {
+                } else if (is_array($item) === true && $this->isFileObject(value: $item) === true) {
                     // File object in array.
                     return true;
                 }//end if
@@ -363,9 +363,14 @@ class FilePropertyHandler
         string $extension,
         ?int $index=null
     ): string {
-        $timestamp   = time();
-        $random      = bin2hex(random_bytes(4));
-        $indexSuffix = $index !== null ? "_{$index}" : '';
+        $timestamp = time();
+        $random    = bin2hex(random_bytes(4));
+        if ($index !== null) {
+            $indexSuffix = "_{$index}";
+        } else {
+            $indexSuffix = '';
+        }
+
         return "{$propertyName}{$indexSuffix}_{$timestamp}_{$random}.{$extension}";
     }//end generateFileName()
 
@@ -486,8 +491,8 @@ class FilePropertyHandler
             $this->logger->info(
                 message: '[FilePropertyHandler] File property deletion requested',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'         => __FILE__,
+                    'line'         => __LINE__,
                     'app'          => 'openregister',
                     'propertyName' => $propertyName,
                     'uuid'         => $objectEntity->getUuid(),
@@ -508,8 +513,8 @@ class FilePropertyHandler
             $this->logger->info(
                 message: '[FilePropertyHandler] Existing file IDs for deletion',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'            => __FILE__,
+                    'line'            => __LINE__,
                     'app'             => 'openregister',
                     'propertyName'    => $propertyName,
                     'existingFileIds' => $existingFileIds,
@@ -570,8 +575,8 @@ class FilePropertyHandler
             $this->logger->info(
                 message: '[FilePropertyHandler] File property set to null/empty',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'         => __FILE__,
+                    'line'         => __LINE__,
                     'app'          => 'openregister',
                     'propertyName' => $propertyName,
                     'newValue'     => $object[$propertyName],
@@ -677,7 +682,7 @@ class FilePropertyHandler
                 );
             }
 
-            if (is_array($fileInput) === true && $this->isFileObject($fileInput) === true) {
+            if (is_array($fileInput) === true && $this->isFileObject(value: $fileInput) === true) {
                 // Handle file object input.
                 return $this->processFileObjectInput(
                     objectEntity: $objectEntity,
@@ -737,11 +742,11 @@ class FilePropertyHandler
             && (strpos($fileInput, 'http://') === 0 || strpos($fileInput, 'https://') === 0)
         ) {
             // Fetch file content from URL.
-            $fileContent = $this->fetchFileFromUrl($fileInput);
+            $fileContent = $this->fetchFileFromUrl(url: $fileInput);
             $fileData    = $this->parseFileDataFromUrl(url: $fileInput, content: $fileContent);
         } else {
             // Parse as base64 or data URI.
-            $fileData = $this->parseFileData($fileInput);
+            $fileData = $this->parseFileData(fileContent: $fileInput);
         }
 
         // Validate file against property configuration.
@@ -828,8 +833,8 @@ class FilePropertyHandler
                     $this->logger->debug(
                         message: '[FilePropertyHandler] Using existing file ID {fileId} for property {property}',
                         context: [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
+                            'file'     => __FILE__,
+                            'line'     => __LINE__,
                             'app'      => 'openregister',
                             'fileId'   => $fileId,
                             'property' => $propertyName,
@@ -842,8 +847,8 @@ class FilePropertyHandler
                 $this->logger->debug(
                     message: '[FilePropertyHandler] Could not retrieve existing file {fileId}: {error}',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'   => __FILE__,
+                        'line'   => __LINE__,
                         'app'    => 'openregister',
                         'fileId' => $fileId,
                         'error'  => $e->getMessage(),
@@ -946,7 +951,7 @@ class FilePropertyHandler
 
         // If no extension from URL, get from MIME type.
         if (empty($extension) === true) {
-            $extension = $this->getExtensionFromMimeType($mimeType);
+            $extension = $this->getExtensionFromMimeType(mimeType: $mimeType);
         }
 
         return [
@@ -1010,7 +1015,7 @@ class FilePropertyHandler
         }//end if
 
         // Determine file extension from MIME type.
-        $extension = $this->getExtensionFromMimeType($mimeType);
+        $extension = $this->getExtensionFromMimeType(mimeType: $mimeType);
 
         return [
             'content'   => $content,
@@ -1118,8 +1123,8 @@ class FilePropertyHandler
                 $this->logger->warning(
                     message: '[FilePropertyHandler] Executable file upload blocked',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'      => __FILE__,
+                        'line'      => __LINE__,
                         'app'       => 'openregister',
                         'filename'  => $fileData['filename'],
                         'extension' => $extension,
@@ -1132,7 +1137,7 @@ class FilePropertyHandler
                 $errorMsg .= "Allowed formats: documents, images, archives, data files.";
                 throw new Exception($errorMsg);
             }
-        }
+        }//end if
 
         // Check magic bytes (file signatures) in content.
         if (($fileData['content'] ?? null) !== null && empty($fileData['content']) === false) {
@@ -1147,8 +1152,8 @@ class FilePropertyHandler
             $this->logger->warning(
                 message: '[FilePropertyHandler] Executable MIME type blocked',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
                     'app'      => 'openregister',
                     'mimeType' => $mimeType,
                 ]

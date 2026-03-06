@@ -266,7 +266,7 @@ class OptimizedFacetHandler
         $jsonPath     = '$'.$field;
 
         // Check if we should skip this facet due to too much data.
-        $estimatedRows = $this->estimateRowCount($baseQuery);
+        $estimatedRows = $this->estimateRowCount(baseQuery: $baseQuery);
         if ($estimatedRows > 50000) {
             // Return empty result for very large datasets to avoid timeouts.
             return [

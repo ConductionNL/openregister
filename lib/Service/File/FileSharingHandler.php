@@ -173,7 +173,10 @@ class FileSharingHandler
             );
             return $share;
         } catch (Exception $e) {
-            $this->logger->error(message: "[FileSharingHandler] Failed to create share for {$shareData['path']} by user {$userId}: ".$e->getMessage());
+            $msg = '[FileSharingHandler] Failed to create share for '.$shareData['path'].' by user '.$userId;
+            $this->logger->error(
+                message: $msg.': '.$e->getMessage()
+            );
             throw new Exception("Failed to create share: ".$e->getMessage());
         }
     }//end createShare()
@@ -204,7 +207,9 @@ class FileSharingHandler
 
             foreach ($existingShares as $share) {
                 if ($share->getSharedWith() === $userId) {
-                    $this->logger->info(message: "[FileSharingHandler] Share already exists for file {$file->getName()} with user {$userId}");
+                    $this->logger->info(
+                        message: '[FileSharingHandler] Share already exists for file '.$file->getName().' with user '.$userId
+                    );
                     return;
                 }
             }
@@ -219,9 +224,14 @@ class FileSharingHandler
 
             $this->shareManager->createShare(share: $share);
 
-            $this->logger->info(message: "[FileSharingHandler] Created share for file {$file->getName()} with user {$userId}");
+            $this->logger->info(
+                message: '[FileSharingHandler] Created share for file '.$file->getName().' with user '.$userId
+            );
         } catch (Exception $e) {
-            $this->logger->error(message: "[FileSharingHandler] Failed to share file {$file->getName()} with user {$userId}: ".$e->getMessage());
+            $msg = '[FileSharingHandler] Failed to share file '.$file->getName().' with user '.$userId;
+            $this->logger->error(
+                message: $msg.': '.$e->getMessage()
+            );
             throw $e;
         }//end try
     }//end shareFileWithUser()
@@ -243,7 +253,10 @@ class FileSharingHandler
         try {
             // Check if user exists.
             if ($this->userManager->userExists($userId) === false) {
-                $this->logger->warning(message: "[FileSharingHandler] Cannot share folder with user '$userId' - user does not exist", context: ['file' => __FILE__, 'line' => __LINE__]);
+                $this->logger->warning(
+                    message: '[FileSharingHandler] Cannot share folder with user '.$userId.' - user does not exist',
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
                 return null;
             }
 
@@ -259,7 +272,10 @@ class FileSharingHandler
                 ]
             );
 
-            $this->logger->info(message: "[FileSharingHandler] Successfully shared folder '{$folder->getName()}' with user '$userId'", context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->info(
+                message: '[FileSharingHandler] Successfully shared folder '.$folder->getName().' with user '.$userId,
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return $share;
         } catch (Exception $e) {
             $msg = "Failed to share folder '{$folder->getName()}' with user '$userId': ".$e->getMessage();

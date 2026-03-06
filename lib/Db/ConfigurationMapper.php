@@ -122,7 +122,7 @@ class ConfigurationMapper extends QBMapper
         ISession $session,
         IEventDispatcher $eventDispatcher
     ) {
-        parent::__construct($db, 'openregister_configurations', Configuration::class);
+        parent::__construct(db: $db, tableName: 'openregister_configurations', entityClass: Configuration::class);
         // REMOVED: Services should not be in mappers.
         $this->organisationMapper = $organisationMapper;
         $this->userSession        = $userSession;
@@ -165,10 +165,10 @@ class ConfigurationMapper extends QBMapper
 
         // Apply organisation filter unless explicitly disabled.
         if ($_multitenancy === true) {
-            $this->applyOrganisationFilter($qb);
+            $this->applyOrganisationFilter(qb: $qb);
         }
 
-        return $this->findEntity($qb);
+        return $this->findEntity(query: $qb);
     }//end find()
 
     /**
@@ -199,9 +199,9 @@ class ConfigurationMapper extends QBMapper
             ->orderBy('created', 'DESC');
 
         // Apply organisation filter.
-        $this->applyOrganisationFilter($qb);
+        $this->applyOrganisationFilter(qb: $qb);
 
-        return $this->findEntities($qb);
+        return $this->findEntities(query: $qb);
     }//end findByApp()
 
     /**
@@ -231,10 +231,10 @@ class ConfigurationMapper extends QBMapper
             ->setMaxResults(1);
 
         // Apply organisation filter.
-        $this->applyOrganisationFilter($qb);
+        $this->applyOrganisationFilter(qb: $qb);
 
         try {
-            return $this->findEntity($qb);
+            return $this->findEntity(query: $qb);
         } catch (DoesNotExistException $e) {
             // No configuration found with this source URL.
             return null;
@@ -273,9 +273,9 @@ class ConfigurationMapper extends QBMapper
             ->setFirstResult($offset);
 
         // Apply organisation filter.
-        $this->applyOrganisationFilter($qb);
+        $this->applyOrganisationFilter(qb: $qb);
 
-        return $this->findEntities($qb);
+        return $this->findEntities(query: $qb);
     }//end findBySyncEnabled()
 
     /**
@@ -300,12 +300,12 @@ class ConfigurationMapper extends QBMapper
         // Verify RBAC permission to update.
         // TEMPORARILY DISABLED FOR TESTING - TODO: Re-enable after fixing CLI/import context.
         // Disabled: $this->verifyRbacPermission(action: 'update', entityType: 'configuration').
-        $configuration = $this->find($id);
+        $configuration = $this->find(id: $id);
         $configuration->setSyncStatus($status);
         $configuration->setLastSyncDate($syncDate);
         $configuration->setUpdated(new DateTime());
 
-        return $this->update($configuration);
+        return $this->update(entity: $configuration);
     }//end updateSyncStatus()
 
     /**
@@ -345,15 +345,15 @@ class ConfigurationMapper extends QBMapper
         }//end if
 
         // Auto-set organisation from active session.
-        $this->setOrganisationOnCreate($entity);
+        $this->setOrganisationOnCreate(entity: $entity);
 
-        $result = parent::insert($entity);
+        $result = parent::insert(entity: $entity);
 
         // Invalidate configuration cache.
         $this->invalidateConfigurationCache();
 
         // Dispatch creation event.
-        $this->eventDispatcher->dispatchTyped(new ConfigurationCreatedEvent($result));
+        $this->eventDispatcher->dispatchTyped(new ConfigurationCreatedEvent(configuration: $result));
 
         return $result;
     }//end insert()
@@ -372,21 +372,21 @@ class ConfigurationMapper extends QBMapper
         // TEMPORARILY DISABLED FOR TESTING - TODO: Re-enable after fixing CLI/import context.
         // Disabled: $this->verifyRbacPermission(action: 'update', entityType: 'configuration').
         // Verify user has access to this organisation.
-        $this->verifyOrganisationAccess($entity);
+        $this->verifyOrganisationAccess(entity: $entity);
 
         // Get old state before update (disable multitenancy filtering).
         // When updating, we need to find the configuration regardless of organisation.
-        $oldEntity = $this->find($entity->getId(), _multitenancy: false);
+        $oldEntity = $this->find(id: $entity->getId(), _multitenancy: false);
 
         $entity->setUpdated(new DateTime());
 
-        $result = parent::update($entity);
+        $result = parent::update(entity: $entity);
 
         // Invalidate configuration cache.
         $this->invalidateConfigurationCache();
 
         // Dispatch update event.
-        $this->eventDispatcher->dispatchTyped(new ConfigurationUpdatedEvent($result, $oldEntity));
+        $this->eventDispatcher->dispatchTyped(new ConfigurationUpdatedEvent(newConfiguration: $result, oldConfiguration: $oldEntity));
 
         return $result;
     }//end update()
@@ -407,15 +407,15 @@ class ConfigurationMapper extends QBMapper
         // TEMPORARILY DISABLED FOR TESTING - TODO: Re-enable after fixing CLI/import context.
         // $this->verifyRbacPermission(action: 'delete', entityType: 'configuration');
         // Verify user has access to this organisation.
-        $this->verifyOrganisationAccess($entity);
+        $this->verifyOrganisationAccess(entity: $entity);
 
-        $result = parent::delete($entity);
+        $result = parent::delete(entity: $entity);
 
         // Invalidate configuration cache.
         $this->invalidateConfigurationCache();
 
         // Dispatch deletion event.
-        $this->eventDispatcher->dispatchTyped(new ConfigurationDeletedEvent($result));
+        $this->eventDispatcher->dispatchTyped(new ConfigurationDeletedEvent(configuration: $result));
 
         return $result;
     }//end delete()
@@ -434,7 +434,7 @@ class ConfigurationMapper extends QBMapper
         $config->hydrate(object: $data);
 
         // Prepare the object before insertion.
-        return $this->insert($config);
+        return $this->insert(entity: $config);
     }//end createFromArray()
 
     /**
@@ -461,7 +461,7 @@ class ConfigurationMapper extends QBMapper
 
         $object->hydrate(object: $data);
 
-        return $this->update($object);
+        return $this->update(entity: $object);
     }//end updateFromArray()
 
     /**
@@ -527,11 +527,11 @@ class ConfigurationMapper extends QBMapper
 
         // Apply organisation filter unless explicitly disabled.
         if ($_multitenancy === true) {
-            $this->applyOrganisationFilter($qb);
+            $this->applyOrganisationFilter(qb: $qb);
         }
 
         // Execute the query and return the results.
-        return $this->findEntities($qb);
+        return $this->findEntities(query: $qb);
     }//end findAll()
 
     /**

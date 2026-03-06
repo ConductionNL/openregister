@@ -92,13 +92,13 @@ class ExportService
     /**
      * Constructor for the ExportService
      *
-     * @param ObjectEntityMapper  $_objectEntityMapper  The object entity mapper (unused but kept for future use)
-     * @param RegisterMapper      $registerMapper       The register mapper
-     * @param IUserManager        $_userManager         The user manager (unused but kept for future use)
-     * @param IGroupManager       $groupManager         The group manager
-     * @param ObjectService       $objectService        The object service
-     * @param CacheHandler        $cacheHandler         The cache handler for name resolution
-     * @param PropertyRbacHandler $propertyRbacHandler   The property RBAC handler
+     * @param ObjectEntityMapper  $_objectEntityMapper The object entity mapper (unused but kept for future use)
+     * @param RegisterMapper      $registerMapper      The register mapper
+     * @param IUserManager        $_userManager        The user manager (unused but kept for future use)
+     * @param IGroupManager       $groupManager        The group manager
+     * @param ObjectService       $objectService       The object service
+     * @param CacheHandler        $cacheHandler        The cache handler for name resolution
+     * @param PropertyRbacHandler $propertyRbacHandler The property RBAC handler
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
@@ -111,11 +111,11 @@ class ExportService
         CacheHandler $cacheHandler,
         PropertyRbacHandler $propertyRbacHandler
     ) {
-        $this->registerMapper       = $registerMapper;
-        $this->groupManager         = $groupManager;
-        $this->objectService        = $objectService;
-        $this->cacheHandler         = $cacheHandler;
-        $this->propertyRbacHandler  = $propertyRbacHandler;
+        $this->registerMapper      = $registerMapper;
+        $this->groupManager        = $groupManager;
+        $this->objectService       = $objectService;
+        $this->cacheHandler        = $cacheHandler;
+        $this->propertyRbacHandler = $propertyRbacHandler;
     }//end __construct()
 
     /**
@@ -168,7 +168,7 @@ class ExportService
 
         if ($register !== null && $schema === null) {
             // Export all schemas in register.
-            $schemas = $this->getSchemasForRegister($register);
+            $schemas = $this->getSchemasForRegister(register: $register);
             foreach ($schemas as $schema) {
                 $this->populateSheet(
                     spreadsheet: $spreadsheet,
@@ -302,9 +302,9 @@ class ExportService
         // Check if multitenancy was explicitly requested via _multi parameter.
         $multiExplicitlySet = isset($filters['_multi']) || isset($filters['multi']);
         $multitenancy       = true;
-        if (isset($filters['_multi'])) {
+        if (isset($filters['_multi']) === true) {
             $multitenancy = filter_var($filters['_multi'], FILTER_VALIDATE_BOOLEAN);
-        } else if (isset($filters['multi'])) {
+        } else if (isset($filters['multi']) === true) {
             $multitenancy = filter_var($filters['multi'], FILTER_VALIDATE_BOOLEAN);
         }
 
@@ -361,7 +361,7 @@ class ExportService
                         continue;
                     }
 
-                    $this->collectUuids($value, $allUuids);
+                    $this->collectUuids(value: $value, allUuids: $allUuids);
                 }
             }
 
@@ -373,7 +373,7 @@ class ExportService
                 $externalNames = $this->cacheHandler->getMultipleObjectNames(array_values($externalUuids));
                 $uuidToNameMap = array_merge($uuidToNameMap, $externalNames);
             }
-        }
+        }//end if
 
         // Second pass: populate the sheet with data and resolved names.
         foreach ($objects as $object) {
@@ -386,7 +386,7 @@ class ExportService
                     $value          = $objectData[$sourceProperty] ?? null;
                     $sheet->setCellValue(
                         coordinate: $col.$row,
-                        value: $this->resolveUuidsToNames($value, $uuidToNameMap)
+                        value: $this->resolveUuidsToNames(value: $value, uuidToNameMap: $uuidToNameMap)
                     );
                 } else {
                     $value = $this->getObjectValue(object: $object, header: $header);
@@ -465,15 +465,15 @@ class ExportService
                 $col++;
 
                 // Insert companion _name column if this property contains UUID references.
-                if ($this->isRelationProperty($properties[$fieldName]) === true) {
+                if ($this->isRelationProperty(property: $properties[$fieldName]) === true) {
                     $headers[$col] = '_'.$fieldName;
                     $col++;
                 }
-            }
-        }
+            }//end foreach
+        }//end if
 
         // REQUIREMENT: Add @self metadata fields only if user is admin.
-        if ($this->isUserAdmin($currentUser) === true) {
+        if ($this->isUserAdmin(user: $currentUser) === true) {
             $metadataFields = [
                 'created',
                 'updated',
@@ -552,7 +552,7 @@ class ExportService
 
                 // Handle arrays and objects.
                 if (is_array($value) === true || is_object($value) === true) {
-                    return $this->convertValueToString($value);
+                    return $this->convertValueToString(value: $value);
                 }
 
                 // Handle scalar values.
@@ -596,7 +596,7 @@ class ExportService
 
                 // Handle arrays and objects.
                 if (is_array($value) === true || is_object($value) === true) {
-                    return $this->convertValueToString($value);
+                    return $this->convertValueToString(value: $value);
                 }
 
                 // Handle scalar values.
@@ -620,7 +620,7 @@ class ExportService
                 // Get value from object data and convert to string.
                 $objectData = $object->getObject();
                 $value      = $objectData[$header] ?? null;
-                return $this->convertValueToString($value);
+                return $this->convertValueToString(value: $value);
         }
     }//end getObjectValue()
 
@@ -701,8 +701,8 @@ class ExportService
      *
      * Handles both single UUID strings and arrays/JSON arrays of UUIDs.
      *
-     * @param mixed $value    The property value (string, array, or JSON string)
-     * @param array &$allUuids The array to collect UUIDs into (passed by reference)
+     * @param mixed $value    The property value (string, array, or JSON string).
+     * @param array $allUuids The array to collect UUIDs into (passed by reference).
      *
      * @return void
      */
@@ -748,7 +748,7 @@ class ExportService
      *
      * Falls back to the UUID itself if no name is found in the map.
      *
-     * @param mixed $value        The original value containing UUID(s)
+     * @param mixed $value         The original value containing UUID(s)
      * @param array $uuidToNameMap Map of UUID → name from bulk resolution
      *
      * @return string|null The resolved name(s) in the same format as input
@@ -764,7 +764,13 @@ class ExportService
             $decoded = json_decode($value, true);
             if (is_array($decoded) === true) {
                 $names = array_map(
-                    fn($item) => is_string($item) ? ($uuidToNameMap[$item] ?? $item) : $this->convertValueToString($item),
+                    function ($item) use ($uuidToNameMap) {
+                        if (is_string($item) === true) {
+                            return $uuidToNameMap[$item] ?? $item;
+                        }
+
+                        return $this->convertValueToString(value: $item);
+                    },
                     $decoded
                 );
 
@@ -773,18 +779,24 @@ class ExportService
 
             // Single UUID string → single name.
             return $uuidToNameMap[$value] ?? $value;
-        }
+        }//end if
 
         if (is_array($value) === true) {
             $names = array_map(
-                fn($item) => is_string($item) ? ($uuidToNameMap[$item] ?? $item) : $this->convertValueToString($item),
+                function ($item) use ($uuidToNameMap) {
+                    if (is_string($item) === true) {
+                        return $uuidToNameMap[$item] ?? $item;
+                    }
+
+                        return $this->convertValueToString(value: $item);
+                },
                 $value
             );
 
             return json_encode($names, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         }
 
-        return $this->convertValueToString($value);
+        return $this->convertValueToString(value: $value);
     }//end resolveUuidsToNames()
 
     /**
@@ -800,5 +812,4 @@ class ExportService
     {
         return $this->registerMapper->getSchemasByRegisterId($register->getId());
     }//end getSchemasForRegister()
-
 }//end class

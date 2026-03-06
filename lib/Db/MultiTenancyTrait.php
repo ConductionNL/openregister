@@ -292,7 +292,7 @@ trait MultiTenancyTrait
         bool $enablePublished=false,
         bool $multiTenancyEnabled=true
     ): void {
-        if ($this->shouldSkipFiltering($multiTenancyEnabled) === true) {
+        if ($this->shouldSkipFiltering(multiTenancyEnabled: $multiTenancyEnabled) === true) {
             return;
         }
 
@@ -303,7 +303,7 @@ trait MultiTenancyTrait
 
         $activeOrgUuids     = $this->getActiveOrganisationUuids();
         $organisationColumn = $this->buildQualifiedColumnName(columnName: $columnName, tableAlias: $tableAlias);
-        $pubBypassEnabled   = $this->isPublishedBypassEnabled($enablePublished);
+        $pubBypassEnabled   = $this->isPublishedBypassEnabled(enablePublished: $enablePublished);
 
         if (empty($activeOrgUuids) === true) {
             $this->applyNoActiveOrgFilter(
@@ -485,7 +485,7 @@ trait MultiTenancyTrait
         bool $enablePublished,
         bool $pubBypassEnabled
     ): void {
-        $isAdmin = $this->isUserAdmin($user);
+        $isAdmin = $this->isUserAdmin(user: $user);
 
         if ($isAdmin === true && $this->isAdminOverrideEnabled() === true) {
             return;
@@ -538,7 +538,7 @@ trait MultiTenancyTrait
         bool $enablePublished,
         bool $pubBypassEnabled
     ): void {
-        $isAdmin = $this->isUserAdmin($user);
+        $isAdmin = $this->isUserAdmin(user: $user);
 
         if ($isAdmin === true && $this->isAdminOverrideEnabled() === true) {
             return;

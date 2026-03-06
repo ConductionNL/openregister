@@ -110,8 +110,8 @@ class PublishHandler
         $this->logger->debug(
             message: '[PublishHandler] Publishing object',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'         => __FILE__,
+                'line'         => __LINE__,
                 'uuid'         => $uuid,
                 'date'         => $date?->format('Y-m-d H:i:s'),
                 'rbac'         => $_rbac,
@@ -172,8 +172,8 @@ class PublishHandler
             $this->logger->info(
                 message: '[PublishHandler] Object published successfully',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'             => __FILE__,
+                    'line'             => __LINE__,
                     'uuid'             => $uuid,
                     'publication_date' => $publicationDate->format('Y-m-d H:i:s'),
                 ]
@@ -184,8 +184,8 @@ class PublishHandler
             $this->logger->error(
                 message: '[PublishHandler] Failed to publish object',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'uuid'  => $uuid,
                     'error' => $e->getMessage(),
                 ]
@@ -220,8 +220,8 @@ class PublishHandler
         $this->logger->debug(
             message: '[PublishHandler] Depublishing object',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'         => __FILE__,
+                'line'         => __LINE__,
                 'uuid'         => $uuid,
                 'date'         => $date?->format('Y-m-d H:i:s'),
                 'rbac'         => $_rbac,
@@ -263,8 +263,8 @@ class PublishHandler
             $this->logger->info(
                 message: '[PublishHandler] Object depublished successfully',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'               => __FILE__,
+                    'line'               => __LINE__,
                     'uuid'               => $uuid,
                     'depublication_date' => $depublicationDate->format('Y-m-d H:i:s'),
                 ]
@@ -275,8 +275,8 @@ class PublishHandler
             $this->logger->error(
                 message: '[PublishHandler] Failed to depublish object',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'uuid'  => $uuid,
                     'error' => $e->getMessage(),
                 ]
@@ -356,7 +356,7 @@ class PublishHandler
         $depublicationDate = $object->getDepublicationDate();
 
         $status = [
-            'is_published'            => $this->isPublished($object),
+            'is_published'            => $this->isPublished(object: $object),
             'publication_date'        => $publicationDate?->format('Y-m-d H:i:s'),
             'depublication_date'      => $depublicationDate?->format('Y-m-d H:i:s'),
             'publication_scheduled'   => false,

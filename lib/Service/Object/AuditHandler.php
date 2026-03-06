@@ -74,8 +74,8 @@ class AuditHandler
         $this->logger->debug(
             message: '[AuditHandler] Getting logs for object',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'    => __FILE__,
+                'line'    => __LINE__,
                 'uuid'    => $uuid,
                 'filters' => $filters,
             ]
@@ -83,7 +83,7 @@ class AuditHandler
 
         try {
             // Prepare filters for audit trail mapper.
-            $auditFilters = $this->prepareFilters($uuid, $filters);
+            $auditFilters = $this->prepareFilters(uuid: $uuid, filters: $filters);
 
             // Fetch logs from mapper.
             $logs = $this->auditTrailMapper->findAll(filters: $auditFilters);
@@ -91,8 +91,8 @@ class AuditHandler
             $this->logger->info(
                 message: '[AuditHandler] Logs retrieved successfully',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
                     'uuid'      => $uuid,
                     'log_count' => count($logs),
                 ]
@@ -103,8 +103,8 @@ class AuditHandler
             $this->logger->error(
                 message: '[AuditHandler] Failed to get logs',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'uuid'  => $uuid,
                     'error' => $e->getMessage(),
                 ]
@@ -141,8 +141,8 @@ class AuditHandler
             $registerMatch      = ($objectRegisterNorm === $reqRegisterNorm);
 
             // Normalize schema (handle array/object/string).
-            $objectSchemaId   = $this->extractSchemaId($objectSchema);
-            $objectSchemaSlug = $this->extractSchemaSlug($objectSchema);
+            $objectSchemaId   = $this->extractSchemaId(schema: $objectSchema);
+            $objectSchemaSlug = $this->extractSchemaSlug(schema: $objectSchema);
 
             $requestedSchemaNorm  = strtolower($requestedSchema);
             $objectSchemaIdNorm   = strtolower((string) $objectSchemaId);

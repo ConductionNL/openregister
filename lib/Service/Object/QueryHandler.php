@@ -45,7 +45,8 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex query routing and optimization logic
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Query operations require many handler dependencies
- * @SuppressWarnings(PHPMD.BooleanArgumentFlag)      Boolean flags are part of established API pattern for RBAC/multitenancy filtering
+ * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+ * Boolean flags are part of established API pattern for RBAC/multitenancy filtering.
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)     Complex business logic requires multiple conditional paths
  * @SuppressWarnings(PHPMD.NPathComplexity)          Query operations have inherently complex execution paths
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)    Query methods handle complex operations that benefit from cohesion
@@ -544,15 +545,17 @@ class QueryHandler
             $paginatedResults['@self']['ignoredFilters'] = $ignoredFilters;
 
             // Check if any ignored filters look like control parameters missing the _ prefix.
-            $controlParams = ['limit', 'offset', 'page', 'order', 'sort', 'search', 'extend', 'fields', 'filter', 'unset'];
+            $controlParams  = ['limit', 'offset', 'page', 'order', 'sort', 'search', 'extend', 'fields', 'filter', 'unset'];
             $mistakenParams = array_intersect($ignoredFilters, $controlParams);
             if (empty($mistakenParams) === false) {
                 $suggestions = array_map(fn($p) => "_{$p}", $mistakenParams);
-                $paginatedResults['@self']['hint'] = 'Query returned 0 results because '
-                    . implode(', ', $mistakenParams)
-                    . ' was treated as an object property filter. Did you mean '
-                    . implode(', ', $suggestions)
-                    . '? Control parameters require an underscore prefix (e.g. _limit, _offset, _page).';
+                $paramList   = implode(', ', $mistakenParams);
+                $sugList     = implode(', ', $suggestions);
+                $msg1        = 'Query returned 0 results because '.$paramList;
+                $msg2        = ' was treated as a property filter.';
+                $msg3        = ' Did you mean '.$sugList;
+                $hint        = $msg1.$msg2.$msg3.'? Control params require underscore prefix.';
+                $paginatedResults['@self']['hint'] = $hint;
             }
         }
 

@@ -66,7 +66,7 @@ class AuditTrailMapper extends QBMapper
      */
     public function __construct(IDBConnection $db, ObjectEntityMapper $objectEntityMapper)
     {
-        parent::__construct($db, 'openregister_audit_trails', AuditTrail::class);
+        parent::__construct(db: $db, tableName: 'openregister_audit_trails', entityClass: AuditTrail::class);
         $this->objectEntityMapper = $objectEntityMapper;
     }//end __construct()
 
@@ -236,7 +236,7 @@ class AuditTrailMapper extends QBMapper
             $qb->setFirstResult($offset);
         }
 
-        return $this->findEntities($qb);
+        return $this->findEntities(query: $qb);
     }//end findAll()
 
 
@@ -383,7 +383,7 @@ class AuditTrailMapper extends QBMapper
         }
 
         if (is_string($until) === true) {
-            if ($this->isSemanticVersion($until) === false) {
+            if ($this->isSemanticVersion(version: $until) === false) {
                 // Handle audit trail ID.
                 $qb->andWhere(
                     $qb->expr()->eq('id', $qb->createNamedParameter($until, IQueryBuilder::PARAM_STR))
@@ -402,7 +402,7 @@ class AuditTrailMapper extends QBMapper
                 );
             }
 
-            if ($this->isSemanticVersion($until) === true) {
+            if ($this->isSemanticVersion(version: $until) === true) {
                 // Handle semantic version.
                 $qb->andWhere(
                     $qb->expr()->eq('version', $qb->createNamedParameter($until, IQueryBuilder::PARAM_STR))
@@ -410,7 +410,7 @@ class AuditTrailMapper extends QBMapper
             }//end if
         }//end if
 
-        return $this->findEntities($qb);
+        return $this->findEntities(query: $qb);
     }//end findByObjectUntil()
 
 
@@ -613,7 +613,7 @@ class AuditTrailMapper extends QBMapper
         $serializedSize = strlen(serialize($entity->jsonSerialize()));
         $entity->setSize(max($serializedSize, 14));
 
-        return parent::update($entity);
+        return parent::update(entity: $entity);
     }//end update()
 
 

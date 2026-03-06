@@ -173,7 +173,7 @@ class RegisterMapper extends QBMapper
         IAppConfig $appConfig
     ) {
         // Initialize parent mapper with table name and entity class.
-        parent::__construct($db, 'openregister_registers', Register::class);
+        parent::__construct(db: $db, tableName: 'openregister_registers', entityClass: Register::class);
 
         // Store dependencies for use in mapper methods.
         $this->schemaMapper       = $schemaMapper;
@@ -214,7 +214,19 @@ class RegisterMapper extends QBMapper
         bool $_multitenancy=true
     ): Register {
         // Check request-scoped cache to avoid redundant DB queries for the same register.
-        $cacheKey = strtolower((string) $id).':'.($_rbac ? '1' : '0').':'.($_multitenancy ? '1' : '0');
+        if ($_rbac === true) {
+            $rbacFlag = '1';
+        } else {
+            $rbacFlag = '0';
+        }
+
+        if ($_multitenancy === true) {
+            $mtFlag = '1';
+        } else {
+            $mtFlag = '0';
+        }
+
+        $cacheKey = strtolower((string) $id).':'.$rbacFlag.':'.$mtFlag;
         if (isset($this->findCache[$cacheKey]) === true) {
             return $this->findCache[$cacheKey];
         }
@@ -224,8 +236,8 @@ class RegisterMapper extends QBMapper
             $this->logger->info(
                 message: '[RegisterMapper] Searching for register',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
                     'identifier' => $id,
                     'rbac'       => $_rbac,
                     'multi'      => $_multitenancy,
@@ -272,8 +284,8 @@ class RegisterMapper extends QBMapper
                 $this->logger->debug(
                     message: '[RegisterMapper] Register exists before filters',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'         => __FILE__,
+                        'line'         => __LINE__,
                         'identifier'   => $id,
                         'registerId'   => $testResult->getId(),
                         'organisation' => $testResult->getOrganisation(),
@@ -287,8 +299,8 @@ class RegisterMapper extends QBMapper
                 $this->logger->warning(
                     message: '[RegisterMapper] Register does not exist in database',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'       => __FILE__,
+                        'line'       => __LINE__,
                         'identifier' => $id,
                     ]
                 );
@@ -326,8 +338,8 @@ class RegisterMapper extends QBMapper
             $this->logger->info(
                 message: '[RegisterMapper] Applying multitenancy filters',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'                 => __FILE__,
+                    'line'                 => __LINE__,
                     'identifier'           => $id,
                     'multiEnabled'         => $_multitenancy,
                     'enablePublished'      => $enablePublished,
@@ -353,10 +365,22 @@ class RegisterMapper extends QBMapper
             $register = $this->findEntity(query: $qb);
 
             // Cache by all possible identifiers to handle lookups by id, uuid, or slug.
-            $rbacSuffix = ':'.($_rbac ? '1' : '0').':'.($_multitenancy ? '1' : '0');
+            if ($_rbac === true) {
+                $rbacChar = '1';
+            } else {
+                $rbacChar = '0';
+            }
+
+            if ($_multitenancy === true) {
+                $mtChar = '1';
+            } else {
+                $mtChar = '0';
+            }
+
+            $rbacSuffix = ':'.$rbacChar.':'.$mtChar;
             $this->findCache[$cacheKey] = $register;
-            $this->findCache[(string) $register->getId().$rbacSuffix]           = $register;
-            $this->findCache[strtolower($register->getUuid()).$rbacSuffix]      = $register;
+            $this->findCache[(string) $register->getId().$rbacSuffix]      = $register;
+            $this->findCache[strtolower($register->getUuid()).$rbacSuffix] = $register;
             if ($register->getSlug() !== null) {
                 $this->findCache[strtolower($register->getSlug()).$rbacSuffix] = $register;
             }
@@ -368,8 +392,8 @@ class RegisterMapper extends QBMapper
                 $this->logger->error(
                     message: '[RegisterMapper] Register not found after filters',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'               => __FILE__,
+                        'line'               => __LINE__,
                         'identifier'         => $id,
                         'existsBeforeFilter' => $existsBeforeFilter,
                         'multiEnabled'       => $_multitenancy,
@@ -381,7 +405,7 @@ class RegisterMapper extends QBMapper
             }
 
             throw $e;
-        }
+        }//end try
     }//end find()
 
     /**
@@ -559,15 +583,15 @@ class RegisterMapper extends QBMapper
         // Verify RBAC permission to create registers
         // $this->verifyRbacPermission('create', 'register');
         // Auto-set organisation from active session.
-        $this->setOrganisationOnCreate($entity);
+        $this->setOrganisationOnCreate(entity: $entity);
 
         // Auto-set owner from current user session.
-        $this->setOwnerOnCreate($entity);
+        $this->setOwnerOnCreate(entity: $entity);
 
-        $entity = parent::insert($entity);
+        $entity = parent::insert(entity: $entity);
 
         // Dispatch creation event.
-        $this->eventDispatcher->dispatchTyped(new RegisterCreatedEvent($entity));
+        $this->eventDispatcher->dispatchTyped(new RegisterCreatedEvent(register: $entity));
 
         return $entity;
     }//end insert()
@@ -627,7 +651,7 @@ class RegisterMapper extends QBMapper
         $register->hydrate(object: $object);
 
         // Clean the register object to ensure UUID, slug, and version are set.
-        $this->cleanObject($register);
+        $this->cleanObject(register: $register);
 
         $register = $this->insert(entity: $register);
 
@@ -648,7 +672,7 @@ class RegisterMapper extends QBMapper
         // Verify RBAC permission to update registers
         // $this->verifyRbacPermission('update', 'register');
         // Verify entity belongs to active organisation.
-        $this->verifyOrganisationAccess($entity);
+        $this->verifyOrganisationAccess(entity: $entity);
 
         // Fetch old entity directly without organisation filter for event comparison.
         $qb = $this->db->getQueryBuilder();
@@ -658,9 +682,9 @@ class RegisterMapper extends QBMapper
         $oldSchema = $this->findEntity(query: $qb);
 
         // Clean the register object to ensure UUID, slug, and version are set.
-        $this->cleanObject($entity);
+        $this->cleanObject(register: $entity);
 
-        $entity = parent::update($entity);
+        $entity = parent::update(entity: $entity);
 
         // Dispatch update event.
         $this->eventDispatcher->dispatchTyped(new RegisterUpdatedEvent(newRegister: $entity, oldRegister: $oldSchema));
@@ -694,9 +718,9 @@ class RegisterMapper extends QBMapper
         $register->hydrate(object: $object);
 
         // Clean the register object to ensure UUID, extend: slug, files: and version are set.
-        $this->cleanObject($register);
+        $this->cleanObject(register: $register);
 
-        $register = $this->update($register);
+        $register = $this->update(entity: $register);
 
         return $register;
     }//end updateFromArray()
@@ -715,7 +739,7 @@ class RegisterMapper extends QBMapper
         // Verify RBAC permission to delete registers
         // $this->verifyRbacPermission('delete', 'register');
         // Verify entity belongs to active organisation.
-        $this->verifyOrganisationAccess($entity);
+        $this->verifyOrganisationAccess(entity: $entity);
 
         // Check for attached objects before deleting.
         $registerId = $entity->id;
@@ -725,15 +749,15 @@ class RegisterMapper extends QBMapper
 
         $stats = $this->objectEntityMapper->getStatistics(registerId: $registerId, schemaId: null);
         if (($stats['total'] ?? 0) > 0) {
-            throw new ValidationException('Cannot delete register: objects are still attached.');
+            throw new ValidationException(message: 'Cannot delete register: objects are still attached.');
         }
 
         // Proceed with deletion if no objects are attached.
-        $result = parent::delete($entity);
+        $result = parent::delete(entity: $entity);
 
         // Dispatch deletion event.
         $this->eventDispatcher->dispatchTyped(
-            new RegisterDeletedEvent($entity)
+            new RegisterDeletedEvent(register: $entity)
         );
 
         return $result;
@@ -829,7 +853,7 @@ class RegisterMapper extends QBMapper
      */
     public function hasSchemaWithTitle(int $registerId, string $schemaTitle): ?Schema
     {
-        $schemas = $this->getSchemasByRegisterId($registerId);
+        $schemas = $this->getSchemasByRegisterId(registerId: $registerId);
 
         // Check each schema for a matching title.
         foreach ($schemas as $schema) {

@@ -50,6 +50,6 @@ class DataAccessProfileMapper extends QBMapper
      */
     public function __construct(IDBConnection $db)
     {
-        parent::__construct($db, 'openregister_data_access_profiles', DataAccessProfile::class);
+        parent::__construct(db: $db, tableName: 'openregister_data_access_profiles', entityClass: DataAccessProfile::class);
     }//end __construct()
 }//end class

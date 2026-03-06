@@ -172,17 +172,20 @@ class FolderManagementHandler
         $folderProperty = $register->getFolder();
 
         // Try to get existing folder by ID.
-        $existingFolder = $this->getExistingFolderFromProperty($folderProperty);
+        $existingFolder = $this->getExistingFolderFromProperty(folderProperty: $folderProperty);
         if ($existingFolder !== null) {
-            $this->logger->info(message: "[FolderManagementHandler] Register folder already exists with ID: ".$folderProperty, context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->info(
+                message: "[FolderManagementHandler] Register folder already exists with ID: ".$folderProperty,
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return $existingFolder;
         }
 
         // Create the folder path and node.
-        $registerFolderName = $this->getRegisterFolderName($register);
+        $registerFolderName = $this->getRegisterFolderName(register: $register);
         $folderPath         = self::ROOT_FOLDER.'/'.$registerFolderName;
 
-        $folderNode = $this->createFolderPath($folderPath);
+        $folderNode = $this->createFolderPath(folderPath: $folderPath);
 
         // Store the folder ID instead of the path.
         $register->setFolder((string) $folderNode->getId());
@@ -196,7 +199,10 @@ class FolderManagementHandler
             context: ['file' => __FILE__, 'line' => __LINE__]
         );
 
-        $this->logger->info(message: "[FolderManagementHandler] Created register folder with ID: ".$folderNode->getId(), context: ['file' => __FILE__, 'line' => __LINE__]);
+        $this->logger->info(
+            message: "[FolderManagementHandler] Created register folder with ID: ".$folderNode->getId(),
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
 
         // Transfer ownership to OpenRegister and share with current user if needed.
         if ($this->fileService !== null) {
@@ -233,9 +239,12 @@ class FolderManagementHandler
         }
 
         // Try to get existing folder by ID.
-        $existingFolder = $this->getExistingFolderFromProperty($folderProperty);
+        $existingFolder = $this->getExistingFolderFromProperty(folderProperty: $folderProperty);
         if ($existingFolder !== null) {
-            $this->logger->info(message: "[FolderManagementHandler] Object folder already exists with ID: ".$folderProperty, context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->info(
+                message: "[FolderManagementHandler] Object folder already exists with ID: ".$folderProperty,
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return $existingFolder;
         }
 
@@ -256,7 +265,10 @@ class FolderManagementHandler
             $this->objectEntityMapper->update($objectEntity);
         }
 
-        $this->logger->info(message: "[FolderManagementHandler] Created object folder with ID: ".$objectFolder->getId(), context: ['file' => __FILE__, 'line' => __LINE__]);
+        $this->logger->info(
+            message: "[FolderManagementHandler] Created object folder with ID: ".$objectFolder->getId(),
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
 
         // Transfer ownership to OpenRegister and share with current user if needed.
         if ($this->fileService !== null) {
@@ -289,29 +301,38 @@ class FolderManagementHandler
 
         // Handle legacy cases where folder might be null, empty string, or a non-numeric string path.
         if ($folderProperty === null || $folderProperty === '') {
-            $this->logger->info(message: "[FolderManagementHandler] Register {$register->getId()} has legacy folder property, creating new folder", context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->info(
+                message: "[FolderManagementHandler] Register {$register->getId()} has legacy folder property, creating new folder",
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return $this->createRegisterFolderById(register: $register);
         }
 
         // At this point $folderProperty is a non-empty string.
         // Check if it's a numeric string (folder ID) or a legacy path.
         if (is_numeric($folderProperty) === false) {
-            $this->logger->warning(message: "[FolderManagementHandler] Invalid folder ID type for register {$register->getId()}, creating new folder", context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->warning(
+                message: "[FolderManagementHandler] Invalid folder ID type for register {$register->getId()}, creating new folder",
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return $this->createRegisterFolderById(register: $register);
         }
 
         $folderId = (int) $folderProperty;
 
         // Try to get folder by ID.
-        $folder = $this->getNodeById($folderId);
+        $folder = $this->getNodeById(nodeId: $folderId);
 
         if ($folder instanceof Folder) {
             return $folder;
         }
 
         // If stored ID is invalid, recreate the folder.
-        $this->logger->warning(message: "[FolderManagementHandler] Register {$register->getId()} has invalid folder ID, recreating folder", context: ['file' => __FILE__, 'line' => __LINE__]);
-        return $this->createRegisterFolderById($register);
+        $this->logger->warning(
+            message: "[FolderManagementHandler] Register {$register->getId()} has invalid folder ID, recreating folder",
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
+        return $this->createRegisterFolderById(register: $register);
     }//end getRegisterFolderById()
 
     /**
@@ -344,7 +365,10 @@ class FolderManagementHandler
                 $objectEntityId = $objectEntity->getId();
             }
 
-            $this->logger->info(message: "[FolderManagementHandler] Object $objectEntityId has legacy folder property, creating new folder", context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->info(
+                message: "[FolderManagementHandler] Object $objectEntityId has legacy folder property, creating new folder",
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return $this->createObjectFolderById(objectEntity: $objectEntity, registerId: $registerId);
         }//end if
 
@@ -352,14 +376,17 @@ class FolderManagementHandler
         $folderId = (int) $folderProperty;
 
         // Try to get folder by ID.
-        $folder = $this->getNodeById($folderId);
+        $folder = $this->getNodeById(nodeId: $folderId);
 
         if ($folder instanceof Folder) {
             return $folder;
         }
 
         // If stored ID is invalid, recreate the folder.
-        $this->logger->warning(message: "[FolderManagementHandler] Object {$objectEntity->getId()} has invalid folder ID, recreating folder", context: ['file' => __FILE__, 'line' => __LINE__]);
+        $this->logger->warning(
+            message: "[FolderManagementHandler] Object {$objectEntity->getId()} has invalid folder ID, recreating folder",
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
 
         return $this->createObjectFolderById(objectEntity: $objectEntity);
     }//end getObjectFolder()
@@ -393,19 +420,28 @@ class FolderManagementHandler
         }
 
         // Create object folder within the register folder.
-        $objectFolderName = $this->getObjectFolderName($objectEntity);
+        $objectFolderName = $this->getObjectFolderName(objectEntity: $objectEntity);
 
         try {
             // Try to get existing folder first.
             $objectFolder = $registerFolder->get($objectFolderName);
-            $this->logger->info(message: "[FolderManagementHandler] Object folder already exists: ".$objectFolderName, context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->info(
+                message: "[FolderManagementHandler] Object folder already exists: ".$objectFolderName,
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
         } catch (NotFoundException) {
             // Create new folder if it doesn't exist.
             $objectFolder = $registerFolder->newFolder($objectFolderName);
-            $this->logger->info(message: "[FolderManagementHandler] Created object folder: ".$objectFolderName, context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->info(
+                message: "[FolderManagementHandler] Created object folder: ".$objectFolderName,
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
         }
 
-        $this->logger->info(message: "[FolderManagementHandler] Created object folder with ID: ".$objectFolder->getId(), context: ['file' => __FILE__, 'line' => __LINE__]);
+        $this->logger->info(
+            message: "[FolderManagementHandler] Created object folder with ID: ".$objectFolder->getId(),
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
 
         // Transfer ownership to OpenRegister and share with current user if needed.
         if ($this->fileService !== null) {
@@ -465,12 +501,18 @@ class FolderManagementHandler
             try {
                 // Try to get the folder if it already exists.
                 $node = $userFolder->get(path: $folderPath);
-                $this->logger->info(message: "[FolderManagementHandler] This folder already exists: $folderPath", context: ['file' => __FILE__, 'line' => __LINE__]);
+                $this->logger->info(
+                    message: "[FolderManagementHandler] This folder already exists: $folderPath",
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
                 return $node;
             } catch (NotFoundException) {
                 // Folder does not exist, create it.
                 $node = $userFolder->newFolder(path: $folderPath);
-                $this->logger->info(message: "[FolderManagementHandler] Created folder: $folderPath", context: ['file' => __FILE__, 'line' => __LINE__]);
+                $this->logger->info(
+                    message: "[FolderManagementHandler] Created folder: $folderPath",
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
 
                 // Transfer ownership to OpenRegister and share with current user if needed.
                 if ($this->fileService !== null) {
@@ -479,10 +521,13 @@ class FolderManagementHandler
                 }
 
                 return $node;
-            }
+            }//end try
         } catch (NotPermittedException $e) {
             // End try.
-            $this->logger->error(message: "[FolderManagementHandler] Can't create folder $folderPath: ".$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->error(
+                message: "[FolderManagementHandler] Can't create folder $folderPath: ".$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             throw new Exception("Can't create folder $folderPath");
         }//end try
     }//end createFolderPath()
@@ -500,7 +545,7 @@ class FolderManagementHandler
      */
     public function createFolder(string $folderPath): Node
     {
-        return $this->createFolderPath($folderPath);
+        return $this->createFolderPath(folderPath: $folderPath);
     }//end createFolder()
 
     /**
@@ -573,7 +618,10 @@ class FolderManagementHandler
             $userFolder = $this->rootFolder->getUserFolder($user->getUID());
             return $userFolder;
         } catch (Exception $e) {
-            $this->logger->error(message: "[FolderManagementHandler] Failed to get OpenRegister user folder: ".$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->error(
+                message: "[FolderManagementHandler] Failed to get OpenRegister user folder: ".$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             throw new Exception("Cannot access OpenRegister user folder: ".$e->getMessage());
         }
     }//end getOpenRegisterUserFolder()
@@ -598,7 +646,10 @@ class FolderManagementHandler
                 return $nodes[0];
             }
         } catch (Exception $e) {
-            $this->logger->debug(message: "[FolderManagementHandler] User folder lookup failed for node $nodeId: ".$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->debug(
+                message: "[FolderManagementHandler] User folder lookup failed for node $nodeId: ".$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
         }
 
         // Fall back to root folder lookup (works for files owned by any user,
@@ -609,7 +660,10 @@ class FolderManagementHandler
                 return $nodes[0];
             }
         } catch (Exception $e) {
-            $this->logger->error(message: "[FolderManagementHandler] Root folder lookup also failed for node $nodeId: ".$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->error(
+                message: "[FolderManagementHandler] Root folder lookup also failed for node $nodeId: ".$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
         }
 
         return null;
@@ -710,14 +764,17 @@ class FolderManagementHandler
 
         try {
             $folderId       = (int) $folderProperty;
-            $existingFolder = $this->getNodeById($folderId);
+            $existingFolder = $this->getNodeById(nodeId: $folderId);
             if ($existingFolder !== null && $existingFolder instanceof Folder) {
                 return $existingFolder;
             }
 
             return null;
         } catch (Exception $e) {
-            $this->logger->warning(message: "[FolderManagementHandler] Stored folder ID invalid: ".$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->warning(
+                message: "[FolderManagementHandler] Stored folder ID invalid: ".$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return null;
         }//end try
     }//end getExistingFolderFromProperty()
@@ -807,17 +864,23 @@ class FolderManagementHandler
      */
     private function createObjectFolderInRegister(Folder $registerFolder, ObjectEntity|string $objectEntity): Folder
     {
-        $objectFolderName = $this->getObjectFolderName($objectEntity);
+        $objectFolderName = $this->getObjectFolderName(objectEntity: $objectEntity);
 
         try {
             // Try to get existing folder first.
             $objectFolder = $registerFolder->get($objectFolderName);
-            $this->logger->info(message: "[FolderManagementHandler] Object folder already exists: ".$objectFolderName, context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->info(
+                message: "[FolderManagementHandler] Object folder already exists: ".$objectFolderName,
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return $objectFolder;
         } catch (NotFoundException) {
             // Create new folder if it doesn't exist.
             $objectFolder = $registerFolder->newFolder($objectFolderName);
-            $this->logger->info(message: "[FolderManagementHandler] Created object folder: ".$objectFolderName, context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->info(
+                message: "[FolderManagementHandler] Created object folder: ".$objectFolderName,
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return $objectFolder;
         }
     }//end createObjectFolderInRegister()

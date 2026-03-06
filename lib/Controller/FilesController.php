@@ -86,6 +86,8 @@ class FilesController extends Controller
      * @param IRequest      $request       HTTP request object
      * @param FileService   $fileService   File service for file operations
      * @param ObjectService $objectService Object service for object validation
+     * @param IRootFolder   $rootFolder    Root folder for file access
+     * @param IUserManager  $userManager   User manager for user lookups
      *
      * @return void
      */
@@ -192,7 +194,7 @@ class FilesController extends Controller
             // uploaded by a different user whose folder is not accessible).
             if ($file === null) {
                 $owner = $object->getOwner();
-                $file  = $this->getFileViaKnownUsers($fileId, $owner);
+                $file  = $this->getFileViaKnownUsers(fileId: $fileId, owner: $owner);
             }
 
             if ($file === null) {
@@ -307,8 +309,8 @@ class FilesController extends Controller
                 );
             }
 
-            $share = $this->parseBool($data['share'] ?? false);
-            $tags  = $this->normalizeTags($data['tags'] ?? []);
+            $share = $this->parseBool(value: $data['share'] ?? false);
+            $tags  = $this->normalizeTags(tags: $data['tags'] ?? []);
 
             $result = $this->fileService->addFile(
                 objectEntity: $object,
@@ -727,7 +729,7 @@ class FilesController extends Controller
 
         if ($fileError !== null && ($fileError !== UPLOAD_ERR_OK) === true) {
             throw new Exception(
-                'File upload error for '.$file['name'].': '.$this->getUploadErrorMessage($fileError)
+                'File upload error for '.$file['name'].': '.$this->getUploadErrorMessage(errorCode: $fileError)
             );
         }
 

@@ -103,10 +103,11 @@ class LogService
      * Initializes the LogService with required mapper dependencies for handling
      * audit trail logs and related entities.
      *
-     * @param AuditTrailMapper   $auditTrailMapper   Mapper for audit trail database operations
-     * @param ObjectEntityMapper $objectEntityMapper Mapper for object entity database operations
-     * @param RegisterMapper     $registerMapper     Mapper for register database operations
-     * @param SchemaMapper       $schemaMapper       Mapper for schema database operations
+     * @param AuditTrailMapper    $auditTrailMapper    Mapper for audit trail database operations.
+     * @param ObjectEntityMapper  $objectEntityMapper  Mapper for object entity database operations.
+     * @param UnifiedObjectMapper $unifiedObjectMapper Mapper for unified object database operations.
+     * @param RegisterMapper      $registerMapper      Mapper for register database operations.
+     * @param SchemaMapper        $schemaMapper        Mapper for schema database operations.
      *
      * @return void
      */
@@ -346,11 +347,11 @@ class LogService
             case 'csv':
                 return $this->exportToCsv(data: $exportData);
             case 'json':
-                return $this->exportToJson($exportData);
+                return $this->exportToJson(data: $exportData);
             case 'xml':
-                return $this->exportToXml($exportData);
+                return $this->exportToXml(data: $exportData);
             case 'txt':
-                return $this->exportToTxt($exportData);
+                return $this->exportToTxt(data: $exportData);
             default:
                 throw new InvalidArgumentException("Unsupported export format: {$format}");
         }
@@ -493,7 +494,7 @@ class LogService
 
             // Include changes if requested.
             if ($includeChanges === true && empty($logData['changed']) === false) {
-                $exportRow['changes'] = $this->getChangesFormatted($logData['changed']);
+                $exportRow['changes'] = $this->getChangesFormatted(changed: $logData['changed']);
             }
 
             // Include metadata if requested.

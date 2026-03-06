@@ -100,8 +100,8 @@ class DocumentBuilder
         $this->logger->debug(
             message: '[DocumentBuilder] Creating basic Solr document',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'      => __FILE__,
+                'line'      => __LINE__,
                 'object_id' => $object->getId(),
             ]
         );
@@ -160,8 +160,8 @@ class DocumentBuilder
         $this->logger->debug(
             message: '[DocumentBuilder] Processing relations for SOLR',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'            => __FILE__,
+                'line'            => __LINE__,
                 'relations_type'  => gettype($relations),
                 'relations_value' => $relations,
                 'is_empty'        => empty($relations),
@@ -182,8 +182,8 @@ class DocumentBuilder
                     $this->logger->debug(
                         message: '[DocumentBuilder] Found value in relations',
                         context: [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
+                            'file'  => __FILE__,
+                            'line'  => __LINE__,
                             'key'   => $key,
                             'value' => $value,
                             'type'  => gettype($value),
@@ -197,8 +197,8 @@ class DocumentBuilder
             $this->logger->debug(
                 message: '[DocumentBuilder] Flattened relations result',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'         => __FILE__,
+                    'line'         => __LINE__,
                     'input_count'  => count($relations),
                     'output_count' => count($values),
                     'values'       => $values,
@@ -325,8 +325,8 @@ class DocumentBuilder
                 $this->logger->debug(
                     message: '[DocumentBuilder] Skipping non-numeric array index in relations',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'         => __FILE__,
+                        'line'         => __LINE__,
                         'relation_key' => $relationKey,
                         'field_name'   => $fieldName,
                         'index'        => $index,
@@ -345,8 +345,8 @@ class DocumentBuilder
         $this->logger->debug(
             message: '[DocumentBuilder] Extracted arrays from relations',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'         => __FILE__,
+                'line'         => __LINE__,
                 'field_count'  => count($arrays),
                 'fields'       => array_keys($arrays),
                 'total_values' => array_sum(array_map('count', $arrays)),
@@ -383,7 +383,7 @@ class DocumentBuilder
                 $extractedValues[] = $item;
             } else if (is_array($item) === true) {
                 // Object/array - try to extract ID/UUID.
-                $idValue = $this->extractIdFromObject($item);
+                $idValue = $this->extractIdFromObject(object: $item);
                 if ($idValue !== null) {
                     $extractedValues[] = $idValue;
                 }
@@ -398,8 +398,8 @@ class DocumentBuilder
         $this->logger->debug(
             message: '[DocumentBuilder] Extracted indexable array values',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'             => __FILE__,
+                'line'             => __LINE__,
                 'field'            => $fieldName,
                 'original_count'   => count($arrayValue),
                 'extracted_count'  => count($extractedValues),
@@ -466,8 +466,8 @@ class DocumentBuilder
                 $this->logger->debug(
                     message: '[DocumentBuilder] Skipping non-numeric value for integer field',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'       => __FILE__,
+                        'line'       => __LINE__,
                         'value'      => $value,
                         'field_type' => $fieldType,
                     ]
@@ -486,8 +486,8 @@ class DocumentBuilder
                 $this->logger->debug(
                     message: '[DocumentBuilder] Skipping non-numeric value for float field',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'       => __FILE__,
+                        'line'       => __LINE__,
                         'value'      => $value,
                         'field_type' => $fieldType,
                     ]
@@ -560,8 +560,8 @@ class DocumentBuilder
         $this->logger->info(
             message: '[DocumentBuilder] Field value truncated for SOLR indexing',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'             => __FILE__,
+                'line'             => __LINE__,
                 'field'            => $fieldName,
                 'original_bytes'   => strlen($value),
                 'truncated_bytes'  => strlen($truncated),
@@ -633,8 +633,8 @@ class DocumentBuilder
             $this->logger->debug(
                 message: '[DocumentBuilder] Field not in SOLR schema, will be auto-created',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'field' => $fieldName,
                     'value' => $fieldValue,
                     'type'  => gettype($fieldValue),
@@ -652,8 +652,8 @@ class DocumentBuilder
             $this->logger->warning(
                 message: '[DocumentBuilder] 🛡️ Field validation prevented type mismatch',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'            => __FILE__,
+                    'line'            => __LINE__,
                     'field'           => $fieldName,
                     'value'           => $fieldValue,
                     'value_type'      => gettype($fieldValue),
@@ -667,8 +667,8 @@ class DocumentBuilder
         $this->logger->debug(
             message: '[DocumentBuilder] ✅ Field validation passed',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'      => __FILE__,
+                'line'      => __LINE__,
                 'field'     => $fieldName,
                 'value'     => $fieldValue,
                 'solr_type' => $solrFieldType,
@@ -774,8 +774,8 @@ class DocumentBuilder
                 $this->logger->warning(
                     message: '[DocumentBuilder] Failed to resolve register value to ID',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'          => __FILE__,
+                        'line'          => __LINE__,
                         'registerValue' => $registerValue,
                         'error'         => $e->getMessage(),
                     ]
@@ -787,8 +787,8 @@ class DocumentBuilder
         $this->logger->warning(
             message: '[DocumentBuilder] Could not resolve register to integer ID',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'          => __FILE__,
+                'line'          => __LINE__,
                 'registerValue' => $registerValue,
                 'type'          => gettype($registerValue),
             ]
@@ -833,8 +833,8 @@ class DocumentBuilder
                 $this->logger->warning(
                     message: '[DocumentBuilder] Failed to resolve schema value to ID',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'        => __FILE__,
+                        'line'        => __LINE__,
                         'schemaValue' => $schemaValue,
                         'error'       => $e->getMessage(),
                     ]
@@ -846,8 +846,8 @@ class DocumentBuilder
         $this->logger->warning(
             message: '[DocumentBuilder] Could not resolve schema to integer ID',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'        => __FILE__,
+                'line'        => __LINE__,
                 'schemaValue' => $schemaValue,
                 'type'        => gettype($schemaValue),
             ]

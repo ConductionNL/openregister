@@ -226,7 +226,7 @@ class FacetsHandler
         $facetableFields = [];
 
         // Get schemas to analyze based on query context.
-        $schemas = $this->getSchemasForQuery($baseQuery);
+        $schemas = $this->getSchemasForQuery(baseQuery: $baseQuery);
 
         if (empty($schemas) === true) {
             return [];
@@ -242,7 +242,7 @@ class FacetsHandler
 
             // Analyze each property for facetable configuration.
             foreach ($properties as $propertyKey => $property) {
-                if ($this->isPropertyFacetable($property) === true) {
+                if ($this->isPropertyFacetable(property: $property) === true) {
                     $fieldConfig = $this->generateFieldConfigFromProperty(
                         propertyKey: $propertyKey,
                         property: $property

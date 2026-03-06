@@ -345,40 +345,40 @@ class Configuration extends Entity implements JsonSerializable
      */
     public function __construct()
     {
-        $this->addType('id', 'integer');
-        $this->addType('uuid', 'string');
-        $this->addType('title', 'string');
-        $this->addType('description', 'string');
-        $this->addType('type', 'string');
-        $this->addType('app', 'string');
-        $this->addType('version', 'string');
-        $this->addType('sourceType', 'string');
-        $this->addType('sourceUrl', 'string');
-        $this->addType('localVersion', 'string');
-        $this->addType('remoteVersion', 'string');
-        $this->addType('lastChecked', 'datetime');
-        $this->addType('autoUpdate', 'boolean');
-        $this->addType('notificationGroups', 'json');
-        $this->addType('githubRepo', 'string');
-        $this->addType('githubBranch', 'string');
-        $this->addType('githubPath', 'string');
-        $this->addType('isLocal', 'boolean');
-        $this->addType('syncEnabled', 'boolean');
-        $this->addType('syncInterval', 'integer');
-        $this->addType('lastSyncDate', 'datetime');
-        $this->addType('syncStatus', 'string');
-        $this->addType('openregister', 'string');
-        $this->addType('registers', 'json');
-        $this->addType('schemas', 'json');
-        $this->addType('objects', 'json');
-        $this->addType('views', 'json');
-        $this->addType('agents', 'json');
-        $this->addType('sources', 'json');
-        $this->addType('applications', 'json');
-        $this->addType('organisation', 'string');
-        $this->addType('owner', 'string');
-        $this->addType('created', 'datetime');
-        $this->addType('updated', 'datetime');
+        $this->addType(fieldName: 'id', type: 'integer');
+        $this->addType(fieldName: 'uuid', type: 'string');
+        $this->addType(fieldName: 'title', type: 'string');
+        $this->addType(fieldName: 'description', type: 'string');
+        $this->addType(fieldName: 'type', type: 'string');
+        $this->addType(fieldName: 'app', type: 'string');
+        $this->addType(fieldName: 'version', type: 'string');
+        $this->addType(fieldName: 'sourceType', type: 'string');
+        $this->addType(fieldName: 'sourceUrl', type: 'string');
+        $this->addType(fieldName: 'localVersion', type: 'string');
+        $this->addType(fieldName: 'remoteVersion', type: 'string');
+        $this->addType(fieldName: 'lastChecked', type: 'datetime');
+        $this->addType(fieldName: 'autoUpdate', type: 'boolean');
+        $this->addType(fieldName: 'notificationGroups', type: 'json');
+        $this->addType(fieldName: 'githubRepo', type: 'string');
+        $this->addType(fieldName: 'githubBranch', type: 'string');
+        $this->addType(fieldName: 'githubPath', type: 'string');
+        $this->addType(fieldName: 'isLocal', type: 'boolean');
+        $this->addType(fieldName: 'syncEnabled', type: 'boolean');
+        $this->addType(fieldName: 'syncInterval', type: 'integer');
+        $this->addType(fieldName: 'lastSyncDate', type: 'datetime');
+        $this->addType(fieldName: 'syncStatus', type: 'string');
+        $this->addType(fieldName: 'openregister', type: 'string');
+        $this->addType(fieldName: 'registers', type: 'json');
+        $this->addType(fieldName: 'schemas', type: 'json');
+        $this->addType(fieldName: 'objects', type: 'json');
+        $this->addType(fieldName: 'views', type: 'json');
+        $this->addType(fieldName: 'agents', type: 'json');
+        $this->addType(fieldName: 'sources', type: 'json');
+        $this->addType(fieldName: 'applications', type: 'json');
+        $this->addType(fieldName: 'organisation', type: 'string');
+        $this->addType(fieldName: 'owner', type: 'string');
+        $this->addType(fieldName: 'created', type: 'datetime');
+        $this->addType(fieldName: 'updated', type: 'datetime');
     }//end __construct()
 
     /**

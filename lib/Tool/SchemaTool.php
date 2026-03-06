@@ -62,7 +62,7 @@ class SchemaTool extends AbstractTool
         LoggerInterface $logger,
         SchemaMapper $schemaMapper
     ) {
-        parent::__construct($userSession, $logger);
+        parent::__construct(userSession: $userSession, logger: $logger);
         $this->schemaMapper = $schemaMapper;
     }//end __construct()
 
@@ -220,7 +220,7 @@ class SchemaTool extends AbstractTool
     {
             $this->log(functionName: $functionName, parameters: $parameters);
 
-        if ($this->hasUserContext($userId) === false) {
+        if ($this->hasUserContext(explicitUserId: $userId) === false) {
             return $this->formatError(message: 'No user context available. Tool cannot execute without user session.');
         }
 
@@ -256,7 +256,7 @@ class SchemaTool extends AbstractTool
             $filters['register'] = $register;
         }
 
-        $filters = $this->applyViewFilters($filters);
+        $filters = $this->applyViewFilters(params: $filters);
 
         $schemas = $this->schemaMapper->findAll(limit: $limit, offset: $offset, filters: $filters);
 

@@ -139,9 +139,9 @@ class CacheSettingsHandler
                 'overview'    => [
                     'totalCacheSize'      => $objectStats['memoryUsage'] ?? 0,
                     'totalCacheEntries'   => $objectStats['entries'] ?? 0,
-                    'overallHitRate'      => $this->calculateHitRate($objectStats),
+                    'overallHitRate'      => $this->calculateHitRate(stats: $objectStats),
                     'averageResponseTime' => $performanceStats['averageHitTime'] ?? 0.0,
-                    'cacheEfficiency'     => $this->calculateHitRate($objectStats),
+                    'cacheEfficiency'     => $this->calculateHitRate(stats: $objectStats),
                 ],
                 'services'    => [
                     'object' => [
@@ -403,27 +403,27 @@ class CacheSettingsHandler
 
             switch ($type) {
                 case 'all':
-                    $results['results']['object']      = $this->clearObjectCache($userId);
-                    $results['results']['schema']      = $this->clearSchemaCache($userId);
-                    $results['results']['facet']       = $this->clearFacetCache($userId);
-                    $results['results']['distributed'] = $this->clearDistributedCache($userId);
+                    $results['results']['object']      = $this->clearObjectCache(_userId: $userId);
+                    $results['results']['schema']      = $this->clearSchemaCache(_userId: $userId);
+                    $results['results']['facet']       = $this->clearFacetCache(_userId: $userId);
+                    $results['results']['distributed'] = $this->clearDistributedCache(_userId: $userId);
                     $results['results']['names']       = $this->clearNamesCache();
                     break;
 
                 case 'object':
-                    $results['results']['object'] = $this->clearObjectCache($userId);
+                    $results['results']['object'] = $this->clearObjectCache(_userId: $userId);
                     break;
 
                 case 'schema':
-                    $results['results']['schema'] = $this->clearSchemaCache($userId);
+                    $results['results']['schema'] = $this->clearSchemaCache(_userId: $userId);
                     break;
 
                 case 'facet':
-                    $results['results']['facet'] = $this->clearFacetCache($userId);
+                    $results['results']['facet'] = $this->clearFacetCache(_userId: $userId);
                     break;
 
                 case 'distributed':
-                    $results['results']['distributed'] = $this->clearDistributedCache($userId);
+                    $results['results']['distributed'] = $this->clearDistributedCache(_userId: $userId);
                     break;
 
                 case 'names':

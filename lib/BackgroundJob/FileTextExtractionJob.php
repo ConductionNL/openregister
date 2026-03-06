@@ -87,7 +87,7 @@ class FileTextExtractionJob extends QueuedJob
         LoggerInterface $logger,
         TextExtractionService $textExtractor
     ) {
-        parent::__construct($time);
+        parent::__construct(time: $time);
         $this->config        = $config;
         $this->logger        = $logger;
         $this->textExtractor = $textExtractor;
@@ -127,8 +127,8 @@ class FileTextExtractionJob extends QueuedJob
             $this->logger->error(
                 message: '[FileTextExtractionJob] Missing file_id in job arguments',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
                     'argument' => $argument,
                 ]
             );
@@ -142,8 +142,8 @@ class FileTextExtractionJob extends QueuedJob
         $this->logger->info(
             message: '[FileTextExtractionJob] Starting text extraction',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'    => __FILE__,
+                'line'    => __LINE__,
                 'file_id' => $fileId,
                 'job_id'  => $this->getId(),
             ]
@@ -163,8 +163,8 @@ class FileTextExtractionJob extends QueuedJob
             $this->logger->info(
                 message: '[FileTextExtractionJob] Text extraction completed successfully',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'               => __FILE__,
+                    'line'               => __LINE__,
                     'file_id'            => $fileId,
                     'processing_time_ms' => $processingTime,
                 ]
@@ -177,8 +177,8 @@ class FileTextExtractionJob extends QueuedJob
             $this->logger->error(
                 message: '[FileTextExtractionJob] Exception during text extraction',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'               => __FILE__,
+                    'line'               => __LINE__,
                     'file_id'            => $fileId,
                     'error'              => $e->getMessage(),
                     'trace'              => $e->getTraceAsString(),

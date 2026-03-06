@@ -268,7 +268,7 @@ class ConfigurationsController extends Controller
      */
     public function patch(int $id): JSONResponse
     {
-        return $this->update($id);
+        return $this->update(id: $id);
     }//end patch()
 
     /**

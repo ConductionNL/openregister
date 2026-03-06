@@ -89,8 +89,8 @@ class SolrCollectionManager
             $this->logger->error(
                 message: '[SolrCollectionManager] Failed to check collection existence',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
                     'collection' => $collectionName,
                     'error'      => $e->getMessage(),
                 ]
@@ -111,15 +111,15 @@ class SolrCollectionManager
         $baseCollection   = $this->config['objectCollection'] ?? $this->config['core'] ?? 'openregister';
         $tenantCollection = $this->httpClient->getTenantSpecificCollectionName($baseCollection);
 
-        if ($this->collectionExists($tenantCollection) === true) {
+        if ($this->collectionExists(collectionName: $tenantCollection) === true) {
             return $tenantCollection;
         }
 
         $this->logger->warning(
             message: '[SolrCollectionManager] Tenant collection does not exist',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'              => __FILE__,
+                'line'              => __LINE__,
                 'tenant_collection' => $tenantCollection,
                 'base_collection'   => $baseCollection,
             ]
@@ -152,8 +152,8 @@ class SolrCollectionManager
         $this->logger->info(
             message: '[SolrCollectionManager] Creating collection',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'      => __FILE__,
+                'line'      => __LINE__,
                 'name'      => $name,
                 'configSet' => $configSetName,
             ]
@@ -191,11 +191,11 @@ class SolrCollectionManager
             $this->logger->error(
                 message: '[SolrCollectionManager] Collection creation failed',
                 context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
-                'collection' => $name,
-                'error'      => $errorMessage,
-            ]
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
+                    'collection' => $name,
+                    'error'      => $errorMessage,
+                ]
         );
 
         throw new Exception("Solr collection creation failed: {$errorMessage}");
@@ -240,8 +240,8 @@ class SolrCollectionManager
                 $this->logger->info(
                     message: '[SolrCollectionManager] Collection deleted successfully',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'       => __FILE__,
+                        'line'       => __LINE__,
                         'collection' => $targetCollection,
                     ]
                 );
@@ -257,8 +257,8 @@ class SolrCollectionManager
             $this->logger->error(
                 message: '[SolrCollectionManager] Collection deletion failed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
                     'collection' => $targetCollection,
                     'error'      => $errorMessage,
                 ]
@@ -272,8 +272,8 @@ class SolrCollectionManager
             $this->logger->error(
                 message: '[SolrCollectionManager] Collection deletion exception',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -302,8 +302,8 @@ class SolrCollectionManager
             $this->logger->error(
                 message: '[SolrCollectionManager] Failed to list collections',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -327,8 +327,8 @@ class SolrCollectionManager
             $this->logger->error(
                 message: '[SolrCollectionManager] Failed to list ConfigSets',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -382,8 +382,8 @@ class SolrCollectionManager
             $this->logger->error(
                 message: '[SolrCollectionManager] ConfigSet creation failed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -435,8 +435,8 @@ class SolrCollectionManager
             $this->logger->error(
                 message: '[SolrCollectionManager] ConfigSet deletion failed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );

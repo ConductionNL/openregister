@@ -56,7 +56,7 @@ class FeedbackMapper extends QBMapper
      */
     public function __construct(IDBConnection $db)
     {
-        parent::__construct($db, 'openregister_feedback', Feedback::class);
+        parent::__construct(db: $db, tableName: 'openregister_feedback', entityClass: Feedback::class);
     }//end __construct()
 
     /**
@@ -82,7 +82,7 @@ class FeedbackMapper extends QBMapper
 
         $entity->setUpdated($now);
 
-        return parent::insert($entity);
+        return parent::insert(entity: $entity);
     }//end insert()
 
     /**
@@ -96,7 +96,7 @@ class FeedbackMapper extends QBMapper
     public function update(Entity $entity): Feedback
     {
         $entity->setUpdated(new DateTime());
-        return parent::update($entity);
+        return parent::update(entity: $entity);
     }//end update()
 
     /**
@@ -117,7 +117,7 @@ class FeedbackMapper extends QBMapper
             ->andWhere($qb->expr()->eq('user_id', $qb->createNamedParameter($userId, IQueryBuilder::PARAM_STR)));
 
         try {
-            return $this->findEntity($qb);
+            return $this->findEntity(query: $qb);
         } catch (DoesNotExistException $e) {
             return null;
         }

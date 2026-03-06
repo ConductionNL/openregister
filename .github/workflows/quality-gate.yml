@@ -1,10 +1,9 @@
 name: Quality Gate
 
+# Disabled: superseded by code-quality.yml
 on:
   pull_request:
-    branches: [ main, development ]
-  push:
-    branches: [ main, development ]
+    branches: [never]
 
 jobs:
   quality-gate:

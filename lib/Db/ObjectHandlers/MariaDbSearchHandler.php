@@ -106,7 +106,7 @@ class MariaDbSearchHandler
     public function applyMetadataFilters(IQueryBuilder $queryBuilder, array $metadataFilters): IQueryBuilder
     {
         foreach ($metadataFilters as $field => $value) {
-            if ($this->isValidMetadataField($field) === false) {
+            if ($this->isValidMetadataField(field: $field) === false) {
                 continue;
             }
 
@@ -231,7 +231,7 @@ class MariaDbSearchHandler
      */
     private function isTextFieldWithArrayValue(string $field, mixed $value): bool
     {
-        return $this->isTextField($field) === true && is_array($value) === true;
+        return $this->isTextField(field: $field) === true && is_array($value) === true;
     }//end isTextFieldWithArrayValue()
 
     /**
@@ -244,7 +244,7 @@ class MariaDbSearchHandler
      */
     private function isDateFieldWithArrayValue(string $field, mixed $value): bool
     {
-        return $this->isDateField($field) === true && is_array($value) === true;
+        return $this->isDateField(field: $field) === true && is_array($value) === true;
     }//end isDateFieldWithArrayValue()
 
     /**
@@ -530,7 +530,7 @@ class MariaDbSearchHandler
         string $qualifiedField,
         mixed $value,
     ): mixed {
-        if ($this->isTextField($field) === false) {
+        if ($this->isTextField(field: $field) === false) {
             return $queryBuilder->expr()->eq($qualifiedField, $queryBuilder->createNamedParameter($value));
         }
 
@@ -572,7 +572,7 @@ class MariaDbSearchHandler
         array $value,
     ): void {
         foreach ($value as $operator => $operatorValue) {
-            $sqlOperator     = $this->convertToSqlOperator($operator);
+            $sqlOperator     = $this->convertToSqlOperator(operator: $operator);
             $normalizedValue = $this->normalizeDateValue(field: $field, value: $operatorValue);
 
             if ($this->applyComparisonOperator(
@@ -633,7 +633,7 @@ class MariaDbSearchHandler
      */
     private function normalizeDateValue(string $field, mixed $value): string
     {
-        if ($this->isDateField($field) === false) {
+        if ($this->isDateField(field: $field) === false) {
             return $value;
         }
 
@@ -827,7 +827,7 @@ class MariaDbSearchHandler
      */
     private function applyArrayFilter(IQueryBuilder $queryBuilder, string $field, string $qualifiedField, array $value): void
     {
-        if ($this->isTextField($field) === false) {
+        if ($this->isTextField(field: $field) === false) {
             $queryBuilder->andWhere(
                 $queryBuilder->expr()->in(
                     $qualifiedField,
@@ -866,7 +866,7 @@ class MariaDbSearchHandler
         string $qualifiedField,
         mixed $value,
     ): void {
-        if ($this->isTextField($field) === false) {
+        if ($this->isTextField(field: $field) === false) {
             $queryBuilder->andWhere(
                 $queryBuilder->expr()->eq($qualifiedField, $queryBuilder->createNamedParameter($value))
             );

@@ -195,8 +195,13 @@ class MagicSearchHandler
 
         // Check if fuzzy search is enabled for relevance scoring.
         $fuzzyEnabled = false;
-        $searchTerm   = ($search !== null && trim($search) !== '') ? trim($search) : null;
-        $fuzzyParam   = $query['_fuzzy'] ?? null;
+        if ($search !== null && trim($search) !== '') {
+            $searchTerm = trim($search);
+        } else {
+            $searchTerm = null;
+        }
+
+        $fuzzyParam = $query['_fuzzy'] ?? null;
         if ($fuzzyParam === true || $fuzzyParam === 'true' || $fuzzyParam === '1' || $fuzzyParam === 1) {
             $fuzzyEnabled = $this->hasPgTrgmExtension();
         }
@@ -276,7 +281,7 @@ class MagicSearchHandler
         if ($multitenancy === true && $source !== 'database') {
             $schemaAuth = $schema->getAuthorization();
             $readGroups = $schemaAuth['read'] ?? [];
-            $hasPublic  = $this->hasPublicReadAccess($readGroups);
+            $hasPublic  = $this->hasPublicReadAccess(readRules: $readGroups);
 
             // Public schemas bypass multitenancy UNLESS user explicitly set _multi=true.
             if ($hasPublic === true && $multitenancyExplicit === false) {
@@ -324,21 +329,21 @@ class MagicSearchHandler
         // Apply multitenancy filter:
         // - When user has NO RBAC access: Apply multitenancy as normal (AND restriction)
         // - When user HAS RBAC access AND _multi=true: Apply multitenancy AFTER RBAC (AND restriction)
-        // - When user HAS RBAC access AND _multi=false: Skip multitenancy (RBAC handles access)
+        // - When user HAS RBAC access AND _multi=false: Skip multitenancy (RBAC handles access).
         if ($multitenancy === true) {
             $shouldApplyMultitenancy = false;
 
             if ($userHasRbacAccess === false) {
-                // No RBAC access - apply multitenancy as normal
+                // No RBAC access - apply multitenancy as normal.
                 $shouldApplyMultitenancy = true;
             } else if ($multitenancyExplicit === true) {
                 // User has RBAC access but explicitly requested _multi=true
-                // Apply multitenancy to further restrict results to their org
+                // Apply multitenancy to further restrict results to their org.
                 $shouldApplyMultitenancy = true;
             }
 
             // Otherwise: user has RBAC access and didn't request _multi=true
-            // Skip multitenancy - let RBAC handle access control
+            // Skip multitenancy - let RBAC handle access control.
             if ($shouldApplyMultitenancy === true) {
                 $this->organizationHandler->applyOrganizationFilter(
                     qb: $queryBuilder,
@@ -478,7 +483,7 @@ class MagicSearchHandler
             foreach ($properties as $propName => $propDef) {
                 $type = $propDef['type'] ?? 'string';
                 if ($type === 'string') {
-                    $columnName         = $this->sanitizeColumnName($propName);
+                    $columnName         = $this->sanitizeColumnName(name: $propName);
                     $searchConditions[] = "{$columnName}::text ILIKE {$likePattern}";
                 }
             }
@@ -555,13 +560,18 @@ class MagicSearchHandler
                 continue;
             }
 
-            $columnName   = $this->sanitizeColumnName($key);
+            $columnName   = $this->sanitizeColumnName(name: $key);
             $propertyType = $properties[$key]['type'] ?? 'string';
 
             // Handle array-type properties (JSONB columns) with JSON containment operator.
             if ($propertyType === 'array') {
                 // Normalize value to array.
-                $values = is_array($value) ? $value : [$value];
+                if (is_array($value) === true) {
+                    $values = $value;
+                } else {
+                    $values = [$value];
+                }
+
                 if (empty($values) === false) {
                     if (count($values) === 1) {
                         // Single value: check if JSON array contains this value.
@@ -681,7 +691,7 @@ class MagicSearchHandler
         foreach ($filters as $field => $value) {
             // Check if this field exists as a column in the schema.
             if (($properties[$field] ?? null) !== null) {
-                $columnName   = $this->sanitizeColumnName($field);
+                $columnName   = $this->sanitizeColumnName(name: $field);
                 $propertyType = $properties[$field]['type'] ?? 'string';
 
                 if ($value === 'IS NOT NULL') {
@@ -898,7 +908,7 @@ class MagicSearchHandler
             if (($propertyConfig['type'] ?? '') === 'string'
                 && in_array($propertyConfig['format'] ?? '', $dateFormats, true) === false
             ) {
-                $columnName = $this->sanitizeColumnName($field);
+                $columnName = $this->sanitizeColumnName(name: $field);
                 $searchConditions->add(
                     $qb->expr()->like(
                         $qb->createFunction("LOWER(t.{$columnName})"),
@@ -974,16 +984,32 @@ class MagicSearchHandler
                 // Metadata field sorting (e.g., @self.created → t._created).
                 $metadataField = '_'.str_replace('@self.', '', $field);
                 $qb->addOrderBy("t.{$metadataField}", $direction);
-            } else if (in_array($field, ['_created', '_updated', '_name', '_description', '_summary',
-                '_uuid', '_register', '_schema', '_owner', '_organisation', '_published', '_depublished',
-            ], true) === true) {
+            } else if (in_array(
+                    $field,
+                    [
+                        '_created',
+                        '_updated',
+                        '_name',
+                        '_description',
+                        '_summary',
+                        '_uuid',
+                        '_register',
+                        '_schema',
+                        '_owner',
+                        '_organisation',
+                        '_published',
+                        '_depublished',
+                    ],
+                    true
+                    ) === true
+            ) {
                 // Direct metadata column reference (e.g., _created → t._created).
                 $qb->addOrderBy("t.{$field}", $direction);
             } else if (($properties[$field] ?? null) !== null) {
                 // Schema property field sorting.
-                $columnName = $this->sanitizeColumnName($field);
+                $columnName = $this->sanitizeColumnName(name: $field);
                 $qb->addOrderBy("t.{$columnName}", $direction);
-            }
+            }//end if
         }//end foreach
     }//end applySorting()
 
@@ -1056,7 +1082,7 @@ class MagicSearchHandler
             $columnToPropertyMap = [];
             foreach ($schema->getProperties() as $propName => $propDef) {
                 $propertyTypes[$propName] = $propDef['type'] ?? 'string';
-                $columnName = $this->sanitizeColumnName($propName);
+                $columnName = $this->sanitizeColumnName(name: $propName);
                 $columnToPropertyMap[$columnName] = $propName;
             }
 
@@ -1070,7 +1096,7 @@ class MagicSearchHandler
 
                 // Map column name back to original property name using schema mapping.
                 // Falls back to camelCase conversion if not found in mapping.
-                $propertyName = $columnToPropertyMap[$column] ?? $this->columnNameToPropertyName($column);
+                $propertyName = $columnToPropertyMap[$column] ?? $this->columnNameToPropertyName(columnName: $column);
 
                 // Convert value based on schema property type.
                 $propertyType = $propertyTypes[$propertyName] ?? 'string';
@@ -1149,59 +1175,115 @@ class MagicSearchHandler
 
             // Set JSON metadata fields (stored as JSONB in magic tables).
             if (($metadataData['relations'] ?? null) !== null) {
-                $relations = is_string($metadataData['relations'])
-                    ? json_decode($metadataData['relations'], true)
-                    : $metadataData['relations'];
-                $objectEntity->setRelations(is_array($relations) ? $relations : []);
+                if (is_string($metadataData['relations']) === true) {
+                    $relations = json_decode($metadataData['relations'], true);
+                } else {
+                    $relations = $metadataData['relations'];
+                }
+
+                if (is_array($relations) === true) {
+                    $objectEntity->setRelations($relations);
+                } else {
+                    $objectEntity->setRelations([]);
+                }
             }
 
             if (($metadataData['files'] ?? null) !== null) {
-                $files = is_string($metadataData['files'])
-                    ? json_decode($metadataData['files'], true)
-                    : $metadataData['files'];
-                $objectEntity->setFiles(is_array($files) ? $files : []);
+                if (is_string($metadataData['files']) === true) {
+                    $files = json_decode($metadataData['files'], true);
+                } else {
+                    $files = $metadataData['files'];
+                }
+
+                if (is_array($files) === true) {
+                    $objectEntity->setFiles($files);
+                } else {
+                    $objectEntity->setFiles([]);
+                }
             }
 
             if (($metadataData['locked'] ?? null) !== null) {
-                $locked = is_string($metadataData['locked'])
-                    ? json_decode($metadataData['locked'], true)
-                    : $metadataData['locked'];
-                $objectEntity->setLocked(is_array($locked) ? $locked : null);
+                if (is_string($metadataData['locked']) === true) {
+                    $locked = json_decode($metadataData['locked'], true);
+                } else {
+                    $locked = $metadataData['locked'];
+                }
+
+                if (is_array($locked) === true) {
+                    $objectEntity->setLocked($locked);
+                } else {
+                    $objectEntity->setLocked(null);
+                }
             }
 
             if (($metadataData['groups'] ?? null) !== null) {
-                $groups = is_string($metadataData['groups'])
-                    ? json_decode($metadataData['groups'], true)
-                    : $metadataData['groups'];
-                $objectEntity->setGroups(is_array($groups) ? $groups : []);
+                if (is_string($metadataData['groups']) === true) {
+                    $groups = json_decode($metadataData['groups'], true);
+                } else {
+                    $groups = $metadataData['groups'];
+                }
+
+                if (is_array($groups) === true) {
+                    $objectEntity->setGroups($groups);
+                } else {
+                    $objectEntity->setGroups([]);
+                }
             }
 
             if (($metadataData['authorization'] ?? null) !== null) {
-                $auth = is_string($metadataData['authorization'])
-                    ? json_decode($metadataData['authorization'], true)
-                    : $metadataData['authorization'];
-                $objectEntity->setAuthorization(is_array($auth) ? $auth : []);
+                if (is_string($metadataData['authorization']) === true) {
+                    $auth = json_decode($metadataData['authorization'], true);
+                } else {
+                    $auth = $metadataData['authorization'];
+                }
+
+                if (is_array($auth) === true) {
+                    $objectEntity->setAuthorization($auth);
+                } else {
+                    $objectEntity->setAuthorization([]);
+                }
             }
 
             if (($metadataData['validation'] ?? null) !== null) {
-                $validation = is_string($metadataData['validation'])
-                    ? json_decode($metadataData['validation'], true)
-                    : $metadataData['validation'];
-                $objectEntity->setValidation(is_array($validation) ? $validation : []);
+                if (is_string($metadataData['validation']) === true) {
+                    $validation = json_decode($metadataData['validation'], true);
+                } else {
+                    $validation = $metadataData['validation'];
+                }
+
+                if (is_array($validation) === true) {
+                    $objectEntity->setValidation($validation);
+                } else {
+                    $objectEntity->setValidation([]);
+                }
             }
 
             if (($metadataData['geo'] ?? null) !== null) {
-                $geo = is_string($metadataData['geo'])
-                    ? json_decode($metadataData['geo'], true)
-                    : $metadataData['geo'];
-                $objectEntity->setGeo(is_array($geo) ? $geo : []);
+                if (is_string($metadataData['geo']) === true) {
+                    $geo = json_decode($metadataData['geo'], true);
+                } else {
+                    $geo = $metadataData['geo'];
+                }
+
+                if (is_array($geo) === true) {
+                    $objectEntity->setGeo($geo);
+                } else {
+                    $objectEntity->setGeo([]);
+                }
             }
 
             if (($metadataData['retention'] ?? null) !== null) {
-                $retention = is_string($metadataData['retention'])
-                    ? json_decode($metadataData['retention'], true)
-                    : $metadataData['retention'];
-                $objectEntity->setRetention(is_array($retention) ? $retention : []);
+                if (is_string($metadataData['retention']) === true) {
+                    $retention = json_decode($metadataData['retention'], true);
+                } else {
+                    $retention = $metadataData['retention'];
+                }
+
+                if (is_array($retention) === true) {
+                    $objectEntity->setRetention($retention);
+                } else {
+                    $objectEntity->setRetention([]);
+                }
             }
 
             // Set scalar metadata fields.
@@ -1233,8 +1315,8 @@ class MagicSearchHandler
             $this->logger->error(
                 message: '[MagicSearchHandler] Failed to convert row to ObjectEntity',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
                     'error'     => $e->getMessage(),
                     'tableName' => $tableName,
                     'row'       => $row,

@@ -118,7 +118,7 @@ class ViewMapper extends QBMapper
         IEventDispatcher $eventDispatcher
     ) {
         // Call parent constructor to initialize base mapper with table name and entity class.
-        parent::__construct($db, 'openregister_views', View::class);
+        parent::__construct(db: $db, tableName: 'openregister_views', entityClass: View::class);
 
         // Store dependencies for use in mapper methods.
         // REMOVED: Services should not be in mappers.
@@ -164,12 +164,12 @@ class ViewMapper extends QBMapper
 
         // Step 4: Apply organisation filter for multi-tenancy.
         // All users including admins must have active organisation.
-        $this->applyOrganisationFilter($qb);
+        $this->applyOrganisationFilter(qb: $qb);
 
         $entity = $this->findEntity(query: $qb);
 
         // Enrich with configuration management info.
-        $this->enrichWithConfigurationInfo($entity);
+        $this->enrichWithConfigurationInfo(view: $entity);
 
         return $entity;
     }//end find()
@@ -207,13 +207,13 @@ class ViewMapper extends QBMapper
         $qb->orderBy('created', 'DESC');
 
         // Apply organisation filter (all users including admins must have active org).
-        $this->applyOrganisationFilter($qb);
+        $this->applyOrganisationFilter(qb: $qb);
 
         $entities = $this->findEntities(query: $qb);
 
         // Enrich all entities with configuration management info.
         foreach ($entities as $entity) {
-            $this->enrichWithConfigurationInfo($entity);
+            $this->enrichWithConfigurationInfo(view: $entity);
         }
 
         return $entities;
@@ -244,12 +244,12 @@ class ViewMapper extends QBMapper
         $entity->setUpdated(new DateTime());
 
         // Auto-set organisation from active session.
-        $this->setOrganisationOnCreate($entity);
+        $this->setOrganisationOnCreate(entity: $entity);
 
         $entity = parent::insert(entity: $entity);
 
         // Dispatch creation event.
-        $this->eventDispatcher->dispatchTyped(new ViewCreatedEvent($entity));
+        $this->eventDispatcher->dispatchTyped(new ViewCreatedEvent(view: $entity));
 
         return $entity;
     }//end insert()
@@ -268,10 +268,10 @@ class ViewMapper extends QBMapper
         $this->verifyRbacPermission(action: 'update', entityType: 'view');
 
         // Verify user has access to this organisation.
-        $this->verifyOrganisationAccess($entity);
+        $this->verifyOrganisationAccess(entity: $entity);
 
         // Get old state before update.
-        $oldEntity = $this->find($entity->getId());
+        $oldEntity = $this->find(id: $entity->getId());
 
         // Update timestamp.
         $entity->setUpdated(new DateTime());
@@ -279,7 +279,7 @@ class ViewMapper extends QBMapper
         $entity = parent::update(entity: $entity);
 
         // Dispatch update event.
-        $this->eventDispatcher->dispatchTyped(new ViewUpdatedEvent($entity, $oldEntity));
+        $this->eventDispatcher->dispatchTyped(new ViewUpdatedEvent(newView: $entity, oldView: $oldEntity));
 
         return $entity;
     }//end update()
@@ -300,12 +300,12 @@ class ViewMapper extends QBMapper
         $this->verifyRbacPermission(action: 'delete', entityType: 'view');
 
         // Verify user has access to this organisation.
-        $this->verifyOrganisationAccess($entity);
+        $this->verifyOrganisationAccess(entity: $entity);
 
-        $entity = parent::delete($entity);
+        $entity = parent::delete(entity: $entity);
 
         // Dispatch deletion event.
-        $this->eventDispatcher->dispatchTyped(new ViewDeletedEvent($entity));
+        $this->eventDispatcher->dispatchTyped(new ViewDeletedEvent(view: $entity));
 
         return $entity;
     }//end delete()
