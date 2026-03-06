@@ -1,5 +1,5 @@
 <script setup>
-import { objectStore, navigationStore, schemaStore, registerStore } from '../../store/store.js'
+import { objectStore, packageObjectStore, navigationStore, schemaStore, registerStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -239,11 +239,13 @@ export default {
 				schemas: '',
 			}
 
-			objectStore.saveObject(newObject)
-				.then(({ response }) => {
-					this.success = response.ok
+			const type = `${newObject.register}-${newObject.schema}`
+			packageObjectStore.registerObjectType(type, newObject.schema, newObject.register)
+			packageObjectStore.saveObject(type, newObject)
+				.then((data) => {
+					this.success = !!data
 					this.error = false
-					response.ok && setTimeout(this.closeModal, 2000)
+					data && setTimeout(this.closeModal, 2000)
 				}).catch((error) => {
 					this.success = false
 					this.error = error.message || 'An error occurred while uploading the object'

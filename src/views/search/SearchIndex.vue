@@ -1,7 +1,7 @@
 <script>
 import { NcAppContent } from '@nextcloud/vue'
 import { CnIndexPage } from '@conduction/nextcloud-vue'
-import { navigationStore, objectStore, registerStore, schemaStore } from '../../store/store.js'
+import { navigationStore, objectStore, packageObjectStore, registerStore, schemaStore } from '../../store/store.js'
 
 /**
  * Normalize list so each row has top-level id for CnIndexPage rowKey.
@@ -50,6 +50,9 @@ export default {
 			const list = objectStore.selectedObjects
 			return Array.isArray(list) ? list.map(String) : []
 		},
+		computedObjectType() {
+			return packageObjectStore.createObjectTypeSlug(objectStore.searchRegister, objectStore.searchSchema)
+		},
 	},
 	methods: {
 		handleRefresh() {
@@ -77,7 +80,7 @@ export default {
 		handleCreate(res) {
 			console.log('handleCreate', res)
 			return
-			
+
 			const registerId = objectStore.searchParams.registerId
 			const schemaId = objectStore.searchParams.schemaId
 			if (!registerId || !schemaId) return
@@ -127,7 +130,10 @@ export default {
 		<CnIndexPage
 			:title="pageTitle"
 			:schema="objectStore.searchSchema"
+			:register="objectStore.searchRegister"
 			:objects="normalizedObjects"
+			:store="objectStore"
+			:object-type="computedObjectType"
 			:loading="objectStore.searchLoading"
 			:pagination="objectStore.searchPagination"
 			row-key="id"

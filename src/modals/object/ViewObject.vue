@@ -1,5 +1,5 @@
 <script setup>
-import { objectStore, navigationStore, registerStore, schemaStore } from '../../store/store.js'
+import { objectStore, packageObjectStore, navigationStore, registerStore, schemaStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -1418,12 +1418,13 @@ export default {
 					dataToSave = this.formData
 				}
 
-				const { response } = await objectStore.saveObject(dataToSave, {
-					register: this.currentRegister.id,
-					schema: this.currentSchema.id,
-				})
-				console.info('Save object response:', response)
-				this.success = response.ok
+				const type = `${this.currentRegister.id}-${this.currentSchema.id}`
+				packageObjectStore.registerObjectType(type, this.currentSchema.id, this.currentRegister.id)
+				const data = await packageObjectStore.saveObject(type, dataToSave)
+				if (data) objectStore.setObjectItem(data)
+				await objectStore.refreshObjectList({ register: this.currentRegister.id, schema: this.currentSchema.id })
+				console.info('Save object data:', data)
+				this.success = !!data
 				if (this.success) {
 					// Re-initialize data to refresh jsonData with the newly created object
 					this.initializeData()

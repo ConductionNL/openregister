@@ -119,7 +119,7 @@
 								:title="field.description">
 								{{ capitalizeFieldName(fieldName) }}
 								<span v-if="field.appearance_rate" class="field-coverage">
-									({{ field.appearance_rate }}/{{ objectStore.objectList?.total || 0 }} objects)
+									({{ field.appearance_rate }}/{{ packageObjectStore.getPagination(objectStore.currentType).total || 0 }} objects)
 								</span>
 							</label>
 							<NcSelect
@@ -181,7 +181,7 @@
 								:title="field.description">
 								{{ capitalizeFieldName(fieldName) }}
 								<span v-if="field.appearance_rate" class="field-coverage">
-									({{ field.appearance_rate }}/{{ objectStore.objectList?.total || 0 }} objects)
+									({{ field.appearance_rate }}/{{ packageObjectStore.getPagination(objectStore.currentType).total || 0 }} objects)
 								</span>
 							</label>
 							<NcSelect
@@ -240,7 +240,7 @@
 <script>
 import { NcCheckboxRadioSwitch, NcLoadingIcon, NcButton, NcSelect, NcDateTimePickerNative } from '@nextcloud/vue'
 import Close from 'vue-material-design-icons/Close.vue'
-import { objectStore } from '../store/store.js'
+import { objectStore, packageObjectStore } from '../store/store.js'
 
 export default {
 	name: 'FacetComponent',
