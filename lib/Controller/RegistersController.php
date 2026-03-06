@@ -457,7 +457,7 @@ class RegistersController extends Controller
                 data: ['error' => $e->getMessage()],
                 statusCode: 500
             );
-        }
+        }//end try
     }//end create()
 
     /**
