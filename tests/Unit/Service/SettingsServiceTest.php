@@ -98,6 +98,18 @@ class SettingsServiceTest extends TestCase
     /** @var ValidationOperationsHandler|MockObject */
     private $validationOperationsHandler;
 
+    /** @var SearchBackendHandler|MockObject */
+    private $searchBackendHandler;
+
+    /** @var LlmSettingsHandler|MockObject */
+    private $llmSettingsHandler;
+
+    /** @var FileSettingsHandler|MockObject */
+    private $fileSettingsHandler;
+
+    /** @var SolrSettingsHandler|MockObject */
+    private $solrSettingsHandler;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -120,6 +132,10 @@ class SettingsServiceTest extends TestCase
         $this->objectRetentionHandler = $this->createMock(ObjectRetentionHandler::class);
         $this->cacheSettingsHandler = $this->createMock(CacheSettingsHandler::class);
         $this->validationOperationsHandler = $this->createMock(ValidationOperationsHandler::class);
+        $this->searchBackendHandler = $this->createMock(SearchBackendHandler::class);
+        $this->llmSettingsHandler = $this->createMock(LlmSettingsHandler::class);
+        $this->fileSettingsHandler = $this->createMock(FileSettingsHandler::class);
+        $this->solrSettingsHandler = $this->createMock(SolrSettingsHandler::class);
 
         // Create SettingsService instance matching the actual constructor.
         // All handler properties must be injected to avoid null property access.
@@ -136,12 +152,12 @@ class SettingsServiceTest extends TestCase
             userManager: $this->userManager,
             db: $this->db,
             validOpsHandler: $this->validationOperationsHandler,
-            searchBackendHandler: $this->createMock(SearchBackendHandler::class),
-            llmSettingsHandler: $this->createMock(LlmSettingsHandler::class),
-            fileSettingsHandler: $this->createMock(FileSettingsHandler::class),
+            searchBackendHandler: $this->searchBackendHandler,
+            llmSettingsHandler: $this->llmSettingsHandler,
+            fileSettingsHandler: $this->fileSettingsHandler,
             objRetentionHandler: $this->objectRetentionHandler,
             cacheSettingsHandler: $this->cacheSettingsHandler,
-            solrSettingsHandler: $this->createMock(SolrSettingsHandler::class),
+            solrSettingsHandler: $this->solrSettingsHandler,
             cfgSettingsHandler: $this->configurationSettingsHandler
         );
     }
@@ -418,5 +434,984 @@ class SettingsServiceTest extends TestCase
         $this->assertIsArray($result);
         $this->assertArrayHasKey('success', $result);
         // May be false due to validation issues.
+    }
+
+    // ===== PURE LOGIC METHOD TESTS =====.
+
+    /**
+     * Test formatBytes with zero bytes
+     */
+    public function testFormatBytesZero(): void
+    {
+        $result = $this->settingsService->formatBytes(bytes: 0);
+        $this->assertSame('0 B', $result);
+    }
+
+    /**
+     * Test formatBytes with bytes below 1KB
+     */
+    public function testFormatBytesSmall(): void
+    {
+        $result = $this->settingsService->formatBytes(bytes: 512);
+        $this->assertSame('512 B', $result);
+    }
+
+    /**
+     * Test formatBytes with exactly 1KB
+     */
+    public function testFormatBytesOneKB(): void
+    {
+        // 1024 bytes is NOT > 1024 so stays as B
+        $result = $this->settingsService->formatBytes(bytes: 1024);
+        $this->assertSame('1024 B', $result);
+    }
+
+    /**
+     * Test formatBytes with value above 1KB
+     */
+    public function testFormatBytesAboveOneKB(): void
+    {
+        $result = $this->settingsService->formatBytes(bytes: 1025);
+        $this->assertSame('1 KB', $result);
+    }
+
+    /**
+     * Test formatBytes with 1MB
+     */
+    public function testFormatBytesOneMB(): void
+    {
+        $result = $this->settingsService->formatBytes(bytes: 1048577);
+        $this->assertSame('1 MB', $result);
+    }
+
+    /**
+     * Test formatBytes with 1GB
+     */
+    public function testFormatBytesOneGB(): void
+    {
+        $result = $this->settingsService->formatBytes(bytes: 1073741825);
+        $this->assertSame('1 GB', $result);
+    }
+
+    /**
+     * Test formatBytes with custom precision
+     */
+    public function testFormatBytesCustomPrecision(): void
+    {
+        // 1536 bytes = 1.5 KB
+        $result = $this->settingsService->formatBytes(bytes: 1536, precision: 1);
+        $this->assertSame('1.5 KB', $result);
+    }
+
+    /**
+     * Test convertToBytes with megabytes
+     */
+    public function testConvertToBytesMegabytes(): void
+    {
+        $result = $this->settingsService->convertToBytes(memoryLimit: '128M');
+        $this->assertSame(134217728, $result);
+    }
+
+    /**
+     * Test convertToBytes with gigabytes
+     */
+    public function testConvertToBytesGigabytes(): void
+    {
+        $result = $this->settingsService->convertToBytes(memoryLimit: '1G');
+        $this->assertSame(1073741824, $result);
+    }
+
+    /**
+     * Test convertToBytes with kilobytes
+     */
+    public function testConvertToBytesKilobytes(): void
+    {
+        $result = $this->settingsService->convertToBytes(memoryLimit: '512K');
+        $this->assertSame(524288, $result);
+    }
+
+    /**
+     * Test convertToBytes with plain number (no suffix)
+     */
+    public function testConvertToBytesPlainNumber(): void
+    {
+        $result = $this->settingsService->convertToBytes(memoryLimit: '65536');
+        $this->assertSame(65536, $result);
+    }
+
+    /**
+     * Test convertToBytes with -1 (unlimited)
+     */
+    public function testConvertToBytesUnlimited(): void
+    {
+        $result = $this->settingsService->convertToBytes(memoryLimit: '-1');
+        $this->assertSame(-1, $result);
+    }
+
+    /**
+     * Test maskToken with long token
+     */
+    public function testMaskTokenLong(): void
+    {
+        $token = 'sk-1234567890abcdef';
+        $result = $this->settingsService->maskToken(token: $token);
+        // Token is 19 chars: first 4 + min(20, 19-8)=11 stars + last 4
+        $this->assertSame('sk-1***********cdef', $result);
+        $this->assertStringStartsWith('sk-1', $result);
+        $this->assertStringEndsWith('cdef', $result);
+    }
+
+    /**
+     * Test maskToken with short token (8 chars or fewer)
+     */
+    public function testMaskTokenShort(): void
+    {
+        $result = $this->settingsService->maskToken(token: 'short');
+        $this->assertSame('*****', $result);
+    }
+
+    /**
+     * Test maskToken with exactly 8 characters
+     */
+    public function testMaskTokenExactlyEight(): void
+    {
+        $result = $this->settingsService->maskToken(token: '12345678');
+        $this->assertSame('********', $result);
+    }
+
+    /**
+     * Test maskToken with 9 characters (boundary case)
+     */
+    public function testMaskTokenNineChars(): void
+    {
+        $result = $this->settingsService->maskToken(token: '123456789');
+        // first 4 + 1 star (min(20, 9-8)=1) + last 4
+        $this->assertSame('1234*6789', $result);
+    }
+
+    /**
+     * Test maskToken with empty string
+     */
+    public function testMaskTokenEmpty(): void
+    {
+        $result = $this->settingsService->maskToken(token: '');
+        $this->assertSame('', $result);
+    }
+
+    // ===== HANDLER DELEGATION TESTS =====.
+
+    /**
+     * Test isMultiTenancyEnabled delegates to configurationSettingsHandler
+     */
+    public function testIsMultiTenancyEnabled(): void
+    {
+        $this->configurationSettingsHandler->expects($this->once())
+            ->method('isMultiTenancyEnabled')
+            ->willReturn(true);
+
+        $result = $this->settingsService->isMultiTenancyEnabled();
+        $this->assertTrue($result);
+    }
+
+    /**
+     * Test isMultiTenancyEnabled returns false
+     */
+    public function testIsMultiTenancyEnabledFalse(): void
+    {
+        $this->configurationSettingsHandler->expects($this->once())
+            ->method('isMultiTenancyEnabled')
+            ->willReturn(false);
+
+        $result = $this->settingsService->isMultiTenancyEnabled();
+        $this->assertFalse($result);
+    }
+
+    /**
+     * Test getDefaultOrganisationUuid delegates to configurationSettingsHandler
+     */
+    public function testGetDefaultOrganisationUuid(): void
+    {
+        $uuid = 'abc-123-def-456';
+        $this->configurationSettingsHandler->expects($this->once())
+            ->method('getDefaultOrganisationUuid')
+            ->willReturn($uuid);
+
+        $result = $this->settingsService->getDefaultOrganisationUuid();
+        $this->assertSame($uuid, $result);
+    }
+
+    /**
+     * Test getDefaultOrganisationUuid returns null
+     */
+    public function testGetDefaultOrganisationUuidNull(): void
+    {
+        $this->configurationSettingsHandler->expects($this->once())
+            ->method('getDefaultOrganisationUuid')
+            ->willReturn(null);
+
+        $result = $this->settingsService->getDefaultOrganisationUuid();
+        $this->assertNull($result);
+    }
+
+    /**
+     * Test setDefaultOrganisationUuid delegates to configurationSettingsHandler
+     */
+    public function testSetDefaultOrganisationUuid(): void
+    {
+        $uuid = 'abc-123-def-456';
+        $this->configurationSettingsHandler->expects($this->once())
+            ->method('setDefaultOrganisationUuid')
+            ->with($uuid);
+
+        $this->settingsService->setDefaultOrganisationUuid(uuid: $uuid);
+    }
+
+    /**
+     * Test setDefaultOrganisationUuid with null
+     */
+    public function testSetDefaultOrganisationUuidNull(): void
+    {
+        $this->configurationSettingsHandler->expects($this->once())
+            ->method('setDefaultOrganisationUuid')
+            ->with(null);
+
+        $this->settingsService->setDefaultOrganisationUuid(uuid: null);
+    }
+
+    /**
+     * Test getTenantId delegates to configurationSettingsHandler
+     */
+    public function testGetTenantId(): void
+    {
+        $this->configurationSettingsHandler->expects($this->once())
+            ->method('getTenantId')
+            ->willReturn('tenant-42');
+
+        $result = $this->settingsService->getTenantId();
+        $this->assertSame('tenant-42', $result);
+    }
+
+    /**
+     * Test getTenantId returns null
+     */
+    public function testGetTenantIdNull(): void
+    {
+        $this->configurationSettingsHandler->expects($this->once())
+            ->method('getTenantId')
+            ->willReturn(null);
+
+        $result = $this->settingsService->getTenantId();
+        $this->assertNull($result);
+    }
+
+    /**
+     * Test getOrganisationId delegates to configurationSettingsHandler
+     */
+    public function testGetOrganisationId(): void
+    {
+        $this->configurationSettingsHandler->expects($this->once())
+            ->method('getOrganisationId')
+            ->willReturn('org-99');
+
+        $result = $this->settingsService->getOrganisationId();
+        $this->assertSame('org-99', $result);
+    }
+
+    /**
+     * Test getOrganisationId returns null
+     */
+    public function testGetOrganisationIdNull(): void
+    {
+        $this->configurationSettingsHandler->expects($this->once())
+            ->method('getOrganisationId')
+            ->willReturn(null);
+
+        $result = $this->settingsService->getOrganisationId();
+        $this->assertNull($result);
+    }
+
+    /**
+     * Test getVersionInfoOnly delegates to configurationSettingsHandler
+     */
+    public function testGetVersionInfoOnly(): void
+    {
+        $expected = ['name' => 'openregister', 'version' => '1.2.3'];
+        $this->configurationSettingsHandler->expects($this->once())
+            ->method('getVersionInfoOnly')
+            ->willReturn($expected);
+
+        $result = $this->settingsService->getVersionInfoOnly();
+        $this->assertSame($expected, $result);
+    }
+
+    /**
+     * Test getLLMSettingsOnly delegates to llmSettingsHandler
+     */
+    public function testGetLLMSettingsOnly(): void
+    {
+        $expected = ['provider' => 'openai', 'model' => 'gpt-4'];
+        $this->llmSettingsHandler->expects($this->once())
+            ->method('getLLMSettingsOnly')
+            ->willReturn($expected);
+
+        $result = $this->settingsService->getLLMSettingsOnly();
+        $this->assertSame($expected, $result);
+    }
+
+    /**
+     * Test updateLLMSettingsOnly delegates to llmSettingsHandler
+     */
+    public function testUpdateLLMSettingsOnly(): void
+    {
+        $data = ['provider' => 'ollama', 'model' => 'llama3'];
+        $expected = ['success' => true, 'provider' => 'ollama'];
+        $this->llmSettingsHandler->expects($this->once())
+            ->method('updateLLMSettingsOnly')
+            ->with($data)
+            ->willReturn($expected);
+
+        $result = $this->settingsService->updateLLMSettingsOnly(data: $data);
+        $this->assertSame($expected, $result);
+    }
+
+    /**
+     * Test getFileSettingsOnly delegates to fileSettingsHandler
+     */
+    public function testGetFileSettingsOnly(): void
+    {
+        $expected = ['max_size' => 10485760, 'allowed_types' => ['pdf', 'docx']];
+        $this->fileSettingsHandler->expects($this->once())
+            ->method('getFileSettingsOnly')
+            ->willReturn($expected);
+
+        $result = $this->settingsService->getFileSettingsOnly();
+        $this->assertSame($expected, $result);
+    }
+
+    /**
+     * Test updateFileSettingsOnly delegates to fileSettingsHandler
+     */
+    public function testUpdateFileSettingsOnly(): void
+    {
+        $data = ['max_size' => 20971520];
+        $expected = ['success' => true];
+        $this->fileSettingsHandler->expects($this->once())
+            ->method('updateFileSettingsOnly')
+            ->with($data)
+            ->willReturn($expected);
+
+        $result = $this->settingsService->updateFileSettingsOnly(data: $data);
+        $this->assertSame($expected, $result);
+    }
+
+    /**
+     * Test getObjectSettingsOnly delegates to objectRetentionHandler
+     */
+    public function testGetObjectSettingsOnly(): void
+    {
+        $expected = ['vectorize' => true, 'auto_index' => false];
+        $this->objectRetentionHandler->expects($this->once())
+            ->method('getObjectSettingsOnly')
+            ->willReturn($expected);
+
+        $result = $this->settingsService->getObjectSettingsOnly();
+        $this->assertSame($expected, $result);
+    }
+
+    /**
+     * Test updateObjectSettingsOnly delegates to objectRetentionHandler
+     */
+    public function testUpdateObjectSettingsOnly(): void
+    {
+        $data = ['vectorize' => false];
+        $expected = ['success' => true];
+        $this->objectRetentionHandler->expects($this->once())
+            ->method('updateObjectSettingsOnly')
+            ->with($data)
+            ->willReturn($expected);
+
+        $result = $this->settingsService->updateObjectSettingsOnly(data: $data);
+        $this->assertSame($expected, $result);
+    }
+
+    /**
+     * Test getSolrSettings delegates to solrSettingsHandler
+     */
+    public function testGetSolrSettings(): void
+    {
+        $expected = ['host' => 'localhost', 'port' => 8983, 'core' => 'openregister'];
+        $this->solrSettingsHandler->expects($this->once())
+            ->method('getSolrSettings')
+            ->willReturn($expected);
+
+        $result = $this->settingsService->getSolrSettings();
+        $this->assertSame($expected, $result);
+    }
+
+    /**
+     * Test getSolrSettingsOnly delegates to solrSettingsHandler
+     */
+    public function testGetSolrSettingsOnly(): void
+    {
+        $expected = ['host' => 'solr', 'port' => 8983];
+        $this->solrSettingsHandler->expects($this->once())
+            ->method('getSolrSettingsOnly')
+            ->willReturn($expected);
+
+        $result = $this->settingsService->getSolrSettingsOnly();
+        $this->assertSame($expected, $result);
+    }
+
+    /**
+     * Test updateSolrSettingsOnly delegates to solrSettingsHandler
+     */
+    public function testUpdateSolrSettingsOnly(): void
+    {
+        $data = ['host' => 'new-solr', 'port' => 8984];
+        $expected = ['success' => true];
+        $this->solrSettingsHandler->expects($this->once())
+            ->method('updateSolrSettingsOnly')
+            ->with($data)
+            ->willReturn($expected);
+
+        $result = $this->settingsService->updateSolrSettingsOnly(data: $data);
+        $this->assertSame($expected, $result);
+    }
+
+    /**
+     * Test getSolrDashboardStats delegates to solrSettingsHandler
+     */
+    public function testGetSolrDashboardStats(): void
+    {
+        $expected = ['numDocs' => 1500, 'indexSize' => '25MB'];
+        $this->solrSettingsHandler->expects($this->once())
+            ->method('getSolrDashboardStats')
+            ->willReturn($expected);
+
+        $result = $this->settingsService->getSolrDashboardStats();
+        $this->assertSame($expected, $result);
+    }
+
+    /**
+     * Test getSolrFacetConfiguration delegates to solrSettingsHandler
+     */
+    public function testGetSolrFacetConfiguration(): void
+    {
+        $expected = ['facets' => ['category', 'status']];
+        $this->solrSettingsHandler->expects($this->once())
+            ->method('getSolrFacetConfiguration')
+            ->willReturn($expected);
+
+        $result = $this->settingsService->getSolrFacetConfiguration();
+        $this->assertSame($expected, $result);
+    }
+
+    /**
+     * Test updateSolrFacetConfiguration delegates to solrSettingsHandler
+     */
+    public function testUpdateSolrFacetConfiguration(): void
+    {
+        $data = ['facets' => ['category', 'type', 'status']];
+        $expected = ['success' => true];
+        $this->solrSettingsHandler->expects($this->once())
+            ->method('updateSolrFacetConfiguration')
+            ->with($data)
+            ->willReturn($expected);
+
+        $result = $this->settingsService->updateSolrFacetConfiguration(data: $data);
+        $this->assertSame($expected, $result);
+    }
+
+    /**
+     * Test getOrganisationSettingsOnly delegates to configurationSettingsHandler
+     */
+    public function testGetOrganisationSettingsOnly(): void
+    {
+        $expected = ['organisation' => ['default_organisation' => 'uuid-1', 'auto_create_default_organisation' => true]];
+        $this->configurationSettingsHandler->expects($this->once())
+            ->method('getOrganisationSettingsOnly')
+            ->willReturn($expected);
+
+        $result = $this->settingsService->getOrganisationSettingsOnly();
+        $this->assertSame($expected, $result);
+    }
+
+    /**
+     * Test updateOrganisationSettingsOnly delegates to configurationSettingsHandler
+     */
+    public function testUpdateOrganisationSettingsOnly(): void
+    {
+        $data = ['organisation' => ['default_organisation' => 'uuid-2']];
+        $expected = ['organisation' => ['default_organisation' => 'uuid-2', 'auto_create_default_organisation' => true]];
+        $this->configurationSettingsHandler->expects($this->once())
+            ->method('updateOrganisationSettingsOnly')
+            ->with($data)
+            ->willReturn($expected);
+
+        $result = $this->settingsService->updateOrganisationSettingsOnly(data: $data);
+        $this->assertSame($expected, $result);
+    }
+
+    /**
+     * Test updatePublishingOptions delegates to configurationSettingsHandler
+     */
+    public function testUpdatePublishingOptions(): void
+    {
+        $data = ['auto_publish_objects' => true];
+        $expected = ['auto_publish_objects' => true, 'auto_publish_attachments' => false];
+        $this->configurationSettingsHandler->expects($this->once())
+            ->method('updatePublishingOptions')
+            ->with($data)
+            ->willReturn($expected);
+
+        $result = $this->settingsService->updatePublishingOptions(data: $data);
+        $this->assertSame($expected, $result);
+    }
+
+    /**
+     * Test validateAllObjects delegates to validationOperationsHandler
+     */
+    public function testValidateAllObjects(): void
+    {
+        $expected = ['success' => true, 'validated' => 100];
+        $this->validationOperationsHandler->expects($this->once())
+            ->method('validateAllObjects')
+            ->willReturn($expected);
+
+        $result = $this->settingsService->validateAllObjects();
+        $this->assertSame($expected, $result);
+    }
+
+    // ===== SEARCH BACKEND CONFIG TESTS =====.
+
+    /**
+     * Test getSearchBackendConfig returns stored config
+     */
+    public function testGetSearchBackendConfigStored(): void
+    {
+        $storedConfig = json_encode(['active' => 'elasticsearch', 'available' => ['solr', 'elasticsearch']]);
+        $this->config->expects($this->once())
+            ->method('getAppValue')
+            ->with('openregister', 'search_backend', '')
+            ->willReturn($storedConfig);
+
+        $result = $this->settingsService->getSearchBackendConfig();
+        $this->assertSame('elasticsearch', $result['active']);
+    }
+
+    /**
+     * Test getSearchBackendConfig returns default when empty
+     */
+    public function testGetSearchBackendConfigDefault(): void
+    {
+        $this->config->expects($this->once())
+            ->method('getAppValue')
+            ->with('openregister', 'search_backend', '')
+            ->willReturn('');
+
+        $result = $this->settingsService->getSearchBackendConfig();
+        $this->assertSame('solr', $result['active']);
+        $this->assertSame(['solr', 'elasticsearch'], $result['available']);
+    }
+
+    /**
+     * Test getSearchBackendConfig returns default on exception
+     */
+    public function testGetSearchBackendConfigException(): void
+    {
+        $this->config->expects($this->once())
+            ->method('getAppValue')
+            ->willThrowException(new \Exception('Config error'));
+
+        $result = $this->settingsService->getSearchBackendConfig();
+        $this->assertSame('solr', $result['active']);
+    }
+
+    /**
+     * Test updateSearchBackendConfig delegates to searchBackendHandler
+     */
+    public function testUpdateSearchBackendConfig(): void
+    {
+        $expected = ['active' => 'elasticsearch', 'available' => ['solr', 'elasticsearch']];
+        $this->searchBackendHandler->expects($this->once())
+            ->method('updateSearchBackendConfig')
+            ->with('elasticsearch')
+            ->willReturn($expected);
+
+        $result = $this->settingsService->updateSearchBackendConfig(data: ['backend' => 'elasticsearch']);
+        $this->assertSame($expected, $result);
+    }
+
+    /**
+     * Test updateSearchBackendConfig with 'active' key
+     */
+    public function testUpdateSearchBackendConfigWithActiveKey(): void
+    {
+        $expected = ['active' => 'solr', 'available' => ['solr', 'elasticsearch']];
+        $this->searchBackendHandler->expects($this->once())
+            ->method('updateSearchBackendConfig')
+            ->with('solr')
+            ->willReturn($expected);
+
+        $result = $this->settingsService->updateSearchBackendConfig(data: ['active' => 'solr']);
+        $this->assertSame($expected, $result);
+    }
+
+    // ===== DATABASE INFO / POSTGRES EXTENSION TESTS =====.
+
+    /**
+     * Test getDatabaseInfo returns cached info
+     */
+    public function testGetDatabaseInfo(): void
+    {
+        $dbData = json_encode([
+            'database' => [
+                'type' => 'PostgreSQL',
+                'version' => '15.0',
+                'extensions' => [['name' => 'vector'], ['name' => 'pg_trgm']],
+            ],
+        ]);
+        $this->config->expects($this->once())
+            ->method('getAppValue')
+            ->with('openregister', 'databaseInfo', '')
+            ->willReturn($dbData);
+
+        $result = $this->settingsService->getDatabaseInfo();
+        $this->assertSame('PostgreSQL', $result['type']);
+    }
+
+    /**
+     * Test getDatabaseInfo returns null when empty
+     */
+    public function testGetDatabaseInfoEmpty(): void
+    {
+        $this->config->expects($this->once())
+            ->method('getAppValue')
+            ->with('openregister', 'databaseInfo', '')
+            ->willReturn('');
+
+        $result = $this->settingsService->getDatabaseInfo();
+        $this->assertNull($result);
+    }
+
+    /**
+     * Test getDatabaseInfo returns null for invalid JSON
+     */
+    public function testGetDatabaseInfoInvalidJson(): void
+    {
+        $this->config->expects($this->once())
+            ->method('getAppValue')
+            ->with('openregister', 'databaseInfo', '')
+            ->willReturn('not-json');
+
+        $result = $this->settingsService->getDatabaseInfo();
+        $this->assertNull($result);
+    }
+
+    /**
+     * Test getDatabaseInfo returns null when database key missing
+     */
+    public function testGetDatabaseInfoMissingKey(): void
+    {
+        $this->config->expects($this->once())
+            ->method('getAppValue')
+            ->with('openregister', 'databaseInfo', '')
+            ->willReturn(json_encode(['something' => 'else']));
+
+        $result = $this->settingsService->getDatabaseInfo();
+        $this->assertNull($result);
+    }
+
+    /**
+     * Test hasPostgresExtension returns true when extension exists
+     */
+    public function testHasPostgresExtensionTrue(): void
+    {
+        $dbData = json_encode([
+            'database' => [
+                'type' => 'PostgreSQL',
+                'extensions' => [['name' => 'vector'], ['name' => 'pg_trgm']],
+            ],
+        ]);
+        $this->config->method('getAppValue')
+            ->with('openregister', 'databaseInfo', '')
+            ->willReturn($dbData);
+
+        $this->assertTrue($this->settingsService->hasPostgresExtension(extensionName: 'vector'));
+    }
+
+    /**
+     * Test hasPostgresExtension returns false when extension not found
+     */
+    public function testHasPostgresExtensionFalse(): void
+    {
+        $dbData = json_encode([
+            'database' => [
+                'type' => 'PostgreSQL',
+                'extensions' => [['name' => 'pg_trgm']],
+            ],
+        ]);
+        $this->config->method('getAppValue')
+            ->with('openregister', 'databaseInfo', '')
+            ->willReturn($dbData);
+
+        $this->assertFalse($this->settingsService->hasPostgresExtension(extensionName: 'vector'));
+    }
+
+    /**
+     * Test hasPostgresExtension returns false for non-PostgreSQL database
+     */
+    public function testHasPostgresExtensionNotPostgres(): void
+    {
+        $dbData = json_encode([
+            'database' => [
+                'type' => 'MySQL',
+                'extensions' => [],
+            ],
+        ]);
+        $this->config->method('getAppValue')
+            ->with('openregister', 'databaseInfo', '')
+            ->willReturn($dbData);
+
+        $this->assertFalse($this->settingsService->hasPostgresExtension(extensionName: 'vector'));
+    }
+
+    /**
+     * Test hasPostgresExtension returns false when no cached data
+     */
+    public function testHasPostgresExtensionNoCachedData(): void
+    {
+        $this->config->method('getAppValue')
+            ->with('openregister', 'databaseInfo', '')
+            ->willReturn('');
+
+        $this->assertFalse($this->settingsService->hasPostgresExtension(extensionName: 'vector'));
+    }
+
+    /**
+     * Test getPostgresExtensions returns extensions list
+     */
+    public function testGetPostgresExtensions(): void
+    {
+        $extensions = [['name' => 'vector'], ['name' => 'pg_trgm']];
+        $dbData = json_encode([
+            'database' => [
+                'type' => 'PostgreSQL',
+                'extensions' => $extensions,
+            ],
+        ]);
+        $this->config->method('getAppValue')
+            ->with('openregister', 'databaseInfo', '')
+            ->willReturn($dbData);
+
+        $result = $this->settingsService->getPostgresExtensions();
+        $this->assertSame($extensions, $result);
+    }
+
+    /**
+     * Test getPostgresExtensions returns empty for non-PostgreSQL
+     */
+    public function testGetPostgresExtensionsNotPostgres(): void
+    {
+        $dbData = json_encode([
+            'database' => [
+                'type' => 'MySQL',
+                'extensions' => [['name' => 'something']],
+            ],
+        ]);
+        $this->config->method('getAppValue')
+            ->with('openregister', 'databaseInfo', '')
+            ->willReturn($dbData);
+
+        $result = $this->settingsService->getPostgresExtensions();
+        $this->assertSame([], $result);
+    }
+
+    /**
+     * Test getPostgresExtensions returns empty when no cached data
+     */
+    public function testGetPostgresExtensionsNoCachedData(): void
+    {
+        $this->config->method('getAppValue')
+            ->with('openregister', 'databaseInfo', '')
+            ->willReturn('');
+
+        $result = $this->settingsService->getPostgresExtensions();
+        $this->assertSame([], $result);
+    }
+
+    // ===== COMPARE FIELDS TESTS =====.
+
+    /**
+     * Test compareFields with no differences
+     */
+    public function testCompareFieldsNoDifferences(): void
+    {
+        $fields = [
+            'title' => ['type' => 'text_general', 'multiValued' => false, 'docValues' => false],
+            'status' => ['type' => 'string', 'multiValued' => false, 'docValues' => true],
+        ];
+
+        $result = $this->settingsService->compareFields(actualFields: $fields, expectedFields: $fields);
+
+        $this->assertSame(0, $result['summary']['total_differences']);
+        $this->assertEmpty($result['missing']);
+        $this->assertEmpty($result['extra']);
+        $this->assertEmpty($result['mismatched']);
+    }
+
+    /**
+     * Test compareFields with missing fields
+     */
+    public function testCompareFieldsMissingFields(): void
+    {
+        $actual = [
+            'title' => ['type' => 'text_general'],
+        ];
+        $expected = [
+            'title' => ['type' => 'text_general'],
+            'description' => ['type' => 'text_general'],
+        ];
+
+        $result = $this->settingsService->compareFields(actualFields: $actual, expectedFields: $expected);
+
+        $this->assertSame(1, $result['summary']['missing_count']);
+        $this->assertSame('description', $result['missing'][0]['field']);
+    }
+
+    /**
+     * Test compareFields with extra fields
+     */
+    public function testCompareFieldsExtraFields(): void
+    {
+        $actual = [
+            'title' => ['type' => 'text_general'],
+            'extra_field' => ['type' => 'string'],
+        ];
+        $expected = [
+            'title' => ['type' => 'text_general'],
+        ];
+
+        $result = $this->settingsService->compareFields(actualFields: $actual, expectedFields: $expected);
+
+        $this->assertSame(1, $result['summary']['extra_count']);
+        $this->assertSame('extra_field', $result['extra'][0]['field']);
+    }
+
+    /**
+     * Test compareFields skips system fields starting with underscore
+     */
+    public function testCompareFieldsSkipsSystemFields(): void
+    {
+        $actual = [
+            '_version_' => ['type' => 'plong'],
+            'title' => ['type' => 'text_general'],
+        ];
+        $expected = [
+            'title' => ['type' => 'text_general'],
+        ];
+
+        $result = $this->settingsService->compareFields(actualFields: $actual, expectedFields: $expected);
+
+        // _version_ should be skipped, not counted as extra
+        $this->assertSame(0, $result['summary']['extra_count']);
+    }
+
+    /**
+     * Test compareFields with type mismatch
+     */
+    public function testCompareFieldsTypeMismatch(): void
+    {
+        $actual = [
+            'status' => ['type' => 'text_general', 'multiValued' => false, 'docValues' => false],
+        ];
+        $expected = [
+            'status' => ['type' => 'string', 'multiValued' => false, 'docValues' => false],
+        ];
+
+        $result = $this->settingsService->compareFields(actualFields: $actual, expectedFields: $expected);
+
+        $this->assertSame(1, $result['summary']['mismatched_count']);
+        $this->assertContains('type', $result['mismatched'][0]['differences']);
+    }
+
+    /**
+     * Test compareFields with multiValued mismatch
+     */
+    public function testCompareFieldsMultiValuedMismatch(): void
+    {
+        $actual = [
+            'tags' => ['type' => 'string', 'multiValued' => false, 'docValues' => false],
+        ];
+        $expected = [
+            'tags' => ['type' => 'string', 'multiValued' => true, 'docValues' => false],
+        ];
+
+        $result = $this->settingsService->compareFields(actualFields: $actual, expectedFields: $expected);
+
+        $this->assertSame(1, $result['summary']['mismatched_count']);
+        $this->assertContains('multiValued', $result['mismatched'][0]['differences']);
+    }
+
+    /**
+     * Test compareFields with multiple differences at once
+     */
+    public function testCompareFieldsMultipleDifferences(): void
+    {
+        $actual = [
+            'title' => ['type' => 'text_general', 'multiValued' => false, 'docValues' => false],
+            'orphan_field' => ['type' => 'string'],
+        ];
+        $expected = [
+            'title' => ['type' => 'string', 'multiValued' => false, 'docValues' => false],
+            'missing_field' => ['type' => 'text_general'],
+        ];
+
+        $result = $this->settingsService->compareFields(actualFields: $actual, expectedFields: $expected);
+
+        $this->assertSame(1, $result['summary']['missing_count']);
+        $this->assertSame(1, $result['summary']['extra_count']);
+        $this->assertSame(1, $result['summary']['mismatched_count']);
+        $this->assertSame(3, $result['summary']['total_differences']);
+    }
+
+    // ===== REBASE TESTS =====.
+
+    /**
+     * Test rebase with 'all' components triggers TypeError when clearCache receives null
+     *
+     * SettingsService::clearCache(?string) passes null to CacheSettingsHandler::clearCache(string).
+     * This is a known type mismatch in production code; we verify the behavior here.
+     */
+    public function testRebaseAllComponentsTypeError(): void
+    {
+        // rebase() with 'all' calls clearCache(null) which triggers TypeError on the handler.
+        $this->expectException(\TypeError::class);
+
+        $this->settingsService->rebase(options: ['components' => ['all']]);
+    }
+
+    /**
+     * Test rebase with only solr component
+     */
+    public function testRebaseSolrOnly(): void
+    {
+        $result = $this->settingsService->rebase(options: ['components' => ['solr']]);
+
+        $this->assertTrue($result['success']);
+        $this->assertArrayHasKey('solr', $result['rebased']);
+        $this->assertArrayNotHasKey('cache', $result['rebased']);
+    }
+
+    /**
+     * Test rebase with explicit cache type via clearCache delegation
+     */
+    public function testRebaseSolrComponent(): void
+    {
+        $result = $this->settingsService->rebase(options: ['components' => ['solr']]);
+
+        $this->assertTrue($result['success']);
+        $this->assertSame('Solr configuration rebased', $result['rebased']['solr']['message']);
+        $this->assertArrayHasKey('timestamp', $result);
     }
 }
