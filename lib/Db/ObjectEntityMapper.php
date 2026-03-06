@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\ObjectEntity\StatisticsHandler;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
+use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Event\ObjectDeletingEvent;
 use OCA\OpenRegister\Event\ObjectLockedEvent;
 use OCA\OpenRegister\Event\ObjectUnlockedEvent;
@@ -371,7 +372,22 @@ class ObjectEntityMapper extends QBMapper
     public function insert(Entity $entity, ?Register $register=null, ?Schema $schema=null): Entity
     {
         // Dispatch creating event.
-        $this->eventDispatcher->dispatchTyped(new ObjectCreatingEvent(object: $entity));
+        $creatingEvent = new ObjectCreatingEvent($entity);
+        $this->eventDispatcher->dispatchTyped($creatingEvent);
+
+        // Check if a hook stopped propagation (reject mode).
+        if ($creatingEvent->isPropagationStopped() === true) {
+            throw new HookStoppedException(
+                $creatingEvent->getErrors()['message'] ?? 'Object creation rejected by hook'
+            );
+        }
+
+        // Merge modified data from hooks if any.
+        $modifiedData = $creatingEvent->getModifiedData();
+        if (empty($modifiedData) === false && $entity instanceof ObjectEntity === true) {
+            $objectData = $entity->getObject();
+            $entity->setObject(array_merge($objectData, $modifiedData));
+        }
 
         // Check if this entity should use magic mapping.
         // IMPORTANT: Use provided register/schema if available, otherwise extract from entity.
@@ -430,7 +446,22 @@ class ObjectEntityMapper extends QBMapper
     public function insertDirectBlobStorage(\OCP\AppFramework\Db\Entity $entity): ObjectEntity
     {
         // Dispatch creating event (pre-save hook).
-        $this->eventDispatcher->dispatchTyped(new ObjectCreatingEvent(object: $entity));
+        $creatingEvent = new ObjectCreatingEvent($entity);
+        $this->eventDispatcher->dispatchTyped($creatingEvent);
+
+        // Check if a hook stopped propagation (reject mode).
+        if ($creatingEvent->isPropagationStopped() === true) {
+            throw new HookStoppedException(
+                $creatingEvent->getErrors()['message'] ?? 'Object creation rejected by hook'
+            );
+        }
+
+        // Merge modified data from hooks if any.
+        $modifiedData = $creatingEvent->getModifiedData();
+        if (empty($modifiedData) === false && $entity instanceof ObjectEntity === true) {
+            $objectData = $entity->getObject();
+            $entity->setObject(array_merge($objectData, $modifiedData));
+        }
 
         // Call parent QBMapper insert directly (blob storage).
         $result = parent::insert(entity: $entity);
@@ -571,12 +602,22 @@ class ObjectEntityMapper extends QBMapper
             );
         }
 
-        $this->eventDispatcher->dispatchTyped(
-            new ObjectUpdatingEvent(
-                newObject: $entity,
-                oldObject: $oldObject
-            )
-        );
+        $updatingEvent = new ObjectUpdatingEvent($entity, $oldObject);
+        $this->eventDispatcher->dispatchTyped($updatingEvent);
+
+        // Check if a hook stopped propagation (reject mode).
+        if ($updatingEvent->isPropagationStopped() === true) {
+            throw new HookStoppedException(
+                $updatingEvent->getErrors()['message'] ?? 'Object update rejected by hook'
+            );
+        }
+
+        // Merge modified data from hooks if any.
+        $modifiedData = $updatingEvent->getModifiedData();
+        if (empty($modifiedData) === false && $entity instanceof ObjectEntity === true) {
+            $objectData = $entity->getObject();
+            $entity->setObject(array_merge($objectData, $modifiedData));
+        }
 
         // Check if this entity should use magic mapping.
         // Use register+schema parameters if provided, otherwise try to resolve from entity.
@@ -649,12 +690,22 @@ class ObjectEntityMapper extends QBMapper
         }
 
         // Dispatch updating event (pre-save hook).
-        $this->eventDispatcher->dispatchTyped(
-            new ObjectUpdatingEvent(
-                newObject: $entity,
-                oldObject: $oldEntity
-            )
-        );
+        $updatingEvent = new ObjectUpdatingEvent($entity, $oldEntity);
+        $this->eventDispatcher->dispatchTyped($updatingEvent);
+
+        // Check if a hook stopped propagation (reject mode).
+        if ($updatingEvent->isPropagationStopped() === true) {
+            throw new HookStoppedException(
+                $updatingEvent->getErrors()['message'] ?? 'Object update rejected by hook'
+            );
+        }
+
+        // Merge modified data from hooks if any.
+        $modifiedData = $updatingEvent->getModifiedData();
+        if (empty($modifiedData) === false && $entity instanceof ObjectEntity === true) {
+            $objectData = $entity->getObject();
+            $entity->setObject(array_merge($objectData, $modifiedData));
+        }
 
         // Call parent QBMapper update directly (blob storage).
         $this->logger->error(
@@ -696,7 +747,15 @@ class ObjectEntityMapper extends QBMapper
     public function delete(\OCP\AppFramework\Db\Entity $entity): \OCP\AppFramework\Db\Entity
     {
         // Dispatch deleting event.
-        $this->eventDispatcher->dispatchTyped(new ObjectDeletingEvent(object: $entity));
+        $deletingEvent = new ObjectDeletingEvent($entity);
+        $this->eventDispatcher->dispatchTyped($deletingEvent);
+
+        // Check if a hook stopped propagation (reject mode).
+        if ($deletingEvent->isPropagationStopped() === true) {
+            throw new HookStoppedException(
+                $deletingEvent->getErrors()['message'] ?? 'Object deletion rejected by hook'
+            );
+        }
 
         // Call parent QBMapper delete directly (CrudHandler has circular dependency).
         $result = parent::delete(entity: $entity);

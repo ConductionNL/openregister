@@ -21,21 +21,6 @@ parameters:
 			path: lib/BackgroundJob/CronFileTextExtractionJob.php
 
 		-
-			message: "#^Call to protected method findEntity\\(\\) of class OCP\\\\AppFramework\\\\Db\\\\QBMapper\\<OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\>\\.$#"
-			count: 1
-			path: lib/BackgroundJob/HookRetryJob.php
-
-		-
-			message: "#^Method OCP\\\\AppFramework\\\\Db\\\\QBMapper\\<OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\>\\:\\:findEntity\\(\\) invoked with 2 parameters, 1 required\\.$#"
-			count: 1
-			path: lib/BackgroundJob/HookRetryJob.php
-
-		-
-			message: "#^Parameter \\#1 \\$query of method OCP\\\\AppFramework\\\\Db\\\\QBMapper\\<OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\>\\:\\:findEntity\\(\\) expects OCP\\\\DB\\\\QueryBuilder\\\\IQueryBuilder, string given\\.$#"
-			count: 1
-			path: lib/BackgroundJob/HookRetryJob.php
-
-		-
 			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\Register\\:\\:getName\\(\\)\\.$#"
 			count: 1
 			path: lib/Command/MigrateStorageCommand.php
@@ -1801,12 +1786,7 @@ parameters:
 			path: lib/Controller/Settings/FileSettingsController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\Settings\\\\FileSettingsController\\:\\:testDolphinConnection\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|400\\|500, array\\{success\\: bool, error\\?\\: string, message\\?\\: 'Dolphin connection…'\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{success\\: bool, error\\: string\\}, array\\{\\}\\>\\.$#"
-			count: 2
-			path: lib/Controller/Settings/FileSettingsController.php
-
-		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\Settings\\\\FileSettingsController\\:\\:testDolphinConnection\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|400\\|500, array\\{success\\: bool, error\\?\\: string, message\\?\\: 'Dolphin connection…'\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{success\\: bool, message\\: string\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\Settings\\\\FileSettingsController\\:\\:testDolphinConnection\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|400\\|500, array\\{success\\: bool, error\\?\\: string, message\\?\\: 'Dolphin connection…'\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{success\\: bool, message\\?\\: string, error\\?\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/Settings/FileSettingsController.php
 
@@ -1821,12 +1801,7 @@ parameters:
 			path: lib/Controller/Settings/FileSettingsController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\Settings\\\\FileSettingsController\\:\\:testOpenAnonymiserConnection\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|400\\|500, array\\{success\\: bool, error\\?\\: string, message\\?\\: string\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{success\\: bool, error\\: string\\}, array\\{\\}\\>\\.$#"
-			count: 2
-			path: lib/Controller/Settings/FileSettingsController.php
-
-		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\Settings\\\\FileSettingsController\\:\\:testOpenAnonymiserConnection\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|400\\|500, array\\{success\\: bool, error\\?\\: string, message\\?\\: string\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{success\\: bool, message\\: string\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\Settings\\\\FileSettingsController\\:\\:testOpenAnonymiserConnection\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|400\\|500, array\\{success\\: bool, error\\?\\: string, message\\?\\: string\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{success\\: bool, message\\?\\: string, error\\?\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/Settings/FileSettingsController.php
 
@@ -1841,12 +1816,7 @@ parameters:
 			path: lib/Controller/Settings/FileSettingsController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\Settings\\\\FileSettingsController\\:\\:testPresidioConnection\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|400\\|500, array\\{success\\: bool, error\\?\\: string, message\\?\\: string, capabilities\\?\\: array\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{success\\: bool, error\\: string\\}, array\\{\\}\\>\\.$#"
-			count: 2
-			path: lib/Controller/Settings/FileSettingsController.php
-
-		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\Settings\\\\FileSettingsController\\:\\:testPresidioConnection\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|400\\|500, array\\{success\\: bool, error\\?\\: string, message\\?\\: string, capabilities\\?\\: array\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{success\\: bool, message\\: string, capabilities\\: array\\{\\}\\|array\\{supported_entities\\: array\\}\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\Settings\\\\FileSettingsController\\:\\:testPresidioConnection\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|400\\|500, array\\{success\\: bool, error\\?\\: string, message\\?\\: string, capabilities\\?\\: array\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{success\\: bool, message\\?\\: string, error\\?\\: string, capabilities\\?\\: array\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/Settings/FileSettingsController.php
 
@@ -2611,6 +2581,11 @@ parameters:
 			path: lib/Db/AgentMapper.php
 
 		-
+			message: "#^Variable \\$groups on left side of \\?\\? always exists and is not nullable\\.$#"
+			count: 1
+			path: lib/Db/Application.php
+
+		-
 			message: "#^Call to an undefined method OCP\\\\AppFramework\\\\Db\\\\Entity\\:\\:getOrganisation\\(\\)\\.$#"
 			count: 1
 			path: lib/Db/ApplicationMapper.php
@@ -2644,11 +2619,6 @@ parameters:
 			message: "#^Parameter \\$entity of method OCP\\\\AppFramework\\\\Db\\\\QBMapper\\<OCA\\\\OpenRegister\\\\Db\\\\Application\\>\\:\\:update\\(\\) expects OCA\\\\OpenRegister\\\\Db\\\\Application, OCP\\\\AppFramework\\\\Db\\\\Entity given\\.$#"
 			count: 1
 			path: lib/Db/ApplicationMapper.php
-
-		-
-			message: "#^Access to undefined constant Doctrine\\\\DBAL\\\\Connection\\:\\:PARAM_STR_ARRAY\\.$#"
-			count: 1
-			path: lib/Db/AuditTrailMapper.php
 
 		-
 			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\AuditTrail\\:\\:getChanges\\(\\)\\.$#"
@@ -2851,11 +2821,6 @@ parameters:
 			path: lib/Db/FeedbackMapper.php
 
 		-
-			message: "#^Access to undefined constant Doctrine\\\\DBAL\\\\Connection\\:\\:PARAM_STR_ARRAY\\.$#"
-			count: 2
-			path: lib/Db/MagicMapper.php
-
-		-
 			message: "#^Call to an undefined method OCP\\\\IDBConnection\\:\\:quoteIdentifier\\(\\)\\.$#"
 			count: 1
 			path: lib/Db/MagicMapper.php
@@ -2863,11 +2828,6 @@ parameters:
 		-
 			message: "#^Call to function array_key_exists\\(\\) with 'default' and array\\{type\\: string, format\\?\\: string, items\\?\\: array, properties\\?\\: array, required\\?\\: array\\<string\\>, maxLength\\?\\: int, minLength\\?\\: int, maximum\\?\\: int, \\.\\.\\.\\} will always evaluate to false\\.$#"
 			count: 3
-			path: lib/Db/MagicMapper.php
-
-		-
-			message: "#^Comparison operation \"\\>\" between int\\<1, max\\> and 0 is always true\\.$#"
-			count: 1
 			path: lib/Db/MagicMapper.php
 
 		-
@@ -2971,11 +2931,6 @@ parameters:
 			path: lib/Db/MagicMapper.php
 
 		-
-			message: "#^Variable \\$orConditions in empty\\(\\) always exists and is not falsy\\.$#"
-			count: 1
-			path: lib/Db/MagicMapper.php
-
-		-
 			message: "#^Property OCA\\\\OpenRegister\\\\Db\\\\MagicMapper\\\\MagicBulkHandler\\:\\:\\$eventDispatcher is never read, only written\\.$#"
 			count: 1
 			path: lib/Db/MagicMapper/MagicBulkHandler.php
@@ -2986,19 +2941,9 @@ parameters:
 			path: lib/Db/MagicMapper/MagicBulkHandler.php
 
 		-
-			message: "#^Access to undefined constant Doctrine\\\\DBAL\\\\Connection\\:\\:PARAM_STR_ARRAY\\.$#"
-			count: 2
-			path: lib/Db/MagicMapper/MagicFacetHandler.php
-
-		-
 			message: "#^Property OCA\\\\OpenRegister\\\\Db\\\\MagicMapper\\\\MagicFacetHandler\\:\\:\\$uuidLabelCache is never read, only written\\.$#"
 			count: 1
 			path: lib/Db/MagicMapper/MagicFacetHandler.php
-
-		-
-			message: "#^Access to undefined constant Doctrine\\\\DBAL\\\\Connection\\:\\:PARAM_STR_ARRAY\\.$#"
-			count: 2
-			path: lib/Db/MagicMapper/MagicRbacHandler.php
 
 		-
 			message: "#^Property OCA\\\\OpenRegister\\\\Db\\\\MagicMapper\\\\MagicRbacHandler\\:\\:\\$appConfig is never read, only written\\.$#"
@@ -3011,8 +2956,13 @@ parameters:
 			path: lib/Db/MagicMapper/MagicRbacHandler.php
 
 		-
-			message: "#^Access to undefined constant Doctrine\\\\DBAL\\\\Connection\\:\\:PARAM_STR_ARRAY\\.$#"
-			count: 4
+			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\MagicMapper\\\\MagicSearchHandler\\:\\:buildSearchConditionSql\\(\\) never returns null so it can be removed from the return type\\.$#"
+			count: 1
+			path: lib/Db/MagicMapper/MagicSearchHandler.php
+
+		-
+			message: "#^Unreachable statement \\- code above always terminates\\.$#"
+			count: 1
 			path: lib/Db/MagicMapper/MagicSearchHandler.php
 
 		-
@@ -3074,16 +3024,6 @@ parameters:
 			message: "#^Variable \\$object on left side of \\?\\? always exists and is not nullable\\.$#"
 			count: 1
 			path: lib/Db/ObjectEntity.php
-
-		-
-			message: "#^Access to undefined constant Doctrine\\\\DBAL\\\\Connection\\:\\:PARAM_INT_ARRAY\\.$#"
-			count: 4
-			path: lib/Db/ObjectEntity/BulkOperationsHandler.php
-
-		-
-			message: "#^Access to undefined constant Doctrine\\\\DBAL\\\\Connection\\:\\:PARAM_STR_ARRAY\\.$#"
-			count: 3
-			path: lib/Db/ObjectEntity/BulkOperationsHandler.php
 
 		-
 			message: "#^Call to an undefined method OCP\\\\AppFramework\\\\Db\\\\Entity\\:\\:getObject\\(\\)\\.$#"
@@ -3151,11 +3091,6 @@ parameters:
 			path: lib/Db/ObjectEntity/QueryOptimizationHandler.php
 
 		-
-			message: "#^Access to undefined constant Doctrine\\\\DBAL\\\\Connection\\:\\:PARAM_STR_ARRAY\\.$#"
-			count: 3
-			path: lib/Db/ObjectEntity/StatisticsHandler.php
-
-		-
 			message: "#^Call to an undefined method OCP\\\\AppFramework\\\\Db\\\\Entity\\:\\:getObject\\(\\)\\.$#"
 			count: 1
 			path: lib/Db/ObjectEntityMapper.php
@@ -3176,27 +3111,27 @@ parameters:
 			path: lib/Db/ObjectEntityMapper.php
 
 		-
+			message: "#^Parameter \\#1 \\$newObject of class OCA\\\\OpenRegister\\\\Event\\\\ObjectUpdatingEvent constructor expects OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity, OCP\\\\AppFramework\\\\Db\\\\Entity given\\.$#"
+			count: 1
+			path: lib/Db/ObjectEntityMapper.php
+
+		-
+			message: "#^Parameter \\#1 \\$object of class OCA\\\\OpenRegister\\\\Event\\\\ObjectCreatingEvent constructor expects OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity, OCP\\\\AppFramework\\\\Db\\\\Entity given\\.$#"
+			count: 1
+			path: lib/Db/ObjectEntityMapper.php
+
+		-
+			message: "#^Parameter \\#2 \\$oldObject of class OCA\\\\OpenRegister\\\\Event\\\\ObjectUpdatingEvent constructor expects OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\|null, OCP\\\\AppFramework\\\\Db\\\\Entity given\\.$#"
+			count: 1
+			path: lib/Db/ObjectEntityMapper.php
+
+		-
 			message: "#^Parameter \\$entity of method OCP\\\\AppFramework\\\\Db\\\\QBMapper\\<OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\>\\:\\:insert\\(\\) expects OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity, OCP\\\\AppFramework\\\\Db\\\\Entity given\\.$#"
 			count: 1
 			path: lib/Db/ObjectEntityMapper.php
 
 		-
 			message: "#^Parameter \\$entity of method OCP\\\\AppFramework\\\\Db\\\\QBMapper\\<OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\>\\:\\:update\\(\\) expects OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity, OCP\\\\AppFramework\\\\Db\\\\Entity given\\.$#"
-			count: 1
-			path: lib/Db/ObjectEntityMapper.php
-
-		-
-			message: "#^Parameter \\$newObject of class OCA\\\\OpenRegister\\\\Event\\\\ObjectUpdatingEvent constructor expects OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity, OCP\\\\AppFramework\\\\Db\\\\Entity given\\.$#"
-			count: 1
-			path: lib/Db/ObjectEntityMapper.php
-
-		-
-			message: "#^Parameter \\$object of class OCA\\\\OpenRegister\\\\Event\\\\ObjectCreatingEvent constructor expects OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity, OCP\\\\AppFramework\\\\Db\\\\Entity given\\.$#"
-			count: 1
-			path: lib/Db/ObjectEntityMapper.php
-
-		-
-			message: "#^Parameter \\$oldObject of class OCA\\\\OpenRegister\\\\Event\\\\ObjectUpdatingEvent constructor expects OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\|null, OCP\\\\AppFramework\\\\Db\\\\Entity given\\.$#"
 			count: 1
 			path: lib/Db/ObjectEntityMapper.php
 
@@ -3251,16 +3186,6 @@ parameters:
 			path: lib/Db/ObjectHandlers/HyperFacetHandler.php
 
 		-
-			message: "#^Access to undefined constant Doctrine\\\\DBAL\\\\Connection\\:\\:PARAM_INT_ARRAY\\.$#"
-			count: 1
-			path: lib/Db/ObjectHandlers/MariaDbFacetHandler.php
-
-		-
-			message: "#^Access to undefined constant Doctrine\\\\DBAL\\\\Connection\\:\\:PARAM_STR_ARRAY\\.$#"
-			count: 2
-			path: lib/Db/ObjectHandlers/MariaDbFacetHandler.php
-
-		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\ObjectHandlers\\\\MariaDbFacetHandler\\:\\:analyzeObjectFields\\(\\) is unused\\.$#"
 			count: 1
 			path: lib/Db/ObjectHandlers/MariaDbFacetHandler.php
@@ -3269,21 +3194,6 @@ parameters:
 			message: "#^Strict comparison using \\=\\=\\= between 0\\|1\\|false and true will always evaluate to false\\.$#"
 			count: 1
 			path: lib/Db/ObjectHandlers/MariaDbFacetHandler.php
-
-		-
-			message: "#^Access to undefined constant Doctrine\\\\DBAL\\\\Connection\\:\\:PARAM_STR_ARRAY\\.$#"
-			count: 2
-			path: lib/Db/ObjectHandlers/MariaDbSearchHandler.php
-
-		-
-			message: "#^Access to undefined constant Doctrine\\\\DBAL\\\\Connection\\:\\:PARAM_INT_ARRAY\\.$#"
-			count: 1
-			path: lib/Db/ObjectHandlers/MetaDataFacetHandler.php
-
-		-
-			message: "#^Access to undefined constant Doctrine\\\\DBAL\\\\Connection\\:\\:PARAM_STR_ARRAY\\.$#"
-			count: 2
-			path: lib/Db/ObjectHandlers/MetaDataFacetHandler.php
 
 		-
 			message: "#^Comparison operation \"\\>\" between 1 and 10000 is always false\\.$#"
@@ -3299,11 +3209,6 @@ parameters:
 			message: "#^Constant OCA\\\\OpenRegister\\\\Db\\\\ObjectHandlers\\\\OptimizedBulkOperations\\:\\:MAX_QUERY_SIZE is unused\\.$#"
 			count: 1
 			path: lib/Db/ObjectHandlers/OptimizedBulkOperations.php
-
-		-
-			message: "#^Access to undefined constant Doctrine\\\\DBAL\\\\Connection\\:\\:PARAM_INT_ARRAY\\.$#"
-			count: 1
-			path: lib/Db/ObjectHandlers/OptimizedFacetHandler.php
 
 		-
 			message: "#^Call to an undefined static method OCP\\\\AppFramework\\\\Db\\\\Entity\\:\\:setActive\\(\\)\\.$#"
@@ -3431,7 +3336,7 @@ parameters:
 			path: lib/Db/Schema.php
 
 		-
-			message: "#^PHPDoc tag @return with type string\\|null is not subtype of native type string\\.$#"
+			message: "#^Else branch is unreachable because ternary operator condition is always true\\.$#"
 			count: 1
 			path: lib/Db/Schema.php
 
@@ -3646,6 +3551,11 @@ parameters:
 			path: lib/Db/UnifiedObjectMapper.php
 
 		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\UnifiedObjectMapper\\:\\:searchObjectsPaginated\\(\\) should return array\\{results\\: array\\<OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\>, total\\: int, register\\: array\\|null, schema\\: array\\|null\\} but returns array\\{results\\: array, total\\: int, registers\\: array, schemas\\: array\\}\\.$#"
+			count: 2
+			path: lib/Db/UnifiedObjectMapper.php
+
+		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\UnifiedObjectMapper\\:\\:searchObjectsPaginated\\(\\) should return array\\{results\\: array\\<OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\>, total\\: int, register\\: array\\|null, schema\\: array\\|null\\} but returns array\\{results\\: array, total\\: int\\<0, max\\>, registers\\: array\\<int, array\\{id\\: int, uuid\\: string\\|null, slug\\: string\\|null, title\\: string\\|null, version\\: string\\|null, description\\: string\\|null, schemas\\: array\\<int\\|string\\>, source\\: string\\|null, \\.\\.\\.\\}\\>, schemas\\: mixed\\}\\.$#"
 			count: 1
 			path: lib/Db/UnifiedObjectMapper.php
@@ -3667,22 +3577,22 @@ parameters:
 
 		-
 			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:find\\(\\)\\.$#"
-			count: 13
+			count: 12
 			path: lib/Db/UnifiedObjectMapper.php
 
 		-
 			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
-			count: 14
+			count: 13
 			path: lib/Db/UnifiedObjectMapper.php
 
 		-
 			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:find\\(\\)\\.$#"
-			count: 11
+			count: 10
 			path: lib/Db/UnifiedObjectMapper.php
 
 		-
 			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
-			count: 12
+			count: 11
 			path: lib/Db/UnifiedObjectMapper.php
 
 		-
@@ -3829,11 +3739,6 @@ parameters:
 			message: "#^Property OCA\\\\OpenRegister\\\\EventListener\\\\AbstractNodesFolderEventListener\\:\\:\\$objectService is never read, only written\\.$#"
 			count: 1
 			path: lib/EventListener/AbstractNodesFolderEventListener.php
-
-		-
-			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\Schema\\:\\:getHooks\\(\\)\\.$#"
-			count: 1
-			path: lib/Listener/HookListener.php
 
 		-
 			message: "#^Strict comparison using \\=\\=\\= between int and null will always evaluate to false\\.$#"
@@ -4596,17 +4501,17 @@ parameters:
 			path: lib/Service/FileService.php
 
 		-
-			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\Schema\\:\\:getHooks\\(\\)\\.$#"
+			message: "#^Parameter \\$errors of method OCA\\\\OpenRegister\\\\Event\\\\ObjectCreatingEvent\\:\\:setErrors\\(\\) expects array\\<string, mixed\\>, array\\<int, array\\<string, string\\>\\> given\\.$#"
 			count: 1
 			path: lib/Service/HookExecutor.php
 
 		-
-			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Event\\\\ObjectDeletingEvent\\:\\:setErrors\\(\\)\\.$#"
+			message: "#^Parameter \\$errors of method OCA\\\\OpenRegister\\\\Event\\\\ObjectDeletingEvent\\:\\:setErrors\\(\\) expects array\\<string, mixed\\>, array\\<int, array\\<string, string\\>\\> given\\.$#"
 			count: 1
 			path: lib/Service/HookExecutor.php
 
 		-
-			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Event\\\\ObjectDeletingEvent\\:\\:setModifiedData\\(\\)\\.$#"
+			message: "#^Parameter \\$errors of method OCA\\\\OpenRegister\\\\Event\\\\ObjectUpdatingEvent\\:\\:setErrors\\(\\) expects array\\<string, mixed\\>, array\\<int, array\\<string, string\\>\\> given\\.$#"
 			count: 1
 			path: lib/Service/HookExecutor.php
 
@@ -5181,11 +5086,6 @@ parameters:
 			path: lib/Service/Object/PerformanceHandler.php
 
 		-
-			message: "#^Strict comparison using \\=\\=\\= between false and true will always evaluate to false\\.$#"
-			count: 2
-			path: lib/Service/Object/PermissionHandler.php
-
-		-
 			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\:\\:getDepublicationDate\\(\\)\\.$#"
 			count: 2
 			path: lib/Service/Object/PublishHandler.php
@@ -5641,7 +5541,22 @@ parameters:
 			path: lib/Service/Object/SearchQueryHandler.php
 
 		-
+			message: "#^Access to an undefined property object\\:\\:\\$description\\.$#"
+			count: 2
+			path: lib/Service/Object/ValidateObject.php
+
+		-
 			message: "#^Access to an undefined property object\\:\\:\\$items\\.$#"
+			count: 1
+			path: lib/Service/Object/ValidateObject.php
+
+		-
+			message: "#^Access to an undefined property object\\:\\:\\$oneOf\\.$#"
+			count: 1
+			path: lib/Service/Object/ValidateObject.php
+
+		-
+			message: "#^Access to an undefined property object\\:\\:\\$properties\\.$#"
 			count: 1
 			path: lib/Service/Object/ValidateObject.php
 
@@ -5656,27 +5571,12 @@ parameters:
 			path: lib/Service/Object/ValidateObject.php
 
 		-
-			message: "#^Call to function is_array\\(\\) with OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity will always evaluate to false\\.$#"
-			count: 1
-			path: lib/Service/Object/ValidationHandler.php
-
-		-
-			message: "#^Comparison operation \"\\>\" between int\\<1, max\\> and 0 is always true\\.$#"
-			count: 1
-			path: lib/Service/Object/ValidationHandler.php
-
-		-
 			message: "#^Empty array passed to foreach\\.$#"
 			count: 1
 			path: lib/Service/Object/ValidationHandler.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Service\\\\Object\\\\ValidationHandler\\:\\:validateAndSaveObjectsBySchema\\(\\) should return array\\{processed\\: int, updated\\: int, failed\\: int, total\\: int, errors\\: array\\} but returns array\\{processed\\: 0, updated\\: 0, failed\\: 0, errors\\: array\\{array\\{error\\: non\\-falsy\\-string\\}\\}\\}\\.$#"
-			count: 1
-			path: lib/Service/Object/ValidationHandler.php
-
-		-
-			message: "#^Strict comparison using \\=\\=\\= between false and true will always evaluate to false\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Service\\\\Object\\\\ValidationHandler\\:\\:validateAndSaveObjectsBySchema\\(\\) should return array\\{processed\\: int, updated\\: int, failed\\: int, total\\: int, errors\\: array\\} but returns array\\{processed\\: 0, updated\\: 0, failed\\: 0, errors\\: array\\{array\\{error\\: 'Failed to load…'\\}\\}\\}\\.$#"
 			count: 1
 			path: lib/Service/Object/ValidationHandler.php
 
@@ -6142,7 +6042,7 @@ parameters:
 
 		-
 			message: "#^Strict comparison using \\=\\=\\= between int\\<0, max\\>\\|false and true will always evaluate to false\\.$#"
-			count: 3
+			count: 1
 			path: lib/Service/TextExtraction/EntityRecognitionHandler.php
 
 		-
