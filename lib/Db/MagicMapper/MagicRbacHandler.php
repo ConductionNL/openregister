@@ -55,6 +55,9 @@ use Psr\Log\LoggerInterface;
  * permission to view based on schema authorization configurations.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ * @SuppressWarnings(PHPMD.TooManyMethods)
  */
 class MagicRbacHandler
 {
@@ -453,59 +456,144 @@ class MagicRbacHandler
     private function buildOperatorCondition(IQueryBuilder $qb, string $columnName, array $operators): mixed
     {
         foreach ($operators as $operator => $operand) {
-            switch ($operator) {
-                case '$eq':
-                    return $qb->expr()->eq("t.{$columnName}", $qb->createNamedParameter($operand));
+            $result = $this->buildSingleOperatorCondition(
+                qb: $qb,
+                columnName: $columnName,
+                operator: $operator,
+                operand: $operand
+            );
 
-                case '$ne':
-                    return $qb->expr()->neq("t.{$columnName}", $qb->createNamedParameter($operand));
-
-                case '$in':
-                    if (is_array($operand) === true && empty($operand) === false) {
-                        return $qb->expr()->in(
-                            "t.{$columnName}",
-                            $qb->createNamedParameter($operand, IQueryBuilder::PARAM_STR_ARRAY)
-                        );
-                    }
-                    break;
-
-                case '$nin':
-                    if (is_array($operand) === true && empty($operand) === false) {
-                        return $qb->expr()->notIn(
-                            "t.{$columnName}",
-                            $qb->createNamedParameter($operand, IQueryBuilder::PARAM_STR_ARRAY)
-                        );
-                    }
-                    break;
-
-                case '$exists':
-                    if ($operand === true) {
-                        return $qb->expr()->isNotNull("t.{$columnName}");
-                    }
-                    return $qb->expr()->isNull("t.{$columnName}");
-
-                case '$gt':
-                    return $qb->expr()->gt("t.{$columnName}", $qb->createNamedParameter($operand));
-
-                case '$gte':
-                    return $qb->expr()->gte("t.{$columnName}", $qb->createNamedParameter($operand));
-
-                case '$lt':
-                    return $qb->expr()->lt("t.{$columnName}", $qb->createNamedParameter($operand));
-
-                case '$lte':
-                    return $qb->expr()->lte("t.{$columnName}", $qb->createNamedParameter($operand));
-
-                default:
-                    $this->logger->warning(
-                        message: '[MagicRbacHandler] Unknown operator',
-                        context: ['file' => __FILE__, 'line' => __LINE__, 'operator' => $operator]
-                    );
-            }//end switch
+            if ($result !== null) {
+                return $result;
+            }
         }//end foreach
 
         return null;
     }//end buildOperatorCondition()
+
+    /**
+     * Build a single operator condition for QueryBuilder
+     *
+     * @param IQueryBuilder $qb         Query builder
+     * @param string        $columnName Column name
+     * @param string        $operator   Operator (e.g. '$eq', '$gt')
+     * @param mixed         $operand    Operand value
+     *
+     * @return mixed SQL expression or null if operator not handled
+     */
+    private function buildSingleOperatorCondition(
+        IQueryBuilder $qb,
+        string $columnName,
+        string $operator,
+        mixed $operand
+    ): mixed {
+        // Comparison operators.
+        $comparisonResult = $this->buildComparisonOperatorCondition(
+            qb: $qb,
+            columnName: $columnName,
+            operator: $operator,
+            operand: $operand
+        );
+        if ($comparisonResult !== null) {
+            return $comparisonResult;
+        }
+
+        // Array operators ($in, $nin).
+        $arrayResult = $this->buildArrayOperatorCondition(
+            qb: $qb,
+            columnName: $columnName,
+            operator: $operator,
+            operand: $operand
+        );
+        if ($arrayResult !== null) {
+            return $arrayResult;
+        }
+
+        // Existence operator ($exists).
+        if ($operator === '$exists') {
+            if ($operand === true) {
+                return $qb->expr()->isNotNull("t.{$columnName}");
+            }
+
+            return $qb->expr()->isNull("t.{$columnName}");
+        }
+
+        $this->logger->warning(
+            message: '[MagicRbacHandler] Unknown operator',
+            context: ['file' => __FILE__, 'line' => __LINE__, 'operator' => $operator]
+        );
+
+        return null;
+    }//end buildSingleOperatorCondition()
+
+    /**
+     * Build comparison operator condition ($eq, $ne, $gt, $gte, $lt, $lte) for QueryBuilder
+     *
+     * @param IQueryBuilder $qb         Query builder
+     * @param string        $columnName Column name
+     * @param string        $operator   Operator string
+     * @param mixed         $operand    Operand value
+     *
+     * @return mixed SQL expression or null if not a comparison operator
+     */
+    private function buildComparisonOperatorCondition(
+        IQueryBuilder $qb,
+        string $columnName,
+        string $operator,
+        mixed $operand
+    ): mixed {
+        $comparisonMap = [
+            '$eq'  => 'eq',
+            '$ne'  => 'neq',
+            '$gt'  => 'gt',
+            '$gte' => 'gte',
+            '$lt'  => 'lt',
+            '$lte' => 'lte',
+        ];
+
+        if (isset($comparisonMap[$operator]) === false) {
+            return null;
+        }
+
+        $method = $comparisonMap[$operator];
+        return $qb->expr()->{$method}("t.{$columnName}", $qb->createNamedParameter($operand));
+    }//end buildComparisonOperatorCondition()
+
+    /**
+     * Build array operator condition ($in, $nin) for QueryBuilder
+     *
+     * @param IQueryBuilder $qb         Query builder
+     * @param string        $columnName Column name
+     * @param string        $operator   Operator string
+     * @param mixed         $operand    Operand value (expected array)
+     *
+     * @return mixed SQL expression or null if not an array operator or invalid operand
+     */
+    private function buildArrayOperatorCondition(
+        IQueryBuilder $qb,
+        string $columnName,
+        string $operator,
+        mixed $operand
+    ): mixed {
+        $arrayMap = [
+            '$in'  => 'in',
+            '$nin' => 'notIn',
+        ];
+
+        if (isset($arrayMap[$operator]) === false) {
+            return null;
+        }
+
+        if (is_array($operand) === true && empty($operand) === false) {
+            $method = $arrayMap[$operator];
+            return $qb->expr()->{$method}(
+                "t.{$columnName}",
+                $qb->createNamedParameter($operand, IQueryBuilder::PARAM_STR_ARRAY)
+            );
+        }
+
+        return null;
+    }//end buildArrayOperatorCondition()
 
     /**
      * Convert camelCase property name to snake_case column name
@@ -621,33 +709,46 @@ class MagicRbacHandler
 
         // Conditional rule: object with 'group' and optional 'match'.
         if (is_array($rule) === true && isset($rule['group']) === true) {
-            $group = $rule['group'];
-            $match = $rule['match'] ?? null;
-
-            // Check if user qualifies for the group.
-            // 'public' grants access to anyone, including unauthenticated users.
-            $userQualifies = false;
-            if ($group === 'public') {
-                $userQualifies = true;
-            } else if (in_array($group, $userGroups, true) === true) {
-                $userQualifies = true;
-            }
-
-            if ($userQualifies === false) {
-                return false;
-            }
-
-            // If no match conditions or no object data, grant access.
-            if ($match === null || empty($match) === true || $objectData === null) {
-                return true;
-            }
-
-            // Check if object matches conditions.
-            return $this->objectMatchesConditions(objectData: $objectData, match: $match);
-        }//end if
+            return $this->checkConditionalPermissionRule(
+                rule: $rule,
+                userGroups: $userGroups,
+                objectData: $objectData
+            );
+        }
 
         return false;
     }//end checkPermissionRule()
+
+    /**
+     * Check if a conditional permission rule grants access
+     *
+     * @param array      $rule       Rule with 'group' and optional 'match'
+     * @param array      $userGroups User's group IDs
+     * @param array|null $objectData Optional object data for conditional checks
+     *
+     * @return bool True if rule grants access
+     */
+    private function checkConditionalPermissionRule(array $rule, array $userGroups, ?array $objectData): bool
+    {
+        $group = $rule['group'];
+        $match = $rule['match'] ?? null;
+
+        // Check if user qualifies for the group.
+        // 'public' grants access to anyone, including unauthenticated users.
+        $userQualifies = ($group === 'public' || in_array($group, $userGroups, true) === true);
+
+        if ($userQualifies === false) {
+            return false;
+        }
+
+        // If no match conditions or no object data, grant access.
+        if ($match === null || empty($match) === true || $objectData === null) {
+            return true;
+        }
+
+        // Check if object matches conditions.
+        return $this->objectMatchesConditions(objectData: $objectData, match: $match);
+    }//end checkConditionalPermissionRule()
 
     /**
      * Check if object data matches the given conditions
@@ -660,42 +761,57 @@ class MagicRbacHandler
     private function objectMatchesConditions(array $objectData, array $match): bool
     {
         foreach ($match as $property => $value) {
-            $objectValue = $objectData[$property] ?? null;
-
-            // Resolve dynamic variables in the match value.
-            $resolvedValue = $this->resolveDynamicValue(value: $value);
-
-            // If dynamic variable resolved to null, condition cannot be met.
-            if ($value !== $resolvedValue && $resolvedValue === null) {
-                return false;
-            }
-
-            // Simple value: equals comparison.
-            if (is_string($resolvedValue) === true || is_numeric($resolvedValue) === true || is_bool($resolvedValue) === true) {
-                if ($objectValue !== $resolvedValue) {
-                    return false;
-                }
-
-                continue;
-            }
-
-            // Operator object.
-            if (is_array($resolvedValue) === true) {
-                if ($this->valueMatchesOperator(value: $objectValue, operators: $resolvedValue) === false) {
-                    return false;
-                }
-
-                continue;
-            }
-
-            // Null value: check if object value is null.
-            if ($resolvedValue === null && $objectValue !== null) {
+            if ($this->objectPropertyMatchesCondition(
+                objectData: $objectData,
+                property: $property,
+                value: $value
+            ) === false
+            ) {
                 return false;
             }
         }//end foreach
 
         return true;
     }//end objectMatchesConditions()
+
+    /**
+     * Check if a single object property matches a condition value
+     *
+     * @param array  $objectData Object data to check
+     * @param string $property   Property name
+     * @param mixed  $value      Expected value or operator object
+     *
+     * @return bool True if the property matches the condition
+     */
+    private function objectPropertyMatchesCondition(array $objectData, string $property, mixed $value): bool
+    {
+        $objectValue = $objectData[$property] ?? null;
+
+        // Resolve dynamic variables in the match value.
+        $resolvedValue = $this->resolveDynamicValue(value: $value);
+
+        // If dynamic variable resolved to null, condition cannot be met.
+        if ($value !== $resolvedValue && $resolvedValue === null) {
+            return false;
+        }
+
+        // Simple value: equals comparison.
+        if (is_string($resolvedValue) === true || is_numeric($resolvedValue) === true || is_bool($resolvedValue) === true) {
+            return $objectValue === $resolvedValue;
+        }
+
+        // Operator object.
+        if (is_array($resolvedValue) === true) {
+            return $this->valueMatchesOperator(value: $objectValue, operators: $resolvedValue);
+        }
+
+        // Null value: check if object value is null.
+        if ($resolvedValue === null && $objectValue !== null) {
+            return false;
+        }
+
+        return true;
+    }//end objectPropertyMatchesCondition()
 
     /**
      * Check if a value matches operator conditions
@@ -708,69 +824,114 @@ class MagicRbacHandler
     private function valueMatchesOperator(mixed $value, array $operators): bool
     {
         foreach ($operators as $operator => $operand) {
-            switch ($operator) {
-                case '$eq':
-                    if ($value !== $operand) {
-                        return false;
-                    }
-                    break;
-
-                case '$ne':
-                    if ($value === $operand) {
-                        return false;
-                    }
-                    break;
-
-                case '$in':
-                    if (is_array($operand) === false || in_array($value, $operand, true) === false) {
-                        return false;
-                    }
-                    break;
-
-                case '$nin':
-                    if (is_array($operand) === true && in_array($value, $operand, true) === true) {
-                        return false;
-                    }
-                    break;
-
-                case '$exists':
-                    if ($operand === true && $value === null) {
-                        return false;
-                    }
-
-                    if ($operand === false && $value !== null) {
-                        return false;
-                    }
-                    break;
-
-                case '$gt':
-                    if ($value <= $operand) {
-                        return false;
-                    }
-                    break;
-
-                case '$gte':
-                    if ($value < $operand) {
-                        return false;
-                    }
-                    break;
-
-                case '$lt':
-                    if ($value >= $operand) {
-                        return false;
-                    }
-                    break;
-
-                case '$lte':
-                    if ($value > $operand) {
-                        return false;
-                    }
-                    break;
-            }//end switch
+            if ($this->singleOperatorMatches(value: $value, operator: $operator, operand: $operand) === false) {
+                return false;
+            }
         }//end foreach
 
         return true;
     }//end valueMatchesOperator()
+
+    /**
+     * Check if a single operator condition matches a value
+     *
+     * @param mixed  $value    Object value to check
+     * @param string $operator Operator (e.g. '$eq', '$gt')
+     * @param mixed  $operand  Operand to compare against
+     *
+     * @return bool True if the value satisfies the operator condition
+     */
+    private function singleOperatorMatches(mixed $value, string $operator, mixed $operand): bool
+    {
+        // Comparison operators.
+        if ($this->comparisonOperatorMatches(value: $value, operator: $operator, operand: $operand) === false) {
+            return false;
+        }
+
+        // Array operators ($in, $nin).
+        if ($this->arrayOperatorMatches(value: $value, operator: $operator, operand: $operand) === false) {
+            return false;
+        }
+
+        // Existence operator ($exists).
+        if ($operator === '$exists') {
+            return $this->existsOperatorMatches(value: $value, operand: $operand);
+        }
+
+        return true;
+    }//end singleOperatorMatches()
+
+    /**
+     * Check comparison operators ($eq, $ne, $gt, $gte, $lt, $lte) against a value
+     *
+     * @param mixed  $value    Object value
+     * @param string $operator Operator string
+     * @param mixed  $operand  Operand value
+     *
+     * @return bool True if condition is satisfied (or operator is not a comparison operator)
+     */
+    private function comparisonOperatorMatches(mixed $value, string $operator, mixed $operand): bool
+    {
+        $comparisonChecks = [
+            '$eq'  => fn() => $value === $operand,
+            '$ne'  => fn() => $value !== $operand,
+            '$gt'  => fn() => $value > $operand,
+            '$gte' => fn() => $value >= $operand,
+            '$lt'  => fn() => $value < $operand,
+            '$lte' => fn() => $value <= $operand,
+        ];
+
+        if (isset($comparisonChecks[$operator]) === false) {
+            return true;
+        }
+
+        return $comparisonChecks[$operator]();
+    }//end comparisonOperatorMatches()
+
+    /**
+     * Check array operators ($in, $nin) against a value
+     *
+     * @param mixed  $value    Object value
+     * @param string $operator Operator string
+     * @param mixed  $operand  Operand value (expected array)
+     *
+     * @return bool True if condition is satisfied (or operator is not an array operator)
+     */
+    private function arrayOperatorMatches(mixed $value, string $operator, mixed $operand): bool
+    {
+        if ($operator === '$in') {
+            return is_array($operand) === true && in_array($value, $operand, true) === true;
+        }
+
+        if ($operator === '$nin') {
+            if (is_array($operand) === true && in_array($value, $operand, true) === true) {
+                return false;
+            }
+        }
+
+        return true;
+    }//end arrayOperatorMatches()
+
+    /**
+     * Check $exists operator against a value
+     *
+     * @param mixed $value   Object value
+     * @param mixed $operand Boolean operand (true = must exist, false = must not exist)
+     *
+     * @return bool True if condition is satisfied
+     */
+    private function existsOperatorMatches(mixed $value, mixed $operand): bool
+    {
+        if ($operand === true && $value === null) {
+            return false;
+        }
+
+        if ($operand === false && $value !== null) {
+            return false;
+        }
+
+        return true;
+    }//end existsOperatorMatches()
 
     /**
      * Build RBAC conditions as raw SQL for use in UNION queries.
@@ -971,10 +1132,9 @@ class MagicRbacHandler
 
         // Boolean value.
         if (is_bool($resolvedValue) === true) {
+            $boolValue = 'FALSE';
             if ($resolvedValue === true) {
                 $boolValue = 'TRUE';
-            } else {
-                $boolValue = 'FALSE';
             }
 
             return "{$columnName} = {$boolValue}";
@@ -1004,55 +1164,123 @@ class MagicRbacHandler
     private function buildOperatorConditionSql(string $columnName, array $operators): ?string
     {
         foreach ($operators as $operator => $operand) {
-            switch ($operator) {
-                case '$eq':
-                    $quotedValue = $this->quoteValue(value: $operand);
-                    return "{$columnName} = {$quotedValue}";
+            $result = $this->buildSingleOperatorConditionSql(
+                columnName: $columnName,
+                operator: $operator,
+                operand: $operand
+            );
 
-                case '$ne':
-                    $quotedValue = $this->quoteValue(value: $operand);
-                    return "{$columnName} != {$quotedValue}";
-
-                case '$in':
-                    if (is_array($operand) === true && empty($operand) === false) {
-                        $quotedValues = array_map(fn($v) => $this->quoteValue(value: $v), $operand);
-                        return "{$columnName} IN (".implode(', ', $quotedValues).')';
-                    }
-                    break;
-
-                case '$nin':
-                    if (is_array($operand) === true && empty($operand) === false) {
-                        $quotedValues = array_map(fn($v) => $this->quoteValue(value: $v), $operand);
-                        return "{$columnName} NOT IN (".implode(', ', $quotedValues).')';
-                    }
-                    break;
-
-                case '$exists':
-                    if ($operand === true) {
-                        return "{$columnName} IS NOT NULL";
-                    }
-                    return "{$columnName} IS NULL";
-
-                case '$gt':
-                    $quotedValue = $this->quoteValue(value: $operand);
-                    return "{$columnName} > {$quotedValue}";
-
-                case '$gte':
-                    $quotedValue = $this->quoteValue(value: $operand);
-                    return "{$columnName} >= {$quotedValue}";
-
-                case '$lt':
-                    $quotedValue = $this->quoteValue(value: $operand);
-                    return "{$columnName} < {$quotedValue}";
-
-                case '$lte':
-                    $quotedValue = $this->quoteValue(value: $operand);
-                    return "{$columnName} <= {$quotedValue}";
-            }//end switch
+            if ($result !== null) {
+                return $result;
+            }
         }//end foreach
 
         return null;
     }//end buildOperatorConditionSql()
+
+    /**
+     * Build a single operator condition as raw SQL
+     *
+     * @param string $columnName Column name
+     * @param string $operator   Operator (e.g. '$eq', '$gt')
+     * @param mixed  $operand    Operand value
+     *
+     * @return string|null SQL expression or null if operator not handled
+     */
+    private function buildSingleOperatorConditionSql(string $columnName, string $operator, mixed $operand): ?string
+    {
+        // Comparison operators.
+        $comparisonResult = $this->buildComparisonOperatorConditionSql(
+            columnName: $columnName,
+            operator: $operator,
+            operand: $operand
+        );
+        if ($comparisonResult !== null) {
+            return $comparisonResult;
+        }
+
+        // Array operators ($in, $nin).
+        $arrayResult = $this->buildArrayOperatorConditionSql(
+            columnName: $columnName,
+            operator: $operator,
+            operand: $operand
+        );
+        if ($arrayResult !== null) {
+            return $arrayResult;
+        }
+
+        // Existence operator ($exists).
+        if ($operator === '$exists') {
+            if ($operand === true) {
+                return "{$columnName} IS NOT NULL";
+            }
+
+            return "{$columnName} IS NULL";
+        }
+
+        return null;
+    }//end buildSingleOperatorConditionSql()
+
+    /**
+     * Build comparison operator condition ($eq, $ne, $gt, $gte, $lt, $lte) as raw SQL
+     *
+     * @param string $columnName Column name
+     * @param string $operator   Operator string
+     * @param mixed  $operand    Operand value
+     *
+     * @return string|null SQL expression or null if not a comparison operator
+     */
+    private function buildComparisonOperatorConditionSql(
+        string $columnName,
+        string $operator,
+        mixed $operand
+    ): ?string {
+        $comparisonMap = [
+            '$eq'  => '=',
+            '$ne'  => '!=',
+            '$gt'  => '>',
+            '$gte' => '>=',
+            '$lt'  => '<',
+            '$lte' => '<=',
+        ];
+
+        if (isset($comparisonMap[$operator]) === false) {
+            return null;
+        }
+
+        $sqlOperator = $comparisonMap[$operator];
+        $quotedValue = $this->quoteValue(value: $operand);
+        return "{$columnName} {$sqlOperator} {$quotedValue}";
+    }//end buildComparisonOperatorConditionSql()
+
+    /**
+     * Build array operator condition ($in, $nin) as raw SQL
+     *
+     * @param string $columnName Column name
+     * @param string $operator   Operator string
+     * @param mixed  $operand    Operand value (expected array)
+     *
+     * @return string|null SQL expression or null if not an array operator or invalid operand
+     */
+    private function buildArrayOperatorConditionSql(string $columnName, string $operator, mixed $operand): ?string
+    {
+        $arrayMap = [
+            '$in'  => 'IN',
+            '$nin' => 'NOT IN',
+        ];
+
+        if (isset($arrayMap[$operator]) === false) {
+            return null;
+        }
+
+        if (is_array($operand) === true && empty($operand) === false) {
+            $sqlKeyword   = $arrayMap[$operator];
+            $quotedValues = array_map(fn($val) => $this->quoteValue(value: $val), $operand);
+            return "{$columnName} {$sqlKeyword} (".implode(', ', $quotedValues).')';
+        }
+
+        return null;
+    }//end buildArrayOperatorConditionSql()
 
     /**
      * Quote a value for safe use in raw SQL.
@@ -1164,45 +1392,98 @@ class MagicRbacHandler
         // 1. Simple rules (group name strings) - user in group can see ALL records.
         // 2. Conditional rules with non-_organisation match fields - RBAC handles filtering.
         foreach ($rules as $rule) {
-            // Check simple rules (just group names).
-            // If user qualifies for a simple rule, they can see ALL records,
-            // so multitenancy should be bypassed.
-            if (is_string($rule) === true) {
-                if ($rule === 'public') {
-                    return true;
-                }
-
-                if (in_array($rule, $userGroups, true) === true) {
-                    return true;
-                }
-
-                continue;
+            if ($this->ruleBypassesMultitenancy(rule: $rule, userGroups: $userGroups) === true) {
+                return true;
             }
-
-            // Check conditional rules.
-            if (is_array($rule) === true && isset($rule['group']) === true && isset($rule['match']) === true) {
-                $group = $rule['group'];
-                $match = $rule['match'];
-
-                // Check if user qualifies for this group.
-                $userQualifies = false;
-                if ($group === 'public') {
-                    $userQualifies = true;
-                } else if (in_array($group, $userGroups, true) === true) {
-                    $userQualifies = true;
-                }
-
-                // If user qualifies and match contains non-_organisation fields, multitenancy should be bypassed.
-                if ($userQualifies === true && is_array($match) === true) {
-                    foreach (array_keys($match) as $matchField) {
-                        if ($matchField !== '_organisation') {
-                            return true;
-                        }
-                    }
-                }
-            }//end if
         }//end foreach
 
         return false;
     }//end hasConditionalRulesBypassingMultitenancy()
+
+    /**
+     * Check if a single rule should bypass multitenancy for the current user
+     *
+     * @param mixed $rule       Authorization rule (string or array)
+     * @param array $userGroups User's group IDs
+     *
+     * @return bool True if this rule bypasses multitenancy
+     */
+    private function ruleBypassesMultitenancy(mixed $rule, array $userGroups): bool
+    {
+        // Check simple rules (just group names).
+        // If user qualifies for a simple rule, they can see ALL records,
+        // so multitenancy should be bypassed.
+        if (is_string($rule) === true) {
+            return $this->simpleRuleBypassesMultitenancy(rule: $rule, userGroups: $userGroups);
+        }
+
+        // Check conditional rules.
+        if (is_array($rule) === true && isset($rule['group']) === true && isset($rule['match']) === true) {
+            return $this->conditionalRuleBypassesMultitenancy(rule: $rule, userGroups: $userGroups);
+        }
+
+        return false;
+    }//end ruleBypassesMultitenancy()
+
+    /**
+     * Check if a simple (group name) rule bypasses multitenancy
+     *
+     * @param string $rule       Group name
+     * @param array  $userGroups User's group IDs
+     *
+     * @return bool True if this simple rule bypasses multitenancy
+     */
+    private function simpleRuleBypassesMultitenancy(string $rule, array $userGroups): bool
+    {
+        if ($rule === 'public') {
+            return true;
+        }
+
+        return in_array($rule, $userGroups, true);
+    }//end simpleRuleBypassesMultitenancy()
+
+    /**
+     * Check if a conditional rule bypasses multitenancy
+     *
+     * A conditional rule bypasses multitenancy when the user qualifies for the
+     * group and the match conditions include fields other than _organisation.
+     *
+     * @param array $rule       Rule with 'group' and 'match'
+     * @param array $userGroups User's group IDs
+     *
+     * @return bool True if this conditional rule bypasses multitenancy
+     */
+    private function conditionalRuleBypassesMultitenancy(array $rule, array $userGroups): bool
+    {
+        $group = $rule['group'];
+        $match = $rule['match'];
+
+        // Check if user qualifies for this group.
+        $userQualifies = ($group === 'public' || in_array($group, $userGroups, true) === true);
+
+        // If user qualifies and match contains non-_organisation fields, multitenancy should be bypassed.
+        if ($userQualifies === true && is_array($match) === true) {
+            return $this->matchHasNonOrganisationFields(match: $match);
+        }
+
+        return false;
+    }//end conditionalRuleBypassesMultitenancy()
+
+    /**
+     * Check if match conditions contain fields other than _organisation
+     *
+     * @param array $match Match conditions
+     *
+     * @return bool True if non-_organisation fields exist
+     */
+    private function matchHasNonOrganisationFields(array $match): bool
+    {
+        foreach (array_keys($match) as $matchField) {
+            if ($matchField !== '_organisation') {
+                return true;
+            }
+        }
+
+        return false;
+    }//end matchHasNonOrganisationFields()
 }//end class
