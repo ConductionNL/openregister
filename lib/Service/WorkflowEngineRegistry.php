@@ -213,6 +213,11 @@ class WorkflowEngineRegistry
     {
         $available = [];
 
+        // Requires app_api to be installed for ExApp discovery.
+        if ($this->appManager->isEnabledForUser('app_api') === false) {
+            return [];
+        }
+
         $knownEngines = [
             'n8n'      => ['appId' => 'n8n', 'defaultPort' => 5678],
             'windmill' => ['appId' => 'windmill', 'defaultPort' => 8000],
