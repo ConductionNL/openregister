@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\WorkflowEngine;
 
+use InvalidArgumentException;
 use JsonSerializable;
 
 /**
@@ -75,7 +76,7 @@ class WorkflowResult implements JsonSerializable
      * @param array<int,array{field?:string,message:string,code?:string}> $errors   Validation errors
      * @param array<string,mixed>                                         $metadata Engine-specific metadata
      *
-     * @throws \InvalidArgumentException If status is not valid
+     * @throws InvalidArgumentException If status is not valid
      */
     public function __construct(
         string $status,
@@ -84,7 +85,7 @@ class WorkflowResult implements JsonSerializable
         array $metadata=[]
     ) {
         if (in_array(needle: $status, haystack: self::VALID_STATUSES, strict: true) === false) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 message: "Invalid workflow result status '$status'. Must be one of: ".implode(separator: ', ', array: self::VALID_STATUSES)
             );
         }

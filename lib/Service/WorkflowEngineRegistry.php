@@ -19,6 +19,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use DateTime;
+use InvalidArgumentException;
 use OCA\OpenRegister\Db\WorkflowEngine;
 use OCA\OpenRegister\Db\WorkflowEngineMapper;
 use OCA\OpenRegister\WorkflowEngine\N8nAdapter;
@@ -60,7 +62,7 @@ class WorkflowEngineRegistry
      *
      * @return WorkflowEngineInterface Configured adapter
      *
-     * @throws \InvalidArgumentException If engine type is unsupported
+     * @throws InvalidArgumentException If engine type is unsupported
      */
     public function resolveAdapter(WorkflowEngine $engine): WorkflowEngineInterface
     {
@@ -69,7 +71,7 @@ class WorkflowEngineRegistry
         $adapter = match ($engine->getEngineType()) {
             'n8n'      => $this->n8nAdapter,
             'windmill' => $this->windmillAdapter,
-            default    => throw new \InvalidArgumentException(
+            default    => throw new InvalidArgumentException(
                 "Unsupported engine type: '{$engine->getEngineType()}'"
             ),
         };
@@ -192,8 +194,8 @@ class WorkflowEngineRegistry
         $elapsed = (int) ((hrtime(true) - $start) / 1_000_000);
 
         $engine->setHealthStatus($healthy);
-        $engine->setLastHealthCheck(new \DateTime());
-        $engine->setUpdated(new \DateTime());
+        $engine->setLastHealthCheck(new DateTime());
+        $engine->setUpdated(new DateTime());
         $this->mapper->update($engine);
 
         return [

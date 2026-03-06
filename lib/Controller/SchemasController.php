@@ -218,7 +218,7 @@ class SchemasController extends Controller
         // If '@self.stats' is requested, attach statistics to each schema.
         if (in_array('@self.stats', $extend, true) === true) {
             // Collect all schema IDs for batch queries.
-            $schemaIds = array_map(fn($s) => $s['id'], $schemasArr);
+            $schemaIds = array_map(fn($schema) => $schema['id'], $schemasArr);
 
             // Batch-load all statistics in 3 queries instead of N*2 queries.
             $registerCounts = $this->schemaMapper->getRegisterCountPerSchema();

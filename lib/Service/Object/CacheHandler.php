@@ -615,7 +615,7 @@ class CacheHandler
         }
 
         // Get distributed cache count (persists across requests).
-        $distributedNameCacheCount = $this->getDistributedNameCacheCount();
+        $distNameCacheCount = $this->getDistributedNameCacheCount();
 
         return array_merge(
             $this->stats,
@@ -626,7 +626,7 @@ class CacheHandler
                 'cache_size'                  => count($this->objectCache),
                 'query_cache_size'            => count($this->inMemoryQueryCache),
                 'name_cache_size'             => count($this->nameCache),
-                'distributed_name_cache_size' => $distributedNameCacheCount,
+                'distributed_name_cache_size' => $distNameCacheCount,
             ]
         );
     }//end getStats()

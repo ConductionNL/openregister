@@ -1766,14 +1766,14 @@ class MagicMapper
                     'version',
                 ];
                 $metadataCount          = count(array_intersect(array_keys($requiredColumns), $metadataColumns));
-                $regularPropertiesCount = count($requiredColumns) - $metadataCount;
+                $regularPropCount = count($requiredColumns) - $metadataCount;
 
                 // Return statistics for newly created table.
                 return [
                     'success'               => true,
                     'created'               => true,
                     'metadataProperties'    => $metadataCount,
-                    'regularProperties'     => $regularPropertiesCount,
+                    'regularProperties'     => $regularPropCount,
                     'totalProperties'       => count($requiredColumns),
                     'columnsAdded'          => count($requiredColumns),
                     'columnsDeRequired'     => 0,
@@ -1822,12 +1822,12 @@ class MagicMapper
             self::$tableExistsCache[$cacheKey] = time();
             // Refresh cache timestamp.
             // Calculate regular properties (excluding metadata).
-            $regularPropertiesCount = count($requiredColumns) - $metadataCount;
+            $regularPropCount = count($requiredColumns) - $metadataCount;
 
             $result = [
                 'success'               => true,
                 'metadataProperties'    => $metadataCount,
-                'regularProperties'     => $regularPropertiesCount,
+                'regularProperties'     => $regularPropCount,
                 'totalProperties'       => count($requiredColumns),
                 'columnsAdded'          => count($columnStats['columnsAdded']),
                 'columnsDeRequired'     => count($columnStats['columnsDeRequired']),
@@ -3223,7 +3223,7 @@ class MagicMapper
             $propertyTypes       = [];
             $propertyFormats     = [];
             $properties          = $_schema->getProperties() ?? [];
-            foreach (array_keys($properties) as $propertyName) {
+            foreach ($properties as $propertyName => $propertyDef) {
                 $columnName = $this->sanitizeColumnName(name: $propertyName);
                 $columnToPropertyMap[$columnName] = $propertyName;
                 $propertyTypes[$propertyName]     = $propertyDef['type'] ?? 'string';
@@ -5094,7 +5094,7 @@ class MagicMapper
 
             $registerId = $tableInfo['registerId'];
             $schemaId   = $tableInfo['schemaId'];
-            $tableNameWithoutPrefix = str_replace($prefix, '', $fullTableName);
+            $bareTableName = str_replace($prefix, '', $fullTableName);
 
             try {
                 // Load register and schema (with caching).
@@ -5108,7 +5108,7 @@ class MagicMapper
 
                 // Fetch full rows for found UUIDs.
                 $searchQb = $this->db->getQueryBuilder();
-                $searchQb->select('*')->from($tableNameWithoutPrefix);
+                $searchQb->select('*')->from($bareTableName);
                 $searchQb->where(
                     $searchQb->expr()->in(
                         $uuidCol,
@@ -5286,7 +5286,7 @@ class MagicMapper
 
             $registerId = $tableInfo['registerId'];
             $schemaId   = $tableInfo['schemaId'];
-            $tableNameWithoutPrefix = str_replace($prefix, '', $fullTableName);
+            $bareTableName = str_replace($prefix, '', $fullTableName);
 
             try {
                 // Load register and schema (with caching).
@@ -5300,7 +5300,7 @@ class MagicMapper
 
                 // Fetch full rows for found UUIDs.
                 $searchQb = $this->db->getQueryBuilder();
-                $searchQb->select('*')->from($tableNameWithoutPrefix);
+                $searchQb->select('*')->from($bareTableName);
                 $searchQb->where(
                     $searchQb->expr()->in(
                         $uuidCol,

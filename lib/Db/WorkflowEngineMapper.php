@@ -17,10 +17,12 @@
 
 namespace OCA\OpenRegister\Db;
 
+use DateTime;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * Mapper for WorkflowEngine entities.
@@ -119,10 +121,10 @@ class WorkflowEngineMapper extends QBMapper
         $engine->hydrate($data);
 
         if ($engine->getUuid() === null) {
-            $engine->setUuid(\Ramsey\Uuid\Uuid::uuid4()->toString());
+            $engine->setUuid(Uuid::v4()->toRfc4122());
         }
 
-        $now = new \DateTime();
+        $now = new DateTime();
         $engine->setCreated($now);
         $engine->setUpdated($now);
 
@@ -141,7 +143,7 @@ class WorkflowEngineMapper extends QBMapper
     {
         $engine = $this->find(id: $id);
         $engine->hydrate($data);
-        $engine->setUpdated(new \DateTime());
+        $engine->setUpdated(new DateTime());
 
         return $this->update(entity: $engine);
     }//end updateFromArray()

@@ -828,10 +828,10 @@ class SaveObject
                 );
 
                 // Get current relations of the related object.
-                $relatedObjectRelations = $relatedObject->getRelations() ?? [];
+                $relatedRelations = $relatedObject->getRelations() ?? [];
 
                 // Check if this object's UUID is already in the related object's relations.
-                if (in_array($savedUuid, $relatedObjectRelations, true) === true) {
+                if (in_array($savedUuid, $relatedRelations, true) === true) {
                     $this->logger->debug(
                         message: '[SaveObject] Object already in related object\'s relations',
                         context: [
@@ -845,8 +845,8 @@ class SaveObject
                 }
 
                 // Add this object's UUID to the related object's relations.
-                $relatedObjectRelations[] = $savedUuid;
-                $relatedObject->setRelations($relatedObjectRelations);
+                $relatedRelations[] = $savedUuid;
+                $relatedObject->setRelations($relatedRelations);
                 $relatedObject->setUpdated(new \DateTime());
 
                 // Save the related object.
@@ -859,7 +859,7 @@ class SaveObject
                         'line'              => __LINE__,
                         'savedUuid'         => $savedUuid,
                         'relatedUuid'       => $relatedUuid,
-                        'newRelationsCount' => count($relatedObjectRelations),
+                        'newRelationsCount' => count($relatedRelations),
                     ]
                 );
             } catch (\Exception $e) {
@@ -2548,16 +2548,16 @@ class SaveObject
                 }
             }
 
-            $unauthorizedProperties = $this->propertyRbacHandler->getUnauthorizedProperties(
+            $unauthorizedProps = $this->propertyRbacHandler->getUnauthorizedProperties(
                 schema: $schema,
                 object: $existingObjectData,
                 incomingData: $data,
                 isCreate: $isCreate
             );
 
-            if (empty($unauthorizedProperties) === false) {
+            if (empty($unauthorizedProps) === false) {
                 throw new Exception(
-                    'You are not authorized to modify the following properties: '.implode(', ', $unauthorizedProperties)
+                    'You are not authorized to modify the following properties: '.implode(', ', $unauthorizedProps)
                 );
             }
         }//end if

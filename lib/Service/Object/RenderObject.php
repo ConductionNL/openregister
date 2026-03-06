@@ -1483,14 +1483,14 @@ class RenderObject
         }
 
         // Filter to only inverse properties that are being extended.
-        $inversePropertiesToExtend = [];
+        $inversePropsExtend = [];
         foreach ($inversedProperties as $propName => $propConfig) {
             if (in_array($propName, $extend, true) === true || in_array('all', $extend, true) === true) {
-                $inversePropertiesToExtend[$propName] = $propConfig;
+                $inversePropsExtend[$propName] = $propConfig;
             }
         }
 
-        if (empty($inversePropertiesToExtend) === true) {
+        if (empty($inversePropsExtend) === true) {
             return;
         }
 
@@ -1512,12 +1512,12 @@ class RenderObject
                     'file'              => __FILE__,
                     'line'              => __LINE__,
                     'entityCount'       => count($entityUuids),
-                    'inverseProperties' => array_keys($inversePropertiesToExtend),
+                    'inverseProperties' => array_keys($inversePropsExtend),
                 ]
                 );
 
         // For each inverse property, determine target schema and batch-load referencing objects.
-        foreach ($inversePropertiesToExtend as $propName => $propConfig) {
+        foreach ($inversePropsExtend as $propName => $propConfig) {
             // Extract target schema reference.
             $targetSchemaRef = $propConfig['items']['$ref'] ?? $propConfig['$ref'] ?? null;
             $inversedByField = $propConfig['items']['inversedBy'] ?? $propConfig['inversedBy'] ?? null;
@@ -1760,7 +1760,7 @@ class RenderObject
                     additionalFieldNames: $additionalFields
                 );
                 // Merge results, deduplicating by UUID.
-                $existingUuids = array_map(fn(ObjectEntity $o) => $o->getUuid(), $referencingObjects);
+                $existingUuids = array_map(fn(ObjectEntity $obj) => $obj->getUuid(), $referencingObjects);
                 foreach ($additionalResults as $obj) {
                     if (in_array($obj->getUuid(), $existingUuids, true) === false) {
                         $referencingObjects[] = $obj;

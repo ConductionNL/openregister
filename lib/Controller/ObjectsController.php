@@ -1098,7 +1098,7 @@ class ObjectsController extends Controller
                     ];
                     $mistakenParams = array_intersect($ignoredFilters, $controlParams);
                     if (empty($mistakenParams) === false) {
-                        $suggestions = array_map(fn($p) => "_{$p}", $mistakenParams);
+                        $suggestions = array_map(fn($param) => "_{$param}", $mistakenParams);
                         $hint        = 'Query returned 0 results because ';
                         $hint       .= implode(', ', $mistakenParams);
                         $hint       .= ' was treated as an object property filter.';

@@ -272,11 +272,11 @@ class MagicSearchHandler
         // Public schemas bypass multitenancy by default, UNLESS the user explicitly requests
         // multitenancy with _multi=true. This allows public data to be visible across orgs
         // while still giving users the option to filter by their own organisation.
-        $multitenancyExplicitRaw = $query['_multitenancy_explicit'] ?? false;
-        $multitenancyExplicit    = $multitenancyExplicitRaw === true
-            || $multitenancyExplicitRaw === 'true'
-            || $multitenancyExplicitRaw === '1'
-            || $multitenancyExplicitRaw === 1;
+        $mtExplicitRaw = $query['_multitenancy_explicit'] ?? false;
+        $multitenancyExplicit    = $mtExplicitRaw === true
+            || $mtExplicitRaw === 'true'
+            || $mtExplicitRaw === '1'
+            || $mtExplicitRaw === 1;
 
         if ($multitenancy === true && $source !== 'database') {
             $schemaAuth = $schema->getAuthorization();
@@ -331,20 +331,20 @@ class MagicSearchHandler
         // - When user HAS RBAC access AND _multi=true: Apply multitenancy AFTER RBAC (AND restriction)
         // - When user HAS RBAC access AND _multi=false: Skip multitenancy (RBAC handles access).
         if ($multitenancy === true) {
-            $shouldApplyMultitenancy = false;
+            $applyMultitenancy = false;
 
             if ($userHasRbacAccess === false) {
                 // No RBAC access - apply multitenancy as normal.
-                $shouldApplyMultitenancy = true;
+                $applyMultitenancy = true;
             } else if ($multitenancyExplicit === true) {
                 // User has RBAC access but explicitly requested _multi=true
                 // Apply multitenancy to further restrict results to their org.
-                $shouldApplyMultitenancy = true;
+                $applyMultitenancy = true;
             }
 
             // Otherwise: user has RBAC access and didn't request _multi=true
             // Skip multitenancy - let RBAC handle access control.
-            if ($shouldApplyMultitenancy === true) {
+            if ($applyMultitenancy === true) {
                 $this->organizationHandler->applyOrganizationFilter(
                     qb: $queryBuilder,
                     allowPublishedAccess: $this->organizationHandler->shouldPublishedBypassMultiTenancy(),
@@ -1438,11 +1438,11 @@ class MagicSearchHandler
                 // the actual data is array/object, matching MagicMapper::convertRowToObjectEntity behavior.
                 if (is_string($value) === true) {
                     $trimmed = trim($value);
-                    $startsWithArrayOrObject = (
+                    $startsWithArrObj = (
                         str_starts_with($trimmed, '[') === true || str_starts_with($trimmed, '{') === true
                     );
 
-                    if ($startsWithArrayOrObject === true) {
+                    if ($startsWithArrObj === true) {
                         $decoded = json_decode($value, true);
                         if (json_last_error() === JSON_ERROR_NONE && ($decoded !== null || $value === 'null')) {
                             return $decoded;

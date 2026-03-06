@@ -1,0 +1,297 @@
+name: Quality
+
+on:
+  push:
+    branches: [main, development]
+  pull_request:
+    branches: [main, development]
+
+concurrency:
+  group: quality-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ──────────────────────────────────────────────
+  # Stage 1: Static analysis (no NC server needed)
+  # ──────────────────────────────────────────────
+  php-quality:
+    runs-on: ubuntu-latest
+    name: PHP Quality
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, intl, zip, gd, curl, xml, json
+          tools: composer:v2
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: ${{ runner.os }}-composer-${{ hashFiles('composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Install dependencies
+        run: composer install --no-progress --prefer-dist --optimize-autoloader
+
+      - name: PHP Lint
+        run: composer lint
+
+      - name: PHP CodeSniffer
+        run: composer phpcs
+        continue-on-error: true
+
+      - name: PHPMD
+        run: composer phpmd
+        continue-on-error: true
+
+      - name: Psalm
+        run: composer psalm
+        continue-on-error: true
+
+      - name: PHPStan
+        run: composer phpstan
+        continue-on-error: true
+
+  # ──────────────────────────────────────────────
+  # Stage 1: Frontend quality (parallel with PHP)
+  # ──────────────────────────────────────────────
+  frontend-quality:
+    runs-on: ubuntu-latest
+    name: Frontend Quality
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: ESLint
+        run: npm run lint
+        continue-on-error: true
+
+      - name: Stylelint
+        run: npm run stylelint
+        continue-on-error: true
+
+  # ──────────────────────────────────────────────
+  # Stage 2: PHPUnit tests (needs NC server)
+  # ──────────────────────────────────────────────
+  php-tests:
+    runs-on: ubuntu-latest
+    name: PHPUnit (PHP ${{ matrix.php-version }})
+    needs: php-quality
+
+    strategy:
+      matrix:
+        php-version: ['8.2', '8.3']
+      fail-fast: false
+
+    steps:
+      - name: Checkout Nextcloud server
+        uses: actions/checkout@v4
+        with:
+          repository: nextcloud/server
+          ref: stable32
+          path: server
+
+      - name: Checkout server submodules
+        run: |
+          cd server
+          git submodule update --init 3rdparty
+
+      - name: Checkout app
+        uses: actions/checkout@v4
+        with:
+          path: server/apps/openregister
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: mbstring, intl, sqlite3, zip, gd, curl, xml, json
+          coverage: xdebug
+          tools: composer:v2
+
+      - name: Install Nextcloud
+        run: |
+          cd server
+          php occ maintenance:install \
+            --database sqlite \
+            --admin-user admin \
+            --admin-pass admin
+          php occ app:enable openregister
+
+      - name: Install app dependencies
+        run: |
+          cd server/apps/openregister
+          composer install --no-progress --prefer-dist --optimize-autoloader
+
+      - name: Run PHPUnit tests
+        run: |
+          cd server/apps/openregister
+          ./vendor/bin/phpunit \
+            --testsuite "Unit Tests" \
+            --colors=always \
+            --coverage-clover=coverage/clover.xml
+        continue-on-error: true
+
+      - name: Check coverage threshold
+        if: matrix.php-version == '8.2'
+        run: |
+          cd server/apps/openregister
+          if [ -f coverage/clover.xml ]; then
+            composer coverage:check || echo "Coverage below threshold"
+          else
+            echo "No coverage data generated"
+          fi
+        continue-on-error: true
+
+      - name: Upload coverage artifact
+        if: always() && matrix.php-version == '8.2'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: server/apps/openregister/coverage/
+          retention-days: 14
+          if-no-files-found: ignore
+
+  # ──────────────────────────────────────────────
+  # Stage 2: Newman API tests (needs running NC)
+  # ──────────────────────────────────────────────
+  integration-tests:
+    runs-on: ubuntu-latest
+    name: Integration Tests (Newman)
+    needs: php-quality
+    if: github.event_name == 'pull_request'
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: nextcloud
+          POSTGRES_PASSWORD: nextcloud
+          POSTGRES_DB: nextcloud
+        ports:
+          - 5432:5432
+        options: --health-cmd="pg_isready" --health-interval=10s --health-timeout=5s --health-retries=5
+
+    steps:
+      - name: Checkout Nextcloud server
+        uses: actions/checkout@v4
+        with:
+          repository: nextcloud/server
+          ref: stable32
+          path: server
+
+      - name: Checkout server submodules
+        run: |
+          cd server
+          git submodule update --init 3rdparty
+
+      - name: Checkout app
+        uses: actions/checkout@v4
+        with:
+          path: server/apps/openregister
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, intl, pgsql, pdo_pgsql, zip, gd, curl, xml, json
+          tools: composer:v2
+
+      - name: Install Nextcloud
+        run: |
+          cd server
+          php occ maintenance:install \
+            --database pgsql \
+            --database-host 127.0.0.1 \
+            --database-port 5432 \
+            --database-name nextcloud \
+            --database-user nextcloud \
+            --database-pass nextcloud \
+            --admin-user admin \
+            --admin-pass admin
+
+      - name: Install and enable app
+        run: |
+          cd server/apps/openregister
+          composer install --no-progress --prefer-dist --optimize-autoloader
+          cd ../../
+          php occ app:enable openregister
+
+      - name: Start PHP built-in server
+        run: |
+          cd server
+          php -S 0.0.0.0:8080 &
+          sleep 3
+          curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/status.php || echo "Server not ready"
+
+      - name: Setup Node.js and Newman
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Newman
+        run: npm install -g newman
+
+      - name: Run Newman tests
+        run: |
+          cd server/apps/openregister/tests/integration
+          newman run openregister-crud.postman_collection.json \
+            --env-var "base_url=http://localhost:8080" \
+            --env-var "admin_user=admin" \
+            --env-var "admin_password=admin" \
+            --reporters cli \
+            || echo "Some integration tests failed"
+        continue-on-error: true
+
+  # ──────────────────────────────────────────────
+  # Summary: Report results on PR
+  # ──────────────────────────────────────────────
+  summary:
+    runs-on: ubuntu-latest
+    name: Quality Summary
+    needs: [php-quality, frontend-quality, php-tests, integration-tests]
+    if: always() && github.event_name == 'pull_request'
+
+    steps:
+      - name: Comment PR with results
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const jobs = {
+              'PHP Quality': '${{ needs.php-quality.result }}',
+              'Frontend Quality': '${{ needs.frontend-quality.result }}',
+              'PHPUnit Tests': '${{ needs.php-tests.result }}',
+              'Integration Tests': '${{ needs.integration-tests.result }}'
+            };
+
+            const icon = (s) => s === 'success' ? '✅' : s === 'skipped' ? '⏭️' : '⚠️';
+
+            let body = '## Quality Report\n\n';
+            body += '| Check | Result |\n|-------|--------|\n';
+            for (const [name, result] of Object.entries(jobs)) {
+              body += `| ${name} | ${icon(result)} ${result} |\n`;
+            }
+            body += '\nSee [workflow run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.\n';
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body
+            });

@@ -211,7 +211,7 @@ class N8nAdapter implements WorkflowEngineInterface
     /**
      * List all workflows from n8n.
      *
-     * @return array<int, array<string, mixed>> List of workflows
+     * @return array<int, array{id: string, name: string}> List of workflows
      */
     public function listWorkflows(): array
     {

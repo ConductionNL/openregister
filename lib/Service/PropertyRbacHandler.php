@@ -197,7 +197,7 @@ class PropertyRbacHandler
             return [];
         }
 
-        $unauthorizedProperties = [];
+        $unauthorizedProps = [];
 
         // Get properties with authorization.
         // Returns associative array: propertyName => authorizationConfig.
@@ -228,11 +228,11 @@ class PropertyRbacHandler
                 isCreate: $isCreate
             ) === false
             ) {
-                $unauthorizedProperties[] = $propertyName;
+                $unauthorizedProps[] = $propertyName;
             }
         }//end foreach
 
-        return $unauthorizedProperties;
+        return $unauthorizedProps;
     }//end getUnauthorizedProperties()
 
     /**

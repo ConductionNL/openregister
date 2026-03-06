@@ -210,7 +210,7 @@ class WindmillAdapter implements WorkflowEngineInterface
     /**
      * List all workflows from Windmill.
      *
-     * @return array<int, array<string, mixed>> List of workflows
+     * @return array<int, array{id: string, name: string}> List of workflows
      */
     public function listWorkflows(): array
     {

@@ -591,9 +591,9 @@ class EntityRecognitionHandler
         try {
             // Get OpenAnonymiser settings.
             $fileSettings           = $this->settingsService->getFileSettingsOnly();
-            $openAnonymiserEndpoint = $fileSettings['openAnonymiserApiEndpoint'] ?? '';
+            $anonEndpoint = $fileSettings['openAnonymiserApiEndpoint'] ?? '';
 
-            if (empty($openAnonymiserEndpoint) === true) {
+            if (empty($anonEndpoint) === true) {
                 $this->logger->warning(
                     message: '[EntityRecognitionHandler] OpenAnonymiser endpoint not configured, falling back to regex',
                     context: ['file' => __FILE__, 'line' => __LINE__]
@@ -616,7 +616,7 @@ class EntityRecognitionHandler
             }
 
             // Make HTTP request to OpenAnonymiser.
-            $ch = curl_init($openAnonymiserEndpoint.'/api/v1/analyze');
+            $ch = curl_init($anonEndpoint.'/api/v1/analyze');
             curl_setopt_array(
                 $ch,
                 [

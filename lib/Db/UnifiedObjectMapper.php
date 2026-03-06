@@ -728,7 +728,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
 
                     if ($groupRegister === null && $groupRegisterId !== null) {
                         try {
-                            $groupRegister = $this->registerMapper->find(id: (int) $groupRegisterId, multitenancy: false);
+                            $groupRegister = $this->registerMapper->find(id: (int) $groupRegisterId, _multitenancy: false);
                         } catch (\Exception $e) {
                             $this->logger->warning(
                                 message: '[UnifiedObjectMapper] Failed to resolve register for group',
@@ -739,7 +739,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
 
                     if ($groupSchemaId !== null) {
                         try {
-                            $groupSchema = $this->schemaMapper->find(id: (int) $groupSchemaId, multitenancy: false);
+                            $groupSchema = $this->schemaMapper->find(id: (int) $groupSchemaId, _multitenancy: false);
                         } catch (\Exception $e) {
                             $this->logger->warning(
                                 message: '[UnifiedObjectMapper] Failed to resolve schema for group',
@@ -802,7 +802,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
 
             if ($registerId !== null && $register === null) {
                 try {
-                    $register = $this->registerMapper->find(id: $registerId, multitenancy: false);
+                    $register = $this->registerMapper->find(id: $registerId, _multitenancy: false);
                 } catch (\Exception $e) {
                     $this->logger->warning(
                         message: '[UnifiedObjectMapper] Failed to resolve register',
@@ -813,7 +813,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
 
             if ($schemaId !== null && $schema === null) {
                 try {
-                    $schema = $this->schemaMapper->find(id: $schemaId, multitenancy: false);
+                    $schema = $this->schemaMapper->find(id: $schemaId, _multitenancy: false);
                 } catch (\Exception $e) {
                     $this->logger->warning(
                         message: '[UnifiedObjectMapper] Failed to resolve schema',
@@ -1039,8 +1039,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         if ($registerId !== null && $schemaId !== null) {
             try {
                 // Disable multitenancy for register/schema resolution (they're system-level).
-                $register = $this->registerMapper->find((int) $registerId, multitenancy: false, rbac: false);
-                $schema   = $this->schemaMapper->find((int) $schemaId, multitenancy: false, rbac: false);
+                $register = $this->registerMapper->find((int) $registerId, _multitenancy: false, _rbac: false);
+                $schema   = $this->schemaMapper->find((int) $schemaId, _multitenancy: false, _rbac: false);
 
                 if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
                     return $this->magicMapper->getSimpleFacetsFromRegisterSchemaTable(
@@ -1076,7 +1076,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         $registers = [];
         foreach ($registerIds as $registerId) {
             try {
-                $register = $this->registerMapper->find($registerId, multitenancy: false, rbac: false);
+                $register = $this->registerMapper->find($registerId, _multitenancy: false, _rbac: false);
                 $registers[$register->getId()] = $register;
             } catch (\Exception $e) {
                 $this->logger->warning(
@@ -1099,7 +1099,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         $registerSchemaPairs = [];
         foreach ($schemaIds as $schemaId) {
             try {
-                $schema = $this->schemaMapper->find($schemaId, multitenancy: false, rbac: false);
+                $schema = $this->schemaMapper->find($schemaId, _multitenancy: false, _rbac: false);
 
                 // Find the correct register for this schema.
                 $matchedRegister = null;
@@ -1195,7 +1195,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         $registers = [];
         foreach ($registerIds as $registerId) {
             try {
-                $register = $this->registerMapper->find($registerId, multitenancy: false, rbac: false);
+                $register = $this->registerMapper->find($registerId, _multitenancy: false, _rbac: false);
                 $registers[$register->getId()]      = $register;
                 $registersCache[$register->getId()] = $register->jsonSerialize();
             } catch (\Exception $e) {
@@ -1228,7 +1228,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
 
         foreach ($schemaIds as $schemaId) {
             try {
-                $schema = $this->schemaMapper->find((int) $schemaId, multitenancy: false, rbac: false);
+                $schema = $this->schemaMapper->find((int) $schemaId, _multitenancy: false, _rbac: false);
                 $schemasCache[$schema->getId()] = $schema->jsonSerialize();
 
                 // Find which register contains this schema by checking register's schema list.
@@ -1372,8 +1372,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         if ($registerId !== null && $schemaId !== null) {
             try {
                 // Disable multitenancy for register/schema resolution (they're system-level).
-                $register = $this->registerMapper->find((int) $registerId, multitenancy: false, rbac: false);
-                $schema   = $this->schemaMapper->find((int) $schemaId, multitenancy: false, rbac: false);
+                $register = $this->registerMapper->find((int) $registerId, _multitenancy: false, _rbac: false);
+                $schema   = $this->schemaMapper->find((int) $schemaId, _multitenancy: false, _rbac: false);
 
                 if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
                     $this->logger->info(
@@ -1442,8 +1442,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         if ($registerId !== null && $schemaId !== null) {
             try {
                 // Disable multitenancy for register/schema resolution (they're system-level).
-                $register = $this->registerMapper->find((int) $registerId, multitenancy: false, rbac: false);
-                $schema   = $this->schemaMapper->find((int) $schemaId, multitenancy: false, rbac: false);
+                $register = $this->registerMapper->find((int) $registerId, _multitenancy: false, _rbac: false);
+                $schema   = $this->schemaMapper->find((int) $schemaId, _multitenancy: false, _rbac: false);
 
                 if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
                     $this->logger->info(
@@ -1563,8 +1563,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         // Load register and schema ONCE if both are specified.
         if ($registerId !== null && $schemaId !== null) {
             try {
-                $register       = $this->registerMapper->find((int) $registerId, multitenancy: false, rbac: false);
-                $schema         = $this->schemaMapper->find((int) $schemaId, multitenancy: false, rbac: false);
+                $register       = $this->registerMapper->find((int) $registerId, _multitenancy: false, _rbac: false);
+                $schema         = $this->schemaMapper->find((int) $schemaId, _multitenancy: false, _rbac: false);
                 $useMagicMapper = $this->shouldUseMagicMapper(register: $register, schema: $schema);
 
                 // Add to cache indexed by ID.
@@ -1644,13 +1644,13 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         // Check if this is a global relations search (no register/schema but _relations_contains provided).
         // In this case, search across ALL magic tables to find objects that reference the given UUID.
         $relationsContains       = $searchQuery['_relations_contains'] ?? null;
-        $isGlobalRelationsSearch = $registerId === null
+        $isGlobalRelSearch = $registerId === null
             && $schemaId === null
             && $relationsContains !== null
             && is_string($relationsContains) === true
             && empty($relationsContains) === false;
 
-        if ($isGlobalRelationsSearch === true) {
+        if ($isGlobalRelSearch === true) {
             return $this->searchObjectsGloballyByRelations(
                 uuid: $relationsContains,
                 searchQuery: $searchQuery,
@@ -1724,7 +1724,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         // Load any missing registers.
         foreach (array_keys($uniqueRegisterIds) as $regId) {
             try {
-                $reg = $this->registerMapper->find((int) $regId, multitenancy: false, rbac: false);
+                $reg = $this->registerMapper->find((int) $regId, _multitenancy: false, _rbac: false);
                 $registersCache[$reg->getId()] = $reg->jsonSerialize();
             } catch (\Exception $e) {
                 // Skip if not found.
@@ -1734,7 +1734,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         // Load any missing schemas.
         foreach (array_keys($uniqueSchemaIds) as $schId) {
             try {
-                $sch = $this->schemaMapper->find((int) $schId, multitenancy: false, rbac: false);
+                $sch = $this->schemaMapper->find((int) $schId, _multitenancy: false, _rbac: false);
                 $schemasCache[$sch->getId()] = $sch->jsonSerialize();
             } catch (\Exception $e) {
                 // Skip if not found.
@@ -1843,7 +1843,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             // Get Schema entity from cache or fetch it.
             if (isset($schemaEntityCache[$schemaId]) === false) {
                 try {
-                    $schema = $this->schemaMapper->find((int) $schemaId, multitenancy: false, rbac: false);
+                    $schema = $this->schemaMapper->find((int) $schemaId, _multitenancy: false, _rbac: false);
                     $schemaEntityCache[$schemaId] = $schema;
 
                     // Also update serialized schemasCache for response metadata.
@@ -1964,7 +1964,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
 
                 if ($regId !== null && isset($registersCache[$regId]) === false) {
                     try {
-                        $reg = $this->registerMapper->find(id: (int) $regId, multitenancy: false, rbac: false);
+                        $reg = $this->registerMapper->find(id: (int) $regId, _multitenancy: false, _rbac: false);
                         $registersCache[$reg->getId()] = $reg->jsonSerialize();
                     } catch (\Exception $e) {
                         // Skip if register not found.
@@ -1973,7 +1973,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
 
                 if ($schId !== null && isset($schemasCache[$schId]) === false) {
                     try {
-                        $sch = $this->schemaMapper->find((int) $schId, multitenancy: false, rbac: false);
+                        $sch = $this->schemaMapper->find((int) $schId, _multitenancy: false, _rbac: false);
                         $schemasCache[$sch->getId()] = $sch->jsonSerialize();
                     } catch (\Exception $e) {
                         // Skip if not found.
@@ -2077,7 +2077,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
 
             if ($regId !== null && isset($registersCache[$regId]) === false) {
                 try {
-                    $register = $this->registerMapper->find((int) $regId, multitenancy: false, rbac: false);
+                    $register = $this->registerMapper->find((int) $regId, _multitenancy: false, _rbac: false);
                     if ($register !== null) {
                         $registersCache[$regId] = $register->jsonSerialize();
                     }
@@ -2088,7 +2088,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
 
             if ($schId !== null && isset($schemasCache[$schId]) === false) {
                 try {
-                    $schema = $this->schemaMapper->find((int) $schId, multitenancy: false, rbac: false);
+                    $schema = $this->schemaMapper->find((int) $schId, _multitenancy: false, _rbac: false);
                     if ($schema !== null) {
                         $schemasCache[$schId] = $schema->jsonSerialize();
                     }
@@ -2190,17 +2190,17 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                 $schemaId   = $idPair['schemaId'];
 
                 if (isset($registersCache[$registerId]) === false) {
-                    $register = $this->registerMapper->find($registerId, multitenancy: false, rbac: false);
+                    $register = $this->registerMapper->find($registerId, _multitenancy: false, _rbac: false);
                     $registersCache[$registerId] = $register->jsonSerialize();
                 } else {
-                    $register = $this->registerMapper->find($registerId, multitenancy: false, rbac: false);
+                    $register = $this->registerMapper->find($registerId, _multitenancy: false, _rbac: false);
                 }
 
                 if (isset($schemasCache[$schemaId]) === false) {
-                    $schema = $this->schemaMapper->find($schemaId, multitenancy: false, rbac: false);
+                    $schema = $this->schemaMapper->find($schemaId, _multitenancy: false, _rbac: false);
                     $schemasCache[$schemaId] = $schema->jsonSerialize();
                 } else {
-                    $schema = $this->schemaMapper->find($schemaId, multitenancy: false, rbac: false);
+                    $schema = $this->schemaMapper->find($schemaId, _multitenancy: false, _rbac: false);
                 }
 
                 $registerSchemaPairs[] = ['register' => $register, 'schema' => $schema];

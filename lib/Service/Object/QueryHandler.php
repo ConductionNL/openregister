@@ -452,12 +452,12 @@ class QueryHandler
         // Check if any schema has property-level authorization.
         // If yes, we need to render to filter unauthorized properties.
         // Schemas may be Entity objects or serialized arrays from UnifiedObjectMapper.
-        $hasPropertyAuthorization = false;
+        $hasPropAuth = false;
         foreach ($schemas as $schema) {
             if ($schema instanceof \OCA\OpenRegister\Db\Schema
                 && $schema->hasPropertyAuthorization() === true
             ) {
-                $hasPropertyAuthorization = true;
+                $hasPropAuth = true;
                 break;
             } else if (is_array($schema) === true && isset($schema['properties']) === true) {
                 foreach ($schema['properties'] as $propertyConfig) {
@@ -465,7 +465,7 @@ class QueryHandler
                         && isset($propertyConfig['authorization']) === true
                         && empty($propertyConfig['authorization']) === false
                     ) {
-                        $hasPropertyAuthorization = true;
+                        $hasPropAuth = true;
                         break 2;
                     }
                 }
@@ -476,7 +476,7 @@ class QueryHandler
             || empty($query['_fields'] ?? null) === false
             || empty($query['_filter'] ?? null) === false
             || empty($query['_unset'] ?? null) === false
-            || $hasPropertyAuthorization === true;
+            || $hasPropAuth === true;
 
         // Apply complex rendering if needed.
         if ($hasComplexRendering === true && is_array($results) === true) {
@@ -548,7 +548,7 @@ class QueryHandler
             $controlParams  = ['limit', 'offset', 'page', 'order', 'sort', 'search', 'extend', 'fields', 'filter', 'unset'];
             $mistakenParams = array_intersect($ignoredFilters, $controlParams);
             if (empty($mistakenParams) === false) {
-                $suggestions = array_map(fn($p) => "_{$p}", $mistakenParams);
+                $suggestions = array_map(fn($param) => "_{$param}", $mistakenParams);
                 $paramList   = implode(', ', $mistakenParams);
                 $sugList     = implode(', ', $suggestions);
                 $msg1        = 'Query returned 0 results because '.$paramList;
