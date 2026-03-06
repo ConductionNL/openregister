@@ -255,6 +255,19 @@ jobs:
       - name: Install Newman
         run: npm install -g newman
 
+      - name: Smoke test API
+        run: |
+          echo "=== Check app is enabled ==="
+          cd server && php occ app:list --enabled | grep -i register || echo "App not listed"
+          echo "=== Test register creation ==="
+          curl -s -u admin:admin -X POST \
+            -H "Content-Type: application/json" \
+            -d '{"title":"smoke-test","description":"CI smoke test"}' \
+            http://localhost:8080/index.php/apps/openregister/api/registers | head -500
+          echo ""
+          echo "=== Nextcloud log (last 20 lines) ==="
+          tail -20 data/nextcloud.log 2>/dev/null | python3 -m json.tool --no-ensure-ascii 2>/dev/null || tail -20 data/nextcloud.log 2>/dev/null || echo "No log"
+
       - name: Run Newman tests
         run: |
           cd server/apps/openregister/tests/integration
@@ -263,6 +276,12 @@ jobs:
             --env-var "admin_user=admin" \
             --env-var "admin_password=admin" \
             --reporters cli
+
+      - name: Show Nextcloud log on failure
+        if: failure()
+        run: |
+          echo "=== Last 50 lines of Nextcloud log ==="
+          tail -50 server/data/nextcloud.log 2>/dev/null | python3 -m json.tool --no-ensure-ascii 2>/dev/null || tail -50 server/data/nextcloud.log 2>/dev/null || echo "No log found"
 
   # ──────────────────────────────────────────────
   # Summary: Report results

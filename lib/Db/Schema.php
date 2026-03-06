@@ -1220,8 +1220,12 @@ class Schema extends Entity implements JsonSerializable
      */
     public function regenerateFacetsFromProperties(): void
     {
-        $schemaService = \OCP\Server::get(\OCA\OpenRegister\Service\SchemaService::class);
-        $schemaService->regenerateFacetsFromProperties($this);
+        try {
+            $schemaService = \OCP\Server::get(\OCA\OpenRegister\Service\SchemaService::class);
+            $schemaService->regenerateFacetsFromProperties($this);
+        } catch (\Throwable $e) {
+            // Silently skip if container is not available (e.g. unit tests).
+        }
     }//end regenerateFacetsFromProperties()
 
     /**
