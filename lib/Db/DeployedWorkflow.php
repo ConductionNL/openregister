@@ -179,18 +179,18 @@ class DeployedWorkflow extends Entity implements JsonSerializable
     public function jsonSerialize(): array
     {
         return [
-            'id'                => $this->id,
-            'uuid'              => $this->uuid,
-            'name'              => $this->name,
-            'engine'            => $this->engine,
-            'engineWorkflowId'  => $this->engineWorkflowId,
-            'sourceHash'        => $this->sourceHash,
-            'attachedSchema'    => $this->attachedSchema,
-            'attachedEvent'     => $this->attachedEvent,
-            'importSource'      => $this->importSource,
-            'version'           => $this->version,
-            'created'           => $this->created?->format('c'),
-            'updated'           => $this->updated?->format('c'),
+            'id'               => $this->id,
+            'uuid'             => $this->uuid,
+            'name'             => $this->name,
+            'engine'           => $this->engine,
+            'engineWorkflowId' => $this->engineWorkflowId,
+            'sourceHash'       => $this->sourceHash,
+            'attachedSchema'   => $this->attachedSchema,
+            'attachedEvent'    => $this->attachedEvent,
+            'importSource'     => $this->importSource,
+            'version'          => $this->version,
+            'created'          => $this->created?->format('c'),
+            'updated'          => $this->updated?->format('c'),
         ];
     }//end jsonSerialize()
 }//end class
