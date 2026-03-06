@@ -2500,10 +2500,9 @@ class ObjectsController extends Controller
     /**
      * Lock an object
      *
-     * @param string        $id            The ID/UUID of the object to lock
-     * @param string        $register      The register ID
-     * @param string        $schema        The schema ID
-     * @param ObjectService $objectService The object service
+     * @param string $register The register slug or identifier
+     * @param string $schema   The schema slug or identifier
+     * @param string $id       The ID/UUID of the object to lock
      *
      * @return JSONResponse JSON response with lock result
      *
@@ -2511,28 +2510,34 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      */
-    public function lock(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
+    public function lock(string $register, string $schema, string $id): JSONResponse
     {
-        // Set the schema and register to the object service.
-        $objectService->setSchema(schema: $schema);
-        $objectService->setRegister(register: $register);
+        try {
+            // Set the schema and register to the object service.
+            $this->objectService->setSchema(schema: $schema);
+            $this->objectService->setRegister(register: $register);
 
-        $data    = $this->request->getParams();
-        $process = ($data['process'] ?? null);
-        // Check if duration is set in the request data.
-        $duration = null;
-        if (($data['duration'] ?? null) !== null) {
-            $duration = (int) $data['duration'];
-        }
+            $data    = $this->request->getParams();
+            $process = ($data['process'] ?? null);
+            // Check if duration is set in the request data.
+            $duration = null;
+            if (($data['duration'] ?? null) !== null) {
+                $duration = (int) $data['duration'];
+            }
 
-        $lockResult = $objectService->lockObject(
-            identifier: $id,
-            process: $process,
-            duration: $duration
-        );
+            $lockResult = $this->objectService->lockObject(
+                identifier: $id,
+                process: $process,
+                duration: $duration
+            );
 
-        // Return response with locked status for test compatibility.
-        return new JSONResponse(data: array_merge($lockResult, ['locked' => true]));
+            // Return response with locked status for test compatibility.
+            return new JSONResponse(data: array_merge($lockResult, ['locked' => true]));
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+        } catch (\Throwable $e) {
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+        }//end try
     }//end lock()
 
     /**

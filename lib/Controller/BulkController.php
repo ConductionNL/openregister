@@ -241,20 +241,30 @@ class BulkController extends Controller
     /**
      * Perform bulk depublish operations on objects
      *
-     * @param string $_register The register identifier (used by routing)
-     * @param string $_schema   The schema identifier (used by routing)
+     * @param string $register The register identifier
+     * @param string $schema   The schema identifier
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @SuppressWarnings                             (PHPMD.UnusedFormalParameter) Parameters used by route resolver
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
      *
      * @return JSONResponse JSON response with bulk depublish result
      */
-    public function depublish(string $_register, string $_schema): JSONResponse
+    public function depublish(string $register, string $schema): JSONResponse
     {
         try {
+            // Resolve slugs to numeric IDs.
+            try {
+                $resolved = $this->resolveRegisterSchemaIds(
+                    register: $register,
+                    schema: $schema,
+                    objectService: $this->objectService
+                );
+            } catch (RegisterNotFoundException | SchemaNotFoundException $e) {
+                return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_NOT_FOUND);
+            }
+
             // Get request data.
             $data     = $this->request->getParams();
             $uuids    = $data['uuids'] ?? [];
@@ -280,7 +290,11 @@ class BulkController extends Controller
                 }
             }
 
-            // Perform bulk depublish operation (resolveRegisterSchemaIds already set context).
+            // Set register and schema context using resolved IDs.
+            $this->objectService->setRegister((string) $resolved['register']);
+            $this->objectService->setSchema((string) $resolved['schema']);
+
+            // Perform bulk depublish operation.
             $depublishedUuids = $this->objectService->depublishObjects(uuids: $uuids, datetime: $datetime ?? true);
 
             // Format datetime for response.
