@@ -84,7 +84,7 @@ class ImportHandler
      *
      * @var boolean
      */
-    private static bool $isDependencyCheckActive = false;
+    private static bool $isDependCheckActive = false;
 
     /**
      * Schema mapper instance for handling schema operations.
@@ -191,21 +191,21 @@ class ImportHandler
      *
      * @SuppressWarnings(PHPMD.UnusedPrivateField) Reserved for future OpenConnector integration
      */
-    private mixed $openConnectorConfigurationService = null;
+    private mixed $connectorConfigSvc = null;
 
     /**
      * Workflow engine registry for resolving adapters during import.
      *
      * @var WorkflowEngineRegistry|null
      */
-    private ?WorkflowEngineRegistry $workflowEngineRegistry = null;
+    private ?WorkflowEngineRegistry $workflowRegistry = null;
 
     /**
      * Deployed workflow mapper for tracking imported workflows.
      *
      * @var DeployedWorkflowMapper|null
      */
-    private ?DeployedWorkflowMapper $deployedWorkflowMapper = null;
+    private ?DeployedWorkflowMapper $deployedWfMapper = null;
 
     /**
      * Constructor for ImportHandler.
@@ -272,7 +272,7 @@ class ImportHandler
      */
     public function setOpenConnectorConfigurationService(mixed $service): void
     {
-        $this->openConnectorConfigurationService = $service;
+        $this->connectorConfigSvc = $service;
     }//end setOpenConnectorConfigurationService()
 
     /**
@@ -284,7 +284,7 @@ class ImportHandler
      */
     public function setWorkflowEngineRegistry(WorkflowEngineRegistry $registry): void
     {
-        $this->workflowEngineRegistry = $registry;
+        $this->workflowRegistry = $registry;
     }//end setWorkflowEngineRegistry()
 
     /**
@@ -296,7 +296,7 @@ class ImportHandler
      */
     public function setDeployedWorkflowMapper(DeployedWorkflowMapper $mapper): void
     {
-        $this->deployedWorkflowMapper = $mapper;
+        $this->deployedWfMapper = $mapper;
     }//end setDeployedWorkflowMapper()
 
     /**
@@ -1594,9 +1594,9 @@ class ImportHandler
         }//end if
 
         // Process OpenConnector integration if available.
-        if ($this->openConnectorConfigurationService !== null) {
+        if ($this->connectorConfigSvc !== null) {
             try {
-                $openConnectorResult = $this->openConnectorConfigurationService->importConfiguration($data);
+                $openConnectorResult = $this->connectorConfigSvc->importConfiguration($data);
                 $result = array_replace_recursive($openConnectorResult, $result);
             } catch (Exception $e) {
                 $this->logger->warning(
@@ -1674,7 +1674,7 @@ class ImportHandler
         array &$deployedWorkflows,
         string $importSource
     ): array {
-        if ($this->workflowEngineRegistry === null || $this->deployedWorkflowMapper === null) {
+        if ($this->workflowRegistry === null || $this->deployedWfMapper === null) {
             $this->logger->warning(
                 message: '[ImportHandler] Workflow import skipped — registry or mapper not configured',
                 context: ['file' => __FILE__, 'line' => __LINE__]
@@ -1701,7 +1701,7 @@ class ImportHandler
 
             $jsonFlags = JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE;
             $hash      = hash('sha256', json_encode($entry['workflow'], $jsonFlags));
-            $existing  = $this->deployedWorkflowMapper->findByNameAndEngine(name: $name, engine: $engine);
+            $existing  = $this->deployedWfMapper->findByNameAndEngine(name: $name, engine: $engine);
 
             if ($existing !== null && $existing->getSourceHash() === $hash) {
                 $result['workflows']['unchanged'][] = $name;
@@ -1709,7 +1709,7 @@ class ImportHandler
                 continue;
             }
 
-            $engines = $this->workflowEngineRegistry->getEnginesByType(engineType: $engine);
+            $engines = $this->workflowRegistry->getEnginesByType(engineType: $engine);
             if (count($engines) === 0) {
                 $result['workflows']['failed'][] = [
                     'name'   => $name,
@@ -1720,7 +1720,7 @@ class ImportHandler
             }
 
             try {
-                $adapter = $this->workflowEngineRegistry->resolveAdapter(engine: $engines[0]);
+                $adapter = $this->workflowRegistry->resolveAdapter(engine: $engines[0]);
 
                 if ($existing !== null) {
                     $engineId = $adapter->updateWorkflow(
@@ -1731,7 +1731,7 @@ class ImportHandler
                     $existing->setSourceHash($hash);
                     $existing->setVersion($existing->getVersion() + 1);
                     $existing->setUpdated(new DateTime());
-                    $this->deployedWorkflowMapper->update($existing);
+                    $this->deployedWfMapper->update($existing);
 
                     $result['workflows']['updated'][] = [
                         'name'    => $name,
@@ -1739,24 +1739,26 @@ class ImportHandler
                         'version' => $existing->getVersion(),
                         'action'  => 'updated',
                     ];
-                    $deployedWorkflows[$name] = $existing;
+                    $deployedWorkflows[$name]         = $existing;
                 } else {
                     $engineId = $adapter->deployWorkflow(workflowDefinition: $entry['workflow']);
-                    $deployed = $this->deployedWorkflowMapper->createFromArray([
-                        'name'             => $name,
-                        'engine'           => $engine,
-                        'engineWorkflowId' => $engineId,
-                        'sourceHash'       => $hash,
-                        'importSource'     => $importSource,
-                        'version'          => 1,
-                    ]);
+                    $deployed = $this->deployedWfMapper->createFromArray(
+                            [
+                                'name'             => $name,
+                                'engine'           => $engine,
+                                'engineWorkflowId' => $engineId,
+                                'sourceHash'       => $hash,
+                                'importSource'     => $importSource,
+                                'version'          => 1,
+                            ]
+                            );
 
                     $result['workflows']['deployed'][] = [
                         'name'   => $name,
                         'engine' => $engine,
                         'action' => 'created',
                     ];
-                    $deployedWorkflows[$name] = $deployed;
+                    $deployedWorkflows[$name]          = $deployed;
                 }//end if
             } catch (Exception $e) {
                 $this->logger->error(
@@ -1790,7 +1792,7 @@ class ImportHandler
         array $deployedWorkflows,
         array $result
     ): array {
-        if ($this->deployedWorkflowMapper === null) {
+        if ($this->deployedWfMapper === null) {
             return $result;
         }
 
@@ -1835,7 +1837,7 @@ class ImportHandler
             $deployed->setAttachedSchema($schemaSlug);
             $deployed->setAttachedEvent($event);
             $deployed->setUpdated(new DateTime());
-            $this->deployedWorkflowMapper->update($deployed);
+            $this->deployedWfMapper->update($deployed);
 
             $msg = "Attached workflow '{$name}' to schema '{$schemaSlug}' on event '{$event}'";
             $this->logger->info(
@@ -2880,7 +2882,7 @@ class ImportHandler
         // GUARD: Prevent recursive dependency checking.
         // When we enable an app, it may boot and load its own config, which would
         // trigger this method again. The guard prevents infinite recursion.
-        if (self::$isDependencyCheckActive === true) {
+        if (self::$isDependCheckActive === true) {
             $this->logger->debug(
                 message: '[ImportHandler] Skipping recursive dependency check (guard flag active)',
                 context: ['file' => __FILE__, 'line' => __LINE__]
@@ -2903,7 +2905,7 @@ class ImportHandler
         );
 
         // Set guard flag before processing.
-        self::$isDependencyCheckActive = true;
+        self::$isDependCheckActive = true;
 
         try {
             foreach ($dependencies as $dependency) {
@@ -3005,7 +3007,7 @@ class ImportHandler
             }//end foreach
         } finally {
             // Always reset guard flag, even if exception occurred.
-            self::$isDependencyCheckActive = false;
+            self::$isDependCheckActive = false;
         }//end try
     }//end ensureDependenciesForSeedData()
 

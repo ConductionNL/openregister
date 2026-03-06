@@ -82,6 +82,8 @@ use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
  * @method void setDeleted(?DateTime $deleted)
  * @method array|null getConfiguration()
  * @method void setConfiguration(?array $configuration)
+ * @method array|null getHooks()
+ * @method void setHooks(?array $hooks)
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
@@ -364,6 +366,13 @@ class Schema extends Entity implements JsonSerializable
     protected ?DateTime $depublished = null;
 
     /**
+     * Hook configurations for schema lifecycle events
+     *
+     * @var array|null Array of hook configuration objects
+     */
+    protected ?array $hooks = [];
+
+    /**
      * Constructor for the Schema class
      *
      * Sets up field types for all properties
@@ -401,6 +410,7 @@ class Schema extends Entity implements JsonSerializable
         $this->addType(fieldName: 'groups', type: 'json');
         $this->addType(fieldName: 'published', type: 'datetime');
         $this->addType(fieldName: 'depublished', type: 'datetime');
+        $this->addType(fieldName: 'hooks', type: 'json');
     }//end __construct()
 
     /**
@@ -1105,12 +1115,12 @@ class Schema extends Entity implements JsonSerializable
             if (in_array($key, ['published', 'depublished', 'created', 'updated', 'deleted'], true) === true) {
                 if (is_string($value) === true && $value !== '') {
                     try {
-                        $value = new \DateTime($value);
+                        $value = new DateTime($value);
                     } catch (\Exception $e) {
                         // If parsing fails, set to null.
                         $value = null;
                     }
-                } else if ($value !== null && ($value instanceof \DateTime) === false) {
+                } else if ($value !== null && ($value instanceof DateTime) === false) {
                     $value = null;
                 }
             }
@@ -1236,6 +1246,7 @@ class Schema extends Entity implements JsonSerializable
             'oneOf'          => $this->oneOf,
             'anyOf'          => $this->anyOf,
             'facets'         => $this->facets,
+            'hooks'          => ($this->hooks ?? []),
         ];
     }//end jsonSerialize()
 

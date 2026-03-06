@@ -142,12 +142,16 @@ use OCA\OpenRegister\Listener\ObjectChangeListener;
 use OCA\OpenRegister\Listener\ObjectCleanupListener;
 use OCA\OpenRegister\Listener\ToolRegistrationListener;
 use OCA\OpenRegister\Listener\WebhookEventListener;
+use OCA\OpenRegister\Listener\HookListener;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\TaskService;
 use OCP\Comments\CommentsEntityEvent;
 use OCP\Files\Events\Node\NodeCreatedEvent;
 use OCP\Files\Events\Node\NodeWrittenEvent;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
+use OCA\OpenRegister\Event\ObjectCreatingEvent;
+use OCA\OpenRegister\Event\ObjectDeletingEvent;
+use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectLockedEvent;
@@ -745,6 +749,14 @@ class Application extends App implements IBootstrap
 
         // ToolRegistrationListener for agent function tools.
         $context->registerEventListener(ToolRegistrationEvent::class, ToolRegistrationListener::class);
+
+        // HookListener for schema hook execution on lifecycle events.
+        $context->registerEventListener(ObjectCreatingEvent::class, HookListener::class);
+        $context->registerEventListener(ObjectUpdatingEvent::class, HookListener::class);
+        $context->registerEventListener(ObjectDeletingEvent::class, HookListener::class);
+        $context->registerEventListener(ObjectCreatedEvent::class, HookListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, HookListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class, HookListener::class);
 
         // WebhookEventListener for webhook delivery.
         $context->registerEventListener(ObjectCreatedEvent::class, WebhookEventListener::class);

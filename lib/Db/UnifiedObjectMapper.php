@@ -1224,7 +1224,6 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         // Each schema belongs to a specific register; find the correct register for each schema.
         $registerSchemaPairs = [];
         $totalCount          = 0;
-        $ignoredFilters      = [];
 
         foreach ($schemaIds as $schemaId) {
             try {
@@ -1643,7 +1642,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
 
         // Check if this is a global relations search (no register/schema but _relations_contains provided).
         // In this case, search across ALL magic tables to find objects that reference the given UUID.
-        $relationsContains       = $searchQuery['_relations_contains'] ?? null;
+        $relationsContains = $searchQuery['_relations_contains'] ?? null;
         $isGlobalRelSearch = $registerId === null
             && $schemaId === null
             && $relationsContains !== null

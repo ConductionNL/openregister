@@ -464,7 +464,7 @@ class MagicRbacHandler
                     if (is_array($operand) === true && empty($operand) === false) {
                         return $qb->expr()->in(
                             "t.{$columnName}",
-                            $qb->createNamedParameter($operand, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)
+                            $qb->createNamedParameter($operand, IQueryBuilder::PARAM_STR_ARRAY)
                         );
                     }
                     break;
@@ -473,7 +473,7 @@ class MagicRbacHandler
                     if (is_array($operand) === true && empty($operand) === false) {
                         return $qb->expr()->notIn(
                             "t.{$columnName}",
-                            $qb->createNamedParameter($operand, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)
+                            $qb->createNamedParameter($operand, IQueryBuilder::PARAM_STR_ARRAY)
                         );
                     }
                     break;

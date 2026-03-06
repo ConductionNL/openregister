@@ -551,7 +551,7 @@ class MariaDbSearchHandler
      */
     private function applyInClause(IQueryBuilder $queryBuilder, string $qualifiedField, array $value): void
     {
-        $param = $queryBuilder->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY);
+        $param = $queryBuilder->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY);
         $queryBuilder->andWhere($queryBuilder->expr()->in($qualifiedField, $param));
     }//end applyInClause()
 
@@ -831,7 +831,7 @@ class MariaDbSearchHandler
             $queryBuilder->andWhere(
                 $queryBuilder->expr()->in(
                     $qualifiedField,
-                    $queryBuilder->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)
+                    $queryBuilder->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY)
                 )
             );
             return;

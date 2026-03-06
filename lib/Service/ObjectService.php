@@ -1370,7 +1370,7 @@ class ObjectService
 
             // Try to parse as datetime and extract just the date part.
             try {
-                $object[$propertyName] = (new \DateTime($object[$propertyName]))->format('Y-m-d');
+                $object[$propertyName] = (new DateTime($object[$propertyName]))->format('Y-m-d');
             } catch (\Exception $e) {
                 // Leave the original value; validation will catch invalid formats.
             }
@@ -2364,7 +2364,7 @@ class ObjectService
      */
     public function publish(
         string $uuid=null,
-        ?\DateTime $date=null,
+        ?DateTime $date=null,
         bool $_rbac=true,
         bool $_multitenancy=true
     ): ObjectEntity {
@@ -2394,7 +2394,7 @@ class ObjectService
      */
     public function depublish(
         string $uuid=null,
-        ?\DateTime $date=null,
+        ?DateTime $date=null,
         bool $_rbac=true,
         bool $_multitenancy=true
     ): ObjectEntity {
@@ -2643,7 +2643,7 @@ class ObjectService
      */
     public function publishObjects(
         array $uuids=[],
-        \DateTime|bool $datetime=true,
+        DateTime|bool $datetime=true,
         bool $_rbac=true,
         bool $_multitenancy=true
     ): array {
@@ -2681,7 +2681,7 @@ class ObjectService
      */
     public function depublishObjects(
         array $uuids=[],
-        \DateTime|bool $datetime=true,
+        DateTime|bool $datetime=true,
         bool $_rbac=true,
         bool $_multitenancy=true
     ): array {

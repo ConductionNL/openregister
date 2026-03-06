@@ -1146,7 +1146,7 @@ class AuditTrailMapper extends QBMapper
             $qb = $this->db->getQueryBuilder();
 
             $stringIds = array_map('strval', $schemaIds);
-            $paramType = \Doctrine\DBAL\Connection::PARAM_STR_ARRAY;
+            $paramType = IQueryBuilder::PARAM_STR_ARRAY;
 
             $qb->select(
                 'schema',

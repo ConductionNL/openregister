@@ -23,6 +23,7 @@ use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use Psr\Log\LoggerInterface;
+use Exception;
 
 /**
  * Handles validation operations for ObjectService.
@@ -481,7 +482,7 @@ class ValidationHandler
                 $objectService = $saveCallback[0] ?? null;
 
                 if ($objectService === null || method_exists($objectService, 'saveObjects') === false) {
-                    throw new \Exception('Cannot access bulk save method');
+                    throw new Exception('Cannot access bulk save method');
                 }
 
                 // Use bulk saveObjects method for this chunk.

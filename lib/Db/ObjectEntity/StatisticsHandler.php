@@ -124,7 +124,7 @@ class StatisticsHandler
                 if (is_array($registerId) === true) {
                     // Convert array of integers to array of strings.
                     $stringIds = array_map('strval', $registerId);
-                    $paramType = \Doctrine\DBAL\Connection::PARAM_STR_ARRAY;
+                    $paramType = IQueryBuilder::PARAM_STR_ARRAY;
                     $param     = $qb->createNamedParameter($stringIds, $paramType);
                     $qb->andWhere($qb->expr()->in('register', $param));
                 }
@@ -141,7 +141,7 @@ class StatisticsHandler
                 if (is_array($schemaId) === true) {
                     // Convert array of integers to array of strings.
                     $stringIds = array_map('strval', $schemaId);
-                    $paramType = \Doctrine\DBAL\Connection::PARAM_STR_ARRAY;
+                    $paramType = IQueryBuilder::PARAM_STR_ARRAY;
                     $param     = $qb->createNamedParameter($stringIds, $paramType);
                     $qb->andWhere($qb->expr()->in('schema', $param));
                 }
@@ -488,7 +488,7 @@ class StatisticsHandler
             $publishedCondition = $part1.$part2;
 
             $stringIds = array_map('strval', $schemaIds);
-            $paramType = \Doctrine\DBAL\Connection::PARAM_STR_ARRAY;
+            $paramType = IQueryBuilder::PARAM_STR_ARRAY;
 
             $qb->select(
                 'schema',

@@ -590,7 +590,7 @@ class EntityRecognitionHandler
     {
         try {
             // Get OpenAnonymiser settings.
-            $fileSettings           = $this->settingsService->getFileSettingsOnly();
+            $fileSettings = $this->settingsService->getFileSettingsOnly();
             $anonEndpoint = $fileSettings['openAnonymiserApiEndpoint'] ?? '';
 
             if (empty($anonEndpoint) === true) {

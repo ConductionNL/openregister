@@ -272,8 +272,8 @@ class MagicSearchHandler
         // Public schemas bypass multitenancy by default, UNLESS the user explicitly requests
         // multitenancy with _multi=true. This allows public data to be visible across orgs
         // while still giving users the option to filter by their own organisation.
-        $mtExplicitRaw = $query['_multitenancy_explicit'] ?? false;
-        $multitenancyExplicit    = $mtExplicitRaw === true
+        $mtExplicitRaw        = $query['_multitenancy_explicit'] ?? false;
+        $multitenancyExplicit = $mtExplicitRaw === true
             || $mtExplicitRaw === 'true'
             || $mtExplicitRaw === '1'
             || $mtExplicitRaw === 1;
@@ -665,7 +665,7 @@ class MagicSearchHandler
                 $qb->andWhere(
                     $qb->expr()->in(
                         "t.{$columnName}",
-                        $qb->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)
+                        $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY)
                     )
                 );
                 continue;
@@ -720,7 +720,7 @@ class MagicSearchHandler
                     $qb->andWhere(
                         $qb->expr()->in(
                             "t.{$columnName}",
-                            $qb->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)
+                            $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY)
                         )
                     );
                     continue;
@@ -839,8 +839,8 @@ class MagicSearchHandler
     private function applyIdFilters(IQueryBuilder $qb, array $ids): void
     {
         $orX = $qb->expr()->orX();
-        $orX->add($qb->expr()->in('t._uuid', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
-        $orX->add($qb->expr()->in('t._slug', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+        $orX->add($qb->expr()->in('t._uuid', $qb->createNamedParameter($ids, IQueryBuilder::PARAM_STR_ARRAY)));
+        $orX->add($qb->expr()->in('t._slug', $qb->createNamedParameter($ids, IQueryBuilder::PARAM_STR_ARRAY)));
         $qb->andWhere($orX);
     }//end applyIdFilters()
 
@@ -1437,7 +1437,7 @@ class MagicSearchHandler
                 // This handles cases where schema is incorrectly defined as string but
                 // the actual data is array/object, matching MagicMapper::convertRowToObjectEntity behavior.
                 if (is_string($value) === true) {
-                    $trimmed = trim($value);
+                    $trimmed          = trim($value);
                     $startsWithArrObj = (
                         str_starts_with($trimmed, '[') === true || str_starts_with($trimmed, '{') === true
                     );

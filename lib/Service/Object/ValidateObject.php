@@ -957,7 +957,7 @@ class ValidateObject
         ) {
             // Ensure items object exists.
             if (($cleanedProperty->items ?? null) === null) {
-                $cleanedProperty->items       = new \stdClass();
+                $cleanedProperty->items       = new stdClass();
                 $cleanedProperty->items->type = 'string';
             }
 
@@ -985,7 +985,7 @@ class ValidateObject
             if (empty($oneOfArray) === false) {
                 // Ensure items object exists.
                 if (($cleanedProperty->items ?? null) === null) {
-                    $cleanedProperty->items = new \stdClass();
+                    $cleanedProperty->items = new stdClass();
                 }
 
                 // Move oneOf to items (only if items doesn't already have oneOf).

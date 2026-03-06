@@ -21,6 +21,21 @@ parameters:
 			path: lib/BackgroundJob/CronFileTextExtractionJob.php
 
 		-
+			message: "#^Call to protected method findEntity\\(\\) of class OCP\\\\AppFramework\\\\Db\\\\QBMapper\\<OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\>\\.$#"
+			count: 1
+			path: lib/BackgroundJob/HookRetryJob.php
+
+		-
+			message: "#^Method OCP\\\\AppFramework\\\\Db\\\\QBMapper\\<OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\>\\:\\:findEntity\\(\\) invoked with 2 parameters, 1 required\\.$#"
+			count: 1
+			path: lib/BackgroundJob/HookRetryJob.php
+
+		-
+			message: "#^Parameter \\#1 \\$query of method OCP\\\\AppFramework\\\\Db\\\\QBMapper\\<OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\>\\:\\:findEntity\\(\\) expects OCP\\\\DB\\\\QueryBuilder\\\\IQueryBuilder, string given\\.$#"
+			count: 1
+			path: lib/BackgroundJob/HookRetryJob.php
+
+		-
 			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\Register\\:\\:getName\\(\\)\\.$#"
 			count: 1
 			path: lib/Command/MigrateStorageCommand.php
@@ -2841,16 +2856,6 @@ parameters:
 			path: lib/Db/MagicMapper.php
 
 		-
-			message: "#^Call to an undefined method Doctrine\\\\DBAL\\\\Platforms\\\\AbstractPlatform\\:\\:getName\\(\\)\\.$#"
-			count: 3
-			path: lib/Db/MagicMapper.php
-
-		-
-			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\:\\:setRelevance\\(\\)\\.$#"
-			count: 1
-			path: lib/Db/MagicMapper.php
-
-		-
 			message: "#^Call to an undefined method OCP\\\\IDBConnection\\:\\:quoteIdentifier\\(\\)\\.$#"
 			count: 1
 			path: lib/Db/MagicMapper.php
@@ -2971,11 +2976,6 @@ parameters:
 			path: lib/Db/MagicMapper.php
 
 		-
-			message: "#^Call to an undefined method Doctrine\\\\DBAL\\\\Platforms\\\\AbstractPlatform\\:\\:getName\\(\\)\\.$#"
-			count: 2
-			path: lib/Db/MagicMapper/MagicBulkHandler.php
-
-		-
 			message: "#^Property OCA\\\\OpenRegister\\\\Db\\\\MagicMapper\\\\MagicBulkHandler\\:\\:\\$eventDispatcher is never read, only written\\.$#"
 			count: 1
 			path: lib/Db/MagicMapper/MagicBulkHandler.php
@@ -3013,21 +3013,6 @@ parameters:
 		-
 			message: "#^Access to undefined constant Doctrine\\\\DBAL\\\\Connection\\:\\:PARAM_STR_ARRAY\\.$#"
 			count: 4
-			path: lib/Db/MagicMapper/MagicSearchHandler.php
-
-		-
-			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\:\\:setDepublished\\(\\)\\.$#"
-			count: 1
-			path: lib/Db/MagicMapper/MagicSearchHandler.php
-
-		-
-			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\:\\:setGroups\\(\\)\\.$#"
-			count: 2
-			path: lib/Db/MagicMapper/MagicSearchHandler.php
-
-		-
-			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\:\\:setRelevance\\(\\)\\.$#"
-			count: 1
 			path: lib/Db/MagicMapper/MagicSearchHandler.php
 
 		-
@@ -3084,11 +3069,6 @@ parameters:
 			message: "#^Parameter \\$entity of method OCP\\\\AppFramework\\\\Db\\\\QBMapper\\<OCA\\\\OpenRegister\\\\Db\\\\Mapping\\>\\:\\:delete\\(\\) expects OCA\\\\OpenRegister\\\\Db\\\\Mapping, OCP\\\\AppFramework\\\\Db\\\\Entity given\\.$#"
 			count: 1
 			path: lib/Db/MappingMapper.php
-
-		-
-			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\:\\:getGroups\\(\\)\\.$#"
-			count: 1
-			path: lib/Db/ObjectEntity.php
 
 		-
 			message: "#^Variable \\$object on left side of \\?\\? always exists and is not nullable\\.$#"
@@ -3174,16 +3154,6 @@ parameters:
 			message: "#^Access to undefined constant Doctrine\\\\DBAL\\\\Connection\\:\\:PARAM_STR_ARRAY\\.$#"
 			count: 3
 			path: lib/Db/ObjectEntity/StatisticsHandler.php
-
-		-
-			message: "#^Call to an undefined method Doctrine\\\\DBAL\\\\Platforms\\\\AbstractPlatform\\:\\:getName\\(\\)\\.$#"
-			count: 2
-			path: lib/Db/ObjectEntity/StatisticsHandler.php
-
-		-
-			message: "#^Call to an undefined method Doctrine\\\\DBAL\\\\Platforms\\\\AbstractPlatform\\:\\:getName\\(\\)\\.$#"
-			count: 1
-			path: lib/Db/ObjectEntityMapper.php
 
 		-
 			message: "#^Call to an undefined method OCP\\\\AppFramework\\\\Db\\\\Entity\\:\\:getObject\\(\\)\\.$#"
@@ -3316,11 +3286,6 @@ parameters:
 			path: lib/Db/ObjectHandlers/MetaDataFacetHandler.php
 
 		-
-			message: "#^Call to an undefined method Doctrine\\\\DBAL\\\\Platforms\\\\AbstractPlatform\\:\\:getName\\(\\)\\.$#"
-			count: 2
-			path: lib/Db/ObjectHandlers/OptimizedBulkOperations.php
-
-		-
 			message: "#^Comparison operation \"\\>\" between 1 and 10000 is always false\\.$#"
 			count: 1
 			path: lib/Db/ObjectHandlers/OptimizedBulkOperations.php
@@ -3344,11 +3309,6 @@ parameters:
 			message: "#^Call to an undefined static method OCP\\\\AppFramework\\\\Db\\\\Entity\\:\\:setActive\\(\\)\\.$#"
 			count: 1
 			path: lib/Db/Organisation.php
-
-		-
-			message: "#^Call to an undefined method Doctrine\\\\DBAL\\\\Platforms\\\\AbstractPlatform\\:\\:getName\\(\\)\\.$#"
-			count: 1
-			path: lib/Db/OrganisationMapper.php
 
 		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\OrganisationMapper\\:\\:findAll\\(\\) has invalid return type OCA\\\\OpenRegister\\\\Db\\\\OCA\\\\OpenRegister\\\\Db\\\\Organisation\\.$#"
@@ -3566,11 +3526,6 @@ parameters:
 			path: lib/Db/SchemaMapper.php
 
 		-
-			message: "#^Call to an undefined method Doctrine\\\\DBAL\\\\Platforms\\\\AbstractPlatform\\:\\:getName\\(\\)\\.$#"
-			count: 3
-			path: lib/Db/SearchTrailMapper.php
-
-		-
 			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\SearchTrail\\:\\:setExecutionType\\(\\)\\.$#"
 			count: 1
 			path: lib/Db/SearchTrailMapper.php
@@ -3612,6 +3567,11 @@ parameters:
 
 		-
 			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\SearchTrail\\:\\:setSortParameters\\(\\)\\.$#"
+			count: 1
+			path: lib/Db/SearchTrailMapper.php
+
+		-
+			message: "#^Class Doctrine\\\\DBAL\\\\Platforms\\\\SQLitePlatform referenced with incorrect case\\: Doctrine\\\\DBAL\\\\Platforms\\\\SqlitePlatform\\.$#"
 			count: 1
 			path: lib/Db/SearchTrailMapper.php
 
@@ -3781,11 +3741,6 @@ parameters:
 			path: lib/Db/ViewMapper.php
 
 		-
-			message: "#^Call to an undefined method Doctrine\\\\DBAL\\\\Platforms\\\\AbstractPlatform\\:\\:getName\\(\\)\\.$#"
-			count: 1
-			path: lib/Db/WebhookLogMapper.php
-
-		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\WebhookLogMapper\\:\\:findAll\\(\\) has invalid return type OCA\\\\OpenRegister\\\\Db\\\\OCA\\\\OpenRegister\\\\Db\\\\WebhookLog\\.$#"
 			count: 1
 			path: lib/Db/WebhookLogMapper.php
@@ -3876,14 +3831,14 @@ parameters:
 			path: lib/EventListener/AbstractNodesFolderEventListener.php
 
 		-
+			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\Schema\\:\\:getHooks\\(\\)\\.$#"
+			count: 1
+			path: lib/Listener/HookListener.php
+
+		-
 			message: "#^Strict comparison using \\=\\=\\= between int and null will always evaluate to false\\.$#"
 			count: 1
 			path: lib/Listener/ObjectChangeListener.php
-
-		-
-			message: "#^Method Doctrine\\\\DBAL\\\\Schema\\\\Table\\:\\:dropColumn\\(\\) invoked with 2 parameters, 1 required\\.$#"
-			count: 1
-			path: lib/Migration/Version1Date20241022135300.php
 
 		-
 			message: "#^Property OCA\\\\OpenRegister\\\\Migration\\\\Version1Date20250102000001\\:\\:\\$connection is never read, only written\\.$#"
@@ -3959,11 +3914,6 @@ parameters:
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\ChatService\\:\\:\\$toolHandler is never read, only written\\.$#"
 			count: 1
 			path: lib/Service/ChatService.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\Configuration\\\\ExportHandler\\:\\:\\$logger is never read, only written\\.$#"
-			count: 1
-			path: lib/Service/Configuration/ExportHandler.php
 
 		-
 			message: "#^Constant OCA\\\\OpenRegister\\\\Service\\\\Configuration\\\\GitHubHandler\\:\\:SEARCH_RATE_LIMIT is unused\\.$#"
@@ -4646,6 +4596,26 @@ parameters:
 			path: lib/Service/FileService.php
 
 		-
+			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\Schema\\:\\:getHooks\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/HookExecutor.php
+
+		-
+			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Event\\\\ObjectDeletingEvent\\:\\:setErrors\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/HookExecutor.php
+
+		-
+			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Event\\\\ObjectDeletingEvent\\:\\:setModifiedData\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/HookExecutor.php
+
+		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\HookExecutor\\:\\:\\$schemaMapper is never read, only written\\.$#"
+			count: 1
+			path: lib/Service/HookExecutor.php
+
+		-
 			message: "#^Constant OCA\\\\OpenRegister\\\\Service\\\\ImportService\\:\\:DEFAULT_CHUNK_SIZE is unused\\.$#"
 			count: 1
 			path: lib/Service/ImportService.php
@@ -4741,16 +4711,6 @@ parameters:
 			path: lib/Service/Index/DocumentBuilder.php
 
 		-
-			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Service\\\\Index\\\\SearchBackendInterface\\:\\:getFileIndexStats\\(\\)\\.$#"
-			count: 1
-			path: lib/Service/Index/FileHandler.php
-
-		-
-			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Service\\\\Index\\\\SearchBackendInterface\\:\\:indexFiles\\(\\)\\.$#"
-			count: 1
-			path: lib/Service/Index/FileHandler.php
-
-		-
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\Index\\\\ObjectHandler\\:\\:\\$registerMapper is never read, only written\\.$#"
 			count: 1
 			path: lib/Service/Index/ObjectHandler.php
@@ -4759,11 +4719,6 @@ parameters:
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\Index\\\\ObjectHandler\\:\\:\\$schemaMapper is never read, only written\\.$#"
 			count: 1
 			path: lib/Service/Index/ObjectHandler.php
-
-		-
-			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Service\\\\Index\\\\SearchBackendInterface\\:\\:fixMismatchedFields\\(\\)\\.$#"
-			count: 1
-			path: lib/Service/Index/SchemaHandler.php
 
 		-
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\Index\\\\SchemaHandler\\:\\:\\$config is never read, only written\\.$#"
@@ -5241,11 +5196,6 @@ parameters:
 			path: lib/Service/Object/PublishHandler.php
 
 		-
-			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\:\\:setDepublished\\(\\)\\.$#"
-			count: 2
-			path: lib/Service/Object/PublishHandler.php
-
-		-
 			message: "#^Call to method getSchema\\(\\) on an unknown class OCA\\\\OpenRegister\\\\Db\\\\OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\.$#"
 			count: 1
 			path: lib/Service/Object/QueryHandler.php
@@ -5491,11 +5441,6 @@ parameters:
 			path: lib/Service/Object/RevertHandler.php
 
 		-
-			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\:\\:setDepublished\\(\\)\\.$#"
-			count: 3
-			path: lib/Service/Object/SaveObject.php
-
-		-
 			message: "#^Dead catch \\- Exception is never thrown in the try block\\.$#"
 			count: 1
 			path: lib/Service/Object/SaveObject.php
@@ -5596,11 +5541,6 @@ parameters:
 			path: lib/Service/Object/SaveObject/RelationCascadeHandler.php
 
 		-
-			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\:\\:getDepublished\\(\\)\\.$#"
-			count: 2
-			path: lib/Service/Object/SaveObjects.php
-
-		-
 			message: "#^Call to method DateTime\\:\\:format\\(\\) on a separate line has no effect\\.$#"
 			count: 1
 			path: lib/Service/Object/SaveObjects.php
@@ -5684,11 +5624,6 @@ parameters:
 			message: "#^Variable \\$transformedObjects on left side of \\?\\? always exists and is not nullable\\.$#"
 			count: 3
 			path: lib/Service/Object/SaveObjects/ChunkProcessingHandler.php
-
-		-
-			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\:\\:getDepublished\\(\\)\\.$#"
-			count: 2
-			path: lib/Service/Object/SaveObjects/PreparationHandler.php
 
 		-
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\Object\\\\SaveObjects\\\\PreparationHandler\\:\\:\\$userSession is never read, only written\\.$#"
@@ -5789,11 +5724,6 @@ parameters:
 			message: "#^Unknown parameter \\$validation in call to method stdClass\\:\\:saveObjects\\(\\)\\.$#"
 			count: 1
 			path: lib/Service/Object/ValidationHandler.php
-
-		-
-			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\:\\:getDepublished\\(\\)\\.$#"
-			count: 2
-			path: lib/Service/ObjectService.php
 
 		-
 			message: "#^Else branch is unreachable because previous condition is always true\\.$#"
@@ -6239,11 +6169,6 @@ parameters:
 			message: "#^Offset 'mtime' on array\\{fileid\\: int, storage\\: int, path\\: string, path_hash\\: string, parent\\: int, name\\: string, mimetype\\: string, mimepart\\: string, \\.\\.\\.\\} on left side of \\?\\? always exists and is not nullable\\.$#"
 			count: 1
 			path: lib/Service/TextExtraction/FileHandler.php
-
-		-
-			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\:\\:getOrganization\\(\\)\\.$#"
-			count: 5
-			path: lib/Service/TextExtraction/ObjectHandler.php
 
 		-
 			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\Register\\:\\:getName\\(\\)\\.$#"

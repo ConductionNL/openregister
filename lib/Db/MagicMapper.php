@@ -197,7 +197,7 @@ class MagicMapper
      *
      * @var array<string, string>
      */
-    private static array $calculatedVersionCache = [];
+    private static array $calcVersionCache = [];
 
     /**
      * Cache for column existence checks to avoid repeated information_schema queries.
@@ -1614,7 +1614,7 @@ class MagicMapper
         unset(self::$tableExistsCache[$cacheKey]);
         unset(self::$regSchemaTableCache[$cacheKey]);
         unset(self::$tableStructureCache[$cacheKey]);
-        unset(self::$calculatedVersionCache[$cacheKey]);
+        unset(self::$calcVersionCache[$cacheKey]);
 
         $this->logger->debug(
             message: '[MagicMapper] Invalidated table cache',
@@ -1751,8 +1751,8 @@ class MagicMapper
                 $this->createTableForRegisterSchema(register: $register, schema: $schema);
 
                 // Get the columns that were created.
-                $requiredColumns        = $this->buildTableColumnsFromSchema(schema: $schema);
-                $metadataColumns        = [
+                $requiredColumns  = $this->buildTableColumnsFromSchema(schema: $schema);
+                $metadataColumns  = [
                     'id',
                     'uuid',
                     'register',
@@ -1765,7 +1765,7 @@ class MagicMapper
                     'created',
                     'version',
                 ];
-                $metadataCount          = count(array_intersect(array_keys($requiredColumns), $metadataColumns));
+                $metadataCount    = count(array_intersect(array_keys($requiredColumns), $metadataColumns));
                 $regularPropCount = count($requiredColumns) - $metadataCount;
 
                 // Return statistics for newly created table.
@@ -3308,14 +3308,14 @@ class MagicMapper
                     if ($propertyFormat === 'date') {
                         // Schema expects date-only (Y-m-d), strip time component.
                         try {
-                            $value = (new \DateTime($value))->format('Y-m-d');
+                            $value = (new DateTime($value))->format('Y-m-d');
                         } catch (\Exception $e) {
                             // Keep original value if parsing fails.
                         }
                     } else if ($propertyFormat === 'date-time') {
                         // Schema expects full ISO 8601 datetime.
                         try {
-                            $value = (new \DateTime($value))->format('c');
+                            $value = (new DateTime($value))->format('c');
                         } catch (\Exception $e) {
                             // Keep original value if parsing fails.
                         }
@@ -3589,8 +3589,8 @@ class MagicMapper
         $cacheKey   = $this->getCacheKey(registerId: $registerId, schemaId: $schemaId);
 
         // Check cache first to avoid expensive json_encode + md5.
-        if (isset(self::$calculatedVersionCache[$cacheKey]) === true) {
-            return self::$calculatedVersionCache[$cacheKey];
+        if (isset(self::$calcVersionCache[$cacheKey]) === true) {
+            return self::$calcVersionCache[$cacheKey];
         }
 
         $combinedData = [
@@ -3611,7 +3611,7 @@ class MagicMapper
         $version = md5(json_encode($combinedData));
 
         // Cache for future calls within this request.
-        self::$calculatedVersionCache[$cacheKey] = $version;
+        self::$calcVersionCache[$cacheKey] = $version;
 
         return $version;
     }//end calculateRegisterSchemaVersion()
@@ -3696,8 +3696,8 @@ class MagicMapper
             // Handle _ids filter specially (UUID/slug lookup).
             if ($key === '_ids' && is_array($value) === true && empty($value) === false) {
                 $orX = $qb->expr()->orX();
-                $orX->add($qb->expr()->in('_uuid', $qb->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
-                $orX->add($qb->expr()->in('_slug', $qb->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+                $orX->add($qb->expr()->in('_uuid', $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY)));
+                $orX->add($qb->expr()->in('_slug', $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY)));
                 $qb->andWhere($orX);
                 continue;
             }
@@ -4500,10 +4500,10 @@ class MagicMapper
     {
         if ($registerId === null || $schemaId === null) {
             // Clear all caches.
-            self::$tableExistsCache       = [];
-            self::$regSchemaTableCache    = [];
-            self::$tableStructureCache    = [];
-            self::$calculatedVersionCache = [];
+            self::$tableExistsCache    = [];
+            self::$regSchemaTableCache = [];
+            self::$tableStructureCache = [];
+            self::$calcVersionCache    = [];
 
             $this->logger->debug(
                 message: '[MagicMapper] Cleared all MagicMapper caches',
@@ -5092,8 +5092,8 @@ class MagicMapper
                 continue;
             }
 
-            $registerId = $tableInfo['registerId'];
-            $schemaId   = $tableInfo['schemaId'];
+            $registerId    = $tableInfo['registerId'];
+            $schemaId      = $tableInfo['schemaId'];
             $bareTableName = str_replace($prefix, '', $fullTableName);
 
             try {
@@ -5284,8 +5284,8 @@ class MagicMapper
                 continue;
             }
 
-            $registerId = $tableInfo['registerId'];
-            $schemaId   = $tableInfo['schemaId'];
+            $registerId    = $tableInfo['registerId'];
+            $schemaId      = $tableInfo['schemaId'];
             $bareTableName = str_replace($prefix, '', $fullTableName);
 
             try {
@@ -5755,7 +5755,7 @@ class MagicMapper
             // Prepare the deletion metadata as JSONB.
             $deletedMetadata = json_encode(
                     [
-                        'time'      => (new \DateTime())->format('Y-m-d H:i:s'),
+                        'time'      => (new DateTime())->format('Y-m-d H:i:s'),
                         'user'      => $this->userSession->getUser()?->getUID() ?? 'system',
                         'reason'    => 'Bulk soft delete via deleteObjectsBySchema',
                         'retention' => 30,
@@ -6319,7 +6319,7 @@ class MagicMapper
         // gemeente/samenwerking contact persons to the public internet,.
         // while still allowing published objects (e.g. diensten) to appear.
         // in inverse relationship lookups like _extend=diensten on modules.
-        $now = (new \DateTime())->format(format: 'Y-m-d H:i:s');
+        $now = (new DateTime())->format(format: 'Y-m-d H:i:s');
         return [
             " AND (_organisation IS NULL OR (_published IS NOT NULL AND _published <= ? AND (_depublished IS NULL OR _depublished > ?)))",
             [$now, $now],

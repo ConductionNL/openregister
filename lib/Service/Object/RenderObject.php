@@ -1970,12 +1970,6 @@ class RenderObject
                 continue;
             }
 
-            // Resolve schema reference.
-            $schemaId = $entity->getSchema();
-            if ($targetSchema !== null) {
-                $schemaId = $this->resolveSchemaReference(schemaRef: $targetSchema);
-            }
-
             // Always use $propertyName as the target property to populate.
             $targetProperty = $propertyName;
 

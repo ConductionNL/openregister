@@ -88,6 +88,7 @@
                 <referencedClass name="OCA\OpenRegister\Db\Exception"/>
             </errorLevel>
         </UndefinedClass>
+        <InaccessibleMethod errorLevel="suppress"/>
         <UndefinedMagicMethod errorLevel="suppress"/>
         <UnusedClass errorLevel="suppress"/>
         <PossiblyUnusedMethod errorLevel="suppress"/>

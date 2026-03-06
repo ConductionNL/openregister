@@ -54,7 +54,7 @@ class FileChangeListener implements IEventListener
      *
      * @var string|null
      */
-    private static ?string $cachedExtractionScope = null;
+    private static ?string $cachedExtractScope = null;
 
     /**
      * Cached extraction mode.
@@ -114,18 +114,18 @@ class FileChangeListener implements IEventListener
             || strpos($filePath, '/Open Registers/') !== false;
 
         // Load extraction scope once per request (cached).
-        if (self::$cachedExtractionScope === null) {
+        if (self::$cachedExtractScope === null) {
             try {
                 $fileSettings = $this->settingsService->getFileSettingsOnly();
-                self::$cachedExtractionScope = $fileSettings['extractionScope'] ?? 'objects';
-                self::$cachedExtractionMode  = $fileSettings['extractionMode'] ?? 'background';
+                self::$cachedExtractScope   = $fileSettings['extractionScope'] ?? 'objects';
+                self::$cachedExtractionMode = $fileSettings['extractionMode'] ?? 'background';
             } catch (\Exception $e) {
-                self::$cachedExtractionScope = 'objects';
-                self::$cachedExtractionMode  = 'background';
+                self::$cachedExtractScope   = 'objects';
+                self::$cachedExtractionMode = 'background';
             }
         }
 
-        $extractionScope = self::$cachedExtractionScope;
+        $extractionScope = self::$cachedExtractScope;
 
         // Skip early based on scope — no DB reads needed for these checks.
         if ($extractionScope === 'none') {

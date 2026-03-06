@@ -847,7 +847,7 @@ class SaveObject
                 // Add this object's UUID to the related object's relations.
                 $relatedRelations[] = $savedUuid;
                 $relatedObject->setRelations($relatedRelations);
-                $relatedObject->setUpdated(new \DateTime());
+                $relatedObject->setUpdated(new DateTime());
 
                 // Save the related object.
                 $this->objectEntityMapper->update($relatedObject);
@@ -2148,7 +2148,7 @@ class SaveObject
             return $data;
         }
 
-        foreach ($properties as $propertyName => $propertyDef) {
+        foreach ($properties as $propertyName => $_propertyDef) {
             if (array_key_exists($propertyName, $data) === false) {
                 $data[$propertyName] = null;
             }

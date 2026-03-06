@@ -182,9 +182,7 @@ class MagicBulkHandler
 
             // Map ALL object properties to columns (camelCase → snake_case).
             // Properties can be at top level OR in 'object' key (structured format).
-            $propertySource   = $object['object'] ?? $object;
-            $schemaProperties = $schema->getProperties() ?? [];
-
+            $propertySource = $object['object'] ?? $object;
             foreach ($propertySource as $propertyName => $value) {
                 // Skip metadata (already handled) and @self.
                 if ($propertyName === '@self' || str_starts_with($propertyName, '_') === true) {

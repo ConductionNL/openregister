@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use DateTime;
 use Exception;
 use OCA\DAV\CalDAV\CalDavBackend;
 use OCP\IUserSession;
@@ -186,7 +187,7 @@ class TaskService
         $lines[] = 'PRIORITY:'.$priority;
 
         if (empty($data['due']) === false) {
-            $dueDate = new \DateTime($data['due']);
+            $dueDate = new DateTime($data['due']);
             $lines[] = 'DUE:'.$dueDate->format('Ymd\THis\Z');
         }
 
@@ -266,7 +267,7 @@ class TaskService
             if (empty($data['due']) === true) {
                 unset($vtodo->DUE);
             } else {
-                $vtodo->DUE = new \DateTime($data['due']);
+                $vtodo->DUE = new DateTime($data['due']);
             }
         }
 
