@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\FileTextMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\DeployedWorkflowMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Service\SearchTrailService;
@@ -47,6 +48,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\MySQLJsonService;
 use OCA\OpenRegister\Service\ConfigurationService;
+use OCA\OpenRegister\Service\WorkflowEngineRegistry;
 use OCA\OpenRegister\Service\UserService;
 use OCA\OpenRegister\Service\Objects\DataManipulationHandler;
 use OCA\OpenRegister\Service\Objects\DeleteObject;
@@ -504,6 +506,10 @@ class Application extends App implements IBootstrap
             // This ensures objects go to the magic mapper table when the register is configured for it.
             $importHandler->setUnifiedObjectMapper($container->get(UnifiedObjectMapper::class));
 
+            // Inject workflow dependencies for deploying workflows during import.
+            $importHandler->setWorkflowEngineRegistry($container->get(WorkflowEngineRegistry::class));
+            $importHandler->setDeployedWorkflowMapper($container->get(DeployedWorkflowMapper::class));
+
             return $importHandler;
         };
 
@@ -514,6 +520,25 @@ class Application extends App implements IBootstrap
         $context->registerService(
             'OCA\OpenRegister\Service\Configuration\ImportHandler',
             $importHandlerFactory
+        );
+
+        // Register ExportHandler with workflow dependencies.
+        $context->registerService(
+            ConfigurationExportHandler::class,
+            function (ContainerInterface $container): ConfigurationExportHandler {
+                $exportHandler = new ConfigurationExportHandler(
+                    schemaMapper: $container->get(SchemaMapper::class),
+                    registerMapper: $container->get(RegisterMapper::class),
+                    objectEntityMapper: $container->get(ObjectEntityMapper::class),
+                    configurationMapper: $container->get('OCA\OpenRegister\Db\ConfigurationMapper'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+
+                $exportHandler->setWorkflowEngineRegistry($container->get(WorkflowEngineRegistry::class));
+                $exportHandler->setDeployedWorkflowMapper($container->get(DeployedWorkflowMapper::class));
+
+                return $exportHandler;
+            }
         );
 
         $context->registerService(

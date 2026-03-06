@@ -26,7 +26,10 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
+use OCA\OpenRegister\Db\DeployedWorkflowMapper;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Service\WorkflowEngineRegistry;
+use Exception;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -37,6 +40,7 @@ use Psr\Log\LoggerInterface;
  * @package OCA\OpenRegister\Service\Configuration
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class ExportHandler
 {
@@ -91,6 +95,20 @@ class ExportHandler
     private array $schemasMap = [];
 
     /**
+     * Workflow engine registry for resolving adapters.
+     *
+     * @var WorkflowEngineRegistry|null
+     */
+    private ?WorkflowEngineRegistry $workflowEngineRegistry = null;
+
+    /**
+     * Mapper for deployed workflow entities.
+     *
+     * @var DeployedWorkflowMapper|null
+     */
+    private ?DeployedWorkflowMapper $deployedWorkflowMapper = null;
+
+    /**
      * Constructor for ExportHandler.
      *
      * @param SchemaMapper        $schemaMapper        The schema mapper.
@@ -112,6 +130,30 @@ class ExportHandler
         $this->configurationMapper = $configurationMapper;
         $this->logger = $logger;
     }//end __construct()
+
+    /**
+     * Set the workflow engine registry.
+     *
+     * @param WorkflowEngineRegistry $registry The registry
+     *
+     * @return void
+     */
+    public function setWorkflowEngineRegistry(WorkflowEngineRegistry $registry): void
+    {
+        $this->workflowEngineRegistry = $registry;
+    }//end setWorkflowEngineRegistry()
+
+    /**
+     * Set the deployed workflow mapper.
+     *
+     * @param DeployedWorkflowMapper $mapper The mapper
+     *
+     * @return void
+     */
+    public function setDeployedWorkflowMapper(DeployedWorkflowMapper $mapper): void
+    {
+        $this->deployedWorkflowMapper = $mapper;
+    }//end setDeployedWorkflowMapper()
 
     /**
      * Export configuration to OpenAPI format.
@@ -153,6 +195,7 @@ class ExportHandler
                 'jobs'             => [],
                 'synchronizations' => [],
                 'rules'            => [],
+                'workflows'        => [],
                 'objects'          => [],
             ],
         ];
@@ -265,6 +308,14 @@ class ExportHandler
                     regIdSlugMap: $regIdSlugMap
                 );
                 $openApiSpec['components']['registers'][$register->getSlug()]['schemas'][] = $schema->getSlug();
+            }
+
+            // Export workflows attached to schemas in this register.
+            foreach ($schemas as $schemaForWorkflows) {
+                $workflowExports = $this->exportWorkflowsForSchema(schemaSlug: $schemaForWorkflows->getSlug());
+                foreach ($workflowExports as $workflowExport) {
+                    $openApiSpec['components']['workflows'][] = $workflowExport;
+                }
             }
 
             // Optionally include objects in the register.
@@ -548,4 +599,70 @@ class ExportHandler
 
         return $url;
     }//end getLastNumericSegment()
+
+    /**
+     * Export deployed workflows for a given schema slug.
+     *
+     * Queries DeployedWorkflow records attached to the schema, fetches their
+     * definitions from the engine, and builds export entries.
+     *
+     * @param string $schemaSlug The schema slug to find workflows for
+     *
+     * @return array<int, array<string, mixed>> Workflow export entries
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Workflow export handles engine lookup and error recovery
+     */
+    private function exportWorkflowsForSchema(string $schemaSlug): array
+    {
+        if ($this->deployedWorkflowMapper === null || $this->workflowEngineRegistry === null) {
+            return [];
+        }
+
+        $deployedWorkflows = $this->deployedWorkflowMapper->findBySchema(schemaSlug: $schemaSlug);
+        $exports           = [];
+
+        foreach ($deployedWorkflows as $deployed) {
+            $engineType = $deployed->getEngine();
+            $engines    = $this->workflowEngineRegistry->getEnginesByType(engineType: $engineType);
+
+            if (count($engines) === 0) {
+                $this->logger->warning(
+                    message: '[ExportHandler] No engine found for type during workflow export',
+                    context: ['engineType' => $engineType, 'workflowName' => $deployed->getName()]
+                );
+                continue;
+            }
+
+            try {
+                $adapter    = $this->workflowEngineRegistry->resolveAdapter(engine: $engines[0]);
+                $definition = $adapter->getWorkflow(workflowId: $deployed->getEngineWorkflowId());
+            } catch (Exception $e) {
+                $this->logger->warning(
+                    message: '[ExportHandler] Failed to fetch workflow definition for export',
+                    context: [
+                        'workflowName' => $deployed->getName(),
+                        'error'        => $e->getMessage(),
+                    ]
+                );
+                $definition = [];
+            }
+
+            $export = [
+                'name'       => $deployed->getName(),
+                'engine'     => $engineType,
+                'definition' => $definition,
+            ];
+
+            if ($deployed->getAttachedSchema() !== null) {
+                $export['attachTo'] = [
+                    'schema' => $deployed->getAttachedSchema(),
+                    'event'  => $deployed->getAttachedEvent() ?? 'created',
+                ];
+            }
+
+            $exports[] = $export;
+        }//end foreach
+
+        return $exports;
+    }//end exportWorkflowsForSchema()
 }//end class

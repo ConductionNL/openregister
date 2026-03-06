@@ -37,6 +37,25 @@ interface WorkflowEngineInterface
     public function deployWorkflow(array $workflowDefinition): string;
 
     /**
+     * Update an existing workflow definition in the engine.
+     *
+     * @param string               $workflowId         Engine-specific workflow ID
+     * @param array<string, mixed> $workflowDefinition Updated workflow definition
+     *
+     * @return string Engine-specific workflow ID (may change on some engines)
+     */
+    public function updateWorkflow(string $workflowId, array $workflowDefinition): string;
+
+    /**
+     * Get the full workflow definition from the engine.
+     *
+     * @param string $workflowId Engine-specific workflow ID
+     *
+     * @return array<string, mixed> Engine-specific workflow definition
+     */
+    public function getWorkflow(string $workflowId): array;
+
+    /**
      * Remove a workflow from the engine.
      *
      * @param string $workflowId Engine-specific workflow ID
