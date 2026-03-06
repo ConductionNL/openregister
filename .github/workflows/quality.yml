@@ -179,7 +179,6 @@ jobs:
     runs-on: ubuntu-latest
     name: Integration Tests (Newman)
     needs: linting
-    if: github.event_name == 'pull_request'
 
     services:
       postgres:
