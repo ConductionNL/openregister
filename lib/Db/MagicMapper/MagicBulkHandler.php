@@ -488,7 +488,7 @@ class MagicBulkHandler
 
         $uuids      = array_column($filteredChunk, '_uuid');
         $platform   = $this->db->getDatabasePlatform();
-        $isPostgres = $platform->getName() === 'postgresql';
+        $isPostgres = $platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 
         // Get full table name with hardcoded prefix.
         $fullTableName = 'oc_'.$tableName;
@@ -702,7 +702,7 @@ class MagicBulkHandler
     {
         try {
             $platform   = $this->db->getDatabasePlatform();
-            $isPostgres = $platform->getName() === 'postgresql';
+            $isPostgres = $platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 
             // Get full table name with hardcoded prefix.
             $fullTableName = 'oc_'.$tableName;

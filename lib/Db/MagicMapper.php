@@ -2555,7 +2555,7 @@ class MagicMapper
         try {
             // Build CREATE TABLE SQL manually for Nextcloud 32 compatibility.
             $platform   = $this->db->getDatabasePlatform();
-            $isPostgres = ($platform->getName() === 'postgresql');
+            $isPostgres = ($platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform);
 
             // Get database table prefix from Nextcloud config.
             $tablePrefix   = $this->config->getSystemValue('dbtableprefix', 'oc_');
@@ -2688,7 +2688,7 @@ class MagicMapper
     private function mapColumnTypeToSQL(string $type, array $column): string
     {
         $platform   = $this->db->getDatabasePlatform();
-        $isPostgres = ($platform->getName() === 'postgresql');
+        $isPostgres = ($platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform);
 
         switch ($type) {
             case 'bigint':
@@ -4086,7 +4086,7 @@ class MagicMapper
     private function updateTableStructure(string $tableName, array $currentColumns, array $requiredColumns): array
     {
         $platform      = $this->db->getDatabasePlatform();
-        $isPostgres    = ($platform->getName() === 'postgresql');
+        $isPostgres    = ($platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform);
         $tablePrefix   = $this->config->getSystemValue('dbtableprefix', 'oc_');
         $fullTableName = $tablePrefix.$tableName;
 

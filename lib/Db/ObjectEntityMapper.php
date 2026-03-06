@@ -1821,14 +1821,14 @@ class ObjectEntityMapper extends QBMapper
         $qb = $this->db->getQueryBuilder();
 
         // Get database platform to determine casting method.
-        $platform = $qb->getConnection()->getDatabasePlatform()->getName();
+        $platform = $qb->getConnection()->getDatabasePlatform();
 
         $qb->select('o.*')
             ->from('openregister_objects', 'o');
 
         // PostgreSQL requires explicit casting for VARCHAR to BIGINT comparison.
         // MySQL/MariaDB does implicit type conversion.
-        if ($platform === 'postgresql') {
+        if ($platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform) {
             $qb->leftJoin('o', 'openregister_schemas', 's', 'CAST(o.schema AS BIGINT) = s.id');
         } else {
             $qb->leftJoin('o', 'openregister_schemas', 's', 'o.schema = s.id');

@@ -412,9 +412,9 @@ class SearchTrailMapper extends QBMapper
         // GetDatabasePlatform() returns a platform instance.
         $platform = $this->db->getDatabasePlatform();
 
-        if ($platform->getName() === 'mysql') {
+        if ($platform instanceof \Doctrine\DBAL\Platforms\AbstractMySQLPlatform) {
             $qb->addSelect($qb->createFunction("DATE_FORMAT(created, '{$dateFormat}') AS date_period"));
-        } else if ($platform->getName() === 'postgresql') {
+        } else if ($platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform) {
             // PostgreSQL uses TO_CHAR for date formatting.
             $postgresFormat = match ($interval) {
                 'hour' => 'YYYY-MM-DD HH24:00:00',
@@ -426,7 +426,7 @@ class SearchTrailMapper extends QBMapper
             };
 
             $qb->addSelect($qb->createFunction("TO_CHAR(created, '{$postgresFormat}') AS date_period"));
-        } else if ($platform->getName() === 'sqlite') {
+        } else if ($platform instanceof \Doctrine\DBAL\Platforms\SqlitePlatform) {
             // For SQLite - use strftime.
             $sqliteFormat = match ($interval) {
                 'hour' => '%Y-%m-%d %H:00:00',
