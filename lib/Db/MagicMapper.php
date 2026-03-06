@@ -3180,112 +3180,6 @@ class MagicMapper
     }//end prepareObjectDataForTable()
 
     /**
-     * Execute search in register+schema-specific table
-     *
-     * @param array    $query     Search query parameters
-     * @param Register $register  The register context
-     * @param Schema   $schema    The schema for context
-     * @param string   $tableName The table name to search
-     *
-     * @throws Exception If search fails
-     *
-     * @return ObjectEntity[]
-     *
-     * @psalm-return list<ObjectEntity>
-     *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Search execution requires handling many query options
-     * @SuppressWarnings(PHPMD.NPathComplexity)      Search execution requires handling many query options
-     */
-    private function executeRegisterSchemaTableSearch(
-        array $query,
-        Register $register,
-        Schema $schema,
-        string $tableName
-    ): array {
-        $qb = $this->db->getQueryBuilder();
-
-        // Don't use select('*') yet - we'll add it conditionally.
-        $qb->from($tableName);
-
-        // Apply _search (fuzzy, case-insensitive, multi-column search).
-        $hasSearch = isset($query['_search']) === true && empty($query['_search']) === false;
-        // No search, just select all columns.
-        $qb->select('*');
-        if ($hasSearch === true) {
-            // Then apply fuzzy search which will add the score column.
-            $this->applyFuzzySearch(qb: $qb, searchTerm: $query['_search'], schema: $schema);
-        }
-
-        // Apply filters.
-        $this->applySearchFilters(qb: $qb, query: $query, schema: $schema, tableName: $tableName);
-
-        // Apply pagination.
-        if (($query['_limit'] ?? null) !== null) {
-            $qb->setMaxResults((int) $query['_limit']);
-        }
-
-        if (($query['_offset'] ?? null) !== null) {
-            $qb->setFirstResult((int) $query['_offset']);
-        }
-
-        // Apply ordering (default: order by search relevance if _search is used).
-        if (isset($query['_search']) === true && empty($query['_search']) === false && empty($query['_order']) === true) {
-            // Order by search score descending when using _search (if it was added).
-            $qb->addOrderBy('_search_score', 'DESC');
-        } else if (($query['_order'] ?? null) !== null && is_array($query['_order']) === true) {
-            foreach ($query['_order'] as $field => $direction) {
-                $columnName = $this->sanitizeColumnName(name: $field);
-                if (str_starts_with($field, '@self.') === true) {
-                    $columnName = self::METADATA_PREFIX.substr($field, 6);
-                }
-
-                $qb->addOrderBy($columnName, strtoupper($direction));
-            }
-        }
-
-        try {
-            $result = $qb->executeQuery();
-            $rows   = $result->fetchAll();
-
-            // Convert rows back to ObjectEntity objects.
-            $objects = [];
-            foreach ($rows as $row) {
-                // Remove _search_score column before converting (it's not a valid attribute).
-                unset($row['_search_score']);
-                $objectEntity = $this->convertRowToObjectEntity(row: $row, _register: $register, _schema: $schema);
-                if ($objectEntity !== null) {
-                    $objects[] = $objectEntity;
-                }
-            }
-
-            $this->logger->debug(
-                message: '[MagicMapper] Register+schema table search completed',
-                context: [
-                    'file'         => __FILE__,
-                    'line'         => __LINE__,
-                    'tableName'    => $tableName,
-                    'resultCount'  => count($objects),
-                    'queryFilters' => array_keys($query),
-                ]
-            );
-
-            return $objects;
-        } catch (Exception $e) {
-            $this->logger->error(
-                message: '[MagicMapper] Register+schema table search failed',
-                context: [
-                    'file'      => __FILE__,
-                    'line'      => __LINE__,
-                    'tableName' => $tableName,
-                    'error'     => $e->getMessage(),
-                ]
-            );
-
-            throw $e;
-        }//end try
-    }//end executeRegisterSchemaTableSearch()
-
-    /**
      * Convert database row back to ObjectEntity
      *
      * @param array    $row       Database row data
@@ -3329,7 +3223,7 @@ class MagicMapper
             $propertyTypes       = [];
             $propertyFormats     = [];
             $properties          = $_schema->getProperties() ?? [];
-            foreach ($properties as $propertyName => $propertyDef) {
+            foreach (array_keys($properties) as $propertyName) {
                 $columnName = $this->sanitizeColumnName(name: $propertyName);
                 $columnToPropertyMap[$columnName] = $propertyName;
                 $propertyTypes[$propertyName]     = $propertyDef['type'] ?? 'string';
@@ -3961,66 +3855,6 @@ class MagicMapper
             $qb->addSelect($qb->createFunction($scoreFormula.' AS _search_score'));
         }
     }//end applyFuzzySearch()
-
-    /**
-     * Apply fuzzy search WHERE clause only (without score column).
-     *
-     * This is used for COUNT queries where we only need the filtering,
-     * not the score column (which would cause GROUP BY errors).
-     *
-     * @param IQueryBuilder $qb         The query builder to modify.
-     * @param string        $searchTerm The search term entered by the user.
-     * @param Schema        $schema     The schema to determine searchable columns.
-     *
-     * @return void
-     */
-    private function applyFuzzySearchWhereOnly(IQueryBuilder $qb, string $searchTerm, Schema $schema): void
-    {
-        // Get all text-based properties from the schema.
-        $properties       = $schema->getProperties() ?? [];
-        $searchableFields = [];
-
-        if (is_array($properties) === true) {
-            foreach ($properties as $propertyName => $propertyConfig) {
-                $type = $propertyConfig['type'] ?? 'string';
-                // Only search in string fields.
-                if ($type === 'string') {
-                    $columnName         = $this->sanitizeColumnName(name: $propertyName);
-                    $searchableFields[] = $columnName;
-                }
-            }
-        }
-
-        if (empty($searchableFields) === true) {
-            return;
-        }
-
-        // Build WHERE clause: match if ANY column matches (using OR).
-        $orConditions = [];
-        $platform     = $this->db->getDatabasePlatform();
-        $hasTrgm      = $this->hasPgTrgmExtension();
-
-        foreach ($searchableFields as $columnName) {
-            if ($platform instanceof PostgreSQLPlatform === true) {
-                // PostgreSQL: Always use ILIKE for case-insensitive matching.
-                $orConditions[] = "LOWER({$columnName}) ILIKE LOWER(".$qb->createNamedParameter('%'.$searchTerm.'%').')';
-
-                // Only use pg_trgm % operator if extension is available.
-                if ($hasTrgm === true) {
-                    $orConditions[] = "LOWER({$columnName}) % LOWER(".$qb->createNamedParameter($searchTerm).')';
-                }
-
-                continue;
-            }
-
-            // MariaDB/MySQL: Use LIKE for case-insensitive substring match.
-            $orConditions[] = "LOWER({$columnName}) LIKE LOWER(".$qb->createNamedParameter('%'.$searchTerm.'%').')';
-        }
-
-        if (empty($orConditions) === false) {
-            $qb->andWhere(implode(' OR ', $orConditions));
-        }
-    }//end applyFuzzySearchWhereOnly()
 
     /**
      * Add WHERE condition to query builder
@@ -5212,10 +5046,7 @@ class MagicMapper
 
         // Execute single UNION query to find which tables contain which UUIDs.
         $unionSql    = implode(' UNION ALL ', $unionParts);
-        $unionParams = [];
-        foreach ($unionParts as $part) {
-            $unionParams = array_merge($unionParams, $uuids);
-        }
+        $unionParams = array_merge(...array_fill(0, count($unionParts), $uuids));
 
         try {
             $stmt        = $this->db->prepare($unionSql);
@@ -6460,25 +6291,6 @@ class MagicMapper
     }//end findByRelationBatchInSchema()
 
     /**
-     * Get the active organisation UUID for multi-tenancy filtering.
-     *
-     * Uses the OrganisationService (via the container) to resolve the current user's
-     * active organisation, matching the same logic used by the MultiTenancyTrait.
-     *
-     * @return string|null The active organisation UUID or null
-     */
-    private function getActiveOrganisationUuidForFilter(): ?string
-    {
-        try {
-            $organisationService = $this->container->get('OCA\OpenRegister\Service\OrganisationService');
-            $activeOrg           = $organisationService->getActiveOrganisation();
-            return $activeOrg?->getUuid();
-        } catch (\Exception $e) {
-            return null;
-        }
-    }//end getActiveOrganisationUuidForFilter()
-
-    /**
      * Build a multi-tenancy SQL fragment and params for _organisation filtering.
      *
      * Returns the SQL condition string and any additional params to bind.
@@ -6716,7 +6528,7 @@ class MagicMapper
                 $schema = $this->schemaMapper->find((int) $row['_schema']);
                 if ($schema !== null) {
                     $properties = $schema->getProperties() ?? [];
-                    foreach ($properties as $propertyName => $propertyDef) {
+                    foreach (array_keys($properties) as $propertyName) {
                         $columnName = $this->sanitizeColumnName(name: $propertyName);
                         $columnToPropertyMap[$columnName] = $propertyName;
                     }

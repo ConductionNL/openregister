@@ -1,5 +1,20 @@
 <?php
 
+/**
+ * OpenRegister WorkflowEngine Interface
+ *
+ * @category WorkflowEngine
+ * @package  OCA\OpenRegister\WorkflowEngine
+ *
+ * @author    Conduction Development Team <dev@conductio.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
+ */
+
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\WorkflowEngine;
@@ -12,7 +27,6 @@ namespace OCA\OpenRegister\WorkflowEngine;
  */
 interface WorkflowEngineInterface
 {
-
     /**
      * Deploy a workflow definition to the engine.
      *
@@ -52,13 +66,13 @@ interface WorkflowEngineInterface
     /**
      * Execute a workflow synchronously and return the response.
      *
-     * @param string             $workflowId Engine-specific workflow ID
+     * @param string               $workflowId Engine-specific workflow ID
      * @param array<string, mixed> $data       Data to pass to the workflow
-     * @param int                $timeout    Timeout in seconds (default 30)
+     * @param int                  $timeout    Timeout in seconds (default 30)
      *
      * @return WorkflowResult Structured execution result
      */
-    public function executeWorkflow(string $workflowId, array $data, int $timeout = 30): WorkflowResult;
+    public function executeWorkflow(string $workflowId, array $data, int $timeout=30): WorkflowResult;
 
     /**
      * Get the webhook URL that triggers a specific workflow.
@@ -82,4 +96,4 @@ interface WorkflowEngineInterface
      * @return bool True if the engine is reachable and responsive
      */
     public function healthCheck(): bool;
-}
+}//end interface

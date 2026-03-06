@@ -482,7 +482,7 @@ class Webhook extends Entity implements JsonSerializable
 
         if (($object['events'] ?? null) !== null) {
             if (is_array($object['events']) === true) {
-                $this->setEventsArray(eventsArray: $object['events']);
+                $this->setEventsArray(events: $object['events']);
             }
 
             if (is_array($object['events']) === false) {
@@ -492,7 +492,7 @@ class Webhook extends Entity implements JsonSerializable
 
         if (($object['headers'] ?? null) !== null) {
             if (is_array($object['headers']) === true) {
-                $this->setHeadersArray(headersArray: $object['headers']);
+                $this->setHeadersArray(headers: $object['headers']);
             }
 
             if (is_array($object['headers']) === false) {
@@ -514,7 +514,7 @@ class Webhook extends Entity implements JsonSerializable
 
         if (($object['filters'] ?? null) !== null) {
             if (is_array($object['filters']) === true) {
-                $this->setFiltersArray(filtersArray: $object['filters']);
+                $this->setFiltersArray(filters: $object['filters']);
             }
 
             if (is_array($object['filters']) === false) {
@@ -536,7 +536,7 @@ class Webhook extends Entity implements JsonSerializable
 
         if (($object['configuration'] ?? null) !== null) {
             if (is_array($object['configuration']) === true) {
-                $this->setConfigurationArray(configurationArray: $object['configuration']);
+                $this->setConfigurationArray(configuration: $object['configuration']);
             }
 
             if (is_array($object['configuration']) === false) {

@@ -66,7 +66,7 @@ class CronFileTextExtractionJob extends TimedJob
     public function __construct(ITimeFactory $time)
     {
         parent::__construct(time: $time);
-        $this->setInterval(interval: self::DEFAULT_INTERVAL);
+        $this->setInterval(seconds: self::DEFAULT_INTERVAL);
     }//end __construct()
 
     /**

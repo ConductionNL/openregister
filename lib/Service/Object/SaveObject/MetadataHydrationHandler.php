@@ -635,7 +635,7 @@ class MetadataHydrationHandler
         }
 
         // Use the existing createSlug method for consistency.
-        return $this->createSlug(name: trim($value));
+        return $this->createSlug(text: trim(string: $value));
     }//end createSlugFromValue()
 
     /**

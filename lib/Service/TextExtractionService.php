@@ -949,13 +949,13 @@ class TextExtractionService
                 );
             } else if ($mimeType === 'application/pdf') {
                 // Extract text from PDF using Smalot PdfParser.
-                $extractedText = $this->extractPdf(content: $file);
+                $extractedText = $this->extractPdf(file: $file);
             } else if ($this->isWordDocument(mimeType: $mimeType) === true) {
                 // Extract text from DOCX/DOC using PhpWord.
-                $extractedText = $this->extractWord(content: $file);
+                $extractedText = $this->extractWord(file: $file);
             } else if ($this->isSpreadsheet(mimeType: $mimeType) === true) {
                 // Extract text from XLSX/XLS using PhpSpreadsheet.
-                $extractedText = $this->extractSpreadsheet(content: $file);
+                $extractedText = $this->extractSpreadsheet(file: $file);
             } else {
                 // Unsupported file type.
                 $this->logger->info(
@@ -1214,9 +1214,9 @@ class TextExtractionService
     public function getStats(): array
     {
         $untrackedCount = $this->fileMapper->countUntrackedFiles();
-        $chunkCount     = $this->getTableCountSafe(spreadsheet: 'openregister_chunks');
-        $objectCount    = $this->getTableCountSafe(spreadsheet: 'openregister_objects');
-        $entityCount    = $this->getTableCountSafe(spreadsheet: 'openregister_entities');
+        $chunkCount     = $this->getTableCountSafe(tableName: 'openregister_chunks');
+        $objectCount    = $this->getTableCountSafe(tableName: 'openregister_objects');
+        $entityCount    = $this->getTableCountSafe(tableName: 'openregister_entities');
 
         return [
             'totalFiles'     => $untrackedCount + $chunkCount,

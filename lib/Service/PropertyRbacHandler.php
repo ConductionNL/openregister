@@ -149,7 +149,7 @@ class PropertyRbacHandler
         $propertiesWithAuth = $schema->getPropertiesWithAuthorization();
 
         // Filter out properties user cannot read.
-        foreach ($propertiesWithAuth as $propertyName => $authConfig) {
+        foreach (array_keys($propertiesWithAuth) as $propertyName) {
             // Only filter if the property exists in the object.
             if (array_key_exists($propertyName, $object) === false) {
                 continue;
@@ -204,7 +204,7 @@ class PropertyRbacHandler
         $propertiesWithAuth = $schema->getPropertiesWithAuthorization();
 
         // Check each incoming property that has authorization rules.
-        foreach ($propertiesWithAuth as $propertyName => $authConfig) {
+        foreach (array_keys($propertiesWithAuth) as $propertyName) {
             // Only check properties that are being submitted.
             if (array_key_exists($propertyName, $incomingData) === false) {
                 continue;

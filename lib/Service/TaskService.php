@@ -428,6 +428,27 @@ class TaskService
             $status = strtolower((string) $vtodo->STATUS);
         }
 
+        // Extract UID, SUMMARY, DESCRIPTION, PRIORITY.
+        $taskUid         = null;
+        $taskSummary     = '';
+        $taskDescription = '';
+        $taskPriority    = 0;
+        if (isset($vtodo->UID) === true) {
+            $taskUid = (string) $vtodo->UID;
+        }
+
+        if (isset($vtodo->SUMMARY) === true) {
+            $taskSummary = (string) $vtodo->SUMMARY;
+        }
+
+        if (isset($vtodo->DESCRIPTION) === true) {
+            $taskDescription = (string) $vtodo->DESCRIPTION;
+        }
+
+        if (isset($vtodo->PRIORITY) === true) {
+            $taskPriority = (int) (string) $vtodo->PRIORITY;
+        }
+
         return [
             'id'          => $uri,
             'uid'         => $taskUid,
