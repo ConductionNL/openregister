@@ -620,9 +620,6 @@ class Schema extends Entity implements JsonSerializable
     /**
      * Check if a user group has permission for a specific CRUD action
      *
-     * @deprecated Use PermissionHandler::hasGroupPermission() instead.
-     *             This method is kept for backward compatibility during the refactoring.
-     *
      * @param string $groupId            The group ID to check
      * @param string $action             The CRUD action (create, read, update, delete)
      * @param string $userId             Optional user ID for owner check
@@ -631,6 +628,9 @@ class Schema extends Entity implements JsonSerializable
      * @param array  $objectData         Optional object data for conditional match evaluation
      * @param string $objectOrganisation Optional object organisation UUID (@self.organisation)
      * @param string $activeOrganisation Optional user's active organisation UUID for $organisation variable
+     *
+     * @deprecated Use PermissionHandler::hasGroupPermission() instead.
+     *             This method is kept for backward compatibility during the refactoring.
      *
      * @return bool True if the group has permission for the action
      *
@@ -899,8 +899,6 @@ class Schema extends Entity implements JsonSerializable
     /**
      * Converts schema to an object representation
      *
-     * @deprecated Use SchemaService::getSchemaObject() instead.
-     *
      * @param IURLGenerator $urlGenerator The URL generator for URLs in the schema
      *
      * @return stdClass A standard object representation of the schema
@@ -909,8 +907,61 @@ class Schema extends Entity implements JsonSerializable
      */
     public function getSchemaObject(IURLGenerator $urlGenerator): stdClass
     {
-        $schemaService = \OCP\Server::get(\OCA\OpenRegister\Service\SchemaService::class);
-        return $schemaService->getSchemaObject($this);
+        $schema        = new stdClass();
+        $schema->title = $this->title;
+        $schema->description = $this->description;
+        $schema->version     = $this->version;
+        $schema->type        = 'object';
+        $schema->required    = $this->required;
+        $schema->{'$schema'} = 'https://json-schema.org/draft/2020-12/schema';
+        $schema->{'$id'}     = $urlGenerator->getBaseUrl().'/apps/openregister/api/v1/schemas/'.$this->uuid;
+        $schema->properties  = new stdClass();
+
+        foreach ($this->properties ?? [] as $propertyName => $property) {
+            if (($property['properties'] ?? null) !== null) {
+                $nestedProperties         = new stdClass();
+                $nestedProperty           = new stdClass();
+                $nestedProperty->type     = 'object';
+                $nestedProperty->title    = $property['title'];
+                $nestedProperty->required = [];
+
+                if (($property['properties'] ?? null) !== null) {
+                    foreach ($property['properties'] as $subName => $subProperty) {
+                        $isRequired = (($subProperty['required'] ?? null) !== null);
+                        if ($isRequired === true && ($subProperty['required'] === true) === true) {
+                            $nestedProperty->required[] = $subName;
+                        }
+
+                        $nestedProp = new stdClass();
+                        foreach ($subProperty as $key => $value) {
+                            if ($key === 'oneOf' && empty($value) === true) {
+                                continue;
+                            }
+
+                            $nestedProp->{$key} = $value;
+                        }
+
+                        $nestedProperties->{$subName} = $nestedProp;
+                    }
+                }
+
+                $nestedProperty->properties          = $nestedProperties;
+                $schema->properties->{$propertyName} = $nestedProperty;
+                continue;
+            }//end if
+
+            $prop = new stdClass();
+            foreach ($property as $key => $value) {
+                // Skip 'required' property on this level.
+                if ($key !== 'required' && (empty($value) === false)) {
+                    $prop->{$key} = $value;
+                }
+            }
+
+            $schema->properties->{$propertyName} = $prop;
+        }//end foreach
+
+        return $schema;
     }//end getSchemaObject()
 
     /**
@@ -1014,18 +1065,30 @@ class Schema extends Entity implements JsonSerializable
         }
 
         try {
-            $schemaService       = \OCP\Server::get(\OCA\OpenRegister\Service\SchemaService::class);
-            $validatedConfig     = $schemaService->validateConfiguration($configuration);
-            $this->configuration = (empty($validatedConfig) === false) ? $validatedConfig : null;
+            $schemaService   = \OCP\Server::get(\OCA\OpenRegister\Service\SchemaService::class);
+            $validatedConfig = $schemaService->validateConfiguration($configuration);
+            if (empty($validatedConfig) === false) {
+                $this->configuration = $validatedConfig;
+            } else {
+                $this->configuration = null;
+            }
         } catch (\Throwable $e) {
             // Fallback: if service not available, store as-is (during bootstrap/migration).
             if (is_string($configuration) === true) {
                 $decoded = json_decode($configuration, true);
-                $this->configuration = (json_last_error() === JSON_ERROR_NONE) ? $decoded : null;
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $this->configuration = $decoded;
+                } else {
+                    $this->configuration = null;
+                }
             } else {
-                $this->configuration = is_array($configuration) ? $configuration : null;
+                if (is_array($configuration) === true) {
+                    $this->configuration = $configuration;
+                } else {
+                    $this->configuration = null;
+                }
             }
-        }
+        }//end try
 
         $this->markFieldUpdated(attribute: 'configuration');
     }//end setConfiguration()

@@ -97,7 +97,6 @@
 		"twig/twig": "^3.18"
 	},
 	"require-dev": {
-		"doctrine/dbal": "^4.2",
 		"edgedesign/phpqa": "^1.27",
 		"nextcloud/coding-standard": "^1.4",
 		"nextcloud/ocp": "^31.0",
