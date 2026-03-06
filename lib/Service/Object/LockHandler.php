@@ -83,14 +83,13 @@ class LockHandler
             _multitenancy: false
         );
 
-        // Determine if this is a magic table object.
-        $isMagic = false;
-        if ($result['register'] !== null && $result['schema'] !== null) {
-            $isMagic = $result['register']->isMagicMappingEnabledForSchema(
-                schemaId: $result['schema']->getId(),
-                schemaSlug: $result['schema']->getSlug()
-            );
-        }
+        // Determine if this is a magic table object based on its source.
+        // The UnifiedObjectMapper always uses magic tables when register+schema
+        // context is present, so we check the object's actual source rather than
+        // the register's magicMapping configuration flag.
+        $isMagic = $result['register'] !== null
+            && $result['schema'] !== null
+            && $result['object']->getSource() === 'orm';
 
         return [
             'object'   => $result['object'],

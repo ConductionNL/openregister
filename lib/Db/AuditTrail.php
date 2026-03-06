@@ -222,7 +222,7 @@ class AuditTrail extends Entity implements JsonSerializable
      *
      * @var string|null The URL where the processing activity is registered
      */
-    protected ?string $procActivityUrl = null;
+    protected ?string $processingActivityUrl = null;
 
     /**
      * The unique identifier for this specific processing operation
@@ -281,7 +281,7 @@ class AuditTrail extends Entity implements JsonSerializable
         $this->addType(fieldName: 'organisationId', type: 'string');
         $this->addType(fieldName: 'organisationIdType', type: 'string');
         $this->addType(fieldName: 'processingActivityId', type: 'string');
-        $this->addType(fieldName: 'procActivityUrl', type: 'string');
+        $this->addType(fieldName: 'processingActivityUrl', type: 'string');
         $this->addType(fieldName: 'processingId', type: 'string');
         $this->addType(fieldName: 'confidentiality', type: 'string');
         $this->addType(fieldName: 'retentionPeriod', type: 'string');
@@ -378,7 +378,7 @@ class AuditTrail extends Entity implements JsonSerializable
      *     organisationId: null|string,
      *     organisationIdType: null|string,
      *     processingActivityId: null|string,
-     *     procActivityUrl: null|string,
+     *     processingActivityUrl: null|string,
      *     processingId: null|string,
      *     confidentiality: null|string,
      *     retentionPeriod: null|string,
@@ -399,32 +399,32 @@ class AuditTrail extends Entity implements JsonSerializable
         }
 
         return [
-            'id'                   => $this->id,
-            'uuid'                 => $this->uuid,
-            'schema'               => $this->schema,
-            'register'             => $this->register,
-            'object'               => $this->object,
-            'objectUuid'           => $this->objectUuid,
-            'registerUuid'         => $this->registerUuid,
-            'schemaUuid'           => $this->schemaUuid,
-            'action'               => $this->action,
-            'changed'              => $this->changed,
-            'user'                 => $this->user,
-            'userName'             => $this->userName,
-            'session'              => $this->session,
-            'request'              => $this->request,
-            'ipAddress'            => $this->ipAddress,
-            'version'              => $this->version,
-            'created'              => $created,
-            'organisationId'       => $this->organisationId,
-            'organisationIdType'   => $this->organisationIdType,
-            'processingActivityId' => $this->processingActivityId,
-            'procActivityUrl'      => $this->procActivityUrl,
-            'processingId'         => $this->processingId,
-            'confidentiality'      => $this->confidentiality,
-            'retentionPeriod'      => $this->retentionPeriod,
-            'size'                 => $this->size,
-            'expires'              => $expires,
+            'id'                    => $this->id,
+            'uuid'                  => $this->uuid,
+            'schema'                => $this->schema,
+            'register'              => $this->register,
+            'object'                => $this->object,
+            'objectUuid'            => $this->objectUuid,
+            'registerUuid'          => $this->registerUuid,
+            'schemaUuid'            => $this->schemaUuid,
+            'action'                => $this->action,
+            'changed'               => $this->changed,
+            'user'                  => $this->user,
+            'userName'              => $this->userName,
+            'session'               => $this->session,
+            'request'               => $this->request,
+            'ipAddress'             => $this->ipAddress,
+            'version'               => $this->version,
+            'created'               => $created,
+            'organisationId'        => $this->organisationId,
+            'organisationIdType'    => $this->organisationIdType,
+            'processingActivityId'  => $this->processingActivityId,
+            'processingActivityUrl' => $this->processingActivityUrl,
+            'processingId'          => $this->processingId,
+            'confidentiality'       => $this->confidentiality,
+            'retentionPeriod'       => $this->retentionPeriod,
+            'size'                  => $this->size,
+            'expires'               => $expires,
         ];
     }//end jsonSerialize()
 
