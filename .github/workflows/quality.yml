@@ -133,6 +133,8 @@ jobs:
             --admin-user admin \
             --admin-pass admin
           php occ app:enable openregister
+          # Make config readable for PHPUnit bootstrap
+          chmod -R a+w config
 
       - name: Install app dependencies
         run: |
@@ -143,6 +145,7 @@ jobs:
         run: |
           cd server/apps/openregister
           ./vendor/bin/phpunit \
+            --bootstrap tests/bootstrap-unit.php \
             --testsuite "Unit Tests" \
             --colors=always \
             --coverage-clover=coverage/clover.xml
