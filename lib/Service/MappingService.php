@@ -27,6 +27,8 @@ use Exception;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapper;
 use Throwable;
+use OCA\OpenRegister\Twig\MappingExtension;
+use OCA\OpenRegister\Twig\MappingRuntimeLoader;
 use Twig\Environment;
 use Twig\Loader\ArrayLoader;
 
@@ -68,6 +70,13 @@ class MappingService
     ) {
         $loader     = new ArrayLoader([]);
         $this->twig = new Environment($loader);
+        $this->twig->addExtension(new MappingExtension());
+        $this->twig->addRuntimeLoader(
+            new MappingRuntimeLoader(
+                mappingService: $this,
+                mappingMapper: $this->mappingMapper,
+            )
+        );
     }//end __construct()
 
     /**

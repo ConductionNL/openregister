@@ -2,58 +2,32 @@
 
 ## Architecture Overview
 
-The ZGW API mapping system spans three projects. OpenRegister owns the mapping engine and ZGW route layer. Procest owns the mapping configuration and default mappings. OpenConnector removes its mapping engine and depends on OpenRegister's.
+The ZGW API mapping system spans three projects. OpenRegister owns the generic mapping engine (MappingService, Mapping entity, MappingRuntime). Procest owns all ZGW-specific code: the ZgwController, ZgwPaginationHelper, mapping configuration, default mappings, and admin UI. OpenConnector removes its mapping engine and depends on OpenRegister's.
+
+**Key principle**: OpenRegister is a generic abstraction layer. ZGW-specific logic belongs in Procest, which consumes OpenRegister's services via cross-app DI loading.
 
 ```
                         ZGW Client
                             |
-                  GET /api/zgw/zaken/v1/zaken/
+                  GET /apps/procest/api/zgw/zaken/v1/zaken/
                             |
                             v
-┌───────────────────────────────────────────────────────┐
-│                    OpenRegister                        │
-│                                                        │
-│  ┌──────────────┐    ┌──────────────────────┐         │
-│  │ ZgwController │───>│    MappingService     │        │
-│  │               │    │  (moved from OC)      │        │
-│  │ Route dispatch│    │  - executeMapping()    │        │
-│  │ Pagination    │    │  - Twig templates      │        │
-│  │ Query mapping │    │  - dot-notation        │        │
-│  └───────┬───────┘    │  - cast / unset        │        │
-│          │            │  - passThrough         │        │
-│          │            └──────────┬─────────────┘        │
-│          │                       │                      │
-│          v                       v                      │
-│  ┌──────────────┐    ┌──────────────────────┐          │
-│  │ ObjectService │    │   MappingRuntime      │         │
-│  │ (existing)    │    │  (Twig extensions)    │         │
-│  │ CRUD on       │    │  - zgw_enum filter    │         │
-│  │ English data  │    │  - generateUuid()     │         │
-│  └───────────────┘    │  - callSource()       │         │
-│                       └───────────────────────┘         │
-│                                                         │
-│  ┌──────────────────────────────────────────────┐      │
-│  │ Mapping entity + MappingMapper (DB table)     │     │
-│  │ oc_openregister_mappings                      │     │
-│  │ - id, uuid, name, slug, mapping (JSON),       │     │
-│  │   unset (JSON), cast (JSON), passThrough      │     │
-│  └───────────────────────────────────────────────┘     │
-└────────────────────────────────────────────────────────┘
-          ^
-          | reads mapping config
-          v
 ┌────────────────────────────────────────────────────────┐
 │                      Procest                           │
 │                                                        │
-│  ┌──────────────────────────────────────────────┐     │
-│  │ ZgwMapping Configuration (IAppConfig)         │     │
-│  │ - zgwResource -> sourceRegister/Schema        │     │
-│  │ - propertyMapping (outbound Twig)             │     │
-│  │ - reverseMapping (inbound)                    │     │
-│  │ - valueMapping (enum translations)            │     │
-│  │ - queryParameterMapping                       │     │
-│  └──────────────────────────────────────────────┘     │
-│                                                        │
+│  ┌──────────────────┐    ┌──────────────────────┐     │
+│  │ ZgwController     │───>│ ZgwMappingService    │     │
+│  │                   │    │ (mapping config)     │     │
+│  │ Route dispatch    │    │ IAppConfig storage   │     │
+│  │ Pagination        │    └──────────────────────┘     │
+│  │ Query mapping     │                                 │
+│  └───────┬───────────┘    ┌──────────────────────┐     │
+│          │                │ ZgwPaginationHelper   │     │
+│          │                │ HAL-style pagination  │     │
+│          │                └──────────────────────┘     │
+│          │                                             │
+│          │  cross-app DI: \OC::$server->get()          │
+│          v                                             │
 │  ┌──────────────────────────────────────────────┐     │
 │  │ Admin Settings: ZGW Mapping Tab               │     │
 │  │ - List/edit all 12 resource mappings          │     │
@@ -66,6 +40,37 @@ The ZGW API mapping system spans three projects. OpenRegister owns the mapping e
 │  │ - Pre-configured for all 12 ZGW resources     │     │
 │  └──────────────────────────────────────────────┘     │
 └────────────────────────────────────────────────────────┘
+          │ loads services at runtime
+          v
+┌───────────────────────────────────────────────────────┐
+│                    OpenRegister                        │
+│                                                        │
+│  ┌──────────────┐    ┌──────────────────────┐         │
+│  │ ObjectService │    │    MappingService     │        │
+│  │ (existing)    │    │  (moved from OC)      │        │
+│  │ CRUD on       │    │  - executeMapping()   │        │
+│  │ English data  │    │  - Twig templates     │        │
+│  └───────────────┘    │  - dot-notation       │        │
+│                       │  - cast / unset       │        │
+│                       │  - passThrough        │        │
+│                       └──────────┬────────────┘        │
+│                                  │                     │
+│                                  v                     │
+│                       ┌──────────────────────┐         │
+│                       │   MappingRuntime      │        │
+│                       │  (Twig extensions)    │        │
+│                       │  - zgw_enum filter    │        │
+│                       │  - generateUuid()     │        │
+│                       │  - callSource()       │        │
+│                       └──────────────────────┘         │
+│                                                        │
+│  ┌──────────────────────────────────────────────┐     │
+│  │ Mapping entity + MappingMapper (DB table)     │     │
+│  │ oc_openregister_mappings                      │     │
+│  │ - id, uuid, name, slug, mapping (JSON),       │     │
+│  │   unset (JSON), cast (JSON), passThrough      │     │
+│  └───────────────────────────────────────────────┘     │
+└───────────────────────────────────────────────────────┘
 ```
 
 ## Moving the Mapping Engine from OpenConnector to OpenRegister
@@ -119,26 +124,30 @@ A new migration in OpenRegister creates the `oc_openregister_mappings` table:
 
 ## ZGW Controller Design
 
-### ZgwController
+### ZgwController (in Procest)
 
-A single controller handles all ZGW API requests, dispatching to the correct schema based on the URL pattern and mapping configuration.
+A single controller in Procest handles all ZGW API requests. It dynamically loads OpenRegister's ObjectService and MappingService via `\OC::$server->get()` at construction time, with graceful fallback if OpenRegister is unavailable (returns 503).
 
 ```php
 class ZgwController extends ApiController {
 
+    // Loaded via cross-app DI: \OC::$server->get('OCA\OpenRegister\Service\...')
+    private ?object $openRegisterMappingService;
+    private ?object $openRegisterObjectService;
+
     /**
-     * Route: /api/zgw/{zgwApi}/v1/{resource}
+     * Route: /apps/procest/api/zgw/{zgwApi}/v1/{resource}
      * Methods: GET, POST
      */
     public function index(string $zgwApi, string $resource): JSONResponse {
-        // 1. Look up ZgwMapping config from Procest for this zgwApi + resource
+        // 1. Look up ZgwMapping config from ZgwMappingService
         // 2. Resolve sourceRegister and sourceSchema
         // 3. For GET: query ObjectService, apply outbound mapping, wrap in ZGW pagination
         // 4. For POST: apply inbound mapping, create via ObjectService, return outbound-mapped result
     }
 
     /**
-     * Route: /api/zgw/{zgwApi}/v1/{resource}/{uuid}
+     * Route: /apps/procest/api/zgw/{zgwApi}/v1/{resource}/{uuid}
      * Methods: GET, PUT, PATCH, DELETE
      */
     public function show(string $zgwApi, string $resource, string $uuid): JSONResponse {
@@ -150,15 +159,15 @@ class ZgwController extends ApiController {
 }
 ```
 
-### Route Registration (routes.php)
+### Route Registration (procest/appinfo/routes.php)
 
 ```php
-['name' => 'zgw#index',  'url' => '/api/zgw/{zgwApi}/v1/{resource}',        'verb' => 'GET'],
-['name' => 'zgw#create', 'url' => '/api/zgw/{zgwApi}/v1/{resource}',        'verb' => 'POST'],
-['name' => 'zgw#show',   'url' => '/api/zgw/{zgwApi}/v1/{resource}/{uuid}', 'verb' => 'GET'],
-['name' => 'zgw#update', 'url' => '/api/zgw/{zgwApi}/v1/{resource}/{uuid}', 'verb' => 'PUT'],
-['name' => 'zgw#patch',  'url' => '/api/zgw/{zgwApi}/v1/{resource}/{uuid}', 'verb' => 'PATCH'],
-['name' => 'zgw#delete', 'url' => '/api/zgw/{zgwApi}/v1/{resource}/{uuid}', 'verb' => 'DELETE'],
+['name' => 'zgw#index',   'url' => '/api/zgw/{zgwApi}/v1/{resource}',        'verb' => 'GET'],
+['name' => 'zgw#create',  'url' => '/api/zgw/{zgwApi}/v1/{resource}',        'verb' => 'POST'],
+['name' => 'zgw#show',    'url' => '/api/zgw/{zgwApi}/v1/{resource}/{uuid}', 'verb' => 'GET'],
+['name' => 'zgw#update',  'url' => '/api/zgw/{zgwApi}/v1/{resource}/{uuid}', 'verb' => 'PUT'],
+['name' => 'zgw#patch',   'url' => '/api/zgw/{zgwApi}/v1/{resource}/{uuid}', 'verb' => 'PATCH'],
+['name' => 'zgw#destroy', 'url' => '/api/zgw/{zgwApi}/v1/{resource}/{uuid}', 'verb' => 'DELETE'],
 ```
 
 ### ZGW API to Resource Routing
@@ -213,10 +222,10 @@ OpenRegister Object (English)
 Every outbound mapping has access to `_baseUrl`, which is computed as:
 
 ```
-https://{host}/index.php/apps/openregister/api/zgw
+https://{host}/index.php/apps/procest/api/zgw
 ```
 
-This is injected into the Twig context automatically by the ZgwController.
+This is injected into the Twig context automatically by Procest's ZgwController.
 
 ## Value Mapping -- zgw_enum Twig Filter
 
@@ -350,17 +359,15 @@ Example keys:
 - `zgw_mapping_statustype`
 - etc. (12 total)
 
-### How OpenRegister Reads Procest Config
+### How Procest Reads Mapping Config
 
-OpenRegister's ZgwController reads Procest's config via:
+Procest's ZgwController reads mapping config directly via its own ZgwMappingService:
 
 ```php
-$config = \OC::$server->get(IAppConfig::class);
-$mappingJson = $config->getValueString('procest', 'zgw_mapping_zaak', '');
-$mapping = json_decode($mappingJson, true);
+$mappingConfig = $this->zgwMappingService->getMapping($resourceKey);
 ```
 
-This loose coupling means OpenRegister does not depend on Procest -- it only reads config if available.
+ZgwMappingService wraps IAppConfig, reading keys like `zgw_mapping_zaak` from Procest's app config namespace. This keeps all ZGW-specific configuration within Procest.
 
 ## Procest Admin UI -- ZGW Mapping Tab
 
@@ -374,37 +381,37 @@ Added as a new tab in the existing Procest admin settings page:
 
 ## File Structure
 
-### OpenRegister -- New/Modified Files
+### OpenRegister -- New/Modified Files (Generic Mapping Engine Only)
 
 ```
 openregister/lib/
-├── Controller/
-│   └── ZgwController.php              (NEW)
 ├── Db/
 │   ├── Mapping.php                    (NEW - moved from OC)
 │   └── MappingMapper.php              (NEW - moved from OC)
 ├── Service/
-│   ├── MappingService.php             (NEW - moved from OC)
-│   └── ZgwPaginationHelper.php        (NEW)
+│   └── MappingService.php             (NEW - moved from OC)
 ├── Twig/
-│   └── MappingRuntime.php             (NEW - moved from OC, extended)
+│   └── MappingRuntime.php             (NEW - moved from OC, extended with zgw_enum filters)
 └── Migration/
     └── VersionXXXXDate_CreateMappings.php (NEW)
-
-openregister/appinfo/
-└── routes.php                         (MODIFIED - add ZGW routes)
 ```
 
-### Procest -- New/Modified Files
+### Procest -- New/Modified Files (ZGW-Specific Code)
 
 ```
 procest/lib/
+├── Controller/
+│   └── ZgwController.php             (NEW - ZGW API controller, loads OR services via DI)
 ├── Service/
-│   └── ZgwMappingService.php          (NEW - manages mapping config)
+│   ├── ZgwMappingService.php          (NEW - manages mapping config in IAppConfig)
+│   └── ZgwPaginationHelper.php        (NEW - HAL-style pagination wrapper)
 ├── Repair/
 │   └── LoadDefaultZgwMappings.php     (NEW - repair step for defaults)
 └── Migration/
     (none - uses IAppConfig, no DB changes)
+
+procest/appinfo/
+└── routes.php                         (MODIFIED - add 6 ZGW API routes)
 
 procest/src/
 └── views/
@@ -443,12 +450,13 @@ openconnector/lib/
 - Con: OpenRegister grows in scope
 - Mitigation: OpenConnector wraps OR's MappingService during transition
 
-### ZGW routes in OpenRegister vs. separate ZGW app
-**Chosen: Routes in OpenRegister**
-- Pro: Direct access to ObjectService, no extra hop
-- Pro: Mapping is already in OpenRegister
-- Con: ZGW-specific code in a generic register app
-- Mitigation: ZgwController is self-contained; config lives in Procest
+### ZGW routes in Procest vs. in OpenRegister
+**Chosen: Routes in Procest** (revised from initial design)
+- Pro: OpenRegister stays a generic abstraction layer with no domain-specific code
+- Pro: All ZGW-specific logic (controller, pagination, config, routes) lives together in Procest
+- Pro: Clear separation of concerns: generic engine vs. domain-specific API
+- Con: Procest must load OpenRegister services via cross-app DI (`\OC::$server->get()`)
+- Mitigation: Cross-app DI pattern already used elsewhere in the codebase; graceful 503 if OpenRegister unavailable
 
 ### IAppConfig vs. OpenRegister objects for mapping storage
 **Chosen: IAppConfig in Procest**
